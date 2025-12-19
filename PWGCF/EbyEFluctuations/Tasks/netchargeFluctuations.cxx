@@ -26,7 +26,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -40,12 +39,13 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
+#include "TF1.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
 #include "TRandom3.h"
 
 #include <string>
-#include <vector> // Include for std::vector
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,54 +53,47 @@ using namespace o2::framework::expressions;
 using namespace std;
 using namespace o2::constants::physics;
 
-namespace o2
-{
-namespace aod
-{
-using MyCollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::Mults>;
-using MyCollisionRun2 = MyCollisionsRun2::iterator;
-using MyCollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::Mults>;
-using MyCollisionRun3 = MyCollisionsRun3::iterator;
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::StoredTracks, aod::TrackSelection>;
-using MyTrack = MyTracks::iterator;
-
-using MyMCCollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::Mults, aod::McCollisionLabels>;
-using MyMCCollisionRun2 = MyMCCollisionsRun2::iterator;
-
-using MyMCCollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>;
-using MyMCCollisionRun3 = MyMCCollisionsRun3::iterator;
-
-using MyMCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::StoredTracks, aod::TrackSelection, aod::McTrackLabels>;
-using MyMCTrack = MyMCTracks::iterator;
-} // namespace aod
-} // namespace o2
-
 enum RunType {
   kRun3 = 0,
   kRun2
 };
 
+// Structure to handle net charge fluctuation analysis
 struct NetchargeFluctuations {
-  Service<o2::framework::O2DatabasePDG> pdgService;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  // Macro to define configurable parameters with default values and help text
+
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+
+  // Services for PDG and CCDB (Calibration and Condition Database)
+  Service<o2::framework::O2DatabasePDG> pdgService; // Particle data group service
+  Service<o2::ccdb::BasicCCDBManager> ccdb;         // CCDB manager service
+
+  // Random number generator for statistical fluctuations, initialized with seed 0
   TRandom3* fRndm = new TRandom3(0);
+
+  // Registry for histograms used in analysis
   HistogramRegistry histogramRegistry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Configurables
+  // -------------------
+  // Configurable parameters
+  // -------------------
+  // CCDB related configurations
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> cfgUrlCCDB{"cfgUrlCCDB", "http://alice-ccdb.cern.ch", "url of ccdb"};
-  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/efftest", "Path for ccdb-object"};
+  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/netcharge/p/Run3/LHC24f3d", "Path for ccdb-object"};
   Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency"};
 
+  // Track and event selection cuts
   Configurable<float> vertexZcut{"vertexZcut", 10.f, "Vertex Z"};
   Configurable<float> etaCut{"etaCut", 0.8f, "Eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.2, "Pt min cut"};
   Configurable<float> ptMaxCut{"ptMaxCut", 5.0, "Pt max cut"};
-  Configurable<float> dcaXYCut{"dcaXYCut", 0.12, "DCA XY cut"};
-  Configurable<float> dcaZCut{"dcaZCut", 0.3, "DCA Z cut"};
-  Configurable<int> tpcCrossCut{"tpcCrossCut", 70, "TPC crossrows cut"};
-  Configurable<int> itsChiCut{"itsChiCut", 70, "ITS chi2 cluster cut"};
-  Configurable<int> tpcChiCut{"tpcChiCut", 70, "TPC chi2 cluster cut"};
+  Configurable<float> dcaXYCut{"dcaXYCut", 0.2, "DCA XY cut"};
+  Configurable<float> dcaZCut{"dcaZCut", 2.0, "DCA Z cut"};
+  Configurable<float> tpcCrossCut{"tpcCrossCut", 70., "TPC crossrows cut"};
+  Configurable<float> itsChiCut{"itsChiCut", 36., "ITS chi2 cluster cut"};
+  Configurable<float> tpcChiCut{"tpcChiCut", 4., "TPC chi2 cluster cut"};
   Configurable<float> centMin{"centMin", 0.0f, "cenrality min for delta eta"};
   Configurable<float> centMax{"centMax", 10.0f, "cenrality max for delta eta"};
   Configurable<int> cfgNSubsample{"cfgNSubsample", 30, "Number of subsamples for Error"};
@@ -108,53 +101,126 @@ struct NetchargeFluctuations {
   Configurable<double> threshold{"threshold", 1e-6, "Delta eta bin count"};
 
   // Event selections
-  Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};                    // sel8
-  Configurable<bool> cInt7Trig{"cInt7Trig", true, "kINT7 MB Trigger"};                                   // kINT7
-  Configurable<bool> cSel7Trig{"cSel7Trig", true, "Sel7 (V0A + V0C) Selection Run2"};                    // sel7
+  Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"}; // sel8
+  Configurable<bool> cInt7Trig{"cInt7Trig", true, "kINT7 MB Trigger"};                // kINT7
+  Configurable<bool> cSel7Trig{"cSel7Trig", true, "Sel7 (V0A + V0C) Selection Run2"}; // sel7
+  Configurable<bool> cDcaXy{"cDcaXy", true, "Dca XY cut"};
+  Configurable<bool> cDcaZ{"cDcaZ", true, "Dca Z cut"};
+  Configurable<bool> cTpcCr{"cTpcCr", true, "tpc crossrows"};
+  Configurable<bool> cItsChi{"cItsChi", true, "ITS chi"};
+  Configurable<bool> cTpcChi{"cTpcChi", true, "TPC chi"};
+  Configurable<bool> cFT0C{"cFT0C", true, "cent FT0C"};
+  Configurable<bool> cFT0M{"cFT0M", false, "cent FT0M"};
+
+  // Centrality binning configuration
+  ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality/Multiplicity percentile bining"};
+  Configurable<bool> cPileupReject{"cPileupReject", false, "Pileup rejection"};                          // pileup
+  Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", false, "Good ITS Layers All"}; // pileup
   Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                        // pileup
   Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                     // pileup
   Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                        // pileup
-  Configurable<bool> cPileupReject{"cPileupReject", false, "Pileup rejection"};                          // pileup
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                 // pileup
-  Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", false, "Good ITS Layers All"}; // pileup
-  Configurable<bool> cDcaXy{"cDcaXy", false, "Dca XY cut"};
-  Configurable<bool> cDcaZ{"cDcaZ", false, "Dca Z cut"};
-  Configurable<bool> cTpcCr{"cTpcCr", false, "tpc crossrows"};
-  Configurable<bool> cItsChi{"cItsChi", false, "ITS chi"};
-  Configurable<bool> cTpcChi{"cTpcChi", false, "TPC chi"};
+  Configurable<bool> cPVcont{"cPVcont", false, "primary vertex contributor"};
 
-  // CCDB efficiency histograms
-  TH2D* efficiency = nullptr;
+  // Configurable to enable multiplicity correlation cuts
+  O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
 
-  // Initialization
+  // Struct grouping multiplicity vs centrality/vertex cuts and related parameters
+  struct : ConfigurableGroup {
+
+    // Flags to enable specific multiplicity correlation cuts
+    O2_DEFINE_CONFIGURABLE(cfgMultPVT0CCutEnabled, bool, true, "Enable PV multiplicity vs T0C centrality cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalFT0CCutEnabled, bool, true, "Enable globalTracks vs FT0C multiplicity cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, true, "Enable globalTracks vs PV multiplicity cut")
+
+    // Parameter values for PV multiplicity vs FT0C centrality cut (polynomial coefficients, etc.)
+    Configurable<std::vector<double>> cfgMultPVT0CCutPars{"cfgMultPVT0CCutPars",
+                                                          std::vector<double>{30.434, -0.917137, 0.0185032, -0.000198425, 7.94381e-07, 13.7406, -0.282656, 0.00556147, -6.32766e-05, 2.51648e-07},
+                                                          "PV multiplicity vs T0C centrality cut parameter values"};
+
+    // Parameter values for globalTracks vs FT0C multiplicity cut
+    Configurable<std::vector<double>> cfgMultGlobalFT0CCutPars{"cfgMultGlobalFT0CCutPars",
+                                                               std::vector<double>{18.9628, -0.576466, 0.0117324, -0.000126086, 5.05365e-07, 8.99921, -0.188022, 0.0037089, -4.20275e-05, 1.68234e-07},
+                                                               "globalTracks vs FT0C cut parameter values"};
+
+    // Parameter values for globalTracks vs PV multiplicity cut
+    Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars",
+                                                             std::vector<double>{0.148031, 0.616699, 0.603083, 0.112751, -0.0013846, 8.38211e-06},
+                                                             "globalTracks vs PV cut parameter values"};
+
+    // Local vectors to store the above parameters
+    std::vector<double> multPVT0CCutPars;
+    std::vector<double> multGlobalFT0CPars;
+    std::vector<double> multGlobalPVCutPars;
+
+    // TF1 objects to represent low/high cut functions for the above correlations
+    TF1* fMultPVT0CCutLow = nullptr;
+    TF1* fMultPVT0CCutHigh = nullptr;
+    TF1* fMultGlobalFT0CCutLow = nullptr;
+    TF1* fMultGlobalFT0CCutHigh = nullptr;
+    TF1* fMultGlobalPVCutLow = nullptr;
+    TF1* fMultGlobalPVCutHigh = nullptr;
+
+  } cfgFunCoeff;
+
+  // Histogram pointer for CCDB efficiency
+  TH1D* efficiency = nullptr;
+
+  // Filters for selecting collisions and tracks
+  Filter collisionFilter = nabs(aod::collision::posZ) <= vertexZcut;
+  Filter trackFilter = (nabs(aod::track::eta) < etaCut) && (aod::track::pt > ptMinCut) && (aod::track::pt < ptMaxCut) && (requireGlobalTrackInFilter());
+
+  using MyCollisionsRun2 = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::Mults>>;
+  using MyCollisionRun2 = MyCollisionsRun2::iterator;
+
+  using MyCollisionsRun3 = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::Mults>>;
+  using MyCollisionRun3 = MyCollisionsRun3::iterator;
+
+  using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  using MyTrack = MyTracks::iterator;
+
+  using MyMCCollisionsRun2 = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::Mults, aod::McCollisionLabels>>;
+  using MyMCCollisionRun2 = MyMCCollisionsRun2::iterator;
+
+  using MyMCCollisionsRun3 = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>>;
+  using MyMCCollisionRun3 = MyMCCollisionsRun3::iterator;
+
+  using MyMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::StoredTracks, aod::TrackSelection, aod::McTrackLabels>>;
+  using MyMCTrack = MyMCTracks::iterator;
+
   void init(o2::framework::InitContext&)
   {
+    // -------------------------------
+    // Define histogram axes specifications
+    // -------------------------------
     const AxisSpec vtxzAxis = {800, -20, 20, "V_{Z} (cm)"};
-    const AxisSpec dcaAxis = {250, -0.5, 0.5, "DCA_{xy} (cm)"};
-    const AxisSpec dcazAxis = {250, -0.5, 0.5, "DCA_{z} (cm)"};
+    const AxisSpec dcaAxis = {1000, -0.5, 0.5, "DCA_{xy} (cm)"};
+    const AxisSpec dcazAxis = {600, -3, 3, "DCA_{z} (cm)"};
+    const AxisSpec phiAxis = {70, 0, 7, "#phi "};
     const AxisSpec ptAxis = {70, 0.0, 7.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec etaAxis = {20, -1., 1., "#eta"};
     const AxisSpec deltaEtaAxis = {9, 0, 1.8, "#eta"};
     const AxisSpec centAxis = {100, 0., 100., "centrality"};
-    const AxisSpec multAxis = {200, 0., 10000., "FT0M Amplitude"};
-    const AxisSpec tpcChiAxis = {1400, 0., 7., "Chi2"};
-    const AxisSpec itsChiAxis = {800, 0., 40., "Chi2"};
+    const AxisSpec multAxis = {100000, 0., 100000., "FT0M Amplitude"};
+    const AxisSpec tpcChiAxis = {700, 0., 7., "Chi2"};
+    const AxisSpec itsChiAxis = {400, 0., 40., "Chi2"};
     const AxisSpec crossedRowAxis = {1600, 0., 160., "TPC Crossed rows"};
     const AxisSpec eventsAxis = {10, 0, 10, ""};
     const AxisSpec signAxis = {20, -10, 10, ""};
     const AxisSpec nchAxis = {5000, 0, 5000, "Nch"};
     const AxisSpec nch1Axis = {1500, 0, 1500, "Nch"};
     const AxisSpec nchpAxis = {50000, 0, 50000, "Nch"};
+    const AxisSpec cent1Axis{centBining, "Multiplicity percentile from FT0M (%)"};
 
-    std::vector<double> centBining = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-    AxisSpec cent1Axis = {centBining, "Multiplicity percentile from FT0M (%)"};
-
+    // Subsample axis (used for error estimation from subsamples)
     auto noSubsample = static_cast<int>(cfgNSubsample);
     float maxSubsample = 1.0 * noSubsample;
     AxisSpec subsampleAxis = {noSubsample, 0.0, maxSubsample, "subsample no."};
 
+    // Add QA histograms
     histogramRegistry.add("QA/hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("QA/hDcaXY_before", "", kTH1F, {dcaAxis});
+    histogramRegistry.add("QA/hphi", "", kTH1F, {phiAxis});
     histogramRegistry.add("QA/hDcaZ_before", "", kTH1F, {dcazAxis});
     histogramRegistry.add("QA/hTPCchi2perCluster_before", "", kTH1D, {tpcChiAxis});
     histogramRegistry.add("QA/hITSchi2perCluster_before", "", kTH1D, {itsChiAxis});
@@ -251,34 +317,156 @@ struct NetchargeFluctuations {
     histogramRegistry.add("subsample/neg_sq", "", kTProfile2D, {cent1Axis, subsampleAxis});
     histogramRegistry.add("subsample/posneg", "", kTProfile2D, {cent1Axis, subsampleAxis});
 
+    histogramRegistry.add("subsample/gen/pos", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/neg", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/termp", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/termn", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/pos_sq", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/neg_sq", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/posneg", "", kTProfile2D, {cent1Axis, subsampleAxis});
+
+    histogramRegistry.add("subsample/delta_eta/pos", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/neg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/termp", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/termn", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/pos_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/neg_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/posneg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+
+    histogramRegistry.add("subsample/delta_eta/gen/pos", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/neg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/termp", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/termn", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/pos_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/neg_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/posneg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+
+    histogramRegistry.add("QA/hCentFT0C", "", kTH1F, {centAxis});
+    histogramRegistry.add("QA/hNchGlobal", "", kTH1F, {nchAxis});
+    histogramRegistry.add("QA/hNchPV", "", kTH1F, {nchAxis});
+
+    // QA histograms for multiplicity correlations
+    histogramRegistry.add("MultCorrelationPlots/globalTracks_PV_bef", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+    histogramRegistry.add("MultCorrelationPlots/globalTracks_FT0C_bef", "", {HistType::kTH2D, {centAxis, nchAxis}});
+    histogramRegistry.add("MultCorrelationPlots/PV_FT0C_bef", "", {HistType::kTH2D, {centAxis, nchAxis}});
+
+    histogramRegistry.add("MultCorrelationPlots/globalTracks_PV_aft", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+    histogramRegistry.add("MultCorrelationPlots/globalTracks_FT0C_aft", "", {HistType::kTH2D, {centAxis, nchAxis}});
+    histogramRegistry.add("MultCorrelationPlots/PV_FT0C_aft", "", {HistType::kTH2D, {centAxis, nchAxis}});
+
+    cfgFunCoeff.multPVT0CCutPars = cfgFunCoeff.cfgMultPVT0CCutPars;
+    cfgFunCoeff.multGlobalFT0CPars = cfgFunCoeff.cfgMultGlobalFT0CCutPars;
+    cfgFunCoeff.multGlobalPVCutPars = cfgFunCoeff.cfgMultGlobalPVCutPars;
+
+    // --- Initialize PV vs FT0C multiplicity cut functions ---
+    // Lower cut function: 4th-order polynomial minus 3.5 sigma deviation
+
+    cfgFunCoeff.fMultPVT0CCutLow =
+      new TF1("fMultPVT0CCutLow",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              0, 100);
+    cfgFunCoeff.fMultPVT0CCutLow->SetParameters(&(cfgFunCoeff.multPVT0CCutPars[0]));
+
+    // Upper cut function: 4th-order polynomial plus 3.5 sigma deviation
+    cfgFunCoeff.fMultPVT0CCutHigh =
+      new TF1("fMultPVT0CCutHigh",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              0, 100);
+    cfgFunCoeff.fMultPVT0CCutHigh->SetParameters(&(cfgFunCoeff.multPVT0CCutPars[0]));
+
+    // --- Initialize globalTracks vs FT0C multiplicity cut functions ---
+    // Lower cut function
+    cfgFunCoeff.fMultGlobalFT0CCutLow =
+      new TF1("fMultGlobalFT0CCutLow",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              0, 100);
+    cfgFunCoeff.fMultGlobalFT0CCutLow->SetParameters(&(cfgFunCoeff.multGlobalFT0CPars[0]));
+
+    // Upper cut function
+    cfgFunCoeff.fMultGlobalFT0CCutHigh =
+      new TF1("fMultGlobalFT0CCutHigh",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              0, 100);
+    cfgFunCoeff.fMultGlobalFT0CCutHigh->SetParameters(&(cfgFunCoeff.multGlobalFT0CPars[0]));
+
+    // --- Initialize globalTracks vs PV multiplicity cut functions ---
+    // Lower cut: linear + cubic term minus 3.5 sigma
+
+    cfgFunCoeff.fMultGlobalPVCutLow =
+      new TF1("fMultGlobalPVCutLow",
+              "[0]+[1]*x - 3.5*([2]+[3]*x+[4]*x*x+[5]*x*x*x)",
+              0, 100);
+    cfgFunCoeff.fMultGlobalPVCutLow->SetParameters(&(cfgFunCoeff.multGlobalPVCutPars[0]));
+
+    // Upper cut: linear + cubic term plus 3.5 sigma
+    cfgFunCoeff.fMultGlobalPVCutHigh =
+      new TF1("fMultGlobalPVCutHigh",
+              "[0]+[1]*x + 3.5*([2]+[3]*x+[4]*x*x+[5]*x*x*x)",
+              0, 100);
+    cfgFunCoeff.fMultGlobalPVCutHigh->SetParameters(&(cfgFunCoeff.multGlobalPVCutPars[0]));
+
+    // --- Load efficiency histogram from CCDB
     if (cfgLoadEff) {
       ccdb->setURL(cfgUrlCCDB.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
 
-      // ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
-      // LOGF(info, "Getting object %s", ccdbPath.value.data());
-
       TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
-      efficiency = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Run3"));
+      efficiency = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Run3"));
+      // Log fatal error if efficiency histogram is not found
       if (!efficiency) {
         LOGF(info, "FATAL!! Could not find required histograms in CCDB");
       }
     }
   }
 
+  bool eventSelected(const float& globalNch, const float& pvTrack, const float& centrality)
+  {
+    if (cfgFunCoeff.cfgMultPVT0CCutEnabled) {
+
+      if (pvTrack < cfgFunCoeff.fMultPVT0CCutLow->Eval(centrality))
+        return false;
+      if (pvTrack > cfgFunCoeff.fMultPVT0CCutHigh->Eval(centrality))
+        return false;
+    }
+
+    if (cfgFunCoeff.cfgMultGlobalFT0CCutEnabled) {
+
+      if (globalNch < cfgFunCoeff.fMultGlobalFT0CCutLow->Eval(centrality))
+        return false;
+      if (globalNch > cfgFunCoeff.fMultGlobalFT0CCutHigh->Eval(centrality))
+        return false;
+    }
+
+    if (cfgFunCoeff.cfgMultGlobalPVCutEnabled) {
+
+      if (globalNch < cfgFunCoeff.fMultGlobalPVCutLow->Eval(pvTrack))
+        return false;
+      if (globalNch > cfgFunCoeff.fMultGlobalPVCutHigh->Eval(pvTrack))
+        return false;
+    }
+
+    return true;
+  }
+
   template <RunType run, typename C>
   bool selCollision(C const& coll, float& cent, float& mult)
   {
 
-    if (std::abs(coll.posZ()) > vertexZcut)
+    if (std::abs(coll.posZ()) >= vertexZcut)
       return false;
     if constexpr (run == kRun3) {
       if (cSel8Trig && !coll.sel8()) {
         return false;
-      } // require min bias trigger
-      cent = coll.centFT0M(); // centrality for run3
-      mult = coll.multFT0M(); // multiplicity for run3
+      }
+      if (cFT0M) {
+        cent = coll.centFT0M(); // centrality for run3 using FT0M
+        mult = coll.multFT0M();
+      } else if (cFT0C) {
+        cent = coll.centFT0C(); // centrality for run3 using FT0C
+        mult = coll.multFT0C();
+      }
+
     } else if constexpr (run == kRun2) {
       if (cInt7Trig && !coll.alias_bit(kINT7)) {
         return false;
@@ -321,6 +509,7 @@ struct NetchargeFluctuations {
   template <typename T>
   void fillAfterQA(T const& track)
   {
+    histogramRegistry.fill(HIST("QA/hphi"), track.phi());
     histogramRegistry.fill(HIST("QA/hDcaXY_after"), track.dcaXY());
     histogramRegistry.fill(HIST("QA/hDcaZ_after"), track.dcaZ());
     histogramRegistry.fill(HIST("QA/hPt"), track.pt());
@@ -338,37 +527,38 @@ struct NetchargeFluctuations {
   {
     if (!track.isGlobalTrack())
       return false;
+    if (cPVcont && !track.isPVContributor())
+      return false;
     if (std::fabs(track.eta()) >= etaCut)
       return false;
     if (track.pt() <= ptMinCut || track.pt() >= ptMaxCut)
       return false;
     if (track.sign() == 0)
       return false;
-    if (cDcaXy && std::fabs(track.dcaXY()) > dcaXYCut)
+    if (cDcaXy && std::fabs(track.dcaXY()) >= dcaXYCut)
       return false;
-    if (cDcaZ && std::fabs(track.dcaZ()) > dcaZCut)
+    if (cDcaZ && std::fabs(track.dcaZ()) >= dcaZCut)
       return false;
-    if (cTpcCr && track.tpcNClsCrossedRows() < tpcCrossCut)
+    if (cTpcCr && track.tpcNClsCrossedRows() <= tpcCrossCut)
       return false;
-    if (cItsChi && track.itsChi2NCl() > itsChiCut)
+    if (cItsChi && track.itsChi2NCl() >= itsChiCut)
       return false;
-    if (cTpcChi && track.tpcChi2NCl() > tpcChiCut)
+    if (cTpcChi && track.tpcChi2NCl() >= tpcChiCut)
       return false;
 
     return true;
   }
 
-  double getEfficiency(float pt, float eta, TH2D* hEff)
+  double getEfficiency(float pt, TH1D* hEff)
   {
     if (!hEff) {
       return 1e-6;
     }
-    int binX = hEff->GetXaxis()->FindBin(pt);
-    int binY = hEff->GetYaxis()->FindBin(eta);
-    if (binX < 1 || binX > hEff->GetNbinsX() || binY < 1 || binY > hEff->GetNbinsY()) {
+    int bin = hEff->GetXaxis()->FindBin(pt);
+    if (bin < 1 || bin > hEff->GetNbinsX()) {
       return 1e-6;
     }
-    double eff = hEff->GetBinContent(binX, binY);
+    double eff = hEff->GetBinContent(bin);
     return eff;
   }
 
@@ -411,6 +601,24 @@ struct NetchargeFluctuations {
     if (!selCollision<run>(coll, cent, mult)) {
       return;
     }
+
+    float globalNch = tracks.size();
+    float pvTrack = coll.multNTracksPV();
+
+    histogramRegistry.fill(HIST("QA/hCentFT0C"), cent);
+    histogramRegistry.fill(HIST("QA/hNchGlobal"), globalNch);
+    histogramRegistry.fill(HIST("QA/hNchPV"), pvTrack);
+
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_PV_bef"), pvTrack, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_FT0C_bef"), cent, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/PV_FT0C_bef"), cent, pvTrack);
+
+    if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent)) {
+      return;
+    }
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_PV_aft"), pvTrack, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_FT0C_aft"), cent, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/PV_FT0C_aft"), cent, pvTrack);
     histogramRegistry.fill(HIST("QA/hVtxZ_after"), coll.posZ());
     histogramRegistry.fill(HIST("QA/hCentrality"), cent);
     histogramRegistry.fill(HIST("QA/hMultiplicity"), mult);
@@ -420,7 +628,7 @@ struct NetchargeFluctuations {
     double posWeight = 0, negWeight = 0, nchCor = 0, nchTotalCor = 0;
     for (const auto& track : tracks) {
 
-      double eff = getEfficiency(track.pt(), track.eta(), efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -450,6 +658,7 @@ struct NetchargeFluctuations {
     termp = fpos * (fpos - 1);
     termn = fneg * (fneg - 1);
     posneg = fpos * fneg;
+
     histogramRegistry.fill(HIST("data/cent_nchTotal"), cent, nchTotal);
     histogramRegistry.fill(HIST("data/cent_nchTotalCor"), cent, nchTotalCor);
     histogramRegistry.fill(HIST("data/nch_nchCor"), nch, nchCor);
@@ -473,6 +682,25 @@ struct NetchargeFluctuations {
     if (!selCollision<run>(coll, cent, mult)) {
       return;
     }
+
+    int globalNch = inputTracks.size();
+    int pvTrack = coll.multNTracksPV();
+
+    histogramRegistry.fill(HIST("QA/hCentFT0C"), cent);
+    histogramRegistry.fill(HIST("QA/hNchGlobal"), globalNch);
+    histogramRegistry.fill(HIST("QA/hNchPV"), pvTrack);
+
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_PV_bef"), pvTrack, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_FT0C_bef"), cent, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/PV_FT0C_bef"), cent, pvTrack);
+
+    if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent)) {
+      return;
+    }
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_PV_aft"), pvTrack, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/globalTracks_FT0C_aft"), cent, globalNch);
+    histogramRegistry.fill(HIST("MultCorrelationPlots/PV_FT0C_aft"), cent, pvTrack);
+
     histogramRegistry.fill(HIST("QA/hVtxZ_after"), coll.posZ());
     histogramRegistry.fill(HIST("QA/hCentrality"), cent);
     histogramRegistry.fill(HIST("QA/hMultiplicity"), mult);
@@ -490,7 +718,7 @@ struct NetchargeFluctuations {
       histogramRegistry.fill(HIST("QA/cent_hEta"), cent, track.eta());
       histogramRegistry.fill(HIST("QA/cent_hPt"), cent, track.pt());
 
-      double eff = getEfficiency(track.pt(), track.eta(), efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -520,7 +748,7 @@ struct NetchargeFluctuations {
     int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0, nchGen = 0;
 
     const auto& mccolgen = coll.template mcCollision_as<aod::McCollisions>();
-    if (std::abs(mccolgen.posZ()) > vertexZcut)
+    if (std::abs(mccolgen.posZ()) >= vertexZcut)
       return;
     const auto& mcpartgen = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolgen.globalIndex(), cache);
     histogramRegistry.fill(HIST("gen/hVtxZ_after"), mccolgen.posZ());
@@ -574,6 +802,17 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("gen/cent_nch"), cent, nchGen);
     histogramRegistry.fill(HIST("gen/nch"), nchGen);
 
+    float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+    histogramRegistry.fill(HIST("subsample/gen/pos"), cent, sampleIndex, posGen);
+    histogramRegistry.fill(HIST("subsample/gen/neg"), cent, sampleIndex, negGen);
+    histogramRegistry.fill(HIST("subsample/gen/termp"), cent, sampleIndex, termPGen);
+    histogramRegistry.fill(HIST("subsample/gen/termn"), cent, sampleIndex, termNGen);
+    histogramRegistry.fill(HIST("subsample/gen/pos_sq"), cent, sampleIndex, posGen * posGen);
+    histogramRegistry.fill(HIST("subsample/gen/neg_sq"), cent, sampleIndex, negGen * negGen);
+    histogramRegistry.fill(HIST("subsample/gen/posneg"), cent, sampleIndex, posNegGen);
+
   } // void
 
   template <RunType run, typename C, typename T>
@@ -582,6 +821,12 @@ struct NetchargeFluctuations {
     float cent = -1, mult = -1;
     if (!selCollision<run>(coll, cent, mult))
       return;
+
+    int globalNch = tracks.size();
+    int pvTrack = coll.multNTracksPV();
+    if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent))
+      return;
+
     if (!(cent >= centMin && cent < centMax))
       return;
     histogramRegistry.fill(HIST("data/delta_eta_cent"), cent);
@@ -593,7 +838,7 @@ struct NetchargeFluctuations {
       if (!selTrack(track))
         continue;
       nch += 1;
-      double eff = getEfficiency(track.pt(), track.eta(), efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -630,6 +875,17 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fpos * fpos);
     histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fneg * fneg);
     histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posneg);
+
+    float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos"), deltaEtaWidth, sampleIndex, fpos);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg"), deltaEtaWidth, sampleIndex, fneg);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termp"), deltaEtaWidth, sampleIndex, termp);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termn"), deltaEtaWidth, sampleIndex, termn);
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos_sq"), deltaEtaWidth, sampleIndex, fpos * fpos);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg_sq"), deltaEtaWidth, sampleIndex, fneg * fneg);
+    histogramRegistry.fill(HIST("subsample/delta_eta/posneg"), deltaEtaWidth, sampleIndex, posneg);
   }
 
   template <RunType run, typename C, typename T, typename M, typename P>
@@ -643,6 +899,12 @@ struct NetchargeFluctuations {
     float cent = -1, mult = -1;
     if (!selCollision<run>(coll, cent, mult))
       return;
+
+    int globalNch = inputTracks.size();
+    int pvTrack = coll.multNTracksPV();
+    if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent))
+      return;
+
     if (!(cent >= centMin && cent < centMax))
       return;
     histogramRegistry.fill(HIST("data/delta_eta_cent"), cent);
@@ -662,7 +924,7 @@ struct NetchargeFluctuations {
         continue;
 
       histogramRegistry.fill(HIST("data/delta_eta_eta"), eta);
-      double eff = getEfficiency(track.pt(), eta, efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -696,7 +958,7 @@ struct NetchargeFluctuations {
 
     const auto& mccolgen = coll.template mcCollision_as<aod::McCollisions>();
 
-    if (std::abs(mccolgen.posZ()) > vertexZcut)
+    if (std::abs(mccolgen.posZ()) >= vertexZcut)
       return;
 
     const auto& mcpartgen = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolgen.globalIndex(), cache);
@@ -754,13 +1016,24 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("gen/delta_eta_posneg"), deltaEtaWidth, posNegGen);
     histogramRegistry.fill(HIST("gen/delta_eta_nch"), deltaEtaWidth, nchGen);
 
+    float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/pos"), deltaEtaWidth, sampleIndex, posGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/neg"), deltaEtaWidth, sampleIndex, negGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/termp"), deltaEtaWidth, sampleIndex, termPGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/termn"), deltaEtaWidth, sampleIndex, termNGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/pos_sq"), deltaEtaWidth, sampleIndex, posGen * posGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/neg_sq"), deltaEtaWidth, sampleIndex, negGen * negGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/posneg"), deltaEtaWidth, sampleIndex, posNegGen);
+
   } // void
 
   SliceCache cache;
-  Preslice<aod::McParticles> mcTrack = o2::aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> mcTrack = aod::mcparticle::mcCollisionId;
 
   // process function for Data Run3
-  void processDataRun3(aod::MyCollisionRun3 const& coll, aod::MyTracks const& tracks)
+  void processDataRun3(MyCollisionRun3 const& coll, MyTracks const& tracks)
   {
     calculationData<kRun3>(coll, tracks);
     for (int ii = 0; ii < deltaEta; ii++) {
@@ -771,10 +1044,10 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", false);
 
   // process function for Data Run2
-  void processDataRun2(aod::MyCollisionRun2 const& coll, aod::MyTracks const& tracks)
+  void processDataRun2(MyCollisionRun2 const& coll, MyTracks const& tracks)
   {
     calculationData<kRun2>(coll, tracks);
     for (int ii = 0; ii < deltaEta; ii++) {
@@ -785,11 +1058,11 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", true);
 
   // process function for MC Run3
 
-  void processMcRun3(aod::MyMCCollisionRun3 const& coll, aod::MyMCTracks const& inputTracks,
+  void processMcRun3(MyMCCollisionRun3 const& coll, MyMCTracks const& inputTracks,
                      aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     calculationMc<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
@@ -803,7 +1076,7 @@ struct NetchargeFluctuations {
 
   // process function for MC Run2
 
-  void processMcRun2(aod::MyMCCollisionRun2 const& coll, aod::MyMCTracks const& inputTracks,
+  void processMcRun2(MyMCCollisionRun2 const& coll, MyMCTracks const& inputTracks,
                      aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     calculationMc<kRun2>(coll, inputTracks, mcCollisions, mcParticles);

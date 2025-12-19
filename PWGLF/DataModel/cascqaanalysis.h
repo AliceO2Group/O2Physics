@@ -181,7 +181,7 @@ DECLARE_SOA_TABLE(CascAnalysis, "AOD", "CascAnalysis", o2::soa::Index<>,
                   cascadesflow::CentFT0C, cascadesflow::IsNoCollInTimeRange, cascadesflow::IsNoCollInRof, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi, cascadesflow::MassLambda, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2CSP, cascadesflow::V2CEP, cascadesflow::V1SPzdcA, cascadesflow::V1SPzdcC, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega, cascadesflow::CosThetaStarLambdaFromOmega, cascadesflow::CosThetaStarLambdaFromXi, cascadesflow::CosThetaStarProton, mycascades::McPdgCode);
 
 DECLARE_SOA_TABLE(LambdaAnalysis, "AOD", "LambdaAnalysis", o2::soa::Index<>,
-                  cascadesflow::CentFT0C, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Phi, cascadesflow::MassLambda, cascadesflow::V0Radius, cascadesflow::DcaPosToPV, cascadesflow::DcaNegToPV, cascadesflow::V0CosPA, cascadesflow::DcaV0Daughters, cascadesflow::V2CEP, cascadesflow::PsiT0C, cascadesflow::Pzs2Lambda, cascadesflow::Cos2ThetaLambda, cascadesflow::CosThetaLambda);
+                  cascadesflow::CentFT0C, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Phi, cascadesflow::Eta, cascadesflow::MassLambda, cascadesflow::V0Radius, cascadesflow::DcaPosToPV, cascadesflow::DcaNegToPV, cascadesflow::V0CosPA, cascadesflow::DcaV0Daughters, cascadesflow::V2CEP, cascadesflow::PsiT0C, cascadesflow::Pzs2Lambda, cascadesflow::Cos2ThetaLambda, cascadesflow::CosThetaLambda);
 
 namespace myMCcascades
 {

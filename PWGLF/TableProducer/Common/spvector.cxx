@@ -12,13 +12,43 @@
 // \author: prottay das 23/12/2024
 // \email: prottay.das@cern.ch
 
-// C++/ROOT includes.
-#include "Math/Vector4D.h"
-#include "TF1.h"
-#include "TRandom3.h"
+#include "PWGLF/DataModel/SPCalibrationTables.h"
+
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsCommonDataFormats/AlignParam.h>
+#include <FT0Base/Geometry.h>
+#include <FV0Base/Geometry.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StepTHn.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <Math/Vector4D.h>
 #include <TComplex.h>
+#include <TF1.h>
 #include <TH1F.h>
 #include <TMath.h>
+#include <TRandom3.h>
 
 #include <array>
 #include <chrono>
@@ -26,45 +56,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
-// o2Physics includes.
-#include "PWGLF/DataModel/SPCalibrationTables.h"
-
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
-// #include "SPCalibrationTableswrite.h"
-
-// o2 includes.
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,6 +84,7 @@ struct spvector {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Centrality cut Max"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Centrality cut Min"};
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
+  Configurable<bool> usemem{"usemem", true, "usemem"};
 
   struct : ConfigurableGroup {
     Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
@@ -230,6 +222,7 @@ struct spvector {
     AxisSpec basisAxis = {2, 0, 2, "basis"};
     AxisSpec VxyAxis = {2, 0, 2, "Vxy"};
 
+    histos.add("htpcnsigmapi", "htpcnsigmapi", kTH1F, {{50, -10, 10.0}});
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
     histos.add("hCentrality", "hCentrality", kTH1F, {{centfineAxis}});
     histos.add("Vz", "Vz", kTH1F, {vzfineAxis});
@@ -409,10 +402,17 @@ struct spvector {
   }
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
+  using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
   Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
 
-  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
+  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&, AllTrackCandidates const& tracks)
   {
+
+    if (usemem) {
+      for (const auto& track : tracks) {
+        histos.fill(HIST("htpcnsigmapi"), track.tpcNSigmaPi());
+      }
+    }
 
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     auto centrality = collision.centFT0C();

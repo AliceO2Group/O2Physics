@@ -17,7 +17,8 @@
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -58,6 +59,9 @@ struct sigmaminustask {
   Configurable<float> cutMaxQtAP{"cutMaxQtAP", 0.20f, "Maximum Qt for Armenteros-Podolanski cut"};
   Configurable<float> cutPtGen{"cutPtGen", 0.5f, "Minimum pT for generated sigma particles"};
 
+  Configurable<std::vector<int>> mothPdgCodes{"mothPdgCodes", std::vector<int>{3112, 3222}, "PDG codes of the selected mother particles"};
+  Configurable<std::vector<int>> daugPdgCodes{"daugPdgCodes", std::vector<int>{211, 2212}, "PDG codes of the selected charged daughter particles"};
+
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
 
   // Configurables for findable tracks (kinkBuilder.cxx efficiency)
@@ -72,8 +76,9 @@ struct sigmaminustask {
 
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
-  // Constants
+  // Constants and castings
   float radToDeg = o2::constants::math::Rad2Deg;
+  std::vector<int> cast_mothPdgCodes, cast_daugPdgCodes;
 
   // Services CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -106,12 +111,13 @@ struct sigmaminustask {
     const AxisSpec xiMassAxis{100, 1.2, 1.6, "m_{#Xi} (GeV/#it{c}^{2})"};
     const AxisSpec pdgAxis{10001, -5000, 5000, "PDG code"};
     const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
-    const AxisSpec dcaMothAxis{100, 0, 0.03, "DCA [cm]"};
+    const AxisSpec dcaMothAxis{800, 0, 200, "DCA [#mu m]"};
     const AxisSpec dcaDaugAxis{200, 0, 20, "DCA [cm]"};
     const AxisSpec radiusAxis{100, -1, 40, "Decay radius [cm]"};
     const AxisSpec alphaAPAxis{200, -1.0, 1.0, "#alpha_{AP}"};
     const AxisSpec qtAPAxis{200, 0.0, 0.5, "q_{T,AP}"};
     const AxisSpec cosPointingAngleAxis{100, -1.0, 1.0, "Cos#theta_{PA}"};
+    const AxisSpec kinkAngleAxis{100, 0, 100, "Kink angle (deg)"};
 
     const AxisSpec ptResolutionAxis{100, -1.0, 1.0, "(#it{p}_{T}^{rec} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
     const AxisSpec massResolutionAxis{100, -0.5, 0.5, "(m_{rec} - m_{gen}) / m_{gen}"};
@@ -137,6 +143,7 @@ struct sigmaminustask {
       // Add MC histograms if needed
       rSigmaMinus.add("h2MassPtMCRec", "h2MassPtMCRec", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
       rSigmaMinus.add("h2MassPtMCGen", "h2MassPtMCGen", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
+      rSigmaMinus.add("h2KinkAngleVsPtMothMC", "h2KinkAngleVsPtMothMC", {HistType::kTH2F, {ptAxis, kinkAngleAxis}});
 
       rSigmaMinus.add("h2MassResolution", "h2MassResolution", {HistType::kTH2F, {ptAxis, massResolutionAxis}});
       rSigmaMinus.add("h2PtResolution", "h2PtResolution", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
@@ -169,23 +176,28 @@ struct sigmaminustask {
         h2RecRadiusFilterIndex->GetXaxis()->SetBinLabel(i + 1, filterLabels[i].c_str());
       }
 
-      rFindable.add("h2MCRadiusFilter_plus_protonkink", "h2MCRadiusFilter_plus_protonkink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
-      rFindable.add("h2MCRadiusFilter_plus_pikink", "h2MCRadiusFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
-      rFindable.add("h2MCRadiusFilter_minus_pikink", "h2MCRadiusFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+      // Sigma minus and plus specific histograms
+      rFindable.add("h2MCRadiusFilter_sigmaplus_protonkink", "h2MCRadiusFilter_sigmaplus_protonkink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+      rFindable.add("h2MCRadiusFilter_sigmaplus_pikink", "h2MCRadiusFilter_sigmaplus_pikink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+      rFindable.add("h2MCRadiusFilter_sigmaminus_pikink", "h2MCRadiusFilter_sigmaminus_pikink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
 
-      rFindable.add("h2PtFilter_plus_protonkink", "h2PtFilter_plus_protonkink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
-      rFindable.add("h2PtFilter_plus_pikink", "h2PtFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
-      rFindable.add("h2PtFilter_minus_pikink", "h2PtFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtFilter_sigmaplus_protonkink", "h2PtFilter_sigmaplus_protonkink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtFilter_sigmaplus_pikink", "h2PtFilter_sigmaplus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtFilter_sigmaminus_pikink", "h2PtFilter_sigmaminus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
 
-      rFindable.add("h2PtDaugFilter_plus_protonkink", "h2PtDaugFilter_plus_protonkink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
-      rFindable.add("h2PtDaugFilter_plus_pikink", "h2PtDaugFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
-      rFindable.add("h2PtDaugFilter_minus_pikink", "h2PtDaugFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtDaugFilter_sigmaplus_protonkink", "h2PtDaugFilter_sigmaplus_protonkink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtDaugFilter_sigmaplus_pikink", "h2PtDaugFilter_sigmaplus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtDaugFilter_sigmaminus_pikink", "h2PtDaugFilter_sigmaminus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
 
       rFindable.add("h2DCAMothPt_protonkink", "h2DCAMothPt_protonkink", {HistType::kTH2F, {ptUnsignedAxis, dcaMothAxis}});
       rFindable.add("h2DCADaugPt_protonkink", "h2DCADaugPt_protonkink", {HistType::kTH2F, {ptUnsignedAxis, dcaDaugAxis}});
       rFindable.add("h2DCAMothPt_pikink", "h2DCAMothPt_pikink", {HistType::kTH2F, {ptUnsignedAxis, dcaMothAxis}});
       rFindable.add("h2DCADaugPt_pikink", "h2DCADaugPt_pikink", {HistType::kTH2F, {ptUnsignedAxis, dcaDaugAxis}});
     }
+
+    // Cast configurables to std::vector
+    cast_mothPdgCodes = (std::vector<int>)mothPdgCodes;
+    cast_daugPdgCodes = (std::vector<int>)daugPdgCodes;
   }
 
   void initCCDB(aod::BCs::iterator const& bc)
@@ -227,6 +239,14 @@ struct sigmaminustask {
     float pMother = std::sqrt(std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f));
     float vMotherNorm = std::sqrt(std::inner_product(vMother.begin(), vMother.end(), vMother.begin(), 0.f));
     return (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (pMother * vMotherNorm);
+  }
+
+  float kinkAngle(std::array<float, 3> const& p_moth, std::array<float, 3> const& p_daug)
+  {
+    float dotProduct = std::inner_product(p_moth.begin(), p_moth.end(), p_daug.begin(), 0.0f);
+    float magMoth = std::hypot(p_moth[0], p_moth[1], p_moth[2]);
+    float magDaug = std::hypot(p_daug[0], p_daug[1], p_daug[2]);
+    return std::acos(dotProduct / (magMoth * magDaug)) * radToDeg;
   }
 
   void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& KinkCands, TracksFull const&)
@@ -305,29 +325,46 @@ struct sigmaminustask {
         rSigmaMinus.fill(HIST("h2NSigmaTPCPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
 
         // do MC association
-        auto mcLabSigma = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
-        auto mcLabPiDau = trackLabelsMC.rawIteratorAt(dauTrack.globalIndex());
-        if (mcLabSigma.has_mcParticle() && mcLabPiDau.has_mcParticle()) {
-          auto mcTrackSigma = mcLabSigma.mcParticle_as<aod::McParticles>();
-          auto mcTrackPiDau = mcLabPiDau.mcParticle_as<aod::McParticles>();
-          if (!mcTrackPiDau.has_mothers()) {
+        auto mcLabMoth = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
+        auto mcLabDaug = trackLabelsMC.rawIteratorAt(dauTrack.globalIndex());
+        if (mcLabMoth.has_mcParticle() && mcLabDaug.has_mcParticle()) {
+          auto mcTrackMoth = mcLabMoth.mcParticle_as<aod::McParticles>();
+          auto mcTrackDaug = mcLabDaug.mcParticle_as<aod::McParticles>();
+          if (!mcTrackDaug.has_mothers()) {
             continue;
           }
-          for (auto& piMother : mcTrackPiDau.mothers_as<aod::McParticles>()) {
-            if (piMother.globalIndex() != mcTrackSigma.globalIndex()) {
-              continue;
-            }
-            if (std::abs(mcTrackSigma.pdgCode()) != 3112 && std::abs(mcTrackSigma.pdgCode()) != 3222) {
-              continue;
-            }
-            if (std::abs(mcTrackPiDau.pdgCode()) != 211 && std::abs(mcTrackPiDau.pdgCode()) != 2212) {
+
+          for (const auto& mcMother : mcTrackDaug.mothers_as<aod::McParticles>()) {
+            if (mcMother.globalIndex() != mcTrackMoth.globalIndex()) {
               continue;
             }
 
-            float MotherMassMC = std::sqrt(piMother.e() * piMother.e() - piMother.p() * piMother.p());
-            float MotherpTMC = piMother.pt();
-            float deltaXMother = mcTrackPiDau.vx() - piMother.vx();
-            float deltaYMother = mcTrackPiDau.vy() - piMother.vy();
+            // Select only valid mother and daughter
+            bool isValidMother = false;
+            bool isValidDaughter = false;
+            for (const int pdgCode : cast_mothPdgCodes) {
+              if (std::abs(mcTrackMoth.pdgCode()) == pdgCode) {
+                isValidMother = true;
+                break;
+              }
+            }
+
+            for (const int pdgCode : cast_daugPdgCodes) {
+              if (std::abs(mcTrackDaug.pdgCode()) == pdgCode) {
+                isValidDaughter = true;
+                break;
+              }
+            }
+
+            if (!isValidMother || !isValidDaughter) {
+              continue;
+            }
+
+            float motherMassMC = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
+            float motherPtMC = mcMother.pt();
+            float motherPzMC = mcMother.pz();
+            float deltaXMother = mcTrackDaug.vx() - mcMother.vx();
+            float deltaYMother = mcTrackDaug.vy() - mcMother.vy();
             float decayRadiusMC = std::sqrt(deltaXMother * deltaXMother + deltaYMother * deltaYMother);
             float decayRadiusRec = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
             float cosPointingAngleRec = cosPAngle(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()},
@@ -337,31 +374,29 @@ struct sigmaminustask {
             // Check coherence of MCcollision Id for daughter MCparticle and reconstructed collision
             bool mcCollisionIdCheck = false;
             if (collision.has_mcCollision()) {
-              mcCollisionIdCheck = collision.mcCollision().globalIndex() == mcTrackPiDau.mcCollisionId();
+              mcCollisionIdCheck = collision.mcCollision().globalIndex() == mcTrackDaug.mcCollisionId();
             }
+
             // Check bunch crossing ID coherence
-            auto mcCollision = mcTrackPiDau.template mcCollision_as<aod::McCollisions>();
-            // bool BCId_vs_MCBCId = collision.bcId() == mcCollision.bcId();
-            bool BCId_vs_EvSel = collision.bcId() == collision.foundBCId();
-            bool EvSel_vs_MCBCId = collision.foundBCId() == mcCollision.bcId();
+            auto mcCollision = mcTrackDaug.template mcCollision_as<aod::McCollisions>();
+            bool bcIdVsEvSel = (collision.bcId() == collision.foundBCId());
+            bool evSelVsMcbcId = (collision.foundBCId() == mcCollision.bcId());
 
             rSigmaMinus.fill(HIST("hMcCollIdCoherence"), static_cast<int>(mcCollisionIdCheck));
-            rSigmaMinus.fill(HIST("h2CollId_BCId"), static_cast<int>(mcCollisionIdCheck), static_cast<int>(EvSel_vs_MCBCId));
-            rSigmaMinus.fill(HIST("h2BCId_comp"), static_cast<int>(EvSel_vs_MCBCId), static_cast<int>(BCId_vs_EvSel));
+            rSigmaMinus.fill(HIST("h2CollId_BCId"), static_cast<int>(mcCollisionIdCheck), static_cast<int>(evSelVsMcbcId));
+            rSigmaMinus.fill(HIST("h2BCId_comp"), static_cast<int>(evSelVsMcbcId), static_cast<int>(bcIdVsEvSel));
 
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
-            rSigmaMinus.fill(HIST("h2MassResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (kinkCand.mSigmaMinus() - MotherMassMC) / MotherMassMC);
-            rSigmaMinus.fill(HIST("h2PtResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (kinkCand.ptMoth() - MotherpTMC) / MotherpTMC);
+            rSigmaMinus.fill(HIST("h2MassResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (kinkCand.mSigmaMinus() - motherMassMC) / motherMassMC);
+            rSigmaMinus.fill(HIST("h2PtResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (kinkCand.ptMoth() - motherPtMC) / motherPtMC);
             rSigmaMinus.fill(HIST("h2RadiusResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (decayRadiusRec - decayRadiusMC) / decayRadiusMC);
             rSigmaMinus.fill(HIST("h2DCAMothPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaMothPv());
             rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaDaugPv());
             rSigmaMinus.fill(HIST("h2CosPointingAnglePt"), kinkCand.mothSign() * kinkCand.ptMoth(), cosPointingAngleRec);
             rSigmaMinus.fill(HIST("h2ArmenterosPostCuts"), alphaAPValue, qtValue);
-            if (std::abs(mcTrackPiDau.pdgCode()) == 211) {
-              rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
-            } else if (std::abs(mcTrackPiDau.pdgCode()) == 2212) {
-              rSigmaMinus.fill(HIST("h2NSigmaTOFPrPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPr());
-            }
+
+            rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
+            rSigmaMinus.fill(HIST("h2NSigmaTOFPrPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPr());
 
             // fill the output table with Mc information
             if (fillOutputTree) {
@@ -372,8 +407,8 @@ struct sigmaminustask {
                                 kinkCand.mothSign(),
                                 dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
                                 dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa(),
-                                mcTrackSigma.pdgCode(), mcTrackPiDau.pdgCode(),
-                                MotherpTMC, MotherMassMC, decayRadiusMC, mcCollisionIdCheck);
+                                mcTrackMoth.pdgCode(), mcTrackDaug.pdgCode(),
+                                motherPtMC, motherPzMC, motherMassMC, decayRadiusMC, mcCollisionIdCheck);
             }
           }
         } // MC association and selection
@@ -382,8 +417,19 @@ struct sigmaminustask {
 
     // Loop over all generated particles to fill MC histograms
     for (const auto& mcPart : particlesMC) {
-      if ((std::abs(mcPart.pdgCode()) != 3112 && std::abs(mcPart.pdgCode()) != 3222) || std::abs(mcPart.y()) > cutRapMotherMC) { // only sigma mothers and rapidity cut
+      if (std::abs(mcPart.y()) > cutRapMotherMC) { // rapidity cut
         continue;
+      }
+
+      bool isValidMother = false;
+      for (const int pdgCode : cast_mothPdgCodes) {
+        if (std::abs(mcPart.pdgCode()) == pdgCode) {
+          isValidMother = true;
+          break;
+        }
+      }
+      if (!isValidMother) {
+        continue; // Skip if not a valid mother
       }
 
       if (mcPart.pt() < cutPtGen) {
@@ -393,26 +439,35 @@ struct sigmaminustask {
       if (!mcPart.has_daughters()) {
         continue; // Skip if no daughters
       }
-      bool hasSigmaDaughter = false;
-      int daug_pdg = 0;
+
+      bool hasValidDaughter = false;
+      int daugPdg = 0;
       std::array<float, 3> secVtx;
       std::array<float, 3> momDaug;
       for (const auto& daughter : mcPart.daughters_as<aod::McParticles>()) {
-        if (std::abs(daughter.pdgCode()) == 211 || std::abs(daughter.pdgCode()) == 2212) { // Pi or proton daughter
-          hasSigmaDaughter = true;
-          secVtx = {daughter.vx(), daughter.vy(), daughter.vz()};
-          momDaug = {daughter.px(), daughter.py(), daughter.pz()};
-          daug_pdg = daughter.pdgCode();
-          break; // Found a daughter, exit loop
+        for (const int pdgCode : cast_daugPdgCodes) {
+          if (std::abs(daughter.pdgCode()) == pdgCode) {
+            hasValidDaughter = true;
+            secVtx = {daughter.vx(), daughter.vy(), daughter.vz()};
+            momDaug = {daughter.px(), daughter.py(), daughter.pz()};
+            daugPdg = daughter.pdgCode();
+            break; // Found a daughter, exit loop
+          }
+        }
+        if (hasValidDaughter) {
+          break; // Exit outer loop if a valid daughter is found
         }
       }
-      if (!hasSigmaDaughter) {
-        continue; // Skip if no pi/proton daughter found
+      if (!hasValidDaughter) {
+        continue; // Skip if no good daughter found
       }
+
       float mcMass = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
       float mcDecayRadius = std::sqrt((secVtx[0] - mcPart.vx()) * (secVtx[0] - mcPart.vx()) + (secVtx[1] - mcPart.vy()) * (secVtx[1] - mcPart.vy()));
-      int sigmaSign = mcPart.pdgCode() > 0 ? 1 : -1; // Determine the sign of the Sigma
-      rSigmaMinus.fill(HIST("h2MassPtMCGen"), sigmaSign * mcPart.pt(), mcMass);
+      int mothSign = mcPart.pdgCode() > 0 ? 1 : -1; // Determine the sign of the Sigma
+      float kinkAngleMC = kinkAngle({mcPart.px(), mcPart.py(), mcPart.pz()}, momDaug);
+      rSigmaMinus.fill(HIST("h2MassPtMCGen"), mothSign * mcPart.pt(), mcMass);
+      rSigmaMinus.fill(HIST("h2KinkAngleVsPtMothMC"), mothSign * mcPart.pt(), kinkAngleMC);
 
       // Fill output table with non reconstructed MC candidates
       if (fillOutputTree) {
@@ -420,38 +475,34 @@ struct sigmaminustask {
                           -999, -999, -999,
                           -999, -999, -999,
                           -999, -999, -999,
-                          sigmaSign,
+                          mothSign,
                           -999, -999, -999,
                           -999, -999, -999,
-                          mcPart.pdgCode(), daug_pdg,
-                          mcPart.pt(), mcMass, mcDecayRadius, false);
+                          mcPart.pdgCode(), daugPdg,
+                          mcPart.pt(), mcPart.pz(), mcMass, mcDecayRadius, false);
       }
     }
   }
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 
-  void fillFindableHistograms(int filterIndex, float mcRadius, float recRadius, float ptMoth, float ptDaug, bool isSigmaMinus, bool isPiDaughter)
+  void fillFindableHistograms(int filterIndex, float mcRadius, float recRadius, float ptMoth, float ptDaug, int mothPdgCode, int daugPdgCode)
   {
     rFindable.fill(HIST("hFilterIndex"), filterIndex);
     rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
     rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
 
-    if (isPiDaughter) {
-      if (isSigmaMinus) {
-        rFindable.fill(HIST("h2MCRadiusFilter_minus_pikink"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2PtFilter_minus_pikink"), filterIndex, ptMoth);
-        rFindable.fill(HIST("h2PtDaugFilter_minus_pikink"), filterIndex, ptDaug);
-      } else {
-        rFindable.fill(HIST("h2MCRadiusFilter_plus_pikink"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2PtFilter_plus_pikink"), filterIndex, ptMoth);
-        rFindable.fill(HIST("h2PtDaugFilter_plus_pikink"), filterIndex, ptDaug);
-      }
-    } else {
-      if (!isSigmaMinus) {
-        rFindable.fill(HIST("h2MCRadiusFilter_plus_protonkink"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2PtFilter_plus_protonkink"), filterIndex, ptMoth);
-        rFindable.fill(HIST("h2PtDaugFilter_plus_protonkink"), filterIndex, ptDaug);
-      }
+    if (std::abs(mothPdgCode) == PDG_t::kSigmaMinus && std::abs(daugPdgCode) == PDG_t::kPiMinus) {
+      rFindable.fill(HIST("h2MCRadiusFilter_sigmaminus_pikink"), filterIndex, mcRadius);
+      rFindable.fill(HIST("h2PtFilter_sigmaminus_pikink"), filterIndex, ptMoth);
+      rFindable.fill(HIST("h2PtDaugFilter_sigmaminus_pikink"), filterIndex, ptDaug);
+    } else if (std::abs(mothPdgCode) == PDG_t::kSigmaPlus && std::abs(daugPdgCode) == PDG_t::kPiPlus) {
+      rFindable.fill(HIST("h2MCRadiusFilter_sigmaplus_pikink"), filterIndex, mcRadius);
+      rFindable.fill(HIST("h2PtFilter_sigmaplus_pikink"), filterIndex, ptMoth);
+      rFindable.fill(HIST("h2PtDaugFilter_sigmaplus_pikink"), filterIndex, ptDaug);
+    } else if (std::abs(mothPdgCode) == PDG_t::kSigmaPlus && std::abs(daugPdgCode) == PDG_t::kProton) {
+      rFindable.fill(HIST("h2MCRadiusFilter_sigmaplus_protonkink"), filterIndex, mcRadius);
+      rFindable.fill(HIST("h2PtFilter_sigmaplus_protonkink"), filterIndex, ptMoth);
+      rFindable.fill(HIST("h2PtDaugFilter_sigmaplus_protonkink"), filterIndex, ptDaug);
     }
   }
 
@@ -467,8 +518,14 @@ struct sigmaminustask {
         continue;
       }
       auto mcParticle = mcLabel.mcParticle_as<aod::McParticles>();
-
-      if (mcParticle.has_daughters() && (std::abs(mcParticle.pdgCode()) == 3112 || std::abs(mcParticle.pdgCode()) == 3222)) {
+      bool isValidMother = false;
+      for (const int pdgCode : cast_mothPdgCodes) {
+        if (std::abs(mcParticle.pdgCode()) == pdgCode) {
+          isValidMother = true;
+          break;
+        }
+      }
+      if (mcParticle.has_daughters() && isValidMother) {
         allCandsIndices[mcParticle.globalIndex()] = {track.globalIndex(), -1};
       }
     }
@@ -479,8 +536,15 @@ struct sigmaminustask {
         continue;
       }
       auto mcParticle = mcLabel.mcParticle_as<aod::McParticles>();
+      bool isValidDaughter = false;
+      for (const int pdgCode : cast_daugPdgCodes) {
+        if (std::abs(mcParticle.pdgCode()) == pdgCode) {
+          isValidDaughter = true;
+          break;
+        }
+      }
 
-      if (mcParticle.has_mothers() && (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 2212)) {
+      if (mcParticle.has_mothers() && isValidDaughter) {
         for (const auto& mother : mcParticle.mothers_as<aod::McParticles>()) {
           auto it = allCandsIndices.find(mother.globalIndex());
           if (it != allCandsIndices.end()) {
@@ -505,10 +569,21 @@ struct sigmaminustask {
       auto mcMother = mcLabMoth.mcParticle_as<aod::McParticles>();
       auto mcDaughter = mcLabDaug.mcParticle_as<aod::McParticles>();
 
-      if (std::abs(mcMother.pdgCode()) != 3112 && std::abs(mcMother.pdgCode()) != 3222) {
-        continue;
+      bool isValidMother = false;
+      for (const int pdgCode : cast_mothPdgCodes) {
+        if (std::abs(mcMother.pdgCode()) == pdgCode) {
+          isValidMother = true;
+          break;
+        }
       }
-      if (std::abs(mcDaughter.pdgCode()) != 211 && std::abs(mcDaughter.pdgCode()) != 2212) {
+      bool isValidDaughter = false;
+      for (const int pdgCode : cast_daugPdgCodes) {
+        if (std::abs(mcDaughter.pdgCode()) == pdgCode) {
+          isValidDaughter = true;
+          break;
+        }
+      }
+      if (!isValidDaughter || !isValidMother) {
         continue;
       }
 
@@ -536,8 +611,8 @@ struct sigmaminustask {
       auto mcDaughter = mcLabDaug.mcParticle_as<aod::McParticles>();
 
       // Compute useful quantities for histograms
-      bool isSigmaMinus = (std::abs(mcMother.pdgCode()) == 3112);
-      bool isPiDaughter = (std::abs(mcDaughter.pdgCode()) == 211);
+      int mothPdg = mcMother.pdgCode();
+      int daugPdg = mcDaughter.pdgCode();
 
       float recPtDaughter = daughterTrack.pt();
       float recPtMother = motherTrack.pt();
@@ -549,26 +624,26 @@ struct sigmaminustask {
       }
 
       // Check for detector mismatches in ITS mother tracks
-      auto mask_value = mcLabMoth.mcMask();
-      int mismatchITS_index = -1;
+      auto maskValue = mcLabMoth.mcMask();
+      int mismatchITSIndex = -1;
 
       for (int i = 0; i < 7; ++i) { // ITS has layers 0-6, bit ON means mismatch
-        if ((mask_value & (1 << i)) != 0) {
-          mismatchITS_index = i;
+        if ((maskValue & (1 << i)) != 0) {
+          mismatchITSIndex = i;
           break;
         }
       }
 
       // Define filter index and progressively apply kinkbuilder cuts to track pairs
       int filterIndex = 0;
-      fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+      fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
 
       // 1 - tracks with right ITS, TPC, TOF signals
       if (motherTrack.has_collision() && motherTrack.hasITS() && !motherTrack.hasTPC() && !motherTrack.hasTOF() &&
           daughterTrack.hasITS() && daughterTrack.hasTPC()) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
-        rFindable.fill(HIST("hfakeITSfindable"), mismatchITS_index);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
+        rFindable.fill(HIST("hfakeITSfindable"), mismatchITSIndex);
       } else {
         continue;
       }
@@ -579,7 +654,7 @@ struct sigmaminustask {
                                 daughterTrack.itsNCls() < 4 && daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > nTPCClusMinDaugKB;
       if (motherGoodITS && daughterGoodITSTPC) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -587,7 +662,7 @@ struct sigmaminustask {
       // 3 - mother track min pT
       if (motherTrack.pt() > minPtMothKB) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -595,7 +670,7 @@ struct sigmaminustask {
       // 4 - geometric cuts: eta
       if (std::abs(motherTrack.eta()) < etaMaxKB && std::abs(daughterTrack.eta()) < etaMaxKB) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -603,7 +678,7 @@ struct sigmaminustask {
       // 5 - geometric cuts: phi difference
       if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < maxPhiDiffKB) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -623,18 +698,19 @@ struct sigmaminustask {
       o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCovDaug, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
       float dcaXYMother = std::abs(dcaInfoMoth[0]);
       float dcaXYDaughter = std::abs(dcaInfoDaug[0]);
-      if (isPiDaughter) {
-        rFindable.fill(HIST("h2DCAMothPt_pikink"), recPtMother, dcaXYMother);
+
+      if (std::abs(daugPdg) == PDG_t::kPiMinus) {
+        rFindable.fill(HIST("h2DCAMothPt_pikink"), recPtMother, dcaXYMother * 1.e4);
         rFindable.fill(HIST("h2DCADaugPt_pikink"), recPtDaughter, dcaXYDaughter);
-      } else {
-        rFindable.fill(HIST("h2DCAMothPt_protonkink"), recPtMother, dcaXYMother);
+      } else if (std::abs(daugPdg) == PDG_t::kProton) {
+        rFindable.fill(HIST("h2DCAMothPt_protonkink"), recPtMother, dcaXYMother * 1.e4);
         rFindable.fill(HIST("h2DCADaugPt_protonkink"), recPtDaughter, dcaXYDaughter);
       }
 
       // 6 - max Z difference
       if (std::abs(trackParCovMoth.getZ() - trackParCovDaug.getZ()) < maxZDiffKB) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -642,7 +718,7 @@ struct sigmaminustask {
       // 7 - DCA mother
       if (dcaXYMother < maxDcaMothPvKB) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -650,7 +726,7 @@ struct sigmaminustask {
       // 8 - DCA daughter
       if (dcaXYDaughter > minDcaDaugPvKB) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -658,7 +734,7 @@ struct sigmaminustask {
       // 9 - radius cut
       if (recRadius > radiusCutKB) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -666,7 +742,7 @@ struct sigmaminustask {
       // 10 - collision selection
       if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       } else {
         continue;
       }
@@ -674,7 +750,7 @@ struct sigmaminustask {
       // 11 - TOF daughter presence
       if (daughterTrack.hasTOF()) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, mothPdg, daugPdg);
       }
     }
   }

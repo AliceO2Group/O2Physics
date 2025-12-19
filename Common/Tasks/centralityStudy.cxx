@@ -13,24 +13,33 @@
 // Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with
 // derived data.
 
+#include "EventSelectionParams.h"
+
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPECSObject.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TProfile.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TList.h>
+#include <TProfile.h>
 
+#include <cstdint>
+#include <format>
 #include <map>
+#include <memory>
 #include <string>
 
 using namespace o2;

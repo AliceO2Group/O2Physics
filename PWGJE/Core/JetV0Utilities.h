@@ -77,10 +77,9 @@ constexpr bool isV0McTable()
  *
  * @param track track that is being checked
  * @param candidate V0 candidate that is being checked
- * @param tracks the track table
  */
-template <typename T, typename U, typename V>
-bool isV0DaughterTrack(T& track, U& candidate, V const& /*tracks*/)
+template <typename T, typename U>
+bool isV0DaughterTrack(T& track, U& candidate)
 {
   if constexpr (isV0Candidate<U>()) {
     if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
@@ -138,9 +137,13 @@ auto slicedPerV0Candidate(T const& table, U const& candidate, V const& perV0Cand
 }
 
 template <typename T, typename U>
-bool isV0Particle(T const& particles, U const& particle)
+bool isV0Particle(T const& particles, U const& particle, bool v0ChargedDecaysOnly)
 {
-  return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true);
+  if (v0ChargedDecaysOnly) {
+    return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true);
+  } else {
+    return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPi0, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kNeutron, +kPi0}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{+kNeutron, +kPi0}, true);
+  }
 }
 
 enum JV0ParticleDecays {
@@ -157,7 +160,7 @@ bool selectV0ParticleDecay(T const& v0Particle, int v0ParticleDecaySelection = -
   return (v0Particle.decayFlag() & (1 << v0ParticleDecaySelection));
 }
 
-int initialiseV0ParticleDecaySelection(std::string v0ParticleDecaySelection)
+int initialiseV0ParticleDecaySelection(const std::string& v0ParticleDecaySelection)
 {
   if (v0ParticleDecaySelection == "K0sToPiPi") {
     return JV0ParticleDecays::K0sToPiPi;

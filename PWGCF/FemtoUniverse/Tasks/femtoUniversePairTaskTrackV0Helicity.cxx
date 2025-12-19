@@ -14,6 +14,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira.dokt@pw.edu.pl
+/// \author Anna-Mariia Andrushko, WUT Warsaw, anna-mariia.andrushko@cern.ch
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
@@ -53,67 +54,78 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
   SliceCache cache;
+
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
   using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
 
-  /// To apply narrow cut
-  Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
+  using FemtoTruthParticles = soa::Join<aod::FDParticles, aod::FDMCLabels>;
+  Preslice<FemtoTruthParticles> perColMCTruth = aod::femtouniverseparticle::fdCollisionId;
+
+  /// To apply a narrow cut
+  Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event selection -- maximum z-vertex (cm)"};
   Configurable<float> confEta{"confEta", 0.8, "Eta cut for the global track"};
 
   /// Particle 1 (track)
-  Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 211, "Particle 1 (Track) - PDG code"};
-  Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 1, "0:Proton, 1:Pion, 2:Kaon"};
-  ConfigurableAxis confTrkTempFitVarBins{"confTrkTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis confTrkTempFitVarpTBins{"confTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
-  Configurable<int> confChargePart1{"confChargePart1", 0, "sign of particle 1"};
-  Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "higher limit for pt of particle 1"};
-  Configurable<float> confLPtPart1{"confLPtPart1", 0.3f, "lower limit for pt of particle 1"};
-  Configurable<float> confmom{"confmom", 0.5, "momentum threshold for particle identification using TOF"};
-  Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < confmom"};
-  Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > confmom"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 211, "Particle 1 (track) -- PDG code"};
+    Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 1, "0: Proton, 1: Pion, 2: Kaon"};
+    ConfigurableAxis confTrkTempFitVarBins{"confTrkTempFitVarBins", {300, -0.15, 0.15}, "TempFitVar binning in the pT vs. TempFitVar plot"};
+    ConfigurableAxis confTrkTempFitVarpTBins{"confTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning in the pT vs. TempFitVar plot"};
+    Configurable<int> confChargePart1{"confChargePart1", 0, "Particle 1 sign"};
+    Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "Particle 1 pT higher limit"};
+    Configurable<float> confLPtPart1{"confLPtPart1", 0.3f, "Particle 1 pT lower limit"};
+    Configurable<float> confTOFmom{"confTOFmom", 0.5, "Momentum threshold for particle identification using TOF"};
+    Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC nSigma for particle momentum < confTOFmom"};
+    Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF nSigma (combined) for particle momentum > confTOFmom"};
+  } trackconfigs;
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
-  /// Partition for particle 1
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
-  Partition<FemtoFullParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
-  Partition<FemtoRecoParticles> partsOneMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < confHPtPart1) && (aod::femtouniverseparticle::pt > confLPtPart1);
+  /// Partitioning for particle 1
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoFullParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
+  Partition<FemtoRecoParticles> partsOneMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == trackconfigs.confChargePart1) && (nabs(aod::femtouniverseparticle::eta) < confEta) && (aod::femtouniverseparticle::pt < trackconfigs.confHPtPart1) && (aod::femtouniverseparticle::pt > trackconfigs.confLPtPart1);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 4> trackHistoPartOneNeg;
 
   /// Particle 2 (V0)
-  Configurable<int> confV0PDGCodePartTwo{"confV0PDGCodePartTwo", 3122, "Particle 2 (V0) - PDG code"};
-  ConfigurableAxis confV0TempFitVarBins{"confV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis confV0TempFitVarpTBins{"confV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
-  Configurable<int> confV0Type1{"confV0Type1", 0, "select one of the V0s (lambda = 0, anti-lambda = 1, k0 = 2) for v0-v0 and Track-v0 combination"};
-  Configurable<int> confV0Type2{"confV0Type2", 0, "select one of the V0s (lambda = 0, anti-lambda = 1, k0 = 2) for v0-v0 combination"};
-  Configurable<float> confV0InvMassLowLimit{"confV0InvMassLowLimit", 1.10, "Lower limit of the V0 invariant mass"};
-  Configurable<float> confV0InvMassUpLimit{"confV0InvMassUpLimit", 1.13, "Upper limit of the V0 invariant mass"};
-  ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis confChildTempFitVarpTBins{"confChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
-  Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of particle 2"};
-  Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of particle 2"};
-  Configurable<int> confPDGCodeV0{"confPDGCodeV0", 3122, "V0 -- PDG code"};
-  Configurable<int> confPDGCodePosChild{"confPDGCodePosChild", 2212, "Positive Child -- PDG code"};
-  Configurable<int> confPDGCodeNegChild{"confPDGCodeNegChild", 211, "Negative Child -- PDG code"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<int> confV0PDGCodePartTwo{"confV0PDGCodePartTwo", 3122, "Particle 2 (V0) -- PDG code"};
+    ConfigurableAxis confV0TempFitVarBins{"confV0TempFitVarBins", {300, 0.95, 1.}, "V0: TempFitVar binning in the pT vs. TempFitVar plot"};
+    ConfigurableAxis confV0TempFitVarpTBins{"confV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning in the pT vs. TempFitVar plot"};
+    Configurable<int> confV0Type1{"confV0Type1", 0, "Select V0 (Lambda = 0, Anti-lambda = 1, K0 = 2) for Track-V0 and V0-V0 combinations"};
+    Configurable<int> confV0Type2{"confV0Type2", 0, "Select V0 (Lambda = 0, Anti-lambda = 1, K0 = 2) for V0-V0 combinations"};
+    Configurable<float> confV0InvMassLowLimit{"confV0InvMassLowLimit", 1.10, "Invariant mass lower limit"};
+    Configurable<float> confV0InvMassUpLimit{"confV0InvMassUpLimit", 1.13, "Invariant mass upper limit"};
+    ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: TempFitVar binning in the pT vs. TempFitVar plot"};
+    ConfigurableAxis confChildTempFitVarpTBins{"confChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning in the pT vs. TempFitVar plot"};
+    Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "Particle 2 pT higher limit"};
+    Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "Particle 2 pT higher limit"};
+    Configurable<int> confPDGCodeV0{"confPDGCodeV0", 3122, "V0 -- PDG code"};
+    Configurable<int> confPDGCodePosChild{"confPDGCodePosChild", 2212, "Positive Child -- PDG code"};
+    Configurable<int> confPDGCodeNegChild{"confPDGCodeNegChild", 211, "Negative Child -- PDG code"};
+  } V0configs;
 
-  /// Partition for particle 2
-  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
-  Partition<FemtoFullParticles> partsTwoMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
-  Partition<FemtoRecoParticles> partsTwoMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < confHPtPart2) && (aod::femtouniverseparticle::pt > confLPtPart2);
+  /// Partitioning for particle 2
+  Partition<FemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoFullParticles> partsTwoMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoRecoParticles> partsTwoMCReco = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
+  Partition<FemtoTruthParticles> partsTwoMCTruth = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < V0configs.confHPtPart2) && (aod::femtouniverseparticle::pt > V0configs.confLPtPart2);
 
   /// Histogramming for particle 2
+  /// Track-V0
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0, 2> trackHistoPartTwo;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> posChildHistos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 4> negChildHistos;
 
+  /// V0-V0
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0, 2> trackHistoV0Type1;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> posChildV0Type1;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 4> negChildV0Type1;
@@ -121,50 +133,76 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> posChildV0Type2;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 4> negChildV0Type2;
 
-  /// Histogramming for Event
+  /// Histogramming for event
   FemtoUniverseEventHisto eventHisto;
 
   /// Correlation part
-  // Configurable<int> confTrackChoicePartTwo{"confTrackChoicePartTwo", 1, "0:Proton, 1:Pion, 2:Kaon"}; //not used
-  Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
+  // Configurable<int> confTrackChoicePartTwo{"confTrackChoicePartTwo", 1, "0: Proton, 1: Pion, 2: Kaon"}; // not used
+  Configurable<bool> confIsMC{"confIsMC", false, "Enable additional histograms in the case of Monte Carlo data"};
   Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<bool> confUseCent{"confUseCent", false, "Use centrality in place of multiplicity"};
-  ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
-  ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins -- multiplicity"};
+  ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins -- z-vertex"};
   Configurable<int> confNEventsMix{"confNEventsMix", 5, "Number of events for mixing"};
-  ConfigurableAxis confkstarBins{"confkstarBins", {1500, 0., 6.}, "binning kstar"};
-  ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
-  ConfigurableAxis confmTBins{"confmTBins", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis confkstarBins{"confkstarBins", {1500, 0., 6.}, "k* binning"};
+  ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "kT binning"};
+  ConfigurableAxis confmTBins{"confmTBins", {225, 0., 7.5}, "mT binning"};
   Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
-  Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for CPR"};
+  Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for CPR"};
+  Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for CPR"};
+  Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for CPR"};
+  Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for CPR"};
   Configurable<int> confPhiBins{"confPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> confEtaBins{"confEtaBins", 29, "Number of eta bins in deta dphi"};
-  ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
-  ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+  ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT binning for the 3D plot: k* vs multiplicity vs mT (set <confUse3D> to true in order to use)"};
+  ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity binning for the 3D plot: k* vs multiplicity vs mT (set <confUse3D> to true in order to use)"};
 
-  // Efficiency
+  /// Helicity ranges (approximate)
+  Configurable<bool> cfgProcessHel{"cfgProcessHel", true, "Process particle pairs from all helicity ranges"};
+  Configurable<bool> cfgProcessHel1{"cfgProcessHel1", false, "Process particle pairs from the helicity range 1"}; // 1.0 > cosineTheta >= 0.1
+  Configurable<bool> cfgProcessHel2{"cfgProcessHel2", false, "Process particle pairs from the helicity range 2"}; // 0.1 > cosineTheta >= -0.1
+  Configurable<bool> cfgProcessHel3{"cfgProcessHel3", false, "Process particle pairs from the helicity range 3"}; // -0.1 > cosineTheta >= -0.5
+  Configurable<bool> cfgProcessHel4{"cfgProcessHel4", false, "Process particle pairs from the helicity range 4"}; // -0.5 > cosineTheta >= -1.0
+
+  /// Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
 
-  static constexpr unsigned int V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // Table to select the V0 children
+  static constexpr unsigned int V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // table to select V0 children
 
+  /// Containers
   FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
   FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
+
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventContHel1;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventContHel1;
+
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventContHel2;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventContHel2;
+
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventContHel3;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventContHel3;
+
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventContHel4;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventContHel4;
+
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kV0> pairCleaner;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0> pairCleanerV0;
+
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kV0> pairCloseRejection;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0> pairCloseRejectionV0;
 
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry thetaRegistry{"ThetaQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryMCtruth{"MCtruthHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry resultRegistryHel1{"CorrelationsHel1", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry resultRegistryHel2{"CorrelationsHel2", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry resultRegistryHel3{"CorrelationsHel3", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry resultRegistryHel4{"CorrelationsHel4", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   std::unique_ptr<TFile> plocalEffFile;
@@ -173,16 +211,16 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
-    if (mom <= confmom) {
-      return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
+    if (mom <= trackconfigs.confTOFmom) {
+      return (std::abs(nsigmaTPCParticle) < trackconfigs.confNsigmaTPCParticle);
     } else {
-      return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
+      return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < trackconfigs.confNsigmaCombinedParticle);
     }
   }
 
   bool invMLambda(float invMassLambda, float invMassAntiLambda)
   {
-    if ((invMassLambda < confV0InvMassLowLimit || invMassLambda > confV0InvMassUpLimit) && (invMassAntiLambda < confV0InvMassLowLimit || invMassAntiLambda > confV0InvMassUpLimit)) {
+    if ((invMassLambda < V0configs.confV0InvMassLowLimit || invMassLambda > V0configs.confV0InvMassUpLimit) && (invMassAntiLambda < V0configs.confV0InvMassLowLimit || invMassAntiLambda > V0configs.confV0InvMassUpLimit)) {
       return false;
     }
     return true;
@@ -190,7 +228,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
   {
-    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle) {
+    if (std::abs(nsigmaTPCParticle) < trackconfigs.confNsigmaTPCParticle) {
       return true;
     } else {
       return false;
@@ -200,9 +238,9 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   template <typename T>
   bool isParticleCombined(const T& part, int id)
   {
-    const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
+    const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
     // const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
-    const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+    const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
     return isNSigmaCombined(part.p(), tpcNSigmas[id], tofNSigmas[id]);
   }
@@ -210,7 +248,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   template <typename T>
   bool isParticleTPC(const T& part, int id)
   {
-    const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
+    const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
 
     return isNSigmaTPC(tpcNSigmas[id]);
   }
@@ -218,24 +256,28 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
+
     qaRegistry.add("Tracks_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_pos/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_neg/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_neg/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
-    trackHistoPartOnePos.init(&qaRegistry, confTrkTempFitVarpTBins, confTrkTempFitVarBins, confIsMC, confTrkPDGCodePartOne);
-    trackHistoPartOneNeg.init(&qaRegistry, confTrkTempFitVarpTBins, confTrkTempFitVarBins, confIsMC, confTrkPDGCodePartOne);
-    trackHistoPartTwo.init(&qaRegistry, confV0TempFitVarpTBins, confV0TempFitVarBins, confIsMC, confV0PDGCodePartTwo, true);
-    posChildHistos.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true);
-    negChildHistos.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true);
 
-    trackHistoV0Type1.init(&qaRegistry, confV0TempFitVarpTBins, confV0TempFitVarBins, confIsMC, confV0PDGCodePartTwo, true, "V0Type1");
-    posChildV0Type1.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true, "posChildV0Type1");
-    negChildV0Type1.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true, "negChildV0Type1");
-    trackHistoV0Type2.init(&qaRegistry, confV0TempFitVarpTBins, confV0TempFitVarBins, confIsMC, confV0PDGCodePartTwo, true, "V0Type2");
-    posChildV0Type2.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true, "posChildV0Type2");
-    negChildV0Type2.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true, "negChildV0Type2");
+    /// Track-V0
+    trackHistoPartOnePos.init(&qaRegistry, trackconfigs.confTrkTempFitVarpTBins, trackconfigs.confTrkTempFitVarBins, confIsMC, trackconfigs.confTrkPDGCodePartOne);
+    trackHistoPartOneNeg.init(&qaRegistry, trackconfigs.confTrkTempFitVarpTBins, trackconfigs.confTrkTempFitVarBins, confIsMC, trackconfigs.confTrkPDGCodePartOne);
+    trackHistoPartTwo.init(&qaRegistry, V0configs.confV0TempFitVarpTBins, V0configs.confV0TempFitVarBins, confIsMC, V0configs.confV0PDGCodePartTwo, true);
+    posChildHistos.init(&qaRegistry, V0configs.confChildTempFitVarpTBins, V0configs.confChildTempFitVarBins, false, 0, true);
+    negChildHistos.init(&qaRegistry, V0configs.confChildTempFitVarpTBins, V0configs.confChildTempFitVarBins, false, 0, true);
 
-    // Helicity angle
+    /// V0-V0
+    trackHistoV0Type1.init(&qaRegistry, V0configs.confV0TempFitVarpTBins, V0configs.confV0TempFitVarBins, confIsMC, V0configs.confV0PDGCodePartTwo, true, "V0Type1");
+    posChildV0Type1.init(&qaRegistry, V0configs.confChildTempFitVarpTBins, V0configs.confChildTempFitVarBins, false, 0, true, "posChildV0Type1");
+    negChildV0Type1.init(&qaRegistry, V0configs.confChildTempFitVarpTBins, V0configs.confChildTempFitVarBins, false, 0, true, "negChildV0Type1");
+    trackHistoV0Type2.init(&qaRegistry, V0configs.confV0TempFitVarpTBins, V0configs.confV0TempFitVarBins, confIsMC, V0configs.confV0PDGCodePartTwo, true, "V0Type2");
+    posChildV0Type2.init(&qaRegistry, V0configs.confChildTempFitVarpTBins, V0configs.confChildTempFitVarBins, false, 0, true, "posChildV0Type2");
+    negChildV0Type2.init(&qaRegistry, V0configs.confChildTempFitVarpTBins, V0configs.confChildTempFitVarBins, false, 0, true, "negChildV0Type2");
+
+    /// Helicity angle
     thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/hTheta3D_PosChild", " ; p_{V0} (GeV/#it{c}); cos(#theta); p_{Positive Child} (GeV/#it{c})", kTH3F, {{100, 0, 10}, {110, -1.1, 1.1}, {100, 0, 10}});
     thetaRegistry.add("Theta/hTheta3D_NegChild", " ; p_{V0} (GeV/#it{c}); cos(#theta); p_{Negative Child} (GeV/#it{c})", kTH3F, {{100, 0, 10}, {110, -1.1, 1.1}, {100, 0, 10}});
@@ -246,9 +288,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     thetaRegistry.add("Theta/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
 
-    mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
-
-    // MC truth
+    /// MC Truth
     registryMCtruth.add("plus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCtruth.add("minus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
@@ -279,7 +319,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     registryMCtruth.add("ThetaMCTruth/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     registryMCtruth.add("ThetaMCTruth/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
 
-    // MC reco
+    /// MC Reco
     registryMCreco.add("plus/MCrecoLambda", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCreco.add("plus/MCrecoLambdaChildPr", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCreco.add("plus/MCrecoLambdaChildPi", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -309,10 +349,48 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     registryMCreco.add("ThetaMCReco/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     registryMCreco.add("ThetaMCReco/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
 
-    sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
-    sameEventCont.setPDGCodes(confTrkPDGCodePartOne, confV0PDGCodePartTwo);
-    mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
-    mixedEventCont.setPDGCodes(confTrkPDGCodePartOne, confV0PDGCodePartTwo);
+    /// Correlations
+    if (cfgProcessHel) {
+      sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      sameEventCont.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+
+      mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      mixedEventCont.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+    }
+
+    if (cfgProcessHel1) {
+      sameEventContHel1.init(&resultRegistryHel1, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      sameEventContHel1.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+
+      mixedEventContHel1.init(&resultRegistryHel1, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      mixedEventContHel1.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+    }
+
+    if (cfgProcessHel2) {
+      sameEventContHel2.init(&resultRegistryHel2, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      sameEventContHel2.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+
+      mixedEventContHel2.init(&resultRegistryHel2, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      mixedEventContHel2.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+    }
+
+    if (cfgProcessHel3) {
+      sameEventContHel3.init(&resultRegistryHel3, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      sameEventContHel3.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+
+      mixedEventContHel3.init(&resultRegistryHel3, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      mixedEventContHel3.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+    }
+
+    if (cfgProcessHel4) {
+      sameEventContHel4.init(&resultRegistryHel4, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      sameEventContHel4.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+
+      mixedEventContHel4.init(&resultRegistryHel4, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+      mixedEventContHel4.setPDGCodes(trackconfigs.confTrkPDGCodePartOne, V0configs.confV0PDGCodePartTwo);
+    }
+
+    mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
     pairCleaner.init(&qaRegistry);
     pairCleanerV0.init(&qaRegistry);
@@ -326,19 +404,20 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       if (!plocalEffFile || plocalEffFile.get()->IsZombie())
         LOGF(fatal, "Could not load efficiency histogram from %s", confLocalEfficiency.value.c_str());
       if (doprocessSameEvent || doprocessMixedEvent) {
-        plocalEffp1 = (confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
-        plocalEffp2 = (confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
+        plocalEffp1 = (trackconfigs.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        plocalEffp2 = (V0configs.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for track-V0.");
       } else if (doprocessSameEventV0 || doprocessMixedEventV0) {
-        plocalEffp1 = (confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
-        plocalEffp2 = (confV0Type2 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
+        plocalEffp1 = (V0configs.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
+        plocalEffp2 = (V0configs.confV0Type2 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for V0-V0.");
       }
     }
   }
-  /// This function processes the same event for track - V0
+
+  /// This function processes the same event for Track-V0
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsOne, PartitionType& groupPartsTwo, int helRange, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     const auto& magFieldTesla = col.magField();
 
@@ -353,11 +432,11 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       /// Daughters that do not pass this condition are not selected
-      if (!isParticleTPC(posChild, V0ChildTable[confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[confV0Type1][1]))
+      if (!isParticleTPC(posChild, V0ChildTable[V0configs.confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[V0configs.confV0Type1][1]))
         continue;
 
-      auto posChildMass = pdg->Mass(confPDGCodePosChild);
-      auto negChildMass = pdg->Mass(confPDGCodeNegChild);
+      auto posChildMass = pdg->Mass(V0configs.confPDGCodePosChild);
+      auto negChildMass = pdg->Mass(V0configs.confPDGCodeNegChild);
       auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
       auto cosineTheta = (posChildBoosted.Px() * part.px() + posChildBoosted.Py() * part.py() + posChildBoosted.Pz() * part.pz()) / (posChildBoosted.P() * part.p());
 
@@ -378,18 +457,18 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
     for (const auto& part : groupPartsOne) {
       /// PID plot for particle 1
-      const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+      const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+      const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
-      if (!isNSigmaCombined(part.p(), tpcNSigmas[confTrackChoicePartOne], tofNSigmas[confTrackChoicePartOne]))
+      if (!isNSigmaCombined(part.p(), tpcNSigmas[trackconfigs.confTrackChoicePartOne], tofNSigmas[trackconfigs.confTrackChoicePartOne]))
         continue;
       if (part.sign() > 0) {
-        qaRegistry.fill(HIST("Tracks_pos/nSigmaTPC"), part.p(), tpcNSigmas[confTrackChoicePartOne]);
-        qaRegistry.fill(HIST("Tracks_pos/nSigmaTOF"), part.p(), tofNSigmas[confTrackChoicePartOne]);
+        qaRegistry.fill(HIST("Tracks_pos/nSigmaTPC"), part.p(), tpcNSigmas[trackconfigs.confTrackChoicePartOne]);
+        qaRegistry.fill(HIST("Tracks_pos/nSigmaTOF"), part.p(), tofNSigmas[trackconfigs.confTrackChoicePartOne]);
         trackHistoPartOnePos.fillQA<false, false>(part);
       } else if (part.sign() < 0) {
-        qaRegistry.fill(HIST("Tracks_neg/nSigmaTPC"), part.p(), tpcNSigmas[confTrackChoicePartOne]);
-        qaRegistry.fill(HIST("Tracks_neg/nSigmaTOF"), part.p(), tofNSigmas[confTrackChoicePartOne]);
+        qaRegistry.fill(HIST("Tracks_neg/nSigmaTPC"), part.p(), tpcNSigmas[trackconfigs.confTrackChoicePartOne]);
+        qaRegistry.fill(HIST("Tracks_neg/nSigmaTOF"), part.p(), tofNSigmas[trackconfigs.confTrackChoicePartOne]);
         trackHistoPartOneNeg.fillQA<false, false>(part);
       }
     }
@@ -400,7 +479,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
         continue;
       /// PID using stored binned nsigma
-      if (!isParticleCombined(p1, confTrackChoicePartOne))
+      if (!isParticleCombined(p1, trackconfigs.confTrackChoicePartOne))
         continue;
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -415,16 +494,59 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       const auto& negChild = parts.iteratorAt(p2.index() - 1);
 
       /// Daughters that do not pass this condition are not selected
-      if (!isParticleTPC(posChild, V0ChildTable[confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[confV0Type1][1]))
+      if (!isParticleTPC(posChild, V0ChildTable[V0configs.confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[V0configs.confV0Type1][1]))
         continue;
 
       float weight = 1.0f;
       if (plocalEffp1)
         weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
-      if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
-        sameEventCont.setPair<true>(p1, p2, multCol, confUse3D, weight);
-      else
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+      auto posChildMass = pdg->Mass(V0configs.confPDGCodePosChild);
+      auto negChildMass = pdg->Mass(V0configs.confPDGCodeNegChild);
+      auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
+      auto cosineTheta = (posChildBoosted.Px() * p2.px() + posChildBoosted.Py() * p2.py() + posChildBoosted.Pz() * p2.pz()) / (posChildBoosted.P() * p2.p());
+
+      switch (helRange) {
+        case 0: {
+          if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
+            sameEventCont.setPair<true>(p1, p2, multCol, confUse3D, weight);
+          else
+            sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+          break;
+        }
+
+        case 1: {
+          if (cosineTheta < 1.0 && cosineTheta >= 0.1)
+            sameEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+          break;
+        }
+
+        case 2: {
+          if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+            sameEventContHel2.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+          break;
+        }
+
+        case 3: {
+          if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+            sameEventContHel3.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+          break;
+        }
+
+        case 4: {
+          if (cosineTheta < -0.5 && cosineTheta >= -1.0)
+            sameEventContHel4.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+          break;
+        }
+
+        default:
+          break;
+      }
     }
   }
 
@@ -432,7 +554,21 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doSameEvent(col, parts, groupPartsOne, groupPartsTwo);
+
+    if (cfgProcessHel)
+      doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 0);
+
+    if (cfgProcessHel1)
+      doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 1);
+
+    if (cfgProcessHel2)
+      doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 2);
+
+    if (cfgProcessHel3)
+      doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 3);
+
+    if (cfgProcessHel4)
+      doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 4);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processSameEvent, "Enable processing same event for track - V0", false);
 
@@ -440,7 +576,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   {
     auto groupPartsOne = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doSameEvent(col, parts, groupPartsOne, groupPartsTwo, mcparts);
+    doSameEvent(col, parts, groupPartsOne, groupPartsTwo, 0, mcparts);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processSameEventMCReco, "Enable processing same event for track - V0 MC Reco", false);
 
@@ -462,13 +598,13 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       const auto& negChild = parts.iteratorAt(part.index() - 1);
 
       /// Check daughters of first V0 particle
-      if (isParticleTPC(posChild, V0ChildTable[confV0Type1][0]) && isParticleTPC(negChild, V0ChildTable[confV0Type1][1])) {
+      if (isParticleTPC(posChild, V0ChildTable[V0configs.confV0Type1][0]) && isParticleTPC(negChild, V0ChildTable[V0configs.confV0Type1][1])) {
         trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
         posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
         negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
       }
       /// Check daughters of second V0 particle
-      if (isParticleTPC(posChild, V0ChildTable[confV0Type2][0]) && isParticleTPC(negChild, V0ChildTable[confV0Type2][1])) {
+      if (isParticleTPC(posChild, V0ChildTable[V0configs.confV0Type2][0]) && isParticleTPC(negChild, V0ChildTable[V0configs.confV0Type2][1])) {
         trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
         posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
         negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
@@ -494,18 +630,18 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
       const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
       /// Daughters that do not pass this condition are not selected
-      if (!isParticleTPC(posChild1, V0ChildTable[confV0Type1][0]) || !isParticleTPC(negChild1, V0ChildTable[confV0Type1][1]))
+      if (!isParticleTPC(posChild1, V0ChildTable[V0configs.confV0Type1][0]) || !isParticleTPC(negChild1, V0ChildTable[V0configs.confV0Type1][1]))
         return;
 
       const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
       const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
       /// Daughters that do not pass this condition are not selected
-      if (!isParticleTPC(posChild2, V0ChildTable[confV0Type2][0]) || !isParticleTPC(negChild2, V0ChildTable[confV0Type2][1]))
+      if (!isParticleTPC(posChild2, V0ChildTable[V0configs.confV0Type2][0]) || !isParticleTPC(negChild2, V0ChildTable[V0configs.confV0Type2][1]))
         return;
 
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D);
     };
-    if (confV0Type1 == confV0Type2) {
+    if (V0configs.confV0Type1 == V0configs.confV0Type2) {
       /// Now build the combinations for identical V0s
       for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
         pairProcessFunc(p1, p2);
@@ -534,14 +670,14 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
       int pdgCode = static_cast<int>(part.pidCut());
-      if ((confV0Type1 == 0 && pdgCode != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode != -confPDGCodeV0))
+      if ((V0configs.confV0Type1 == 0 && pdgCode != V0configs.confPDGCodeV0) || (V0configs.confV0Type1 == 1 && pdgCode != -V0configs.confPDGCodeV0))
         continue;
       trackHistoPartTwo.fillQA<false, true>(part);
     }
 
     for (const auto& part : groupPartsOne) {
       int pdgCode = static_cast<int>(part.pidCut());
-      if (pdgCode != confTrkPDGCodePartOne)
+      if (pdgCode != trackconfigs.confTrkPDGCodePartOne)
         continue;
       const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
       if (!pdgParticle) {
@@ -557,10 +693,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
     /// Now build the combinations
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
+      if (static_cast<int>(p1.pidCut()) != trackconfigs.confTrkPDGCodePartOne)
         continue;
       int pdgCode2 = static_cast<int>(p2.pidCut());
-      if ((confV0Type1 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode2 != -confPDGCodeV0))
+      if ((V0configs.confV0Type1 == 0 && pdgCode2 != V0configs.confPDGCodeV0) || (V0configs.confV0Type1 == 1 && pdgCode2 != -V0configs.confPDGCodeV0))
         continue;
       // track cleaning
       if (confIsCPR.value) {
@@ -585,22 +721,22 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
       int pdgCode = static_cast<int>(part.pidCut());
-      if ((confV0Type1 == 0 && pdgCode != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode != -confPDGCodeV0))
+      if ((V0configs.confV0Type1 == 0 && pdgCode != V0configs.confPDGCodeV0) || (V0configs.confV0Type1 == 1 && pdgCode != -V0configs.confPDGCodeV0))
         continue;
       trackHistoPartTwo.fillQA<false, true>(part);
     }
 
     auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
       int pdgCode1 = static_cast<int>(p1.pidCut());
-      if ((confV0Type1 == 0 && pdgCode1 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode1 != -confPDGCodeV0))
+      if ((V0configs.confV0Type1 == 0 && pdgCode1 != V0configs.confPDGCodeV0) || (V0configs.confV0Type1 == 1 && pdgCode1 != -V0configs.confPDGCodeV0))
         return;
       int pdgCode2 = static_cast<int>(p2.pidCut());
-      if ((confV0Type2 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type2 == 1 && pdgCode2 != -confPDGCodeV0))
+      if ((V0configs.confV0Type2 == 0 && pdgCode2 != V0configs.confPDGCodeV0) || (V0configs.confV0Type2 == 1 && pdgCode2 != -V0configs.confPDGCodeV0))
         return;
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D);
     };
     /// Now build the combinations
-    if (confV0Type1 == confV0Type2) {
+    if (V0configs.confV0Type1 == V0configs.confV0Type2) {
       /// Now build the combinations for identical V0s
       for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
         pairProcessFunc(p1, p2);
@@ -617,7 +753,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   /// This function processes the mixed event for track - V0
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partitionOne, PartitionType& partitionTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doMixedEvent(FilteredFDCollisions const& cols, PartType const& parts, PartitionType& partitionOne, PartitionType& partitionTwo, int helRange, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
@@ -640,13 +776,13 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
           continue;
         /// PID using stored binned nsigma
-        if (!isParticleCombined(p1, confTrackChoicePartOne))
+        if (!isParticleCombined(p1, trackconfigs.confTrackChoicePartOne))
           continue;
 
         const auto& posChild = parts.iteratorAt(p2.globalIndex() - 2);
         const auto& negChild = parts.iteratorAt(p2.globalIndex() - 1);
         /// Daughters that do not pass this condition are not selected
-        if (!isParticleTPC(posChild, V0ChildTable[confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[confV0Type1][1]))
+        if (!isParticleTPC(posChild, V0ChildTable[V0configs.confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[V0configs.confV0Type1][1]))
           continue;
 
         // track cleaning
@@ -658,14 +794,57 @@ struct FemtoUniversePairTaskTrackV0Helicity {
             continue;
           }
         }
+
         float weight = 1.0f;
         if (plocalEffp1)
           weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
 
-        if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
-          mixedEventCont.setPair<true>(p1, p2, multCol, confUse3D, weight);
-        else
-          mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
+        auto posChildMass = pdg->Mass(V0configs.confPDGCodePosChild);
+        auto negChildMass = pdg->Mass(V0configs.confPDGCodeNegChild);
+        auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
+        auto cosineTheta = (posChildBoosted.Px() * p2.px() + posChildBoosted.Py() * p2.py() + posChildBoosted.Pz() * p2.pz()) / (posChildBoosted.P() * p2.p());
+
+        switch (helRange) {
+          case 0: {
+            if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
+              mixedEventCont.setPair<true>(p1, p2, multCol, confUse3D, weight);
+            else
+              mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+            break;
+          }
+
+          case 1: {
+            if (cosineTheta < 1.0 && cosineTheta >= 0.1)
+              mixedEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+            break;
+          }
+
+          case 2: {
+            if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+              mixedEventContHel2.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+            break;
+          }
+
+          case 3: {
+            if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+              mixedEventContHel3.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+            break;
+          }
+
+          case 4: {
+            if (cosineTheta < -0.5 && cosineTheta >= -1.0)
+              mixedEventContHel4.setPair<false>(p1, p2, multCol, confUse3D, weight);
+
+            break;
+          }
+
+          default:
+            break;
+        }
       }
     };
 
@@ -684,13 +863,26 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
   void processMixedEvent(FilteredFDCollisions const& cols, FemtoFullParticles const& parts)
   {
-    doMixedEvent(cols, parts, partsOne, partsTwo);
+    if (cfgProcessHel)
+      doMixedEvent(cols, parts, partsOne, partsTwo, 0);
+
+    if (cfgProcessHel1)
+      doMixedEvent(cols, parts, partsOne, partsTwo, 1);
+
+    if (cfgProcessHel2)
+      doMixedEvent(cols, parts, partsOne, partsTwo, 2);
+
+    if (cfgProcessHel3)
+      doMixedEvent(cols, parts, partsOne, partsTwo, 3);
+
+    if (cfgProcessHel4)
+      doMixedEvent(cols, parts, partsOne, partsTwo, 4);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processMixedEvent, "Enable processing mixed event for track - V0", false);
 
   void processMixedEventMCReco(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
   {
-    doMixedEvent(cols, parts, partsOneMCReco, partsTwoMCReco, mcparts);
+    doMixedEvent(cols, parts, partsOneMCReco, partsTwoMCReco, 0, mcparts);
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processMixedEventMCReco, "Enable processing mixed event for track - V0 for MC Reco", false);
 
@@ -726,13 +918,13 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2);
         const auto& negChild1 = parts.iteratorAt(p1.globalIndex() - 1);
         /// Daughters that do not pass this condition are not selected
-        if (!isParticleTPC(posChild1, V0ChildTable[confV0Type1][0]) || !isParticleTPC(negChild1, V0ChildTable[confV0Type1][1]))
+        if (!isParticleTPC(posChild1, V0ChildTable[V0configs.confV0Type1][0]) || !isParticleTPC(negChild1, V0ChildTable[V0configs.confV0Type1][1]))
           continue;
 
         const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 2);
         const auto& negChild2 = parts.iteratorAt(p2.globalIndex() - 1);
         /// Daughters that do not pass this condition are not selected
-        if (!isParticleTPC(posChild2, V0ChildTable[confV0Type2][0]) || !isParticleTPC(negChild2, V0ChildTable[confV0Type2][1]))
+        if (!isParticleTPC(posChild2, V0ChildTable[V0configs.confV0Type2][0]) || !isParticleTPC(negChild2, V0ChildTable[V0configs.confV0Type2][1]))
           continue;
 
         // track cleaning
@@ -781,10 +973,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         return;
       }
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
+        if (static_cast<int>(p1.pidCut()) != trackconfigs.confTrkPDGCodePartOne)
           continue;
         int pdgCode2 = static_cast<int>(p2.pidCut());
-        if ((confV0Type1 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode2 != -confPDGCodeV0))
+        if ((V0configs.confV0Type1 == 0 && pdgCode2 != V0configs.confPDGCodeV0) || (V0configs.confV0Type1 == 1 && pdgCode2 != -V0configs.confPDGCodeV0))
           continue;
         if (confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
@@ -824,10 +1016,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         int pdgCode1 = static_cast<int>(p1.pidCut());
-        if ((confV0Type1 == 0 && pdgCode1 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode1 != -confPDGCodeV0))
+        if ((V0configs.confV0Type1 == 0 && pdgCode1 != V0configs.confPDGCodeV0) || (V0configs.confV0Type1 == 1 && pdgCode1 != -V0configs.confPDGCodeV0))
           continue;
         int pdgCode2 = static_cast<int>(p2.pidCut());
-        if ((confV0Type2 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type2 == 1 && pdgCode2 != -confPDGCodeV0))
+        if ((V0configs.confV0Type2 == 0 && pdgCode2 != V0configs.confPDGCodeV0) || (V0configs.confV0Type2 == 1 && pdgCode2 != -V0configs.confPDGCodeV0))
           continue;
         mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D);
       }
@@ -847,23 +1039,48 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   }
 
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processMCMixedEventV0, "Enable processing mixed events for MC truth V0 - V0", false);
-  ///--------------------------------------------MC-------------------------------------------------///
 
-  /// This function fills MC truth particles from derived MC table
-  void processMCTruth(aod::FDParticles const& parts)
+  /// --------------------------------------------------------------- MC --------------------------------------------------------------- ///
+
+  /// This function fills MC Truth particles from derived MC table
+  void processMCTruth(o2::aod::FdCollision const& col, FemtoTruthParticles const& parts)
   {
-    for (const auto& part : parts) {
+    eventHisto.fillQA(col);
+    auto groupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    for (const auto& part : groupPartsTwo) {
       if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
         continue;
 
-      int pdgCode = static_cast<int>(part.pidCut());
+      int pdgCode = static_cast<int>(part.tempFitVar());
       const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
-      if (!pdgParticle) {
+      if (!pdgParticle)
         continue;
-      }
 
       if (pdgCode == 3122) {
         registryMCtruth.fill(HIST("plus/MCtruthLambda"), part.pt(), part.eta());
+
+        // Helicity angle
+        const auto& posChild = parts.iteratorAt(part.index() - 2);
+        const auto& negChild = parts.iteratorAt(part.index() - 1);
+
+        registryMCtruth.fill(HIST("PosChildMCTruth/hPt"), posChild.pt());
+        registryMCtruth.fill(HIST("NegChildMCTruth/hPt"), negChild.pt());
+
+        auto posChildMass = pdg->Mass(V0configs.confPDGCodePosChild);
+        auto negChildMass = pdg->Mass(V0configs.confPDGCodeNegChild);
+        auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
+        auto cosineTheta = (posChildBoosted.Px() * part.px() + posChildBoosted.Py() * part.py() + posChildBoosted.Pz() * part.pz()) / (posChildBoosted.P() * part.p());
+
+        registryMCtruth.fill(HIST("ThetaMCTruth/hTheta"), part.p(), cosineTheta);
+        registryMCtruth.fill(HIST("ThetaMCTruth/hTheta3D_PosChild"), part.p(), cosineTheta, posChild.pt());
+        registryMCtruth.fill(HIST("ThetaMCTruth/hTheta3D_NegChild"), part.p(), cosineTheta, negChild.pt());
+        registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaPt"), posChild.pt(), cosineTheta);
+        registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaEta"), posChild.eta(), cosineTheta);
+        registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaPhi"), posChild.phi(), cosineTheta);
+        registryMCtruth.fill(HIST("ThetaMCTruth/NegativeChild/hThetaPt"), negChild.pt(), cosineTheta);
+        registryMCtruth.fill(HIST("ThetaMCTruth/NegativeChild/hThetaEta"), negChild.eta(), cosineTheta);
+        registryMCtruth.fill(HIST("ThetaMCTruth/NegativeChild/hThetaPhi"), negChild.phi(), cosineTheta);
+
         continue;
       } else if (pdgCode == -3122) {
         registryMCtruth.fill(HIST("minus/MCtruthLambda"), part.pt(), part.eta());
@@ -893,31 +1110,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         registryMCtruth.fill(HIST("minus/MCtruthPr"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("minus/MCtruthPrPt"), part.pt());
       }
-
-      // Helicity angle
-      const auto& posChild = parts.iteratorAt(part.index() - 2);
-      const auto& negChild = parts.iteratorAt(part.index() - 1);
-
-      registryMCtruth.fill(HIST("PosChildMCTruth/hPt"), posChild.pt());
-      registryMCtruth.fill(HIST("NegChildMCTruth/hPt"), negChild.pt());
-
-      auto posChildMass = pdg->Mass(confPDGCodePosChild);
-      auto negChildMass = pdg->Mass(confPDGCodeNegChild);
-      auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
-      auto cosineTheta = (posChildBoosted.Px() * part.px() + posChildBoosted.Py() * part.py() + posChildBoosted.Pz() * part.pz()) / (posChildBoosted.P() * part.p());
-
-      registryMCtruth.fill(HIST("ThetaMCTruth/hTheta"), part.p(), cosineTheta);
-      registryMCtruth.fill(HIST("ThetaMCTruth/hTheta3D_PosChild"), part.p(), cosineTheta, posChild.p());
-      registryMCtruth.fill(HIST("ThetaMCTruth/hTheta3D_NegChild"), part.p(), cosineTheta, negChild.p());
-      registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaPt"), posChild.pt(), cosineTheta);
-      registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaEta"), posChild.eta(), cosineTheta);
-      registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaPhi"), posChild.phi(), cosineTheta);
-      registryMCtruth.fill(HIST("ThetaMCTruth/NegativeChild/hThetaPt"), negChild.pt(), cosineTheta);
-      registryMCtruth.fill(HIST("ThetaMCTruth/NegativeChild/hThetaEta"), negChild.eta(), cosineTheta);
-      registryMCtruth.fill(HIST("ThetaMCTruth/NegativeChild/hThetaPhi"), negChild.phi(), cosineTheta);
     }
   }
-
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processMCTruth, "Process MC truth data", false);
 
   void processMCReco(FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
@@ -963,10 +1157,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
         if (part.sign() > 0) {
           registryMCreco.fill(HIST("plus/MCrecoAllPt"), mcpart.pt());
-          if (mcpart.pdgMCTruth() == 211 && isNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()))) {
+          if (mcpart.pdgMCTruth() == 211 && isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()))) {
             registryMCreco.fill(HIST("plus/MCrecoPi"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("plus/MCrecoPiPt"), mcpart.pt());
-          } else if (mcpart.pdgMCTruth() == 2212 && isNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()))) {
+          } else if (mcpart.pdgMCTruth() == 2212 && isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()))) {
             registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
           }
@@ -974,10 +1168,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
         if (part.sign() < 0) {
           registryMCreco.fill(HIST("minus/MCrecoAllPt"), mcpart.pt());
-          if (mcpart.pdgMCTruth() == -211 && isNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()))) {
+          if (mcpart.pdgMCTruth() == -211 && isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()))) {
             registryMCreco.fill(HIST("minus/MCrecoPi"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("minus/MCrecoPiPt"), mcpart.pt());
-          } else if (mcpart.pdgMCTruth() == -2212 && isNSigmaCombined(part.p(), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()))) {
+          } else if (mcpart.pdgMCTruth() == -2212 && isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()))) {
             registryMCreco.fill(HIST("minus/MCrecoPr"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("minus/MCrecoPrPt"), mcpart.pt());
           }
@@ -985,7 +1179,6 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       } // partType
     }
   }
-
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Helicity, processMCReco, "Process MC reco data", false);
 };
 

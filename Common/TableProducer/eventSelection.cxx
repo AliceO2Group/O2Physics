@@ -26,7 +26,6 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
-#include <DataFormatsITSMFT/NoiseMap.h> // missing include in TimeDeadMap.
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -695,7 +694,7 @@ struct EventSelectionTask {
       }
     }
 
-    evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0);
+    evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -751,7 +750,7 @@ struct EventSelectionTask {
         int32_t foundFDD = bc.foundFDDId();
         int32_t foundZDC = bc.foundZDCId();
         uint32_t rct = 0;
-        evsel(bc.alias_raw(), bc.selection_raw(), rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, -1, -1);
+        evsel(bc.alias_raw(), bc.selection_raw(), rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, -1, -1, -1);
       }
       return;
     }
@@ -1167,7 +1166,7 @@ struct EventSelectionTask {
       }
 
       evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC,
-            vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+            vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex], 0);
     }
   }
 
@@ -1202,10 +1201,12 @@ struct LumiTask {
     histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXZDC", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTVXafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXZDCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
@@ -1429,9 +1430,15 @@ struct LumiTask {
       if (isTriggerTVX) {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiTVX"))->Fill(srun, lumiTVX);
+        if (isTriggerZNA && isTriggerZNC) {
+          histos.get<TH1>(HIST("hCounterTVXZDC"))->Fill(srun, 1);
+        }
         if (noBorder) {
           histos.get<TH1>(HIST("hCounterTVXafterBCcuts"))->Fill(srun, 1);
           histos.get<TH1>(HIST("hLumiTVXafterBCcuts"))->Fill(srun, lumiTVX);
+          if (isTriggerZNA && isTriggerZNC) {
+            histos.get<TH1>(HIST("hCounterTVXZDCafterBCcuts"))->Fill(srun, 1);
+          }
           for (size_t i = 0; i < mRCTFlagsCheckers.size(); i++) {
             if (mRCTFlagsCheckers[i](bc))
               histos.get<TH2>(HIST("hLumiTVXafterBCcutsRCT"))->Fill(srun, i, lumiTVX);

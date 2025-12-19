@@ -29,44 +29,44 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGUD/Core/SGSelector.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
+#include "Tools/ML/model.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include <Math/Vector4D.h>
-#include <cmath>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+
 #include <array>
+#include <cmath>
 #include <cstdlib>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessMLTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/Core/SGSelector.h"
-#include "Tools/ML/MlResponse.h"
-#include "Tools/ML/model.h"
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 // constants
 const float ctauXiPDG = 4.91;     // Xi PDG lifetime
@@ -99,6 +99,19 @@ struct QuarkoniaToHyperons {
   // for running over skimmed dataset
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "If running over skimmed data, switch it on true"};
   Configurable<std::string> cfgSkimmedTrigger{"cfgSkimmedTrigger", "fDoubleXi,fTripleXi,fQuadrupleXi", "(std::string) Comma separated list of triggers of interest"};
+
+  // Custom grouping
+  std::vector<std::vector<int>> v0sGrouped;
+  std::vector<std::vector<int>> cascadesGrouped;
+
+  // vector of selected V0/cascade indices
+  std::vector<int> selK0ShortIndices;
+  std::vector<int> selLambdaIndices;
+  std::vector<int> selAntiLambdaIndices;
+  std::vector<int> selXiIndices;
+  std::vector<int> selAntiXiIndices;
+  std::vector<int> selOmIndices;
+  std::vector<int> selAntiOmIndices;
 
   // switch on/off event selections
   Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
@@ -1360,7 +1373,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TV0>
-  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
+  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<int>& selK0ShortIndices, std::vector<int>& selLambdaIndices, std::vector<int>& selAntiLambdaIndices /*, int v0TableOffset*/)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1418,9 +1431,12 @@ struct QuarkoniaToHyperons {
     }
 
     // need local index because of the grouping of collisions
-    selK0ShortIndices[v0.globalIndex() - v0TableOffset] = passK0ShortSelections;
-    selLambdaIndices[v0.globalIndex() - v0TableOffset] = passLambdaSelections;
-    selAntiLambdaIndices[v0.globalIndex() - v0TableOffset] = passAntiLambdaSelections;
+    if (passK0ShortSelections)
+      selK0ShortIndices.push_back(v0.globalIndex());
+    if (passLambdaSelections)
+      selLambdaIndices.push_back(v0.globalIndex());
+    if (passAntiLambdaSelections)
+      selAntiLambdaIndices.push_back(v0.globalIndex());
   }
 
   template <typename TCollision, typename THyperon>
@@ -1895,27 +1911,20 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TCollision, typename THyperons>
-  void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<bool> selHypIndices, std::vector<bool> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
+  void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<int> selHypIndices, std::vector<int> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
   {
     // 1st loop over all v0s/cascades
-    for (const auto& hyperon : fullHyperons) {
-      // select only v0s matching Lambda selections
-      if (!selHypIndices[hyperon.globalIndex() - fullHyperons.offset()]) { // local index needed due to collisions grouping
-        continue;
-      }
+    for (std::size_t iHyp = 0; iHyp < selHypIndices.size(); iHyp++) {
+      auto hyperon = fullHyperons.rawIteratorAt(selHypIndices[iHyp]);
 
       // 2nd loop over all v0s/cascade
-      for (const auto& antiHyperon : fullHyperons) {
-        // select only v0s matching Anti-Lambda selections
-        if (!selAntiHypIndices[antiHyperon.globalIndex() - fullHyperons.offset()]) { // local index needed due to collisions grouping
-          continue;
-        }
-
+      for (std::size_t iAntiHyp = 0; iAntiHyp < selAntiHypIndices.size(); iAntiHyp++) {
         // check we don't look at the same v0s/cascades
-        if (hyperon.globalIndex() == antiHyperon.globalIndex()) {
+        if (selHypIndices[iHyp] == selAntiHypIndices[iAntiHyp]) {
           continue;
         }
 
+        auto antiHyperon = fullHyperons.rawIteratorAt(selAntiHypIndices[iAntiHyp]);
         // check that the two hyperons have different daughter tracks
         if (!checkTrackIndices(hyperon, antiHyperon)) {
           continue;
@@ -1926,155 +1935,209 @@ struct QuarkoniaToHyperons {
       } // end antiHyperon loop
     } // end hyperon loop
 
+    // for (const auto& hyperon : fullHyperons) {
+    //   // select only v0s matching Lambda selections
+    //   if (!selHypIndices[hyperon.globalIndex() /*- fullHyperons.offset()*/]) { // local index needed due to collisions grouping
+    //     continue;
+    //   }
+
+    //   // 2nd loop over all v0s/cascade
+    //   for (const auto& antiHyperon : fullHyperons) {
+    //     // select only v0s matching Anti-Lambda selections
+    //     if (!selAntiHypIndices[antiHyperon.globalIndex() /*- fullHyperons.offset()*/]) { // local index needed due to collisions grouping
+    //       continue;
+    //     }
+
+    //     // check we don't look at the same v0s/cascades
+    //     if (hyperon.globalIndex() == antiHyperon.globalIndex()) {
+    //       continue;
+    //     }
+
+    //     // check that the two hyperons have different daughter tracks
+    //     if (!checkTrackIndices(hyperon, antiHyperon)) {
+    //       continue;
+    //     }
+
+    //     // form V0 pairs and fill histograms
+    //     analyseHyperonPairCandidate(collision, hyperon, antiHyperon, centrality, gapSide, type);
+    //   } // end antiHyperon loop
+    // } // end hyperon loop
+
     return;
   }
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0Candidates const& fullV0s, CascadeCandidates const& fullCascades, DauTracks const&)
   {
-    // Fire up CCDB
-    if (cfgSkimmedProcessing ||
-        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
-        (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
-        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
-      initCCDB(collision);
+    // Custom grouping
+    v0sGrouped.clear();
+    cascadesGrouped.clear();
+    v0sGrouped.resize(collisions.size());
+    cascadesGrouped.resize(collisions.size());
+
+    for (const auto& v0 : fullV0s) {
+      v0sGrouped[v0.straCollisionId()].push_back(v0.globalIndex());
+    }
+    for (const auto& cascade : fullCascades) {
+      cascadesGrouped[cascade.straCollisionId()].push_back(cascade.globalIndex());
     }
 
-    if (!isEventAccepted(collision, true)) {
-      return;
-    }
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      if (cfgSkimmedProcessing ||
+          (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+          (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
+          (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
+        initCCDB(collision);
+      }
 
-    if (cfgSkimmedProcessing) {
-      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
-    }
+      if (!isEventAccepted(collision, true)) {
+        return;
+      }
 
-    float centrality = -1;
-    int selGapSide = -1; // only useful in case one wants to use this task in Pb-Pb UPC
-    fillEventHistograms(collision, centrality, selGapSide);
+      if (cfgSkimmedProcessing) {
+        zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
+      }
 
-    // __________________________________________
-    // perform main analysis
-    //
-    if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
-      std::vector<bool> selK0ShortIndices(fullV0s.size());
-      std::vector<bool> selLambdaIndices(fullV0s.size());
-      std::vector<bool> selAntiLambdaIndices(fullV0s.size());
-      for (const auto& v0 : fullV0s) {
-        if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
-          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+      float centrality = -1;
+      int selGapSide = -1; // only useful in case one wants to use this task in Pb-Pb UPC
+      fillEventHistograms(collision, centrality, selGapSide);
 
-        if (v0.v0Type() != v0Selections.v0TypeSelection && v0Selections.v0TypeSelection > -1)
-          continue; // skip V0s that are not standard
+      // __________________________________________
+      // perform main analysis
+      //
+      if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
+        std::size_t nV0sThisColl = v0sGrouped[collision.globalIndex()].size();
+        selK0ShortIndices.clear();
+        selLambdaIndices.clear();
+        selAntiLambdaIndices.clear();
+        for (std::size_t i = 0; i < nV0sThisColl; i++) {
+          auto v0 = fullV0s.rawIteratorAt(v0sGrouped[collision.globalIndex()][i]);
 
-        uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
+          if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
+            continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
-        // consider for histograms for all species
-        selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
-        selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
+          if (v0.v0Type() != v0Selections.v0TypeSelection && v0Selections.v0TypeSelection > -1)
+            continue; // skip V0s that are not standard
 
-        analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
-      } // end v0 loop
+          uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
 
-      // count the number of K0s, Lambda and AntiLambdas passsing the selections
-      int nK0Shorts = std::count(selK0ShortIndices.begin(), selK0ShortIndices.end(), true);
-      int nLambdas = std::count(selLambdaIndices.begin(), selLambdaIndices.end(), true);
-      int nAntiLambdas = std::count(selAntiLambdaIndices.begin(), selAntiLambdaIndices.end(), true);
+          // consider for histograms for all species
+          selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
+          selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
 
-      if (buildK0sK0sPairs) {
-        // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-        histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
+          analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices /*, fullV0s.offset()*/);
+        } // end v0 loop
 
-        // Check the number of K0Short
-        // needs at least 2 to form K0s-K0s pairs
-        if (nK0Shorts >= 2) { // consider K0s K0s pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
+        // count the number of K0s, Lambda and AntiLambdas passsing the selections
+        std::size_t nK0Shorts = selK0ShortIndices.size();
+        std::size_t nLambdas = selLambdaIndices.size();
+        std::size_t nAntiLambdas = selAntiLambdaIndices.size();
+
+        if (buildK0sK0sPairs) {
+          // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+          histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
+
+          // Check the number of K0Short
+          // needs at least 2 to form K0s-K0s pairs
+          if (nK0Shorts >= 2) { // consider K0s K0s pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
+          }
+        }
+
+        if (buildLaLaBarPairs) {
+          // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+          histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+          histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+
+          // Check the number of Lambdas and antiLambdas
+          // needs at least 1 of each
+          if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+          }
+          if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
+          }
+          if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+          }
         }
       }
 
-      if (buildLaLaBarPairs) {
+      if (buildXiXiBarPairs || buildOmOmBarPairs) { // Look at Cascades
+        std::size_t nCascadesThisColl = cascadesGrouped[collision.globalIndex()].size();
+
+        selXiIndices.clear();
+        selAntiXiIndices.clear();
+        selOmIndices.clear();
+        selAntiOmIndices.clear();
+        for (std::size_t i = 0; i < nCascadesThisColl; i++) {
+          auto cascade = fullCascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
+
+          if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
+              std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
+              std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
+            continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+
+          if (buildXiXiBarPairs) {
+            if (isCascadeSelected(cascade, collision, cascade.yXi(), true)) {
+              if (cascade.sign() < 0) {
+                selXiIndices.push_back(cascade.globalIndex());
+              } else {
+                selAntiXiIndices.push_back(cascade.globalIndex());
+              }
+            }
+          }
+          if (buildOmOmBarPairs) {
+            if (isCascadeSelected(cascade, collision, cascade.yOmega(), false)) {
+              if (cascade.sign() < 0) {
+                selOmIndices.push_back(cascade.globalIndex());
+              } else {
+                selAntiOmIndices.push_back(cascade.globalIndex());
+              }
+            }
+          }
+        } // end cascade loop
+
+        // count the number of Xi and antiXi passsing the selections
+        std::size_t nXis = selXiIndices.size();
+        std::size_t nAntiXis = selAntiXiIndices.size();
+        std::size_t nOmegas = selOmIndices.size();
+        std::size_t nAntiOmegas = selAntiOmIndices.size();
+
         // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-        histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
-        histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
-
-        // Check the number of Lambdas and antiLambdas
-        // needs at least 1 of each
-        if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
-        }
-        if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
-        }
-        if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
-        }
-      }
-    }
-
-    if (buildXiXiBarPairs || buildOmOmBarPairs) { // Look at Cascades
-      std::vector<bool> selXiIndices(fullCascades.size());
-      std::vector<bool> selAntiXiIndices(fullCascades.size());
-      std::vector<bool> selOmIndices(fullCascades.size());
-      std::vector<bool> selAntiOmIndices(fullCascades.size());
-      for (const auto& cascade : fullCascades) {
-        if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
-            std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
-            std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
-          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
-
         if (buildXiXiBarPairs) {
-          if (cascade.sign() < 0) {
-            selXiIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, cascade.yXi(), true);
-          } else {
-            selAntiXiIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, cascade.yXi(), true);
+          histos.fill(HIST("XiXiBar/h2dNbrOfXiVsCentrality"), centrality, nXis);
+          histos.fill(HIST("XiXiBar/h2dNbrOfAntiXiVsCentrality"), centrality, nAntiXis);
+
+          // Check the number of Lambdas and antiLambdas
+          // needs at least 1 of each
+          if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
+          }
+          if (buildSameSignPairs && nXis > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
+          }
+          if (buildSameSignPairs && nAntiXis > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
           }
         }
         if (buildOmOmBarPairs) {
-          if (cascade.sign() < 0) {
-            selOmIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, cascade.yOmega(), false);
-          } else {
-            selAntiOmIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, cascade.yOmega(), false);
+          histos.fill(HIST("OmOmBar/h2dNbrOfOmegaVsCentrality"), centrality, nOmegas);
+          histos.fill(HIST("OmOmBar/h2dNbrOfAntiOmegaVsCentrality"), centrality, nAntiOmegas);
+
+          // Check the number of Lambdas and antiLambdas
+          // needs at least 1 of each
+          if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
           }
-        }
-      } // end cascade loop
-
-      // count the number of Xi and antiXi passsing the selections
-      int nXis = std::count(selXiIndices.begin(), selXiIndices.end(), true);
-      int nAntiXis = std::count(selAntiXiIndices.begin(), selAntiXiIndices.end(), true);
-      int nOmegas = std::count(selOmIndices.begin(), selOmIndices.end(), true);
-      int nAntiOmegas = std::count(selAntiOmIndices.begin(), selAntiOmIndices.end(), true);
-
-      // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-      if (buildXiXiBarPairs) {
-        histos.fill(HIST("XiXiBar/h2dNbrOfXiVsCentrality"), centrality, nXis);
-        histos.fill(HIST("XiXiBar/h2dNbrOfAntiXiVsCentrality"), centrality, nAntiXis);
-
-        // Check the number of Lambdas and antiLambdas
-        // needs at least 1 of each
-        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
-        }
-        if (buildSameSignPairs && nXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
-        }
-        if (buildSameSignPairs && nAntiXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
-        }
-      }
-      if (buildOmOmBarPairs) {
-        histos.fill(HIST("OmOmBar/h2dNbrOfOmegaVsCentrality"), centrality, nOmegas);
-        histos.fill(HIST("OmOmBar/h2dNbrOfAntiOmegaVsCentrality"), centrality, nAntiOmegas);
-
-        // Check the number of Lambdas and antiLambdas
-        // needs at least 1 of each
-        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
-        }
-        if (buildSameSignPairs && nOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
-        }
-        if (buildSameSignPairs && nAntiOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
+          if (buildSameSignPairs && nOmegas > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
+          }
+          if (buildSameSignPairs && nAntiOmegas > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
+          }
         }
       }
     }
@@ -2082,170 +2145,196 @@ struct QuarkoniaToHyperons {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0MCCandidates const& fullV0s, CascadeMCCandidates const& fullCascades, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
-    // Fire up CCDB
-    if (cfgSkimmedProcessing ||
-        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
-        (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
-        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
-      initCCDB(collision);
+    // Custom grouping
+    v0sGrouped.clear();
+    cascadesGrouped.clear();
+    v0sGrouped.resize(collisions.size());
+    cascadesGrouped.resize(collisions.size());
+
+    for (const auto& v0 : fullV0s) {
+      v0sGrouped[v0.straCollisionId()].push_back(v0.globalIndex());
+    }
+    for (const auto& cascade : fullCascades) {
+      cascadesGrouped[cascade.straCollisionId()].push_back(cascade.globalIndex());
     }
 
-    if (!isEventAccepted(collision, true)) {
-      return;
-    }
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      if (cfgSkimmedProcessing ||
+          (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+          (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
+          (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
+        initCCDB(collision);
+      }
 
-    if (cfgSkimmedProcessing) {
-      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
-    }
+      if (!isEventAccepted(collision, true)) {
+        return;
+      }
 
-    float centrality = -1;
-    int selGapSide = -1; // only useful in case one wants to use this task in Pb-Pb UPC
-    fillEventHistograms(collision, centrality, selGapSide);
+      if (cfgSkimmedProcessing) {
+        zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
+      }
 
-    // __________________________________________
-    // perform main analysis
-    if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
-      std::vector<bool> selK0ShortIndices(fullV0s.size());
-      std::vector<bool> selLambdaIndices(fullV0s.size());
-      std::vector<bool> selAntiLambdaIndices(fullV0s.size());
-      for (const auto& v0 : fullV0s) {
-        if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
-          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+      float centrality = -1;
+      int selGapSide = -1; // only useful in case one wants to use this task in Pb-Pb UPC
+      fillEventHistograms(collision, centrality, selGapSide);
 
-        if (!v0.has_v0MCCore())
-          continue;
+      // __________________________________________
+      // perform main analysis
+      if (buildK0sK0sPairs || buildLaLaBarPairs) { // Look at V0s
+        std::size_t nV0sThisColl = v0sGrouped[collision.globalIndex()].size();
+        selK0ShortIndices.clear();
+        selLambdaIndices.clear();
+        selAntiLambdaIndices.clear();
+        for (std::size_t i = 0; i < nV0sThisColl; i++) {
+          auto v0 = fullV0s.rawIteratorAt(v0sGrouped[collision.globalIndex()][i]);
 
-        auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+          if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
+            continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
-        float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
-        float ymc = 1e-3;
-        if (v0MC.pdgCode() == 310)
-          ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-        else if (std::fabs(v0MC.pdgCode()) == 3122)
-          ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
+          if (!v0.has_v0MCCore())
+            continue;
 
-        uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
-        selMap = selMap | computeMCAssociation(v0MC);
+          auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
-        // consider only associated candidates if asked to do so, disregard association
-        if (!doMCAssociation) {
-          selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
-          selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
+          float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
+          float ymc = 1e-3;
+          if (v0MC.pdgCode() == 310)
+            ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+          else if (std::fabs(v0MC.pdgCode()) == 3122)
+            ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
+
+          uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
+          selMap = selMap | computeMCAssociation(v0MC);
+
+          // consider only associated candidates if asked to do so, disregard association
+          if (!doMCAssociation) {
+            selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
+            selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
+          }
+
+          analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices /*, fullV0s.offset()*/);
+        } // end v0 loop
+
+        /// count the number of K0s, Lambda and AntiLambdas passsing the selections
+        std::size_t nK0Shorts = selK0ShortIndices.size();
+        std::size_t nLambdas = selLambdaIndices.size();
+        std::size_t nAntiLambdas = selAntiLambdaIndices.size();
+
+        if (buildK0sK0sPairs) {
+          // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+          histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
+
+          // Check the number of K0Short
+          // needs at least 2 to form K0s-K0s pairs
+          if (nK0Shorts >= 2) { // consider K0s K0s pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
+          }
         }
 
-        analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
-      } // end v0 loop
+        if (buildLaLaBarPairs) {
+          // fill the histograms with the number of reconstructed Lambda/antiLambda per collision
+          histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+          histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
 
-      /// count the number of K0s, Lambda and AntiLambdas passsing the selections
-      int nK0Shorts = std::count(selK0ShortIndices.begin(), selK0ShortIndices.end(), true);
-      int nLambdas = std::count(selLambdaIndices.begin(), selLambdaIndices.end(), true);
-      int nAntiLambdas = std::count(selAntiLambdaIndices.begin(), selAntiLambdaIndices.end(), true);
+          if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+          }
+          if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
+          }
+          if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
+          }
+        }
+      }
 
-      if (buildK0sK0sPairs) {
+      if (buildXiXiBarPairs || buildOmOmBarPairs) { // Look at Cascades
+        std::size_t nCascadesThisColl = cascadesGrouped[collision.globalIndex()].size();
+
+        selXiIndices.clear();
+        selAntiXiIndices.clear();
+        selOmIndices.clear();
+        selAntiOmIndices.clear();
+        for (std::size_t i = 0; i < nCascadesThisColl; i++) {
+          auto cascade = fullCascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
+
+          if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
+              std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
+              std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
+            continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+
+          if (!cascade.has_cascMCCore())
+            continue;
+
+          auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
+
+          float ymc = 1e-3;
+          if (std::fabs(cascadeMC.pdgCode()) == 3312)
+            ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
+          else if (std::fabs(cascadeMC.pdgCode()) == 3334)
+            ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
+
+          if (buildXiXiBarPairs) {
+            if (isCascadeSelected(cascade, collision, ymc, true)) {
+              if (cascade.sign() < 0) {
+                selXiIndices.push_back(cascade.globalIndex());
+              } else {
+                selAntiXiIndices.push_back(cascade.globalIndex());
+              }
+            }
+          }
+          if (buildOmOmBarPairs) {
+            if (isCascadeSelected(cascade, collision, ymc, false)) {
+              if (cascade.sign() < 0) {
+                selOmIndices.push_back(cascade.globalIndex());
+              } else {
+                selAntiOmIndices.push_back(cascade.globalIndex());
+              }
+            }
+          }
+        } // end cascade loop
+
+        // count the number of Xi and antiXi passsing the selections
+        std::size_t nXis = selXiIndices.size();
+        std::size_t nAntiXis = selAntiXiIndices.size();
+        std::size_t nOmegas = selOmIndices.size();
+        std::size_t nAntiOmegas = selAntiOmIndices.size();
+
         // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-        histos.fill(HIST("K0sK0s/h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
-
-        // Check the number of K0Short
-        // needs at least 2 to form K0s-K0s pairs
-        if (nK0Shorts >= 2) { // consider K0s K0s pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selK0ShortIndices, selK0ShortIndices, centrality, selGapSide, 0);
-        }
-      }
-
-      if (buildLaLaBarPairs) {
-        // fill the histograms with the number of reconstructed Lambda/antiLambda per collision
-        histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
-        histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
-
-        if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
-        }
-        if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
-        }
-        if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
-          buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
-        }
-      }
-    }
-
-    if (buildXiXiBarPairs || buildOmOmBarPairs) { // Look at Cascades
-      std::vector<bool> selXiIndices(fullCascades.size());
-      std::vector<bool> selAntiXiIndices(fullCascades.size());
-      std::vector<bool> selOmIndices(fullCascades.size());
-      std::vector<bool> selAntiOmIndices(fullCascades.size());
-      for (const auto& cascade : fullCascades) {
-        if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
-            std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
-            std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
-          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
-
-        if (!cascade.has_cascMCCore())
-          continue;
-
-        auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
-
-        float ymc = 1e-3;
-        if (std::fabs(cascadeMC.pdgCode()) == 3312)
-          ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
-        else if (std::fabs(cascadeMC.pdgCode()) == 3334)
-          ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
-
         if (buildXiXiBarPairs) {
-          if (cascade.sign() < 0) {
-            selXiIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, ymc, true);
-          } else {
-            selAntiXiIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, ymc, true);
+          histos.fill(HIST("XiXiBar/h2dNbrOfXiVsCentrality"), centrality, nXis);
+          histos.fill(HIST("XiXiBar/h2dNbrOfAntiXiVsCentrality"), centrality, nAntiXis);
+
+          // Check the number of Lambdas and antiLambdas
+          // needs at least 1 of each
+          if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
+          }
+          if (buildSameSignPairs && nXis > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
+          }
+          if (buildSameSignPairs && nAntiXis > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
           }
         }
         if (buildOmOmBarPairs) {
-          if (cascade.sign() < 0) {
-            selOmIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, ymc, false);
-          } else {
-            selAntiOmIndices[cascade.globalIndex() - fullCascades.offset()] = isCascadeSelected(cascade, collision, ymc, false);
+          histos.fill(HIST("OmOmBar/h2dNbrOfOmegaVsCentrality"), centrality, nOmegas);
+          histos.fill(HIST("OmOmBar/h2dNbrOfAntiOmegaVsCentrality"), centrality, nAntiOmegas);
+
+          // Check the number of Lambdas and antiLambdas
+          // needs at least 1 of each
+          if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
           }
-        }
-      } // end cascade loop
-
-      // count the number of Xi and antiXi passsing the selections
-      int nXis = std::count(selXiIndices.begin(), selXiIndices.end(), true);
-      int nAntiXis = std::count(selAntiXiIndices.begin(), selAntiXiIndices.end(), true);
-      int nOmegas = std::count(selOmIndices.begin(), selOmIndices.end(), true);
-      int nAntiOmegas = std::count(selAntiOmIndices.begin(), selAntiOmIndices.end(), true);
-
-      // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
-      if (buildXiXiBarPairs) {
-        histos.fill(HIST("XiXiBar/h2dNbrOfXiVsCentrality"), centrality, nXis);
-        histos.fill(HIST("XiXiBar/h2dNbrOfAntiXiVsCentrality"), centrality, nAntiXis);
-
-        // Check the number of Lambdas and antiLambdas
-        // needs at least 1 of each
-        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
-        }
-        if (buildSameSignPairs && nXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 2);
-        }
-        if (buildSameSignPairs && nAntiXis > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 2);
-        }
-      }
-      if (buildOmOmBarPairs) {
-        histos.fill(HIST("OmOmBar/h2dNbrOfOmegaVsCentrality"), centrality, nOmegas);
-        histos.fill(HIST("OmOmBar/h2dNbrOfAntiOmegaVsCentrality"), centrality, nAntiOmegas);
-
-        // Check the number of Lambdas and antiLambdas
-        // needs at least 1 of each
-        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
-        }
-        if (buildSameSignPairs && nOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
-        }
-        if (buildSameSignPairs && nAntiOmegas > 1) {
-          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
+          if (buildSameSignPairs && nOmegas > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 3);
+          }
+          if (buildSameSignPairs && nAntiOmegas > 1) {
+            buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 3);
+          }
         }
       }
     }

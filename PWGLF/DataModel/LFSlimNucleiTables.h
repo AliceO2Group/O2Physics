@@ -54,6 +54,7 @@ DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
 DECLARE_SOA_COLUMN(MotherDecRad, motherDecRad, float);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
+DECLARE_SOA_COLUMN(McProcess, mcProcess, uint64_t);
 
 } // namespace NucleiTableNS
 
@@ -184,6 +185,23 @@ DECLARE_SOA_TABLE(NucleiPairTable, "AOD", "NUCLEIPAIRTABLE",
                   NucleiPairTableNS::DCAz2,
                   NucleiPairTableNS::ClusterSizesITS2,
                   NucleiPairTableNS::Flags2);
+
+// Reduced table
+DECLARE_SOA_TABLE(NucleiTableRed, "AOD", "NUCLEITABLERED",
+                  NucleiTableNS::Pt,
+                  NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
+                  NucleiTableNS::TPCInnerParam,
+                  NucleiTableNS::ITSclusterSizes,
+                  NucleiTableNS::TPCsignal,
+                  NucleiTableNS::Beta,
+                  NucleiTableNS::DCAxy,
+                  NucleiTableNS::DCAz,
+                  NucleiTableNS::Flags,
+                  NucleiTableNS::gPt,
+                  NucleiTableNS::McProcess,
+                  NucleiTableNS::PDGcode,
+                  NucleiTableNS::MotherPDGcode);
 
 } // namespace o2::aod
 

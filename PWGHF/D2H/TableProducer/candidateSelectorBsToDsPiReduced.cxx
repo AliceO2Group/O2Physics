@@ -93,11 +93,10 @@ struct HfCandidateSelectorBsToDsPiReduced {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseBsToDsPi<float> hfMlResponse;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
-  HfHelper hfHelper;
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
@@ -156,7 +155,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
   /// \param hfCandsBs Bs candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the charm-hadron data creator
-  template <bool withDmesMl, typename Cands>
+  template <bool WithDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsBs,
                     TracksPion const&,
                     HfCandBsConfigs const&)
@@ -172,7 +171,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
       }
 
       // topological cuts
-      if (!hfHelper.selectionBsToDsPiTopol(hfCandBs, cuts, binsPt)) {
+      if (!HfHelper::selectionBsToDsPiTopol(hfCandBs, cuts, binsPt)) {
         hfSelBsToDsPiCandidate(statusBsToDsPi);
         if (applyBsMl) {
           hfMlBsToDsPiCandidate(outputMl);
@@ -180,8 +179,8 @@ struct HfCandidateSelectorBsToDsPiReduced {
         continue;
       }
 
-      if constexpr (withDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandBs, cutsDmesMl, binsPtDmesMl)) {
+      if constexpr (WithDmesMl) { // we include it in the topological selections
+        if (!HfHelper::selectionDmesMlScoresForBReduced(hfCandBs, cutsDmesMl, binsPtDmesMl)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyBsMl) {
             hfMlBsToDsPiCandidate(outputMl);
@@ -204,7 +203,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
-        if (!hfHelper.selectionBsToDsPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionBsToDsPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyBsMl) {
             hfMlBsToDsPiCandidate(outputMl);
@@ -219,8 +218,8 @@ struct HfCandidateSelectorBsToDsPiReduced {
 
       if (applyBsMl) {
         // Bs ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandBs, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandBs, trackPi);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
         hfMlBsToDsPiCandidate(outputMl);
 
         if (!isSelectedMl) {

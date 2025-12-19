@@ -94,6 +94,7 @@ struct JetTaggerHFTask {
   Configurable<float> minSignImpXYSig{"minSignImpXYSig", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
   Configurable<float> tagPointForIPxyz{"tagPointForIPxyz", 2.5, "tagging working point for IP xyz"};
+  Configurable<int64_t> timestampCCDBForIP{"timestampCCDBForIP", -1, "timestamp of the resolution function file for IP method used to query in CCDB"};
   // configuration about SV method
   Configurable<float> tagPointForSV{"tagPointForSV", 40, "tagging working point for SV"};
   Configurable<float> tagPointForSVxyz{"tagPointForSVxyz", 40, "tagging working point for SV xyz"};
@@ -119,6 +120,9 @@ struct JetTaggerHFTask {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // GNN configuration
+  Configurable<float> jetpTMin{"jetpTMin", 5., "minimum jet pT"};
+  Configurable<float> dbMin{"dbMin", -10., "minimum GNN Db"};
+  Configurable<float> dbMax{"dbMax", 20., "maximum GNN Db"};
   Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
   Configurable<int64_t> nJetFeat{"nJetFeat", 4, "Number of jet GNN input features"};
   Configurable<int64_t> nTrkFeat{"nTrkFeat", 13, "Number of track GNN input features"};
@@ -273,23 +277,37 @@ struct JetTaggerHFTask {
       }
     }
     if (doprocessAlgorithmGNN) {
-      if constexpr (isMC) {
-        switch (origin) {
-          case 2:
-            registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
-            break;
-          case 1:
-            registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
-            break;
-          case 0:
-          case 3:
-            registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
-            break;
-          default:
-            LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+      if (jet.pt() >= jetpTMin) {
+        float dbRange;
+        if (scoreML[jet.globalIndex()] < dbMin) {
+          dbRange = 0.5; // underflow
+        } else if (scoreML[jet.globalIndex()] < dbMax) {
+          dbRange = 1.5; // in range
+        } else {
+          dbRange = 2.5; // overflow
         }
+        registry.fill(HIST("h2_count_db"), 3.5, dbRange); // incl jet
+        if constexpr (isMC) {
+          switch (origin) {
+            case 2:
+              registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 0.5, dbRange); // b-jet
+              break;
+            case 1:
+              registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 1.5, dbRange); // c-jet
+              break;
+            case 0:
+            case 3:
+              registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 2.5, dbRange); // lf-jet
+              break;
+            default:
+              LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+          }
+        }
+        registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
       }
-      registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
     }
     taggingTable(decisionNonML[jet.globalIndex()], jetProb, scoreML[jet.globalIndex()]);
   }
@@ -324,7 +342,7 @@ struct JetTaggerHFTask {
         return;
       }
       for (int i = 0; i < mIPmethodResolutionFunctionSize; i++) {
-        targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, -1));
+        targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, timestampCCDBForIP));
       }
     };
 
@@ -508,6 +526,17 @@ struct JetTaggerHFTask {
 
     if (doprocessAlgorithmGNN) {
       tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst);
+
+      registry.add("h2_count_db", "#it{D}_{b} underflow/overflow;Jet flavour;#it{D}_{b} range", {HistType::kTH2F, {{4, 0., 4.}, {3, 0., 3.}}});
+      auto h2CountDb = registry.get<TH2>(HIST("h2_count_db"));
+      h2CountDb->GetXaxis()->SetBinLabel(1, "b-jet");
+      h2CountDb->GetXaxis()->SetBinLabel(2, "c-jet");
+      h2CountDb->GetXaxis()->SetBinLabel(3, "lf-jet");
+      h2CountDb->GetXaxis()->SetBinLabel(4, "incl jet");
+      h2CountDb->GetYaxis()->SetBinLabel(1, "underflow");
+      h2CountDb->GetYaxis()->SetBinLabel(2, "in range");
+      h2CountDb->GetYaxis()->SetBinLabel(3, "overflow");
+
       registry.add("h_db_b", "#it{D}_{b} b-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
       registry.add("h_db_c", "#it{D}_{b} c-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
       registry.add("h_db_lf", "#it{D}_{b} lf-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
@@ -543,7 +572,7 @@ struct JetTaggerHFTask {
       }
 
       if (bMlResponse.getOutputNodes() > 1) {
-        auto mDb = [](std::vector<float> scores, float fC) {
+        auto mDb = [](const std::vector<float>& scores, float fC) {
           return std::log(scores[2] / (fC * scores[1] + (1 - fC) * scores[0]));
         };
 

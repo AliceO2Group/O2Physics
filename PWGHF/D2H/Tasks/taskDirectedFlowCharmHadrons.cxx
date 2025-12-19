@@ -71,7 +71,6 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
-  HfHelper hfHelper;
   EventPlaneHelper epHelper;
   SliceCache cache;
   HfEventSelection hfEvSel; // event selection and monitoring
@@ -152,6 +151,8 @@ struct HfTaskDirectedFlowCharmHadrons {
       registry.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQxtQxpvscentpteta", "hpQxtQxpvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpQytQypvscentpteta", "hpQytQypvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, axes, true);
@@ -199,12 +200,12 @@ struct HfTaskDirectedFlowCharmHadrons {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
-  template <DecayChannel channel, typename T1, typename Trk>
+  template <DecayChannel Channel, typename T1, typename Trk>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                        T1 const& candidates,
                        Trk const& /*tracks*/)
   {
-    double cent = getCentrality(collision);
+    double const cent = getCentrality(collision);
     if (cent < centralityMin || cent > centralityMax) {
       return;
     }
@@ -251,32 +252,35 @@ struct HfTaskDirectedFlowCharmHadrons {
       double signDstarCand = 0.0;
       std::vector<double> outputMl = {-999., -999.};
       if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
-        massCand = hfHelper.invMassDplusToPiKPi(candidate);
-        rapCand = hfHelper.yDplus(candidate);
+        massCand = HfHelper::invMassDplusToPiKPi(candidate);
+        rapCand = HfHelper::yDplus(candidate);
         auto trackprong0 = candidate.template prong0_as<Trk>();
         sign = trackprong0.sign();
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
-          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+          }
         }
       } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
-        switch (channel) {
+        switch (Channel) {
           case DecayChannel::D0ToPiK:
-            massCand = hfHelper.invMassD0ToPiK(candidate);
-            rapCand = hfHelper.yD0(candidate);
+            massCand = HfHelper::invMassD0ToPiK(candidate);
+            rapCand = HfHelper::yD0(candidate);
             sign = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
+              }
             }
             break;
           case DecayChannel::D0ToKPi:
-            massCand = hfHelper.invMassD0barToKPi(candidate);
-            rapCand = hfHelper.yD0(candidate);
+            massCand = HfHelper::invMassD0barToKPi(candidate);
+            rapCand = HfHelper::yD0(candidate);
             sign = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
+              }
             }
             break;
           default:
@@ -292,22 +296,25 @@ struct HfTaskDirectedFlowCharmHadrons {
           rapCand = candidate.y(candidate.invMassAntiDstar());
         }
         if constexpr (std::is_same_v<T1, CandDstarDataWMl>) {
-          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDstarToD0Pi()[classMl->at(iclass)];
+          }
         }
       }
 
-      double ptCand = candidate.pt();
+      double const ptCand = candidate.pt();
       double etaCand = candidate.eta();
-      double phiCand = candidate.phi();
-      double cosNPhi = std::cos(phiCand);
-      double sinNPhi = std::sin(phiCand);
+      double const phiCand = candidate.phi();
+      double const cosNPhi = std::cos(phiCand);
+      double const sinNPhi = std::sin(phiCand);
 
-      if (userap)
+      if (userap) {
         etaCand = rapCand;
+      }
 
-      if (selectionFlagDstar)
+      if (selectionFlagDstar) {
         sign = signDstarCand;
+      }
 
       auto ux = cosNPhi; // real part of candidate q vector
       auto uy = sinNPhi; // imaginary part of candidate q vector
@@ -336,6 +343,8 @@ struct HfTaskDirectedFlowCharmHadrons {
           registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpQxtQxpvscentpteta"), massCand, cent, ptCand, etaCand, qxtQxp, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpQytQypvscentpteta"), massCand, cent, ptCand, etaCand, qytQyp, sign, outputMl[0], outputMl[1]);
 
           registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign, outputMl[0], outputMl[1]);

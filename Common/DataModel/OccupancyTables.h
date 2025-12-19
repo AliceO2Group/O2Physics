@@ -14,10 +14,11 @@
 ///
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Marian I Ivanov (marian.ivanov@cern.ch)
 
-#include <vector>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <cstdint>
+#include <vector>
 
 #ifndef COMMON_DATAMODEL_OCCUPANCYTABLES_H_
 #define COMMON_DATAMODEL_OCCUPANCYTABLES_H_
@@ -196,10 +197,9 @@ DECLARE_SOA_COLUMN(TfId, tfId, int);
 DECLARE_SOA_COLUMN(BcInTF, bcInTF, int);
 } // namespace occidx
 
-// DECLARE_SOA_TABLE(OccIndexTable, "AOD", "OCCINDEXTABLE", o2::soa::Index<>,
-DECLARE_SOA_INDEX_TABLE_USER(OccIndexTable, Occs, "OCCINDEXTABLE",
-                             o2::aod::occidx::BCId,
-                             o2::aod::occidx::OccId);
+DECLARE_SOA_TABLE(OccIndexTable, "AOD", "OCCINDEXTABLE", o2::soa::Index<>,
+                  o2::aod::occidx::BCId,
+                  o2::aod::occidx::OccId);
 
 DECLARE_SOA_TABLE(BCTFinfoTable, "AOD", "BCTFINFOTABLE", o2::soa::Index<>,
                   o2::aod::occidx::TfId,

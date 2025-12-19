@@ -16,6 +16,7 @@
 
 #include "PWGHF/Core/HfMlResponseXic0ToXiPiKf.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -61,7 +62,7 @@ enum PidInfoStored {
 /// Struct for applying Xic0 -> Xi pi selection cuts
 struct HfCandidateSelectorXic0ToXiPiKf {
   Produces<aod::HfSelToXiPiKf> hfSelToXiPi;
-  Produces<aod::HfMlToXiPiKf> hfMlToXiPi;
+  Produces<aod::HfMlToXiPi> hfMlToXiPi;
 
   // kinematic selections
   Configurable<double> etaTrackCharmBachMax{"etaTrackCharmBachMax", 0.8, "Max absolute value of eta for charm baryon bachelor"};
@@ -137,7 +138,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponse;
-  std::vector<float> outputMlXic0ToXiPiKf = {};
+  std::vector<float> outputMlXic0ToXiPiKf;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPr selectorProton;
@@ -226,7 +227,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
+      int8_t const signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
@@ -237,14 +238,14 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       }
 
       // eta selection
-      double etaV0PosDau = candidate.etaV0PosDau();
-      double etaV0NegDau = candidate.etaV0NegDau();
-      double etaPiFromCasc = candidate.etaBachFromCasc();
-      double etaPiFromCharmBaryon = candidate.etaBachFromCharmBaryon();
+      double const etaV0PosDau = candidate.etaV0PosDau();
+      double const etaV0NegDau = candidate.etaV0NegDau();
+      double const etaPiFromCasc = candidate.etaBachFromCasc();
+      double const etaPiFromCharmBaryon = candidate.etaBachFromCharmBaryon();
       if (std::abs(etaV0PosDau) > etaTrackLFDauMax || std::abs(etaV0NegDau) > etaTrackLFDauMax || std::abs(etaPiFromCasc) > etaTrackLFDauMax || std::abs(etaPiFromCharmBaryon) > etaTrackCharmBachMax) {
         resultSelections = false;
       }
-      double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
+      double const ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
       if (std::abs(ptPiFromCasc) < ptPiFromCascMin) {
         resultSelections = false;
         registry.fill(HIST("hSelPtPiFromCasc"), 0);
@@ -384,9 +385,9 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       bool statusInvMassCascade = false;
       bool statusInvMassCharmBaryon = false;
 
-      double invMassLambda = candidate.invMassLambda();
-      double invMassCascade = candidate.invMassCascade();
-      double invMassCharmBaryon = candidate.invMassCharmBaryon();
+      double const invMassLambda = candidate.invMassLambda();
+      double const invMassCascade = candidate.invMassCascade();
+      double const invMassCharmBaryon = candidate.invMassCharmBaryon();
 
       if (resultSelections) {
         resultSelections = selectionTopolKf(candidate);
@@ -483,12 +484,12 @@ struct HfCandidateSelectorXic0ToXiPiKf {
   {
     auto candpT = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
 
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
 
-    double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+    double const ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
     if (ptPiFromCharmBaryon <= cuts->get(pTBin, "ptPiFromCharmBaryon")) {
       return false;
     }

@@ -14,8 +14,8 @@
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDMATH_H_
-#define FEMTOWORLDMATH_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDMATH_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDMATH_H_
 
 #include "Math/Vector4D.h"
 #include "Math/Boost.h"
@@ -39,10 +39,10 @@ class FemtoWorldMath
   /// \param part2 Particle 2
   /// \param mass2 Mass of particle 2
   template <typename T>
-  static float getkstar(const T& part1, const float mass1, const T& part2, const float mass2)
+  static float getkstar(const T& part1, const float mass1, const T& part2, const float mass2, const float z1 = 1.f, const float z2 = 1.f)
   {
-    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
-    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt() * z1, part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt() * z2, part2.eta(), part2.phi(), mass2);
     const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
 
     const float beta = trackSum.Beta();
@@ -140,4 +140,4 @@ class FemtoWorldMath
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDMATH_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDMATH_H_

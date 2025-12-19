@@ -11,12 +11,17 @@
 
 // This task finds minimum and maximum orbit among all processed bcs
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "CommonConstants/LHCConstants.h"
 #include "OrbitRange.h"
-#include "TMath.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMathBase.h>
+
+#include <cstdint>
 using namespace o2;
 using namespace o2::framework;
 

@@ -22,6 +22,7 @@
 #include <Framework/AnalysisDataModel.h>
 
 #include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {
@@ -85,6 +86,8 @@ DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of th
 DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
 DECLARE_SOA_COLUMN(TpcNSigmaElTrack, tpcNSigmaElTrack, float); //! tpcNSigma of the electron track(TPC PID)
 DECLARE_SOA_COLUMN(TofNSigmaElTrack, tofNSigmaElTrack, float); //! tofNSigma of the electron track(TOF PID)
+DECLARE_SOA_COLUMN(LSMassEE, lSMassEE, std::vector<float>);    //!  mass of the Like sign electron pair
+DECLARE_SOA_COLUMN(ULSMassEE, uLSMassEE, std::vector<float>);  //! mass of UnLike sign electron pair
 DECLARE_SOA_COLUMN(NElPairLS, nElPairLS, int);                 //! Number of Like sign electron pair
 DECLARE_SOA_COLUMN(NElPairUS, nElPairUS, int);                 //! Number of UnLike sign electron pair
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                    //! electron information
@@ -98,6 +101,8 @@ DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
                   hf_corr_sel_electron::PtTrack,
                   hf_corr_sel_electron::TpcNSigmaElTrack,
                   hf_corr_sel_electron::TofNSigmaElTrack,
+                  hf_corr_sel_electron::LSMassEE,
+                  hf_corr_sel_electron::ULSMassEE,
                   hf_corr_sel_electron::NElPairLS,
                   hf_corr_sel_electron::NElPairUS,
                   hf_corr_sel_electron::IsEmcal);

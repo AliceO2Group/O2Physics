@@ -13,6 +13,7 @@
 #define COMMON_CCDB_TRIGGERALIASES_H_
 
 #include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <cstdint>
 #include <map>

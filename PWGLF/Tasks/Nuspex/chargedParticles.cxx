@@ -13,6 +13,8 @@
 /// \brief Task for analysis of charged particle pt spectra vs multiplicity with 2d unfolding.
 /// \author Mario Krüger <mario.kruger@cern.ch>
 
+#include "PWGLF/DataModel/particleCompositionCorrectionTable.h"
+
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -25,6 +27,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
 
+#include <random>
 #include <unordered_set>
 #include <vector>
 
@@ -38,6 +41,19 @@ using aod::track::TrackSelectionFlags;
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 struct ChargedParticles {
+  std::random_device rnd;
+  std::mt19937 gen{rnd()};
+  std::uniform_real_distribution<float> dist{0.f, 1.f};
+  uint32_t getNRepetitons(float scalingFactor)
+  {
+    uint32_t nRepetitions = static_cast<uint32_t>(scalingFactor);
+    float rest = scalingFactor - nRepetitions;
+    if (rest) {
+      nRepetitions += (dist(gen) <= rest) ? 1u : 0u;
+      // LOGP(info, "scalingFactor: {} -> {}", scalingFactor, nRepetitions);
+    }
+    return nRepetitions;
+  };
 
   HistogramRegistry histos;
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -62,9 +78,11 @@ struct ChargedParticles {
     kSystUpDCAxy,
     kSystDownDCAz,
     kSystUpDCAz,
-    kSystITSHits,
+    kSystITSHits, // only relevant for converted data
     kSystDownTPCCrossedRows,
-    kSystUpTPCCrossedRows
+    kSystUpTPCCrossedRows,
+    kSystDownPCC = 120,
+    kSystUpPCC
   };
   Configurable<uint32_t> systMode{"systMode", kSystNominal, "variation for systematic uncertainties"};
   uint16_t trackSelMask{TrackSelectionFlags::kGlobalTrackWoPtEta}; // track selection bitmask (without cut that is being varied)
@@ -80,6 +98,7 @@ struct ChargedParticles {
     bool isAcceptedEventMC{false};
     bool isINELGT0EventMC{false};
     bool isChargedPrimary{false};
+    uint32_t nRepetitions{1u};
   };
   VarContainer vars;
   static constexpr float kMaxVtxZ = 10.f;
@@ -92,7 +111,7 @@ struct ChargedParticles {
   template <typename T>
   bool initTrack(const T& track);
 
-  template <typename C, typename T>
+  template <bool IS_MC, typename C, typename T>
   void initEvent(const C& collision, const T& tracks);
 
   template <typename C, typename P>
@@ -112,9 +131,9 @@ struct ChargedParticles {
   using CollisionTableMCTrue = aod::McCollisions;
   using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
   using TrackTableMC = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
-  using ParticleTableMC = aod::McParticles;
+  using ParticleTableMC = soa::Join<aod::McParticles, aod::ParticleCompositionCorrection>;
   Preslice<TrackTableMC> perCollision = aod::track::collisionId;
-  void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
+  void processMC(CollisionTableMCTrue::iterator const& mcCollision, TrackTableMC const& tracks, CollisionTableMC const& collisions, ParticleTableMC const& particles);
   PROCESS_SWITCH(ChargedParticles, processMC, "process mc", true);
 };
 
@@ -241,7 +260,7 @@ void ChargedParticles::init(InitContext const&)
 //**************************************************************************************************
 void ChargedParticles::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
 {
-  initEvent(collision, tracks);
+  initEvent<false>(collision, tracks);
   processMeas<false>(tracks);
 }
 
@@ -250,7 +269,7 @@ void ChargedParticles::processData(CollisionTableData::iterator const& collision
  * Entrypoint to processes mc.
  */
 //**************************************************************************************************
-void ChargedParticles::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
+void ChargedParticles::processMC(CollisionTableMCTrue::iterator const& mcCollision, TrackTableMC const& tracks, CollisionTableMC const& collisions, ParticleTableMC const& particles)
 {
   histos.fill(HIST("collision_ambiguity"), collisions.size());
 
@@ -270,7 +289,7 @@ void ChargedParticles::processMC(CollisionTableMCTrue::iterator const& mcCollisi
   } else {
     for (const auto& collision : collisions) {
       auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-      initEvent(collision, curTracks);
+      initEvent<true>(collision, curTracks);
       processMeas<true>(curTracks);
       break; // for now look only at first collision...
     }
@@ -302,6 +321,15 @@ bool ChargedParticles::initParticle(const P& particle)
   if (particle.pt() <= ptMinCut || particle.pt() >= ptMaxCut) {
     return false;
   }
+
+  float pccWeight = particle.pccWeight();
+  if (systMode == kSystDownPCC) {
+    pccWeight = particle.pccWeightSysDown();
+  } else if (systMode == kSystUpPCC) {
+    pccWeight = particle.pccWeightSysUp();
+  }
+  vars.nRepetitions = getNRepetitons(pccWeight);
+  // FIXME: in case of nRepetitions = 0 INELGT0 can be wrong
   return true;
 }
 
@@ -334,20 +362,43 @@ bool ChargedParticles::initTrack(const T& track)
  * Check if event is good.
  */
 //**************************************************************************************************
-template <typename C, typename T>
+template <bool IS_MC, typename C, typename T>
 void ChargedParticles::initEvent(const C& collision, const T& tracks)
 {
   vars.multMeas = 0;
   for (const auto& track : tracks) {
     if (initTrack(track)) {
-      ++vars.multMeas;
+      if constexpr (IS_MC) {
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto& particle = track.template mcParticle_as<ParticleTableMC>();
+        if (!initParticle(particle)) {
+          continue;
+        }
+        vars.multMeas += vars.nRepetitions;
+      } else {
+        ++vars.multMeas;
+      }
     }
   }
 
   vars.isAcceptedEvent = false;
   if (std::abs(collision.posZ()) < kMaxVtxZ) {
-    if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
+    if (isRun3) {
+      if (collision.sel8() &&
+          collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+          collision.selection_bit(aod::evsel::kIsVertexITSTPC) &&
+          collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      // !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched) &&
+      // collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
+      // collision.selection_bit(aod::evsel::kNoCollInRofStandard) &&
+      // collision.selection_bit(aod::evsel::kIsVertexTOFmatched)
+      {
+        vars.isAcceptedEvent = true;
+      }
+    } else {
+      if (collision.sel7() && ((doprocessMC) ? true : collision.alias_bit(kINT7))) {
         vars.isAcceptedEvent = true;
       }
     }
@@ -368,7 +419,7 @@ void ChargedParticles::initEventMC(const C& collision, const P& particles)
     if (!initParticle(particle) || !vars.isChargedPrimary) {
       continue;
     }
-    ++vars.multTrue;
+    vars.multTrue += vars.nRepetitions;
   }
   bool isGoodEventClass = (normINELGT0) ? vars.isINELGT0EventMC : (vars.multTrue > 0);
   vars.isAcceptedEventMC = isGoodEventClass && (std::abs(collision.posZ()) < kMaxVtxZ);
@@ -390,9 +441,11 @@ void ChargedParticles::processTrue(const P& particles)
 
   for (const auto& particle : particles) {
     if (initParticle(particle) && vars.isChargedPrimary) {
-      histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
-      if (!vars.isAcceptedEvent) {
-        histos.fill(HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
+      for (auto i = 0u; i < vars.nRepetitions; ++i) {
+        histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
+        if (!vars.isAcceptedEvent) {
+          histos.fill(HIST("multPtSpec_prim_gen_evtloss"), vars.multTrue, particle.pt());
+        }
       }
     }
   }
@@ -441,7 +494,7 @@ void ChargedParticles::processMeas(const T& tracks)
 
       foundParticles.push_back(track.mcParticleId());
 
-      const auto& particle = track.template mcParticle_as<aod::McParticles>();
+      const auto& particle = track.template mcParticle_as<ParticleTableMC>();
 
       if (!vars.isAcceptedEventMC) {
         histos.fill(HIST("multPtSpec_trk_meas_evtcont"), vars.multMeas, track.pt());
@@ -450,19 +503,21 @@ void ChargedParticles::processMeas(const T& tracks)
 
       histos.fill(HIST("multPtSpec_trk_inter"), vars.multTrue, track.pt());
       if (initParticle(particle)) {
-        if (!vars.isChargedPrimary) {
-          histos.fill(HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
-        } else {
-          histos.fill(HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
-          histos.fill(HIST("ptCorrel_prim"), track.pt(), particle.pt());
-          histos.fill(HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
-          histos.fill(HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
+        for (auto i = 0u; i < vars.nRepetitions; ++i) {
+          if (!vars.isChargedPrimary) {
+            histos.fill(HIST("multPtSpec_trk_sec_meas"), vars.multMeas, track.pt());
+          } else {
+            histos.fill(HIST("multCorrel_prim"), vars.multMeas, vars.multTrue);
+            histos.fill(HIST("ptCorrel_prim"), track.pt(), particle.pt());
+            histos.fill(HIST("multPtSpec_prim_meas"), vars.multTrue, particle.pt());
+            histos.fill(HIST("multPtSpec_trk_prim_meas"), vars.multMeas, track.pt());
+          }
         }
       }
     }
   }
 
-  std::unordered_set<int> uniqueIndices(foundParticles.begin(), foundParticles.end());
+  std::unordered_set<int32_t> uniqueIndices(foundParticles.begin(), foundParticles.end());
   for (const auto& mcParticleID : uniqueIndices) {
     histos.fill(HIST("track_ambiguity"), std::count(foundParticles.begin(), foundParticles.end(), mcParticleID));
   }

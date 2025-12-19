@@ -18,6 +18,9 @@
 
 #include "EventSelectionParams.h"
 
+#include <cstddef>
+#include <cstring>
+
 namespace o2::aod::evsel
 {
 const char* selectionLabels[kNsel] = {

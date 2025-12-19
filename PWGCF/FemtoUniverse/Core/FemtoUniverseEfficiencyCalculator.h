@@ -23,6 +23,8 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/Configurable.h"
 
+#include <TH1.h>
+
 #include <algorithm>
 #include <map>
 #include <string>
@@ -36,7 +38,7 @@ enum ParticleNo : size_t {
 };
 
 template <size_t T>
-concept isOneOrTwo = T == ParticleNo::ONE || T == ParticleNo::TWO;
+concept IsOneOrTwo = T == ParticleNo::ONE || T == ParticleNo::TWO;
 
 template <typename T>
 consteval auto getHistDim() -> int
@@ -104,7 +106,7 @@ class EfficiencyCalculator
     auto hEff = hLoaded[partNo - 1];
 
     if (shouldApplyCorrections && hEff) {
-      auto bin = hEff->FindBin(binVars...);
+      auto bin = hEff->FindBin(static_cast<double>(binVars)...);
       auto eff = hEff->GetBinContent(bin);
       weight /= eff > 0 ? eff : 1.0f;
     }
@@ -149,8 +151,11 @@ class EfficiencyCalculator
       LOGF(warn, notify("Histogram \"%s/%ld\" has been loaded, but it is empty"), config->confCCDBPath.value, timestamp);
     }
 
+    auto clonedEffHist = static_cast<HistType*>(hEff->Clone());
+    clonedEffHist->SetDirectory(nullptr);
+
     LOGF(info, notify("Successfully loaded %ld"), timestamp);
-    return hEff;
+    return clonedEffHist;
   }
 
   EfficiencyConfigurableGroup* config{};
@@ -158,7 +163,7 @@ class EfficiencyCalculator
   bool shouldApplyCorrections = false;
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-  std::array<HistType*, 2> hLoaded{};
+  std::array<HistType*, 2> hLoaded{nullptr, nullptr};
 };
 
 } // namespace o2::analysis::femto_universe::efficiency

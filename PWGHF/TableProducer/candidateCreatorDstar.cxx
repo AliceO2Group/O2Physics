@@ -18,13 +18,16 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -107,10 +110,10 @@ struct HfCandidateCreatorDstar {
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
   o2::vertexing::DCAFitterN<2> df;
-  int runNumber;
-  double bz;
+  int runNumber{};
+  double bz{};
   static constexpr float CmToMicrometers = 10000.; // from cm to µm
-  double massPi, massK, massD0;
+  double massPi{}, massK{}, massD0{};
 
   using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -139,6 +142,7 @@ struct HfCandidateCreatorDstar {
      {"QA/hPtD0Prong1", "D^{0} candidates' prong1", {HistType::kTH1F, {ptAxis}}},
      {"QA/hPtD0", "D^{0} candidates", {HistType::kTH1F, {ptAxis}}},
      {"QA/hPtDstar", "D* candidates", {HistType::kTH1F, {ptAxis}}}}};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   /// @brief This function initializes the ccdb setting, vertex fitter and runs function MatLayerCylSet::rectifyPtrFromFile(..args..)
   void init(InitContext const&)
@@ -170,7 +174,7 @@ struct HfCandidateCreatorDstar {
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // init HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, &zorroSummary);
 
     // LOG(info) << "Init Function Invoked";
     massPi = MassPiPlus;
@@ -204,7 +208,7 @@ struct HfCandidateCreatorDstar {
   /// @param rowsTrackIndexD0 D0 table object from trackIndexSkimCreator.cxx
   /// @param tracks track table with Cov object
   /// @param bcWithTimeStamps Bunch Crossing with timestamps
-  template <bool doPvRefit, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename CandsDstar>
+  template <bool DoPvRefit, o2::hf_centrality::CentralityEstimator CentEstimator, typename Coll, typename CandsDstar>
   void runCreatorDstar(Coll const&,
                        CandsDstar const& rowsTrackIndexDstar,
                        aod::Hf2Prongs const&,
@@ -219,7 +223,7 @@ struct HfCandidateCreatorDstar {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexDstar.template collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -249,7 +253,7 @@ struct HfCandidateCreatorDstar {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         // LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
         if (grpo == nullptr) {
           LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
         }
@@ -287,13 +291,13 @@ struct HfCandidateCreatorDstar {
       auto trackD0ProngParVar0 = df.getTrack(0);
       auto trackD0ProngParVar1 = df.getTrack(1);
 
-      std::array<float, 3> pVecD0Prong0;
-      std::array<float, 3> pVecD0Prong1;
+      std::array<float, 3> pVecD0Prong0{};
+      std::array<float, 3> pVecD0Prong1{};
       trackD0ProngParVar0.getPxPyPzGlo(pVecD0Prong0);
       trackD0ProngParVar1.getPxPyPzGlo(pVecD0Prong1);
 
       // This modifies track momenta!
-      if constexpr (doPvRefit) {
+      if constexpr (DoPvRefit) {
         /// use PV refit
         /// Using it in the *HfCand3ProngBase/HfCand2ProngBase* all dynamic columns shall take it into account
         // coordinates
@@ -346,9 +350,9 @@ struct HfCandidateCreatorDstar {
       auto ptD0 = RecoDecay::pt(pVecD0);
 
       // Soft pi momentum vector and sign
-      std::array<float, 3> pVecSoftPi;
+      std::array<float, 3> pVecSoftPi{};
       trackPiParVar.getPxPyPzGlo(pVecSoftPi);
-      int8_t signSoftPi = static_cast<int8_t>(trackPi.sign());
+      auto signSoftPi = static_cast<int8_t>(trackPi.sign());
 
       // D* pt magnitude
       auto ptDstar = RecoDecay::pt(pVecD0, pVecSoftPi);
@@ -496,10 +500,12 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -513,10 +519,12 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -530,10 +538,12 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -575,7 +585,7 @@ struct HfCandidateCreatorDstarExpressions {
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-dstar") == 0) {
+      if (device.name == "hf-candidate-creator-dstar") {
         // init HF event selection helper
         hfEvSelMc.init(device, registry);
         break;
@@ -584,7 +594,7 @@ struct HfCandidateCreatorDstarExpressions {
   }
 
   /// Perform MC Matching.
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>
+  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename CCs, typename McCollisions>
   void runCreatorDstarMc(aod::TracksWMc const& tracks,
                          aod::McParticles const& mcParticles,
                          CCs const& collInfos,
@@ -734,18 +744,18 @@ struct HfCandidateCreatorDstarExpressions {
       float centrality{-1.f};
       o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
-      if constexpr (centEstimator == CentralityEstimator::FT0C) {
+      if constexpr (CentEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (CentEstimator == CentralityEstimator::FT0M) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
         nSplitColl = collSlice.size();
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      } else if constexpr (centEstimator == CentralityEstimator::None) {
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (CentEstimator == CentralityEstimator::None) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, collSlice, centrality);
       }
-      hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
+      hfEvSelMc.fillHistograms<CentEstimator>(mcCollision, rejectionMask, nSplitColl);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
@@ -768,7 +778,7 @@ struct HfCandidateCreatorDstarExpressions {
 
         // D*± → D0(bar) π±
         std::vector<int> listIndexDaughters{};
-        bool isDstarToDzeroPi = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+Pdg::kD0, +kPiPlus}, true, &signDstar, 1, &listIndexDaughters);
+        bool const isDstarToDzeroPi = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+Pdg::kD0, +kPiPlus}, true, &signDstar, 1, &listIndexDaughters);
 
         // D0(bar) → π± K∓
         if (isDstarToDzeroPi) {
@@ -808,9 +818,9 @@ struct HfCandidateCreatorDstarExpressions {
                  aod::McParticles const& mcParticles,
                  McCollisionsNoCents const& collInfos,
                  aod::McCollisions const& mcCollisions,
-                 BCsInfo const& BCsInfo)
+                 BCsInfo const& bcsInfo)
   {
-    runCreatorDstarMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+    runCreatorDstarMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, bcsInfo);
   }
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMc, "Process MC - no centrality", false);
 
@@ -818,9 +828,9 @@ struct HfCandidateCreatorDstarExpressions {
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Cs const& collInfos,
                          aod::McCollisions const& mcCollisions,
-                         BCsInfo const& BCsInfo)
+                         BCsInfo const& bcsInfo)
   {
-    runCreatorDstarMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+    runCreatorDstarMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, bcsInfo);
   }
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMcCentFT0C, "Process MC - FT0c centrality", false);
 
@@ -828,9 +838,9 @@ struct HfCandidateCreatorDstarExpressions {
                          aod::McParticles const& mcParticles,
                          McCollisionsFT0Ms const& collInfos,
                          McCollisionsCentFT0Ms const& mcCollisions,
-                         BCsInfo const& BCsInfo)
+                         BCsInfo const& bcsInfo)
   {
-    runCreatorDstarMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+    runCreatorDstarMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, bcsInfo);
   }
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMcCentFT0M, "Process MC - FT0m centrality", false);
 };

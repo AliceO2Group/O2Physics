@@ -196,8 +196,6 @@ struct HfTaskBplusReduced {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
-
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsD0 = soa::Join<HfRed2Prongs, HfRedPidDau0s, HfRedPidDau1s>;
 
@@ -402,20 +400,20 @@ struct HfTaskBplusReduced {
   /// \param withBplusMl is the flag to enable the filling with ML scores for the B+ candidate
   /// \param candidate is the B+ candidate
   /// \param candidatesD is the table with D0 candidates
-  template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withBplusMl, typename Cand, typename CandsDmes>
+  template <bool DoMc, bool WithDecayTypeCheck, bool WithDmesMl, bool WithBplusMl, typename Cand, typename CandsDmes>
   void fillCand(Cand const& candidate,
                 CandsDmes const& /*candidatesD*/,
                 TracksPion const&)
   {
     auto ptCandBplus = candidate.pt();
-    auto invMassBplus = hfHelper.invMassBplusToD0Pi(candidate);
+    auto invMassBplus = HfHelper::invMassBplusToD0Pi(candidate);
     auto candD0 = candidate.template prong0_as<CandsDmes>();
     auto candPi = candidate.template prong1_as<TracksPion>();
     auto ptD0 = candidate.ptProng0();
     auto invMassD0 = (candPi.signed1Pt() < 0) ? candD0.invMassHypo0() : candD0.invMassHypo1();
-    std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
-    std::array<float, 3> posSvD{candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex()};
-    std::array<float, 3> momD{candD0.pVector()};
+    std::array<float, 3> const posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+    std::array<float, 3> const posSvD{candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex()};
+    std::array<float, 3> const momD{candD0.pVector()};
     auto cpaD0 = RecoDecay::cpa(posPv, posSvD, momD);
     auto cpaXyD0 = RecoDecay::cpaXY(posPv, posSvD, momD);
     auto decLenD0 = RecoDecay::distance(posPv, posSvD);
@@ -424,14 +422,14 @@ struct HfTaskBplusReduced {
     int8_t flagMcMatchRec = 0;
     int8_t flagWrongCollision = 0;
     bool isSignal = false;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
       isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_bplus::DecayTypeMc::BplusToD0PiToKPiPi);
     }
 
     if (fillHistograms) {
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         if (isSignal) {
           registry.fill(HIST("hMassRecSig"), invMassBplus, ptCandBplus);
           registry.fill(HIST("hPtRecSig"), ptCandBplus);
@@ -440,7 +438,7 @@ struct HfTaskBplusReduced {
           registry.fill(HIST("hCpaRecSig"), candidate.cpa(), ptCandBplus);
           registry.fill(HIST("hCpaXyRecSig"), candidate.cpaXY(), ptCandBplus);
           registry.fill(HIST("hEtaRecSig"), candidate.eta(), ptCandBplus);
-          registry.fill(HIST("hRapidityRecSig"), hfHelper.yBplus(candidate), ptCandBplus);
+          registry.fill(HIST("hRapidityRecSig"), HfHelper::yBplus(candidate), ptCandBplus);
           registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandBplus);
           registry.fill(HIST("hDecLengthXyRecSig"), candidate.decayLengthXY(), ptCandBplus);
           registry.fill(HIST("hNormDecLengthXyRecSig"), candidate.decayLengthXYNormalised(), ptCandBplus);
@@ -453,15 +451,15 @@ struct HfTaskBplusReduced {
           registry.fill(HIST("hDecLengthXyD0RecSig"), decLenXyD0, ptD0);
           registry.fill(HIST("hCpaD0RecSig"), cpaD0, ptD0);
           registry.fill(HIST("hCpaXyD0RecSig"), cpaXyD0, ptD0);
-          if constexpr (withDecayTypeCheck) {
+          if constexpr (WithDecayTypeCheck) {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::BplusToD0PiToKPiPi, invMassBplus, ptCandBplus);
           }
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMlScoreBkgDRecSig"), ptD0, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptDRecSig"), ptD0, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptDRecSig"), ptD0, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withBplusMl) {
+          if constexpr (WithBplusMl) {
             registry.fill(HIST("hMlScoreSigBplusRecSig"), ptCandBplus, candidate.mlProbBplusToD0Pi());
           }
         } else if (fillBackground) {
@@ -472,7 +470,7 @@ struct HfTaskBplusReduced {
           registry.fill(HIST("hCpaRecBg"), candidate.cpa(), ptCandBplus);
           registry.fill(HIST("hCpaXyRecBg"), candidate.cpaXY(), ptCandBplus);
           registry.fill(HIST("hEtaRecBg"), candidate.eta(), ptCandBplus);
-          registry.fill(HIST("hRapidityRecBg"), hfHelper.yBplus(candidate), ptCandBplus);
+          registry.fill(HIST("hRapidityRecBg"), HfHelper::yBplus(candidate), ptCandBplus);
           registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandBplus);
           registry.fill(HIST("hDecLengthXyRecBg"), candidate.decayLengthXY(), ptCandBplus);
           registry.fill(HIST("hNormDecLengthXyRecBg"), candidate.decayLengthXYNormalised(), ptCandBplus);
@@ -485,15 +483,15 @@ struct HfTaskBplusReduced {
           registry.fill(HIST("hDecLengthXyDRecBg"), decLenXyD0, ptD0);
           registry.fill(HIST("hCpaDRecBg"), cpaD0, ptD0);
           registry.fill(HIST("hCpaXyDRecBg"), cpaXyD0, ptD0);
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMlScoreBkgDRecBg"), ptD0, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptDRecBg"), ptD0, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptDRecBg"), ptD0, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withBplusMl) {
+          if constexpr (WithBplusMl) {
             registry.fill(HIST("hMlScoreSigBplusRecBg"), ptCandBplus, candidate.mlProbBplusToD0Pi());
           }
-        } else if constexpr (withDecayTypeCheck) {
+        } else if constexpr (WithDecayTypeCheck) {
           if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK, invMassBplus, ptCandBplus);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
@@ -516,39 +514,39 @@ struct HfTaskBplusReduced {
         registry.fill(HIST("hCpa"), candidate.cpa(), ptCandBplus);
         registry.fill(HIST("hCpaXy"), candidate.cpaXY(), ptCandBplus);
         registry.fill(HIST("hEta"), candidate.eta(), ptCandBplus);
-        registry.fill(HIST("hRapidity"), hfHelper.yBplus(candidate), ptCandBplus);
+        registry.fill(HIST("hRapidity"), HfHelper::yBplus(candidate), ptCandBplus);
         registry.fill(HIST("hInvMassD0"), invMassD0, ptCandBplus);
         registry.fill(HIST("hDecLengthD0"), decLenD0, ptD0);
         registry.fill(HIST("hDecLengthXyD0"), decLenXyD0, ptD0);
         registry.fill(HIST("hCpaD0"), cpaD0, ptD0);
         registry.fill(HIST("hCpaXyD0"), cpaXyD0, ptD0);
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           registry.fill(HIST("hMlScoreBkgD"), ptD0, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptD"), ptD0, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptD"), ptD0, candidate.prong0MlScoreNonprompt());
         }
-        if constexpr (withBplusMl) {
+        if constexpr (WithBplusMl) {
           registry.fill(HIST("hMlScoreSigBplus"), ptCandBplus, candidate.mlProbBplusToD0Pi());
         }
       }
     }
     if (fillSparses) {
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         if (isSignal) {
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassBplus, ptCandBplus, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD0, ptD0, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassBplus, ptCandBplus, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD0, ptD0, decLenD0, cpaD0);
           }
         } else if (fillBackground) {
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassBplus, ptCandBplus, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD0, ptD0, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassBplus, ptCandBplus, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD0, ptD0, decLenD0, cpaD0);
           }
         }
       } else {
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           registry.fill(HIST("hMassPtCutVars"), invMassBplus, ptCandBplus, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD0, ptD0, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
         } else {
           registry.fill(HIST("hMassPtCutVars"), invMassBplus, ptCandBplus, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD0, ptD0, decLenD0, cpaD0);
@@ -556,18 +554,18 @@ struct HfTaskBplusReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptD0 * 1000. - static_cast<int64_t>(ptD0 * 1000);
+      float const pseudoRndm = ptD0 * 1000. - static_cast<int64_t>(ptD0 * 1000);
       if (ptCandBplus >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
         float candidateMlScoreSig = -1;
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
           prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
         }
-        if constexpr (withBplusMl) {
+        if constexpr (WithBplusMl) {
           candidateMlScoreSig = candidate.mlProbBplusToD0Pi();
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
@@ -589,7 +587,7 @@ struct HfTaskBplusReduced {
         }
 
         float ptMother = -1.;
-        if constexpr (doMc) {
+        if constexpr (DoMc) {
           ptMother = candidate.ptMother();
         }
 
@@ -599,7 +597,7 @@ struct HfTaskBplusReduced {
           ptCandBplus,
           candidate.eta(),
           candidate.phi(),
-          hfHelper.yBplus(candidate),
+          HfHelper::yBplus(candidate),
           candidate.cpa(),
           candidate.cpaXY(),
           candidate.chi2PCA(),
@@ -649,7 +647,7 @@ struct HfTaskBplusReduced {
           flagWrongCollision,
           ptMother);
 
-        if constexpr (withDecayTypeCheck) {
+        if constexpr (WithDecayTypeCheck) {
           hfRedBpMcCheck(
             flagMcMatchRec,
             flagWrongCollision,
@@ -680,7 +678,7 @@ struct HfTaskBplusReduced {
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> yProngs = {particle.yProng0(), particle.yProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     if (fillHistograms) {
       registry.fill(HIST("hPtProng0Gen"), ptParticle, ptProngs[0]);
@@ -712,7 +710,7 @@ struct HfTaskBplusReduced {
                    TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, false>(candidate, candidatesD, pionTracks);
@@ -725,7 +723,7 @@ struct HfTaskBplusReduced {
                              TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, true, false>(candidate, candidatesD, pionTracks);
@@ -738,7 +736,7 @@ struct HfTaskBplusReduced {
                               TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, true>(candidate, candidatesD, pionTracks);
@@ -753,7 +751,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, false>(candidate, candidatesD, pionTracks);
@@ -773,7 +771,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, false>(candidate, candidatesD, pionTracks);
@@ -793,7 +791,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, true, false>(candidate, candidatesD, pionTracks);
@@ -813,7 +811,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, true, false>(candidate, candidatesD, pionTracks);
@@ -833,7 +831,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, true>(candidate, candidatesD, pionTracks);
@@ -853,7 +851,7 @@ struct HfTaskBplusReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, true>(candidate, candidatesD, pionTracks);

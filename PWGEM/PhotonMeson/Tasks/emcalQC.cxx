@@ -8,19 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-/// EMCAL QC Task
-///
+
 /// \file emcalQC.cxx
-///
 /// \brief Task that runs basic EMCal cluster QA for derived data in the EM format
-///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) Goethe University Frankfurt
 ///
 
-#include "EMPhotonEventCut.h"
-
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/ClusterHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
@@ -51,7 +46,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMEventsWeight>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMEventsWeight>;
 using MyCollision = MyCollisions::iterator;
 
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMCEMEventIds>;
@@ -114,23 +109,14 @@ struct EmcalQC {
 
   void defineEMCCut()
   {
-    const float a = emccuts.tmEta->at(0);
-    const float b = emccuts.tmEta->at(1);
-    const float c = emccuts.tmEta->at(2);
-
-    const float d = emccuts.tmPhi->at(0);
-    const float e = emccuts.tmPhi->at(1);
-    const float f = emccuts.tmPhi->at(2);
-    LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
-
     fEMCCut.SetClusterizer(emccuts.clusterDefinition);
     fEMCCut.SetMinE(emccuts.minClusterE);
     fEMCCut.SetMinNCell(emccuts.minNCell);
     fEMCCut.SetM02Range(emccuts.minM02, emccuts.maxM02);
     fEMCCut.SetTimeRange(emccuts.minClusterTime, emccuts.maxClusterTime);
 
-    fEMCCut.SetTrackMatchingEta([a, b, c](float pT) { return a + std::pow(pT + b, c); });
-    fEMCCut.SetTrackMatchingPhi([d, e, f](float pT) { return d + std::pow(pT + e, f); });
+    fEMCCut.SetTrackMatchingEtaParams(emccuts.tmEta->at(0), emccuts.tmEta->at(1), emccuts.tmEta->at(2));
+    fEMCCut.SetTrackMatchingPhiParams(emccuts.tmPhi->at(0), emccuts.tmPhi->at(1), emccuts.tmPhi->at(2));
 
     fEMCCut.SetMinEoverP(emccuts.tmEoverP);
     fEMCCut.SetUseExoticCut(emccuts.useExoticCut);
@@ -213,13 +199,13 @@ struct EmcalQC {
         fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 0., cluster.e(), collision.weight());
 
         // Define two boleans to see, whether the cluster "survives" the EMC cluster cuts to later check, whether the cuts in this task align with the ones in EMCPhotonCut.h:
-        bool survivesIsSelectedEMCalCuts = true;                        // Survives "manual" cuts listed in this task
-        bool survivesIsSelectedCuts = fEMCCut.IsSelected<int>(cluster); // Survives the cutlist defines in EMCPhotonCut.h, which is also used in the Pi0Eta task
+        bool survivesIsSelectedEMCalCuts = true;                   // Survives "manual" cuts listed in this task
+        bool survivesIsSelectedCuts = fEMCCut.IsSelected(cluster); // Survives the cutlist defines in EMCPhotonCut.h, which is also used in the Pi0Eta task
 
-        for (int icut = 1; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables, start at 1 to ignore ClusterDefinition
+        for (int icut = 0; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables
           EMCPhotonCut::EMCPhotonCuts specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
           if (!fEMCCut.IsSelectedEMCal(specificcut, cluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
-            fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut, cluster.e(), collision.weight());
+            fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut + 1, cluster.e(), collision.weight());
             survivesIsSelectedEMCalCuts = false;
           }
         }
@@ -230,7 +216,7 @@ struct EmcalQC {
 
         if (survivesIsSelectedCuts) {
           o2::aod::pwgem::photonmeson::utils::clusterhistogram::fillClusterHistograms<1>(&fRegistry, cluster, cfgDo2DQA, collision.weight());
-          fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 7., cluster.e(), collision.weight());
+          fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1., cluster.e(), collision.weight());
           ngAfter++;
         }
       }

@@ -17,18 +17,24 @@
 #ifndef PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 #define PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 
-#include <cstdio>
-
-#include <RtypesCore.h>
 #include <TF1.h>
 #include <TH1.h>
+
+#include <RtypesCore.h>
+
+#include <cstdio>
 
 class DhCorrelationFitter
 {
 
  public:
   enum FunctionType { kConstwoGaus = 1,
-                      kTwoGausPeriodicity = 2 };
+                      kTwoGausPeriodicity = 2,
+                      kSingleGaus = 3,
+                      kGenGaus = 4,
+                      kVonMises = 5,
+                      kSingleVonMises = 6,
+                      kTwoGausPeriodicityPlusV2modulation = 7 };
 
   /// Constructors
   DhCorrelationFitter();
@@ -38,53 +44,67 @@ class DhCorrelationFitter
   DhCorrelationFitter& operator=(const DhCorrelationFitter& cfit);
 
   /// Setters
-  void SetHistoIsReflected(Bool_t isrefl) { fIsReflected = isrefl; }
-  void SetFuncType(FunctionType fitType) { fTypeOfFitFunc = fitType; }
-  void SetFixBaseline(Int_t fixBase) { fFixBase = fixBase; }
-  void SetFixMean(Int_t fixMean) { fFixMean = fixMean; }
-  void SetPtRanges(Double_t PtCandMin, Double_t PtCandMax, Double_t PtAssocMin, Double_t PtAssocMax)
+  void setHistoIsReflected(Bool_t isrefl) { fIsReflected = isrefl; }
+  void setFuncType(FunctionType fitType) { fTypeOfFitFunc = fitType; }
+  void setFixBaseline(Int_t fixBase) { fFixBase = fixBase; }
+  void setFixMean(Int_t fixMean) { fFixMean = fixMean; }
+  void setPtRanges(Double_t ptCandMin, Double_t ptCandMax, Double_t ptAssocMin, Double_t ptAssocMax)
   {
-    fMinCandPt = PtCandMin;
-    fMaxCandPt = PtCandMax;
-    fMinAssoPt = PtAssocMin;
-    fMaxAssoPt = PtAssocMax;
+    fMinCandPt = ptCandMin;
+    fMaxCandPt = ptCandMax;
+    fMinAssoPt = ptAssocMin;
+    fMaxAssoPt = ptAssocMax;
   }
-  void SetExternalValsAndBounds(Int_t nPars, Double_t* vals, Double_t* lowBounds, Double_t* uppBounds);
-  void SetPointsForBaseline(Int_t nBaselinePoints, Int_t* binsBaseline);
+  void setExternalValsAndBounds(Int_t nPars, const Double_t* vals, const Double_t* lowBounds, const Double_t* uppBounds);
+  void setPointsForBaseline(Int_t nBaselinePoints, const Int_t* binsBaseline);
+  void setReflectedCorrHisto(Bool_t isReflected) { fIsTotal = !isReflected; }
+  void setBaselineUpOrDown(Bool_t baseUp, Bool_t baseDown)
+  {
+    fShiftBaselineUp = baseUp;
+    fShiftBaselineDown = baseDown;
+  }
+  void setv2(Double_t v2AssocPart, Double_t v2Dmeson)
+  {
+    fv2AssocPart = v2AssocPart;
+    fv2Dmeson = v2Dmeson;
+  }
 
   /// Functions for fitting
-  void Fitting(Bool_t drawSplitTerm = kTRUE, Bool_t useExternalPars = kFALSE);
-  void SetFitFunction();
-  void CalculateYieldsAboveBaseline();
-  void SetSingleTermsForDrawing(Bool_t draw);
-  Double_t FindBaseline();
+  void fitting(Bool_t drawSplitTerm = kTRUE, Bool_t useExternalPars = kFALSE);
+  void setFitFunction();
+  void calculateYieldsAboveBaseline();
+  void fitBaselineWv2();
+  Double_t calculateBaseline(TH1F*& histo, Bool_t totalRange = kTRUE);
+  Double_t calculateBaselineError(TH1F*& histo, Bool_t totalRange = kTRUE);
+  void setSingleTermsForDrawing(Bool_t draw);
+  Double_t findBaseline();
 
   /// Getters
-  Double_t GetNSSigma() { return fFit->GetParameter("NS #sigma"); } // TODO: case kConstThreeGausPeriodicity
-  Double_t GetASSigma() { return fFit->GetParameter("AS #sigma"); } // TODO: case kConstThreeGausPeriodicity
-  Double_t GetNSYield() { return fFit->GetParameter("NS Y"); }
-  Double_t GetASYield() { return fFit->GetParameter("AS Y"); }
-  Double_t GetBeta() { return fFit->GetParameter(7); }
-  Double_t GetPedestal() { return fBaseline; }
-  Double_t Getv2hadron() { return fFit->GetParameter("v_{2} hadron"); }
-  Double_t Getv2Dmeson() { return fFit->GetParameter("v_{2} D meson"); }
-  Double_t GetNSSigmaError() { return fFit->GetParError(fFit->GetParNumber("NS #sigma")); } // TODO: case kConstThreeGausPeriodicity
-  Double_t GetASSigmaError() { return fFit->GetParError(fFit->GetParNumber("AS #sigma")); } // TODO: case kConstThreeGausPeriodicityAS
-  Double_t GetNSYieldError() { return fFit->GetParError(fFit->GetParNumber("NS Y")); }
-  Double_t GetASYieldError() { return fFit->GetParError(fFit->GetParNumber("AS Y")); }
-  Double_t GetBetaError() { return fFit->GetParError(7); }
-  Double_t GetPedestalError() { return fErrBaseline; }
-  Double_t Getv2hadronError() { return fFit->GetParError(fFit->GetParNumber("v_{2} hadron")); }
-  Double_t Getv2DmesonError() { return fFit->GetParError(fFit->GetParNumber("v_{2} D meson")); }
-  Double_t GetBinCountingNSYield() { return fNSyieldBinCount; }
-  Double_t GetBinCountingASYield() { return fASyieldBinCount; }
-  Double_t GetBinCountingNSYieldErr() { return fErrNSyieldBinCount; }
-  Double_t GetBinCountingASYieldErr() { return fErrASyieldBinCount; }
-  TF1* GetFitFunction()
+  Double_t getNsSigma() { return fFit->GetParameter("NS #sigma"); } // TODO: case kConstThreeGausPeriodicity
+  Double_t getAsSigma() { return fFit->GetParameter("AS #sigma"); } // TODO: case kConstThreeGausPeriodicity
+  Double_t getNsYield() { return fFit->GetParameter("NS Y"); }
+  Double_t getAsYield() { return fFit->GetParameter("AS Y"); }
+  Double_t getBeta() { return fFit->GetParameter(7); }
+  [[nodiscard]] Double_t getPedestal() const { return fBaseline; }
+  Double_t getv2hadron() { return fFit->GetParameter("v_{2} hadron"); }
+  Double_t getv2Dmeson() { return fFit->GetParameter("v_{2} D meson"); }
+  Double_t getNsSigmaError() { return fFit->GetParError(fFit->GetParNumber("NS #sigma")); } // TODO: case kConstThreeGausPeriodicity
+  Double_t getAsSigmaError() { return fFit->GetParError(fFit->GetParNumber("AS #sigma")); } // TODO: case kConstThreeGausPeriodicityAS
+  Double_t getNsYieldError() { return fFit->GetParError(fFit->GetParNumber("NS Y")); }
+  Double_t getAsYieldError() { return fFit->GetParError(fFit->GetParNumber("AS Y")); }
+  Double_t getBetaError() { return fFit->GetParError(7); }
+  [[nodiscard]] Double_t getPedestalError() const { return fErrBaseline; }
+  Double_t getv2hadronError() { return fFit->GetParError(fFit->GetParNumber("v_{2} hadron")); }
+  Double_t getv2DmesonError() { return fFit->GetParError(fFit->GetParNumber("v_{2} D meson")); }
+  [[nodiscard]] Double_t getBinCountingNsYield() const { return fNSyieldBinCount; }
+  [[nodiscard]] Double_t getBinCountingAsYield() const { return fASyieldBinCount; }
+  [[nodiscard]] Double_t getBinCountingNsYieldErr() const { return fErrNSyieldBinCount; }
+  [[nodiscard]] Double_t getBinCountingAsYieldErr() const { return fErrASyieldBinCount; }
+  TF1* getFitFunction()
   {
-    if (!fFit) {
+    if (fFit == nullptr) {
       printf("[ERROR] DhCorrelationFitter::GetFitFunction, No fit function");
-      return NULL;
+      return nullptr;
     }
     return fFit;
   }
@@ -92,13 +112,17 @@ class DhCorrelationFitter
  private:
   TH1F* fHist; // 1D azimuthal correlation histogram
 
-  TF1* fFit;    // Total fit function
-  TF1* fGausNS; // Near-Side (NS) Gaussian
-  TF1* fGausAS; // Away-Side (AS) Gaussian
-  TF1* fPed;    // Baseline function
+  TF1* fFit;           // Total fit function
+  TF1* fGausNS;        // Near-Side (NS) Gaussian
+  TF1* fGausAS;        // Away-Side (AS) Gaussian
+  TF1* fPed;           // Baseline function
+  TF1* fBaseTransvReg; // Baseline function with v2
 
-  Bool_t fIsReflected;
-  Bool_t fUseExternalPars; // To use external fit parameters initial values and bounds
+  Bool_t fIsReflected;       // To use if reflected azimuthal correlation are given as input
+  Bool_t fUseExternalPars;   // To use external fit parameters initial values and bounds
+  Bool_t fShiftBaselineUp;   // To shift the baseline up of its statistical uncertainty
+  Bool_t fShiftBaselineDown; // To shift baseline down of its statistical uncertainty
+  Bool_t fIsTotal;           // Total range of 2*pi in the azimuthal correlation distribution
 
   FunctionType fTypeOfFitFunc; // Type of fit function
 
@@ -121,6 +145,8 @@ class DhCorrelationFitter
   Double_t fErrNSyieldBinCount; // NS Yield error from bin counting
   Double_t fASyieldBinCount;    // AS Yield from bin counting
   Double_t fErrASyieldBinCount; // AS Yield error from bin counting
+  Double_t fv2AssocPart;        // v2 associated particles
+  Double_t fv2Dmeson;           // v2 of D mesons
 
   Double_t* fExtParsVals;      // Fit parameters initial values
   Double_t* fExtParsLowBounds; // Fit parameters lower bounds

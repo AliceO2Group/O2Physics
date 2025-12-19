@@ -18,6 +18,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -97,9 +98,8 @@ struct HfCandidateCreatorBs {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber{0};
@@ -268,16 +268,16 @@ struct HfCandidateCreatorBs {
         df3.getTrack(2).getPxPyPzGlo(pVec2);
 
         // Ds∓ → K∓ K± π∓
-        std::array<float, 3> pVecKK = RecoDecay::pVec(pVec0, pVec1);
+        std::array<float, 3> const pVecKK = RecoDecay::pVec(pVec0, pVec1);
         std::array<float, 3> pVecDs = RecoDecay::pVec(pVec0, pVec1, pVec2);
         auto trackParCovKK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecKK, df3.calcPCACovMatrixFlat(),
                                                  trackParCov0, trackParCov1);
         auto trackParCovDs = o2::dataformats::V0(df3.getPCACandidatePos(), pVecDs, df3.calcPCACovMatrixFlat(),
                                                  trackParCovKK, trackParCov2);
 
-        int indexTrack0 = track0.globalIndex();
-        int indexTrack1 = track1.globalIndex();
-        int indexTrack2 = track2.globalIndex();
+        int const indexTrack0 = track0.globalIndex();
+        int const indexTrack1 = track1.globalIndex();
+        int const indexTrack2 = track2.globalIndex();
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
@@ -350,7 +350,7 @@ struct HfCandidateCreatorBs {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           // fill output histograms for Bs candidates
-          hMassDsToKKPi->Fill(hfHelper.invMassDsToKKPi(candDs), candDs.pt());
+          hMassDsToKKPi->Fill(HfHelper::invMassDsToKKPi(candDs), candDs.pt());
           hCovSVXX->Fill(covMatrixPCA[0]);
           hCovPVXX->Fill(covMatrixPV[0]);
           hMassBsToDsPi->Fill(massDsPi);
@@ -393,8 +393,8 @@ struct HfCandidateCreatorBsExpressions {
     int8_t sign = 0;
     int8_t flagChannelMain = 0;
     int8_t flagChannelReso = 0;
-    std::vector<int> arrDaughDsIndex;
-    std::array<int, 2> arrPDGDaughDs;
+    std::vector<int> arrDaughDsIndex{};
+    std::array<int, 2> arrPDGDaughDs{};
     std::array<int, 2> arrPDGResonantDsPhiPi = {Pdg::kPhi, kPiPlus}; // Ds± → Phi π±
 
     // Match reconstructed candidates.
@@ -430,7 +430,7 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      if (!flagChannelMain) {
+      if (flagChannelMain == 0) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, Pdg::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
@@ -453,19 +453,19 @@ struct HfCandidateCreatorBsExpressions {
 
       // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
       // convention: final state particles are prong0,1,2,3
-      if (!flagChannelMain) {
+      if (flagChannelMain == 0) {
         auto particleProng0 = arrayDaughtersBs[0].mcParticle();
         auto particleProng1 = arrayDaughtersBs[1].mcParticle();
         auto particleProng2 = arrayDaughtersBs[2].mcParticle();
         auto particleProng3 = arrayDaughtersBs[3].mcParticle();
         // b-hadron hypothesis
-        std::array<int, 4> bHadronMotherHypos = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
+        std::array<int, 4> const bHadronMotherHypos = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
 
         for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
-          int index0Mother = RecoDecay::getMother(mcParticles, particleProng0, bHadronMotherHypo, true);
-          int index1Mother = RecoDecay::getMother(mcParticles, particleProng1, bHadronMotherHypo, true);
-          int index2Mother = RecoDecay::getMother(mcParticles, particleProng2, bHadronMotherHypo, true);
-          int index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
+          int const index0Mother = RecoDecay::getMother(mcParticles, particleProng0, bHadronMotherHypo, true);
+          int const index1Mother = RecoDecay::getMother(mcParticles, particleProng1, bHadronMotherHypo, true);
+          int const index2Mother = RecoDecay::getMother(mcParticles, particleProng2, bHadronMotherHypo, true);
+          int const index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
 
           // look for common b-hadron ancestor
           if (index0Mother > -1 && index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
@@ -502,7 +502,7 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      if (!flagChannelMain) {
+      if (flagChannelMain == 0) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kB0, std::array{+Pdg::kDS, -kPiPlus}, true)) {
           // Checking Ds± → K- K+ π±

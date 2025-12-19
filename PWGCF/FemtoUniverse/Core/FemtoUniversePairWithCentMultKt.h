@@ -54,12 +54,9 @@ class FemtoUniversePairWithCentMultKt
       std::string histTitle = "mult_" + std::to_string(lowBin) + "-" + std::to_string(highBin);
       std::string histSuffix1 = static_cast<std::string>(HistSuffix[i]);
       std::string histSuffix2 = static_cast<std::string>(HistSuffix[i + 1]);
-      LOGF(info, "histSuffix1 %s histSuffix2", histSuffix1, histSuffix2);
       std::string histFolderMult = "mult_" + histSuffix1 + "_" + histSuffix2;
       std::string histName = histFolderMult + "/kstar";
-      std::string histName3D = histFolderMult + "/q3D";
       pairWithCentMultKtRegistry->add(histName.c_str(), histTitle.c_str(), HistType::kTH1F, {kstarAxis});
-      pairWithCentMultKtRegistry->add(histName3D.c_str(), histTitle.c_str(), HistType::kTH3F, {kOutAxis, kSideAxis, kLongAxis});
       if (useKt) {
         for (int i = 0; i < static_cast<int>(ktBins.size() - 1); i++) {
           std::string ktBin1String = std::to_string(ktBins[i]);
@@ -77,6 +74,8 @@ class FemtoUniversePairWithCentMultKt
         }
       }
       if (use3D) {
+        std::string histName3D = histFolderMult + "/q3D";
+        pairWithCentMultKtRegistry->add(histName3D.c_str(), histTitle.c_str(), HistType::kTH3F, {kOutAxis, kSideAxis, kLongAxis});
         for (int i = 0; i < static_cast<int>(ktBins.size() - 1); i++) {
           std::string ktBin1String = std::to_string(ktBins[i]);
           std::replace(ktBin1String.begin(), ktBin1String.end(), '.', '_');

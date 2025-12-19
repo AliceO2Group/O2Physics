@@ -9,15 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <utility>
+#include "decayTree.h"
+
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
 #include <cstdio>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
-
-#include "rapidjson/document.h"
-#include "rapidjson/filereadstream.h"
-#include "decayTree.h"
 
 using namespace rapidjson;
 

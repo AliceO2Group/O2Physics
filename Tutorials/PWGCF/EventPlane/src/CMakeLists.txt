@@ -13,3 +13,8 @@ o2physics_add_dpl_workflow(qvectors-tutorial
                     SOURCES qVectorstutorial.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(spectator-plane-tutorial
+                    SOURCES spectatorPlaneTutorial.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

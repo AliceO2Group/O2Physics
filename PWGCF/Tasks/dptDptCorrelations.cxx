@@ -908,9 +908,9 @@ struct DptDptCorrelations {
   TList* ccdblst = nullptr;
   bool loadfromccdb = false;
   std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
-  std::string cfgCCDBPathName{""};
-  std::string cfgCCDBDate{"20220307"};
-  std::string cfgCCDBPeriod{"LHC22o"};
+  std::string cfgCCDBPathNameCorrections{""};
+  std::string cfgCCDBDateCorrections{"20220307"};
+  std::string cfgCCDBSuffix{""};
 
   /* pair conversion suppression defaults */
   static constexpr float kCfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
@@ -971,11 +971,11 @@ struct DptDptCorrelations {
     nNoOfDimensions = static_cast<HistoDimensions>(cfgNoOfDimensions.value);
 
     /* self configure the CCDB access to the input file */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBUrl", cfgCCDBUrl, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPathName", cfgCCDBPathName, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBDate", cfgCCDBDate, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPeriod", cfgCCDBPeriod, false);
-    loadfromccdb = cfgCCDBPathName.length() > 0;
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.url", cfgCCDBUrl, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.pathNameCorrections", cfgCCDBPathNameCorrections, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.dateCorrections", cfgCCDBDateCorrections, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.suffix", cfgCCDBSuffix, false);
+    loadfromccdb = (cfgCCDBDateCorrections.length() > 0) && (cfgCCDBPathNameCorrections.length() > 0);
 
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
@@ -1230,7 +1230,7 @@ struct DptDptCorrelations {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(ccdb, cfgCCDBPathName.c_str(), cfgCCDBDate.c_str());
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathNameCorrections.c_str(), cfgCCDBDateCorrections.c_str(), true, cfgCCDBSuffix);
       }
     }
 
@@ -1326,7 +1326,7 @@ struct DptDptCorrelations {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(ccdb, cfgCCDBPathName.c_str(), cfgCCDBDate.c_str());
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathNameCorrections.c_str(), cfgCCDBDateCorrections.c_str(), true, cfgCCDBSuffix);
       }
     }
 
@@ -1646,6 +1646,7 @@ struct DptDptCorrelations {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  o2::analysis::dptdptfilter::metadataInfo.initMetadata(cfgc);
   WorkflowSpec workflow{
     adaptAnalysisTask<DptDptCorrelations>(cfgc, TaskName{"DptDptCorrelationsRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),  // o2-linter: disable=name/o2-task (It is adapted multiple times)
     adaptAnalysisTask<DptDptCorrelations>(cfgc, TaskName{"DptDptCorrelationsGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})}; // o2-linter: disable=name/o2-task (It is adapted multiple times)

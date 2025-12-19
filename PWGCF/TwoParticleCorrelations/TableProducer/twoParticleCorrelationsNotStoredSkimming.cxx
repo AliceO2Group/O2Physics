@@ -9,24 +9,29 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <CCDB/BasicCCDBManager.h>
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
+
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::soa;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
+
+#include <string>
 
 namespace o2::analysis::cfskim
 {
@@ -97,7 +102,7 @@ struct TwoParticleCorrelationsCollisionSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   int nReportedTracks;
   int runNumber = 0;
@@ -229,7 +234,7 @@ struct TwoParticleCorrelationsTrackSkimming {
   Produces<aod::CFTrackPIDs> skimmtrackpid;
   Produces<aod::CFMCPartMask> particlemask;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   void init(InitContext const&)
   {

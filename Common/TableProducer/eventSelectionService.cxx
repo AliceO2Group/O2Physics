@@ -19,27 +19,26 @@
 //
 //===============================================================
 
-#include "MetadataHelper.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Tools/EventSelectionTools.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/Tools/EventSelectionModule.h"
 #include "Common/Tools/timestampModule.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -189,15 +188,20 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   LOGF(info, "Event selection autoconfiguring from metadata. Availability of info for Run 2/3 is %i", hasRunInfo);
   if (!hasRunInfo) {
-    LOGF(info, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
-    LOGF(info, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
-    LOGF(info, "You should instead make sure the metadata is read in correctly.");
+    LOGF(warn, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
+    LOGF(warn, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
+    LOGF(warn, "You should instead make sure the metadata is read in correctly.");
     return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
   } else {
     LOGF(info, "Metadata successfully read in. Is this Run 3? %i - will self-configure.", isRun3);
     if (isRun3) {
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
     } else {
+      LOGF(warn, "******************************************************************");
+      LOGF(warn, " Event selection service self-configuring for Run 2.");
+      LOGF(warn, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
+      LOGF(warn, " If this fails, please use event-selection-service-run2 instead.");
+      LOGF(warn, "******************************************************************");
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
     }
   }

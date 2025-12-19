@@ -41,7 +41,6 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 // ROOT

@@ -23,26 +23,41 @@
 
 #include "qaEventTrack.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <numeric>
 #include <string>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::dataformats;
+
+o2::common::core::MetadataHelper metadataInfo;
 
 // TODO: add PID wagons as dependency + include impact parameter studies (same or separate task in workflow??)
 
@@ -67,6 +82,9 @@ struct qaEventTrack {
 
   // option to apply a timeframe cut
   Configurable<bool> tfCut{"tfCut", false, "applies timeframe cut"};
+
+  // option to add run info to the histograms
+  Configurable<bool> addRunInfo{"addRunInfo", true, "add run info (pass, data) to the histograms"};
 
   // options to select only specific tracks
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -166,6 +184,14 @@ struct qaEventTrack {
       }
     }
 
+    if (addRunInfo) {
+      auto hRunInfo = histos.add<TH1>("hRunInfo", "Run info", kTH1D, {{1, 0.5, 1.5, "Run info"}});
+      // hRunInfo->SetBit(TH1::kCanRebin); // allow dynamic bin creation based on label
+      if (metadataInfo.isFullyDefined()) {
+        hRunInfo->Fill(metadataInfo.makeMetadataLabel().c_str(), 1.0);
+      }
+    }
+
     //
     // Next section setups overwrite of configurableAxis if overwriteAxisRangeForPbPb is used.
     //
@@ -245,9 +271,12 @@ struct qaEventTrack {
     histos.add("Events/nContrib", "", kTH1D, {axisVertexNumContrib});
     histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
+    histos.add("Events/nContribVsAtLeastITSMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/nContribAllvsWithTRD", ";PV contrib. all; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
+    histos.add("Events/vertexChi2OvernContrib", ";#chi^{2} / n contrib.", kTH1D, {{100, 0, 100}});
+    histos.add("Events/vertexChi2VsnContrib", ";#chi^{2};n contrib.", kTH2D, {{100, 0, 100}, axisVertexNumContrib});
 
     histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
     histos.add("Events/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
@@ -1150,6 +1179,8 @@ struct qaEventTrack {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{adaptAnalysisTask<qaEventTrack>(cfgc)};
 }
 
@@ -1286,11 +1317,15 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   }
 
   int nFilteredTracks = 0;
+  int atLeastITSTracks = 0;
   for (const auto& track : tracks) {
     if (checkOnlyPVContributor && !track.isPVContributor()) {
       continue;
     }
     histos.fill(HIST("Tracks/selection"), 1.f);
+    if (track.hasITS()) {
+      atLeastITSTracks++;
+    }
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
@@ -1437,7 +1472,10 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Events/nContrib"), collision.numContrib());
   histos.fill(HIST("Events/nContribVsFilteredMult"), collision.numContrib(), nFilteredTracks);
   histos.fill(HIST("Events/nContribVsMult"), collision.numContrib(), tracksUnfiltered.size());
+  histos.fill(HIST("Events/nContribVsAtLeastITSMult"), collision.numContrib(), atLeastITSTracks);
   histos.fill(HIST("Events/vertexChi2"), collision.chi2());
+  histos.fill(HIST("Events/vertexChi2OvernContrib"), collision.chi2() / collision.numContrib());
+  histos.fill(HIST("Events/vertexChi2VsnContrib"), collision.chi2(), collision.numContrib());
 
   histos.fill(HIST("Events/covXX"), collision.covXX());
   histos.fill(HIST("Events/covXY"), collision.covXY());

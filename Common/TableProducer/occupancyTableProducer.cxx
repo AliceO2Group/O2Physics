@@ -15,31 +15,35 @@
 ///         Ambg tracks were not used
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Marian I Ivanov (marian.ivanov@cern.ch)
 
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
-#include <cmath>
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "Common/DataModel/OccupancyTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+
+#include <sys/types.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -2704,15 +2708,17 @@ struct CreatePointerTables {
     // create pointer table
     int currentIDXforCheck = 0;
     int listSize = trackGIForTrackQAIndexList.size();
+    bool breakOnOverflow = false;
 
     for (const auto& track : tracks) {
-      while (track.globalIndex() > trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
+      while (!breakOnOverflow && track.globalIndex() > trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
         currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
         if (currentIDXforCheck >= listSize) {
+          breakOnOverflow = true;
           break;
         }
       }
-      if (track.globalIndex() == trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
+      if (!breakOnOverflow && track.globalIndex() == trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
         genTrackToTracksQA(trackGIForTrackQAIndexList[currentIDXforCheck][1]);
       } else {
         genTrackToTracksQA(-1); // put a dummy index when track is not found in trackQA
@@ -2737,15 +2743,17 @@ struct CreatePointerTables {
     // create pointer table
     int currentIDXforCheck = 0;
     int listSize = trackGIForTMOIndexList.size();
+    bool breakOnOverflow = false;
 
     for (const auto& track : tracks) {
-      while (track.globalIndex() > trackGIForTMOIndexList[currentIDXforCheck][0]) {
+      while (!breakOnOverflow && track.globalIndex() > trackGIForTMOIndexList[currentIDXforCheck][0]) {
         currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
         if (currentIDXforCheck >= listSize) {
+          breakOnOverflow = true;
           break;
         }
       }
-      if (track.globalIndex() == trackGIForTMOIndexList[currentIDXforCheck][0]) {
+      if (!breakOnOverflow && track.globalIndex() == trackGIForTMOIndexList[currentIDXforCheck][0]) {
         genTrackToTmo(trackGIForTMOIndexList[currentIDXforCheck][1]);
       } else {
         genTrackToTmo(-1); // put a dummy index when track is not found in trackQA

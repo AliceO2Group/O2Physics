@@ -24,16 +24,8 @@ struct stradautrackstofpidconverter {
   void process(soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFs> const& v0s, soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFs> const& cascs, aod::DauTrackExtras const& dauTracks)
   {
     // prepare arrays with the relevant information
-    std::vector<float> lLengths, lTOFSignals, lTOFEvTimes;
-    lLengths.reserve(dauTracks.size());
-    lTOFSignals.reserve(dauTracks.size());
-    lTOFEvTimes.reserve(dauTracks.size());
-    for (int ii = 0; ii < dauTracks.size(); ii++) {
-      lLengths[ii] = 1e+6;
-      lTOFSignals[ii] = -1e+3f;
-      lTOFEvTimes[ii] = -1e+3f;
-    }
-    for (auto& v0 : v0s) {
+    std::vector<float> lLengths(dauTracks.size(), 1.e+6), lTOFSignals(dauTracks.size(), -1e+3f), lTOFEvTimes(dauTracks.size(), -1e+3f);
+    for (const auto& v0 : v0s) {
       lLengths[v0.posTrackExtraId()] = v0.posTOFLengthToPV();
       lTOFSignals[v0.posTrackExtraId()] = v0.posTOFSignal();
       lTOFEvTimes[v0.posTrackExtraId()] = v0.posTOFEventTime();
@@ -41,7 +33,7 @@ struct stradautrackstofpidconverter {
       lTOFSignals[v0.negTrackExtraId()] = v0.negTOFSignal();
       lTOFEvTimes[v0.negTrackExtraId()] = v0.negTOFEventTime();
     }
-    for (auto& casc : cascs) {
+    for (const auto& casc : cascs) {
       lLengths[casc.posTrackExtraId()] = casc.posTOFLengthToPV();
       lTOFSignals[casc.posTrackExtraId()] = casc.posTOFSignal();
       lTOFEvTimes[casc.posTrackExtraId()] = casc.posTOFEventTime();
@@ -52,8 +44,8 @@ struct stradautrackstofpidconverter {
       lTOFSignals[casc.bachTrackExtraId()] = casc.bachTOFSignal();
       lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime();
     }
-    for (int ii = 0; ii < dauTracks.size(); ii++) {
-      dautracktofpids(lTOFSignals[ii], lTOFEvTimes[ii], lLengths[ii]);
+    for (unsigned int ii = 0; ii < dauTracks.size(); ii++) {
+      dautracktofpids(-1, -1, lTOFSignals[ii], lTOFEvTimes[ii], lLengths[ii], 0.0f);
     }
   }
 };

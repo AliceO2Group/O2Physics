@@ -13,10 +13,12 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@v10
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-pr-message: 'This PR has not been updated in the last 30 days. Is it still needed? Unless further action is taken, it will be closed in 5 days.'
+          stale-issue-message: 'This issue has not been updated in the last 30 days. Is it still needed? Unless further action is taken, it will be closed in 5 days.'
           stale-pr-label: stale
           days-before-stale: 30
           days-before-close: 5
+          exempt-issue-labels: bug,enhancement

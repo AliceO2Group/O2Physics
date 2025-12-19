@@ -97,10 +97,9 @@ struct HfCandidateSelectorBplusToD0PiReduced {
 
   o2::analysis::HfMlResponseBplusToD0PiReduced<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
@@ -160,7 +159,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   /// \param hfCandsBp B+ candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the D0pi data creator
-  template <bool withDmesMl, typename Cands>
+  template <bool WithDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsBp,
                     TracksPion const& /*pionTracks*/,
                     HfCandBpConfigs const& configs)
@@ -181,7 +180,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
 
       // topological cuts
-      if (!hfHelper.selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
+      if (!HfHelper::selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
         if (applyBplusMl) {
           hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -190,8 +189,8 @@ struct HfCandidateSelectorBplusToD0PiReduced {
         continue;
       }
 
-      if constexpr (withDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
+      if constexpr (WithDmesMl) { // we include it in the topological selections
+        if (!HfHelper::selectionDmesMlScoresForBReduced(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
             hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -215,7 +214,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
-        if (!hfHelper.selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
@@ -230,8 +229,8 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
       if (applyBplusMl) {
         // B+ ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandBp, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandBp, trackPi);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
         hfMlBplusToD0PiCandidate(outputMl[1]); // storing ML score for signal class
 
         if (!isSelectedMl) {

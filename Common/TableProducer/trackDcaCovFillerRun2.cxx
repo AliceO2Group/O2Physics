@@ -15,11 +15,34 @@
 // Run 2 AO2Ds cannot have their dcacov filled by the current track-propagation workflow as the workflow isn't designed for them, given Run 2 tracks are already propagated to the PV.
 // This task fills the DCA Cov (and DCA) tables for Run 2 tracks by "propagating" the tracks (though given they are already at the PV it doesn't actually do the propagation) and retrieving the DCA and DCA cov given by the propagateToDCABxByBz function
 
-#include <string>
+#include "Common/Core/TableHelper.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "TableHelper.h"
-#include "Common/Tools/TrackTuner.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/WorkflowSpec.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <array>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

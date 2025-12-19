@@ -14,30 +14,31 @@
 /// \remark This file is inherited from ~/FemtoUniverse/Tasks/femtoUniversePairTaskTrackTrackMultKtExtended.cxx on 10/01/2024
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
-#include <vector>
-#include <string>
-#include "TRandom2.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Common/DataModel/PIDResponse.h"
-
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverse3DContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairWithCentMultKt.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
+
+#include "TRandom2.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
@@ -98,9 +99,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   } trackonefilter;
 
   /// Partition for particle 1
-  Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
+  Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.ConfChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
 
-  Partition<FilteredFemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
+  Partition<FilteredFemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.ConfChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
   //
 
   /// Histogramming for particle 1
@@ -118,9 +119,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   } tracktwofilter;
 
   /// Partition for particle 2
-  Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == tracktwofilter.ConfChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
+  Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.ConfChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
 
-  Partition<FilteredFemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == tracktwofilter.ConfChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
+  Partition<FilteredFemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.ConfChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;

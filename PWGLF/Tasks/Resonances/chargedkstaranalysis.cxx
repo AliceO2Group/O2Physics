@@ -25,7 +25,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -75,8 +76,6 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 struct chargedkstaranalysis {
-  SliceCache cache;
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   //  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::Mults>;
@@ -899,26 +898,50 @@ struct chargedkstaranalysis {
   }
   PROCESS_SWITCH(chargedkstaranalysis, processDataSE, "Process Event for data without Partitioning", true);
 
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-
-  //  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ,  aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
-  BinningTypeVtxZT0M colBinning{{cfgvtxbins, cfgmultbins}, true};
-  void processDataME(EventCandidates const& collisions, TrackCandidates const& tracks, V0Candidates const& v0s)
+  SliceCache cache;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningTypeVertexContributor binningOnPositions{{cfgvtxbins, cfgmultbins}, true};
+  Pair<EventCandidates, TrackCandidates, V0Candidates, BinningTypeVertexContributor> pair{binningOnPositions, nEvtMixing, -1, &cache};
+  void processDataME(EventCandidates const& /*collisions*/, TrackCandidates const& /*tracks*/, V0Candidates const& /*V0s*/)
   {
-    auto tracksV0sTuple = std::make_tuple(tracks, v0s);
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
 
-    Pair<EventCandidates, TrackCandidates, V0Candidates, BinningTypeVtxZT0M> pair{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache};
-    // restrk1 is a TrackCandidates table of tracks belonging to collision c1 (aod::Collision::iterator)
-    // resov0s2 is a V0Candidates table of V0s belonging to collision c2 (aod::Collision::iterator)
-    for (const auto& [c1, restrk1, c2, resov0s2] : pair) {
-      if (!colCuts.isSelected(c1) || !colCuts.isSelected(c2)) {
-        // Default event selection
+      if (!colCuts.isSelected(c1)) {
         continue;
       }
-      colCuts.fillQA(c1);
-      fillHistograms<false, true>(c1, restrk1, resov0s2);
+      if (!colCuts.isSelected(c2)) {
+        continue;
+      }
+
+      for (auto& [t1, t2] : o2::soa::combinations(
+             o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        // Here t1 corressponds to bachelor track and t2 corressponds to v0s.
+        if (!isTrackSelected(t1))
+          continue;
+        if (!trackCut(t1))
+          continue;
+        if (!selectionPIDPion(t1))
+          continue;
+
+        auto posDauTrack = t2.template posTrack_as<TrackCandidates>();
+        auto negDauTrack = t2.template negTrack_as<TrackCandidates>();
+        if (!cfgByPassDauPIDSelection && !selectionPIDPion(posDauTrack)) // Perhaps it's already applied in trackCut (need to check QA plots)
+          continue;
+        if (!cfgByPassDauPIDSelection && !selectionPIDPion(negDauTrack))
+          continue;
+        if (!selectionK0s(c2, t2))
+          continue;
+
+        ROOT::Math::PxPyPzMVector lResoSecondary, lDecayDaughter_bach, lResoKstar;
+        lDecayDaughter_bach = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massPi);
+        lResoSecondary = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massK0s);
+        lResoKstar = lResoSecondary + lDecayDaughter_bach;
+
+        if (lResoKstar.Rapidity() > cKstarMaxRap || lResoKstar.Rapidity() < cKstarMinRap)
+          continue;
+        histos.fill(HIST("hInvmass_KstarME"), c1.centFT0M(), lResoKstar.Pt(), lResoKstar.M());
+      }
     }
-    // fillHistograms<false, false>(collision, tracks, v0s); // second order
   }
   PROCESS_SWITCH(chargedkstaranalysis, processDataME, "Process Event for data without Partitioning", true);
 

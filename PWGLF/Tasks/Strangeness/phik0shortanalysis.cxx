@@ -24,7 +24,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -225,7 +226,6 @@ struct Phik0shortanalysis {
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
 
   // Configurables for dN/deta with phi computation
-  Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
   Configurable<int> filterOnGenPhi{"filterOnGenPhi", 1, "Filter on Gen Phi (0: K+K- pair like Phi, 1: proper Phi)"};
   Configurable<int> filterOnRecoPhi{"filterOnRecoPhi", 1, "Filter on Reco Phi (0: without PDG, 1: with PDG)"};
   Configurable<bool> fillMcPartsForAllReco{"fillMcPartsForAllReco", false, "Fill MC particles for all associated reco collisions"};
@@ -295,8 +295,9 @@ struct Phik0shortanalysis {
 
   // Preslice for manual slicing
   struct : PresliceGroup {
-    Preslice<aod::Tracks> perColl = aod::track::collisionId;
-    Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
+    Preslice<aod::Tracks> trackPerCollision = aod::track::collisionId;
+    Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
+    Preslice<aod::V0Datas> v0PerCollision = aod::v0::collisionId;
   } preslices;
 
   // Positive and negative tracks partitions
@@ -338,6 +339,7 @@ struct Phik0shortanalysis {
     AxisSpec etaAxis = {16, -trackConfigs.etaMax, trackConfigs.etaMax, "#eta"};
     AxisSpec yAxis = {deltaYConfigs.nBinsY, -deltaYConfigs.cfgYAcceptance, deltaYConfigs.cfgYAcceptance, "#it{y}"};
     AxisSpec deltayAxis = {deltaYConfigs.nBinsDeltaY, -1.0f, 1.0f, "#Delta#it{y}"};
+    AxisSpec deltaphiAxis = {72, -o2::constants::math::PIHalf, o2::constants::math::PIHalf * 3, "#Delta#varphi"};
     AxisSpec phiAxis = {629, 0, o2::constants::math::TwoPI, "#phi"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
@@ -399,16 +401,13 @@ struct Phik0shortanalysis {
     mcEventHist.add("hGenMCAssocRecoMultiplicityPercent", "GenMC AssocReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("h2GenMCAssocRecoVertexZvsMult", "GenMC AssocReco Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
     mcEventHist.add("hGenMCRecoMultiplicityPercent", "GenMCReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
-    mcEventHist.add("h2GenMCRecoVertexZvsMult", "GenMCReco Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
 
     // Eta distribution for dN/deta values estimation in MC
     mcEventHist.add("h6RecoMCEtaDistribution", "Eta vs multiplicity in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6RecoCheckMCEtaDistribution", "Eta vs multiplicity in MCReco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
 
     mcEventHist.add("h5GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTHnSparseF, {binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6GenMCEtaDistributionReco", "Eta vs multiplicity in MCGen Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6GenMCEtaDistributionRecoCheck", "Eta vs multiplicity in MCGen Reco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
+    mcEventHist.add("h6GenMCAssocRecoEtaDistribution", "Eta vs multiplicity in MCGen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
+    mcEventHist.add("h6GenMCAllAssocRecoEtaDistribution", "Eta vs multiplicity in MCGen Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
 
     // Phi topological/PID cuts
     dataPhiHist.add("h2DauTracksPhiDCAxyPreCutData", "Dcaxy distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
@@ -660,6 +659,9 @@ struct Phik0shortanalysis {
       dataPhiK0SHist.add("h5PhiK0SDataNewProc", "2D Invariant mass of Phi and K0Short in Data", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, massPhiAxis});
       dataPhiPionHist.add("h5PhiPiTPCDataNewProc", "Phi Invariant mass vs Pion nSigma TPC in Data", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis, massPhiAxis});
       dataPhiPionHist.add("h5PhiPiTOFDataNewProc", "Phi Invariant mass vs Pion nSigma TOF in Data", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis, massPhiAxis});
+
+      dataPhiK0SHist.add("h5PhiK0SData2PartCorr", "Deltay vs deltaphi for Phi and K0Short in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
+      dataPhiPionHist.add("h5PhiPiData2PartCorr", "Deltay vs deltaphi for Phi and Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
     }
 
     if (analysisModeConfigs.isClosureNewProc) {
@@ -676,26 +678,18 @@ struct Phik0shortanalysis {
     }
 
     if (analysisModeConfigs.isMCNewProc) {
-      mcPhiHist.add("h3PhiMCRecoNewProc", "Phi in MCReco", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCRecoNewProc", "K0S in MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCRecoNewProc", "Pion in MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
-      mcPionHist.add("h3PiMCReco2NewProc", "Pion in MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
+      mcPhiHist.add("h4PhiMCRecoNewProc", "Phi in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPhiAxis, yAxis});
+      mcK0SHist.add("h4K0SMCRecoNewProc", "K0S in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTK0SAxis, yAxis});
+      mcPionHist.add("h4PiMCRecoNewProc", "Pion in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPiAxis, yAxis});
+      mcPionHist.add("h4PiMCReco2NewProc", "Pion in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPiAxis, yAxis});
 
       mcPhiHist.add("h3PhiMCGenNewProc", "Phi in MCGen", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
       mcK0SHist.add("h3K0SMCGenNewProc", "K0S in MCGen", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
       mcPionHist.add("h3PiMCGenNewProc", "Pion in MCGen", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
 
-      mcPhiHist.add("h3PhiMCGenAssocRecoNewProc", "Phi in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
-
-      mcPhiHist.add("h3PhiMCGenRecoNewProc", "Phi in MCGen MCReco", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCGenRecoNewProc", "K0S in MCGen MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCGenRecoNewProc", "Pion in MCGen MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
-
-      mcPhiHist.add("h3PhiMCGenRecoCheckNewProc", "Phi in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCGenRecoCheckNewProc", "K0S in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCGenRecoCheckNewProc", "Pion in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
+      mcPhiHist.add("h4PhiMCGenAssocRecoNewProc", "Phi in MCGen Associated MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPhiAxis, yAxis});
+      mcK0SHist.add("h4K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTK0SAxis, yAxis});
+      mcPionHist.add("h4PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPiAxis, yAxis});
     }
 
     // Initialize CCDB only if purity or efficiencies are requested in the task
@@ -1120,7 +1114,7 @@ struct Phik0shortanalysis {
   }
 
   template <typename T>
-  bool isGenParticleCharged(const T& mcParticle)
+  bool selectionChargedGenParticle(const T& mcParticle)
   {
     if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
       return false;
@@ -2636,67 +2630,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiData, "Process function for dN/deta values in Data", false);
 
-  void processdNdetaWPhiMCReco(SimCollisions::iterator const& collision, FilteredMCTracks const& filteredMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
-  {
-    if (!acceptEventQA<true>(collision, true))
-      return;
-    if (!collision.has_mcCollision())
-      return;
-
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
-    auto mcParticlesThisColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
-
-    if (furtherCheckonMcCollision && (std::abs(mcCollision.posZ()) > cutZVertex || !pwglf::isINELgtNmc(mcParticlesThisColl, 0, pdgDB)))
-      return;
-    if (filterOnGenPhi && !eventHasGenPhi(mcParticlesThisColl))
-      return;
-
-    mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
-    mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
-
-    for (const auto& track : filteredMCTracks) {
-      if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
-                                             track.phi() <= trackConfigs.extraPhiCuts->at(2) || track.phi() >= trackConfigs.extraPhiCuts->at(3)))
-        continue;
-      if (!track.has_mcParticle())
-        continue;
-
-      auto mcTrack = track.mcParticle_as<aod::McParticles>();
-      if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
-        continue;
-
-      mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
-      if (track.hasTPC()) {
-        mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
-      } else {
-        mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
-      }
-
-      int pid = fromPDGToEnum(mcTrack.pdgCode());
-      mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
-    }
-
-    for (const auto& mcParticle : mcParticlesThisColl) {
-      if (!isGenParticleCharged(mcParticle))
-        continue;
-
-      mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
-      if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
-      } else {
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
-      }
-
-      int pid = fromPDGToEnum(mcParticle.pdgCode());
-      mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
-    }
-  }
-
-  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCReco, "Process function for dN/deta values in MCReco", false);
-
-  void processdNdetaWPhiMCGen(MCCollisions const& mcCollisions, SimCollisions const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
+  void processdNdetaWPhiMC(MCCollisions const& mcCollisions, SimCollisions const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
   {
     std::vector<std::vector<int>> collsGrouped(mcCollisions.size());
 
@@ -2708,7 +2642,7 @@ struct Phik0shortanalysis {
     }
 
     for (const auto& mcCollision : mcCollisions) {
-      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
+      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.mcPartPerMCCollision, mcCollision.globalIndex());
 
       if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
         continue;
@@ -2734,7 +2668,7 @@ struct Phik0shortanalysis {
         auto collision = collisions.rawIteratorAt(collisionIndex);
 
         if (acceptEventQA<true>(collision, false)) {
-          auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
+          auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.trackPerCollision, collision.globalIndex());
 
           posFiltMCTracks.bindTable(filteredMCTracksThisColl);
           negFiltMCTracks.bindTable(filteredMCTracksThisColl);
@@ -2752,8 +2686,8 @@ struct Phik0shortanalysis {
               break;
           }
 
-          mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
-          mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
+          mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
+          mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
 
           zVtxs.push_back(collision.posZ());
 
@@ -2768,33 +2702,33 @@ struct Phik0shortanalysis {
             if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
               continue;
 
-            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
+            mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
             if (track.hasTPC()) {
-              mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
+              mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
             } else {
-              mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
+              mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
             }
 
             int pid = fromPDGToEnum(mcTrack.pdgCode());
-            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
+            mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
           }
 
           if (fillMcPartsForAllReco) {
             for (const auto& mcParticle : mcParticlesThisMcColl) {
-              if (!isGenParticleCharged(mcParticle))
+              if (!selectionChargedGenParticle(mcParticle))
                 continue;
 
-              mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+              mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
               if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
               } else {
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
               }
 
               int pid = fromPDGToEnum(mcParticle.pdgCode());
-              mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+              mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
             }
           }
 
@@ -2817,7 +2751,7 @@ struct Phik0shortanalysis {
       }
 
       for (const auto& mcParticle : mcParticlesThisMcColl) {
-        if (!isGenParticleCharged(mcParticle))
+        if (!selectionChargedGenParticle(mcParticle))
           continue;
 
         int pid = fromPDGToEnum(mcParticle.pdgCode());
@@ -2835,21 +2769,21 @@ struct Phik0shortanalysis {
         if (numberAssocColl > 0) {
           float zVtxRef = zVtxs[0];
 
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+          mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
           if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
           } else {
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
           }
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+          mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
         }
       }
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCGen, "Process function for dN/deta values in MCGen", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMC, "Process function for dN/deta values in MC", false);
 
   // New 2D analysis procedure
   void processPhiK0SPionData2D(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
@@ -3091,228 +3025,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SPionMCClosure2D, "Process function for Phi-K0S and Phi-Pion Correlations in MCClosure2D", false);
 
-  void processAllPartMCReco(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
-  {
-    if (!acceptEventQA<true>(collision, false))
-      return;
-
-    if (!collision.has_mcCollision())
-      return;
-
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
-    float genmultiplicity = mcCollision.centFT0M();
-
-    // Defining positive and negative tracks for phi reconstruction
-    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-    for (const auto& track1 : posThisColl) { // loop over all selected tracks
-      if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
-        continue; // topological and PID selection
-
-      auto track1ID = track1.globalIndex();
-
-      if (!track1.has_mcParticle())
-        continue;
-      auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-      if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
-        continue;
-
-      for (const auto& track2 : negThisColl) {
-        if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
-          continue; // topological and PID selection
-
-        auto track2ID = track2.globalIndex();
-        if (track2ID == track1ID)
-          continue; // condition to avoid double counting of pair
-
-        if (!track2.has_mcParticle())
-          continue;
-        auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
-        if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
-          continue;
-
-        float pTMother = -1.0f;
-        float yMother = -1.0f;
-        bool isMCMotherPhi = false;
-        for (const auto& motherOfMcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
-          for (const auto& motherOfMcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
-            if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
-              continue;
-            if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
-              continue;
-            if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
-              continue;
-
-            pTMother = motherOfMcTrack1.pt();
-            yMother = motherOfMcTrack1.y();
-            isMCMotherPhi = true;
-          }
-        }
-
-        if (!isMCMotherPhi)
-          continue;
-        if (pTMother < phiConfigs.minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
-          continue;
-
-        mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, pTMother, yMother);
-      }
-    }
-
-    for (const auto& v0 : V0s) {
-      if (!v0.has_mcParticle())
-        continue;
-
-      auto v0mcparticle = v0.mcParticle();
-      if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
-        continue;
-
-      const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
-      const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
-
-      if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
-        continue;
-      if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
-        continue;
-      if (std::abs(v0mcparticle.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      mcK0SHist.fill(HIST("h3K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt(), v0mcparticle.y());
-    }
-
-    for (const auto& track : fullMCTracks) {
-      // Pion selection
-      if (!selectionPion<false, true>(track, false))
-        continue;
-
-      if (!track.has_mcParticle())
-        continue;
-
-      auto mcTrack = track.mcParticle_as<aod::McParticles>();
-      if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
-        continue;
-
-      if (std::abs(mcTrack.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      // Primary pion selection
-      if (mcTrack.isPhysicalPrimary()) {
-        mcPionHist.fill(HIST("h3RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
-      } else {
-        if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
-          mcPionHist.fill(HIST("h3RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
-        } else { // Selection of secondary pions from material interactions
-          mcPionHist.fill(HIST("h3RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
-        }
-        continue;
-      }
-
-      mcPionHist.fill(HIST("h3PiMCRecoNewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
-
-      if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
-        continue;
-
-      mcPionHist.fill(HIST("h3PiMCReco2NewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
-    }
-
-    // Defining McParticles in the collision
-    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-
-    for (const auto& mcParticle : mcParticlesThisColl) {
-      if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      // Phi selection
-      if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt)
-        mcPhiHist.fill(HIST("h3PhiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-      // K0S selection
-      if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
-        mcK0SHist.fill(HIST("h3K0SMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-      // Pion selection
-      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
-        mcPionHist.fill(HIST("h3PiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-    }
-  }
-
-  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMCReco, "Process function for all particles in MCReco", false);
-
-  void processAllPartMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
-  {
-    if (std::abs(mcCollision.posZ()) > cutZVertex)
-      return;
-    if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
-      return;
-
-    float genmultiplicity = mcCollision.centFT0M();
-
-    uint64_t numberAssocColl = 0;
-    for (const auto& collision : collisions) {
-      if (acceptEventQA<true>(collision, false)) {
-        mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity); // Event split numerator
-
-        for (const auto& mcParticle : mcParticles) {
-          // The inclusive number of particles is the signal loss denominator,
-          //  while the number of associated particles is the signal loss numerator
-          if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
-            continue;
-
-          // Phi selection
-          if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt)
-            mcPhiHist.fill(HIST("h3PhiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-          // K0S selection
-          if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
-            mcK0SHist.fill(HIST("h3K0SMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-          // Pion selection
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
-            mcPionHist.fill(HIST("h3PiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-        }
-
-        numberAssocColl++;
-      }
-    }
-
-    // The inclusive number of events is the event loss denominator,
-    // while the number of associated events is the event loss numerator
-    mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
-    if (numberAssocColl > 0)
-      mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), genmultiplicity);
-
-    for (const auto& mcParticle : mcParticles) {
-      // The inclusive number of particles is the signal loss denominator,
-      //  while the number of associated particles is the signal loss numerator
-      if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      // Phi selection
-      if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt) {
-        mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-        if (numberAssocColl > 0)
-          mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      }
-
-      // K0S selection
-      if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt) {
-        mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-        if (numberAssocColl > 0)
-          mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      }
-
-      // Pion selection
-      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut) {
-        mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-        if (numberAssocColl > 0)
-          mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      }
-    }
-  }
-
-  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMCGen, "Process function for all particles in MCGen", false);
-
-  void processPhiK0SMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiK0SMixingEvent2D(SelCollisions const& collisions, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     auto tracksV0sTuple = std::make_tuple(fullTracks, V0s);
     Pair<SelCollisions, FullTracks, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache};
@@ -3361,9 +3074,9 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SMixingEvent, "Process Mixed Event for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SMixingEvent2D, "Process Mixed Event for Phi-K0S Analysis 2D", false);
 
-  void processPhiPionMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks)
+  void processPhiPionMixingEvent2D(SelCollisions const& collisions, FullTracks const& fullTracks)
   {
     auto tracksTuple = std::make_tuple(fullTracks);
     SameKindPair<SelCollisions, FullTracks, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
@@ -3409,7 +3122,363 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMixingEvent, "Process Mixed Event for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMixingEvent2D, "Process Mixed Event for Phi-Pion Analysis 2D", false);
+
+  void processAllPartMC(MCCollisions const& mcCollisions, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
+  {
+
+    std::vector<std::vector<int>> collsGrouped(mcCollisions.size());
+
+    for (const auto& collision : collisions) {
+      if (!collision.has_mcCollision())
+        continue;
+      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+      collsGrouped[mcCollision.globalIndex()].push_back(collision.globalIndex());
+    }
+
+    for (const auto& mcCollision : mcCollisions) {
+      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.mcPartPerMCCollision, mcCollision.globalIndex());
+
+      if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
+        continue;
+      switch (filterOnGenPhi) {
+        case 0:
+          if (!eventHasGenKPair(mcParticlesThisMcColl))
+            continue;
+          break;
+        case 1:
+          if (!eventHasGenPhi(mcParticlesThisMcColl))
+            continue;
+          break;
+        default:
+          break;
+      }
+
+      uint64_t numberAssocColl = 0;
+      std::vector<float> zVtxs;
+
+      auto& collIndexesThisMcColl = collsGrouped[mcCollision.globalIndex()];
+
+      for (const auto& collisionIndex : collIndexesThisMcColl) {
+        auto collision = collisions.rawIteratorAt(collisionIndex);
+
+        if (acceptEventQA<true>(collision, false)) {
+          auto fullMCTracksThisColl = fullMCTracks.sliceBy(preslices.trackPerCollision, collision.globalIndex());
+          auto v0sThisColl = V0s.sliceBy(preslices.v0PerCollision, collision.globalIndex());
+
+          posMCTracks.bindTable(fullMCTracksThisColl);
+          negMCTracks.bindTable(fullMCTracksThisColl);
+
+          switch (filterOnRecoPhi) {
+            case 0:
+              if (!eventHasRecoPhi(posMCTracks, negMCTracks))
+                continue;
+              break;
+            case 1:
+              if (!eventHasRecoPhiWPDG(posMCTracks, negMCTracks, mcParticles))
+                continue;
+              break;
+            default:
+              break;
+          }
+
+          mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
+          mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
+
+          zVtxs.push_back(collision.posZ());
+
+          if ((filterOnGenPhi != 0 && filterOnGenPhi != 1) && (filterOnRecoPhi != 0 && filterOnRecoPhi != 1)) {
+            for (const auto& track1 : posMCTracks) { // loop over all selected tracks
+              if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
+                continue; // topological and PID selection
+
+              auto track1ID = track1.globalIndex();
+
+              if (!track1.has_mcParticle())
+                continue;
+              auto mcTrack1 = mcParticles.rawIteratorAt(track1.mcParticleId());
+              if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
+                continue;
+
+              for (const auto& track2 : negMCTracks) {
+                if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
+                  continue; // topological and PID selection
+
+                auto track2ID = track2.globalIndex();
+                if (track2ID == track1ID)
+                  continue; // condition to avoid double counting of pair
+
+                if (!track2.has_mcParticle())
+                  continue;
+                auto mcTrack2 = mcParticles.rawIteratorAt(track2.mcParticleId());
+                if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
+                  continue;
+
+                const auto mcTrack1MotherIndexes = mcTrack1.mothersIds();
+                const auto mcTrack2MotherIndexes = mcTrack2.mothersIds();
+
+                float pTMother = -1.0f;
+                float yMother = -1.0f;
+                bool isMCMotherPhi = false;
+
+                for (const auto& mcTrack1MotherIndex : mcTrack1MotherIndexes) {
+                  for (const auto& mcTrack2MotherIndex : mcTrack2MotherIndexes) {
+                    if (mcTrack1MotherIndex != mcTrack2MotherIndex)
+                      continue;
+
+                    const auto mother = mcParticles.rawIteratorAt(mcTrack1MotherIndex);
+                    if (mother.pdgCode() != o2::constants::physics::Pdg::kPhi)
+                      continue;
+
+                    pTMother = mother.pt();
+                    yMother = mother.y();
+                    isMCMotherPhi = true;
+                  }
+                }
+
+                if (!isMCMotherPhi)
+                  continue;
+                if (pTMother < phiConfigs.minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
+                  continue;
+
+                mcPhiHist.fill(HIST("h4PhiMCRecoNewProc"), collision.posZ(), mcCollision.centFT0M(), pTMother, yMother);
+              }
+            }
+          }
+
+          for (const auto& v0 : v0sThisColl) {
+            if (!v0.has_mcParticle())
+              continue;
+
+            auto v0mcparticle = mcParticles.rawIteratorAt(v0.mcParticleId());
+            if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
+              continue;
+
+            const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
+            const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
+
+            if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+              continue;
+            if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+              continue;
+            if (std::abs(v0mcparticle.y()) > deltaYConfigs.cfgYAcceptance)
+              continue;
+
+            mcK0SHist.fill(HIST("h4K0SMCRecoNewProc"), collision.posZ(), mcCollision.centFT0M(), v0mcparticle.pt(), v0mcparticle.y());
+          }
+
+          for (const auto& track : fullMCTracksThisColl) {
+            // Pion selection
+            if (!selectionPion<false, true>(track, false))
+              continue;
+
+            if (!track.has_mcParticle())
+              continue;
+
+            auto mcTrack = mcParticles.rawIteratorAt(track.mcParticleId());
+            if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
+              continue;
+
+            if (std::abs(mcTrack.y()) > deltaYConfigs.cfgYAcceptance)
+              continue;
+
+            // Primary pion selection
+            if (mcTrack.isPhysicalPrimary()) {
+              mcPionHist.fill(HIST("h3RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
+            } else {
+              if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
+                mcPionHist.fill(HIST("h3RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
+              } else { // Selection of secondary pions from material interactions
+                mcPionHist.fill(HIST("h3RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
+              }
+              continue;
+            }
+
+            mcPionHist.fill(HIST("h4PiMCRecoNewProc"), collision.posZ(), mcCollision.centFT0M(), mcTrack.pt(), mcTrack.y());
+
+            if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
+              continue;
+
+            mcPionHist.fill(HIST("h4PiMCReco2NewProc"), collision.posZ(), mcCollision.centFT0M(), mcTrack.pt(), mcTrack.y());
+          }
+
+          numberAssocColl++;
+        }
+      }
+
+      mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), mcCollision.centFT0M());
+
+      if (numberAssocColl > 0) {
+        float zVtxRef = zVtxs[0];
+        if (zVtxs.size() > 1) {
+          for (size_t i = 1; i < zVtxs.size(); ++i) {
+            mcEventHist.fill(HIST("hSplitVertexZ"), zVtxs[i] - zVtxRef);
+          }
+        }
+
+        mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
+        mcEventHist.fill(HIST("h2GenMCAssocRecoVertexZvsMult"), zVtxRef, mcCollision.centFT0M());
+      }
+
+      for (const auto& mcParticle : mcParticlesThisMcColl) {
+        if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
+          continue;
+
+        if (filterOnGenPhi != 0 && filterOnGenPhi != 1) {
+          // Phi selection
+          if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt) {
+            mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+            if (numberAssocColl > 0) {
+              float zVtxRef = zVtxs[0];
+              mcPhiHist.fill(HIST("h4PhiMCGenAssocRecoNewProc"), zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+            }
+          }
+        }
+
+        // K0S selection
+        if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt) {
+          mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          if (numberAssocColl > 0) {
+            float zVtxRef = zVtxs[0];
+            mcK0SHist.fill(HIST("h4K0SMCGenAssocRecoNewProc"), zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          }
+        }
+
+        // Pion selection
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut) {
+          mcPionHist.fill(HIST("h3PiMCGenNewProc"), mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          if (numberAssocColl > 0) {
+            float zVtxRef = zVtxs[0];
+            mcPionHist.fill(HIST("h4PiMCGenAssocRecoNewProc"), zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMC, "Process function for all particles (not for phi if triggered on it) in MC", false);
+
+  // New 2D analysis procedure
+  void processPhiK0SPionDeltayDeltaphiData2D(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  {
+    // Check if the event selection is passed
+    if (!acceptEventQA<false>(collision, true))
+      return;
+
+    float multiplicity = collision.centFT0M();
+    dataEventHist.fill(HIST("hMultiplicityPercent"), multiplicity);
+
+    // Defining positive and negative tracks for phi reconstruction
+    auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+    if (!eventHasRecoPhi(posThisColl, negThisColl))
+      return;
+
+    dataEventHist.fill(HIST("hEventSelection"), 4); // at least a Phi candidate in the event
+
+    bool isCountedPhi = false;
+    bool isFilledhV0 = false;
+
+    // Loop over all positive tracks
+    for (const auto& track1 : posThisColl) {
+      if (!selectionTrackResonance<false>(track1, true) || !selectionPIDKaonpTdependent(track1))
+        continue; // topological and PID selection
+
+      dataPhiHist.fill(HIST("hEta"), track1.eta());
+      dataPhiHist.fill(HIST("hNsigmaKaonTPC"), track1.tpcInnerParam(), track1.tpcNSigmaKa());
+      dataPhiHist.fill(HIST("hNsigmaKaonTOF"), track1.tpcInnerParam(), track1.tofNSigmaKa());
+
+      auto track1ID = track1.globalIndex();
+
+      // Loop over all negative tracks
+      for (const auto& track2 : negThisColl) {
+        if (!selectionTrackResonance<false>(track2, true) || !selectionPIDKaonpTdependent(track2))
+          continue; // topological and PID selection
+
+        auto track2ID = track2.globalIndex();
+        if (track2ID == track1ID)
+          continue; // condition to avoid double counting of pair
+
+        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < phiConfigs.minPhiPt)
+          continue;
+        if (recPhi.M() < phiConfigs.lowMPhi || recPhi.M() > phiConfigs.upMPhi)
+          continue;
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
+          continue;
+
+        if (!isCountedPhi)
+          isCountedPhi = true;
+
+        float efficiencyPhi = 1.0f;
+        if (applyEfficiency) {
+          efficiencyPhi = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity());
+          if (efficiencyPhi == 0)
+            efficiencyPhi = 1.0f;
+        }
+        float weightPhi = applyEfficiency ? 1.0f / efficiencyPhi : 1.0f;
+        dataPhiHist.fill(HIST("h3PhiDataNewProc"), multiplicity, recPhi.Pt(), recPhi.M(), weightPhi);
+
+        // V0 already reconstructed by the builder
+        for (const auto& v0 : V0s) {
+          const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+          const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
+
+          // Cut on V0 dynamic columns
+          if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+            continue;
+          if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+            continue;
+
+          if (!isFilledhV0) {
+            dataK0SHist.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
+            dataK0SHist.fill(HIST("hV0CosPA"), v0.v0cosPA());
+
+            // Filling the PID of the V0 daughters in the region of the K0 peak
+            if (v0Configs.lowMK0S < v0.mK0Short() && v0.mK0Short() < v0Configs.upMK0S) {
+              dataK0SHist.fill(HIST("hNSigmaPosPionFromK0S"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi());
+              dataK0SHist.fill(HIST("hNSigmaNegPionFromK0S"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi());
+            }
+          }
+
+          if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
+            continue;
+
+          float efficiencyPhiK0S = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiK0S = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(multiplicity, v0.pt(), v0.yK0Short());
+            if (efficiencyPhiK0S == 0)
+              efficiencyPhiK0S = 1.0f;
+          }
+          float weightPhiK0S = applyEfficiency ? 1.0f / efficiencyPhiK0S : 1.0f;
+          dataPhiK0SHist.fill(HIST("h5PhiK0SData2PartCorr"), multiplicity, recPhi.Pt(), v0.pt(), recPhi.Rapidity() - v0.yK0Short(), recPhi.Phi() - v0.phi(), weightPhiK0S);
+        }
+
+        isFilledhV0 = true;
+
+        // Loop over all primary pion candidates
+        for (const auto& track : fullTracks) {
+          if (!selectionPion<true, false>(track, false))
+            continue;
+
+          if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
+            continue;
+
+          float efficiencyPhiPion = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiPion = track.pt() < trackConfigs.pTToUseTOF ? effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPionTPC->Interpolate(multiplicity, track.pt(), track.rapidity(massPi)) : effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPionTPCTOF->Interpolate(multiplicity, track.pt(), track.rapidity(massPi));
+            if (efficiencyPhiPion == 0)
+              efficiencyPhiPion = 1.0f;
+          }
+          float weightPhiPion = applyEfficiency ? 1.0f / efficiencyPhiPion : 1.0f;
+          dataPhiPionHist.fill(HIST("h5PhiPiData2PartCorr"), multiplicity, recPhi.Pt(), track.pt(), recPhi.Rapidity() - track.rapidity(massPi), recPhi.Phi() - track.phi(), weightPhiPion);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SPionDeltayDeltaphiData2D, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

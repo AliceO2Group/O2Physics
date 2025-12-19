@@ -22,7 +22,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -89,15 +89,17 @@ struct lambdapolsp {
   o2::ccdb::CcdbApi ccdbApi;
   TH1D* hwgtAL;
   // fill output
-  Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
-  Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
-  Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
-  Configurable<bool> additionalEvSel4{"additionalEvSel4", false, "additionalEvSel4"};
+  struct : ConfigurableGroup {
+    Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
+    Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
+    Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
+    Configurable<bool> additionalEvSel4{"additionalEvSel4", false, "additionalEvSel4"};
+    Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+    Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  } evselGrp;
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
   Configurable<bool> cqvas{"cqvas", false, "change q vectors after shift correction"};
   Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
-  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> sys{"sys", 1, "flag to select systematic source"};
   Configurable<int> centestim{"centestim", 0, "flag to select centrality estimator"};
   Configurable<bool> dosystematic{"dosystematic", false, "flag to perform systematic study"};
@@ -109,6 +111,7 @@ struct lambdapolsp {
     Configurable<double> etaMix{"etaMix", 0.1, "eta difference in mixing"};
     Configurable<double> ptMix{"ptMix", 0.1, "pt difference in mixing"};
     Configurable<double> phiMix{"phiMix", 0.1, "phi difference in mixing"};
+    Configurable<bool> useSP{"useSP", false, "use scalar product"};
   } randGrp;
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -232,6 +235,7 @@ struct lambdapolsp {
     std::vector<AxisSpec> runaxes = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis};
     if (needetaaxis)
       runaxes.insert(runaxes.end(), {axisGrp.configbinAxis});
+    std::vector<AxisSpec> runaxes2 = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configcentAxis};
 
     if (checkwithpub) {
       if (useprofile == 2) {
@@ -351,11 +355,12 @@ struct lambdapolsp {
       histos.add("hpCosPsiC", "hpCosPsiC", HistType::kTHnSparseF, {axisGrp.configcentAxis, thnAxisres});
       histos.add("hpSinPsiA", "hpSinPsiA", HistType::kTHnSparseF, {axisGrp.configcentAxis, thnAxisres});
       histos.add("hpSinPsiC", "hpSinPsiC", HistType::kTHnSparseF, {axisGrp.configcentAxis, thnAxisres});*/
-      /*histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
-      histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
-      histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
-      histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});*/
-
+      if (randGrp.useSP) {
+        histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {axisGrp.configcentAxis, spAxis});
+        histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {axisGrp.configcentAxis, spAxis});
+        histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {axisGrp.configcentAxis, spAxis});
+        histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {axisGrp.configcentAxis, spAxis});
+      }
       if (usesubdet) {
         histos.add("hSparseLambdaCosPsiA", "hSparseLambdaCosPsiA", HistType::kTHnSparseF, runaxes, true);
         histos.add("hSparseLambdaSinPsiA", "hSparseLambdaSinPsiA", HistType::kTHnSparseF, runaxes, true);
@@ -400,6 +405,12 @@ struct lambdapolsp {
       // histos.add("hSparseLambda_corr2b", "hSparseLambda_corr2b", HistType::kTHnSparseF, runaxes, true);
       histos.add("hSparseAntiLambda_corr2a", "hSparseAntiLambda_corr2a", HistType::kTHnSparseF, runaxes, true);
       // histos.add("hSparseAntiLambda_corr2b", "hSparseAntiLambda_corr2b", HistType::kTHnSparseF, runaxes, true);
+      if (randGrp.useSP) {
+        histos.add("hSparseAntiLambda_avgux", "hSparseAntiLambda_avgux", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+        histos.add("hSparseAntiLambda_avguy", "hSparseAntiLambda_avguy", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+        histos.add("hSparseLambda_avgux", "hSparseLambda_avgux", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+        histos.add("hSparseLambda_avguy", "hSparseLambda_avguy", HistType::kTHnSparseF, {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis}, true);
+      }
     }
 
     if (distGrp.filldist) {
@@ -427,6 +438,11 @@ struct lambdapolsp {
       histos.add("hptposantilambda", "hptposantilambda", HistType::kTH1D, {distGrp.axispt}, true);
       histos.add("hptnegantilambda", "hptnegantilambda", HistType::kTH1D, {distGrp.axispt}, true);
     }
+
+    histos.add("hSparseGenLambda", "hSparseGenLambda", HistType::kTHnSparseF, runaxes2, true);
+    histos.add("hSparseGenAntiLambda", "hSparseGenAntiLambda", HistType::kTHnSparseF, runaxes2, true);
+    histos.add("hSparseRecLambda", "hSparseRecLambda", HistType::kTHnSparseF, runaxes2, true);
+    histos.add("hSparseRecAntiLambda", "hSparseRecAntiLambda", HistType::kTHnSparseF, runaxes2, true);
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
@@ -659,6 +675,11 @@ struct lambdapolsp {
             (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
   }
 
+  double modqxZDCA;
+  double modqyZDCA;
+  double modqxZDCC;
+  double modqyZDCC;
+
   void fillHistograms(bool tag1, bool tag2, const ROOT::Math::PxPyPzMVector& particle,
                       const ROOT::Math::PxPyPzMVector& daughter,
                       double psiZDCC, double psiZDCA, double psiZDC, double centrality,
@@ -672,6 +693,10 @@ struct lambdapolsp {
     if (randGrp.doRandomPhi) {
       phiangle = randPhi.Uniform(0, 2 * TMath::Pi());
     }
+
+    auto ux = TMath::Cos(phiangle);
+    auto uy = TMath::Sin(phiangle);
+
     auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
     auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
     auto phiminuspsi = GetPhiInRange(phiangle - psiZDC);
@@ -680,7 +705,8 @@ struct lambdapolsp {
     auto PolC = TMath::Sin(phiminuspsiC);
     auto PolA = TMath::Sin(phiminuspsiA);
     auto Pol = TMath::Sin(phiminuspsi);
-
+    // auto PolSP = uy * TMath::Cos(psiZDC) - ux * TMath::Sin(psiZDC);
+    auto PolSP = uy * (modqxZDCC - modqxZDCA) - ux * (modqyZDCC - modqyZDCA);
     auto sinPhiStar = TMath::Sin(GetPhiInRange(phiangle));
     auto cosPhiStar = TMath::Cos(GetPhiInRange(phiangle));
     // auto sinThetaStarcosphiphiStar = sinThetaStar * TMath::Cos(2 * GetPhiInRange(particle.Phi() - phiangle));
@@ -693,6 +719,9 @@ struct lambdapolsp {
     auto Polwgt = Pol / acvalue;
     auto PolAwgt = PolA / acvalue;
     auto PolCwgt = PolC / acvalue;
+
+    if (randGrp.useSP)
+      Polwgt = PolSP / acvalue;
 
     // Fill histograms using constructed names
     if (tag2) {
@@ -718,6 +747,10 @@ struct lambdapolsp {
         // histos.fill(HIST("hSparseAntiLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
         histos.fill(HIST("hSparseAntiLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
         // histos.fill(HIST("hSparseAntiLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
+        if (randGrp.useSP) {
+          histos.fill(HIST("hSparseAntiLambda_avgux"), candmass, candpt, ux, centrality);
+          histos.fill(HIST("hSparseAntiLambda_avguy"), candmass, candpt, uy, centrality);
+        }
       } else {
         if (usesubdet) {
           histos.fill(HIST("hSparseAntiLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
@@ -765,6 +798,10 @@ struct lambdapolsp {
         // histos.fill(HIST("hSparseLambda_corr1c"), candmass, candpt, phiphiStar, centrality, desbinvalue, wgtfactor);
         histos.fill(HIST("hSparseLambda_corr2a"), candmass, candpt, sinThetaStar, centrality, desbinvalue, wgtfactor);
         // histos.fill(HIST("hSparseLambda_corr2b"), candmass, candpt, sinThetaStarcosphiphiStar, centrality, desbinvalue, wgtfactor);
+        if (randGrp.useSP) {
+          histos.fill(HIST("hSparseLambda_avgux"), candmass, candpt, ux, centrality);
+          histos.fill(HIST("hSparseLambda_avguy"), candmass, candpt, uy, centrality);
+        }
       } else {
         if (usesubdet) {
           histos.fill(HIST("hSparseLambdaCosPsiA"), candmass, candpt, (TMath::Cos(GetPhiInRange(psiZDCA))), centrality, wgtfactor);
@@ -807,6 +844,7 @@ struct lambdapolsp {
   Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
+  using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
   using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>>;
   using ResoV0s = aod::V0Datas;
 
@@ -839,26 +877,27 @@ struct lambdapolsp {
     }
     // histos.fill(HIST("hCentrality1"), centrality);
 
-    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+    if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
     // histos.fill(HIST("hCentrality2"), centrality);
-    // if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+    // if (evselGrp.additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (evselGrp.additionalEvSel2 && (collision.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
       return;
     }
     // histos.fill(HIST("hCentrality3"), centrality);
-    if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (evselGrp.additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
 
-    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (evselGrp.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
 
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
       return;
     }
+
     // currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
     auto bc = collision.foundBC_as<BCsRun3>();
 
@@ -868,11 +907,6 @@ struct lambdapolsp {
     auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
-
-    double modqxZDCA;
-    double modqyZDCA;
-    double modqxZDCC;
-    double modqyZDCC;
 
     if (cqvas) {
       modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
@@ -886,7 +920,7 @@ struct lambdapolsp {
       modqyZDCC = qyZDCC;
     }
 
-    auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane
+    auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane*/
     /*if (useonlypsis) {
       psiZDC = psiZDCC - psiZDCA;
       }*/
@@ -894,16 +928,20 @@ struct lambdapolsp {
     histos.fill(HIST("hCentrality"), centrality);
     if (!checkwithpub) {
       // histos.fill(HIST("hVtxZ"), collision.posZ());
-      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
-      // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
-      /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
-      histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
-      /*histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
-        histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
-        histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
-        histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);*/
+      if (randGrp.useSP) {
+        histos.fill(HIST("hpRes"), centrality, ((modqxZDCA * modqxZDCC) + (modqyZDCA * modqyZDCC)));
+        // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+        /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
+          histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
+          histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
+          histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
+        histos.fill(HIST("hcentQxZDCA"), centrality, modqxZDCA);
+        histos.fill(HIST("hcentQyZDCA"), centrality, modqyZDCA);
+        histos.fill(HIST("hcentQxZDCC"), centrality, modqxZDCC);
+        histos.fill(HIST("hcentQyZDCC"), centrality, modqyZDCC);
+      } else {
+        histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      }
     }
 
     ///////////checking v1////////////////////////////////
@@ -1105,6 +1143,7 @@ struct lambdapolsp {
           accprofileL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathL.value, bc.timestamp());
           accprofileAL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathAL.value, bc.timestamp());
         }
+        double acvalue = 1.0;
         int binxwgt;
         double wgtvalue;
         if (useyldwgt) {
@@ -1168,9 +1207,14 @@ struct lambdapolsp {
             if (LambdaTag) {
               Lambda = Proton + AntiPion;
               tagb = 0;
-              int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-              int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-              double acvalue = accprofileL->GetBinContent(binx, biny);
+              if (useAccCorr) {
+                int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+                int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+                acvalue = accprofileL->GetBinContent(binx, biny);
+              } else {
+                acvalue = 1.0;
+              }
+
               fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), desbinvalue, acvalue, 1.0);
             }
 
@@ -1178,20 +1222,27 @@ struct lambdapolsp {
             if (aLambdaTag) {
               AntiLambda = AntiProton + Pion;
               taga = 0;
-              int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
-              int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
-              double acvalue = accprofileAL->GetBinContent(binx, biny);
+              if (useAccCorr) {
+                int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+                int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+                acvalue = accprofileAL->GetBinContent(binx, biny);
+              } else {
+                acvalue = 1.0;
+              }
               fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), desbinvalue, acvalue, 1.0);
             }
           }
         } else {
-
           if (LambdaTag) {
             Lambda = Proton + AntiPion;
             tagb = 0;
-            int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-            int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-            double acvalue = accprofileL->GetBinContent(binx, biny);
+            if (useAccCorr) {
+              int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+              int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+              acvalue = accprofileL->GetBinContent(binx, biny);
+            } else {
+              acvalue = 1.0;
+            }
             if (distGrp.filldist && aLambdaTag == 0 && Lambda.M() > distGrp.lowmasscut && Lambda.M() < distGrp.highmasscut) {
               histos.fill(HIST("hcosinelambda"), v0.v0cosPA());
               histos.fill(HIST("hdcabwv0daughlambda"), v0.dcaV0daughters());
@@ -1212,9 +1263,13 @@ struct lambdapolsp {
           if (aLambdaTag) {
             AntiLambda = AntiProton + Pion;
             taga = 0;
-            int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
-            int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
-            double acvalue = accprofileAL->GetBinContent(binx, biny);
+            if (useAccCorr) {
+              int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+              int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+              acvalue = accprofileAL->GetBinContent(binx, biny);
+            } else {
+              acvalue = 1.0;
+            }
             if (distGrp.filldist && LambdaTag == 0 && AntiLambda.M() > distGrp.lowmasscut && AntiLambda.M() < distGrp.highmasscut) {
               histos.fill(HIST("hcosineantilambda"), v0.v0cosPA());
               histos.fill(HIST("hdcabwv0daughantilambda"), v0.dcaV0daughters());
@@ -1265,20 +1320,20 @@ struct lambdapolsp {
       return;
     }
 
-    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+    if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
     // histos.fill(HIST("hCentrality2"), centrality);
-    //  if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+    //  if (evselGrp.additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (evselGrp.additionalEvSel2 && (collision.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
       return;
     }
     // histos.fill(HIST("hCentrality3"), centrality);
-    if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (evselGrp.additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
 
-    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (evselGrp.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
 
@@ -1308,10 +1363,10 @@ struct lambdapolsp {
     auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
-    double modqxZDCA;
+    /*double modqxZDCA;
     double modqyZDCA;
     double modqxZDCC;
-    double modqyZDCC;
+    double modqyZDCC;*/
 
     if (cqvas) {
       modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
@@ -1331,12 +1386,20 @@ struct lambdapolsp {
     histos.fill(HIST("hCentrality"), centrality);
     if (!checkwithpub) {
       // histos.fill(HIST("hVtxZ"), collision.posZ());
-      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
-      // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
-      /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
-      histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
-      histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
+      if (randGrp.useSP) {
+        histos.fill(HIST("hpRes"), centrality, ((modqxZDCA * modqxZDCC) + (modqyZDCA * modqyZDCC)));
+        // histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+        /*histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
+        histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
+        histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
+        histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));*/
+        histos.fill(HIST("hcentQxZDCA"), centrality, modqxZDCA);
+        histos.fill(HIST("hcentQyZDCA"), centrality, modqyZDCA);
+        histos.fill(HIST("hcentQxZDCC"), centrality, modqxZDCC);
+        histos.fill(HIST("hcentQyZDCC"), centrality, modqyZDCC);
+      } else {
+        histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      }
     }
 
     //___________________________________________________________________________________________________
@@ -1482,9 +1545,14 @@ struct lambdapolsp {
         if (analyzeLambda && LambdaTag) {
           Lambda = Proton + AntiPion;
           tagb = 0;
-          int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
-          int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
-          double acvalue = accprofileL->GetBinContent(binx, biny);
+          double acvalue = 1.0;
+          if (useAccCorr) {
+            int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+            int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+            acvalue = accprofileL->GetBinContent(binx, biny);
+          } else {
+            acvalue = 1.0;
+          }
           // double acvalue = 1.0;
           fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, 1.0);
         }
@@ -1493,9 +1561,14 @@ struct lambdapolsp {
         if (analyzeLambda && aLambdaTag) {
           AntiLambda = AntiProton + Pion;
           taga = 0;
-          int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
-          int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
-          double acvalue = accprofileAL->GetBinContent(binx, biny);
+          double acvalue = 1.0;
+          if (useAccCorr) {
+            int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+            int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+            acvalue = accprofileAL->GetBinContent(binx, biny);
+          } else {
+            acvalue = 1.0;
+          }
           // double acvalue = 1.0;
           fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue);
         }
@@ -1505,7 +1578,142 @@ struct lambdapolsp {
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedData, "Process derived data", false);
 
+  using TrackMCTrueTable = aod::McParticles;
+  ROOT::Math::PxPyPzMVector lambdadummymc, antiLambdadummymc, protonmc, pionmc, antiProtonmc, antiPionmc;
+
+  void processMC(EventCandidatesMC::iterator const& collision, AllTrackCandidates const& /*tracks*/, TrackMCTrueTable const& GenParticles, ResoV0s const& V0s)
+  {
+    if (!collision.sel8()) {
+      return;
+    }
+    double centrality = -999.;
+    centrality = collision.centFT0C();
+
+    if (evselGrp.additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
+
+    if (evselGrp.additionalEvSel2 && (collision.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
+      return;
+    }
+
+    if (evselGrp.additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
+    if (evselGrp.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
+
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
+
+    histos.fill(HIST("hCentrality"), centrality);
+
+    for (const auto& v0 : V0s) {
+
+      auto postrack = v0.template posTrack_as<AllTrackCandidates>();
+      auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
+
+      int LambdaTag = 0;
+      int aLambdaTag = 0;
+
+      const auto signpos = postrack.sign();
+      const auto signneg = negtrack.sign();
+
+      if (signpos < 0 || signneg > 0) {
+        continue;
+      }
+
+      if (isSelectedV0Daughter(v0, postrack, 0, 0) && isSelectedV0Daughter(v0, negtrack, 1, 0)) {
+        LambdaTag = 1;
+      }
+      if (isSelectedV0Daughter(v0, negtrack, 0, 1) && isSelectedV0Daughter(v0, postrack, 1, 1)) {
+        aLambdaTag = 1;
+      }
+
+      if (!LambdaTag && !aLambdaTag)
+        continue;
+
+      if (!SelectionV0(collision, v0)) {
+        continue;
+      }
+
+      if (LambdaTag) {
+        Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+        AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+        Lambdadummy = Proton + AntiPion;
+      }
+      if (aLambdaTag) {
+        AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+        Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+        AntiLambdadummy = AntiProton + Pion;
+      }
+
+      if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+        continue;
+      }
+
+      if (TMath::Abs(v0.eta()) > 0.8)
+        continue;
+
+      if (LambdaTag) {
+        Lambda = Proton + AntiPion;
+        histos.fill(HIST("hSparseRecLambda"), v0.mLambda(), v0.pt(), centrality);
+      }
+      if (aLambdaTag) {
+        AntiLambda = AntiProton + Pion;
+        histos.fill(HIST("hSparseRecAntiLambda"), v0.mAntiLambda(), v0.pt(), centrality);
+      }
+    }
+
+    for (const auto& mcParticle : GenParticles) {
+      if (std::abs(mcParticle.pdgCode()) != PDG_t::kLambda0) {
+        continue;
+      }
+      if (std::abs(mcParticle.y()) > ConfV0Rap) {
+        continue;
+      }
+      auto pdg1 = mcParticle.pdgCode();
+      auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+      int daughsize = 2;
+      if (kDaughters.size() != daughsize) {
+        continue;
+      }
+      for (const auto& kCurrentDaughter : kDaughters) {
+
+        if (std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kPiPlus) {
+          continue;
+        }
+        if (kCurrentDaughter.pdgCode() == PDG_t::kProton) {
+          protonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
+        }
+        if (kCurrentDaughter.pdgCode() == PDG_t::kPiMinus) {
+          antiPionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
+        }
+
+        if (kCurrentDaughter.pdgCode() == PDG_t::kProtonBar) {
+          antiProtonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
+        }
+        if (kCurrentDaughter.pdgCode() == PDG_t::kPiPlus) {
+          pionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
+        }
+      }
+      if (pdg1 == PDG_t::kLambda0) {
+        lambdadummymc = protonmc + antiPionmc;
+        histos.fill(HIST("hSparseGenLambda"), lambdadummymc.M(), lambdadummymc.Pt(), centrality);
+      }
+
+      if (pdg1 == PDG_t::kLambda0Bar) {
+        antiLambdadummymc = antiProtonmc + pionmc;
+        histos.fill(HIST("hSparseGenAntiLambda"), antiLambdadummymc.M(), antiLambdadummymc.Pt(), centrality);
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdapolsp, processMC, "Process MC", false);
+
   // Processing Event Mixing
+  /*
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType colBinning{{meGrp.axisVertex, meGrp.axisMultiplicityClass}, true};
   Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
@@ -1541,28 +1749,28 @@ struct lambdapolsp {
         continue;
       }
 
-      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
-      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
 
@@ -1644,6 +1852,7 @@ struct lambdapolsp {
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed, "Process mixed event using derived data", false);
 
+
   void processDerivedDataMixed2(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
   {
     TRandom3 randGen(0);
@@ -1675,28 +1884,28 @@ struct lambdapolsp {
         continue;
       }
 
-      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (evselGrp.additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      if (evselGrp.additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > evselGrp.cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < evselGrp.cfgMinOccupancy)) {
         continue;
       }
-      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (evselGrp.additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
-      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (evselGrp.additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
       auto centrality = collision1.centFT0C();
@@ -1795,150 +2004,9 @@ struct lambdapolsp {
     }
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed2, "Process mixed event2 using derived data", false);
-
-  void processDerivedDataMixedFIFO(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
-  {
-
-    auto nBins = colBinning.getAllBinsCount();
-    std::vector<std::deque<int>> eventPools(nBins); // Pool per bin holding just event indices
-
-    for (auto& collision1 : collisions) {
-
-      if (!collision1.sel8()) {
-        continue;
-      }
-      if (!collision1.triggereventsp()) { // provided by StraZDCSP
-        continue;
-      }
-      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
-        continue;
-      }
-
-      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-        continue;
-      }
-      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
-        continue;
-      }
-      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
-      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-        continue;
-      }
-
-      int bin = colBinning.getBin(std::make_tuple(collision1.posZ(), collision1.centFT0C()));
-      auto groupV0_evt1 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
-      float centrality = collision1.centFT0C();
-      auto qxZDCA = collision1.qxZDCA();
-      auto qxZDCC = collision1.qxZDCC();
-      auto qyZDCA = collision1.qyZDCA();
-      auto qyZDCC = collision1.qyZDCC();
-      auto psiZDCC = collision1.psiZDCC();
-      auto psiZDCA = collision1.psiZDCA();
-      double modqxZDCA;
-      double modqyZDCA;
-      double modqxZDCC;
-      double modqyZDCC;
-
-      if (bin < 0)
-        continue;
-      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
-      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
-      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
-      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
-
-      auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane from collision
-
-      histos.fill(HIST("hCentrality"), centrality);
-      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
-
-      // For deduplication of (v0_evt1, v0_evt2) pairs per mixed event
-      std::unordered_map<int, std::set<std::pair<int, int>>> seenMap;
-
-      // Loop over Λ candidates in collision1 (keep psi from here)
-
-      for (auto& v0_evt1 : groupV0_evt1) {
-        if (!SelectionV0(collision1, v0_evt1))
-          continue;
-        bool LambdaTag1 = isCompatible(v0_evt1, 0);
-        bool aLambdaTag1 = isCompatible(v0_evt1, 1);
-        ROOT::Math::PxPyPzMVector proton1, pion1, antiproton1, antipion1, LambdaTag1dummy, AntiLambdaTag1dummy;
-        if (LambdaTag1) {
-          proton1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPr};
-          antipion1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPi};
-          LambdaTag1dummy = proton1 + antipion1;
-        }
-        if (aLambdaTag1) {
-          antiproton1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPr};
-          pion1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPi};
-          AntiLambdaTag1dummy = antiproton1 + pion1;
-        }
-        if (shouldReject(LambdaTag1, aLambdaTag1, LambdaTag1dummy, AntiLambdaTag1dummy)) {
-          continue;
-        }
-        if (TMath::Abs(v0_evt1.eta()) > 0.8)
-          continue;
-
-        // Loop over all FIFO pool events (mixed events) for this centrality bin
-        int nMixedEvents = 0;
-        for (auto it = eventPools[bin].rbegin(); it != eventPools[bin].rend() && nMixedEvents < meGrp.nMix; ++it, ++nMixedEvents) {
-          int collision2idx = *it;
-          if (collision1.index() == collision2idx)
-            continue;
-          auto groupV0_evt2 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2idx);
-
-          // Now loop over Λ candidates in collision2 to randomize proton phi* (randomize decay angle)
-          for (auto& v0_evt2 : groupV0_evt2) {
-            if (!SelectionV0(collision1, v0_evt2))
-              continue;
-            bool LambdaTag2 = isCompatible(v0_evt2, 0);
-            bool aLambdaTag2 = isCompatible(v0_evt2, 1);
-            if (!LambdaTag2 && !aLambdaTag2)
-              continue;
-
-            // Deduplicate (v0_evt1, v0_evt2) pairs per collision2idx
-            auto key = std::make_pair(v0_evt1.index(), v0_evt2.index());
-            if (!seenMap[collision2idx].insert(key).second)
-              continue;
-
-            ROOT::Math::PxPyPzMVector proton_mix, antiproton_mix, pion_mix, antipion_mix, LambdaTag2dummy, AntiLambdaTag2dummy;
-            if (LambdaTag2) {
-              proton_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPr};
-              antipion_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPi};
-              LambdaTag2dummy = proton_mix + antipion_mix;
-            }
-            if (aLambdaTag2) {
-              antiproton_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPr};
-              pion_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPi};
-              AntiLambdaTag2dummy = antiproton_mix + pion_mix;
-            }
-            if (shouldReject(LambdaTag2, aLambdaTag2, LambdaTag2dummy, AntiLambdaTag2dummy)) {
-              continue;
-            }
-            if (TMath::Abs(v0_evt2.eta()) > 0.8)
-              continue;
-            if (LambdaTag1) {
-              double acvalue = 1.0;
-              fillHistograms(1, 0, LambdaTag1dummy, proton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue, 1.0);
-            }
-            if (aLambdaTag1) {
-              double acvalue = 1.0;
-              fillHistograms(0, 1, AntiLambdaTag1dummy, antiproton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mAntiLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue, 1.0);
-            }
-          }
-        }
-      }
-      // After processing all mixes, add current event V0s to pool for future mixing
-      eventPools[bin].push_back(collision1.index());
-      // Keep only N last events in FIFO queue
-      if (static_cast<int>(eventPools[bin].size()) > meGrp.nMix) {
-        eventPools[bin].pop_front();
-      }
-    }
-  }
-  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixedFIFO, "Process mixed event using derived data with FIFO method", false);
+ */
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{

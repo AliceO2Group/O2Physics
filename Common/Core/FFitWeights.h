@@ -17,19 +17,17 @@
 #ifndef COMMON_CORE_FFITWEIGHTS_H_
 #define COMMON_CORE_FFITWEIGHTS_H_
 
+#include <TAxis.h>
 #include <TCollection.h>
-#include <TFile.h>
-#include <TH1D.h>
-#include <TH2D.h>
-#include <TH3D.h>
-#include <TMath.h>
+#include <TH2.h>
 #include <TNamed.h>
 #include <TObjArray.h>
+#include <TProfile.h>
 #include <TString.h>
 
-#include <algorithm>
-#include <complex>
-#include <memory>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -43,28 +41,44 @@ class FFitWeights : public TNamed
 
   void init();
   void fillWeights(float centrality, float qn, int nh, const char* pf = "");
+  void fillPt(float centrality, float pt, float weight, bool first);
+  float getPtMult(float centrality);
   TObjArray* getDataArray() { return fW_data; }
 
-  void setCentBin(int bin) { CentBin = bin; }
+  void setCentBin(int bin) { centBin = bin; }
   void setBinAxis(int bin, float min, float max)
   {
     qAxis = new TAxis(bin, min, max);
   }
   TAxis* getqVecAx() { return qAxis; }
 
+  void setPtBin(int bin) { ptBin = bin; }
+  void setPtAxis(int bin, float min, float max)
+  {
+    ptAxis = new TAxis(bin, min, max);
+  }
+  TAxis* getPtAx() { return ptAxis; }
+
   Long64_t Merge(TCollection* collist);
   void qSelection(const std::vector<int>& nhv, const std::vector<std::string>& stv);
   float eval(float centr, const float& dqn, const int nh, const char* pf = "");
+  float evalPt(float centr, const float& mpt);
   void setResolution(int res) { nResolution = res; }
   int getResolution() const { return nResolution; }
   void setQnType(const std::vector<std::pair<int, std::string>>& qninp) { qnTYPE = qninp; }
 
+  void mptSel();
+
  private:
   TObjArray* fW_data;
+  TProfile* ptProfCent; //!
+  TH2D* h2ptCent;       //!
 
-  int CentBin;
+  int centBin;
   TAxis* qAxis; //!
   int nResolution;
+  int ptBin;
+  TAxis* ptAxis; //!
 
   std::vector<std::pair<int, std::string>> qnTYPE;
 
@@ -77,6 +91,11 @@ class FFitWeights : public TNamed
     return Form(";Centrality;q_{%i}^{%s}", nh, pf);
   };
   void addArray(TObjArray* targ, TObjArray* sour);
+
+  static constexpr int NumberSp = 90;
+  static constexpr float MaxTol = 100.05;
+
+  float internalEval(float centr, const float& val, const char* name);
 
   ClassDef(FFitWeights, 1); // calibration class
 };

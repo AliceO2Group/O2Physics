@@ -14,42 +14,48 @@
 ///
 /// \author Sourav Kundu, sourav.kundu@cern.ch
 
-#include <Framework/Configurable.h>
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <fairlogger/Logger.h>
-#include <iostream>
-#include <iterator>
-#include <string>
-#include <vector>
+#include "../filterTables.h"
 
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/TrackParametrization.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "../filterTables.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/Utils/strangenessBuilderHelper.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
+#include <Framework/Configurable.h>
+
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+
+#include <fairlogger/Logger.h>
+
+#include <iostream>
+#include <iterator>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

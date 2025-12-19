@@ -20,37 +20,39 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/ASoA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "CCDB/BasicCCDBManager.h"
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -72,6 +74,9 @@ struct cascademlselection {
   o2::ml::OnnxModel mlModelXiPlus;
   o2::ml::OnnxModel mlModelOmegaMinus;
   o2::ml::OnnxModel mlModelOmegaPlus;
+
+  // Custom grouping
+  std::vector<std::vector<int>> cascadesGrouped;
 
   std::map<std::string, std::string> metadata;
 
@@ -261,30 +266,52 @@ struct cascademlselection {
     }
   }
 
-  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps>::iterator const& collision, CascDerivedDatas const& cascades)
+  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, CascDerivedDatas const& cascades)
   {
-    initCCDB(collision);
+    // Custom grouping
+    cascadesGrouped.clear();
+    cascadesGrouped.resize(collisions.size());
 
-    histos.fill(HIST("hEventVertexZ"), collision.posZ());
-    for (auto& casc : cascades) {
-      nCandidates++;
-      if (nCandidates % 50000 == 0) {
-        LOG(info) << "Candidates processed: " << nCandidates;
+    for (const auto& cascade : cascades) {
+      cascadesGrouped[cascade.straCollisionId()].push_back(cascade.globalIndex());
+    }
+
+    for (const auto& collision : collisions) {
+      initCCDB(collision);
+
+      histos.fill(HIST("hEventVertexZ"), collision.posZ());
+      for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
+        auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
+        nCandidates++;
+        if (nCandidates % 50000 == 0) {
+          LOG(info) << "Candidates processed: " << nCandidates;
+        }
+        processCandidate(casc);
       }
-      processCandidate(casc);
     }
   }
-  void processStandardData(aod::Collision const& collision, CascOriginalDatas const& cascades)
+  void processStandardData(aod::Collisions const& collisions, CascOriginalDatas const& cascades)
   {
-    initCCDB(collision);
+    // Custom grouping
+    cascadesGrouped.clear();
+    cascadesGrouped.resize(collisions.size());
 
-    histos.fill(HIST("hEventVertexZ"), collision.posZ());
-    for (auto& casc : cascades) {
-      nCandidates++;
-      if (nCandidates % 50000 == 0) {
-        LOG(info) << "Candidates processed: " << nCandidates;
+    for (const auto& cascade : cascades) {
+      cascadesGrouped[cascade.collisionId()].push_back(cascade.globalIndex());
+    }
+
+    for (const auto& collision : collisions) {
+      initCCDB(collision);
+
+      histos.fill(HIST("hEventVertexZ"), collision.posZ());
+      for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
+        auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
+        nCandidates++;
+        if (nCandidates % 50000 == 0) {
+          LOG(info) << "Candidates processed: " << nCandidates;
+        }
+        processCandidate(casc);
       }
-      processCandidate(casc);
     }
   }
 

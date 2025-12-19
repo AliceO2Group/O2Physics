@@ -13,14 +13,15 @@
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/v0qaanalysis.h"
+
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,7 +53,8 @@ struct v0postprocessing {
   Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
   Configurable<bool> hasTOF1Leg{"hasTOF1Leg", 0, "hasTOF1Leg"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-  Configurable<bool> doArmenterosCut{"doArmenterosCut", 1, "do Armenteros Cut"};
+  Configurable<bool> doArmenterosCut{"doArmenterosCut", 1, "do Armenteros Cut for K0s"};
+  Configurable<bool> doArmenterosCutLam{"doArmenterosCutLam", 1, "do Armenteros Cut for Lam"};
   Configurable<bool> doQA{"doQA", 1, "fill QA histograms"};
 
   HistogramRegistry registry{"registry"};
@@ -122,11 +124,11 @@ struct v0postprocessing {
       registry.add("hMassLambda_MC", "hMassLambda", {HistType::kTH1F, {{200, 1.016f, 1.216f}}});
       registry.add("hMassVsPtLambdaVsCentFT0M_MC", ";p_{T} [GeV/c];M_{p^{+}#pi^{-}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {100, 0.f, 100.f}, {200, 1.016f, 1.216f}}});
       registry.add("hMassAntiLambda_MC", "hMassAntiLambda", {HistType::kTH1F, {{200, 1.016f, 1.216f}}});
-      registry.add("hMassVsPtLambdaVsMotherPt_DoubleCharged_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (Xi);M_{p^{-}#pi^{+}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {200, 1.016f, 1.216f}}});
-      registry.add("hMassVsPtLambdaVsMotherPt_MCRatio_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (Xi);M_{p^{-}#pi^{+}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {200, 1.016f, 1.216f}}});
+      registry.add("hFDVsPtLambdaVsMotherPt_DoubleCharged_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-}); percentile", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {100, 0.f, 100.f}}});
+      registry.add("hFDVsPtLambdaVsMotherPt_MCRatio_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-/0}); percentile", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {100, 0.f, 100.f}}});
       registry.add("hMassVsPtAntiLambdaVsCentFT0M_MC", ";p_{T} [GeV/c];M_{p^{-}#pi^{+}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {100, 0.f, 100.f}, {200, 1.016f, 1.216f}}});
-      registry.add("hMassVsPtAntiLambdaVsMotherPt_DoubleCharged_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (Xi);M_{p^{-}#pi^{+}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {200, 1.016f, 1.216f}}});
-      registry.add("hMassVsPtAntiLambdaVsMotherPt_MCRatio_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (Xi);M_{p^{-}#pi^{+}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {200, 1.016f, 1.216f}}});
+      registry.add("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+});percentile", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {100, 0.f, 100.f}}});
+      registry.add("hFDVsPtAntiLambdaVsMotherPt_MCRatio_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+/0});percentile", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {100, 0.f, 100.f}}});
     }
 
     if (doQA) {
@@ -398,11 +400,11 @@ struct v0postprocessing {
       if (candidate.v0cospa() > cospaK0s &&
           std::abs(candidate.rapk0short()) < rap &&
           candidate.ctauk0short() < ctauK0s &&
-          std::abs(candidate.massk0short() - o2::constants::physics::MassK0Short) < 0.075 &&
+          std::abs(candidate.massk0short() - o2::constants::physics::MassK0Short) < 0.1 &&
           std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) > v0rejK0s &&
           std::abs(candidate.ntpcsigmanegpi()) <= ntpcsigma &&
           std::abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
-          (doArmenterosCut && candidate.qtarm() > (paramArmenterosCut * std::abs(candidate.alpha())))) {
+          (!doArmenterosCut || candidate.qtarm() > (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
         registry.fill(HIST("hMassK0Short"), candidate.massk0short());
         registry.fill(HIST("hMassVsPtK0Short"), candidate.v0pt(), candidate.massk0short());
@@ -442,26 +444,24 @@ struct v0postprocessing {
         if (std::abs(candidate.ntpcsigmanegpi()) <= ntpcsigma &&
             std::abs(candidate.ntpcsigmapospr()) <= ntpcsigma &&
             candidate.ctaulambda() < ctauLambda &&
-            std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075) {
+            std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075 &&
+            (!doArmenterosCutLam || candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
           registry.fill(HIST("hMassLambda"), candidate.masslambda());
           registry.fill(HIST("hMassVsPtLambda"), candidate.v0pt(), candidate.masslambda());
           registry.fill(HIST("hMassVsPtLambdaVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
 
-          if (isMC) {
+          if (isMC && candidate.pdgcode() == 3122 && candidate.isdaulambda()) {
 
-            if (candidate.pdgcode() == 3122 && candidate.isdaulambda()) {
-
-              if (candidate.isphysprimary() == 1) {
-                registry.fill(HIST("hMassLambda_MC"), candidate.masslambda());
-                registry.fill(HIST("hMassVsPtLambdaVsCentFT0M_MC"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
-              }
-
+            if (candidate.isphysprimary() == 1) {
+              registry.fill(HIST("hMassLambda_MC"), candidate.masslambda());
+              registry.fill(HIST("hMassVsPtLambdaVsCentFT0M_MC"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
+            } else if (std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.01) {
               if (candidate.pdgcodemother() == 3312) {
-                registry.fill(HIST("hMassVsPtLambdaVsMotherPt_DoubleCharged_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.masslambda());
+                registry.fill(HIST("hFDVsPtLambdaVsMotherPt_DoubleCharged_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.multft0m());
               }
               if (candidate.pdgcodemother() == 3312 || candidate.pdgcodemother() == 3322) {
-                registry.fill(HIST("hMassVsPtLambdaVsMotherPt_MCRatio_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.masslambda());
+                registry.fill(HIST("hFDVsPtLambdaVsMotherPt_MCRatio_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.multft0m());
               }
             }
           }
@@ -483,24 +483,25 @@ struct v0postprocessing {
         if (std::abs(candidate.ntpcsigmanegpr()) <= ntpcsigma &&
             std::abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
             candidate.ctauantilambda() < ctauLambda &&
-            std::abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075) {
+            std::abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075 &&
+            (!doArmenterosCutLam || candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
           registry.fill(HIST("hMassAntiLambda"), candidate.massantilambda());
           registry.fill(HIST("hMassVsPtAntiLambda"), candidate.v0pt(), candidate.massantilambda());
           registry.fill(HIST("hMassVsPtAntiLambdaVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
 
-          if (candidate.pdgcode() == -3122 && candidate.isdauantilambda()) {
+          if (isMC && candidate.pdgcode() == -3122 && candidate.isdauantilambda()) {
 
             if (candidate.isphysprimary() == 1) {
               registry.fill(HIST("hMassAntiLambda_MC"), candidate.massantilambda());
-              registry.fill(HIST("hMassVsPtAntiLambdaVsCentFT0M_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.massantilambda());
-            }
-
-            if (candidate.pdgcodemother() == -3312) {
-              registry.fill(HIST("hMassVsPtAntiLambdaVsMotherPt_DoubleCharged_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.massantilambda());
-            }
-            if (candidate.pdgcodemother() == -3312 || candidate.pdgcodemother() == -3322) {
-              registry.fill(HIST("hMassVsPtAntiLambdaVsMotherPt_MCRatio_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.massantilambda());
+              registry.fill(HIST("hMassVsPtAntiLambdaVsCentFT0M_MC"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
+            } else if (std::abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.01) {
+              if (candidate.pdgcodemother() == -3312) {
+                registry.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.multft0m());
+              }
+              if (candidate.pdgcodemother() == -3312 || candidate.pdgcodemother() == -3322) {
+                registry.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_MCRatio_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.multft0m());
+              }
             }
           }
 

@@ -316,9 +316,9 @@ struct FilterCF {
   ///                      event selections
   /// \param tracks The collection of tracks, filtered by selection criteria
   /// \param bcs The collection of bunch crossings with timestamps
-  template <typename T1>
+  template <typename C1, typename T1>
   void processMCT(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
-                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                  C1 const& allCollisions,
                   T1 const& tracks,
                   aod::BCsWithTimestamps const&)
   {
@@ -403,10 +403,24 @@ struct FilterCF {
         continue;
       }
 
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       // NOTE works only when we store all MC collisions (as we do here)
       outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
       outputMcCollisionLabels(collision.mcCollisionId());
+
+      if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
+        multiplicities.clear();
+        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0C)
+          multiplicities.push_back(collision.centFT0C());
+        if (cfgEstimatorBitMask & aod::cfmultset::MultFV0A)
+          multiplicities.push_back(collision.multFV0A());
+        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksPV)
+          multiplicities.push_back(collision.multNTracksPV());
+        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
+          multiplicities.push_back(collision.multNTracksGlobal());
+        outputMultSets(multiplicities);
+      }
+
       if (cfgTransientTables)
         outputCollRefs(collision.globalIndex());
 
@@ -450,6 +464,16 @@ struct FilterCF {
     processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
   }
   PROCESS_SWITCH(FilterCF, processMCPid, "Process MC with PID", false);
+
+  void processMCMults(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+                      soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal> const& allCollisions,
+                      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                      aod::BCsWithTimestamps const& bcs)
+  {
+    processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
+  }
+
+  PROCESS_SWITCH(FilterCF, processMCMults, "Process MC with multiplicity sets", false);
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
   {

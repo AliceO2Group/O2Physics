@@ -15,7 +15,6 @@
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 
 #include "JetDerivedDataUtilities.h"
-#include "RecoDecay.h"
 
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
@@ -23,13 +22,14 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -48,34 +48,14 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// Charged jets
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-using ChargedJetsWithConstituents = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>;
-
-using MCDJets = aod::ChargedMCDetectorLevelJets;
-using MCDJetsWithConstituents = soa::Join<MCDJets, aod::ChargedMCDetectorLevelJetConstituents>;
-using MatchedMCDJets = soa::Join<MCDJets, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
-using MatchedMCDJetsWithConstituents = soa::Join<MCDJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
-
-using MCPJets = aod::ChargedMCParticleLevelJets;
-using MatchedMCPJets = soa::Join<MCPJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
-using MCPJetsWithConstituents = soa::Join<MCPJets, aod::ChargedMCParticleLevelJetConstituents>;
-using MatchedMCPJetsWithConstituents = soa::Join<MCPJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
-
-// V0 jets
 using DataV0JetsWithConstituents = soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents>;
-using CandidatesV0DataWithFlags = aod::CandidatesV0Data;
 
-using CandidatesV0MCDWithLabelsAndFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>;
-using MCDV0Jets = aod::V0ChargedMCDetectorLevelJets;
-using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents>;
-using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
-using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
+using CandidatesV0MCDWithLabels = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>;
+using MatchedMCDV0Jets = soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
+using MatchedMCDV0JetsWithConstituents = soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
-using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
-using MCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents>;
-using MatchedMCPV0Jets = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
-using MatchedMCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
+using MatchedMCPV0Jets = soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
+using MatchedMCPV0JetsWithConstituents = soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
 
 struct JetFragmentation {
   HistogramRegistry registry{"registry"}; // CallSumw2 = false?
@@ -84,6 +64,8 @@ struct JetFragmentation {
   Configurable<std::string> trackSel{"trackSel", "globalTracks", "choose track selection"};
   Configurable<int> nV0Classes{"nV0Classes", 2, "Must be 2 or 4! Number of V0 signal/bkg classes"};
   Configurable<bool> doCorrectionWithTracks{"doCorrectionWithTracks", false, "add tracks during background subtraction"};
+  Configurable<bool> fillHistsInclusiveV0s{"fillHistsInclusiveV0s", true, "Fill hists for inclusive V0s"};
+  Configurable<bool> fillHistsJets{"fillHistsJets", true, "Fill hists for jets"};
 
   Configurable<std::vector<float>> ptBinsK0S{"ptBinsK0S", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0}, "K0S pt Vals"};
   Configurable<std::vector<float>> ptBinsLambda{"ptBinsLambda", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0}, "Lambda pt Vals"};
@@ -204,7 +186,7 @@ struct JetFragmentation {
 
     AxisSpec ptJetRelDiffAxis = {binPtRelDiff, "(#it{p}_{T}^{jet, det} - #it{p}_{T}^{jet, part})/#it{p}_{T, jet}^{part}"};
     AxisSpec ptTrackRelDiffAxis = {binPtRelDiff, "(#it{p}_{T}^{track, det} - #it{p}_{T}^{track, part})/#it{p}_{T, track}^{part}"};
-    AxisSpec zRelDiffAxis = {binZRelDiff, "(#it{p}_{T}^{jet, det} - #it{p}_{T}^{jet, part})/#it{p}_{T, jet}^{part}"};
+    AxisSpec zRelDiffAxis = {binZRelDiff, "(#it{z}^{det} - #it{z}^{part})/#it{z}^{part}"};
 
     AxisSpec v0PtAxis = {binV0Pt, "#it{p}_{T}^{V0}"};
     AxisSpec v0PtRatioAxis = {binPtRatio, "#it{p}_{T}^{V0, det}/#it{p}_{T, V0}^{part}"};
@@ -240,6 +222,7 @@ struct JetFragmentation {
     AxisSpec antiLambdaMassCutAxis = {binAntiLambdaMassCut, "Inv. mass (GeV/#it{c}^{2})"};
 
     if (doprocessDataV0) {
+      registry.add("data/hEvents", "hEvents", {HistType::kTH1D, {{2, 0.0f, 2.0f}}});
       registry.add("data/V0/nV0sEvent", "nV0sEvent", HistType::kTH1D, {v0Count});
       registry.add("data/V0/nV0sEventAcc", "nV0s per event (accepted)", HistType::kTH1D, {v0Count});
       registry.add("data/V0/nV0sEventAccWeighted", "nV0s per event (accepted, weighted)", HistType::kTH1D, {v0Weight}, true);
@@ -342,11 +325,10 @@ struct JetFragmentation {
 
       // Cut variation
       registry.add("data/V0/V0CutVariation", "V0CutVariation", HistType::kTHnSparseD, {ptCutAxis, k0SMassCutAxis, lambdaMassCutAxis, antiLambdaMassCutAxis, rCutAxis, ctauCutAxis, cosPACutAxis, dcapCutAxis, dcanCutAxis, dcadCutAxis});
-    } // doprocessDataV0
 
-    if (doprocessDataV0JetsFrag) {
+      // Jets
       registry.add("data/jets/jetPtEtaPhi", "Jet #it{p}_{T}, #eta, #phi", HistType::kTH3D, {jetPtAxis, etaAxis, phiAxis});
-
+      registry.add("data/jets/inclJetPtEtaPhi", "incljetPtEtaPhi", HistType::kTH3D, {jetPtAxis, etaAxis, phiAxis});
       registry.add("data/jets/V0/jetPtV0TrackProj", "jetPtV0TrackProj", HistType::kTH2D, {jetPtAxis, zAxis});
       registry.add("data/jets/V0/jetPtnV0nK0SnLambdanAntiLambda", "jetPtnV0nK0SnLambdanAntiLambda", HistType::kTHnSparseD, {jetPtAxis, v0Count, v0Count, v0Count, v0Count});
 
@@ -547,9 +529,51 @@ struct JetFragmentation {
       registry.add("data/jets/weighted/V0/jetPtBkgTrackProjDCAposAntiLambdaMass", "jetPtBkgTrackProjDCAposAntiLambdaMass", HistType::kTHnSparseD, {jetPtAxis, zAxis, v0DCApAxis, lambdaMassAxis}, true);
       registry.add("data/jets/weighted/V0/jetPtBkgTrackProjDCAnegAntiLambdaMass", "jetPtBkgTrackProjDCAnegAntiLambdaMass", HistType::kTHnSparseD, {jetPtAxis, zAxis, v0DCAnAxis, lambdaMassAxis}, true);
       registry.add("data/jets/weighted/V0/jetPtBkgTrackProjDCAdAntiLambdaMass", "jetPtBkgTrackProjDCAdAntiLambdaMass", HistType::kTHnSparseD, {jetPtAxis, zAxis, v0DCAdAxis, lambdaMassAxis}, true);
-    }
 
-    if (doprocessMcMatchedV0) {
+      // Perp Cone
+      registry.add("data/PC/JetPtEtaV0Pt", "JetPtEtaV0Pt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
+      registry.add("data/PC/V0PtEtaPhi", "V0 #it{p}_{T}, #eta, #phi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
+      registry.add("data/PC/V0PtCtau", "V0PtCtau", HistType::kTHnSparseD, {v0PtAxis, v0CtauAxis, v0CtauAxis, v0CtauAxis});
+      registry.add("data/PC/V0PtMass", "V0PtMass", HistType::kTHnSparseD, {v0PtAxis, k0SMassAxis, lambdaMassAxis, lambdaMassAxis});
+      registry.add("data/PC/V0PtMassWide", "V0PtMassWide", HistType::kTHnSparseD, {v0PtAxis, k0SWideAxis, lambdaMassAxis, lambdaMassAxis});
+      registry.add("data/PC/V0PtRadiusCosPA", "V0PtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
+      registry.add("data/PC/V0PtDCAposneg", "V0PtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
+      registry.add("data/PC/V0PtDCAd", "V0PtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
+
+      // K0S
+      registry.add("data/PC/JetPtK0SPtMass", "JetPtK0SPtMass", HistType::kTH3D, {jetPtAxis, v0PtAxis, k0SMassAxis});
+      registry.add("data/PC/JetPtEtaK0SPt", "JetPtEtaK0SPt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
+      registry.add("data/PC/K0SPtEtaPhi", "K0SPtEtaPhi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
+      registry.add("data/PC/K0SPtCtauMass", "K0SPtCtauMass", HistType::kTH3D, {v0PtAxis, v0CtauAxis, k0SMassAxis});
+      registry.add("data/PC/K0SPtRadiusCosPA", "K0SPtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
+      registry.add("data/PC/K0SPtDCAposneg", "K0SPtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
+      registry.add("data/PC/K0SPtDCAd", "K0SPtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
+
+      // Lambda
+      registry.add("data/PC/JetPtLambdaPtMass", "JetPtLambdaPtMass", HistType::kTH3D, {jetPtAxis, v0PtAxis, lambdaMassAxis});
+      registry.add("data/PC/JetPtEtaLambdaPt", "JetPtEtaLambdaPt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
+      registry.add("data/PC/LambdaPtEtaPhi", "LambdaPtEtaPhi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
+      registry.add("data/PC/LambdaPtCtauMass", "LambdaPtCtauMass", HistType::kTH3D, {v0PtAxis, v0CtauAxis, lambdaMassAxis});
+      registry.add("data/PC/LambdaPtRadiusCosPA", "LambdaPtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
+      registry.add("data/PC/LambdaPtDCAposneg", "LambdaPtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
+      registry.add("data/PC/LambdaPtDCAd", "LambdaPtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
+
+      // AntiLambda
+      registry.add("data/PC/JetPtAntiLambdaPtMass", "JetPtAntiLambdaPtMass", HistType::kTH3D, {jetPtAxis, v0PtAxis, lambdaMassAxis});
+      registry.add("data/PC/JetPtEtaAntiLambdaPt", "JetPtEtaAntiLambdaPt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
+      registry.add("data/PC/AntiLambdaPtEtaPhi", "AntiLambdaPtEtaPhi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
+      registry.add("data/PC/AntiLambdaPtCtauMass", "AntiLambdaPtCtauMass", HistType::kTH3D, {v0PtAxis, v0CtauAxis, lambdaMassAxis});
+      registry.add("data/PC/AntiLambdaPtRadiusCosPA", "AntiLambdaPtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
+      registry.add("data/PC/AntiLambdaPtDCAposneg", "AntiLambdaPtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
+      registry.add("data/PC/AntiLambdaPtDCAd", "AntiLambdaPtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
+
+      registry.add("data/PC/nV0sConePtEta", "nV0sConePtEta", HistType::kTH3D, {v0Count, jetPtAxis, etaAxis});
+      registry.add("data/PC/ConePtEtaPhi", "ConePtEtaPhi", HistType::kTH3D, {jetPtAxis, etaAxis, phiAxis});
+      registry.add("data/PC/JetPtEtaConePt", "JetPtEtaConePt", HistType::kTH3D, {jetPtAxis, etaAxis, jetPtAxis});
+    } // doprocessDataV0
+
+    if (doprocessMcV0) {
+      registry.add("matching/hEvents", "hEvents", {HistType::kTH1D, {{3, 0.0f, 3.0f}}});
       // MCP
       registry.add("mcp/V0/nV0sEventAcc", "nV0s per event (accepted)", HistType::kTH1D, {v0Count}, true);
       registry.add("mcp/V0/nV0sEventAccWeighted", "nV0s per event (accepted, weighted)", HistType::kTH1D, {v0Weight}, true);
@@ -716,12 +740,17 @@ struct JetFragmentation {
       registry.add("matching/V0/K0SPosNegPtMass", "K0SPosNegPtMass", HistType::kTHnSparseD, {v0partPtAxis, trackPtAxis, trackPtAxis, k0SMassAxis}, true);
       registry.add("matching/V0/LambdaPosNegPtMass", "LambdaPosNegPtMass", HistType::kTHnSparseD, {v0partPtAxis, trackPtAxis, trackPtAxis, lambdaMassAxis}, true);
       registry.add("matching/V0/AntiLambdaPosNegPtMass", "AntiLambdaPosNegPtMass", HistType::kTHnSparseD, {v0partPtAxis, trackPtAxis, trackPtAxis, lambdaMassAxis}, true);
-    } // doprocessMcMatchedV0
 
-    if (doprocessMcMatchedV0JetsFrag) {
       // Matching - Jets
+      registry.add("mcp/jets/inclPartJetPtEtaPhi", "inclPartJetPtEtaPhi", HistType::kTH3D, {partJetPtAxis, partEtaAxis, partPhiAxis}, true);
       registry.add("mcp/jets/partJetPtEtaPhi", "Particle level jet #it{p}_{T}, #eta, #phi", HistType::kTH3D, {partJetPtAxis, partEtaAxis, partPhiAxis}, true);
+      registry.add("mcd/jets/inclDetJetPtEtaPhi", "inclDetJetPtEtaPhi", HistType::kTH3D, {detJetPtAxis, detEtaAxis, detPhiAxis}, true);
       registry.add("mcd/jets/detJetPtEtaPhi", "Detector level jet #it{p}_{T}, #eta, #phi", HistType::kTH3D, {detJetPtAxis, detEtaAxis, detPhiAxis}, true);
+
+      registry.add("matching/jets/fakeJetPtEtaPhi", "fakeJetPtEtaPhi", HistType::kTH3D, {detJetPtAxis, detEtaAxis, detPhiAxis}, true);
+      registry.add("matching/jets/inclFakeJetPtEtaPhi", "inclFakeJetPtEtaPhi", HistType::kTH3D, {detJetPtAxis, detEtaAxis, detPhiAxis}, true);
+      registry.add("matching/jets/inclMissJetPtEtaPhi", "inclMissJetPtEtaPhi", HistType::kTH3D, {partJetPtAxis, partEtaAxis, partPhiAxis}, true);
+      registry.add("matching/jets/missJetPtEtaPhi", "missJetPtEtaPhi", HistType::kTH3D, {partJetPtAxis, partEtaAxis, partPhiAxis}, true);
 
       registry.add("matching/jets/matchDetJetPtEtaPhi", "Matched detector level jet #it{p}_{T}, #eta, #phi", HistType::kTH3D, {detJetPtAxis, detEtaAxis, detPhiAxis}, true);
       registry.add("matching/jets/matchPartJetPtEtaPhi", "Matched particle level jet #it{p}_{T}, #eta, #phi", HistType::kTH3D, {partJetPtAxis, partEtaAxis, partPhiAxis}, true);
@@ -735,9 +764,23 @@ struct JetFragmentation {
       registry.add("matching/jets/matchPartJetPtResolutionPhi", "#phi^{jet, det} - #phi^{jet, part}", HistType::kTH3D, {partJetPtAxis, partPhiAxis, phiDiffAxis}, true);
       registry.add("matching/jets/matchPartJetPtRelDiffPt", "#it{p}_{T}^{jet, det} - #it{p}_{T}^{jet, part}", HistType::kTH2D, {partJetPtAxis, ptJetRelDiffAxis}, true);
 
+      registry.add("matching/jets/inclMatchDetJetPtEtaPhi", "inclMatchDetJetPtEtaPhi", HistType::kTH3D, {detJetPtAxis, detEtaAxis, detPhiAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtEtaPhi", "inclMatchPartJetPtEtaPhi", HistType::kTH3D, {partJetPtAxis, partEtaAxis, partPhiAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtEtaPhiMatchDist", "matchJetMatchDist", HistType::kTHnSparseD, {partJetPtAxis, partEtaAxis, partPhiAxis, matchDistAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtEnergyScale", "jetEnergyScale", HistType::kTH2D, {partJetPtAxis, ptRatioAxis}, true);
+      registry.add("matching/jets/inclMatchDetJetPtPartJetPt", "matchDetJetPtPartJetPt", HistType::kTH2D, {detJetPtAxis, partJetPtAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtDetJetEtaPartJetEta", "matchPartJetPtDetJetEtaPartJetEta", HistType::kTH3D, {partJetPtAxis, detEtaAxis, partEtaAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtDetJetPhiPartJetPhi", "matchPartJetPtDetJetPhiPartJetPhi", HistType::kTH3D, {partJetPtAxis, detPhiAxis, partPhiAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtResolutionPt", "inclMatchPartJetPtResolutionPt", HistType::kTH2D, {partJetPtAxis, ptDiffAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtResolutionEta", "inclMatchPartJetPtResolutionEta", HistType::kTH3D, {partJetPtAxis, partEtaAxis, etaDiffAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtResolutionPhi", "inclMatchPartJetPtResolutionPhi", HistType::kTH3D, {partJetPtAxis, partPhiAxis, phiDiffAxis}, true);
+      registry.add("matching/jets/inclMatchPartJetPtRelDiffPt", "inclMatchPartJetPtRelDiffPt", HistType::kTH2D, {partJetPtAxis, ptJetRelDiffAxis}, true);
+
       registry.add("matching/jets/V0/jetPtnV0MatchednK0SnLambdanAntiLambda", "jet Pt, nV0 matched, nK0S nLambdan AntiLambda", HistType::kTHnSparseD, {detJetPtAxis, v0Count, v0Count, v0Count, v0Count}, true);
       registry.add("matching/jets/V0/partJetPtV0PtDetPt", "V0PartPtDetPt", HistType::kTH3D, {partJetPtAxis, v0partPtAxis, v0detPtAxis}, true);
-      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt", "V0PartPtRatioRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRatioAxis, v0PtRelDiffAxis}, true);
+      // registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt", "V0PartPtRatioRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRatioAxis, v0PtRelDiffAxis}, true);
+      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRelDiffPt", "V0PartPtRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRelDiffAxis}, true);
+      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0ZRelDiffZ", "V0PartPtRelDiffZ", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, partZAxis, zRelDiffAxis}, true);
 
       // Matching - Matched V0s
       registry.add("matching/jets/V0/matchDetJetPtV0TrackProjPartJetPtV0TrackProj", "Matched", HistType::kTHnSparseD, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis}, true);
@@ -980,51 +1023,7 @@ struct JetFragmentation {
       registry.add("matching/V0/decayedOtherPtV0PtMass", "decayedOtherPtV0PtMass", HistType::kTHnSparseD, {v0partPtAxis, v0detPtAxis, k0SMassAxis, lambdaMassAxis, lambdaMassAxis}, true);
       registry.add("matching/jets/V0/decayedOtherPtV0PtMass", "decayedOtherPtV0PtMass", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0detPtAxis, k0SMassAxis, lambdaMassAxis, lambdaMassAxis}, true);
       registry.add("matching/jets/V0/decayedOtherPtV0TrackProjMass", "decayedOtherPtV0TrackProjMass", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, partZAxis, detZAxis, k0SMassAxis, lambdaMassAxis, lambdaMassAxis}, true);
-    } // doprocessMcMatchedV0JetsFrag
 
-    if (doprocessDataV0PerpCone) {
-      registry.add("data/PC/JetPtEtaV0Pt", "JetPtEtaV0Pt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
-      registry.add("data/PC/V0PtEtaPhi", "V0 #it{p}_{T}, #eta, #phi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
-      registry.add("data/PC/V0PtCtau", "V0PtCtau", HistType::kTHnSparseD, {v0PtAxis, v0CtauAxis, v0CtauAxis, v0CtauAxis});
-      registry.add("data/PC/V0PtMass", "V0PtMass", HistType::kTHnSparseD, {v0PtAxis, k0SMassAxis, lambdaMassAxis, lambdaMassAxis});
-      registry.add("data/PC/V0PtMassWide", "V0PtMassWide", HistType::kTHnSparseD, {v0PtAxis, k0SWideAxis, lambdaMassAxis, lambdaMassAxis});
-      registry.add("data/PC/V0PtRadiusCosPA", "V0PtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
-      registry.add("data/PC/V0PtDCAposneg", "V0PtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
-      registry.add("data/PC/V0PtDCAd", "V0PtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
-
-      // K0S
-      registry.add("data/PC/JetPtK0SPtMass", "JetPtK0SPtMass", HistType::kTH3D, {jetPtAxis, v0PtAxis, k0SMassAxis});
-      registry.add("data/PC/JetPtEtaK0SPt", "JetPtEtaK0SPt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
-      registry.add("data/PC/K0SPtEtaPhi", "K0SPtEtaPhi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
-      registry.add("data/PC/K0SPtCtauMass", "K0SPtCtauMass", HistType::kTH3D, {v0PtAxis, v0CtauAxis, k0SMassAxis});
-      registry.add("data/PC/K0SPtRadiusCosPA", "K0SPtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
-      registry.add("data/PC/K0SPtDCAposneg", "K0SPtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
-      registry.add("data/PC/K0SPtDCAd", "K0SPtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
-
-      // Lambda
-      registry.add("data/PC/JetPtLambdaPtMass", "JetPtLambdaPtMass", HistType::kTH3D, {jetPtAxis, v0PtAxis, lambdaMassAxis});
-      registry.add("data/PC/JetPtEtaLambdaPt", "JetPtEtaLambdaPt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
-      registry.add("data/PC/LambdaPtEtaPhi", "LambdaPtEtaPhi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
-      registry.add("data/PC/LambdaPtCtauMass", "LambdaPtCtauMass", HistType::kTH3D, {v0PtAxis, v0CtauAxis, lambdaMassAxis});
-      registry.add("data/PC/LambdaPtRadiusCosPA", "LambdaPtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
-      registry.add("data/PC/LambdaPtDCAposneg", "LambdaPtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
-      registry.add("data/PC/LambdaPtDCAd", "LambdaPtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
-
-      // AntiLambda
-      registry.add("data/PC/JetPtAntiLambdaPtMass", "JetPtAntiLambdaPtMass", HistType::kTH3D, {jetPtAxis, v0PtAxis, lambdaMassAxis});
-      registry.add("data/PC/JetPtEtaAntiLambdaPt", "JetPtEtaAntiLambdaPt", HistType::kTH3D, {jetPtAxis, etaAxis, v0PtAxis});
-      registry.add("data/PC/AntiLambdaPtEtaPhi", "AntiLambdaPtEtaPhi", HistType::kTH3D, {v0PtAxis, v0EtaAxis, v0PhiAxis});
-      registry.add("data/PC/AntiLambdaPtCtauMass", "AntiLambdaPtCtauMass", HistType::kTH3D, {v0PtAxis, v0CtauAxis, lambdaMassAxis});
-      registry.add("data/PC/AntiLambdaPtRadiusCosPA", "AntiLambdaPtRadiusCosPA", HistType::kTH3D, {v0PtAxis, v0RadiusAxis, v0CosPAAxis});
-      registry.add("data/PC/AntiLambdaPtDCAposneg", "AntiLambdaPtDCAposneg", HistType::kTH3D, {v0PtAxis, v0DCApAxis, v0DCAnAxis});
-      registry.add("data/PC/AntiLambdaPtDCAd", "AntiLambdaPtDCAd", HistType::kTH2D, {v0PtAxis, v0DCAdAxis});
-
-      registry.add("data/PC/nV0sConePtEta", "nV0sConePtEta", HistType::kTH3D, {v0Count, jetPtAxis, etaAxis});
-      registry.add("data/PC/ConePtEtaPhi", "ConePtEtaPhi", HistType::kTH3D, {jetPtAxis, etaAxis, phiAxis});
-      registry.add("data/PC/JetPtEtaConePt", "JetPtEtaConePt", HistType::kTH3D, {jetPtAxis, etaAxis, jetPtAxis});
-    } // doprocessDataV0PerpCone
-
-    if (doprocessMcV0PerpCone) {
       registry.add("mcd/V0/nV0sEvent", "NV0s in event", HistType::kTH1D, {v0Count});
       registry.add("mcd/V0/nV0sEventWeighted", "NV0s in event weighted", HistType::kTH1D, {v0Count}, true);
 
@@ -1095,14 +1094,14 @@ struct JetFragmentation {
       // PerpCone - Matched AntiLambda in Matched jets
       registry.add("matching/PC/matchedJetPtAntiLambdaPtMass", "matchedJetPtAntiLambdaPtMass", HistType::kTH3D, {detJetPtAxis, v0PtAxis, lambdaMassAxis}, true);
       registry.add("matching/PC/matchedJetsPtAntiLambdaPtMass", "matchedJetsPtAntiLambdaPtMass", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0PtAxis, lambdaMassAxis}, true);
-    } // doprocessMcV0PerpCone
+    } // doprocessMcV0
   } // init
 
   // ---------------------------------------------------
   // Implementation of background subtraction at runtime
   // ---------------------------------------------------
 
-  int getPtBin(float pt, std::vector<float> ptBins)
+  int getPtBin(float pt, const std::vector<float>& ptBins)
   {
     if (pt < ptBins.at(0))
       return -1;
@@ -1174,7 +1173,6 @@ struct JetFragmentation {
   // Convert state from uint32_t to std::vector<int> containing the particle classes for that weight
   std::vector<int> convertState(uint32_t state, int nParticles, int nClasses = 4)
   {
-    // TODO: Should we cast these to uint32_t?
     std::vector<int> v(nParticles, nClasses);
     int nStates = std::round(std::pow(static_cast<double>(nClasses), static_cast<double>(nParticles)));
     int nBitsPerParticle = std::round(std::log2(nClasses));
@@ -1218,7 +1216,7 @@ struct JetFragmentation {
     return v;
   }
   // Return the probability associated with a given outcome
-  double stateWeight(std::vector<int> state, std::vector<std::vector<double>> weights)
+  double stateWeight(const std::vector<int>& state, const std::vector<std::vector<double>>& weights)
   {
     double w = 1.;
     for (uint32_t ip = 0; ip < state.size(); ip++) {
@@ -1228,7 +1226,7 @@ struct JetFragmentation {
   }
   // Return the corrected values for z and ptjet for a given state
   // Scale values by the fraction of jet momentum carried by removed V0s
-  std::vector<double> correctedValues(std::vector<int> state, std::vector<double> values)
+  std::vector<double> correctedValues(const std::vector<int>& state, const std::vector<double>& values)
   {
     // Assumes values = (z1, z2, ..., zn, ptjet)
     std::vector<double> v(values);
@@ -1255,7 +1253,7 @@ struct JetFragmentation {
   // Return the corrected values for z and ptjet for a given state
   // Take into account tracks that would have been included in the jet regardless of the V0s
   template <typename T, typename U, typename V>
-  std::vector<double> correctedValuesPlusTracks(std::vector<int> state, V const& jet)
+  std::vector<double> correctedValuesPlusTracks(const std::vector<int>& state, V const& jet)
   {
     int ip = 0;
     double ptToSubtract = 0., ptToAdd = 0.;
@@ -1307,11 +1305,11 @@ struct JetFragmentation {
     return (jet.candidatesIds().size() > 0);
   }
   template <typename T, typename U, typename V>
-  bool v0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
+  // bool v0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
+  bool v0sAreMatched(U const& v0, V const& particle)
   {
-    // FIXME: Should this check whether V0 is selected as correct species? Probably!
-    auto negId = v0.template negTrack_as<V>().mcParticleId();
-    auto posId = v0.template posTrack_as<V>().mcParticleId();
+    auto negId = v0.template negTrack_as<T>().mcParticleId();
+    auto posId = v0.template posTrack_as<T>().mcParticleId();
     auto daughters = particle.daughtersIds();
     return ((negId == daughters[0] && posId == daughters[1]) || (posId == daughters[0] && negId == daughters[1]));
   }
@@ -1353,7 +1351,7 @@ struct JetFragmentation {
   // ---------------------------------------------------
   // Data - Counts
   template <typename CollisionType, typename V0Type>
-  void fillDataV0Histograms(CollisionType const& collision, V0Type const& V0s)
+  void fillDataV0sInclusive(CollisionType const& coll, V0Type const& V0s)
   {
     // Fill histograms unweighted. Hists will be filled with V0 counts
     float nV0s = 0;
@@ -1362,9 +1360,9 @@ struct JetFragmentation {
         continue;
 
       nV0s += 1;
-      double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
-      double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
-      double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
+      double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+      double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+      double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
       double massDiff = v0.mLambda() - v0.mAntiLambda();
       double massRatio = v0.mAntiLambda() / v0.mLambda();
@@ -1426,17 +1424,23 @@ struct JetFragmentation {
     registry.fill(HIST("data/V0/nV0sEventAcc"), nV0s);
   }
   template <typename T>
-  void fillDataJetHistograms(T const& jet)
+  void fillDataJet(T const& jet)
   {
-    registry.fill(HIST("data/jets/jetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+    registry.fill(HIST("data/jets/inclJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+    if (jetContainsV0s(jet))
+      registry.fill(HIST("data/jets/jetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+  }
+  void fillDataJetWeighted(double jetpt, double jeteta, double jetphi, double weight = 1.)
+  {
+    registry.fill(HIST("data/jets/weighted/jetPtEtaPhi"), jetpt, jeteta, jetphi, weight);
   }
   template <typename CollisionType, typename JetType, typename V0Type>
-  void fillDataV0FragHistograms(CollisionType const& collision, JetType const& jet, V0Type const& v0)
+  void fillDataV0sInJet(CollisionType const& coll, JetType const& jet, V0Type const& v0)
   {
     double trackProj = getMomFrac(jet, v0);
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
     double massDiff = v0.mLambda() - v0.mAntiLambda();
     double massRatio = v0.mAntiLambda() / v0.mLambda();
@@ -1553,7 +1557,7 @@ struct JetFragmentation {
     }
   }
   template <typename T, typename U, typename V>
-  void fillDataPerpConeHists(T const& coll, U const& jet, V const& v0s)
+  void fillDataV0sInPerpCone(T const& coll, U const& jet, V const& v0s)
   {
     const int nCones = 2;
     double perpConeR = jet.r() * 1e-2;
@@ -1633,7 +1637,7 @@ struct JetFragmentation {
   }
   // Data - Weighted
   template <typename CollisionType, typename V0Type>
-  void fillDataV0HistogramsWeighted(CollisionType const& collision, V0Type const& V0s)
+  void fillDataV0sInclusiveWeighted(CollisionType const& coll, V0Type const& V0s)
   {
     // Fill histograms with V0 signal weights
     float nV0s = 0;
@@ -1644,9 +1648,9 @@ struct JetFragmentation {
       float weight = getV0SignalProb(v0);
       nV0s += weight; // Sum weights (purity) of V0s
 
-      double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
-      double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
-      double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
+      double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+      double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+      double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
       double massDiff = v0.mLambda() - v0.mAntiLambda();
       double massRatio = v0.mAntiLambda() / v0.mLambda();
@@ -1705,25 +1709,21 @@ struct JetFragmentation {
     } // for v0
     registry.fill(HIST("data/V0/nV0sEventAccWeighted"), nV0s);
   }
-  void fillDataJetHistogramsWeighted(double jetpt, double jeteta, double jetphi, double weight = 1.)
-  {
-    registry.fill(HIST("data/jets/weighted/jetPtEtaPhi"), jetpt, jeteta, jetphi, weight);
-  }
   template <typename C, typename J>
-  void fillDataV0FragHistogramsWeighted(C const& collision, J const& jet, std::vector<int> state, std::vector<double> values, double weight)
+  void fillDataV0sInJetWeighted(C const& coll, J const& jet, const std::vector<int>& state, const std::vector<double>& values, double weight)
   {
     double jetpt = values[values.size() - 1];
     int ip = 0;
-    for (const auto& v0 : jet.template candidates_as<CandidatesV0DataWithFlags>()) {
+    for (const auto& v0 : jet.template candidates_as<aod::CandidatesV0Data>()) {
       if (v0.isRejectedCandidate())
         continue;
 
       double z = values[ip];
       ip++;
 
-      double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
-      double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
-      double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
+      double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
+      double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+      double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
 
       double massDiff = v0.mLambda() - v0.mAntiLambda();
       double massRatio = v0.mAntiLambda() / v0.mLambda();
@@ -1818,7 +1818,7 @@ struct JetFragmentation {
 
   // MC - Counts (or event weights)
   template <typename T>
-  void fillMCPV0Histograms(T const& pV0s, double weight = 1.)
+  void fillMcpV0sInclusive(T const& pV0s, double weight = 1.)
   {
     float nV0s = 0;
     for (const auto& pv0 : pV0s) {
@@ -1838,12 +1838,15 @@ struct JetFragmentation {
     registry.fill(HIST("mcp/V0/nV0sEventAccWeighted"), nV0s, weight);
   }
   template <typename T>
-  void fillMCPJetHistograms(T const& jet, double weight = 1.)
+  void fillMcpJet(T const& jet, double weight = 1.)
   {
-    registry.fill(HIST("mcp/jets/partJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    registry.fill(HIST("mcp/jets/inclPartJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    if (jetContainsV0s(jet)) {
+      registry.fill(HIST("mcp/jets/partJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    }
   }
   template <typename T, typename U>
-  void fillMCDV0Histograms(T const& coll, U const& V0s, double weight = 1.)
+  void fillMcdV0sInclusive(T const& coll, U const& V0s, double weight = 1.)
   {
     float nV0s = 0;
     for (const auto& v0 : V0s) {
@@ -1912,14 +1915,50 @@ struct JetFragmentation {
     registry.fill(HIST("mcd/V0/nV0sEventAcc"), nV0s);
     registry.fill(HIST("mcd/V0/nV0sEventAccWeighted"), nV0s, weight);
   }
-  template <typename T>
-  void fillMCDJetHistograms(T const& jet, double weight = 1.)
+  template <typename T, typename U, typename V, typename W, typename X>
+  void fillMatchingV0sInclusive(V const& coll, W const& V0s, X const& pV0s, double weight = 1.)
   {
-    registry.fill(HIST("mcd/jets/detJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    float nV0s = 0;
+    for (const auto& v0 : V0s) {
+      if (v0.isRejectedCandidate())
+        continue;
+
+      if (!v0.has_mcParticle()) {
+        fillFakeV0Inclusive(coll, v0, weight);
+        fillFakeV0DaughtersInclusive<T>(v0, weight);
+        fillFakeV0DecayedInclusive<T, U>(v0, weight);
+        continue;
+      }
+      for (const auto& pv0 : pV0s) {
+        if (v0sAreMatched<T>(v0, pv0)) {
+          nV0s += 1;
+          fillMatchedV0Inclusive(coll, v0, pv0, weight);
+          fillMatchedV0DaughtersInclusive<T, U>(v0, pv0, weight);
+        }
+      }
+    } // Reconstructed V0s
+    for (const auto& pv0 : pV0s) {
+      for (const auto& v0 : V0s) {
+        if (v0sAreMatched<T>(v0, pv0))
+          continue;
+
+        fillMissV0Inclusive(pv0);
+      }
+    }
+    registry.fill(HIST("matching/V0/nV0sEventAcc"), nV0s);
+    registry.fill(HIST("matching/V0/nV0sEventAccWeighted"), nV0s, weight);
+  }
+  template <typename T>
+  void fillMcdJet(T const& jet, double weight = 1.)
+  {
+    registry.fill(HIST("mcd/jets/inclDetJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    if (jetContainsV0s(jet)) {
+      registry.fill(HIST("mcd/jets/detJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    }
   }
   // Reconstructed V0s in the cone of MCD jets
   template <typename T, typename U, typename V, typename W>
-  void fillMcPerpConeHists(T const& coll, U const& mcdjet, V const& v0s, W const& /* V0 particles */, double weight = 1.)
+  void fillMcV0sInPerpCone(T const& coll, U const& mcdjet, V const& v0s, W const& /* V0 particles */, double weight = 1.)
   {
     const int nCones = 2;
     double perpConeR = mcdjet.r() * 1e-2;
@@ -1989,7 +2028,7 @@ struct JetFragmentation {
   }
   // Reconstructed V0s in the cone of matched jets
   template <typename T, typename U, typename V, typename W, typename X>
-  void fillMcPerpConeHists(T const& coll, U const& mcdjet, V const& mcpjet, W const& v0s, X const& /* V0 particles */, double weight = 1.)
+  void fillMcV0sInMatchedPerpCone(T const& coll, U const& mcdjet, V const& mcpjet, W const& v0s, X const& /* V0 particles */, double weight = 1.)
   {
     const int nCones = 2;
     double perpConeR = mcdjet.r() * 1e-2;
@@ -2066,11 +2105,11 @@ struct JetFragmentation {
   }
   // Matched - Counts (or event weights)
   template <typename CollisionType, typename V0Type, typename particleType> // Reconstructed signal for inclusive V0s
-  void fillMatchingV0Histograms(CollisionType const& collision, V0Type const& v0, particleType const& particle, double weight = 1.)
+  void fillMatchedV0Inclusive(CollisionType const& coll, V0Type const& v0, particleType const& particle, double weight = 1.)
   {
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
     registry.fill(HIST("matching/V0/V0PartPtDetPt"), particle.pt(), v0.pt(), weight);
     registry.fill(HIST("matching/V0/V0PartPtRatioPtRelDiffPt"), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
@@ -2107,7 +2146,7 @@ struct JetFragmentation {
     }
   }
   template <typename V0DaughterType, typename ParticleDaughterType, typename V0Type, typename ParticleType> // Reconstructed signal for inclusive V0s: daughters
-  void fillMatchingV0DauHistograms(V0Type const& v0, ParticleType const& pv0, double weight = 1.)
+  void fillMatchedV0DaughtersInclusive(V0Type const& v0, ParticleType const& pv0, double weight = 1.)
   {
     auto negTrack = v0.template negTrack_as<V0DaughterType>();
     auto posTrack = v0.template posTrack_as<V0DaughterType>();
@@ -2125,11 +2164,26 @@ struct JetFragmentation {
     }
   }
   template <typename DetJet, typename PartJet> // Reconstructed jets
-  void fillMatchingHistogramsJet(DetJet const& detJet, PartJet const& partJet, double weight = 1.)
+  void fillMatchedJet(DetJet const& detJet, PartJet const& partJet, double weight = 1.)
   {
     double deltaEta = detJet.eta() - partJet.eta();
     double deltaPhi = RecoDecay::constrainAngle(detJet.phi() - partJet.phi(), -constants::math::PI);
     double dR = jetutilities::deltaR(detJet, partJet);
+
+    registry.fill(HIST("matching/jets/inclMatchDetJetPtEtaPhi"), detJet.pt(), detJet.eta(), detJet.phi(), weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtEtaPhi"), partJet.pt(), partJet.eta(), partJet.phi(), weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtEtaPhiMatchDist"), partJet.pt(), partJet.eta(), partJet.phi(), dR, weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtEnergyScale"), partJet.pt(), detJet.pt() / partJet.pt(), weight);
+    registry.fill(HIST("matching/jets/inclMatchDetJetPtPartJetPt"), detJet.pt(), partJet.pt(), weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtDetJetEtaPartJetEta"), partJet.pt(), detJet.eta(), partJet.eta(), weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtDetJetPhiPartJetPhi"), partJet.pt(), detJet.phi(), partJet.phi(), weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtResolutionPt"), partJet.pt(), (detJet.pt() - partJet.pt()), weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtResolutionEta"), partJet.pt(), partJet.eta(), deltaEta, weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtResolutionPhi"), partJet.pt(), partJet.phi(), deltaPhi, weight);
+    registry.fill(HIST("matching/jets/inclMatchPartJetPtRelDiffPt"), partJet.pt(), (detJet.pt() - partJet.pt()) / partJet.pt(), weight);
+
+    if (!jetContainsV0s(detJet))
+      return;
 
     registry.fill(HIST("matching/jets/matchDetJetPtEtaPhi"), detJet.pt(), detJet.eta(), detJet.phi(), weight);
     registry.fill(HIST("matching/jets/matchPartJetPtEtaPhi"), partJet.pt(), partJet.eta(), partJet.phi(), weight);
@@ -2144,20 +2198,22 @@ struct JetFragmentation {
     registry.fill(HIST("matching/jets/matchPartJetPtRelDiffPt"), partJet.pt(), (detJet.pt() - partJet.pt()) / partJet.pt(), weight);
   }
   template <typename CollisionType, typename DetJetType, typename PartJetType, typename V0Type, typename ParticleType> // Reconstructed signal for in-jet V0s
-  void fillMatchingV0FragHistograms(CollisionType const& collision, DetJetType const& detJet, PartJetType const& partJet, V0Type const& v0, ParticleType const& particle, double weight = 1.)
+  void fillMatchedV0InJet(CollisionType const& coll, DetJetType const& detJet, PartJetType const& partJet, V0Type const& v0, ParticleType const& particle, double weight = 1.)
   {
-    bool correctCollision = (collision.mcCollisionId() == particle.mcCollisionId());
+    bool correctCollision = (coll.mcCollisionId() == particle.mcCollisionId());
     double detTrackProj = getMomFrac(detJet, v0);
     double partTrackProj = getMomFrac(partJet, particle);
 
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
 
     registry.fill(HIST("matching/jets/V0/matchDetJetPtV0TrackProjPartJetPtV0TrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0Pt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetPt"), partJet.pt(), particle.pt(), detJet.pt(), weight);
-    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    // registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0ZRelDiffZ"), partJet.pt(), detJet.pt(), partTrackProj, (detTrackProj - partTrackProj) / partTrackProj, weight);
 
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0PtCtauLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauLambda, weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0PtCtauAntiLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauAntiLambda, weight);
@@ -2296,7 +2352,7 @@ struct JetFragmentation {
     } // AntiLambda
   }
   template <typename V0DaughterType, typename ParticleDaughterType, typename DetJetType, typename PartJetType, typename V0Type, typename ParticleType> // Reconstructed signal for in-jet V0s: daughters
-  void fillMatchingV0DauJetHistograms(DetJetType const& detJet, PartJetType const& partJet, V0Type const& v0, ParticleType const& particle, double weight = 1.)
+  void fillMatchedV0DaughtersInJet(DetJetType const& detJet, PartJetType const& partJet, V0Type const& v0, ParticleType const& particle, double weight = 1.)
   {
     auto negTrack = v0.template negTrack_as<V0DaughterType>();
     auto posTrack = v0.template posTrack_as<V0DaughterType>();
@@ -2306,8 +2362,8 @@ struct JetFragmentation {
     registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtNegPtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), negPart.pt(), negTrack.pt() / negPart.pt(), (negTrack.pt() - negPart.pt()) / negPart.pt(), weight);
   }
   // Misses - Counts (or event weights)
-  template <typename T, typename U> // Missed inclusive V0s
-  void fillMatchingMissV0Histograms(T const& pv0, double weight = 1.)
+  template <typename T>
+  void fillMissV0Inclusive(T const& pv0, double weight = 1.)
   {
     int pdg = pv0.pdgCode();
     registry.fill(HIST("matching/V0/missV0PtEtaPhi"), pv0.pt(), pv0.eta(), pv0.phi(), weight);
@@ -2319,8 +2375,17 @@ struct JetFragmentation {
       registry.fill(HIST("matching/V0/missAntiLambdaPtEtaPhi"), pv0.pt(), pv0.eta(), pv0.phi(), weight);
     }
   }
-  template <typename JetType, typename V0Type> // Missed V0s in jets
-  void fillMatchingV0Miss(JetType const& jet, V0Type const& v0, double weight = 1.)
+  template <typename T>
+  void fillMissJet(T const& jet, double weight = 1.)
+  {
+    registry.fill(HIST("matching/jets/inclMissJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    if (!jetContainsV0s(jet))
+      return;
+
+    registry.fill(HIST("matching/jets/missJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+  }
+  template <typename JetType, typename V0Type>
+  void fillMissV0InJet(JetType const& jet, V0Type const& v0, double weight = 1.)
   {
     double trackProj = getMomFrac(jet, v0);
 
@@ -2338,8 +2403,8 @@ struct JetFragmentation {
     }
   }
   // Fakes - Counts (or event weights)
-  template <typename T, typename U> // Fake inclusive V0s
-  void fillMatchingV0FakeHistograms(T const& coll, U const& v0, double weight = 1.)
+  template <typename T, typename U>
+  void fillFakeV0Inclusive(T const& coll, U const& v0, double weight = 1.)
   {
     double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
     double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
@@ -2399,8 +2464,8 @@ struct JetFragmentation {
       registry.fill(HIST("matching/V0/fakeAntiLambdaPtDCAdMass"), v0.pt(), v0.dcaV0daughters(), v0.mAntiLambda(), weight);
     }
   }
-  template <typename T, typename U> // Fake inclusive V0s daughters
-  void fillMatchingFakeV0DauHistograms(U const& v0, double weight = 1.)
+  template <typename T, typename U>
+  void fillFakeV0DaughtersInclusive(U const& v0, double weight = 1.)
   {
     auto negTrack = v0.template negTrack_as<T>();
     auto posTrack = v0.template posTrack_as<T>();
@@ -2427,7 +2492,7 @@ struct JetFragmentation {
     }
   }
   template <typename T, typename U, typename V> // Check if inclusive V0 was missed because daughter decayed
-  void fillMatchingV0DecayedHistograms(V const& v0, double weight = 1.)
+  void fillFakeV0DecayedInclusive(V const& v0, double weight = 1.)
   {
     // Check if decayed daughter
     auto posTrack = v0.template posTrack_as<T>();
@@ -2481,13 +2546,22 @@ struct JetFragmentation {
       }
     }
   }
-  template <typename CollisionType, typename JetType, typename V0Type> // Fake V0s in jets
-  void fillMatchingV0JetFakeHistograms(CollisionType const& collision, JetType const& jet, V0Type const& v0, double weight = 1.)
+  template <typename T>
+  void fillFakeJet(T const& jet, double weight = 1.)
+  {
+    registry.fill(HIST("matching/jets/fakeJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+    if (!jetContainsV0s(jet))
+      return;
+
+    registry.fill(HIST("matching/jets/inclFakeJetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi(), weight);
+  }
+  template <typename CollisionType, typename JetType, typename V0Type>
+  void fillFakeV0InJet(CollisionType const& coll, JetType const& jet, V0Type const& v0, double weight = 1.)
   {
     double trackProj = getMomFrac(jet, v0);
-    double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0;
-    double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassLambda0Bar;
-    double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
+    double ctauLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0;
+    double ctauAntiLambda = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassLambda0Bar;
+    double ctauK0s = v0.distovertotmom(coll.posX(), coll.posY(), coll.posZ()) * constants::physics::MassK0Short;
     double massDiff = v0.mLambda() - v0.mAntiLambda();
     double massRatio = v0.mAntiLambda() / v0.mLambda();
     double massRelDiff = (v0.mLambda() - v0.mAntiLambda()) / v0.mLambda();
@@ -2566,7 +2640,7 @@ struct JetFragmentation {
     }
   }
   template <typename T, typename U, typename V, typename W, typename X> // Check if V0 in jet was missed because daughter decayed
-  void fillMatchingV0JetDecayedHistograms(V const& partJet, W const& detJet, X const& v0, double weight = 1.)
+  void fillFakeV0DecayedInJet(V const& partJet, W const& detJet, X const& v0, double weight = 1.)
   {
     // Check if decayed daughter
     auto posTrack = v0.template posTrack_as<T>();
@@ -2658,40 +2732,36 @@ struct JetFragmentation {
   void processDummy(aod::JetTracks const&) {}
   PROCESS_SWITCH(JetFragmentation, processDummy, "Dummy process function turned on by default", true);
 
-  // Data
-  void processDataV0(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, CandidatesV0DataWithFlags const& V0s)
+  void processDataV0(soa::Filtered<aod::JetCollisions>::iterator const& coll, DataV0JetsWithConstituents const& jets, aod::CandidatesV0Data const& V0s, aod::JetTracks const&)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
+    registry.fill(HIST("data/hEvents"), 0.5);
+    if (!jetderiveddatautilities::selectCollision(coll, eventSelectionBits))
       return;
-    }
+
+    registry.fill(HIST("data/hEvents"), 1.5);
     registry.fill(HIST("data/V0/nV0sEvent"), V0s.size());
-    fillDataV0Histograms(jcoll, V0s);
-    fillDataV0HistogramsWeighted(jcoll, V0s);
-  }
-  PROCESS_SWITCH(JetFragmentation, processDataV0, "Data V0", false);
 
-  void processDataV0JetsFrag(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, DataV0JetsWithConstituents const& v0jets, CandidatesV0DataWithFlags const&, aod::JetTracks const&)
-  {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
-      return;
+    if (fillHistsInclusiveV0s) {
+      fillDataV0sInclusive(coll, V0s);
+      fillDataV0sInclusiveWeighted(coll, V0s);
     }
 
-    for (const auto& jet : v0jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax)) {
-        continue;
-      }
+    if (!fillHistsJets)
+      return;
 
-      if (!jetContainsV0s(jet)) // Double check if the jet contains V0s
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax))
         continue;
 
-      fillDataJetHistograms(jet);
+      fillDataJet(jet);
+      fillDataV0sInPerpCone(coll, jet, V0s);
 
       int nV0inJet = 0, nLambdainJet = 0, nAntiLambdainJet = 0, nK0SinJet = 0;   // Counts
       float wV0inJet = 0, wLambdainJet = 0, wAntiLambdainJet = 0, wK0SinJet = 0; // Weights
 
       std::vector<double> values;
       std::vector<std::vector<double>> weights;
-      for (const auto& v0 : jet.candidates_as<CandidatesV0DataWithFlags>()) {
+      for (const auto& v0 : jet.candidates_as<aod::CandidatesV0Data>()) {
         if (v0.isRejectedCandidate())
           continue;
 
@@ -2711,7 +2781,7 @@ struct JetFragmentation {
           wAntiLambdainJet += signalProb;
         }
 
-        fillDataV0FragHistograms(jcoll, jet, v0);
+        fillDataV0sInJet(coll, jet, v0);
         double z = getMomFrac(jet, v0);
         std::vector<double> w;
 
@@ -2729,144 +2799,99 @@ struct JetFragmentation {
       registry.fill(HIST("data/jets/V0/jetPtnV0nK0SnLambdanAntiLambda"), jet.pt(), nV0inJet, nK0SinJet, nLambdainJet, nAntiLambdainJet);
       registry.fill(HIST("data/jets/weighted/V0/jetPtnV0nK0SnLambdanAntiLambda"), jet.pt(), wV0inJet, wK0SinJet, wLambdainJet, wAntiLambdainJet);
 
+      if (nV0inJet == 0)
+        continue;
+
       int nStates = std::round(std::pow(static_cast<double>(nV0Classes), static_cast<double>(nV0inJet)));
       for (int M = 0; M < nStates; M++) {
         std::vector<int> state = convertState(M, nV0inJet, nV0Classes);
         std::vector<double> corrected;
         if (doCorrectionWithTracks)
-          corrected = correctedValuesPlusTracks<CandidatesV0DataWithFlags, aod::JetTracks>(state, jet);
+          corrected = correctedValuesPlusTracks<aod::CandidatesV0Data, aod::JetTracks>(state, jet);
         else
           corrected = correctedValues(state, values);
 
         double ws = stateWeight(state, weights);
         double jetpt = corrected[nV0inJet];
-        fillDataJetHistogramsWeighted(jetpt, jet.eta(), jet.phi(), ws);
-        fillDataV0FragHistogramsWeighted(jcoll, jet, state, corrected, ws);
+        fillDataJetWeighted(jetpt, jet.eta(), jet.phi(), ws);
+        fillDataV0sInJetWeighted(coll, jet, state, corrected, ws);
       }
     }
   }
-  PROCESS_SWITCH(JetFragmentation, processDataV0JetsFrag, "Data V0 jets fragmentation with weights", false);
+  PROCESS_SWITCH(JetFragmentation, processDataV0, "Data V0", false);
 
-  void processDataV0PerpCone(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, aod::V0ChargedJets const& v0jets, CandidatesV0DataWithFlags const& v0s)
+  void processMcV0(soa::Filtered<aod::JetCollisionsMCD>::iterator const& coll, aod::JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& v0jetsMCD, MatchedMCPV0JetsWithConstituents const& v0jetsMCP, CandidatesV0MCDWithLabels const& V0s, aod::CandidatesV0MCP const& pV0s, aod::JetTracksMCD const&, aod::JetParticles const&, aod::McParticles const& particles)
   {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
+    registry.fill(HIST("matching/hEvents"), 0.5);
+    if (!coll.has_mcCollision())
       return;
-    }
-
-    for (const auto& jet : v0jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax)) {
-        continue;
-      }
-      fillDataPerpConeHists(jcoll, jet, v0s);
-    }
-  }
-  PROCESS_SWITCH(JetFragmentation, processDataV0PerpCone, "Perpendicular cone V0s in data", false);
-
-  // Matching
-  void processMcMatchedV0(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, CandidatesV0MCDWithLabelsAndFlags const& v0s, aod::CandidatesV0MCP const& pv0s, aod::JetTracksMCD const& jTracks, aod::JetParticles const&)
-  {
-    if (!jcoll.has_mcCollision()) {
-      return;
-    }
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
-      return;
-    }
-    double weight = jcoll.mcCollision().weight();
-    registry.fill(HIST("matching/V0/nV0sEvent"), v0s.size());
-    registry.fill(HIST("matching/V0/nV0sEventWeighted"), v0s.size(), weight);
-
-    // TODO: Fill mcd and mcp hists
-    fillMCDV0Histograms(jcoll, v0s, weight);
-    fillMCPV0Histograms(pv0s, weight);
-
-    float nV0s = 0;
-    for (const auto& v0 : v0s) {
-      if (v0.isRejectedCandidate())
-        continue;
-
-      if (!v0.has_mcParticle()) {
-        fillMatchingV0FakeHistograms(jcoll, v0, weight);
-        fillMatchingFakeV0DauHistograms<aod::JetTracksMCD>(v0, weight);
-        fillMatchingV0DecayedHistograms<aod::JetTracksMCD, aod::JetParticles>(v0, weight);
-        continue;
-      }
-      for (const auto& pv0 : pv0s) {
-        if (v0sAreMatched(v0, pv0, jTracks)) {
-          nV0s += 1;
-          fillMatchingV0Histograms(jcoll, v0, pv0, weight);
-          fillMatchingV0DauHistograms<aod::JetTracksMCD, aod::JetParticles>(v0, pv0, weight);
-        }
-      }
-    } // Reconstructed V0s
-    for (const auto& pv0 : pv0s) {
-      for (const auto& v0 : v0s) {
-        if (v0sAreMatched(v0, pv0, jTracks)) {
-          continue;
-        }
-        // Fill histograms for missed V0s
-      }
-    }
-    registry.fill(HIST("matching/V0/nV0sEventAcc"), nV0s);
-    registry.fill(HIST("matching/V0/nV0sEventAccWeighted"), nV0s, weight);
-  }
-  PROCESS_SWITCH(JetFragmentation, processMcMatchedV0, "Monte Carlo V0", false);
-
-  void processMcMatchedV0JetsFrag(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& v0jetsMCD, MatchedMCPV0JetsWithConstituents const& v0jetsMCP, CandidatesV0MCDWithLabelsAndFlags const&, aod::CandidatesV0MCP const&, aod::JetTracksMCD const& jTracks, aod::JetParticles const&)
-  {
-    if (!jcoll.has_mcCollision())
-      return;
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits))
+    if (!jetderiveddatautilities::selectCollision(coll, eventSelectionBits))
       return;
 
-    double weight = jcoll.mcCollision().weight();
+    registry.fill(HIST("matching/hEvents"), 1.5);
+    double weight = coll.mcCollision().weight();
+    registry.fill(HIST("matching/hEvents"), 2.5, weight);
+    registry.fill(HIST("matching/V0/nV0sEvent"), V0s.size());
+    registry.fill(HIST("matching/V0/nV0sEventWeighted"), V0s.size(), weight);
+
+    if (fillHistsInclusiveV0s) {
+      fillMcdV0sInclusive(coll, V0s, weight);
+      fillMcpV0sInclusive(pV0s, weight);
+      fillMatchingV0sInclusive<aod::JetTracksMCD, aod::JetParticles>(coll, V0s, pV0s, weight);
+    }
+
+    if (!fillHistsJets)
+      return;
 
     for (const auto& detJet : v0jetsMCD) {
       if (!jetfindingutilities::isInEtaAcceptance(detJet, -99., -99., v0EtaMin, v0EtaMax))
         continue;
 
-      // Double check if the jet contains V0s
-      if (!jetContainsV0s(detJet))
-        continue;
-
-      fillMCDJetHistograms(detJet, weight);
+      fillMcdJet(detJet, weight);
+      fillMcV0sInPerpCone(coll, detJet, V0s, particles, weight);
 
       int nV0inJet = 0, nLambdainJet = 0, nAntiLambdainJet = 0, nK0SinJet = 0;
       if (!detJet.has_matchedJetGeo()) {
-        for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabelsAndFlags>()) {
-          fillMatchingV0JetFakeHistograms(jcoll, detJet, detV0, weight);
+        fillFakeJet(detJet, weight);
+        for (const auto& v0 : detJet.candidates_as<CandidatesV0MCDWithLabels>()) {
+          fillFakeV0InJet(coll, detJet, v0, weight);
         }
         continue;
       } // if jet not matched
 
       for (const auto& partJet : detJet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
-        fillMatchingHistogramsJet(detJet, partJet, weight);
-        for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabelsAndFlags>()) {
+        fillMatchedJet(detJet, partJet, weight);
+        fillMcV0sInMatchedPerpCone(coll, detJet, partJet, V0s, particles, weight);
+
+        for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabels>()) {
           if (!detV0.has_mcParticle()) {
-            fillMatchingV0JetFakeHistograms(jcoll, detJet, detV0, weight);
-            fillMatchingV0JetDecayedHistograms<aod::JetTracksMCD, aod::JetParticles>(partJet, detJet, detV0, weight);
+            fillFakeV0InJet(coll, detJet, detV0, weight);
+            fillFakeV0DecayedInJet<aod::JetTracksMCD, aod::JetParticles>(partJet, detJet, detV0, weight);
             continue;
           }
+
           bool isV0Matched = false;
           for (const auto& partV0 : partJet.template candidates_as<aod::CandidatesV0MCP>()) {
-            if (v0sAreMatched(detV0, partV0, jTracks)) {
-              isV0Matched = true;
-              nV0inJet++;
-              fillMatchingV0FragHistograms(jcoll, detJet, partJet, detV0, partV0, weight);
-              fillMatchingV0DauJetHistograms<aod::JetTracksMCD, aod::JetParticles>(detJet, partJet, detV0, partV0, weight);
+            if (!v0sAreMatched<aod::JetTracksMCD>(detV0, partV0))
+              continue;
 
-              if (std::abs(partV0.pdgCode()) == PDG_t::kK0Short) {
-                nK0SinJet++;
-              } else if (partV0.pdgCode() == PDG_t::kLambda0) {
-                nLambdainJet++;
-              } else if (partV0.pdgCode() == PDG_t::kLambda0Bar) {
-                nAntiLambdainJet++;
-              }
-              break;
-            } // if matched
+            isV0Matched = true;
+            nV0inJet++;
+            fillMatchedV0InJet(coll, detJet, partJet, detV0, partV0, weight);
+            fillMatchedV0DaughtersInJet<aod::JetTracksMCD, aod::JetParticles>(detJet, partJet, detV0, partV0, weight);
+
+            if (std::abs(partV0.pdgCode()) == PDG_t::kK0Short) {
+              nK0SinJet++;
+            } else if (partV0.pdgCode() == PDG_t::kLambda0) {
+              nLambdainJet++;
+            } else if (partV0.pdgCode() == PDG_t::kLambda0Bar) {
+              nAntiLambdainJet++;
+            }
+            break;
           } // partV0 loop
 
           if (!isV0Matched) {
-            fillMatchingV0JetFakeHistograms(jcoll, detJet, detV0, weight);
+            fillFakeV0InJet(coll, detJet, detV0, weight);
           }
         } // detV0 loop
         registry.fill(HIST("matching/jets/V0/jetPtnV0MatchednK0SnLambdanAntiLambda"), partJet.pt(), nV0inJet, nK0SinJet, nLambdainJet, nAntiLambdainJet, weight);
@@ -2874,70 +2899,46 @@ struct JetFragmentation {
     } // detJet loop
 
     for (const auto& partJet : v0jetsMCP) {
-      if (!jetContainsV0s(partJet)) {
-        continue;
-      }
-      fillMCPJetHistograms(partJet, weight);
+      fillMcpJet(partJet, weight);
 
       if (!partJet.has_matchedJetGeo()) {
+        fillMissJet(partJet, weight);
         for (const auto& partV0 : partJet.candidates_as<aod::CandidatesV0MCP>()) {
-          fillMatchingV0Miss(partJet, partV0, weight);
+          fillMissV0InJet(partJet, partV0, weight);
         }
         continue;
       } // if jet not matched
 
       bool isJetMatched = false;
       for (const auto& detJet : partJet.template matchedJetGeo_as<MatchedMCDV0JetsWithConstituents>()) {
-        if (!jetfindingutilities::isInEtaAcceptance(detJet, -99., -99., v0EtaMin, v0EtaMax)) {
+        if (!jetfindingutilities::isInEtaAcceptance(detJet, -99., -99., v0EtaMin, v0EtaMax))
           continue;
-        }
+
         isJetMatched = true;
         for (const auto& partV0 : partJet.candidates_as<aod::CandidatesV0MCP>()) {
           bool isV0Matched = false;
-          for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabelsAndFlags>()) {
-            if (v0sAreMatched(detV0, partV0, jTracks)) {
+          for (const auto& detV0 : detJet.candidates_as<CandidatesV0MCDWithLabels>()) {
+            if (v0sAreMatched<aod::JetTracksMCD>(detV0, partV0)) {
               isV0Matched = true;
               break;
             }
           } // detV0 loop
-          if (!isV0Matched) {
-            fillMatchingV0Miss(partJet, partV0, weight);
-          }
+
+          // If V0 is matched, it has already been filled in the mcdjet loop
+          if (!isV0Matched)
+            fillMissV0InJet(partJet, partV0, weight);
         } // partV0 loop
       } // detJet loop
 
       // To account for matched jets where the detector level jet is outside of the eta range (cut applied within this task)
       if (!isJetMatched) {
         for (const auto& partV0 : partJet.candidates_as<aod::CandidatesV0MCP>()) {
-          fillMatchingV0Miss(partJet, partV0, weight);
+          fillMissV0InJet(partJet, partV0, weight);
         }
       }
     } // partJet loop
   }
-  PROCESS_SWITCH(JetFragmentation, processMcMatchedV0JetsFrag, "Matched V0 jets fragmentation", false);
-
-  void processMcV0PerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, CandidatesV0MCDWithLabelsAndFlags const& v0s, aod::McParticles const& particles, MatchedMCPV0Jets const&)
-  {
-    if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
-      return;
-    }
-    double weight = jcoll.mcCollision().weight();
-    registry.fill(HIST("mcd/V0/nV0sEvent"), v0s.size());
-    registry.fill(HIST("mcd/V0/nV0sEventWeighted"), v0s.size(), weight);
-
-    for (const auto& mcdjet : v0jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, -99., -99., v0EtaMin, v0EtaMax))
-        continue;
-
-      fillMcPerpConeHists(jcoll, mcdjet, v0s, particles, weight);
-
-      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0Jets>()) {
-        fillMcPerpConeHists(jcoll, mcdjet, mcpjet, v0s, particles, weight);
-        break; // Make sure we only do this once
-      }
-    }
-  }
-  PROCESS_SWITCH(JetFragmentation, processMcV0PerpCone, "Perpendicular cone V0s in MC", false);
+  PROCESS_SWITCH(JetFragmentation, processMcV0, "MC V0", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

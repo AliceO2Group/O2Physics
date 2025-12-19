@@ -9,41 +9,169 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+//**********************************************************************
 // Defines TOF PID tables for strangeness.
 // Entries calculated per candidate, tables are joinable with v0/cascdata tables.
+//**********************************************************************
+
+//**********************************************************************
+// Nota bene: when using, do not check track.hasTOF! That conditional may not match
+// the calculation of strangeness TOF, which requires e.g. a successful calculation
+// of the collision time for the reassociated collision
+//**********************************************************************
 
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
 #define PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
 namespace dautrack
 {
-// ==== TPC INFORMATION ===
-DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);     //! track TPC signal
+// ==== define packing helpers ===
+namespace packing
+{
+// define variables for packing
+static constexpr int nbins = (1 << 8 * sizeof(int8_t)) - 2;
+static constexpr int8_t overflowBin = nbins >> 1;
+static constexpr int8_t underflowBin = -(nbins >> 1);
+static constexpr float binned_max = 6.35;
+static constexpr float binned_min = -6.35;
+static constexpr float bin_width = (binned_max - binned_min) / nbins;
+static constexpr float underflow_return = -100.0f;
+static constexpr float overflow_return = +100.0f;
+
+// define helper function to do packing
+int8_t packInInt8(float nSigma)
+{
+  // calculate
+  if (nSigma <= binned_min)
+    return underflowBin;
+  if (nSigma >= binned_max)
+    return overflowBin;
+  if (nSigma >= 0) {
+    return static_cast<int8_t>((nSigma / bin_width) + 0.5f);
+  }
+  // automatic: this is the case in which nSigma < 0
+  return static_cast<int8_t>((nSigma / bin_width) - 0.5f);
+}
+
+// define helper function to do unpacking
+float unpackInt8(int8_t nSigma)
+{
+  if (nSigma == underflowBin) {
+    return underflow_return;
+  }
+  if (nSigma == overflowBin) {
+    return overflow_return;
+  }
+  return bin_width * nSigma;
+}
+
+} // namespace packing
+} // namespace dautrack
+
+namespace dautrack_legacy
+{
+// ==== LEGACY TPC INFORMATION (full size tables) ===
 DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma proton
+} // namespace dautrack_legacy
+
+namespace dautrack
+{
+// ==== COMPACT TPC INFORMATION (full size tables) ===
+DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);                  //! track TPC signal
+DECLARE_SOA_COLUMN(PackedTPCNSigmaEl, packedTpcNSigmaEl, int8_t); //! Nsigma proton
+DECLARE_SOA_COLUMN(PackedTPCNSigmaPi, packedTpcNSigmaPi, int8_t); //! Nsigma proton
+DECLARE_SOA_COLUMN(PackedTPCNSigmaKa, packedTpcNSigmaKa, int8_t); //! Nsigma proton
+DECLARE_SOA_COLUMN(PackedTPCNSigmaPr, packedTpcNSigmaPr, int8_t); //! Nsigma proton
+
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaEl, tpcNSigmaEl, //! unpacked TPC nsigma
+                           [](int8_t nsigma_packed) -> float { return o2::aod::dautrack::packing::unpackInt8(nsigma_packed); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi, //! unpacked TPC nsigma
+                           [](int8_t nsigma_packed) -> float { return o2::aod::dautrack::packing::unpackInt8(nsigma_packed); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa, //! unpacked TPC nsigma
+                           [](int8_t nsigma_packed) -> float { return o2::aod::dautrack::packing::unpackInt8(nsigma_packed); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr, //! unpacked TPC nsigma
+                           [](int8_t nsigma_packed) -> float { return o2::aod::dautrack::packing::unpackInt8(nsigma_packed); });
 
 // ==== TOF INFORMATION ===
+DECLARE_SOA_INDEX_COLUMN(DauTrackExtra, dauTrackExtra); //! point to daughter this TOF info belongs to
+DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision); //! point to collision associated with this track (not the V0/Casc)
 DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! track TOF signal
-DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float); //! track TOF signal
-DECLARE_SOA_COLUMN(Length, length, float);       //! track TOF signal
+DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float); //! event time
+DECLARE_SOA_COLUMN(Length, length, float);       //! track length (to assigned PV)
+DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float); //! tof Exp Mom (to assigned PV)
+
+// dynamics with expected times
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeEl, tofExpTimeEl, //! Expected time for the track to reach the TOF under the electron hypothesis
+                           [](float length, float tofExpMom) -> float {
+                             constexpr float massSquared = o2::constants::physics::MassElectron * o2::constants::physics::MassElectron;
+                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, massSquared);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimePi, tofExpTimePi, //! Expected time for the track to reach the TOF under the pion hypothesis
+                           [](float length, float tofExpMom) -> float {
+                             constexpr float massSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, massSquared);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeKa, tofExpTimeKa, //! Expected time for the track to reach the TOF under the kaon hypothesis
+                           [](float length, float tofExpMom) -> float {
+                             constexpr float massSquared = o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged;
+                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, massSquared);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimePr, tofExpTimePr, //! Expected time for the track to reach the TOF under the proton hypothesis
+                           [](float length, float tofExpMom) -> float {
+                             constexpr float massSquared = o2::constants::physics::MassProton * o2::constants::physics::MassProton;
+                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, massSquared);
+                           });
+
 } // namespace dautrack
 
-DECLARE_SOA_TABLE(DauTrackTPCPIDs, "AOD", "DAUTRACKTPCPID", // nsigma table (for analysis)
-                  dautrack::TPCSignal, dautrack::TPCNSigmaEl,
-                  dautrack::TPCNSigmaPi, dautrack::TPCNSigmaKa,
-                  dautrack::TPCNSigmaPr, dautrack::TPCNSigmaHe);
-DECLARE_SOA_TABLE(DauTrackTOFPIDs, "AOD", "DAUTRACKTOFPID", // raw table (for posterior TOF calculation)
+DECLARE_SOA_TABLE(DauTrackTPCPIDs_000, "AOD", "DAUTRACKTPCPID", // nsigma table (for analysis)
+                  dautrack::TPCSignal, dautrack_legacy::TPCNSigmaEl,
+                  dautrack_legacy::TPCNSigmaPi, dautrack_legacy::TPCNSigmaKa,
+                  dautrack_legacy::TPCNSigmaPr, dautrack_legacy::TPCNSigmaHe);
+
+DECLARE_SOA_TABLE_VERSIONED(DauTrackTPCPIDs_001, "AOD", "DAUTRACKTPCPID", 1, // nsigma table (for analysis)
+                            dautrack::TPCSignal,
+                            dautrack::PackedTPCNSigmaEl, dautrack::PackedTPCNSigmaPi,
+                            dautrack::PackedTPCNSigmaKa, dautrack::PackedTPCNSigmaPr,
+                            dautrack::TPCNSigmaEl<dautrack::PackedTPCNSigmaEl>,
+                            dautrack::TPCNSigmaPi<dautrack::PackedTPCNSigmaPi>,
+                            dautrack::TPCNSigmaKa<dautrack::PackedTPCNSigmaKa>,
+                            dautrack::TPCNSigmaPr<dautrack::PackedTPCNSigmaPr>);
+
+using DauTrackTPCPIDs = DauTrackTPCPIDs_001; // second gen: packed Nsigma, no He
+
+DECLARE_SOA_TABLE(DauTrackTOFPIDs_000, "AOD", "DAUTRACKTOFPID", // raw table (for posterior TOF calculation)
                   dautrack::TOFSignal, dautrack::TOFEvTime, dautrack::Length);
+
+DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_001, "AOD", "DAUTRACKTOFPID", 1, // raw table (for posterior TOF calculation)
+                            o2::soa::Index<>,
+                            dautrack::StraCollisionId, dautrack::DauTrackExtraId,
+                            dautrack::TOFSignal, dautrack::TOFEvTime,
+                            dautrack::Length, dautrack::TOFExpMom,
+                            dautrack::TOFExpTimeEl<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePi<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
+
+using DauTrackTOFPIDs = DauTrackTOFPIDs_001; // second gen: with collision Id, with TOFExpMom
 
 namespace v0data
 {
@@ -82,6 +210,25 @@ DECLARE_SOA_COLUMN(TOFNSigmaALaPr, tofNSigmaALaPr, float);         //! negative 
 DECLARE_SOA_COLUMN(TOFNSigmaALaPi, tofNSigmaALaPi, float);         //! positive track NSigma from pion <- antilambda expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiPlus, tofNSigmaK0PiPlus, float);   //! positive track NSigma from pion <- k0short expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative track NSigma from pion <- k0short expectation
+
+// dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
+// note: only single hypothesis check necessary; other hypotheses will always be valid
+DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid
+                           [](float TOFNSigmaLaPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(TOFNSigmaLaPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! negative daughter TOF calculation valid
+                           [](float TOFNSigmaALaPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(TOFNSigmaALaPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
 
 // dynamics based on n-sigmas with use-only-if-tof-present logic
 DECLARE_SOA_DYNAMIC_COLUMN(TofLambdaCompatibility, tofLambdaCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
@@ -164,6 +311,8 @@ DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table 
                   v0data::TOFNSigmaLaPr, v0data::TOFNSigmaLaPi,
                   v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi,
                   v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus,
+                  v0data::PositiveHasTOF<v0data::TOFNSigmaLaPr>,
+                  v0data::NegativeHasTOF<v0data::TOFNSigmaALaPr>,
                   v0data::TofLambdaCompatibility<v0data::TOFNSigmaLaPr, v0data::TOFNSigmaLaPi>,
                   v0data::TofAntiLambdaCompatibility<v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi>,
                   v0data::TofK0ShortCompatibility<v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus>);
@@ -204,6 +353,33 @@ DECLARE_SOA_COLUMN(TOFNSigmaXiPi, tofNSigmaXiPi, float);     //! bachelor track 
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPi, tofNSigmaOmLaPi, float); //! meson track NSigma from pion <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPr, tofNSigmaOmLaPr, float); //! baryon track NSigma from proton <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track NSigma from kaon <- om expectation
+
+// dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
+// note: only single hypothesis check necessary; other hypotheses will always be valid
+DECLARE_SOA_DYNAMIC_COLUMN(PositiveHasTOF, positiveHasTOF, //! positive daughter TOF calculation valid
+                           [](float PosTOFDeltaTXiPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(PosTOFDeltaTXiPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(NegativeHasTOF, negativeHasTOF, //! positive daughter TOF calculation valid
+                           [](float NegTOFDeltaTXiPr) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(NegTOFDeltaTXiPr - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(BachelorHasTOF, bachelorHasTOF, //! bachelor daughter TOF calculation valid
+                           [](float BachTOFDeltaTXiPi) -> bool {
+                             bool returnStatus = true;
+                             if (std::abs(BachTOFDeltaTXiPi - kNoTOFValue) < kEpsilon) {
+                               returnStatus = false;
+                             }
+                             return returnStatus;
+                           });
 
 // dynamics based on n-sigmas with use-only-if-tof-present logic
 DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
@@ -256,6 +432,9 @@ DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for
 DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascades
                   cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
                   cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa,
+                  cascdata::PositiveHasTOF<cascdata::PosTOFDeltaTXiPr>,
+                  cascdata::NegativeHasTOF<cascdata::NegTOFDeltaTXiPr>,
+                  cascdata::BachelorHasTOF<cascdata::BachTOFDeltaTXiPi>,
                   cascdata::TofXiCompatibility<cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiPi>,
                   cascdata::TofOmegaCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
 } // namespace o2::aod

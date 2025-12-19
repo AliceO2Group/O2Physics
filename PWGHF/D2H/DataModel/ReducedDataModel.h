@@ -25,6 +25,7 @@
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsPid.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -177,7 +178,7 @@ namespace hf_track_vars_reduced
 DECLARE_SOA_COLUMN(Px, px, float);                                               //! x-component of momentum
 DECLARE_SOA_COLUMN(Py, py, float);                                               //! y-component of momentum
 DECLARE_SOA_COLUMN(Pz, pz, float);                                               //! z-component of momentum
-DECLARE_SOA_COLUMN(Sign, sign, uint8_t);                                         //! charge sign
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                          //! charge sign
 DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                                        //! Flag to check if track has a TPC match
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                                        //! Flag to check if track has a TOF match
 DECLARE_SOA_COLUMN(HasTPCProng0, hasTPCProng0, bool);                            //! Flag to check if prong0 has a TPC match
@@ -747,14 +748,14 @@ using HfRedPidDau2 = HfRedPidDau2s::iterator;
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0, prongD0, int, HfRed2Prongs, "_0");  //! ProngD0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");               //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1");            //! Prong1 index
+DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0, prongD0, int, HfRed2Prongs, "_0");             //! ProngD0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngBachPi, prongBachPi, int, HfRedTrackBases, "_1");  //! ProngBachPi index
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngSoftPi, prongSoftPi, int, HfRedSoftPiBases, "_2"); //! ProngSoftPi index
-DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                        //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);                  //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);            //! Nonprompt ML score of the D daughter
 } // namespace hf_cand_b0_reduced
 
 DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG", //! Table with B0 daughter indices
@@ -1645,6 +1646,7 @@ DECLARE_SOA_TABLE(HfMcRecRedResos, "AOD", "HFMCRECREDRESO", //! Reconstruction-l
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
                   o2::soa::Marker<1>);
 } // namespace aod
 

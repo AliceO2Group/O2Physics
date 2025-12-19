@@ -44,7 +44,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/HelixHelper.h"
+#include "ReconstructionDataFormats/HelixHelper.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/GeometryManager.h"

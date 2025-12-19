@@ -17,14 +17,15 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"
@@ -49,14 +50,14 @@ using namespace o2::soa;
 
 struct eventQC {
   using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-  using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
+  using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using MyCollisions_Qvec = soa::Join<MyCollisions, MyQvectors>;
 
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
-                             aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                             aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                             aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                             aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
   using MyTrack = MyTracks::iterator;
 
   // Configurables
@@ -71,8 +72,8 @@ struct eventQC {
   Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
-  Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", 1000000000, "max. multNTracksPV"};
+  Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+  Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   ConfigurableAxis ConfPtBins{"ConfPtBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pT bins for output histograms"};
   Configurable<int> cfgNbinsEta{"cfgNbinsEta", 20, "number of eta bins for output histograms"};
   Configurable<int> cfgNbinsPhi{"cfgNbinsPhi", 36, "number of phi bins for output histograms"};
@@ -291,6 +292,8 @@ struct eventQC {
         fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0A_CentFT0C", nmod), Form("hQ%dyFT0A_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0A}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
         fRegistry.add(Form("Event/after/Qvector/hQ%dxFT0C_CentFT0C", nmod), Form("hQ%dxFT0C_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FT0C}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
         fRegistry.add(Form("Event/after/Qvector/hQ%dyFT0C_CentFT0C", nmod), Form("hQ%dyFT0C_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FT0C}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hQ%dxFV0A_CentFT0C", nmod), Form("hQ%dxFV0A_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{FV0A}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hQ%dyFV0A_CentFT0C", nmod), Form("hQ%dyFV0A_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{FV0A}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
         fRegistry.add(Form("Event/after/Qvector/hQ%dxBPos_CentFT0C", nmod), Form("hQ%dxBPos_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BPos}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
         fRegistry.add(Form("Event/after/Qvector/hQ%dyBPos_CentFT0C", nmod), Form("hQ%dyBPos_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BPos}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
         fRegistry.add(Form("Event/after/Qvector/hQ%dxBNeg_CentFT0C", nmod), Form("hQ%dxBNeg_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BNeg}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
@@ -308,10 +311,15 @@ struct eventQC {
         fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
         fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBTot_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
         fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dFT0C_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFV0AQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FV0A} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FV0A} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFV0AQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FV0A} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FV0A} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFV0AQ%dBTot_CentFT0C", nmod, nmod), Form("Q_{%d}^{FV0A} #upoint Q_{%d}^{BTot};centrality FT0C (%%);Q_{%d}^{FV0A} #upoint Q_{%d}^{BTot}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFV0AQ%dFT0C_CentFT0C", nmod, nmod), Form("Q_{%d}^{FV0A} #upoint Q_{%d}^{FT0C};centrality FT0C (%%);Q_{%d}^{FV0A} #upoint Q_{%d}^{FT0C}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
 
         fRegistry.add(Form("Event/after/Qvector/hEP%dFT0M_CentFT0C", nmod), Form("event plane FT0M;centrality FT0C (%%);#Psi_{%d}^{FT0M} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
         fRegistry.add(Form("Event/after/Qvector/hEP%dFT0A_CentFT0C", nmod), Form("event plane FT0A;centrality FT0C (%%);#Psi_{%d}^{FT0A} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
         fRegistry.add(Form("Event/after/Qvector/hEP%dFT0C_CentFT0C", nmod), Form("event plane FT0C;centrality FT0C (%%);#Psi_{%d}^{FT0C} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hEP%dFV0A_CentFT0C", nmod), Form("event plane FV0A;centrality FT0C (%%);#Psi_{%d}^{FV0A} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
         fRegistry.add(Form("Event/after/Qvector/hEP%dBPos_CentFT0C", nmod), Form("event plane BPos;centrality FT0C (%%);#Psi_{%d}^{BPos} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
         fRegistry.add(Form("Event/after/Qvector/hEP%dBNeg_CentFT0C", nmod), Form("event plane BNeg;centrality FT0C (%%);#Psi_{%d}^{BNeg} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
         fRegistry.add(Form("Event/after/Qvector/hEP%dBTot_CentFT0C", nmod), Form("event plane BTot;centrality FT0C (%%);#Psi_{%d}^{BTot} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
@@ -326,6 +334,10 @@ struct eventQC {
         fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0AEP%dBNeg_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BNeg}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BNeg}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
         fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0AEP%dBTot_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BTot}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BTot}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
         fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0AEP%dFT0C_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{FT0C}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{FT0C}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFV0AEP%dBPos_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{BPos}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{BPos}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFV0AEP%dBNeg_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{BNeg}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{BNeg}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFV0AEP%dBTot_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{BTot}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{BTot}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+        fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFV0AEP%dFT0C_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{FT0C}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FV0A} - #Psi_{%d}^{FT0C}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
       }
 
       for (int i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
@@ -360,13 +372,11 @@ struct eventQC {
     if (cfgFillPID) {
       fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
-      fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
       fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
       fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
       fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
       fRegistry.add("Track/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -401,14 +411,12 @@ struct eventQC {
     if (cfgFillPID) {
       fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
       fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
       fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
       fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
 
       fRegistry.fill(HIST("Track/hTOFbeta"), track.p(), track.beta());
       fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
-      fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
       fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
       fRegistry.fill(HIST("Track/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
       fRegistry.fill(HIST("Track/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
@@ -514,15 +522,16 @@ struct eventQC {
   void fillQvectorInfo(TCollision const& collision)
   {
     int idx = std::distance(cfgnMods->begin(), std::find(cfgnMods->begin(), cfgnMods->end(), nmod));
-    float qxft0m = collision.qvecFT0MReVec()[idx], qxft0a = collision.qvecFT0AReVec()[idx], qxft0c = collision.qvecFT0CReVec()[idx], qxbpos = collision.qvecBPosReVec()[idx], qxbneg = collision.qvecBNegReVec()[idx], qxbtot = collision.qvecBTotReVec()[idx];
-    float qyft0m = collision.qvecFT0MImVec()[idx], qyft0a = collision.qvecFT0AImVec()[idx], qyft0c = collision.qvecFT0CImVec()[idx], qybpos = collision.qvecBPosImVec()[idx], qybneg = collision.qvecBNegImVec()[idx], qybtot = collision.qvecBTotImVec()[idx];
+    float qxft0m = collision.qvecFT0MReVec()[idx], qxft0a = collision.qvecFT0AReVec()[idx], qxft0c = collision.qvecFT0CReVec()[idx], qxfv0a = collision.qvecFV0AReVec()[idx], qxbpos = collision.qvecBPosReVec()[idx], qxbneg = collision.qvecBNegReVec()[idx], qxbtot = collision.qvecBTotReVec()[idx];
+    float qyft0m = collision.qvecFT0MImVec()[idx], qyft0a = collision.qvecFT0AImVec()[idx], qyft0c = collision.qvecFT0CImVec()[idx], qyfv0a = collision.qvecFV0AImVec()[idx], qybpos = collision.qvecBPosImVec()[idx], qybneg = collision.qvecBNegImVec()[idx], qybtot = collision.qvecBTotImVec()[idx];
     std::array<float, 2> qft0m = {qxft0m, qyft0m};
     std::array<float, 2> qft0a = {qxft0a, qyft0a};
     std::array<float, 2> qft0c = {qxft0c, qyft0c};
+    std::array<float, 2> qfv0a = {qxfv0a, qyfv0a};
     std::array<float, 2> qbpos = {qxbpos, qybpos};
     std::array<float, 2> qbneg = {qxbneg, qybneg};
     std::array<float, 2> qbtot = {qxbtot, qybtot};
-    std::vector<std::array<float, 2>> qvectors = {qft0m, qft0a, qft0c, qbpos, qbneg, qbtot};
+    std::vector<std::array<float, 2>> qvectors = {qft0m, qft0a, qft0c, qfv0a, qbpos, qbneg, qbtot};
 
     if (!isGoodQvector(qvectors)) {
       return;
@@ -535,6 +544,8 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2yFT0A_CentFT0C"), collision.centFT0C(), qyft0a);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2xFT0C_CentFT0C"), collision.centFT0C(), qxft0c);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2yFT0C_CentFT0C"), collision.centFT0C(), qyft0c);
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2xFV0A_CentFT0C"), collision.centFT0C(), qxfv0a);
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2yFV0A_CentFT0C"), collision.centFT0C(), qyfv0a);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2xBPos_CentFT0C"), collision.centFT0C(), qxbpos);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2yBPos_CentFT0C"), collision.centFT0C(), qybpos);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2xBNeg_CentFT0C"), collision.centFT0C(), qxbneg);
@@ -545,17 +556,22 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0MQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbpos));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0MQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2BPosQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qbpos, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbpos));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbtot));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0CQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbpos));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0CQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0CQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbtot));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qft0c));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbpos));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbneg));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbtot));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FV0AQ2FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qft0c));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FV0AQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qbpos));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FV0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qbneg));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FV0AQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qbtot));
 
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0M_CentFT0C"), collision.centFT0C(), getEP(qxft0m, qyft0m, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0A_CentFT0C"), collision.centFT0C(), getEP(qxft0a, qyft0a, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0C_CentFT0C"), collision.centFT0C(), getEP(qxft0c, qyft0c, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FV0A_CentFT0C"), collision.centFT0C(), getEP(qxfv0a, qyfv0a, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BPos_CentFT0C"), collision.centFT0C(), getEP(qxbpos, qybpos, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BNeg_CentFT0C"), collision.centFT0C(), getEP(qxbneg, qybneg, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BTot_CentFT0C"), collision.centFT0C(), getEP(qxbtot, qybtot, nmod));
@@ -563,13 +579,17 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0MEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbpos, qybpos, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0MEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbneg, qybneg, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2BPosEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxbpos, qybpos, nmod) - getEP(qxbneg, qybneg, nmod))));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbpos, qybpos, nmod))));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbneg, qybneg, nmod))));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbtot, qybtot, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0CEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbpos, qybpos, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0CEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbneg, qybneg, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0CEP2BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbtot, qybtot, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2FT0C_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxft0c, qyft0c, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbtot, qybtot, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FV0AEP2FT0C_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxft0c, qyft0c, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FV0AEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FV0AEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FV0AEP2BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxbtot, qybtot, nmod))));
     } else if constexpr (nmod == 3) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3xFT0M_CentFT0C"), collision.centFT0C(), qxft0m);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3yFT0M_CentFT0C"), collision.centFT0C(), qyft0m);
@@ -577,6 +597,8 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3yFT0A_CentFT0C"), collision.centFT0C(), qyft0a);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3xFT0C_CentFT0C"), collision.centFT0C(), qxft0c);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3yFT0C_CentFT0C"), collision.centFT0C(), qyft0c);
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3xFV0A_CentFT0C"), collision.centFT0C(), qxfv0a);
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3yFV0A_CentFT0C"), collision.centFT0C(), qyfv0a);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3xBPos_CentFT0C"), collision.centFT0C(), qxbpos);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3yBPos_CentFT0C"), collision.centFT0C(), qybpos);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3xBNeg_CentFT0C"), collision.centFT0C(), qxbneg);
@@ -587,17 +609,22 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0MQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbpos));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0MQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3BPosQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qbpos, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbpos));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbtot));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0CQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbpos));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0CQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0CQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbtot));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qft0c));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbpos));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbneg));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbtot));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FV0AQ3FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qft0c));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FV0AQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qbpos));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FV0AQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qbneg));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FV0AQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qfv0a, qbtot));
 
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0M_CentFT0C"), collision.centFT0C(), getEP(qxft0m, qyft0m, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0A_CentFT0C"), collision.centFT0C(), getEP(qxft0a, qyft0a, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0C_CentFT0C"), collision.centFT0C(), getEP(qxft0c, qyft0c, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FV0A_CentFT0C"), collision.centFT0C(), getEP(qxfv0a, qyfv0a, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BPos_CentFT0C"), collision.centFT0C(), getEP(qxbpos, qybpos, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BNeg_CentFT0C"), collision.centFT0C(), getEP(qxbneg, qybneg, nmod));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BTot_CentFT0C"), collision.centFT0C(), getEP(qxbtot, qybtot, nmod));
@@ -605,13 +632,17 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0MEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbpos, qybpos, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0MEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbneg, qybneg, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3BPosEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxbpos, qybpos, nmod) - getEP(qxbneg, qybneg, nmod))));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbpos, qybpos, nmod))));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbneg, qybneg, nmod))));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbtot, qybtot, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0CEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbpos, qybpos, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0CEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbneg, qybneg, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0CEP3BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbtot, qybtot, nmod))));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3FT0C_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxft0c, qyft0c, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbtot, qybtot, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FV0AEP3FT0C_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxft0c, qyft0c, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FV0AEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FV0AEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FV0AEP3BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxfv0a, qyfv0a, nmod) - getEP(qxbtot, qybtot, nmod))));
     }
   }
 
@@ -619,15 +650,16 @@ struct eventQC {
   void fillVn(TCollision const& collision, TTrack const& track)
   {
     int idx = std::distance(cfgnMods->begin(), std::find(cfgnMods->begin(), cfgnMods->end(), nmod));
-    float qxft0m = collision.qvecFT0MReVec()[idx], qxft0a = collision.qvecFT0AReVec()[idx], qxft0c = collision.qvecFT0CReVec()[idx], qxbpos = collision.qvecBPosReVec()[idx], qxbneg = collision.qvecBNegReVec()[idx], qxbtot = collision.qvecBTotReVec()[idx];
-    float qyft0m = collision.qvecFT0MImVec()[idx], qyft0a = collision.qvecFT0AImVec()[idx], qyft0c = collision.qvecFT0CImVec()[idx], qybpos = collision.qvecBPosImVec()[idx], qybneg = collision.qvecBNegImVec()[idx], qybtot = collision.qvecBTotImVec()[idx];
+    float qxft0m = collision.qvecFT0MReVec()[idx], qxft0a = collision.qvecFT0AReVec()[idx], qxft0c = collision.qvecFT0CReVec()[idx], qxfv0a = collision.qvecFV0AReVec()[idx], qxbpos = collision.qvecBPosReVec()[idx], qxbneg = collision.qvecBNegReVec()[idx], qxbtot = collision.qvecBTotReVec()[idx];
+    float qyft0m = collision.qvecFT0MImVec()[idx], qyft0a = collision.qvecFT0AImVec()[idx], qyft0c = collision.qvecFT0CImVec()[idx], qyfv0a = collision.qvecFV0AImVec()[idx], qybpos = collision.qvecBPosImVec()[idx], qybneg = collision.qvecBNegImVec()[idx], qybtot = collision.qvecBTotImVec()[idx];
     std::array<float, 2> qft0m = {qxft0m, qyft0m};
     std::array<float, 2> qft0a = {qxft0a, qyft0a};
     std::array<float, 2> qft0c = {qxft0c, qyft0c};
+    std::array<float, 2> qfv0a = {qxfv0a, qyfv0a};
     std::array<float, 2> qbpos = {qxbpos, qybpos};
     std::array<float, 2> qbneg = {qxbneg, qybneg};
     std::array<float, 2> qbtot = {qxbtot, qybtot};
-    std::vector<std::array<float, 2>> qvectors = {qft0m, qft0a, qft0c, qbpos, qbneg, qbtot};
+    std::vector<std::array<float, 2>> qvectors = {qft0m, qft0a, qft0c, qfv0a, qbpos, qbneg, qbtot};
 
     if (!isGoodQvector(qvectors)) {
       return;
@@ -827,7 +859,7 @@ struct eventQC {
   Filter collisionFilter_evsel = ifnode(eventcuts.cfgRequireSel8.node(), o2::aod::evsel::sel8 == true, true);
   Filter collisionFilter_zvtx = eventcuts.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventcuts.cfgZvtxMax;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
+  Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
   Filter collisionFilter_track_occupancy = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_ft0c_occupancy = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;

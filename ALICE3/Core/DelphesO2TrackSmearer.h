@@ -24,12 +24,15 @@
 #ifndef ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 #define ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 
-#include <map>
-#include <iostream>
-#include <fstream>
+#include <CCDB/BasicCCDBManager.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "TRandom.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <TRandom.h>
+
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <map>
 
 ///////////////////////////////
 /// DelphesO2/src/lutCovm.hh //
@@ -85,7 +88,7 @@ struct map_t {
     if (bin > nbins - 1)
       return nbins - 1;
     return bin;
-  }                                                                                                            //;
+  } //;
   void print() { printf("nbins = %d, min = %f, max = %f, log = %s \n", nbins, min, max, log ? "on" : "off"); } //;
 };
 
@@ -177,23 +180,24 @@ class TrackSmearer
 
   /** LUT methods **/
   bool loadTable(int pdg, const char* filename, bool forceReload = false);
-  void useEfficiency(bool val) { mUseEfficiency = val; }                      //;
-  void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }      //;
-  void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }          //;
-  void setWhatEfficiency(int val) { mWhatEfficiency = val; }                  //;
-  lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; } //;
-  lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff);
+  bool hasTable(int pdg) { return (mLUTHeader[getIndexPDG(pdg)] != nullptr); } //;
+  void useEfficiency(bool val) { mUseEfficiency = val; }                       //;
+  void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }       //;
+  void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }           //;
+  void setWhatEfficiency(int val) { mWhatEfficiency = val; }                   //;
+  lutHeader_t* getLUTHeader(int pdg) { return mLUTHeader[getIndexPDG(pdg)]; }  //;
+  lutEntry_t* getLUTEntry(const int pdg, const float nch, const float radius, const float eta, const float pt, float& interpolatedEff);
 
   bool smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float interpolatedEff);
   bool smearTrack(O2Track& o2track, int pdg, float nch);
   // bool smearTrack(Track& track, bool atDCA = true); // Only in DelphesO2
-  double getPtRes(int pdg, float nch, float eta, float pt);
-  double getEtaRes(int pdg, float nch, float eta, float pt);
-  double getAbsPtRes(int pdg, float nch, float eta, float pt);
-  double getAbsEtaRes(int pdg, float nch, float eta, float pt);
-  double getEfficiency(int pdg, float nch, float eta, float pt);
+  double getPtRes(const int pdg, const float nch, const float eta, const float pt);
+  double getEtaRes(const int pdg, const float nch, const float eta, const float pt);
+  double getAbsPtRes(const int pdg, const float nch, const float eta, const float pt);
+  double getAbsEtaRes(const int pdg, const float nch, const float eta, const float pt);
+  double getEfficiency(const int pdg, const float nch, const float eta, const float pt);
 
-  int getIndexPDG(int pdg)
+  int getIndexPDG(const int pdg)
   {
     switch (abs(pdg)) {
       case 11:
@@ -212,15 +216,44 @@ class TrackSmearer
         return 6; // Triton
       case 1000020030:
         return 7; // Helium3
+      case 1000020040:
+        return 8; // Alphas
       default:
         return 2; // Default: pion
-    }             //;
-  }               //;
+    }
+  }
 
-  void setdNdEta(float val) { mdNdEta = val; } //;
+  const char* getParticleName(int pdg)
+  {
+    switch (abs(pdg)) {
+      case 11:
+        return "electron";
+      case 13:
+        return "muon";
+      case 211:
+        return "pion";
+      case 321:
+        return "kaon";
+      case 2212:
+        return "proton";
+      case 1000010020:
+        return "deuteron";
+      case 1000010030:
+        return "triton";
+      case 1000020030:
+        return "helium3";
+      case 1000020040:
+        return "alpha";
+      default:
+        return "pion"; // Default: pion
+    }
+  }
+  void setdNdEta(float val) { mdNdEta = val; }                                 //;
+  void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; } //;
+  void setCleanupDownloadedFile(bool val) { mCleanupDownloadedFile = val; }    //;
 
  protected:
-  static constexpr unsigned int nLUTs = 8; // Number of LUT available
+  static constexpr unsigned int nLUTs = 9; // Number of LUT available
   lutHeader_t* mLUTHeader[nLUTs] = {nullptr};
   lutEntry_t***** mLUTEntry[nLUTs] = {nullptr};
   bool mUseEfficiency = true;
@@ -228,6 +261,10 @@ class TrackSmearer
   bool mSkipUnreconstructed = true; // don't smear tracks that are not reco'ed
   int mWhatEfficiency = 1;
   float mdNdEta = 1600.;
+
+ private:
+  o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
+  bool mCleanupDownloadedFile = true;
 };
 
 } // namespace delphes

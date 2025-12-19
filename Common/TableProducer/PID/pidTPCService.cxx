@@ -19,35 +19,23 @@
 //
 //===============================================================
 
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-// ROOT includes
-#include "TFile.h"
-#include "TRandom.h"
-#include "TSystem.h"
-
-// O2 includes
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "pidTPCBase.h"
-#include "pidTPCModule.h"
-
-#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Tools/ML/model.h"
+#include "Common/Tools/PID/pidTPCModule.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TObject.h>
+
+#include <chrono>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -79,28 +67,24 @@ struct pidTpcService {
     pidTPC.init(ccdb, ccdbApi, initContext, pidTPCopts, metadataInfo);
   }
 
-  void processTracks(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
-  }
-  void processTracksWithTracksQA(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs, aod::TracksQA const& tracksQA)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, tracksQA, products);
-  }
-
-  void processTracksMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
-  }
-
   void processTracksIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
-  PROCESS_SWITCH(pidTpcService, processTracks, "Process Tracks", false);
-  PROCESS_SWITCH(pidTpcService, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
-  PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (experimental)", true);
+  void processTracksMCIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
+  {
+    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
+  }
+
+  void processTracksIUWithTracksQA(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs, aod::TracksQAVersion const& tracksQA)
+  {
+    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, tracksQA, products);
+  }
+
+  PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (Run 3)", true);
+  PROCESS_SWITCH(pidTpcService, processTracksIUWithTracksQA, "Process TracksIU (Run 3)", false);
+  PROCESS_SWITCH(pidTpcService, processTracksMCIU, "Process TracksIUMC (Run 3)", false);
 };
 
 //****************************************************************************************

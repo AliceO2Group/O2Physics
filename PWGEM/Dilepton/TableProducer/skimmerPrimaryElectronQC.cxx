@@ -19,8 +19,9 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 // #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -48,7 +49,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                            aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -85,10 +86,12 @@ struct skimmerPrimaryElectronQC {
     Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
     Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
+    Configurable<float> minchi2its{"minchi2its", -1e+10, "min. chi2/NclsITS"};
     Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
     Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
     Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
     Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
+    Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -3.5, "min. TPC n sigma for electron inclusion"};
     Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", +3.5, "max. TPC n sigma for electron inclusion"};
   } trackcut;
@@ -157,7 +160,7 @@ struct skimmerPrimaryElectronQC {
 
     if (fillQAHistogram) {
       fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-      fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
+      fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{4000, -20, 20}}, false);
       fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {20, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
@@ -188,7 +191,7 @@ struct skimmerPrimaryElectronQC {
       fRegistry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
       fRegistry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
       fRegistry.add("Track/hProbElBDT", "probability to be e from BDT;p_{in} (GeV/c);BDT score;", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
-      fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V} ULS;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0.f, M_PI}, {100, 0, 0.1}});
+      fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V} ULS;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 0.1}});
     }
 
     if (usePIDML) {
@@ -293,13 +296,17 @@ struct skimmerPrimaryElectronQC {
       return false;
     }
 
-    if (trackcut.maxchi2its < track.itsChi2NCl()) { // accept ITS afterburner (itsChi2NCl = -999)
+    if (track.itsChi2NCl() < trackcut.minchi2its || trackcut.maxchi2its < track.itsChi2NCl()) { // accept ITS afterburner (itsChi2NCl = -999)
       return false;
     }
     if (track.itsNCls() < trackcut.min_ncluster_its) {
       return false;
     }
     if (track.itsNClsInnerBarrel() < trackcut.min_ncluster_itsib) {
+      return false;
+    }
+
+    if (!trackcut.includeITSsa && (!track.hasITS() || !track.hasTPC())) {
       return false;
     }
 
@@ -330,7 +337,10 @@ struct skimmerPrimaryElectronQC {
     trackParCov.setPID(o2::track::PID::Electron);
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     float dcaXY = mDcaInfoCov.getY();
     float dcaZ = mDcaInfoCov.getZ();
 
@@ -403,7 +413,10 @@ struct skimmerPrimaryElectronQC {
     trackParCov.setPID(o2::track::PID::Electron);
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     float dcaXY = mDcaInfoCov.getY();
     float dcaZ = mDcaInfoCov.getZ();
 
@@ -449,7 +462,10 @@ struct skimmerPrimaryElectronQC {
       trackParCov.setPID(o2::track::PID::Electron);
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      if (!isPropOK) {
+        return;
+      }
       float dcaXY = mDcaInfoCov.getY();
       float dcaZ = mDcaInfoCov.getZ();
 
@@ -481,7 +497,7 @@ struct skimmerPrimaryElectronQC {
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                          pt_recalc, eta_recalc, phi_recalc,
                          dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
-                         track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
+                         track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusPID(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                          track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),*/
@@ -590,12 +606,18 @@ struct skimmerPrimaryElectronQC {
 
     auto t1ParCov = getTrackParCov(t1);
     t1ParCov.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t1ParCov, 2.f, matCorr, &mDcaInfoCov);
+    bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t1ParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     getPxPyPz(t1ParCov, pVec1);
 
     auto t2ParCov = getTrackParCov(t2);
     t2ParCov.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t2ParCov, 2.f, matCorr, &mDcaInfoCov);
+    isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, t2ParCov, 2.f, matCorr, &mDcaInfoCov);
+    if (!isPropOK) {
+      return false;
+    }
     getPxPyPz(t2ParCov, pVec2);
 
     ROOT::Math::PtEtaPhiMVector v1(t1ParCov.getPt(), t1ParCov.getEta(), t1ParCov.getPhi(), o2::constants::physics::MassElectron);

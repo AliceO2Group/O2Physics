@@ -16,37 +16,39 @@
 // (5) particle = 2 --> lambdastar
 // (6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed
 
-#include <TH1F.h>
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -56,6 +58,7 @@ struct phianalysisrun3 {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // events
+  Configurable<bool> applyEvsel{"applyEvsel", false, "applyEvsel"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   // track
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
@@ -252,7 +255,7 @@ struct phianalysisrun3 {
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
-    if (!collision.sel8()) {
+    if (applyEvsel && !collision.sel8()) {
       return;
     }
     if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
@@ -309,10 +312,10 @@ struct phianalysisrun3 {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      if (!c1.sel8()) {
+      if (applyEvsel && !c1.sel8()) {
         continue;
       }
-      if (!c2.sel8()) {
+      if (applyEvsel && !c2.sel8()) {
         continue;
       }
       if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {

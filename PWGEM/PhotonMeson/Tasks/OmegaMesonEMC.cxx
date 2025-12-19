@@ -22,7 +22,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/MathConstants.h"

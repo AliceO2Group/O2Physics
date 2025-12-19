@@ -11,345 +11,59 @@
 
 /// \file photonChargedTriggerCorrelation.cxx
 /// \author Julius Kinner
-/// \brief photon-jet correlation analysis
+/// \brief photon-jet angular correlation analysis
 ///
 /// Analysis for angular correlations between jets and photons via two-particle correlations with charged high-pt triggers
 /// Associated hadrons (tracks), pipm, photons (PCM), pi0 (PCM)
 /// Also contains checks and monte-carlo (efficiency, purity, mc-true correlation,...)
 /// End goal of studying correlations between direct photons and jets
 
-#include <cmath>
-#include <deque>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <chrono>
-#include <memory>
-#include <random>
-
-#include "TMath.h"
-#include "Math/Vector4D.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/TableHelper.h"
+#include "PWGJE/DataModel/PhotonChargedTriggerCorrelation.h"
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
-
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/PhotonChargedTriggerCorrelation.h"
 
-const double absEtaMax = 0.8;
+#include "Common/Core/TableHelper.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+#include "TMath.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <deque>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
+
+const double absEtaMaxDefault = 0.8;
 #define DPHI_SCALE constants::math::TwoPI - constants::math::PIHalf
-#define DETA_SCALE 4 * absEtaMax - 2 * absEtaMax
+#define DETA_SCALE 4 * absEtaMaxDefault - 2 * absEtaMaxDefault
 
 using namespace o2;
 using namespace o2::framework;
 
-using CorrCollisions = soa::Join<aod::JetCollisions, aod::CollisionsExtraCorr, aod::MultsGlobal>;
+using CorrCollisions = soa::Join<aod::JetCollisions, aod::CollisionsExtraCorr>;
 using CorrCollision = CorrCollisions::iterator;
-using CorrMcDCollisions = soa::Join<aod::JetCollisionsMCD, aod::CollisionsExtraCorr, aod::MultsGlobal>;
+using CorrMcDCollisions = soa::Join<aod::JetCollisionsMCD, aod::CollisionsExtraCorr>;
 using CorrMcDCollision = CorrMcDCollisions::iterator;
-using CorrMcCollisions = soa::Join<aod::JetMcCollisions, aod::McCollisionsExtraCorr, aod::MultMCExtras>;
+using CorrMcCollisions = soa::Join<aod::JetMcCollisions, aod::McCollisionsExtraCorr>;
 using CorrMcCollision = CorrMcCollisions::iterator;
 
-using BinningZPvMult = ColumnBinningPolicy<aod::jcollision::PosZ, aod::mult::MultNTracksGlobal>;
-
-// correlation derived data ===================================================================================================================================================================
-
-struct CorrelationTableProducer {
-  // reco
-  Produces<aod::CollisionsExtraCorr> collisionExtraCorrTable;
-  Produces<aod::Triggers> triggerTable;
-  Produces<aod::Hadrons> hadronTable;
-  Produces<aod::Pipms> pipmTable;
-  Produces<aod::PhotonPCMs> photonPCMTable;
-  Produces<aod::PhotonPCMPairs> photonPCMPairTable;
-  // mc
-  Produces<aod::McCollisionsExtraCorr> mcCollisionExtraCorrTable;
-  Produces<aod::TriggerParticles> triggerParticleTable;
-
-  Configurable<double> zPvMax{"zPvMax", 7, "maximum absZ primary-vertex cut"};
-  Configurable<int> occupancyMin{"occupancyMin", 0, "minimum occupancy cut"};
-  Configurable<int> occupancyMax{"occupancyMax", 2000, "maximum occupancy cut"};
-  Configurable<double> etaMax{"etaMax", 1 * absEtaMax, "maximum absEta cut"};
-
-  Configurable<std::string> eventSelections{"eventSelections", "sel8", "JE framework - event selection"};
-  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "JE framework - track selections"};
-  Configurable<std::string> triggerMasks{"triggerMasks", "", "JE framework - skimmed data trigger masks (relevent for correlation: fTrackLowPt,fTrackHighPt)"};
-
-  Configurable<double> piPIDLowPt{"piPIDLowPt", 0.5, "max pt value for pipm PID without tof"};
-  Configurable<double> piPIDHighPt{"piPIDHighPt", 2.5, "min pt value for pipm PID without tof in relativistic rise of Bethe-Bloch"};
-  Configurable<std::vector<double>> nSigmaPiTpcLowPt{"nSigmaPiTpcLowPt", {-2, 2}, "minimum-maximum nSigma for pipm in tpc at low pt"};
-  Configurable<std::vector<double>> nSigmaPiTpcMidPt{"nSigmaPiTpcMidPt", {-1, 1}, "minimum-maximum nSigma for pipm in tpc at mid pt"};
-  Configurable<std::vector<double>> nSigmaPiTof{"nSigmaPiTof", {-1, 2}, "minimum-maximum nSigma for pipm in tof"};
-  Configurable<std::vector<double>> nSigmaPiRelRise{"nSigmaPiRelRise", {0, 2}, "minimum-maximum nSigma pipm tpc at high pt"};
-
-  Configurable<float> ptTrigMin{"ptTrigMin", 5, "minimum pT of triggers"};
-
-  // derivatives of configurables
-
-  std::vector<int> eventSelectionBits;
-  int trackSelection = -1;
-  std::vector<int> triggerMaskBits;
-
-  // for mc
-  Service<framework::O2DatabasePDG> pdg;
-
-  // partitions++
-  SliceCache cache;
-  Partition<aod::JetTracks> partitionTriggerTracks = aod::jtrack::pt > ptTrigMin;
-  Partition<aod::JetParticles> partitionTriggerParticles = aod::jmcparticle::pt > ptTrigMin;
-
-  Preslice<aod::JetTracks> perColTracks = aod::jtrack::collisionId;
-  Preslice<aod::JetParticles> perColMcParticles = aod::jmcparticle::mcCollisionId;
-
-  Preslice<aod::V0PhotonsKF> perColV0Photons = aod::v0photonkf::collisionId;
-
-  // functions ================================================================================================================================================================================
-
-  // selections ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  // event selection
-  template <typename T_collision>
-  bool checkEventSelection(T_collision const& collision)
-  {
-    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits))
-      return false;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
-      return false;
-    if (std::abs(collision.posZ()) > zPvMax)
-      return false;
-    if (collision.trackOccupancyInTimeRange() < occupancyMin || collision.trackOccupancyInTimeRange() > occupancyMax)
-      return false;
-    return true;
-  }
-
-  // checks global track cuts
-  template <typename T_track>
-  bool checkGlobalTrackEta(T_track const& track)
-  {
-    if (!jetderiveddatautilities::selectTrack(track, trackSelection))
-      return false;
-    if (!jetderiveddatautilities::applyTrackKinematics(track, 0.1, 1000, -1 * etaMax, etaMax))
-      return false;
-    return true;
-  }
-
-  // checks pipm selection (just PID (no additional track cuts))
-  template <typename T_track>
-  bool checkPipmTPCTOF(T_track const& track)
-  {
-    // too low for tof
-    if (track.pt() < piPIDLowPt) {
-      if (track.tpcNSigmaPi() > nSigmaPiTpcLowPt.value[0] && track.tpcNSigmaPi() < nSigmaPiTpcLowPt.value[1]) {
-        return true;
-      }
-      return false;
-    }
-    // Bethe-Bloch overlap (-> tpc + tof)
-    if (track.pt() < piPIDHighPt) {
-      if (track.hasTOF()) { // has to stay inside pt-if due to return-layout of function
-        if (track.tpcNSigmaPi() > nSigmaPiTpcMidPt.value[0] && track.tpcNSigmaPi() < nSigmaPiTpcMidPt.value[1] &&
-            track.tofNSigmaPi() > nSigmaPiTof.value[0] && track.tofNSigmaPi() < nSigmaPiTof.value[1]) {
-          return true;
-        }
-      }
-      return false;
-    }
-    // Bethe-Bloch rel rise (too high for tof)
-    if (track.tpcNSigmaPi() > nSigmaPiRelRise.value[0] && track.tpcNSigmaPi() < nSigmaPiRelRise.value[1]) {
-      return true;
-    }
-    return false;
-  }
-
-  // checks pipm selection (just PID (no additional track cuts))
-  template <typename T_track>
-  bool checkPipmTPC(T_track const& track)
-  {
-    // Bethe-Bloch rel rise
-    if (track.pt() > piPIDHighPt) {
-      if (track.tpcNSigmaPi() > nSigmaPiRelRise.value[0] && track.tpcNSigmaPi() < nSigmaPiRelRise.value[1]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // analysis /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  void init(InitContext const&)
-  {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
-    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
-  }
-
-  void processRecoCollisionTrigger(aod::JetCollision const& collision, aod::JetTracks const&)
-  {
-    // event selection
-    const bool isSelectedEvent = checkEventSelection(collision);
-    // trigger event check
-    bool isTriggerEvent = false;
-
-    if (isSelectedEvent) {
-      // group collision
-      auto const triggers = partitionTriggerTracks->sliceByCached(aod::jtrack::collisionId, collision.globalIndex(), cache);
-
-      // trigger loop
-      for (auto const& trigger : triggers) {
-        // track selection
-        if (!checkGlobalTrackEta(trigger))
-          continue;
-
-        // detect trigger event
-        isTriggerEvent = true;
-
-        // trigger info
-        triggerTable(trigger.collisionId(), trigger.globalIndex(), trigger.pt(), trigger.phi(), trigger.eta());
-      }
-    }
-
-    // collision info
-    collisionExtraCorrTable(isSelectedEvent, isTriggerEvent);
-  }
-  PROCESS_SWITCH(CorrelationTableProducer, processRecoCollisionTrigger, "process correlation collision_extra and trigger table (reconstructed)", false);
-
-  void processRecoPipmTPCTOF(aod::JetCollision const& collision,
-                             soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi> const&)
-  {
-    // event selection
-    if (!checkEventSelection(collision))
-      return;
-
-    // hadron/pipm
-    for (auto const& track : tracks) {
-      // track selection
-      if (!checkGlobalTrackEta(track))
-        continue;
-
-      // hadron
-      hadronTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
-
-      // pipm selection
-      auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi>>();
-      if (!checkPipmTPCTOF(trackPID))
-        continue;
-
-      // pipm
-      pipmTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
-    }
-  }
-  PROCESS_SWITCH(CorrelationTableProducer, processRecoPipmTPCTOF, "process pipm (TPC-TOF) table (reconstructed)", false);
-
-  void processRecoPipmTPC(aod::JetCollision const& collision,
-                          soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::pidTPCPi> const&)
-  {
-    // event selection
-    if (!checkEventSelection(collision))
-      return;
-
-    // hadron/pipm
-    for (auto const& track : tracks) {
-      // track selection
-      if (!checkGlobalTrackEta(track))
-        continue;
-
-      // hadron
-      hadronTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
-
-      // pipm selection
-      auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::pidTPCPi>>();
-      if (!checkPipmTPC(trackPID))
-        continue;
-
-      // pipm
-      pipmTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
-    }
-  }
-  PROCESS_SWITCH(CorrelationTableProducer, processRecoPipmTPC, "process pipm (TPC) table (reconstructed)", false);
-
-  void processRecoPhotonPCM(soa::Join<aod::JetCollisions, aod::JCollisionPIs>::iterator const& collision, aod::Collisions const&,
-                            aod::V0PhotonsKF const& v0Photons, aod::V0Legs const&)
-  {
-    // event selection
-    if (!checkEventSelection(collision))
-      return;
-
-    // photonsPCM (for some reason collsionId not an index column (?))
-    auto const v0PhotonsThisEvent = v0Photons.sliceBy(perColV0Photons, collision.collisionId());
-
-    // photonPCM
-    for (auto const& v0Photon : v0PhotonsThisEvent) {
-      // photon selection
-      if (std::abs(v0Photon.eta()) > etaMax)
-        continue;
-
-      // photon PCM
-      photonPCMTable(v0Photon.collisionId(), v0Photon.globalIndex(),
-                     v0Photon.posTrack().trackId(), v0Photon.negTrack().trackId(), v0Photon.pt(), v0Photon.phi(), v0Photon.eta());
-    }
-
-    // photonPCm pairs
-    for (auto const& [v0Photon1, v0Photon2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(v0PhotonsThisEvent, v0PhotonsThisEvent))) {
-      // get kinematics
-      ROOT::Math::PtEtaPhiMVector const p4V0PCM1(v0Photon1.pt(), v0Photon1.eta(), v0Photon1.phi(), 0.);
-      ROOT::Math::PtEtaPhiMVector const p4V0PCM2(v0Photon2.pt(), v0Photon2.eta(), v0Photon2.phi(), 0.);
-      ROOT::Math::PtEtaPhiMVector const p4V0PCMPair = p4V0PCM1 + p4V0PCM2;
-
-      // pi0 selection
-      if (std::abs(p4V0PCMPair.Eta()) > etaMax)
-        continue;
-
-      // save info
-      photonPCMPairTable(v0Photon1.collisionId(), v0Photon1.globalIndex(), v0Photon2.globalIndex(),
-                         v0Photon1.posTrack().trackId(), v0Photon1.negTrack().trackId(), v0Photon2.posTrack().trackId(), v0Photon2.negTrack().trackId(),
-                         p4V0PCMPair.Pt(), p4V0PCMPair.Phi() + constants::math::PI, p4V0PCMPair.Eta(), p4V0PCMPair.M());
-    }
-  }
-  PROCESS_SWITCH(CorrelationTableProducer, processRecoPhotonPCM, "process photonPCM table (reconstructed)", false);
-
-  void processMcCorrTables(aod::JetMcCollision const& mcCollision, aod::JetParticles const&)
-  {
-    // group collision
-    auto const triggers = partitionTriggerParticles->sliceByCached(aod::jmcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    // trigger event check
-    bool isTriggerEvent = false;
-
-    // trigger loop
-    for (auto const& trigger : triggers) {
-      // track selection
-      auto const pdgParticle = pdg->GetParticle(trigger.pdgCode());
-      if (!pdgParticle || pdgParticle->Charge() == 0)
-        continue;
-      if (!trigger.isPhysicalPrimary())
-        continue;
-      if (std::abs(trigger.eta()) > etaMax)
-        continue;
-
-      // detect trigger event
-      isTriggerEvent = true;
-
-      // trigger info
-      triggerParticleTable(mcCollision.globalIndex(), trigger.globalIndex(), trigger.pt(), trigger.phi(), trigger.eta());
-    }
-
-    // collision info
-    mcCollisionExtraCorrTable(isTriggerEvent);
-  }
-  PROCESS_SWITCH(CorrelationTableProducer, processMcCorrTables, "process table production (mc)", false);
-};
+using BinningZPvMult = ColumnBinningPolicy<aod::jcollision::PosZ, aod::collision_extra_corr::NGlobalTracks>;
 
 // correlation analysis =======================================================================================================================================================================
 
@@ -359,9 +73,7 @@ struct PhotonChargedTriggerCorrelation {
   // general (kenobi)
   Configurable<std::string> pathCcdbEff{"pathCcdbEff", "Users/j/jkinner/efficiency/set_in_config", "base path to the ccdb efficiencies"};
   Configurable<std::string> urlCcdb{"urlCcdb", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> noLaterThanCcdb{"noLaterThanCcdb",
-                                        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                        "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> noLaterThanCcdbConfig{"noLaterThanCcdbConfig", -1, "latest acceptable timestamp of creation for the object (-1 for task start time)"};
 
   // analysis
   Configurable<bool> doEffCorrectionTrigger{"doEffCorrectionTrigger", false, "whether to do on-the-fly mixing correction for triggers"};
@@ -370,16 +82,21 @@ struct PhotonChargedTriggerCorrelation {
   Configurable<bool> doEffCorrectionPhotonPCM{"doEffCorrectionPhotonPCM", false, "whether to do on-the-fly mixing correction for photonPCM"};
 
   Configurable<bool> doTrigEvMixing{"doTrigEvMixing", false, "whether to use trigger events for trigger mixing"};
-  Configurable<bool> doTrigEvEff{"doTrigEvEff", false, "whether to use trigger events for efficiency histograms"};
   Configurable<int> nTriggerSavedForMixing{"nTriggerSavedForMixing", 2048, "number of triggers that are saved for mixing with other events"};
+  Configurable<int> nTriggerMixingMcTrue{"nTriggerMixingMcTrue", 8, "number of triggers that are used for mc true mixing"};
   Configurable<int> nTriggerMixingHadron{"nTriggerMixingHadron", 64, "number of triggers that are used for hadron mixing"};
   Configurable<int> nTriggerMixingPipm{"nTriggerMixingPipm", 64, "number of triggers that are used for pipm mixing"};
-  Configurable<int> nTriggerMixingPhotonPCM{"nTriggerMixingPhotonPCM", 64, "number of triggers that are saved for photonPCM mixing"};
-  Configurable<int> nTriggerMixingPi0PCM{"nTriggerMixingPi0PCM", 64, "number of triggers that are saved for pi0PCM mixing"};
-  Configurable<int> nNeighboursMixingPi0PCMPair{"nNeighboursMixingPi0PCMPair", 64, "number neighbours used for for pi0PCM pair mixing"};
-  Configurable<std::vector<double>> pi0PCMMassRange{"pi0PCMMassRange", {0.10, 0.15}, "photon-pair mass integration range for pi0PCM"};
-  Configurable<std::vector<double>> pi0PCMSideMassRange{"pi0PCMSideMassRange", {0.16, 0.24}, "photon-pair mass integration range outside outside pi0PCM region"};
+  Configurable<int> nTriggerMixingPhotonPCM{"nTriggerMixingPhotonPCM", 256, "number of triggers that are saved for photonPCM mixing"};
+  Configurable<int> nTriggerMixingH0PCM{"nTriggerMixingH0PCM", 256, "number of triggers that are saved for h0PCM (pi0, eta) mixing"};
+  Configurable<int> nNeighboursMixingPhotonPCMPair{"nNeighboursMixingPhotonPCMPair", 32, "number neighbours used for for photonPCM pair mixing"};
+  Configurable<std::vector<double>> pi0PCMPeakMassRange{"pi0PCMPeakMassRange", {0.10, 0.15}, "photon-pair mass integration range for pi0PCM"};
+  Configurable<std::vector<double>> pi0PCMSideMassRange{"pi0PCMSideMassRange", {0.16, 0.24}, "photon-pair mass integration range outside pi0PCM region"};
+  Configurable<std::vector<double>> etaPCMPeakMassRange{"etaPCMPeakMassRange", {0.51, 0.56}, "photon-pair mass integration range for etaPCM"};
+  Configurable<std::vector<double>> etaPCMLowSideMassRange{"etaPCMLowSideMassRange", {0.45, 0.50}, "photon-pair mass integration range below etaPCM region"};
+  Configurable<std::vector<double>> etaPCMHighSideMassRange{"etaPCMHighSideMassRange", {0.56, 0.65}, "photon-pair mass integration range above etaPCM region"};
 
+  Configurable<bool> doTrigEvEff{"doTrigEvEff", false, "whether to use trigger events for efficiency histograms"};
+  Configurable<float> ptCutTrigEvEff{"ptCutTrigEvEff", 4, "pT cut for efficieny calculation in trigger events (to avoid trigger bias)"};
   Configurable<bool> requireSingleCollisionPurity{"requireSingleCollisionPurity", true, "whether particle from single chosen MC-col associated to reco-col (else just type/kin match)"};
 
   // for histograms
@@ -425,7 +142,13 @@ struct PhotonChargedTriggerCorrelation {
                                             "zPv mixing bins"};
   Configurable<std::vector<double>> binsMult{"binsMult",
                                              {-0.5, 9.5, 14.5, 19.5, 25.5, 32},
-                                             "multiplicity mixing bins"};
+                                             "multiplicity mixing bins for mc true"};
+  Configurable<std::vector<double>> binsZPvMcTrue{"binsZPvMcTrue",
+                                                  {-10000, 10000},
+                                                  "zPv mixing bins"};
+  Configurable<std::vector<double>> binsMultMcTrue{"binsMultMcTrue",
+                                                   {-0.5, 10.5, 15.5, 20.5, 25.5, 30.5, 35.5, 40.5, 50.5, 64},
+                                                   "multiplicity mixing bins for mc true"};
 
   // configurables from other tasks
 
@@ -435,6 +158,7 @@ struct PhotonChargedTriggerCorrelation {
   HistogramRegistry histos{"histogramRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   // ccdb calls
+  const int64_t noLaterThanCcdb = noLaterThanCcdbConfig == -1 ? std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() : noLaterThanCcdbConfig;
   Service<ccdb::BasicCCDBManager> ccdb;
   // for mc
   Service<framework::O2DatabasePDG> pdg;
@@ -452,6 +176,7 @@ struct PhotonChargedTriggerCorrelation {
   Preslice<aod::Hadrons> perColHadrons = aod::corr_particle::jetCollisionId;
   Preslice<aod::Pipms> perColPipms = aod::corr_particle::jetCollisionId;
   Preslice<aod::PhotonPCMs> perColPhotonPCMs = aod::corr_particle::jetCollisionId;
+  Preslice<aod::PhotonPCMPairs> perColPhotonPCMPairs = aod::corr_particle::jetCollisionId;
   Preslice<aod::JetParticles> perColMcParticles = aod::jmcparticle::mcCollisionId;
   Preslice<aod::TriggerParticles> perColTriggerParticles = aod::corr_particle::jetMcCollisionId;
 
@@ -474,16 +199,80 @@ struct PhotonChargedTriggerCorrelation {
   TH1D* h1PtInvEffPhotonPCM;
 
   // mixing trigger memory
-  int nTriggersThisDataFrame;
-  // organised as zPv- and mult-bin matrix of deques to save trigger info beyond single dataframe
+  struct MixingTrigger {
+    float fPt, fPhi, fEta;
+    float pt() const { return fPt; }
+    float phi() const { return fPhi; }
+    float eta() const { return fEta; }
+  };
+  // class to handle trigger info from previous collisions (beyond single dataframe)
+  // organised as zPv- and mult-bin matrix of deque (pt, phi, eta) to save trigger info beyond single dataframe
   // extra bin for mult overflow
-  // with ajusted zVtx (see triggerBinValuesZPv in init) and mult overflow -> all events accounted for
+  // with adjusted zVtx (see triggerBinValuesZPv in init) and mult overflow -> all events accounted for
   // (possibly replace by some advanced derived data method and O2 event mixing in future?)
-  std::vector<double> triggerBinValuesZPv;
-  std::vector<double> triggerBinValuesMult;
-  std::vector<std::vector<std::deque<float>>> savedTriggersZPvMultPt;
-  std::vector<std::vector<std::deque<float>>> savedTriggersZPvMultPhi;
-  std::vector<std::vector<std::deque<float>>> savedTriggersZPvMultEta;
+  class MixingTriggerMemory
+  {
+   public:
+    // finds bin that value belongs to (assumes ordered bins) (starts at 0; includes underflow (return -1) and overlflow (return bins.size() - 1))
+    // should be faster than some std binary search due to small number of bins (zPv, mult)
+    static int findIntervalBin(double value, const std::vector<double>& bins)
+    {
+      const int n = bins.size() - 1;
+      if (value < bins[0])
+        return -1; // underflow
+      for (int i_bin = 0; i_bin < n; i_bin++)
+        if (value < bins[i_bin + 1])
+          return i_bin;
+      return n; // overflow
+    }
+
+    MixingTriggerMemory(int const nTriggerSavedForMixingIn, std::vector<double> binsZPv, std::vector<double> binsMult)
+    {
+      nTriggerSavedForMixing = nTriggerSavedForMixingIn;
+      triggerBinValuesZPv = binsZPv;
+      triggerBinValuesMult = binsMult;
+      // prevent rounding errors in bin finding (multiplicity accounted for by it going to 0 and already considering overflow separately)
+      triggerBinValuesZPv.front() *= zPvRoundingErrorAdjust;
+      triggerBinValuesZPv.back() *= zPvRoundingErrorAdjust;
+      // init correct size of zPv-mult matrix
+      savedTriggersZPvMult.resize(binsZPv.size() - 1);
+      for (size_t i_zPv = 0; i_zPv < binsZPv.size() - 1; i_zPv++) {
+        savedTriggersZPvMult[i_zPv].resize(binsMult.size());
+      }
+    }
+
+    // save trigger for mixing
+    // up to nTriggerSavedForMixing stored (LIFO)
+    void saveTrigger(float const pt, float const phi, float const eta, double const zPv, double const mult)
+    {
+      int const iBinCorrZPv = findIntervalBin(zPv, triggerBinValuesZPv);
+      int const iBinCorrMult = findIntervalBin(mult, triggerBinValuesMult);
+      // special cases (floating point precision errors, mult overflow) should be taken care of by triggerBinValuesZPv and triggerBinValuesMult
+      savedTriggersZPvMult[iBinCorrZPv][iBinCorrMult].push_front(MixingTrigger{pt, phi, eta});
+      if (static_cast<int>(savedTriggersZPvMult[iBinCorrZPv][iBinCorrMult].size()) > nTriggerSavedForMixing) {
+        savedTriggersZPvMult[iBinCorrZPv][iBinCorrMult].pop_back();
+      }
+    }
+
+    // return deques of trigger pt, phi, eta in the given zPv/mult bin
+    std::deque<MixingTrigger> const& getTriggers(double const zPv, double const mult) const
+    {
+      int const iBinCorrZPv = findIntervalBin(zPv, triggerBinValuesZPv);
+      int const iBinCorrMult = findIntervalBin(mult, triggerBinValuesMult);
+      return savedTriggersZPvMult[iBinCorrZPv][iBinCorrMult];
+    }
+
+   private:
+    double const zPvRoundingErrorAdjust = 1.0001;
+    int nTriggerSavedForMixing;
+    std::vector<double> triggerBinValuesZPv;
+    std::vector<double> triggerBinValuesMult;
+    std::vector<std::vector<std::deque<MixingTrigger>>> savedTriggersZPvMult;
+  };
+
+  MixingTriggerMemory mixingTriggerMemoryReco{nTriggerSavedForMixing.value, binsZPv.value, binsMult.value};
+  MixingTriggerMemory mixingTriggerMemoryTrue{nTriggerSavedForMixing.value, binsZPvMcTrue.value, binsMult.value};
+  MixingTriggerMemory mixingTriggerMemoryRecoColTrue{nTriggerSavedForMixing.value, binsZPvMcTrue.value, binsMult.value};
 
   // functions ================================================================================================================================================================================
 
@@ -496,7 +285,7 @@ struct PhotonChargedTriggerCorrelation {
     // trigger
     h1PtInvEffTrigger = nullptr;
     if (doEffCorrectionTrigger) {
-      h1PtInvEffTrigger = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/trigger", noLaterThanCcdb.value);
+      h1PtInvEffTrigger = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/trigger", noLaterThanCcdb);
 
       const double* effBinsTrigger = h1PtInvEffTrigger->GetXaxis()->GetXbins()->GetArray();
       const AxisSpec axisPtEffTrigger{std::vector<double>(effBinsTrigger, effBinsTrigger + h1PtInvEffTrigger->GetNbinsX() + 1), "#it{p}_{T}"};
@@ -509,7 +298,7 @@ struct PhotonChargedTriggerCorrelation {
     // hadron
     h1PtInvEffHadron = nullptr;
     if (doEffCorrectionHadron) {
-      h1PtInvEffHadron = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/hadron", noLaterThanCcdb.value);
+      h1PtInvEffHadron = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/hadron", noLaterThanCcdb);
 
       const double* effBinsHadron = h1PtInvEffHadron->GetXaxis()->GetXbins()->GetArray();
       const AxisSpec axisPtEffHadron{std::vector<double>(effBinsHadron, effBinsHadron + h1PtInvEffHadron->GetNbinsX() + 1), "#it{p}_{T}"};
@@ -522,7 +311,7 @@ struct PhotonChargedTriggerCorrelation {
     // pipm
     h1PtInvEffPipm = nullptr;
     if (doEffCorrectionPipm) {
-      h1PtInvEffPipm = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/pipm", noLaterThanCcdb.value);
+      h1PtInvEffPipm = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/pipm", noLaterThanCcdb);
 
       const double* effBinsPipm = h1PtInvEffPipm->GetXaxis()->GetXbins()->GetArray();
       const AxisSpec axisPtEffPipm{std::vector<double>(effBinsPipm, effBinsPipm + h1PtInvEffPipm->GetNbinsX() + 1), "#it{p}_{T}"};
@@ -535,7 +324,7 @@ struct PhotonChargedTriggerCorrelation {
     // photonPCM
     h1PtInvEffPhotonPCM = nullptr;
     if (doEffCorrectionPhotonPCM) {
-      h1PtInvEffPhotonPCM = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/photonPCM", noLaterThanCcdb.value);
+      h1PtInvEffPhotonPCM = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/photonPCM", noLaterThanCcdb);
 
       const double* effBinsPhotonPCM = h1PtInvEffPhotonPCM->GetXaxis()->GetXbins()->GetArray();
       const AxisSpec axisPtEffPhotonPCM{std::vector<double>(effBinsPhotonPCM, effBinsPhotonPCM + h1PtInvEffPhotonPCM->GetNbinsX() + 1), "#it{p}_{T}"};
@@ -570,6 +359,8 @@ struct PhotonChargedTriggerCorrelation {
     const AxisSpec axisDEta{binsDEta, "#Delta#it{#eta}"};
     const AxisSpec axisZPvBinning{binsZPv, "#it{z}_{pv} correlation binning"};
     const AxisSpec axisMultBinning{binsMult, "multiplicity correlation binning"};
+    const AxisSpec axisZPvBinningMcTrue{binsZPvMcTrue, "#it{z}_{pv} correlation binning for mc true"};
+    const AxisSpec axisMultBinningMcTrue{binsMultMcTrue, "multiplicity correlation binning for mc true"};
 
     // reco info
     histos.add("reco/info/h1_nEvents", "h1_nEvents", kTH1D, {axisCategories});
@@ -579,113 +370,90 @@ struct PhotonChargedTriggerCorrelation {
 
     histos.add("reco/info/h2_zPvMult", "h2_zPvMult", kTHnSparseD, {axisZPv, axisMult}, true);
     histos.add("reco/info/h1_occupancy", "h1_occupancy", kTH1D, {axisOccupancy}, true);
-
-    // reco (correlation) analysis
     histos.add("reco/info/h2_zPvMult_trigEv", "h2_zPvMult_trigEv", kTHnSparseD, {axisZPv, axisMult}, true);
     histos.add("reco/info/h1_occupancy_trigEv", "h1_occupancy_trigEv", kTH1D, {axisOccupancy}, true);
+
+    // reco (correlation) analysis
     histos.add("reco/corr/h3_ptPhiEta_trig", "h3_ptPhiEta_trig", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
 
+    std::function<void(std::string)> add_corrHists =
+      [&](std::string const name_id) {
+        histos.add(std::format("reco/corr/h3_ptPhiEta_assoc_{}", name_id).data(), std::format("h3_ptPhiEta_assoc_{}", name_id).data(),
+                   kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
+        histos.add(std::format("reco/corr/h6_corr_{}", name_id).data(), std::format("h6_corr_{}", name_id).data(),
+                   kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+        histos.add(std::format("reco/corr/h6_mix_{}", name_id).data(), std::format("h6_mix_{}", name_id).data(),
+                   kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+      };
     // hadron
     histos.add("reco/plain/h3_ptPhiEta_hadron", "h3_ptPhiEta_hadron", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_hadron", "h3_ptPhiEta_assoc_hadron", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h6_corr_hadron", "h6_corr_hadron",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_hadron", "h6_mix_hadron",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    add_corrHists("hadron");
     // pipm
     histos.add("reco/plain/h3_ptPhiEta_pipm", "h3_ptPhiEta_pipm", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_pipm", "h3_ptPhiEta_assoc_pipm", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h6_corr_pipm", "h6_corr_pipm",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_pipm", "h6_mix_pipm",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    add_corrHists("pipm");
     // photonPCM
     histos.add("reco/plain/h3_ptPhiEta_photonPCM", "h3_ptPhiEta_photonPCM", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_photonPCM", "h3_ptPhiEta_assoc_photonPCM", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h6_corr_photonPCM", "h6_corr_photonPCM",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_photonPCM", "h6_mix_photonPCM",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    add_corrHists("photonPCM");
     // photonPCM pairs
     histos.add("reco/plain/h4_ptMggZPvMult_photonPCMPair", "h4_ptMggZPvMult_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/plain/h3_ptPhiEta_pi0PCMPeak", "h3_ptPhiEta_pi0PCMPeak", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair", "h4_ptMggZPvMult_assoc_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_pi0PCMPeak", "h3_ptPhiEta_assoc_pi0PCMPeak", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    // peak (mgg)
-    histos.add("reco/corr/h6_corr_pi0PCMPeak", "h6_corr_pi0PCMPeak",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_pi0PCMPeak", "h6_mix_pi0PCMPeak",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // side (mgg)
-    histos.add("reco/corr/h6_corr_pi0PCMSide", "h6_corr_pi0PCMSide",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_pi0PCMSide", "h6_mix_pi0PCMSide",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/plain/h4_ptMggZPvMult_trigEv_photonPCMPair", "h4_ptMggZPvMult_trigEv_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h5_ptTrigPtAssocMggZPvMult_assoc_photonPCMPair", "h5_ptTrigPtAssocMggZPvMult_assoc_photonPCMPair", kTHnSparseD, {axisPtTrig, axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    // pi0PCM
+    add_corrHists("pi0PCMPeak");
+    add_corrHists("pi0PCMSide");
+    // etaPCM
+    add_corrHists("etaPCMPeak");
+    add_corrHists("etaPCMSide");
+
     // event mixing for photon pairs
     histos.add("reco/plain/h2_zPvMult_photonPCMPair_evMix", "h2_zPvMult_photonPCMPair_evMix", kTHnSparseD, {axisZPv, axisMult}, true);
     histos.add("reco/plain/h4_ptMggZPvMult_photonPCMPair_evMix", "h4_ptMggZPvMult_photonPCMPair_evMix", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/plain/h3_ptPhiEta_pi0PCMPeak_evMix", "h3_ptPhiEta_pi0PCMPeak_evMix", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/plain/h4_ptMggZPvMult_trigEv_photonPCMPair_evMix", "h4_ptMggZPvMult_trigEv_photonPCMPair_evMix", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
 
     // mc info
     histos.add("mc/info/h1_nEvents_mcTrue", "h1_nEvents_mcTrue", kTH1D, {axisN});
-    histos.add("mc/info/h1_nTriggerEvents_mcTrue", "h1_nTriggerEvents_mcTrue", kTH1D, {axisN});
-
-    histos.add("mc/info/h1_zPv_mcTrue", "h1_zPv_mcTrue", kTH1D, {axisZPv}, true);
-    histos.add("mc/info/h1_mult_mcTrue", "h1_mult_mcTrue", kTH1D, {axisMult}, true);
+    histos.add("mc/info/h2_zPvMult_mcTrue", "h2_zPvMult_mcTrue", kTHnSparseD, {axisZPv, axisMult}, true);
+    histos.add("mc/info/h1_nTrigEv_mcTrue", "h1_nTrigEv_mcTrue", kTH1D, {axisN});
+    histos.add("mc/info/h2_zPvMult_trigEv_mcTrue", "h2_zPvMult_trigEv_mcTrue", kTHnSparseD, {axisZPv, axisMult}, true);
+    histos.add("mc/info/h1_nRecoCol_mcTrue", "h1_nRecoCol_mcTrue", kTH1D, {axisN});
+    histos.add("mc/info/h2_zPvMult_recoCol_mcTrue", "h2_zPvMult_recoCol_mcTrue", kTHnSparseD, {axisZPv, axisMult}, true);
 
     // reco and true collision correlations
-    for (auto const& collision_type : {"true", "true_reco"}) {
+    const std::vector<std::string> assocMcCorrHistNames = {"hadron", "pipm", "photon", "pi0", "eta"};
+    for (auto const& collision_type : {"true", "recoCol_true"}) {
       histos.add(std::format("mc/{}/corr/h3_ptPhiEta_trig", collision_type).data(), "h3_ptPhiEta_trig", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-      // hadron
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_hadron", collision_type).data(), "h3_ptPhiEta_assoc_hadron",
-                 kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_hadron", collision_type).data(), "h4_corr_hadron",
-                 kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
-      // pipm
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_pipm", collision_type).data(), "h3_ptPhiEta_assoc_pipm",
-                 kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_pipm", collision_type).data(), "h4_corr_pipm",
-                 kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
-      // photon
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_photon", collision_type).data(), "h3_ptPhiEta_assoc_photon",
-                 kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_photon", collision_type).data(), "h4_corr_photon",
-                 kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
-      // pi0
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_pi0", collision_type).data(), "h3_ptPhiEta_assoc_pi0",
-                 kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_pi0", collision_type).data(), "h4_corr_pi0",
-                 kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
+      for (auto const& assocName : assocMcCorrHistNames) {
+        histos.add(std::format("mc/{}/corr/h6_corr_{}", collision_type, assocName).data(), std::format("h6_corr_{}", assocName).data(),
+                   kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinningMcTrue, axisMultBinningMcTrue}, true);
+        histos.add(std::format("mc/{}/corr/h6_mix_{}", collision_type, assocName).data(), std::format("h6_mix_{}", assocName).data(),
+                   kTHnSparseD, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinningMcTrue, axisMultBinningMcTrue}, true);
+      }
     }
 
     // mc efficiency/purity
     std::function<void(std::string)> add_effHists =
-      [&](std::string name_id) {
-        histos.add(std::format("mc/eff/h3_ptPhiEta_{}", name_id).data(), "h3_ptPhiEta_mcReco_hadron",
+      [&](std::string const name_id) {
+        histos.add(std::format("mc/eff/h3_ptPhiEta_{}", name_id).data(), std::format("h3_ptPhiEta_{}", name_id).data(),
                    kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-        histos.add(std::format("mc/eff/h3_ptZPvMult_{}", name_id).data(), "h3_ptZPvMult_mcReco_hadron",
+        histos.add(std::format("mc/eff/h3_ptZPvMult_{}", name_id).data(), std::format("h3_ptZPvMult_{}", name_id).data(),
                    kTHnSparseD, {axisPtAssoc, axisZPvSmol, axisMultSmol}, true);
       };
     // mc tracks
     add_effHists("mcReco_hadron");
     add_effHists("mcReco_hasCorrectMc_hadron");
-    add_effHists("mcTrue_hadron");
     add_effHists("mcTrue_recoCol_hadron");
     // mc pipm PID
     add_effHists("mcReco_pipm");
     add_effHists("mcReco_hasCorrectMc_pipm");
-    add_effHists("mcTrue_pipm");
     add_effHists("mcTrue_recoCol_pipm");
     // mc photonPCM
     add_effHists("mcReco_photonPCM");
     add_effHists("mcReco_hasCorrectMc_photonPCM");
-    add_effHists("mcTrue_photon");
     add_effHists("mcTrue_recoCol_photon");
-    // mc pi0PCM
-    add_effHists("mcReco_pi0PCM");
-    add_effHists("mcReco_hasCorrectMc_pi0PCM");
-    add_effHists("mcTrue_pi0");
+    // mc pi0
     add_effHists("mcTrue_recoCol_pi0");
+    // mc eta
+    add_effHists("mcTrue_recoCol_eta");
 
     // test of the test while testing another test. featuring a test
     histos.add("test/h2_mult_comp", "h2_mult_comp", kTH2D, {axisMult, axisMult}, true);
@@ -724,25 +492,72 @@ struct PhotonChargedTriggerCorrelation {
       return false;
     return true;
   }
-  // checks if mcParticle should be detected as 'primary' pi0->gg (|eta| not checked)
+  // checks if mcParticle should be detected as 'primary' (|eta| not checked)
   template <typename T_mcParticle>
-  bool checkPi0ToGG(T_mcParticle const& mcParticle)
+  bool checkH0Primary(T_mcParticle const& mcParticle, int const pdg)
   {
-    if (mcParticle.pdgCode() != PDG_t::kPi0)
+    if (mcParticle.pdgCode() != pdg)
       return false;
-    // identify primary pi0 (account for 0 daughters for some reason)
-    if (mcParticle.template daughters_as<aod::JetParticles>().size() == 0)
+    const auto& h0Daughters = mcParticle.template daughters_as<aod::JetParticles>();
+    // identify primary h0 (account for 0 daughters for some reason)
+    if (h0Daughters.size() == 0)
       return false;
-    for (auto const& pi0_daughter : mcParticle.template daughters_as<aod::JetParticles>()) {
-      if (!pi0_daughter.isPhysicalPrimary())
+    for (auto const& h0_daughter : h0Daughters) {
+      if (!h0_daughter.isPhysicalPrimary())
         return false;
     }
-    // select pi0 -> gg
-    constexpr int NDaughtersPi0ToGG = 2;
-    if (mcParticle.template daughters_as<aod::JetParticles>().size() != NDaughtersPi0ToGG)
+    return true;
+  }
+  // checks if mcParticle should be detected as 'primary' pi0->gammagamma (|eta| not checked)
+  template <typename T_mcParticle>
+  bool checkH0ToGG(T_mcParticle const& mcParticle, int const pdg)
+  {
+    if (!checkH0Primary(mcParticle, pdg))
+      return false;
+    // select h0 -> gg
+    constexpr int NDaughtersH0ToGG = 2;
+    if (mcParticle.template daughters_as<aod::JetParticles>().size() != NDaughtersH0ToGG)
       return false;
     return true;
   }
+
+  // checks if tracks come from photon conversion
+  template <typename T_track>
+  bool isConversionPhoton(T_track const& posTrack, T_track const& negTrack)
+  {
+    // check same mother
+    auto const& posMothers = posTrack.mcParticle().template mothers_as<aod::JetParticles>();
+    auto const& negMothers = negTrack.mcParticle().template mothers_as<aod::JetParticles>();
+    if (posMothers.size() != 1 || negMothers.size() != 1)
+      return false;
+    if (posMothers.begin()->globalIndex() != negMothers.begin()->globalIndex())
+      return false;
+    // check photon
+    if (posMothers.begin()->pdgCode() != PDG_t::kGamma)
+      return false;
+
+    return true;
+  };
+  // checks if tracks come from pi0 double conversion
+  template <typename T_track>
+  bool isGGFromPi0(T_track const& posTrack1, T_track const& negTrack1, T_track const& posTrack2, T_track const& negTrack2)
+  {
+    if (!isConversionPhoton(posTrack1, negTrack1) || !isConversionPhoton(posTrack2, negTrack2))
+      return false;
+    // check same mother
+    auto const& mothers1 = (*(posTrack1.mcParticle().template mothers_as<aod::JetParticles>().begin())).template mothers_as<aod::JetParticles>();
+    auto const& mothers2 = (*(posTrack2.mcParticle().template mothers_as<aod::JetParticles>().begin())).template mothers_as<aod::JetParticles>();
+    constexpr int NMothersPhotonFromPi0 = 2; // for some reason two mothers (same particle) for pi0 decays (contradicts PYTHIA documentation, but whatever)
+    if (mothers1.size() != NMothersPhotonFromPi0 || mothers2.size() != NMothersPhotonFromPi0)
+      return false;
+    if (mothers1.begin()->globalIndex() != mothers2.begin()->globalIndex())
+      return false;
+    // check pi0
+    if (mothers1.begin()->pdgCode() != PDG_t::kPi0)
+      return false;
+
+    return true;
+  };
 
   // analysis helpers /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -752,22 +567,21 @@ struct PhotonChargedTriggerCorrelation {
     return h1->GetBinContent(h1->FindFixBin(value));
   }
   // efficiency helpers
-  // define enum class for particle type
-  enum class ParticleType { Trigger,
-                            Hadron,
-                            Pipm,
-                            PhotonPCM };
+  enum class EffParticleType { Trigger,
+                               Hadron,
+                               Pipm,
+                               PhotonPCM };
   // efficiency function
-  template <ParticleType T>
+  template <EffParticleType T_effParticleType>
   double getInvEff(double const value)
   {
-    if constexpr (T == ParticleType::Trigger) {
+    if constexpr (T_effParticleType == EffParticleType::Trigger) {
       return doEffCorrectionTrigger ? getH1ValueAt(h1PtInvEffTrigger, value) : 1;
-    } else if constexpr (T == ParticleType::Hadron) {
+    } else if constexpr (T_effParticleType == EffParticleType::Hadron) {
       return doEffCorrectionHadron ? getH1ValueAt(h1PtInvEffHadron, value) : 1;
-    } else if constexpr (T == ParticleType::Pipm) {
+    } else if constexpr (T_effParticleType == EffParticleType::Pipm) {
       return doEffCorrectionPipm ? getH1ValueAt(h1PtInvEffPipm, value) : 1;
-    } else if constexpr (T == ParticleType::PhotonPCM) {
+    } else if constexpr (T_effParticleType == EffParticleType::PhotonPCM) {
       return doEffCorrectionPhotonPCM ? getH1ValueAt(h1PtInvEffPhotonPCM, value) : 1;
     } else {
       return 1;
@@ -814,6 +628,28 @@ struct PhotonChargedTriggerCorrelation {
     return -1;
   }
 
+  // check if invariant mass range
+  enum class MassRange { pi0PCMPeak,
+                         pi0PCMSide,
+                         etaPCMPeak,
+                         etaPCMSide };
+
+  template <MassRange T_massRange>
+  bool checkMassRange(double const mgg)
+  {
+    if constexpr (T_massRange == MassRange::pi0PCMPeak) {
+      return mgg > pi0PCMPeakMassRange.value[0] && mgg < pi0PCMPeakMassRange.value[1];
+    } else if constexpr (T_massRange == MassRange::pi0PCMSide) {
+      return mgg > pi0PCMSideMassRange.value[0] && mgg < pi0PCMSideMassRange.value[1];
+    } else if constexpr (T_massRange == MassRange::etaPCMPeak) {
+      return mgg > etaPCMPeakMassRange.value[0] && mgg < etaPCMPeakMassRange.value[1];
+    } else if constexpr (T_massRange == MassRange::etaPCMSide) {
+      return (mgg > etaPCMLowSideMassRange.value[0] && mgg < etaPCMLowSideMassRange.value[1]) ||
+             (mgg > etaPCMHighSideMassRange.value[0] && mgg < etaPCMHighSideMassRange.value[1]);
+    }
+    return false;
+  }
+
   // analysis /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // generalised correlation functions
@@ -848,26 +684,21 @@ struct PhotonChargedTriggerCorrelation {
             typename T_funcMixing>
   void corrProcessMixing(T_collision const& collision, T_associatedThisEvent const& associatedThisEvent,
                          T_funcMixing&& funcMixing,
-                         size_t const nTriggerMixing)
+                         size_t const nTriggerMixing, size_t const nTriggersThisDataFrame)
   {
     // skip if event does not contain valid trigger
     if (doTrigEvMixing && !collision.trigEv())
       return;
 
     // mixing loops (more efficient than O2 mixing (for now))
-    // prepare zPv-mult binned saved triggers
-    const int iBinCorrZPv = findIntervalBin(collision.posZ(), triggerBinValuesZPv);
-    const int iBinCorrMult = findIntervalBin(collision.multNTracksGlobal(), triggerBinValuesMult);
-    auto const& savedTriggersPt = savedTriggersZPvMultPt[iBinCorrZPv][iBinCorrMult];
-    auto const& savedTriggersPhi = savedTriggersZPvMultPhi[iBinCorrZPv][iBinCorrMult];
-    auto const& savedTriggersEta = savedTriggersZPvMultEta[iBinCorrZPv][iBinCorrMult];
+    auto savedTriggers = mixingTriggerMemoryReco.getTriggers(collision.posZ(), collision.nGlobalTracks());
     // number of triggers
-    const int mixUpToTriggerN = std::min(savedTriggersPt.size(), nTriggerMixing + nTriggersThisDataFrame);
+    const size_t mixUpToTriggerN = std::min(savedTriggers.size(), nTriggerMixing + nTriggersThisDataFrame);
     const float perTriggerWeight = 1. / (mixUpToTriggerN - nTriggersThisDataFrame); // mixUpToTriggerN <= nTriggersThisDataFrame not problematic since no loop then
     // mixing loops
-    for (int i_mixingTrigger = nTriggersThisDataFrame; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
+    for (size_t i_mixingTrigger = nTriggersThisDataFrame; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
       for (auto const& associated : associatedThisEvent) {
-        funcMixing(collision, savedTriggersPt[i_mixingTrigger], savedTriggersPhi[i_mixingTrigger], savedTriggersEta[i_mixingTrigger], associated, perTriggerWeight);
+        funcMixing(collision, savedTriggers[i_mixingTrigger].pt(), savedTriggers[i_mixingTrigger].phi(), savedTriggers[i_mixingTrigger].eta(), associated, perTriggerWeight);
       }
     }
   }
@@ -879,29 +710,13 @@ struct PhotonChargedTriggerCorrelation {
     // enabling object caching (otherwise each call goes to CCDB server)
     ccdb->setCaching(true);
     // ccdb->setLocalObjectValidityChecking();
-    // not later than now, will be replaced by the value of train creation (avoids replacing objects while a train is running)
-    ccdb->setCreatedNotAfter(noLaterThanCcdb.value);
+    // not later than (avoids replacing objects while a train is running)
+    ccdb->setCreatedNotAfter(noLaterThanCcdb);
 
     // init analysis variables
 
-    // get variabels from other tasks
-    getTaskOptionValue(initContext, "correlation-table-producer", "etaMax", etaMax, false);
-
-    // mixing trigger memory
-    triggerBinValuesZPv = binsZPv;
-    triggerBinValuesMult = binsMult;
-    // prevent rounding errors in bin finding (multiplicity accounted for by it going to 0 and already considering overflow separately)
-    triggerBinValuesZPv.front() *= 1.0001;
-    triggerBinValuesZPv.back() *= 1.0001;
-    // init correct size of zPv-mult matrix
-    savedTriggersZPvMultPt.resize(binsZPv.value.size() - 1);
-    savedTriggersZPvMultPhi.resize(binsZPv.value.size() - 1);
-    savedTriggersZPvMultEta.resize(binsZPv.value.size() - 1);
-    for (size_t i_zPv = 0; i_zPv < binsZPv.value.size() - 1; i_zPv++) {
-      savedTriggersZPvMultPt[i_zPv].resize(binsMult.value.size());
-      savedTriggersZPvMultPhi[i_zPv].resize(binsMult.value.size());
-      savedTriggersZPvMultEta[i_zPv].resize(binsMult.value.size());
-    }
+    // get variables from other tasks
+    getTaskOptionValue(initContext, "photon-charged-trigger-producer", "etaMax", etaMax, false);
 
     // histograms from ccdb
     initCcdbHistograms();
@@ -914,30 +729,33 @@ struct PhotonChargedTriggerCorrelation {
 
   void processInfo(CorrCollision const& collision)
   {
-    // trigger events
-    if (collision.trigEv()) {
-      histos.fill(HIST("reco/info/h1_nEvents"), 2.5);
-    }
+    // all events
+    histos.fill(HIST("reco/info/h1_nEvents"), 1.5);
 
     // event selection
-    histos.fill(HIST("reco/info/h1_nEvents"), 1.5);
     if (!collision.selEv())
       return;
     histos.fill(HIST("reco/info/h1_nEvents"), 0.5);
 
-    // QA
-    histos.fill(HIST("reco/info/h2_zPvMult"), collision.posZ(), collision.multNTracksGlobal());
+    histos.fill(HIST("reco/info/h2_zPvMult"), collision.posZ(), collision.nGlobalTracks());
     histos.fill(HIST("reco/info/h1_occupancy"), collision.trackOccupancyInTimeRange());
+
+    // trigger events
+    if (!collision.trigEv())
+      return;
+    histos.fill(HIST("reco/info/h1_nEvents"), 2.5);
+
+    histos.fill(HIST("reco/info/h2_zPvMult_trigEv"), collision.posZ(), collision.nGlobalTracks());
+    histos.fill(HIST("reco/info/h1_occupancy_trigEv"), collision.trackOccupancyInTimeRange());
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processInfo, "process general info on collisions and tracks for analysis and qa", false);
 
   void processCorrFirst(CorrCollisions const& collisions, aod::Triggers const& triggers)
   {
-    // do at beginning of each data frame (before other correlation process functions)
+    // do at beginning of each data frame (before other reco correlation process functions)
     // (PROCESS_SWITCH of this process has to be declared first)
 
-    // set trigger counter
-    nTriggersThisDataFrame = triggers.size();
+    // [wow, such empty]
 
     for (auto const& collision : collisions) {
       // event selection
@@ -951,226 +769,291 @@ struct PhotonChargedTriggerCorrelation {
       for (auto const& trigger : triggersThisEvent) {
         // trigger info
         histos.fill(HIST("reco/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta(),
-                    getInvEff<ParticleType::Trigger>(trigger.pt()));
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
 
-        // save triggers for mixing
-        const int iBinCorrZPv = findIntervalBin(collision.posZ(), triggerBinValuesZPv);
-        const int iBinCorrMult = findIntervalBin(collision.multNTracksGlobal(), triggerBinValuesMult);
-        // special cases (floating point precision errors, mult overflow) should be taken care of by triggerBinValuesZPv and triggerBinValuesMult
-        savedTriggersZPvMultPt[iBinCorrZPv][iBinCorrMult].push_front(trigger.pt());
-        savedTriggersZPvMultPhi[iBinCorrZPv][iBinCorrMult].push_front(trigger.phi());
-        savedTriggersZPvMultEta[iBinCorrZPv][iBinCorrMult].push_front(trigger.eta());
-        if (static_cast<int>(savedTriggersZPvMultPt[iBinCorrZPv][iBinCorrMult].size()) > nTriggerSavedForMixing) {
-          savedTriggersZPvMultPt[iBinCorrZPv][iBinCorrMult].pop_back();
-          savedTriggersZPvMultPhi[iBinCorrZPv][iBinCorrMult].pop_back();
-          savedTriggersZPvMultEta[iBinCorrZPv][iBinCorrMult].pop_back();
-        }
-      }
-
-      // trigger event info
-      if (collision.trigEv()) {
-        histos.fill(HIST("reco/info/h2_zPvMult_trigEv"), collision.posZ(), collision.multNTracksGlobal());
-        histos.fill(HIST("reco/info/h1_occupancy_trigEv"), collision.trackOccupancyInTimeRange());
+        // save trigger for mixing
+        mixingTriggerMemoryReco.saveTrigger(trigger.pt(), trigger.phi(), trigger.eta(), collision.posZ(), collision.nGlobalTracks());
       }
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrFirst, "process to gather info before correlation processes", false);
 
-  void processCorrHadron(CorrCollision const& collision, aod::Triggers const& triggers, aod::Hadrons const& hadrons)
+  void processCorrHadron(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::Hadrons const& hadrons)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h3_ptPhiEta_hadron"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<ParticleType::Hadron>(associated.pt()));
-    };
-    corrProcessPlain(collision, hadrons, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.jetTrackId())
-        return;
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const hadronsThisEvent = hadrons.sliceBy(perColHadrons, collision.globalIndex());
 
-      histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_hadron"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<ParticleType::Trigger>(trigger.pt()) * getInvEff<ParticleType::Hadron>(associated.pt()));
-      histos.fill(HIST("reco/corr/h6_corr_hadron"),
-                  getDeltaPhi(trigger.phi(), associated.phi()),
-                  trigger.eta() - associated.eta(),
-                  trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                  getInvEff<ParticleType::Trigger>(trigger.pt()) * getInvEff<ParticleType::Hadron>(associated.pt()));
-    };
-    corrProcessCorrelation(collision, triggers, hadrons, funcCorrelation);
+      auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h3_ptPhiEta_hadron"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Hadron>(associated.pt()));
+      };
+      corrProcessPlain(collision, hadronsThisEvent, funcPlain);
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      histos.fill(HIST("reco/corr/h6_mix_hadron"),
-                  getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                  mixingTriggerEta - associated.eta(),
-                  mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                  perTriggerWeight * getInvEff<ParticleType::Trigger>(mixingTriggerPt) * getInvEff<ParticleType::Hadron>(associated.pt()));
-    };
-    corrProcessMixing(collision, hadrons, funcMixing, nTriggerMixingHadron);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.jetTrackId())
+          return;
+
+        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_hadron"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Hadron>(associated.pt()));
+        histos.fill(HIST("reco/corr/h6_corr_hadron"),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Hadron>(associated.pt()));
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, hadronsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        histos.fill(HIST("reco/corr/h6_mix_hadron"),
+                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                    mixingTriggerEta - associated.eta(),
+                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::Hadron>(associated.pt()));
+      };
+      corrProcessMixing(collision, hadronsThisEvent, funcMixing, nTriggerMixingHadron, nTriggersThisDataFrame);
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrHadron, "process standard correlation for associated hardons", false);
 
-  void processCorrPipm(CorrCollision const& collision, aod::Triggers const& triggers, aod::Pipms const& pipms)
+  void processCorrPipm(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::Pipms const& pipms)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h3_ptPhiEta_pipm"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<ParticleType::Pipm>(associated.pt()));
-    };
-    corrProcessPlain(collision, pipms, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.jetTrackId())
-        return;
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const pipmsThisEvent = pipms.sliceBy(perColPipms, collision.globalIndex());
 
-      histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pipm"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<ParticleType::Trigger>(trigger.pt()) * getInvEff<ParticleType::Pipm>(associated.pt()));
-      histos.fill(HIST("reco/corr/h6_corr_pipm"),
-                  getDeltaPhi(trigger.phi(), associated.phi()),
-                  trigger.eta() - associated.eta(),
-                  trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                  getInvEff<ParticleType::Trigger>(trigger.pt()) * getInvEff<ParticleType::Pipm>(associated.pt()));
-    };
-    corrProcessCorrelation(collision, triggers, pipms, funcCorrelation);
+      auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h3_ptPhiEta_pipm"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Pipm>(associated.pt()));
+      };
+      corrProcessPlain(collision, pipmsThisEvent, funcPlain);
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      histos.fill(HIST("reco/corr/h6_mix_pipm"),
-                  getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                  mixingTriggerEta - associated.eta(),
-                  mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                  perTriggerWeight * getInvEff<ParticleType::Trigger>(mixingTriggerPt) * getInvEff<ParticleType::Pipm>(associated.pt()));
-    };
-    corrProcessMixing(collision, pipms, funcMixing, nTriggerMixingPipm);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.jetTrackId())
+          return;
+
+        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pipm"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Pipm>(associated.pt()));
+        histos.fill(HIST("reco/corr/h6_corr_pipm"),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Pipm>(associated.pt()));
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, pipmsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        histos.fill(HIST("reco/corr/h6_mix_pipm"),
+                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                    mixingTriggerEta - associated.eta(),
+                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::Pipm>(associated.pt()));
+      };
+      corrProcessMixing(collision, pipmsThisEvent, funcMixing, nTriggerMixingPipm, nTriggersThisDataFrame);
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPipm, "process standard correlation for associated pipm", false);
 
-  void processCorrPhotonPCM(CorrCollision const& collision, aod::Triggers const& triggers, aod::PhotonPCMs const& photonPCMs)
+  void processCorrPhotonPCM(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::PhotonPCMs const& photonPCMs)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h3_ptPhiEta_photonPCM"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<ParticleType::PhotonPCM>(associated.pt()));
-    };
-    corrProcessPlain(collision, photonPCMs, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.posTrackId() || trigger.jetTrackId() == associated.negTrackId())
-        return;
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const photonPCMsThisEvent = photonPCMs.sliceBy(perColPhotonPCMs, collision.globalIndex());
 
-      histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_photonPCM"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<ParticleType::Trigger>(trigger.pt()) * getInvEff<ParticleType::PhotonPCM>(associated.pt()));
-      histos.fill(HIST("reco/corr/h6_corr_photonPCM"),
-                  getDeltaPhi(trigger.phi(), associated.phi()),
-                  trigger.eta() - associated.eta(),
-                  trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                  getInvEff<ParticleType::Trigger>(trigger.pt()) * getInvEff<ParticleType::PhotonPCM>(associated.pt()));
-    };
-    corrProcessCorrelation(collision, triggers, photonPCMs, funcCorrelation);
+      auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h3_ptPhiEta_photonPCM"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+      };
+      corrProcessPlain(collision, photonPCMsThisEvent, funcPlain);
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      histos.fill(HIST("reco/corr/h6_mix_photonPCM"),
-                  getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                  mixingTriggerEta - associated.eta(),
-                  mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                  perTriggerWeight * getInvEff<ParticleType::Trigger>(mixingTriggerPt) * getInvEff<ParticleType::PhotonPCM>(associated.pt()));
-    };
-    corrProcessMixing(collision, photonPCMs, funcMixing, nTriggerMixingPhotonPCM);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.posTrackId() || trigger.jetTrackId() == associated.negTrackId())
+          return;
+
+        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_photonPCM"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+        histos.fill(HIST("reco/corr/h6_corr_photonPCM"),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, photonPCMsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        histos.fill(HIST("reco/corr/h6_mix_photonPCM"),
+                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                    mixingTriggerEta - associated.eta(),
+                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+      };
+      corrProcessMixing(collision, photonPCMsThisEvent, funcMixing, nTriggerMixingPhotonPCM, nTriggersThisDataFrame);
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCM, "process standard correlation for associated photonPCM", false);
 
-  void processCorrPi0PCM(CorrCollision const& collision, aod::Triggers const& triggers, aod::PhotonPCMPairs const& photonPCMPairs)
+  void processCorrPhotonPCMPair(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::PhotonPCMPairs const& photonPCMPairs)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this](auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.multNTracksGlobal());
-      // pi0 mass range
-      if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
-        histos.fill(HIST("reco/plain/h3_ptPhiEta_pi0PCMPeak"), associated.pt(), associated.phi(), associated.eta());
-      }
-    };
-    corrProcessPlain(collision, photonPCMPairs, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.posTrack1Id() || trigger.jetTrackId() == associated.negTrack1Id() ||
-          trigger.jetTrackId() == associated.negTrack2Id() || trigger.jetTrackId() == associated.posTrack2Id())
-        return;
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const photonPCMPairsThisEvent = photonPCMPairs.sliceBy(perColPhotonPCMPairs, collision.globalIndex());
 
-      histos.fill(HIST("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair"),
-                  associated.pt(), associated.mgg(), collision.posZ(), collision.multNTracksGlobal(),
-                  getInvEff<ParticleType::Trigger>(trigger.pt()));
+      auto const funcPlain = [this](auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks());
+      };
+      corrProcessPlain(collision, photonPCMPairsThisEvent, funcPlain);
 
-      if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
-        // pi0 mass range
-        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMPeak"),
-                    associated.pt(), associated.phi(), associated.eta(),
-                    getInvEff<ParticleType::Trigger>(trigger.pt()));
-        histos.fill(HIST("reco/corr/h6_corr_pi0PCMPeak"),
-                    getDeltaPhi(trigger.phi(), associated.phi()),
-                    trigger.eta() - associated.eta(),
-                    trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                    getInvEff<ParticleType::Trigger>(trigger.pt()));
-      } else if (associated.mgg() > pi0PCMSideMassRange.value[0] && associated.mgg() < pi0PCMSideMassRange.value[1]) {
-        // pi0 mass side range
-        histos.fill(HIST("reco/corr/h6_corr_pi0PCMSide"),
-                    getDeltaPhi(trigger.phi(), associated.phi()),
-                    trigger.eta() - associated.eta(),
-                    trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                    getInvEff<ParticleType::Trigger>(trigger.pt()));
-      }
-    };
-    corrProcessCorrelation(collision, triggers, photonPCMPairs, funcCorrelation);
+      auto const funcPlainTrigEv = [this](auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_trigEv_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks());
+      };
+      if (collision.trigEv())
+        corrProcessPlain(collision, photonPCMPairsThisEvent, funcPlainTrigEv);
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
-        // pi0 mass range
-        histos.fill(HIST("reco/corr/h6_mix_pi0PCMPeak"),
-                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                    mixingTriggerEta - associated.eta(),
-                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                    perTriggerWeight * getInvEff<ParticleType::Trigger>(mixingTriggerPt));
-      } else if (associated.mgg() > pi0PCMSideMassRange.value[0] && associated.mgg() < pi0PCMSideMassRange.value[1]) {
-        // pi0 mass side range
-        histos.fill(HIST("reco/corr/h6_mix_pi0PCMSide"),
-                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                    mixingTriggerEta - associated.eta(),
-                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
-                    perTriggerWeight * getInvEff<ParticleType::Trigger>(mixingTriggerPt));
-      }
-    };
-    corrProcessMixing(collision, photonPCMPairs, funcMixing, nTriggerMixingPi0PCM);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.posTrack1Id() || trigger.jetTrackId() == associated.negTrack1Id() ||
+            trigger.jetTrackId() == associated.negTrack2Id() || trigger.jetTrackId() == associated.posTrack2Id())
+          return;
+
+        histos.fill(HIST("reco/corr/h5_ptTrigPtAssocMggZPvMult_assoc_photonPCMPair"),
+                    trigger.pt(), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
+
+        // pi0
+        if (checkMassRange<MassRange::pi0PCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMPeak"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_pi0PCMPeak"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          return;
+        }
+        if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMSide"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_pi0PCMSide"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          return;
+        }
+        // eta
+        if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_etaPCMPeak"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_etaPCMPeak"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          return;
+        }
+        if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_etaPCMSide"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_etaPCMSide"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          return;
+        }
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, photonPCMPairsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        // pi0
+        if (checkMassRange<MassRange::pi0PCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_pi0PCMPeak"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+          return;
+        }
+        if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_pi0PCMSide"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+          return;
+        }
+        // eta
+        if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_etaPCMPeak"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+          return;
+        }
+        if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_etaPCMSide"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+          return;
+        }
+      };
+      corrProcessMixing(collision, photonPCMPairsThisEvent, funcMixing, nTriggerMixingH0PCM, nTriggersThisDataFrame);
+    }
   }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPi0PCM, "process standard correlation for associated pi0PCM", false);
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCMPair, "process standard correlation for associated pi0PCM", false);
 
-  void processCorrPi0PCMMix(CorrCollisions const& collisions, aod::PhotonPCMs const& photonPCMs)
+  void processCorrPhotonPCMPairMix(CorrCollisions const& collisions, aod::PhotonPCMs const& photonPCMs)
   {
     auto photonPCMsTuple = std::make_tuple(photonPCMs);
-    SameKindPair<CorrCollisions, aod::PhotonPCMs, BinningZPvMult> pairs{binningZPvMult, nNeighboursMixingPi0PCMPair, -1, collisions, photonPCMsTuple, &cache};
+    SameKindPair<CorrCollisions, aod::PhotonPCMs, BinningZPvMult> pairs{binningZPvMult, nNeighboursMixingPhotonPCMPair, -1, collisions, photonPCMsTuple, &cache};
 
     // mixed events
     for (auto pair = pairs.begin(); pair != pairs.end(); pair++) {
@@ -1180,249 +1063,275 @@ struct PhotonChargedTriggerCorrelation {
       // if (checkSameBin(collision1.posZ(), collision2.posZ(), binsZPv) == -1) {
       //   std::printf("ERROR: zPv bins do not match\n"); continue;
       // }
-      // if (checkSameBin(collision1.multNTracksGlobal(), collision2.multNTracksGlobal(), binsMult) == -1) {
+      // if (checkSameBin(collision1.nGlobalTracks(), collision2.nGlobalTracks(), binsMult) == -1) {
       //   std::printf("ERROR: multiplicity bins do not match\n"); continue;
       // }
 
       // event selection
-      if (!collision1.selEv())
+      if (!collision1.selEv() || !collision2.selEv())
         continue;
-      if (!collision2.selEv())
-        continue;
-
       // event info
-      histos.fill(HIST("reco/plain/h2_zPvMult_photonPCMPair_evMix"), collision1.posZ(), collision1.multNTracksGlobal());
-
+      histos.fill(HIST("reco/plain/h2_zPvMult_photonPCMPair_evMix"), collision1.posZ(), collision1.nGlobalTracks());
       // mixing loop
       for (auto const& [photonPCM1, photonPCM2] : soa::combinations(soa::CombinationsFullIndexPolicy(photonPCMs1, photonPCMs2))) {
         ROOT::Math::PtEtaPhiMVector const p4photonPCM1(photonPCM1.pt(), photonPCM1.eta(), photonPCM1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector const p4photonPCM2(photonPCM2.pt(), photonPCM2.eta(), photonPCM2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector const p4photonPCMPair = p4photonPCM1 + p4photonPCM2;
 
-        // plain
-        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair_evMix"), p4photonPCMPair.pt(), p4photonPCMPair.M(), collision1.posZ(), collision1.multNTracksGlobal());
-        // pi0 mass range
-        if (p4photonPCMPair.M() > pi0PCMMassRange.value[0] && p4photonPCMPair.M() < pi0PCMMassRange.value[1]) {
-          histos.fill(HIST("reco/plain/h3_ptPhiEta_pi0PCMPeak_evMix"), p4photonPCMPair.pt(), p4photonPCMPair.phi() + constants::math::PI, p4photonPCMPair.eta());
-        }
+        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair_evMix"), p4photonPCMPair.pt(), p4photonPCMPair.M(), collision1.posZ(), collision1.nGlobalTracks());
+      }
+
+      // trigger events
+      if (!collision1.trigEv() || !collision2.trigEv())
+        continue;
+      // mixing loop
+      for (auto const& [photonPCM1, photonPCM2] : soa::combinations(soa::CombinationsFullIndexPolicy(photonPCMs1, photonPCMs2))) {
+        ROOT::Math::PtEtaPhiMVector const p4photonPCM1(photonPCM1.pt(), photonPCM1.eta(), photonPCM1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector const p4photonPCM2(photonPCM2.pt(), photonPCM2.eta(), photonPCM2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector const p4photonPCMPair = p4photonPCM1 + p4photonPCM2;
+
+        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_trigEv_photonPCMPair_evMix"), p4photonPCMPair.pt(), p4photonPCMPair.M(), collision1.posZ(), collision1.nGlobalTracks());
       }
     }
   }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPi0PCMMix, "process gamma-gamma mixing for photonPCM", false);
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCMPairMix, "process gamma-gamma mixing for photonPCM", false);
 
   // mc ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void processMcInfo(CorrMcCollision const& mcCollision)
+  void processMcInfo(CorrMcCollisions const& mcCollisions, CorrMcDCollisions const& collisions)
   {
-    // event counter
-    histos.fill(HIST("mc/info/h1_nEvents_mcTrue"), 0.5);
-    // trigger events
-    if (mcCollision.trigEv()) {
-      histos.fill(HIST("mc/info/h1_nTriggerEvents_mcTrue"), 0.5);
-    }
+    for (auto const& mcCollision : mcCollisions) {
+      // all events
+      histos.fill(HIST("mc/info/h1_nEvents_mcTrue"), 0.5);
+      histos.fill(HIST("mc/info/h2_zPvMult_mcTrue"), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
 
-    // QA
-    histos.fill(HIST("mc/info/h1_zPv_mcTrue"), mcCollision.posZ());
-    histos.fill(HIST("mc/info/h1_mult_mcTrue"), mcCollision.multMCNParticlesEta08());
+      // trigger events
+      if (!mcCollision.trigEv())
+        continue;
+      histos.fill(HIST("mc/info/h1_nTrigEv_mcTrue"), 0.5);
+      histos.fill(HIST("mc/info/h2_zPvMult_trigEv_mcTrue"), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+    }
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
+      histos.fill(HIST("mc/info/h1_nRecoCol_mcTrue"), 0.5);
+      histos.fill(HIST("mc/info/h2_zPvMult_recoCol_mcTrue"), collision.mcCollision_as<CorrMcCollisions>().posZ(), collision.mcCollision_as<CorrMcCollisions>().nChargedInEtaRange());
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcInfo, "process general info on mc collisions and tracks for analysis and qa", false);
 
-  void processMcTrueCorr(CorrMcCollision const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  // (sad) attempt at reducing code duplication
+  enum class McCorrEventType : int { True = 0,
+                                     RecoColTrue = 1 };
+  enum class McCorrCorrelationType : int { Correlation = 0,
+                                           Mixing = 1 };
+  enum class McCorrAssociatedType : int { Hadron = 0,
+                                          Pipm = 1,
+                                          Photon = 2,
+                                          Pi0 = 3,
+                                          Eta = 4 };
+  static constexpr const char* McHistPaths[2][2][5] = {
+    {{"mc/true/corr/h6_corr_hadron", "mc/true/corr/h6_corr_pipm", "mc/true/corr/h6_corr_photon",
+      "mc/true/corr/h6_corr_pi0", "mc/true/corr/h6_corr_eta"},
+     {"mc/true/corr/h6_mix_hadron", "mc/true/corr/h6_mix_pipm", "mc/true/corr/h6_mix_photon",
+      "mc/true/corr/h6_mix_pi0", "mc/true/corr/h6_mix_eta"}},
+    {{"mc/recoCol_true/corr/h6_corr_hadron", "mc/recoCol_true/corr/h6_corr_pipm", "mc/recoCol_true/corr/h6_corr_photon",
+      "mc/recoCol_true/corr/h6_corr_pi0", "mc/recoCol_true/corr/h6_corr_eta"},
+     {"mc/recoCol_true/corr/h6_mix_hadron", "mc/recoCol_true/corr/h6_mix_pipm", "mc/recoCol_true/corr/h6_mix_photon",
+      "mc/recoCol_true/corr/h6_mix_pi0", "mc/recoCol_true/corr/h6_mix_eta"}}};
+  static constexpr const char* getMcHistPath(McCorrEventType eventType, McCorrCorrelationType correlationType, McCorrAssociatedType associatedType)
   {
-    // trigger pairing loop
-    for (auto const& trigger : triggerParticles) {
-      // trigger info
-      histos.fill(HIST("mc/true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
+    return McHistPaths[static_cast<int>(eventType)][static_cast<int>(correlationType)][static_cast<int>(associatedType)];
+  }
 
-      // hadrons (tracks) and pipm
-      for (auto const& associated : mcParticles) {
-        // exclude self correlation
-        if (trigger.jetMcParticleId() == associated.globalIndex())
-          continue;
+  // fill mc correaltion histograms based on given associated mc particle
+  template <McCorrEventType eventType, McCorrCorrelationType correlationType>
+  void fillMcCorrHists(auto const& mcCollision, auto const& trigger, auto const& associated, double const weight)
+  {
+    // standard particles (marked physical primary)
+    if (checkPrimaryEtaMc(associated)) {
+      // charged primary ('hadron') selection
+      if (checkChargedMc(associated)) {
+        histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Hadron)),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
+                    weight);
+      }
+      // pipm selection
+      if (std::abs(associated.pdgCode()) == PDG_t::kPiPlus) {
+        histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Pipm)),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
+                    weight);
+        return;
+      }
+      // photon selection
+      if (associated.pdgCode() == PDG_t::kGamma) {
+        histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Photon)),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
+                    weight);
+        return;
+      }
+      return;
+    }
+    // decaying particles (not marked physical primary)
+    if ((std::abs(associated.eta()) < etaMax)) {
+      // pi0 selection
+      if (checkH0Primary(associated, PDG_t::kPi0)) {
+        histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Pi0)),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
+                    weight);
+        return;
+      }
+      // eta selection
+      if (checkH0Primary(associated, 221)) {
+        histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Eta)),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
+                    weight);
+        return;
+      }
+    }
+  }
 
-        // standard particles (marked physical primary)
-        if (checkPrimaryEtaMc(associated)) {
-          // charged primary ('hadron') selection
-          if (checkChargedMc(associated)) {
-            histos.fill(HIST("mc/true/corr/h3_ptPhiEta_assoc_hadron"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true/corr/h4_corr_hadron"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
+  void processMcTrueCorr(CorrMcCollisions const& mcCollisions, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  {
+    for (auto const& mcCollision : mcCollisions) {
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, mcCollision.globalIndex());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, mcCollision.globalIndex());
 
-          // pipm selection
-          if (std::abs(associated.pdgCode()) == PDG_t::kPiPlus) {
-            histos.fill(HIST("mc/true/corr/h3_ptPhiEta_assoc_pipm"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true/corr/h4_corr_pipm"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
+      // trigger pairing loop
+      for (auto const& trigger : triggerParticlesThisEvent) {
+        // trigger info
+        histos.fill(HIST("mc/true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
 
-          // photon selection
-          if (associated.pdgCode() == PDG_t::kGamma) {
-            histos.fill(HIST("mc/true/corr/h3_ptPhiEta_assoc_photon"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true/corr/h4_corr_photon"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
-        }
+        // save trigger for mixing
+        mixingTriggerMemoryTrue.saveTrigger(trigger.pt(), trigger.phi(), trigger.eta(), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
 
-        // decaying particles (not marked physical primary)
-        if ((std::abs(associated.eta()) < etaMax)) {
-          // pi0 selection
-          if (checkPi0ToGG(associated)) {
-            histos.fill(HIST("mc/true/corr/h3_ptPhiEta_assoc_pi0"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true/corr/h4_corr_pi0"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
+        for (auto const& associated : mcParticlesThisEvent) {
+          // exclude self correlation
+          if (trigger.jetMcParticleId() == associated.globalIndex())
+            continue;
+
+          fillMcCorrHists<McCorrEventType::True, McCorrCorrelationType::Correlation>(mcCollision, trigger, associated, 1);
         }
       }
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcTrueCorr, "process mc-true (all collisions) correlation for multiple associated particles", false);
 
-  void processMcTrueRecoColCorr(CorrMcDCollision const& collision, aod::JetMcCollisions const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  void processMcTrueMix(CorrMcCollisions const& mcCollisions, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  {
+    for (auto const& mcCollision : mcCollisions) {
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, mcCollision.globalIndex());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, mcCollision.globalIndex());
+
+      const size_t nTriggerParticlesThisDataFrame = triggerParticles.size();
+      auto savedTriggers = mixingTriggerMemoryTrue.getTriggers(mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+      const size_t mixUpToTriggerN = std::min(savedTriggers.size(), static_cast<size_t>(nTriggerMixingMcTrue) + nTriggerParticlesThisDataFrame);
+      const float perTriggerWeight = 1. / (mixUpToTriggerN - nTriggerParticlesThisDataFrame);
+
+      // trigger loop
+      for (size_t i_mixingTrigger = nTriggerParticlesThisDataFrame; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
+        MixingTrigger const& mixingTrigger = savedTriggers[i_mixingTrigger];
+        for (auto const& associated : mcParticlesThisEvent) {
+          fillMcCorrHists<McCorrEventType::True, McCorrCorrelationType::Mixing>(mcCollision, mixingTrigger, associated, perTriggerWeight);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcTrueMix, "process mc-true (all collisions) correlation mixing for multiple associated particles", false);
+
+  void processMcRecoColTrueCorr(CorrMcDCollisions const& collisions, CorrMcCollisions const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  {
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
+
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
+
+      auto const& mcCollision = collision.mcCollision_as<CorrMcCollisions>();
+
+      // trigger pairing loop
+      for (auto const& trigger : triggerParticlesThisEvent) {
+        // trigger info
+        histos.fill(HIST("mc/recoCol_true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
+
+        // save trigger for mixing
+        mixingTriggerMemoryRecoColTrue.saveTrigger(trigger.pt(), trigger.phi(), trigger.eta(), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+
+        // hadrons (tracks) and pipm
+        for (auto const& associated : mcParticlesThisEvent) {
+          // exclude self correlation
+          if (trigger.jetMcParticleId() == associated.globalIndex())
+            continue;
+
+          fillMcCorrHists<McCorrEventType::RecoColTrue, McCorrCorrelationType::Correlation>(mcCollision, trigger, associated, 1);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcRecoColTrueCorr, "process mc-true (reco collisions) correlation for multiple associated particles", false);
+
+  void processMcRecoColTrueMix(CorrMcDCollisions const& collisions, CorrMcCollisions const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  {
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
+
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
+
+      auto const& mcCollision = collision.mcCollision_as<CorrMcCollisions>();
+
+      const size_t nTriggerParticlesThisDataFrame = triggerParticles.size();
+      auto savedTriggers = mixingTriggerMemoryRecoColTrue.getTriggers(mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+      const size_t mixUpToTriggerN = std::min(savedTriggers.size(), static_cast<size_t>(nTriggerMixingMcTrue) + nTriggerParticlesThisDataFrame);
+      const float perTriggerWeight = 1. / (mixUpToTriggerN - nTriggerParticlesThisDataFrame);
+
+      // trigger loop
+      for (size_t i_mixingTrigger = nTriggerParticlesThisDataFrame; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
+        MixingTrigger const& mixingTrigger = savedTriggers[i_mixingTrigger];
+        for (auto const& associated : mcParticlesThisEvent) {
+          fillMcCorrHists<McCorrEventType::RecoColTrue, McCorrCorrelationType::Mixing>(mcCollision, mixingTrigger, associated, perTriggerWeight);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcRecoColTrueMix, "process mc-true (reco collisions) correlation mixing for multiple associated particles", false);
+
+  void processMcRecoColEff(CorrMcDCollision const& collision, aod::JetTracksMCD const& tracks,
+                           aod::Hadrons const& hadrons, aod::Pipms const& pipms, aod::PhotonPCMs const& photonPCMs,
+                           CorrMcCollisions const&, aod::JetParticles const& mcParticles, aod::TriggerParticles const& triggerParticles)
   {
     // event selection
     if (!collision.selEv())
       return;
 
-    // group collision
+    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
     auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
-    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
-
-    // trigger pairing loop
-    for (auto const& trigger : triggerParticlesThisEvent) {
-      // trigger info
-      histos.fill(HIST("mc/true_reco/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
-
-      // hadrons (tracks) and pipm
-      for (auto const& associated : mcParticlesThisEvent) {
-        // exclude self correlation
-        if (trigger.jetMcParticleId() == associated.globalIndex())
-          continue;
-
-        // standard particles (marked physical primary)
-        if (checkPrimaryEtaMc(associated)) {
-          // charged primary ('hadron') selection
-          if (checkChargedMc(associated)) {
-            histos.fill(HIST("mc/true_reco/corr/h3_ptPhiEta_assoc_hadron"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true_reco/corr/h4_corr_hadron"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
-
-          // pipm selection
-          if (std::abs(associated.pdgCode()) == PDG_t::kPiPlus) {
-            histos.fill(HIST("mc/true_reco/corr/h3_ptPhiEta_assoc_pipm"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true_reco/corr/h4_corr_pipm"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
-
-          // photon selection
-          if (associated.pdgCode() == PDG_t::kGamma) {
-            histos.fill(HIST("mc/true_reco/corr/h3_ptPhiEta_assoc_photon"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true_reco/corr/h4_corr_photon"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
-        }
-
-        // decaying particles (not marked physical primary)
-        if ((std::abs(associated.eta()) < etaMax)) {
-          // pi0 selection
-          if (checkPi0ToGG(associated)) {
-            histos.fill(HIST("mc/true_reco/corr/h3_ptPhiEta_assoc_pi0"), associated.pt(), associated.phi(), associated.eta());
-            histos.fill(HIST("mc/true_reco/corr/h4_corr_pi0"),
-                        getDeltaPhi(trigger.phi(), associated.phi()),
-                        trigger.eta() - associated.eta(),
-                        trigger.pt(), associated.pt());
-          }
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcTrueRecoColCorr, "process mc-true (reco collisions) correlation for multiple associated particles", false);
-
-  void processMcTrueEff(CorrMcCollision const& mcCollision, aod::JetParticles const& mcParticles)
-  {
-    // event selection
-    if (doTrigEvEff && !mcCollision.trigEv())
-      return;
-
-    for (auto const& mcParticle : mcParticles) {
-      // standard particles (marked physical primary)
-      if (checkPrimaryEtaMc(mcParticle)) {
-        // hadrons
-        if (checkChargedMc(mcParticle)) {
-          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_hadron"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_hadron"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
-        }
-        // pipm
-        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
-          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_pipm"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_pipm"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
-        }
-        // photons
-        if (mcParticle.pdgCode() == PDG_t::kGamma) {
-          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_photon"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_photon"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
-        }
-      }
-
-      // decaying particles (not marked physical primary)
-      if ((std::abs(mcParticle.eta()) < etaMax)) {
-        // pi0
-        if (checkPi0ToGG(mcParticle)) {
-          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_pi0"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_pi0"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcTrueEff, "process MC-true data (all collisions) to calculate efficiencies", false);
-
-  void processMcRecoColEff(CorrMcDCollision const& collision, aod::JetMcCollisions const&, aod::JetTracksMCD const& tracks,
-                           aod::Triggers const& triggers, aod::Hadrons const& hadrons, aod::Pipms const& pipms,
-                           aod::PhotonPCMs const& photonPCMs, aod::PhotonPCMPairs const& photonPCMPairs,
-                           aod::JetParticles const& mcParticles)
-  {
-    int excludeTriggerTrackId = -1;
-    int excludeTriggerParticleId = -1;
-
-    // event selection
-    if (!collision.selEv())
-      return;
-    if (doTrigEvEff && !collision.trigEv())
-      return;
-
-    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
-
-    // random trigger
-    if (doTrigEvEff) {
-      std::uniform_int_distribution<int> intDistribution(0, static_cast<int>(triggers.size()) - 1);
-      auto const& excludeTrigger = triggers.rawIteratorAt(intDistribution(randomEngine));
-      if (excludeTrigger.jetTrack_as<aod::JetTracksMCD>().has_mcParticle()) {
-        excludeTriggerParticleId = excludeTrigger.jetTrack_as<aod::JetTracksMCD>().mcParticleId();
-        excludeTriggerTrackId = excludeTrigger.jetTrack_as<aod::JetTracksMCD>().globalIndex();
-      }
-    }
 
     // hadrons
     for (auto const& hadron : hadrons) {
-      if (doTrigEvEff && hadron.jetTrackId() == excludeTriggerTrackId)
+      if (doTrigEvEff && !collision.trigEv() && hadron.pt() < ptCutTrigEvEff)
         continue;
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hadron"), hadron.pt(), hadron.phi(), hadron.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hadron"), hadron.pt(), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hadron"), hadron.pt(), collision.posZ(), collision.nGlobalTracks());
       // purity
       if (!hadron.jetTrack_as<aod::JetTracksMCD>().has_mcParticle())
         continue;
@@ -1433,15 +1342,15 @@ struct PhotonChargedTriggerCorrelation {
         continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_hadron"), hadron.pt(), hadron.phi(), hadron.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_hadron"), hadron.pt(), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_hadron"), hadron.pt(), collision.posZ(), collision.nGlobalTracks());
     }
 
     // pipm
     for (auto const& pipm : pipms) {
-      if (doTrigEvEff && pipm.jetTrackId() == excludeTriggerTrackId)
+      if (doTrigEvEff && !collision.trigEv() && pipm.pt() < ptCutTrigEvEff)
         continue;
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_pipm"), pipm.pt(), pipm.phi(), pipm.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_pipm"), pipm.pt(), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_pipm"), pipm.pt(), collision.posZ(), collision.nGlobalTracks());
       // purity
       if (!pipm.jetTrack_as<aod::JetTracksMCD>().has_mcParticle())
         continue;
@@ -1452,47 +1361,15 @@ struct PhotonChargedTriggerCorrelation {
         continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_pipm"), pipm.pt(), pipm.phi(), pipm.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_pipm"), pipm.pt(), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_pipm"), pipm.pt(), collision.posZ(), collision.nGlobalTracks());
     }
-
-    // photon mc checks
-
-    auto const isConversionPhoton = [&](auto const& posTrack, auto const& negTrack) {
-      // check same mother
-      auto const& posMothers = posTrack.mcParticle().template mothers_as<aod::JetParticles>();
-      auto const& negMothers = negTrack.mcParticle().template mothers_as<aod::JetParticles>();
-      if (posMothers.size() != 1 || negMothers.size() != 1)
-        return false;
-      if (posMothers.begin()->globalIndex() != negMothers.begin()->globalIndex())
-        return false;
-      // check photon
-      if (posMothers.begin()->pdgCode() != PDG_t::kGamma)
-        return false;
-
-      return true;
-    };
-    auto const isGGFromPi0 = [&](auto const& posTrack1, auto const& negTrack1, auto const& posTrack2, auto const& negTrack2) {
-      if (!isConversionPhoton(posTrack1, negTrack1) || !isConversionPhoton(posTrack2, negTrack2))
-        return false;
-      // check same mother
-      auto const& mothers1 = (*(posTrack1.mcParticle().template mothers_as<aod::JetParticles>().begin())).template mothers_as<aod::JetParticles>();
-      auto const& mothers2 = (*(posTrack2.mcParticle().template mothers_as<aod::JetParticles>().begin())).template mothers_as<aod::JetParticles>();
-      constexpr int NMothersPhotonFromPi0 = 2; // for some reason two mothers (same particle) for pi0 decays (contradicts PYTHIA documentation, but whatever)
-      if (mothers1.size() != NMothersPhotonFromPi0 || mothers2.size() != NMothersPhotonFromPi0)
-        return false;
-      if (mothers1.begin()->globalIndex() != mothers2.begin()->globalIndex())
-        return false;
-      // check pi0
-      if (mothers1.begin()->pdgCode() != PDG_t::kPi0)
-        return false;
-
-      return true;
-    };
 
     // photonPCM
     for (auto const& photonPCM : photonPCMs) {
+      if (doTrigEvEff && !collision.trigEv())
+        continue;
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_photonPCM"), photonPCM.pt(), photonPCM.phi(), photonPCM.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_photonPCM"), photonPCM.pt(), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_photonPCM"), photonPCM.pt(), collision.posZ(), collision.nGlobalTracks());
 
       // purity
       // (V0Legs does not have the tracks reference as index column (just int)??)
@@ -1506,62 +1383,44 @@ struct PhotonChargedTriggerCorrelation {
         continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), photonPCM.phi(), photonPCM.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), collision.posZ(), collision.multNTracksGlobal());
-    }
-
-    // pi0PCM
-    for (auto const& photonPCMPair : photonPCMPairs) {
-      if (photonPCMPair.mgg() < pi0PCMMassRange.value[0] || photonPCMPair.mgg() > pi0PCMMassRange.value[1])
-        continue;
-
-      histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_pi0PCM"), photonPCMPair.pt(), photonPCMPair.phi(), photonPCMPair.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_pi0PCM"), photonPCMPair.pt(), collision.posZ(), collision.multNTracksGlobal());
-
-      // purity
-      auto const& posTrack1 = tracks.rawIteratorAt(photonPCMPair.posTrack1Id() - tracks.offset());
-      auto const& negTrack1 = tracks.rawIteratorAt(photonPCMPair.negTrack1Id() - tracks.offset());
-      auto const& posTrack2 = tracks.rawIteratorAt(photonPCMPair.posTrack2Id() - tracks.offset());
-      auto const& negTrack2 = tracks.rawIteratorAt(photonPCMPair.negTrack2Id() - tracks.offset());
-      if (!posTrack1.has_mcParticle() || !negTrack1.has_mcParticle() || !posTrack2.has_mcParticle() || !negTrack2.has_mcParticle())
-        continue;
-      if (!isGGFromPi0(posTrack1, negTrack1, posTrack2, negTrack2) ||
-          std::abs((*(posTrack1.mcParticle().mothers_as<aod::JetParticles>().begin())).mothers_as<aod::JetParticles>().begin()->eta()) > etaMax)
-        continue;
-      if (requireSingleCollisionPurity &&
-          (posTrack1.mcParticle().mcCollisionId() != collision.mcCollisionId() || posTrack2.mcParticle().mcCollisionId() != collision.mcCollisionId()))
-        continue;
-
-      histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_pi0PCM"), photonPCMPair.pt(), photonPCMPair.phi(), photonPCMPair.eta());
-      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_pi0PCM"), photonPCMPair.pt(), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), collision.posZ(), collision.nGlobalTracks());
     }
 
     // mcParticle loop
     for (auto const& mcParticle : mcParticlesThisEvent) {
+      bool const countChargedTrigEvEff = !doTrigEvEff || collision.trigEv() || mcParticle.pt() > ptCutTrigEvEff;
+      bool const countOtherTrigEvEff = !doTrigEvEff || collision.trigEv();
+
       // standard particles (marked physical primary)
       if (checkPrimaryEtaMc(mcParticle)) {
         // hadrons
-        if (checkChargedMc(mcParticle) && (!doTrigEvEff || mcParticle.globalIndex() != excludeTriggerParticleId)) {
+        if (checkChargedMc(mcParticle) && countChargedTrigEvEff) {
           histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_hadron"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_hadron"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_hadron"), mcParticle.pt(), collision.mcCollision_as<CorrMcCollisions>().posZ(), collision.nGlobalTracks());
         }
         // pipm
-        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && (!doTrigEvEff || mcParticle.globalIndex() != excludeTriggerParticleId)) {
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && countChargedTrigEvEff) {
           histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_pipm"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_pipm"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_pipm"), mcParticle.pt(), collision.mcCollision_as<CorrMcCollisions>().posZ(), collision.nGlobalTracks());
         }
         // photons
-        if (mcParticle.pdgCode() == PDG_t::kGamma) {
+        if (mcParticle.pdgCode() == PDG_t::kGamma && countOtherTrigEvEff) {
           histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_photon"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_photon"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_photon"), mcParticle.pt(), collision.mcCollision_as<CorrMcCollisions>().posZ(), collision.nGlobalTracks());
         }
       }
 
       // decaying particles (not marked physical primary)
       if ((std::abs(mcParticle.eta()) < etaMax)) {
         // pi0
-        if (checkPi0ToGG(mcParticle)) {
+        if (checkH0ToGG(mcParticle, PDG_t::kPi0) && countOtherTrigEvEff) {
           histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_pi0"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_pi0"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_pi0"), mcParticle.pt(), collision.mcCollision_as<CorrMcCollisions>().posZ(), collision.nGlobalTracks());
+        }
+        // eta
+        if (checkH0ToGG(mcParticle, 221) && countOtherTrigEvEff) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_eta"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_eta"), mcParticle.pt(), collision.mcCollision_as<CorrMcCollisions>().posZ(), collision.nGlobalTracks());
         }
       }
     }
@@ -1578,7 +1437,7 @@ struct PhotonChargedTriggerCorrelation {
     if (!collision.selEv())
       return;
 
-    histos.fill(HIST("test/h2_mult_comp"), collision.multNTracksGlobal(), hadrons.size());
+    histos.fill(HIST("test/h2_mult_comp"), collision.nGlobalTracks(), hadrons.size());
 
     for (auto const& track : tracks) {
       auto const fullTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
@@ -1602,17 +1461,15 @@ struct PhotonChargedTriggerCorrelation {
           continue;
       }
 
-      histos.fill(HIST("test/h2_tracks_zPvMultDep"), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("test/h2_tracks_zPvMultDep"), collision.posZ(), collision.nGlobalTracks());
     }
 
-    histos.fill(HIST("test/h2_globalTracks_zPvMultDep"), collision.posZ(), collision.multNTracksGlobal(), hadrons.size());
+    histos.fill(HIST("test/h2_globalTracks_zPvMultDep"), collision.posZ(), collision.nGlobalTracks(), hadrons.size());
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processTest, "process just to test things", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& configContext)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<CorrelationTableProducer>(configContext),
-    adaptAnalysisTask<PhotonChargedTriggerCorrelation>(configContext)};
+  return WorkflowSpec{adaptAnalysisTask<PhotonChargedTriggerCorrelation>(configContext)};
 }

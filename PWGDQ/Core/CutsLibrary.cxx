@@ -3782,6 +3782,19 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventSel8NoSameBunch")) {
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventSel8NoSameBunchGoodZvtx")) {
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("eventStandardSel8PbPbQuality")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
@@ -4290,6 +4303,22 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   // -----------------------------------------------
   // Barrel track quality cuts
+
+  // ---------------------------------------------------
+  // MC generated particle acceptance cuts
+
+  if (!nameStr.compare("rapidity08")) {
+    cut->AddCut(VarManager::kMCY, -0.8, 0.8);
+    return cut;
+  }
+
+  if (!nameStr.compare("rapidity09")) {
+    cut->AddCut(VarManager::kMCY, -0.9, 0.9);
+    return cut;
+  }
+
+  // ---------------------------------------------------
+  // MC generated particle acceptance cuts
 
   // Run 2 only
 

@@ -9,27 +9,27 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(twopartcorr-register-skim
+o2physics_add_dpl_workflow(two-particle-correlations-register-skimming
                            SOURCES twoParticleCorrelationsRegisterSkimming.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(twopartcorr-skim
+o2physics_add_dpl_workflow(two-particle-correlations-full-skimming
                            SOURCES twoParticleCorrelationsFullSkimming.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(twopartcorr-notstored-skim
+o2physics_add_dpl_workflow(two-particle-correlations-not-stored-skimming
                            SOURCES twoParticleCorrelationsNotStoredSkimming.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(twopartcorr-filter
+o2physics_add_dpl_workflow(two-particle-correlations-filtering
                            SOURCES twoParticleCorrelationsFiltering.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(identifiedbf-filter
-                           SOURCES identifiedBfFilter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+o2physics_add_dpl_workflow(longrange-maker
+                           SOURCES longrangeMaker.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore O2Physics::SGCutParHolder
                            COMPONENT_NAME Analysis)

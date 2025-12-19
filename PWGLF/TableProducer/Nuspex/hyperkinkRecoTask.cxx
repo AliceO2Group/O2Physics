@@ -21,8 +21,9 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -369,8 +370,6 @@ struct HyperkinkRecoTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
-  std::vector<int> mcPartIndices;
-
   // Histograms are defined with HistogramRegistry
   HistogramRegistry registry{"registry", {}};
 
@@ -590,17 +589,17 @@ struct HyperkinkRecoTask {
     auto motherTrackPar = getTrackParCov(trackMoth);
     o2::dataformats::VertexBase primaryVtx = {{collision.posX(), collision.posY(), collision.posZ()}, {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()}};
     std::array<float, 3> pMotherPv = {-999.f};
+    std::array<float, 3> updatePMotherPv = {-999.f};
     if (o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVtx, motherTrackPar, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
       motherTrackPar.getPxPyPzGlo(pMotherPv);
+      if (motherTrackPar.update(primaryVtx)) {
+        motherTrackPar.getPxPyPzGlo(updatePMotherPv);
+      }
     }
+
     hypkinkCand.momMothPV[0] = pMotherPv[0];
     hypkinkCand.momMothPV[1] = pMotherPv[1];
     hypkinkCand.momMothPV[2] = pMotherPv[2];
-
-    std::array<float, 3> updatePMotherPv = {-999.f};
-    if (motherTrackPar.update(primaryVtx)) {
-      motherTrackPar.getPxPyPzGlo(updatePMotherPv);
-    }
     hypkinkCand.updateMomMothPV[0] = updatePMotherPv[0];
     hypkinkCand.updateMomMothPV[1] = updatePMotherPv[1];
     hypkinkCand.updateMomMothPV[2] = updatePMotherPv[2];
@@ -714,23 +713,27 @@ struct HyperkinkRecoTask {
 
   void processMC(MCLabeledCollisionsFull const& collisions, aod::KinkCands const& KinkCands, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
   {
-    mcPartIndices.clear();
     std::vector<int64_t> mcPartIndices;
     setTrackIDForMC(mcPartIndices, particlesMC, tracks);
+    std::vector<int64_t> signalIndicesPool;
     std::vector<bool> isReconstructedMCCollisions(mcCollisions.size(), false);
     std::vector<bool> isSelectedMCCollisions(mcCollisions.size(), false);
     std::vector<bool> isGoodCollisions(collisions.size(), false);
     std::vector<int> dauIDList(2, -1);
 
     for (const auto& collision : collisions) {
-      isReconstructedMCCollisions[collision.mcCollisionId()] = true;
+      if (collision.has_mcCollision()) {
+        isReconstructedMCCollisions[collision.mcCollisionId()] = true;
+      }
       registry.fill(HIST("hEventCounter"), 0);
       if (doEventCut && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > maxZVertex)) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1);
       registry.fill(HIST("hVertexZCollision"), collision.posZ());
-      isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      if (collision.has_mcCollision()) {
+        isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      }
       isGoodCollisions[collision.globalIndex()] = true;
     }
 
@@ -745,9 +748,7 @@ struct HyperkinkRecoTask {
         if (hypoMoth == kHypertriton) {
           auto dChannel = H3LDecay::getDecayChannel<aod::McParticles>(mcMothTrack, dauIDList);
           if (dChannel == H3LDecay::k2bodyNeutral && dauIDList[0] == mcDaugTrack.globalIndex()) {
-            if (std::hypot(mcDaugTrack.vx(), mcDaugTrack.vy()) > LayerRadii[3]) {
-              isKinkSignal = true;
-            }
+            isKinkSignal = true;
           }
         } else if (hypoMoth == kHyperhelium4sigma) {
           auto dChannel = He4SDecay::getDecayChannel<aod::McParticles>(mcMothTrack, dauIDList);
@@ -883,7 +884,7 @@ struct HyperkinkRecoTask {
         hypkinkCand.isSignal = true;
         hypkinkCand.isSignalReco = true;
         fillCandidateMCInfo(hypkinkCand, mcMothTrack, mcDaugTrack, mcNeutTrack);
-        mcPartIndices.push_back(mcMothTrack.globalIndex());
+        signalIndicesPool.push_back(mcMothTrack.globalIndex());
 
         std::array<float, 2> dcaInfo;
         auto mcMothTrackPar = getTrackParFromMC(mcMothTrack, 2);
@@ -934,7 +935,7 @@ struct HyperkinkRecoTask {
         continue;
       }
 
-      if (std::find(mcPartIndices.begin(), mcPartIndices.end(), mcparticle.globalIndex()) != mcPartIndices.end()) {
+      if (std::find(signalIndicesPool.begin(), signalIndicesPool.end(), mcparticle.globalIndex()) != signalIndicesPool.end()) {
         continue;
       }
 
@@ -1243,13 +1244,16 @@ struct HyperkinkQa {
     setTrackIDForMC(mcPartIndices, particlesMC, tracks);
     std::vector<bool> isSelectedMCCollisions(mcCollisions.size(), false);
     std::vector<int> dauIDList(2, -1);
+
     for (const auto& collision : collisions) {
       genQAHist.fill(HIST("hCollCounter"), 0.5);
       if (doEventCut && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > maxZVertex)) {
         continue;
       }
       genQAHist.fill(HIST("hCollCounter"), 1.5);
-      isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      if (collision.has_mcCollision()) {
+        isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      }
     }
 
     for (const auto& mcCollision : mcCollisions) {

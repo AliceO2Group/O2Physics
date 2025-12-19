@@ -41,9 +41,9 @@ using namespace o2::aod::emdownscaling;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-using MyMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
-using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::BCCentFT0Ms>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
+using MyMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::McCollisionLabels>;
+using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::BCCentFT0Cs, aod::BCCentFT0Ms, aod::Run3MatchedToBCSparse>;
 
 using SelectedUniqueClusters = soa::Filtered<aod::EMCALClusters>;                                                         // Clusters from collisions with only one collision in the BC
 using SelectedUniqueMCClusters = soa::Filtered<soa::Join<aod::EMCALClusters, aod::EMCALMCClusters>>;                      // Clusters from collisions with only one collision in the BC
@@ -98,12 +98,20 @@ struct bcWiseClusterSkimmer {
   {
     const int nEventBins = 6;
     mHistManager.add("nBCs", "Number of BCs;;#bf{#it{N}_{BCs}}", HistType::kTH1F, {{nEventBins, -0.5, 5.5}});
-    const TString binLabels[nEventBins] = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "NoBorder"};
+    const TString binLabels[nEventBins] = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "HasMCColl"};
     for (int iBin = 0; iBin < nEventBins; iBin++)
       mHistManager.get<TH1>(HIST("nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
 
     mHistManager.add("CentralityVsGenMultiplicity", "Centrality vs number of generated MC particles;Centrality;#bf{#it{N}_{gen}}", HistType::kTH2F, {{102, 0., 102}, cfgMultiplicityBinning});
+    mHistManager.add("CentralityFT0CVsM", "Centrality of FT0C vs FT0M;FT0C Cent;FT0M Cent", HistType::kTH2F, {{102, 0., 102}, {102, 0., 102}});
     mHistManager.add("BCCentVsCollCent", "Centrality of the BC vs Centrality of the collision;BC Centrality;Collision Centrality", HistType::kTH2F, {{102, 0., 102}, {102, 0., 102}});
+    mHistManager.add("BCHasFT0FoundFT0", "BCHasFT0FoundFT0;BC has FT0;BC has found FT0", HistType::kTH2F, {{1000, -2., 50000}, {1000, -2., 50000}});
+    mHistManager.add("BCFoundFT0Diff", "BCFoundFT0Diff;BC_{ID}^{found FT0} - BC_{ID}^{FT0}", HistType::kTH1F, {{200001, -100000.5, 100000.5}});
+    mHistManager.add("BCIDOfMCColl", "BCIDOfMCColl;BCID", HistType::kTH1F, {{4001, -0.5, 4000.5}});
+    mHistManager.add("BCIDOfMCCollButNoFT0", "BCIDOfMCCollButNoFT0;BCID", HistType::kTH1F, {{4001, -0.5, 4000.5}});
+
+    mHistManager.add("MCZVtx", "Vertex position of MC collision;#bf{z_{vtx}^{MC} (cm)};#bf{#it{N}_{BCs}}", HistType::kTH1F, {{2000, -100, 100}});
+    mHistManager.add("MCZVtx_TVX", "Vertex position of MC collision;#bf{z_{vtx}^{MC} (cm)};#bf{#it{N}_{BCs}}", HistType::kTH1F, {{2000, -100, 100}});
 
     LOG(info) << "BC wise cluster skimmer cuts:";
     LOG(info) << "------------------------------------";
@@ -233,14 +241,29 @@ struct bcWiseClusterSkimmer {
     return mu;
   }
 
-  void processEventProperties(const auto& bc, const auto& collisionsInBC, const auto& cellsInBC)
+  void processEventProperties(const auto& bc, const auto& collisionsInBC, const auto& cellsInBC, const bool hasMCCollision = false)
   {
-    bool hasFT0 = bc.has_foundFT0();
+    bool hasFT0 = bc.has_ft0();
+    bool hasFoundFT0 = bc.has_foundFT0();
+    int foundFT0ID = hasFoundFT0 ? bc.foundFT0().bcId() : -1;
+    int FT0ID = hasFT0 ? bc.ft0().bcId() : -1;
+    mHistManager.fill(HIST("BCHasFT0FoundFT0"), static_cast<float>(FT0ID), static_cast<float>(foundFT0ID));
+    mHistManager.fill(HIST("BCFoundFT0Diff"), static_cast<float>(foundFT0ID - FT0ID));
+
+    auto bcIDInOrbit = bc.globalBC() % 3564;
+
+    if (hasMCCollision) {
+      mHistManager.fill(HIST("BCIDOfMCColl"), static_cast<float>(bcIDInOrbit));
+      if (!hasFoundFT0) {
+        mHistManager.fill(HIST("BCIDOfMCCollButNoFT0"), static_cast<float>(bcIDInOrbit));
+      }
+    }
+
     bool hasTVX = bc.selection_bit(aod::evsel::kIsTriggerTVX);
     bool haskTVXinEMC = bc.alias_bit(kTVXinEMC);
     bool hasEMCCell = cellsInBC.size() > 0;
     mHistManager.fill(HIST("nBCs"), 0);
-    if (hasFT0)
+    if (hasFoundFT0)
       mHistManager.fill(HIST("nBCs"), 1);
     if (hasTVX)
       mHistManager.fill(HIST("nBCs"), 2);
@@ -248,23 +271,26 @@ struct bcWiseClusterSkimmer {
       mHistManager.fill(HIST("nBCs"), 3);
     if (hasEMCCell)
       mHistManager.fill(HIST("nBCs"), 4);
+    if (hasMCCollision)
+      mHistManager.fill(HIST("nBCs"), 5);
 
     if (cfgStoreMu || cfgStoreTime)
       setLHCIFData(bc);
     double mu = cfgStoreMu ? calculateMu(bc) : 0.;
     float timeSinceSOF = cfgStoreTime ? (bc.timestamp() - mLHCIFdata->getFillNumberTime()) / 1e3 : 0.; // Convert to seconds
-    float ft0Amp = hasFT0 ? bc.foundFT0().sumAmpA() + bc.foundFT0().sumAmpC() : 0.;
+    float ft0Amp = hasFoundFT0 ? bc.foundFT0().sumAmpA() + bc.foundFT0().sumAmpC() : 0.;
     double centralityOfCollision = 101.5;
     if (collisionsInBC.size() > 0)
-      centralityOfCollision = collisionsInBC.iteratorAt(0).centFT0M();
-    double centralityOfBC = bc.centFT0M();
+      centralityOfCollision = collisionsInBC.iteratorAt(0).centFT0C();
+    double centralityOfBC = bc.centFT0C();
 
     mHistManager.fill(HIST("BCCentVsCollCent"), centralityOfBC, centralityOfCollision);
+    mHistManager.fill(HIST("CentralityFT0CVsM"), centralityOfBC, bc.centFT0M());
 
-    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, convertForStorage<uint8_t>(centralityOfBC, kFT0MCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu), convertForStorage<uint16_t>(timeSinceSOF, kTimeSinceSOF));
+    bcTable(hasFoundFT0, hasTVX, haskTVXinEMC, hasEMCCell, convertForStorage<uint8_t>(centralityOfBC, kCent), convertForStorage<uint8_t>(bc.centFT0M(), kCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu), convertForStorage<uint16_t>(timeSinceSOF, kTimeSinceSOF));
 
     for (const auto& collision : collisionsInBC)
-      collisionTable(bcTable.lastIndex(), convertForStorage<uint8_t>(collision.centFT0M(), kFT0MCent), convertForStorage<int16_t>(collision.posZ(), kZVtx));
+      collisionTable(bcTable.lastIndex(), convertForStorage<int16_t>(collision.posZ(), kZVtx));
   }
 
   template <typename TMCParticle, typename TMCParticles>
@@ -333,10 +359,14 @@ struct bcWiseClusterSkimmer {
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerBC, bc.globalIndex());
 
-      processEventProperties(bc, collisionsInBC, cellsInBC);
-
       auto mcCollisionsBC = mcCollisions.sliceBy(mcCollperBC, bc.globalIndex());
+
+      processEventProperties(bc, collisionsInBC, cellsInBC, mcCollisionsBC.size() > 0);
+
       for (const auto& mcCollision : mcCollisionsBC) {
+        mHistManager.fill(HIST("MCZVtx"), mcCollision.posZ());
+        if (bc.selection_bit(aod::evsel::kIsTriggerTVX))
+          mHistManager.fill(HIST("MCZVtx_TVX"), mcCollision.posZ());
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
         mHistManager.fill(HIST("CentralityVsGenMultiplicity"), bc.centFT0M(), mcParticlesInColl.size());
         for (const auto& mcParticle : mcParticlesInColl) {
@@ -358,11 +388,11 @@ struct bcWiseClusterSkimmer {
       if (collisionsInBC.size() == 1) {
         auto clustersInBC = uClusters.sliceBy(perCol, collisionsInBC.begin().globalIndex());
         processClusters(clustersInBC, bcTable.lastIndex());
-        processClusterMCInfo(clustersInBC, bc.globalIndex(), mcParticles);
+        processClusterMCInfo(clustersInBC, bcTable.lastIndex(), mcParticles);
       } else {
         auto clustersInBC = aClusters.sliceBy(perBC, bc.globalIndex());
         processClusters(clustersInBC, bcTable.lastIndex());
-        processClusterMCInfo(clustersInBC, bc.globalIndex(), mcParticles);
+        processClusterMCInfo(clustersInBC, bcTable.lastIndex(), mcParticles);
       }
       fMapPi0Index.clear();
       fMapEtaIndex.clear();

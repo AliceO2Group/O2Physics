@@ -11,7 +11,7 @@
 #ifndef COMMON_DATAMODEL_CENTRALITY_H_
 #define COMMON_DATAMODEL_CENTRALITY_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {
@@ -31,9 +31,10 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);                 //! Run 3 cent. f
 DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);                 //! Run 3 cent. from FT0A multiplicity
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);                 //! Run 3 cent. from FT0C multiplicity
 DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float); //! Run 3 cent. from FT0C multiplicity
+DECLARE_SOA_COLUMN(CentFT0CVariant2, centFT0CVariant2, float); //! Run 3 cent. from FT0C multiplicity, uses classical truncated Nancestors (NOT recommended, cross-check only!)
 DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);                 //! Run 3 cent. from FDDA+FDDC multiplicity
-DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                 //! Run 3 cent. from the number of tracks contributing to the
-DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);           //! Run 3 cent. from the number of tracks contributing to the PV
+DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                 //! Run 3 cent. from the number of tracks contributing to the PV
+DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);           //! Run 3 cent. from the number of global tracks
 DECLARE_SOA_COLUMN(CentMFT, centMFT, float);                   //! Run 3 cent. from the number of tracks in the MFT
 } // namespace cent
 
@@ -59,6 +60,7 @@ DECLARE_SOA_TABLE(CentMFTs, "AOD", "CENTMFT", cent::CentMFT);             //! Ru
 
 // Run 3 variant tables
 DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1); //! Run 3 FT0C variant 1
+DECLARE_SOA_TABLE(CentFT0CVariant2s, "AOD", "CENTFT0Cvar2", cent::CentFT0CVariant2); //! Run 3 FT0C variant 1 - uses truncated Nancestors in glauber fit. Not recommended! for cross-checks only
 
 // Run 3 centrality per BC (joinable with BC)
 DECLARE_SOA_TABLE(BCCentFT0Ms, "AOD", "BCCENTFT0M", cent::CentFT0M, o2::soa::Marker<1>); //! Run 3 FT0M BC centrality table

@@ -36,6 +36,10 @@ using namespace o2::framework::expressions;
 struct V0SelectorTask {
   Produces<aod::V0SignalFlags> v0FlagTable;
 
+  Configurable<bool> selectK0S{"selectK0S", true, "Check V0s for K0S cuts"};
+  Configurable<bool> selectLambda{"selectLambda", true, "Check V0s for Lambda cuts"};
+  Configurable<bool> selectAntiLambda{"selectAntiLambda", true, "Check V0s for AntiLambda cuts"};
+
   Configurable<std::vector<float>> K0SPtBins{"K0SPtBins", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0}, "K0S pt Vals"};
   Configurable<std::vector<float>> K0SRminVals{"K0SRminVals", {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, "K0S min R values"};
   Configurable<std::vector<float>> K0SRmaxVals{"K0SRmaxVals", {40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0, 40.0}, "K0S max R values"};
@@ -85,7 +89,7 @@ struct V0SelectorTask {
   Configurable<std::vector<float>> AntiLambdaMassLowVals{"AntiLambdaMassLowVals", {1.08, 1.08, 1.08, 1.08, 1.08, 1.08, 1.08, 1.08}, "AntiLambda mass cut lower values (MeV)"};
   Configurable<std::vector<float>> AntiLambdaMassHighVals{"AntiLambdaMassHighVals", {1.125, 1.125, 1.125, 1.125, 1.125, 1.125, 1.125, 1.125}, "AntiLambda mass cut upper values (MeV)"};
 
-  Configurable<bool> randomSelection{"randomSelection", true, "Randomly select V0s"};
+  Configurable<bool> randomSelection{"randomSelection", false, "Randomly select V0s"};
   Configurable<std::vector<float>> K0SFraction{"K0SFraction", {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0}, "Fraction of K0S to randomly select"};
   Configurable<std::vector<float>> LambdaFraction{"LambdaFraction", {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0}, "Fraction of Lambda to randomly select"};
   Configurable<std::vector<float>> AntiLambdaFraction{"AntiLambdaFraction", {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0}, "Fraction of AntiLambda to randomly select"};
@@ -277,13 +281,16 @@ struct V0SelectorTask {
   {
     for (const auto& v0 : v0s) {
       uint8_t flag = 0;
-      flag += K0SCuts(collision, v0) * aod::v0flags::FK0S;
-      flag += LambdaCuts(collision, v0) * aod::v0flags::FLAMBDA;
-      flag += AntiLambdaCuts(collision, v0) * aod::v0flags::FANTILAMBDA;
+      if (selectK0S)
+        flag += K0SCuts(collision, v0) * aod::v0flags::FK0S;
+      if (selectLambda)
+        flag += LambdaCuts(collision, v0) * aod::v0flags::FLAMBDA;
+      if (selectAntiLambda)
+        flag += AntiLambdaCuts(collision, v0) * aod::v0flags::FANTILAMBDA;
 
       if (flag == 0)
         flag += aod::v0flags::FREJECTED;
-      else
+      else if (randomSelection)
         flag += RandomlyReject(v0, flag) * aod::v0flags::FREJECTED;
 
       v0FlagTable(flag);

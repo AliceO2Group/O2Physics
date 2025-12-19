@@ -14,35 +14,36 @@
 ///
 /// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch; Anton Riedel, TU München, anton.riedel@cern.ch; Maximilian Korwieser, TU Munich, maximilian.korwieser@cern.ch
 
-#include <string>
-#include <vector>
-
 #include "../filterTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h"
 
-#include "fairlogger/Logger.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/RecoDecay.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGLF/Utils/strangenessBuilderHelper.h"
-
 #include "Math/GenVector/Boost.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
+
+#include "fairlogger/Logger.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;

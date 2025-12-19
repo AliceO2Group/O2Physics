@@ -115,7 +115,7 @@ CorrelationContainer::CorrelationContainer(const char* name, const char* objTitl
   triggerAxis.insert(triggerAxis.end(), userAxis.begin(), userAxis.end());
   mTriggerHist = HistFactory::createHist<StepTHnF>({"mTriggerHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, triggerAxis, fgkCFSteps}}).release();
 
-  mTrackHistEfficiency = HistFactory::createHist<StepTHnD>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnD, {efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2]}, fgkCFSteps}}).release();
+  mTrackHistEfficiency = HistFactory::createHist<StepTHnF>({"mTrackHistEfficiency", "Tracking efficiency", {HistType::kStepTHnF, {efficiencyAxis[0], efficiencyAxis[1], {5, -0.5, 4.5, "species"}, correlationAxis[3], efficiencyAxis[2]}, fgkCFSteps}}).release();
 
   mEventCount = HistFactory::createHist<TH2F>({"mEventCount", ";step;centrality;count", {HistType::kTH2F, {{fgkCFSteps + 2, -2.5, -0.5 + fgkCFSteps, "step"}, correlationAxis[3]}}}).release();
 }

@@ -19,6 +19,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseBplusToD0Pi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
@@ -100,10 +101,9 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   o2::analysis::HfMlResponseBplusToD0Pi<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
   using TracksPion = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
@@ -162,7 +162,7 @@ struct HfCandidateSelectorBplusToD0Pi {
   /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
   /// \param hfCandsBp B+ candidates
   /// \param pionTracks pion tracks
-  template <bool withDmesMl, typename Cands, typename CandsDmes>
+  template <bool WithDmesMl, typename Cands, typename CandsDmes>
   void runSelection(Cands const& hfCandsBp,
                     CandsDmes const& /*hfCandsD0*/,
                     TracksPion const& /*pionTracks*/)
@@ -178,7 +178,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       }
 
       // topological cuts
-      if (!hfHelper.selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
+      if (!HfHelper::selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
         if (applyBplusMl) {
           hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -190,7 +190,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       auto trackPi = hfCandBp.template prong1_as<TracksPion>();
       auto hfCandD = hfCandBp.template prong0_as<CandsDmes>();
 
-      if constexpr (withDmesMl) {
+      if constexpr (WithDmesMl) {
         std::vector<float> mlScoresD;
         if (trackPi.sign() < 0) {
           std::copy(hfCandD.mlProbD0().begin(), hfCandD.mlProbD0().end(), std::back_inserter(mlScoresD));
@@ -198,7 +198,7 @@ struct HfCandidateSelectorBplusToD0Pi {
           std::copy(hfCandD.mlProbD0bar().begin(), hfCandD.mlProbD0bar().end(), std::back_inserter(mlScoresD));
         }
 
-        if (!hfHelper.selectionDmesMlScoresForB(hfCandD, cutsDmesMl, binsPtDmesMl, mlScoresD)) {
+        if (!HfHelper::selectionDmesMlScoresForB(hfCandD, cutsDmesMl, binsPtDmesMl, mlScoresD)) {
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
             hfMlBplusToD0PiCandidate(outputMlNotPreselected);
@@ -221,7 +221,7 @@ struct HfCandidateSelectorBplusToD0Pi {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
-        if (!hfHelper.selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
@@ -240,8 +240,8 @@ struct HfCandidateSelectorBplusToD0Pi {
         if (trackPi.sign() > 0) {
           pdgCode = -1 * pdgCode;
         }
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandBp, hfCandD, pdgCode, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandBp, hfCandD, pdgCode, trackPi);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
         hfMlBplusToD0PiCandidate(outputMl[1]); // storing ML score for signal class
 
         if (!isSelectedMl) {

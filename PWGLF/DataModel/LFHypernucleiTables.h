@@ -14,8 +14,8 @@
 /// \brief Slim hypernuclei tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
@@ -34,7 +34,9 @@ DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);                   // Amplitude with FT0
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);             // Multiplicity with FT0C estimator
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                 // Psi with TPC estimator
 DECLARE_SOA_COLUMN(MultTPC, multTPC, float);               // Multiplicity with TPC estimator
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int64_t);     // CollisionID
 
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);                    // Run number
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                         // bool: true for matter
 DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                              // Pt of the He daughter
 DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);                            // Phi of the He daughter
@@ -80,9 +82,11 @@ DECLARE_SOA_COLUMN(GenXDecVtx, genXDecVtx, float);                    // Decay v
 DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float);                    // Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float);                    // Decay vertex of the candidate (z direction)
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);                             // bool: true for reco
+DECLARE_SOA_COLUMN(IsFakeHeOnITSLayer, isFakeHeOnITSLayer, uint8_t);  // uint8_t: bit map for fake He on ITS layers
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                         // bool: true for signal
 DECLARE_SOA_COLUMN(IsRecoMCCollision, isRecoMCCollision, bool);       // bool: true for reco MC collision
 DECLARE_SOA_COLUMN(IsSurvEvSel, isSurvEvSel, bool);                   // bool: true for survived event selection
+DECLARE_SOA_COLUMN(IsTwoBodyDecay, isTwoBodyDecay, bool);             // bool: true for two body decay
 } // namespace hyperrec
 
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
@@ -90,7 +94,7 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
-                  hyperrec::IsMatter,
+                  hyperrec::RunNumber, hyperrec::IsMatter,
                   hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
@@ -109,7 +113,7 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   hyperrec::PsiTPC, hyperrec::MultTPC,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
-                  hyperrec::IsMatter,
+                  hyperrec::RunNumber, hyperrec::IsMatter,
                   hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
@@ -125,7 +129,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
-                  hyperrec::IsMatter,
+                  hyperrec::RunNumber, hyperrec::IsMatter,
                   hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
@@ -143,13 +147,32 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::GenYDecVtx,
                   hyperrec::GenZDecVtx,
                   hyperrec::IsReco,
+                  hyperrec::IsFakeHeOnITSLayer,
                   hyperrec::IsSignal,
                   hyperrec::IsRecoMCCollision,
-                  hyperrec::IsSurvEvSel);
+                  hyperrec::IsSurvEvSel,
+                  hyperrec::IsTwoBodyDecay, aod::mcparticle::StatusCode);
+
+DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
+                  o2::soa::Index<>,
+                  hyperrec::CollisionId, hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+
+                  hyperrec::RunNumber, hyperrec::IsMatter,
+                  hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
+                  hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
+                  hyperrec::TOFMass,
+                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
+                  hyperrec::Flags, hyperrec::TrackedClSize);
 
 using DataHypCand = DataHypCands::iterator;
 using DataHypCandFlow = DataHypCandsFlow::iterator;
 using MCHypCand = MCHypCands::iterator;
+using DataHypCandWColl = DataHypCandsWColl::iterator;
 
 namespace hyperkink
 {

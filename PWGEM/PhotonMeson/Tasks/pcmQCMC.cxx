@@ -8,25 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
-// This code runs loop over v0 photons for PCM QC.
-//    Please write to: daiki.sekihata@cern.ch
+
+/// \file MaterialBudget.cxx
+/// \brief This code runs loop over v0 photons for PCM QC in MC.
+/// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 
-#include "Framework/ASoAHelpers.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <MathUtils/Utils.h>
 
+#include <TH1.h>
+#include <TH2.h>
+
+#include <cmath>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -38,7 +52,7 @@ using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
@@ -145,11 +159,11 @@ struct PCMQCMC {
       fRegistry.add("Generated/hPtY", "Generated info", kTH2F, {axis_pt, axis_rapidity}, true);
       fRegistry.add("Generated/hPt_ConversionPhoton", "converted photon pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
       fRegistry.add("Generated/hY_ConversionPhoton", "converted photon y;rapidity y", kTH1F, {{40, -2.0f, 2.0f}}, true);
-      fRegistry.add("Generated/hPhi_ConversionPhoton", "converted photon #varphi;#varphi (rad.)", kTH1F, {{180, 0, 2 * M_PI}}, true);
+      fRegistry.add("Generated/hPhi_ConversionPhoton", "converted photon #varphi;#varphi (rad.)", kTH1F, {{180, 0, o2::constants::math::TwoPI}}, true);
       fRegistry.add("Generated/hXY", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", kTH2F, {{800, -100.0f, 100.0f}, {800, -100.0f, 100.0f}}, true);
       fRegistry.add("Generated/hRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, 0.f, 100.0f}}, true);
-      fRegistry.add("Generated/hRPhi", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", kTH2F, {{360, 0.0f, 2 * M_PI}, {400, 0, 100}}, true);
-      fRegistry.add("Generated/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, true);
+      fRegistry.add("Generated/hRPhi", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", kTH2F, {{360, 0.0f, o2::constants::math::TwoPI}, {400, 0, 100}}, true);
+      fRegistry.add("Generated/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, o2::constants::math::TwoPI}, {80, -2, +2}}, true);
     }
 
     // event info
@@ -178,7 +192,7 @@ struct PCMQCMC {
 
     // v0 info
     fRegistry.add("V0/primary/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
-    fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, o2::constants::math::TwoPI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0/primary/hXY", "conversion point in XY;V_{x} (cm);V_{y} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}}, false);
     fRegistry.add("V0/primary/hRZ", "conversion point in RZ;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
     fRegistry.add("V0/primary/hCosPA", "V0CosPA;cosine pointing angle in 3D", kTH1F, {{100, 0.99f, 1.0f}}, false);
@@ -207,7 +221,7 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hRxyGen_DeltaR", "photon #varphi resolution;R_{xy}^{gen} (cm);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 100}, {100, 0, 100}}, true);
     fRegistry.add("V0/primary/hXY_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
     fRegistry.add("V0/primary/hRZ_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
-    fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
+    fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, o2::constants::math::TwoPI}, {80, -2, +2}}, false);
     fRegistry.addClone("V0/primary/", "V0/fromWD/");                  // from weak decay
     fRegistry.addClone("V0/primary/", "V0/fromHS/");                  // from hadronic shower in detector materials
     fRegistry.addClone("V0/primary/", "V0/fromPi0Dalitz/");           // misidentified dielectron from pi0 dalitz decay
@@ -218,7 +232,7 @@ struct PCMQCMC {
     // v0leg info
     fRegistry.add("V0Leg/primary/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("V0Leg/primary/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
-    fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, o2::constants::math::TwoPI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0Leg/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
     fRegistry.add("V0Leg/primary/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("V0Leg/primary/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -448,7 +462,7 @@ struct PCMQCMC {
 
         // LOGF(info, "posmc.isPhysicalPrimary() = %d, posmc.producedByGenerator() = %d, elemc.isPhysicalPrimary() = %d, elemc.producedByGenerator() = %d", posmc.isPhysicalPrimary(), posmc.producedByGenerator(), elemc.isPhysicalPrimary(), elemc.producedByGenerator());
 
-        if (!fV0PhotonCut.IsSelected<MyMCV0Legs>(v0)) {
+        if (!fV0PhotonCut.IsSelected<decltype(v0), MyMCV0Legs>(v0)) {
           continue;
         }
 

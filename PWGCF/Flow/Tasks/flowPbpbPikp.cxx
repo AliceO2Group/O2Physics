@@ -26,8 +26,9 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
@@ -107,6 +108,7 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgV0AT0Acut, int, 5, "V0AT0A cut")
   O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts")
   O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
+  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, true, "Use Nch for multiplicity selection instead of centrality")
 
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
@@ -129,6 +131,7 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
   ConfigurableAxis axisTOFbeta{"axisTOFbeta", {200, 0, 2}, "axis for TOF beta"};
+  ConfigurableAxis axisNch{"axisNch", {200, 2000, 4000}, "N_{ch}"};
 
   std::vector<double> tofNsigmaCut;
   std::vector<double> itsNsigmaCut;
@@ -232,6 +235,8 @@ struct FlowPbpbPikp {
     regions.Print();
     configs.Print();
 
+    const AxisSpec axisCentForQA{100, 0, 100, "centrality (%)"};
+
     histos.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
     histos.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     histos.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
@@ -240,24 +245,12 @@ struct FlowPbpbPikp {
     histos.add("hEta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hPt", "", {HistType::kTH1D, {axisPt}});
     histos.add("c22_full_ch", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_full_pi", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_full_ka", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_full_pr", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08F_ch", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08F_pi", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08F_ka", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08F_pr", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08B_ch", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08B_pi", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08B_ka", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08B_pr", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_full_ch", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_full_pi", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_full_ka", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_full_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_full_ch_Nch", "", {HistType::kTProfile, {axisNch}});
 
     histos.add("TpcdEdx", "", {HistType::kTH2D, {axisPt, axisTPCsignal}});
     histos.add("TofBeta", "", {HistType::kTH2D, {axisPt, axisTOFbeta}});
+
+    histos.add("globalTracks_centT0C", "after cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
 
     histos.add("TofTpcNsigma_before", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     if (!cfgUseItsPID)
@@ -360,7 +353,13 @@ struct FlowPbpbPikp {
 
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
-    fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
+
+    if (!cfgUseNch) {
+      fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
+    } else {
+      fFC->Initialize(oba, axisNch, cfgNbootstrap);
+    }
+
     delete oba;
 
     if (eventCuts[kUseMultCorrCut]) {
@@ -898,6 +897,7 @@ struct FlowPbpbPikp {
     histos.fill(HIST("hVtxZ"), vtxz);
     histos.fill(HIST("hMult"), nTot);
     histos.fill(HIST("hCent"), cent);
+    histos.fill(HIST("globalTracks_centT0C"), cent, nTot);
     fGFW->Clear();
 
     float weff = 1;
@@ -1008,24 +1008,16 @@ struct FlowPbpbPikp {
 
     // Filling cumulants with ROOT TProfile
     fillProfile(corrconfigs.at(0), HIST("c22_full_ch"), cent);
-    fillProfile(corrconfigs.at(1), HIST("c22_full_pi"), cent);
-    fillProfile(corrconfigs.at(2), HIST("c22_full_ka"), cent);
-    fillProfile(corrconfigs.at(3), HIST("c22_full_pr"), cent);
-    fillProfile(corrconfigs.at(4), HIST("c22_gap08F_ch"), cent);
-    fillProfile(corrconfigs.at(5), HIST("c22_gap08F_pi"), cent);
-    fillProfile(corrconfigs.at(6), HIST("c22_gap08F_ka"), cent);
-    fillProfile(corrconfigs.at(7), HIST("c22_gap08F_pr"), cent);
-    fillProfile(corrconfigs.at(8), HIST("c22_gap08B_ch"), cent);
-    fillProfile(corrconfigs.at(9), HIST("c22_gap08B_pi"), cent);
-    fillProfile(corrconfigs.at(10), HIST("c22_gap08B_ka"), cent);
-    fillProfile(corrconfigs.at(11), HIST("c22_gap08B_pr"), cent);
-    fillProfile(corrconfigs.at(12), HIST("c24_full_ch"), cent);
-    fillProfile(corrconfigs.at(13), HIST("c24_full_pi"), cent);
-    fillProfile(corrconfigs.at(14), HIST("c24_full_ka"), cent);
-    fillProfile(corrconfigs.at(15), HIST("c24_full_pr"), cent);
+    fillProfile(corrconfigs.at(0), HIST("c22_full_ch_Nch"), nTot);
 
-    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      fillFC(corrconfigs.at(l_ind), cent, lRandom);
+    if (!cfgUseNch) {
+      for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+        fillFC(corrconfigs.at(l_ind), cent, lRandom);
+      }
+    } else {
+      for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+        fillFC(corrconfigs.at(l_ind), nTot, lRandom);
+      }
     }
 
   } // end of process

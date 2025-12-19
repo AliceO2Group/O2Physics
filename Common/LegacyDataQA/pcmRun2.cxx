@@ -25,7 +25,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
 #include <cmath>
@@ -39,6 +40,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+
 struct PcmRun2 {
   struct : ConfigurableGroup {
     std::string prefix = "trackcuts";

@@ -9,43 +9,53 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// ========================
-// \file photonconversionbuilder.cxx
-// \brief this task produces photon data table with KFParticle.
-//
-// \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
 
+/// \file photonconversionbuilder.cxx
+/// \brief this task produces photon data table with KFParticle.
+/// \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
+
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+#include <TPDGCode.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdlib>
-#include <iterator>
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
@@ -62,17 +72,24 @@ using namespace o2::pwgem::photonmeson;
 using std::array;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi>;
 using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels, aod::mcTPCTuneOnData>;
+
+enum MatCorrType {
+  None = 0,
+  TGeo = 1,
+  LUT = 2
+};
 
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
   Produces<aod::V0LegsXYZ> v0legsXYZ;
   Produces<aod::V0LegsDeDxMC> v0legsDeDxMC;
+  Produces<aod::V0PhotonsPhiV> v0photonsphiv;
   // Produces<aod::V0PhotonsKFCov> v0photonskfcov;
   // Produces<aod::EMEventsNgPCM> events_ngpcm;
 
@@ -150,7 +167,7 @@ struct PhotonConversionBuilder {
       {"V0/hConversionPointXY", "conversion point in XY;X (cm);Y (cm)", {HistType::kTH2F, {{400, -100.0f, 100.0f}, {400, -100.f, 100.f}}}},
       {"V0/hConversionPointRZ", "conversion point in RZ;Z (cm);R_{xy} (cm)", {HistType::kTH2F, {{200, -100.0f, 100.0f}, {200, 0.f, 100.f}}}},
       {"V0/hPt", "pT of V0 at PV;p_{T,#gamma} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-      {"V0/hEtaPhi", "#eta vs. #varphi of V0 at PV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {200, -1, +1}}}},
+      {"V0/hEtaPhi", "#eta vs. #varphi of V0 at PV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, o2::constants::math::TwoPI}, {200, -1, +1}}}},
       {"V0/hCosPA", "cosine of pointing angle;cosine of pointing angle", {HistType::kTH1F, {{100, 0.99f, 1.f}}}},
       {"V0/hCosPA_Rxy", "cosine of pointing angle;r_{xy} (cm);cosine of pointing angle", {HistType::kTH2F, {{200, 0, 100}, {100, 0.99f, 1.f}}}},
       {"V0/hCosPAXY_Rxy", "cosine of pointing angle;r_{xy} (cm);cosine of pointing angle", {HistType::kTH2F, {{200, 0, 100}, {100, 0.99f, 1.f}}}},
@@ -166,8 +183,9 @@ struct PhotonConversionBuilder {
       {"V0/hRxy_minX_ITSTPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hRxy_minX_TPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hPCA_diffX", "PCA vs. trackiu X - R_{xy};distance btween 2 legs (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{500, 0.0f, 5.f}, {100, -50.0, 50.0f}}}},
+      {"V0/hPhiV", "#phi_{V}; #phi_{V} (rad.)", {HistType::kTH1F, {{500, 0.0f, 2 * M_PI}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-      {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {200, -1, +1}}}},
+      {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, o2::constants::math::TwoPI}, {200, -1, +1}}}},
       {"V0Leg/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, 0, 1}}}},
       {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -50.f, 50.f}, {200, -50.f, +50.f}}}},
       {"V0Leg/hdEdx_Pin", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
@@ -187,21 +205,21 @@ struct PhotonConversionBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (useMatCorrType == 1) {
+    if (useMatCorrType == MatCorrType::TGeo) {
       LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(geoPath);
       }
     }
-    if (useMatCorrType == 2) {
+    if (useMatCorrType == MatCorrType::LUT) {
       LOGF(info, "LUT correction requested, loading LUT");
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    if (useMatCorrType == 1) {
+    if (useMatCorrType == MatCorrType::TGeo) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     }
-    if (useMatCorrType == 2) {
+    if (useMatCorrType == MatCorrType::LUT) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     }
   }
@@ -464,8 +482,8 @@ struct PhotonConversionBuilder {
 
     KFPTrack kfp_track_pos = createKFPTrackFromTrackParCov(pTrack, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
     KFPTrack kfp_track_ele = createKFPTrackFromTrackParCov(nTrack, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
-    KFParticle kfp_pos(kfp_track_pos, -11);
-    KFParticle kfp_ele(kfp_track_ele, 11);
+    KFParticle kfp_pos(kfp_track_pos, kPositron);
+    KFParticle kfp_ele(kfp_track_ele, kElectron);
     const KFParticle* GammaDaughters[2] = {&kfp_pos, &kfp_ele};
 
     KFParticle gammaKF;
@@ -550,7 +568,7 @@ struct PhotonConversionBuilder {
     gammaKF_PV.SetProductionVertex(KFPV);
     float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_PV.GetPx(), gammaKF_PV.GetPy());
     float v0eta = RecoDecay::eta(std::array{gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz()});
-    float v0phi = RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) : RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) + TMath::TwoPi();
+    float v0phi = RecoDecay::constrainAngle(RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()));
 
     // KFParticle gammaKF_DecayVtx2 = gammaKF;
     // gammaKF_DecayVtx2.SetProductionVertex(KFPV);
@@ -631,6 +649,8 @@ struct PhotonConversionBuilder {
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = pca_kf;
     cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = cospa_kf;
 
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+
     if (filltable) {
       registry.fill(HIST("V0/hAP"), alpha, qt);
       registry.fill(HIST("V0/hConversionPointXY"), gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
@@ -644,6 +664,7 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPCA_Rxy"), rxy, pca_kf);
       registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
       registry.fill(HIST("V0/hPCA_diffX"), pca_kf, std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
+      registry.fill(HIST("V0/hPhiV"), phiv);
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -651,18 +672,18 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hCosPAXY_Rxy"), rxy, cospaXY_kf);
       registry.fill(HIST("V0/hCosPARZ_Rxy"), rxy, cospaRZ_kf);
 
-      for (auto& leg : {kfp_pos_DecayVtx, kfp_ele_DecayVtx}) {
+      for (const auto& leg : {kfp_pos_DecayVtx, kfp_ele_DecayVtx}) {
         float legpt = RecoDecay::sqrtSumOfSquares(leg.GetPx(), leg.GetPy());
         float legeta = RecoDecay::eta(std::array{leg.GetPx(), leg.GetPy(), leg.GetPz()});
-        float legphi = RecoDecay::phi(leg.GetPx(), leg.GetPy()) > 0.f ? RecoDecay::phi(leg.GetPx(), leg.GetPy()) : RecoDecay::phi(leg.GetPx(), leg.GetPy()) + TMath::TwoPi();
+        float legphi = RecoDecay::constrainAngle(RecoDecay::phi(leg.GetPx(), leg.GetPy()));
         registry.fill(HIST("V0Leg/hPt"), legpt);
         registry.fill(HIST("V0Leg/hEtaPhi"), legphi, legeta);
       } // end of leg loop
-      for (auto& leg : {pos, ele}) {
+      for (const auto& leg : {pos, ele}) {
         registry.fill(HIST("V0Leg/hdEdx_Pin"), leg.tpcInnerParam(), leg.tpcSignal());
         registry.fill(HIST("V0Leg/hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
       } // end of leg loop
-      for (auto& leg : {pTrack, nTrack}) {
+      for (const auto& leg : {pTrack, nTrack}) {
         registry.fill(HIST("V0Leg/hXZ"), leg.getZ(), leg.getX());
         registry.fill(HIST("V0Leg/hRelDeltaPt"), leg.getPt(), leg.getPt() * std::sqrt(leg.getSigma1Pt2()));
       } // end of leg loop
@@ -680,6 +701,7 @@ struct PhotonConversionBuilder {
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, cospaXY_kf, cospaRZ_kf,
                   pca_kf, alpha, qt, chi2kf);
+      v0photonsphiv(phiv);
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 
@@ -786,7 +808,7 @@ struct PhotonConversionBuilder {
     } // end of pca_map loop
     // LOGF(info, "pca_map.size() = %d", pca_map.size());
 
-    for (auto& fullv0Id : stored_fullv0Ids) {
+    for (const auto& fullv0Id : stored_fullv0Ids) {
       auto v0Id = std::get<0>(fullv0Id);
       // auto collisionId = std::get<1>(fullv0Id);
       // auto posId = std::get<2>(fullv0Id);
@@ -805,7 +827,7 @@ struct PhotonConversionBuilder {
       fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, true);
     } // end of fullv0Id loop
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
           continue;

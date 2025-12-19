@@ -11,6 +11,9 @@
 
 #include "FlowContainer.h"
 
+#include <cstdio>
+#include <vector>
+
 ClassImp(FlowContainer);
 
 FlowContainer::FlowContainer() : TNamed("", ""),
@@ -392,7 +395,7 @@ TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
   }
   return retSubset;
 };
-TProfile* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double lmaxmulti)
+TH1D* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double lmaxmulti)
 {
   int minm = 1;
   int maxm = fProf->GetXaxis()->GetNbins();
@@ -405,7 +408,6 @@ TProfile* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, doub
   if (lmaxmulti > lminmulti)
     maxm = fProf->GetXaxis()->FindBin(lmaxmulti - 0.001);
   ProfileSubset* rhProfSub = new ProfileSubset(*fProf);
-  TProfile* retSubset = 0;
   TString l_name("");
   Ssiz_t l_pos = 0;
   while (fIDName.Tokenize(l_name, l_pos)) {
@@ -413,27 +415,24 @@ TProfile* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, doub
     TString ybl2(Form("%s%s_pt_%i", l_name.Data(), order, fNbinsPt));
     int ybn1 = fProf->GetYaxis()->FindBin(ybl1.Data());
     int ybn2 = fProf->GetYaxis()->FindBin(ybl2.Data());
-    rhProfSub->GetYaxis()->SetRange(ybn1, ybn2);
-    TProfile* tempprof = rhProfSub->GetSubset(kFALSE, "tempprof", minm, maxm, fNbinsPt, fbinsPt);
-    if (!retSubset) {
-      TString profname = Form("%s_MultiB_%i_%i", order, minm, maxm);
-      retSubset = dynamic_cast<TProfile*>(tempprof->Clone(profname.Data()));
-    } else {
-      retSubset->Add(tempprof);
+    if (fNbinsPt != (ybn2 - ybn1 + 1)) {
+      printf("fNbinsPt is not matching the num of found histograms");
+      return nullptr;
     }
-    delete tempprof;
+    TProfile* profY = rhProfSub->ProfileY("profY", minm, maxm);
+    TH1D* histY = ProfToHist(profY);
+    TH1D* hist = new TH1D("temphist", "temphist", fNbinsPt, fbinsPt);
+    for (int ibin = 1; ibin < hist->GetNbinsX(); ibin++) {
+      TString bLabel = rhProfSub->GetYaxis()->GetBinLabel(ibin + ybn1 - 1);
+      hist->GetXaxis()->SetBinLabel(ibin, bLabel.Data());
+      hist->SetBinContent(ibin, histY->GetBinContent(ibin + ybn1 - 1));
+      hist->SetBinError(ibin, histY->GetBinError(ibin + ybn1 - 1));
+    }
+    delete histY;
+    delete rhProfSub;
+    return hist;
   }
-  delete rhProfSub;
-  if (fPtRebinEdges) {
-    TString pnbu(retSubset->GetName());
-    retSubset->SetName("TempName");
-    TProfile* tempprof = dynamic_cast<TProfile*>(retSubset->Rebin(fPtRebin, pnbu.Data(), fPtRebinEdges));
-    delete retSubset;
-    retSubset = tempprof;
-  } else {
-    retSubset->RebinX(fPtRebin);
-  }
-  return retSubset;
+  return nullptr;
 };
 TH1D* FlowContainer::ProfToHist(TProfile* inpf)
 {
@@ -459,14 +458,18 @@ TH1D* FlowContainer::GetHistCorrXXVsMulti(const char* order, int l_pti)
 }
 TH1D* FlowContainer::GetHistCorrXXVsPt(const char* order, double lminmulti, double lmaxmulti)
 {
-  TProfile* tpf = GetCorrXXVsPt(order, lminmulti, lmaxmulti);
-  TH1D* rethist = ProfToHist(tpf);
+  TH1D* rethist = GetCorrXXVsPt(order, lminmulti, lmaxmulti);
+  if (!rethist) {
+    printf("GetCorrXXVsPt return nullptr!");
+    return nullptr;
+  }
   TProfile* refflow = GetRefFlowProfile(order, lminmulti, lmaxmulti);
-  refflow->RebinX(refflow->GetNbinsX());
-  rethist->SetBinContent(0, refflow->GetBinContent(1));
-  rethist->SetBinError(0, refflow->GetBinError(1));
+  if (refflow) {
+    refflow->RebinX(refflow->GetNbinsX());
+    rethist->SetBinContent(0, refflow->GetBinContent(1));
+    rethist->SetBinError(0, refflow->GetBinError(1));
+  }
   delete refflow;
-  delete tpf;
   return rethist;
 }
 TH1D* FlowContainer::GetVN2(TH1D* cn2)
@@ -916,7 +919,12 @@ TProfile* FlowContainer::GetRefFlowProfile(const char* order, double m1, double 
     delete tempprof;
   }
   delete rhSubset;
-  retpf->RebinX(nBins);
+  if (!retpf) {
+    LOGF(error, "Reference flow profile is null");
+    return nullptr;
+  } else {
+    retpf->RebinX(nBins);
+  }
   return retpf;
 };
 

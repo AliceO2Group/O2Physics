@@ -123,13 +123,13 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
   const std::vector<T>& jetsBaseEta,
   std::vector<T> jetsBasePhiForMatching,
   std::vector<T> jetsBaseEtaForMatching,
-  const std::vector<std::size_t> jetMapBaseToJetIndex,
+  const std::vector<std::size_t>& jetMapBaseToJetIndex,
   const std::vector<T>& jetsTagPhi,
   const std::vector<T>& jetsTagEta,
   std::vector<T> jetsTagPhiForMatching,
   std::vector<T> jetsTagEtaForMatching,
-  const std::vector<std::size_t> jetMapTagToJetIndex,
-  double maxMatchingDistance)
+  const std::vector<std::size_t>& jetMapTagToJetIndex,
+  const double maxMatchingDistance)
 {
   // Validation
   // If no jets in either collection, then return immediately.
@@ -330,27 +330,25 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
     }
     std::tie(baseToTagMatchingGeoIndex, tagToBaseMatchingGeoIndex) = MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance); // change max distnace to a function call
     int jetBaseIndex = 0;
+    int jetTagIndex = 0;
     for (const auto& jetBase : jetsBasePerCollision) {
       if (std::round(jetBase.r()) != std::round(jetR)) {
         continue;
       }
-      int jetTagIndex = baseToTagMatchingGeoIndex[jetBaseIndex];
-      int jetTagGlobalIndex;
+      jetTagIndex = baseToTagMatchingGeoIndex[jetBaseIndex];
       if (jetTagIndex > -1 && jetTagIndex < jetsTagPerCollision.size()) {
-        jetTagGlobalIndex = jetsTagPerCollision.iteratorAt(jetTagIndex).globalIndex();
+        int jetTagGlobalIndex = jetsTagPerCollision.iteratorAt(jetTagIndex).globalIndex();
         baseToTagMatchingGeo[jetBase.globalIndex()].push_back(jetTagGlobalIndex);
       }
       jetBaseIndex++;
     }
-    int jetTagIndex = 0;
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetTag.r()) != std::round(jetR)) {
         continue;
       }
-      int jetBaseIndex = tagToBaseMatchingGeoIndex[jetTagIndex];
-      int jetBaseGlobalIndex;
+      jetBaseIndex = tagToBaseMatchingGeoIndex[jetTagIndex];
       if (jetBaseIndex > -1 && jetBaseIndex < jetsBasePerCollision.size()) {
-        jetBaseGlobalIndex = jetsBasePerCollision.iteratorAt(jetBaseIndex).globalIndex();
+        int jetBaseGlobalIndex = jetsBasePerCollision.iteratorAt(jetBaseIndex).globalIndex();
         tagToBaseMatchingGeo[jetTag.globalIndex()].push_back(jetBaseGlobalIndex);
       }
       jetTagIndex++;
@@ -544,8 +542,10 @@ void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
       auto jetTagClusters = getConstituents(jetTag, clustersTag);
       auto jetTagCandidates = getConstituents(jetTag, candidatesTag);
 
-      ptSumBase = getPtSum < jetfindingutilities::isEMCALClusterTable<N>() || jetfindingutilities::isEMCALClusterTable<Q>(), (jetcandidateutilities::isCandidateTable<M>() || jetcandidateutilities::isCandidateMcTable<M>()) && (jetcandidateutilities::isCandidateTable<P>() || jetcandidateutilities::isCandidateMcTable<P>()), jetsBaseIsMc, jetsTagIsMc > (jetBaseTracks, jetBaseCandidates, jetBaseClusters, jetTagTracks, jetTagCandidates, jetTagClusters, tracksBase, tracksTag);
-      ptSumTag = getPtSum < jetfindingutilities::isEMCALClusterTable<N>() || jetfindingutilities::isEMCALClusterTable<Q>(), (jetcandidateutilities::isCandidateTable<M>() || jetcandidateutilities::isCandidateMcTable<M>()) && (jetcandidateutilities::isCandidateTable<P>() || jetcandidateutilities::isCandidateMcTable<P>()), jetsTagIsMc, jetsBaseIsMc > (jetTagTracks, jetTagCandidates, jetTagClusters, jetBaseTracks, jetBaseCandidates, jetBaseClusters, tracksTag, tracksBase);
+      constexpr bool IsEMCAL{jetfindingutilities::isEMCALClusterTable<N>() || jetfindingutilities::isEMCALClusterTable<Q>()};
+      constexpr bool IsCandidate{(jetcandidateutilities::isCandidateTable<M>() || jetcandidateutilities::isCandidateMcTable<M>()) && (jetcandidateutilities::isCandidateTable<P>() || jetcandidateutilities::isCandidateMcTable<P>())};
+      ptSumBase = getPtSum<IsEMCAL, IsCandidate, jetsBaseIsMc, jetsTagIsMc>(jetBaseTracks, jetBaseCandidates, jetBaseClusters, jetTagTracks, jetTagCandidates, jetTagClusters, tracksBase, tracksTag);
+      ptSumTag = getPtSum<IsEMCAL, IsCandidate, jetsTagIsMc, jetsBaseIsMc>(jetTagTracks, jetTagCandidates, jetTagClusters, jetBaseTracks, jetBaseCandidates, jetBaseClusters, tracksTag, tracksBase);
       if (ptSumBase > jetBase.pt() * minPtFraction) {
         baseToTagMatchingPt[jetBase.globalIndex()].push_back(jetTag.globalIndex());
       }

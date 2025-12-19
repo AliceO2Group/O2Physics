@@ -18,17 +18,17 @@
 //
 #include "multCalibrator.h"
 
-#include <TArrayF.h>
-#include <TArrayL64.h>
 #include <TDirectory.h>
 #include <TFile.h>
-#include <TH1D.h>
-#include <TH1F.h>
+#include <TH1.h>
 #include <TList.h>
-#include <TMath.h>
-#include <TProfile.h>
-#include <TStopwatch.h>
+#include <TMathBase.h>
+#include <TNamed.h>
+#include <TString.h>
 
+#include <RtypesCore.h>
+
+#include <cmath>
 #include <iostream> // FIXME
 
 using namespace std;

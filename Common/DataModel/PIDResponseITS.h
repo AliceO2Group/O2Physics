@@ -22,13 +22,17 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSEITS_H_
 #define COMMON_DATAMODEL_PIDRESPONSEITS_H_
 
-// O2 includes
-#include "TableHelper.h"
+#include "Common/Core/TableHelper.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Array2D.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {

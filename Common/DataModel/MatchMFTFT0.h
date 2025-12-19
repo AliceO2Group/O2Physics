@@ -15,7 +15,10 @@
 // \brief  Declaration of tables useful for the matching of MFT tracks to FT0-C signals
 // \date   03/09/24
 
-#include "Framework/AnalysisDataModel.h"
+#ifndef COMMON_DATAMODEL_MATCHMFTFT0_H_
+#define COMMON_DATAMODEL_MATCHMFTFT0_H_
+
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {
@@ -32,3 +35,5 @@ DECLARE_SOA_TABLE(MatchedToFT0, "AOD", "MAFT", indices::BCId, indices::FT0Ids);
 
 DECLARE_SOA_TABLE(BCofMFT, "AOD", "BCOFMFT", ambii::MFTTrackId, indices::BCIds);
 } // namespace o2::aod
+
+#endif // COMMON_DATAMODEL_MATCHMFTFT0_H_

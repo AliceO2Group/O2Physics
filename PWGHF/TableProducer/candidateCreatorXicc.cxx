@@ -17,9 +17,12 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch >, SALERNO
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 
+#include "PWGHF/ALICE3/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -53,7 +56,7 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
+  ConfigParamSpec const optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -78,12 +81,6 @@ struct HfCandidateCreatorXicc {
 
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter to rebuild the Xic vertex
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter to build the Xicc vertex
-  HfHelper hfHelper;
-
-  double massPi{0.};
-  double massK{0.};
-  double massXic{0.};
-  double massXicc{0.};
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
@@ -93,10 +90,6 @@ struct HfCandidateCreatorXicc {
 
   void init(InitContext const&)
   {
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massXic = MassXiCPlus;
-
     df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
@@ -121,14 +114,14 @@ struct HfCandidateCreatorXicc {
                aod::TracksWCov const& tracks)
   {
     for (const auto& xicCand : xicCands) {
-      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi)) {
+      if ((xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi) == 0) {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
-        hMassXic->Fill(hfHelper.invMassXicToPKPi(xicCand), xicCand.pt());
+        hMassXic->Fill(HfHelper::invMassXicToPKPi(xicCand), xicCand.pt());
       }
       if (xicCand.isSelXicToPiKP() >= selectionFlagXic) {
-        hMassXic->Fill(hfHelper.invMassXicToPiKP(xicCand), xicCand.pt());
+        hMassXic->Fill(HfHelper::invMassXicToPiKP(xicCand), xicCand.pt());
       }
       auto track0 = xicCand.prong0_as<aod::TracksWCov>();
       auto track1 = xicCand.prong1_as<aod::TracksWCov>();
@@ -147,15 +140,15 @@ struct HfCandidateCreatorXicc {
       trackParVar1.propagateTo(secondaryVertex[0], bz);
       trackParVar2.propagateTo(secondaryVertex[0], bz);
 
-      std::array<float, 3> pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
+      std::array<float, 3> const pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
       std::array<float, 3> pvecxic = RecoDecay::pVec(pvecpK, track2.pVector());
       auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(), trackParVar0, trackParVar1);
       auto trackxic = o2::dataformats::V0(df3.getPCACandidatePos(), pvecxic, df3.calcPCACovMatrixFlat(), trackpK, trackParVar2);
 
-      int index0Xic = track0.globalIndex();
-      int index1Xic = track1.globalIndex();
-      int index2Xic = track2.globalIndex();
-      int charge = track0.sign() + track1.sign() + track2.sign();
+      int const index0Xic = track0.globalIndex();
+      int const index1Xic = track1.globalIndex();
+      int const index2Xic = track2.globalIndex();
+      int const charge = track0.sign() + track1.sign() + track2.sign();
 
       for (const auto& trackpion : tracks) {
         if (trackpion.pt() < cutPtPionMin) {
@@ -167,7 +160,7 @@ struct HfCandidateCreatorXicc {
         if (trackpion.globalIndex() == index0Xic || trackpion.globalIndex() == index1Xic || trackpion.globalIndex() == index2Xic) {
           continue;
         }
-        std::array<float, 3> pvecpion;
+        std::array<float, 3> pvecpion{};
         auto trackParVarPi = getTrackParCov(trackpion);
 
         // reconstruct the 3-prong X vertex
@@ -232,17 +225,15 @@ struct HfCandidateCreatorXiccMc {
                aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
-    int indexRec = -1;
     int8_t sign = 0;
-    int8_t flag = 0;
-    int8_t origin = 0;
-    int8_t debug = 0;
+    int8_t flag;
+    int8_t origin;
 
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
+      int8_t debug = 0;
       flag = 0;
       origin = 0;
-      debug = 0;
       auto xicCand = candidate.prong0();
       auto arrayDaughters = std::array{xicCand.prong0_as<aod::TracksWMc>(),
                                        xicCand.prong1_as<aod::TracksWMc>(),
@@ -252,7 +243,7 @@ struct HfCandidateCreatorXiccMc {
                                           xicCand.prong1_as<aod::TracksWMc>(),
                                           xicCand.prong2_as<aod::TracksWMc>()};
       // Ξcc±± → p± K∓ π± π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
+      auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
         // Ξc± → p± K∓ π±
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersXic, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);

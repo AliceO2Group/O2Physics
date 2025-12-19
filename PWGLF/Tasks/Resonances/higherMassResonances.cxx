@@ -22,7 +22,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h" //
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h" //
+#include "Common/DataModel/PIDResponseTOF.h" //
+#include "Common/DataModel/PIDResponseTPC.h" //
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -85,7 +86,7 @@ struct HigherMassResonances {
     kFV0A,
     kFV0C,
     kFV0M,
-    kNEstimators // useful if you want to iterate or size things
+    kNEstimators
   };
 
   struct : ConfigurableGroup {
@@ -103,6 +104,7 @@ struct HigherMassResonances {
     Configurable<int> configOccCut{"configOccCut", 1000, "Occupancy cut"};
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
     Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "No collision in time range standard"};
+    Configurable<bool> isSel8{"isSel8", false, "Event Selection 8"};
 
     // Configurables for event selection
     // Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
@@ -120,7 +122,7 @@ struct HigherMassResonances {
     Configurable<float> confV0DCADaughMax{"confV0DCADaughMax", 1.0f, "DCA b/w V0 daughters"};
     Configurable<float> v0settingDcapostopv{"v0settingDcapostopv", 0.06, "DCA Pos To PV"};
     Configurable<float> v0settingDcanegtopv{"v0settingDcanegtopv", 0.06, "DCA Neg To PV"};
-    Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.3, "DCA V0 to PV"};
+    Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.5, "DCA V0 to PV"};
     Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
     Configurable<float> confV0CPAMin{"confV0CPAMin", 0.97f, "Minimum CPA of V0"};
     Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 0.5f, "Minimum transverse radius"};
@@ -150,14 +152,15 @@ struct HigherMassResonances {
     Configurable<bool> iscTVXEvsel{"iscTVXEvsel", true, "Triggger selection"};
     Configurable<bool> isavoidsplitrackMC{"isavoidsplitrackMC", false, "avoid split track in MC"};
     Configurable<bool> isapplyRapidityMC{"isapplyRapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
-    Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500)"};
-    std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221};
+    Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500), 5: f2(1270)"};
+    std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221, 225};
 
     // output THnSparses
-    Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
-    Configurable<bool> activateTHnSparseCosThStarProduction{"activateTHnSparseCosThStarProduction", false, "Activate the THnSparse with cosThStar w.r.t. production axis"};
-    Configurable<bool> activateTHnSparseCosThStarBeam{"activateTHnSparseCosThStarBeam", true, "Activate the THnSparse with cosThStar w.r.t. beam axis (Gottified jackson frame)"};
-    Configurable<bool> activateTHnSparseCosThStarRandom{"activateTHnSparseCosThStarRandom", false, "Activate the THnSparse with cosThStar w.r.t. random axis"};
+    Configurable<bool> activateHelicityFrame{"activateHelicityFrame", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
+    Configurable<bool> activateCollinsSoperFrame{"activateCollinsSoperFrame", false, "Activate the THnSparse with cosThStar w.r.t. Collins soper axis"};
+    Configurable<bool> activateProductionFrame{"activateProductionFrame", false, "Activate the THnSparse with cosThStar w.r.t. production axis"};
+    Configurable<bool> activateBeamAxisFrame{"activateBeamAxisFrame", true, "Activate the THnSparse with cosThStar w.r.t. beam axis (Gottified jackson frame)"};
+    Configurable<bool> activateRandomFrame{"activateRandomFrame", false, "Activate the THnSparse with cosThStar w.r.t. random axis"};
     Configurable<int> cRotations{"cRotations", 3, "Number of random rotations in the rotational background"};
 
     // Other cuts on Ks and glueball
@@ -195,7 +198,7 @@ struct HigherMassResonances {
   ROOT::Math::XYZVector zBeam; // ẑ: beam direction in lab frame
   ROOT::Math::PxPyPzEVector beam1{0., 0., -config.beamMomentum, 13600. / 2.};
   ROOT::Math::PxPyPzEVector beam2{0., 0., config.beamMomentum, 13600. / 2.};
-  ROOT::Math::XYZVectorF beam1CM, beam2CM;
+  ROOT::Math::XYZVectorF beam1CM, beam2CM, zAxisCS, yAxisCS, xAxisCS;
 
   // const double massK0s = o2::constants::physics::MassK0Short;
   bool isMix = false;
@@ -214,21 +217,24 @@ struct HigherMassResonances {
     AxisSpec thnAxisPhi = {config.configThnAxisPhi, "Configurabel phi axis"}; // 0 to 2pi
 
     //  THnSparses
-    std::array<int, 4> sparses = {config.activateTHnSparseCosThStarHelicity, config.activateTHnSparseCosThStarProduction, config.activateTHnSparseCosThStarBeam, config.activateTHnSparseCosThStarRandom};
+    std::array<int, 5> sparses = {config.activateHelicityFrame, config.activateCollinsSoperFrame, config.activateProductionFrame, config.activateBeamAxisFrame, config.activateRandomFrame};
 
     if (std::accumulate(sparses.begin(), sparses.end(), 0) == 0) {
       LOGP(fatal, "No output THnSparses enabled");
     } else {
-      if (config.activateTHnSparseCosThStarHelicity) {
+      if (config.activateHelicityFrame) {
         LOGP(info, "THnSparse with cosThStar w.r.t. helicity axis active.");
       }
-      if (config.activateTHnSparseCosThStarProduction) {
+      if (config.activateCollinsSoperFrame) {
+        LOGP(info, "THnSparse with cosThStar w.r.t. Collins Soper axis active.");
+      }
+      if (config.activateProductionFrame) {
         LOGP(info, "THnSparse with cosThStar w.r.t. production axis active.");
       }
-      if (config.activateTHnSparseCosThStarBeam) {
+      if (config.activateBeamAxisFrame) {
         LOGP(info, "THnSparse with cosThStar w.r.t. beam axis active. (Gottified jackson frame)");
       }
-      if (config.activateTHnSparseCosThStarRandom) {
+      if (config.activateRandomFrame) {
         LOGP(info, "THnSparse with cosThStar w.r.t. random axis active.");
       }
     }
@@ -240,7 +246,7 @@ struct HigherMassResonances {
       rEventSelection.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
       rEventSelection.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
       hMChists.add("events_check", "No. of events in the generated MC", kTH1I, {{20, 0, 20}});
-      hMChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{25, 0, 25}});
+      hMChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{20, 0, 20}});
 
       rEventSelection.add("hEventCut", "No. of event after cuts", kTH1I, {{20, 0, 20}});
       std::shared_ptr<TH1> hCutFlow = rEventSelection.get<TH1>(HIST("hEventCut"));
@@ -287,12 +293,23 @@ struct HigherMassResonances {
       hv0labelmcrec->GetXaxis()->SetBinLabel(2, "V0Daughter Sel.");
       hv0labelmcrec->GetXaxis()->SetBinLabel(3, "V0 Sel.");
       hv0labelmcrec->GetXaxis()->SetBinLabel(4, "V0 PDG");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(5, "Mother PDG");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(6, "Same Mother");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(7, "Split Track");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(8, "Global Index");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(9, "Generator");
-      hv0labelmcrec->GetXaxis()->SetBinLabel(10, "Rapidity");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(5, "All Mothers");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(6, "Mother PDG");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(7, "Same Mother");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(8, "Split Track");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(9, "Global Index");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(10, "Generator");
+      hv0labelmcrec->GetXaxis()->SetBinLabel(11, "Rapidity");
+
+      std::shared_ptr<TH1> hv0labelmcgen = hMChists.get<TH1>(HIST("events_check"));
+      hv0labelmcgen->GetXaxis()->SetBinLabel(1, "All Events");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(2, "Event Sel.");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(3, "Event reconstructed");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(4, "PDG check");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(5, "Rapidity");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(6, "Daughters2");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(7, "PhysicalPrimary");
+      hv0labelmcgen->GetXaxis()->SetBinLabel(8, "Daughters K0s");
     }
 
     hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
@@ -362,7 +379,7 @@ struct HigherMassResonances {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 1);
 
-    if (!collision.sel8())
+    if (config.isSel8 && !collision.sel8())
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 2);
@@ -523,7 +540,7 @@ struct HigherMassResonances {
   }
 
   template <typename T, typename V0s>
-  bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0DaughterTPC, V0s const& /*candidate*/)
+  bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0DaughterTPC, V0s const& v0candidate)
   {
     if (config.qAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
@@ -572,12 +589,75 @@ struct HigherMassResonances {
     }
     rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 8.5);
 
-    // if (std::abs())
+    if (std::abs(v0candidate.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && v0candidate.positiveHasTOF()) {
+      return false;
+    }
+
+    if (std::abs(v0candidate.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && v0candidate.negativeHasTOF()) {
+      return false;
+    }
 
     if (config.qAPID) {
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
     }
 
+    return true;
+  }
+
+  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
+  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+  // using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
+  using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+
+  template <typename TV0>
+  bool isSelectedK0sDaughtersDerived(TV0 const& v0)
+  {
+    // Fpr derived dataset
+
+    // de-ref track extras
+    auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
+
+    if (std::abs(v0.positiveeta()) > config.confDaughEta || std::abs(v0.negativeeta()) > config.confDaughEta) {
+      return false;
+    }
+
+    if (posTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows || negTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows) {
+      return false;
+    }
+
+    if (posTrackExtra.tpcNClsFound() < config.confDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < config.confDaughTPCnclsMin) {
+      return false;
+    }
+    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls || negTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls) {
+      return false;
+    }
+
+    // check TPC PID
+    if (((std::abs(posTrackExtra.tpcNSigmaPi()) > config.confDaughPIDCutTPC) || (std::abs(negTrackExtra.tpcNSigmaPi()) > config.confDaughPIDCutTPC))) {
+      return false;
+    }
+
+    // // check TOF PID if TOF exists
+
+    if (config.isApplyDCAv0topv && (std::abs(v0.dcapostopv()) < config.cMaxV0DCA || std::abs(v0.dcanegtopv()) < config.cMaxV0DCA)) {
+      return false;
+    }
+
+    if (std::abs(v0.tofNSigmaK0PiPlus()) > config.confDaughPIDCutTOF && v0.positiveHasTOF()) {
+      return false;
+    }
+
+    if (std::abs(v0.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && v0.negativeHasTOF()) {
+      return false;
+    }
+
+    // rKzeroShort.fill(HIST("negative_pt"), negTrackExtra.pt());
+    // rKzeroShort.fill(HIST("positive_pt"), posTrackExtra.pt());
+    // rKzeroShort.fill(HIST("negative_eta"), negTrackExtra.eta());
+    // rKzeroShort.fill(HIST("positive_eta"), posTrackExtra.eta());
+    // rKzeroShort.fill(HIST("negative_phi"), negTrackExtra.phi());
+    // rKzeroShort.fill(HIST("positive_phi"), posTrackExtra.phi());
     return true;
   }
 
@@ -612,11 +692,11 @@ struct HigherMassResonances {
   // Defining the type of the daughter tracks
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
-  using V0TrackCandidate = aod::V0Datas;
+  using V0TrackCandidate = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
   // For Monte Carlo
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::PVMults>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
-  using V0TrackCandidatesMC = soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>>;
+  using V0TrackCandidatesMC = soa::Filtered<soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::McV0Labels>>;
   // zBeam direction in lab frame
 
   template <typename T>
@@ -633,6 +713,7 @@ struct HigherMassResonances {
     beam1CM = ROOT::Math::XYZVectorF((boost(beam1).Vect()).Unit());
     beam2CM = ROOT::Math::XYZVectorF((boost(beam2).Vect()).Unit());
 
+    //========================Helicity and Production frame calculation==========================
     // define y = zBeam x z: Normal to the production plane
     // ẑ: mother direction in lab, boosted into mother's rest frame
 
@@ -650,12 +731,13 @@ struct HigherMassResonances {
 
     // // Calculate φ in [-π, π]
     // auto anglePhi = std::atan2(p_proj_y, p_proj_x); // φ in radians
+    //=============================================================================================
 
     v1CM = ROOT::Math::XYZVectorF(boost(daughter1).Vect()).Unit();
     // ROOT::Math::XYZVectorF v2_CM{(boost(daughter1).Vect()).Unit()};
     // using positive sign convention for the first track
     // ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1CM : v2_CM); // here selected decay daughter momentum is intested. here you can choose one decay daughter no need to check both case as it is neutral particle for our case
-    // Helicity frame
+    // Helicity Frame
     zaxisHE = ROOT::Math::XYZVectorF(mother.Vect()).Unit();
     yaxisHE = ROOT::Math::XYZVectorF(beam1CM.Cross(beam2CM)).Unit();
     xaxisHE = ROOT::Math::XYZVectorF(yaxisHE.Cross(zaxisHE)).Unit();
@@ -668,8 +750,16 @@ struct HigherMassResonances {
     //   anglePhi += o2::constants::math::TwoPI; // ensure phi is in [0, 2pi]
     // }
 
+    // CS Frame
+    zAxisCS = ROOT::Math::XYZVectorF((beam1CM.Unit() - beam2CM.Unit())).Unit();
+    yAxisCS = ROOT::Math::XYZVectorF(beam1CM.Cross(beam2CM)).Unit();
+    xAxisCS = ROOT::Math::XYZVectorF(yAxisCS.Cross(zAxisCS)).Unit();
+    double cosThetaStarCS = zAxisCS.Dot(v1CM);
+    auto phiCS = std::atan2(yAxisCS.Dot(v1CM), xAxisCS.Dot(v1CM));
+    phiCS = RecoDecay::constrainAngle(phiCS, 0.0);
+
     // if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-    if (config.activateTHnSparseCosThStarHelicity) {
+    if (config.activateHelicityFrame) {
       // helicityVec = mother.Vect(); // 3 vector of mother in COM frame
       // auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
       auto cosThetaStarHelicity = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
@@ -689,34 +779,64 @@ struct HigherMassResonances {
           daughterRotCM = boost2(daughterRot);
 
           auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
+          auto phiHelicityRot = std::atan2(yaxisHE.Dot(daughterRotCM.Vect().Unit()), xaxisHE.Dot(daughterRotCM.Vect().Unit()));
+          phiHelicityRot = RecoDecay::constrainAngle(phiHelicityRot, 0.0);
           if (motherRot.Rapidity() < config.rapidityMotherData)
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot, anglePhi);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot, phiHelicityRot);
         }
       } else {
         if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
           hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity, anglePhi);
         }
       }
-    } else if (config.activateTHnSparseCosThStarProduction) {
-      normalVec = ROOT::Math::XYZVector(mother.Py(), -mother.Px(), 0.f);
-      auto cosThetaStarProduction = normalVec.Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(normalVec.Mag2()));
+    } else if (config.activateCollinsSoperFrame) {
       if (!isMix) {
         if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, anglePhi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarCS, phiCS);
+        }
+
+        for (int i = 0; i < config.cRotations; i++) {
+          theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+
+          daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+          motherRot = daughterRot + daughter2;
+
+          ROOT::Math::Boost boost2{motherRot.BoostToCM()};
+          daughterRotCM = boost2(daughterRot);
+
+          auto cosThetaStarCSrot = zAxisCS.Dot(daughterRotCM.Vect()) / std::sqrt(daughterRotCM.Vect().Mag2());
+          auto phiCSrot = std::atan2(yAxisCS.Dot(daughterRotCM.Vect().Unit()), xAxisCS.Dot(daughterRotCM.Vect().Unit()));
+          phiCSrot = RecoDecay::constrainAngle(phiCSrot, 0.0);
+
+          if (motherRot.Rapidity() < config.rapidityMotherData)
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarCSrot, phiCSrot);
+        }
+      } else {
+        if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarCS, phiCS);
+        }
+      }
+    } else if (config.activateProductionFrame) {
+      normalVec = ROOT::Math::XYZVector(mother.Py(), -mother.Px(), 0.f);
+      auto cosThetaProduction = normalVec.Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(normalVec.Mag2()));
+      if (!isMix) {
+        if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaProduction, anglePhi);
         }
         for (int i = 0; i < config.cRotations; i++) {
           theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
           motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
           if (std::abs(motherRot.Rapidity()) < config.rapidityMotherData) {
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarProduction, anglePhi);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaProduction, anglePhi);
           }
         }
       } else {
         if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, anglePhi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaProduction, anglePhi);
         }
       }
-    } else if (config.activateTHnSparseCosThStarBeam) {
+    } else if (config.activateBeamAxisFrame) {
       beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
       auto cosThetaStarBeam = beamVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
       if (!isMix) {
@@ -735,7 +855,7 @@ struct HigherMassResonances {
           hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam, anglePhi);
         }
       }
-    } else if (config.activateTHnSparseCosThStarRandom) {
+    } else if (config.activateRandomFrame) {
       auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
       auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
 
@@ -743,25 +863,25 @@ struct HigherMassResonances {
       auto cosThetaStarRandom = randomVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
       if (!isMix) {
         if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, anglePhi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, phiRandom);
         }
         for (int i = 0; i < config.cRotations; i++) {
           theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
           motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
           if (std::abs(motherRot.Rapidity()) < config.rapidityMotherData) {
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarRandom, anglePhi);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarRandom, phiRandom);
           }
         }
       } else {
         if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, anglePhi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, phiRandom);
         }
       }
     }
     // }
   }
 
-  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
+  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, V0TrackCandidate const& V0s)
   {
     multiplicity = 0.0;
 
@@ -831,16 +951,33 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (postrack1.hasTOF() && negtrack1.hasTOF() && postrack2.hasTOF() && negtrack2.hasTOF()) {
-        double nTOFSigmaPos1{postrack1.tofNSigmaPi()};
-        double nTOFSigmaNeg1{negtrack1.tofNSigmaPi()};
-        double nTOFSigmaPos2{postrack2.tofNSigmaPi()};
-        double nTOFSigmaNeg2{negtrack2.tofNSigmaPi()};
-        if ((std::abs(nTOFSigmaPos1) > config.confDaughPIDCutTPC) || (std::abs(nTOFSigmaNeg1) > config.confDaughPIDCutTPC) ||
-            (std::abs(nTOFSigmaPos2) > config.confDaughPIDCutTPC) || (std::abs(nTOFSigmaNeg2) > config.confDaughPIDCutTPC)) {
-          continue;
-        }
-      }
+      // if (postrack1.hasTOF()) {
+      //   double nTOFSigmaPos1{postrack1.tofNSigmaPi()};
+      //   if ((std::abs(nTOFSigmaPos1) > config.confDaughPIDCutTOF)) {
+      //     continue;
+      //   }
+      // }
+
+      // if (negtrack1.hasTOF()) {
+      //   double nTOFSigmaNeg1{negtrack1.tofNSigmaPi()};
+      //   if (std::abs(nTOFSigmaNeg1) > config.confDaughPIDCutTOF) {
+      //     continue;
+      //   }
+      // }
+
+      // if (postrack2.hasTOF()) {
+      //   double nTOFSigmaPos2{postrack2.tofNSigmaPi()};
+      //   if ((std::abs(nTOFSigmaPos2) > config.confDaughPIDCutTOF)) {
+      //     continue;
+      //   }
+      // }
+
+      // if (negtrack2.hasTOF()) {
+      //   double nTOFSigmaNeg2{negtrack2.tofNSigmaPi()};
+      //   if (std::abs(nTOFSigmaNeg2) > config.confDaughPIDCutTOF) {
+      //     continue;
+      //   }
+      // }
 
       if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
         v0indexes.push_back(v1.globalIndex());
@@ -886,14 +1023,6 @@ struct HigherMassResonances {
     v0indexes.clear();
   }
   PROCESS_SWITCH(HigherMassResonances, processSE, "same event process", true);
-
-  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>>;
-  // using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
-  // using V0TrackCandidate = aod::V0Datas;
-
-  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
-  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
-  using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for ME mixing"};
   // ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for ME mixing"};
@@ -1030,31 +1159,31 @@ struct HigherMassResonances {
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
     selectedEvents.resize(nevts);
-    hMChists.fill(HIST("events_check"), 3.5);
+    hMChists.fill(HIST("events_check"), 1.5);
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
 
     if (!config.isallGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    hMChists.fill(HIST("events_check"), 4.5);
+    hMChists.fill(HIST("events_check"), 2.5);
     for (const auto& mcParticle : mcParticles) {
 
       if (std::abs(mcParticle.pdgCode()) != config.pdgCodes[config.selectMCparticles]) // f2(1525), f0(1710)
       {
         continue;
       }
-      hMChists.fill(HIST("events_check"), 5.5);
+      hMChists.fill(HIST("events_check"), 3.5);
 
       if (config.isapplyRapidityMC && std::abs(mcParticle.y()) >= config.rapidityMotherData) {
         continue;
       }
-      hMChists.fill(HIST("events_check"), 6.5);
+      hMChists.fill(HIST("events_check"), 4.5);
 
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
       if (kDaughters.size() != config.noOfDaughters) {
         continue;
       }
-      hMChists.fill(HIST("events_check"), 7.5);
+      hMChists.fill(HIST("events_check"), 5.5);
 
       for (const auto& kCurrentDaughter : kDaughters) {
         // int daupdg = std::abs(kCurrentDaughter.pdgCode());
@@ -1062,10 +1191,10 @@ struct HigherMassResonances {
         if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
-        hMChists.fill(HIST("events_check"), 8.5);
+        hMChists.fill(HIST("events_check"), 6.5);
         if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kK0Short) {
           passKs.push_back(true);
-          hMChists.fill(HIST("events_check"), 9.5);
+          hMChists.fill(HIST("events_check"), 7.5);
           if (passKs.size() == 1) {
             daughter1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
           } else if (static_cast<int>(passKs.size()) == config.noOfDaughters) {
@@ -1206,16 +1335,17 @@ struct HigherMassResonances {
           }
 
           for (const auto& mothertrack2 : mctrackv02.mothers_as<aod::McParticles>()) {
+            hMChists.fill(HIST("events_checkrec"), 4.5);
 
             if (mothertrack1.pdgCode() != config.pdgCodes[config.selectMCparticles]) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 4.5);
+            hMChists.fill(HIST("events_checkrec"), 5.5);
 
             if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 5.5);
+            hMChists.fill(HIST("events_checkrec"), 6.5);
 
             gindex2.push_back(mothertrack2.globalIndex());
             if (gindex2.size() > 1) {
@@ -1223,28 +1353,28 @@ struct HigherMassResonances {
                 continue;
               }
             }
-            hMChists.fill(HIST("events_checkrec"), 6.5);
+            hMChists.fill(HIST("events_checkrec"), 7.5);
 
             if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 7.5);
+            hMChists.fill(HIST("events_checkrec"), 8.5);
 
             if (!mothertrack1.producedByGenerator()) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 8.5);
+            hMChists.fill(HIST("events_checkrec"), 9.5);
 
             if (config.isapplyRapidityMC && std::abs(mothertrack1.y()) >= config.rapidityMotherData) {
               continue;
             }
-            hMChists.fill(HIST("events_checkrec"), 9.5);
+            hMChists.fill(HIST("events_checkrec"), 10.5);
 
             // if (config.isavoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
             //   hMChists.fill(HIST("h1Recsplit"), mothertrack1.pt());
             //   continue;
             // }
-            // hMChists.fill(HIST("events_checkrec"), 20.5);
+            // hMChists.fill(HIST("events_checkrec"), 11.5);
             // oldindex = mothertrack1.globalIndex(); // split tracks is already handled using gindex1 and gindex2
 
             daughter1 = ROOT::Math::PxPyPzMVector(v01.px(), v01.py(), v01.pz(), o2::constants::physics::MassK0Short);
@@ -1284,8 +1414,9 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processRec, "Process Reconstructed", false);
 
-  void processSEderived(EventCandidatesDerivedData::iterator const& collision, V0CandidatesDerivedData const& V0s)
+  void processSEderived(EventCandidatesDerivedData::iterator const& collision, V0CandidatesDerivedData const& V0s, DauTracks const&)
   {
+    multiplicity = 0.0;
     if (config.cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
     } else if (config.cSelectMultEstimator == kFT0A) {
@@ -1323,49 +1454,17 @@ struct HigherMassResonances {
         continue;
       }
 
-      // auto postrack1 = v1.template posTrack_as<DauTracks>();
-      // auto negtrack1 = v1.template negTrack_as<DauTracks>();
-      // auto postrack2 = v2.template posTrack_as<DauTracks>();
-      // auto negtrack2 = v2.template negTrack_as<DauTracks>();
-
-      // double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
-      // double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
-      // double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
-      // double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
-
-      // if (!(isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1) && isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1))) {
-      //   continue;
-      // }
-      // if (!(isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2) && isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2))) {
-      //   continue;
-      // }
+      if (!isSelectedK0sDaughtersDerived(v1) || !isSelectedK0sDaughtersDerived(v2)) {
+        continue;
+      }
 
       if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
         v0indexes.push_back(v1.globalIndex());
       }
-      // if (!(std::find(v0indexes.begin(), v0indexes.end(), v2.globalIndex()) != v0indexes.end())) {
-      //   v0indexes.push_back(v2.globalIndex());
-      // }
 
       if (v2.globalIndex() <= v1.globalIndex()) {
         continue;
       }
-
-      // if (config.qAv0Daughters) {
-      //   rKzeroShort.fill(HIST("negative_pt"), negtrack1.pt());
-      //   rKzeroShort.fill(HIST("positive_pt"), postrack1.pt());
-      //   rKzeroShort.fill(HIST("negative_eta"), negtrack1.eta());
-      //   rKzeroShort.fill(HIST("positive_eta"), postrack1.eta());
-      //   rKzeroShort.fill(HIST("negative_phi"), negtrack1.phi());
-      //   rKzeroShort.fill(HIST("positive_phi"), postrack1.phi());
-      // }
-
-      // if (postrack1.globalIndex() == postrack2.globalIndex()) {
-      //   continue;
-      // }
-      // if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
-      //   continue;
-      // }
 
       if (!applyAngSep(v1, v2)) {
         continue;
@@ -1393,7 +1492,7 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processSEderived, "same event process in strangeness derived data", false);
 
-  void processMEderived(EventCandidatesDerivedData const& collisions, TrackCandidates const& /*tracks*/, V0CandidatesDerivedData const& v0s)
+  void processMEderived(EventCandidatesDerivedData const& collisions, V0CandidatesDerivedData const& v0s, DauTracks const&)
   {
 
     for (const auto& [c1, c2] : selfCombinations(colBinning, config.cfgNmixedEvents, -1, collisions, collisions)) // two different centrality c1 and c2 and tracks corresponding to them
@@ -1419,32 +1518,7 @@ struct HigherMassResonances {
         if (!selectionV0(c2, t2, multiplicity))
           continue;
 
-        auto postrack1 = t1.template posTrackExtra_as<TrackCandidates>();
-        auto negtrack1 = t1.template negTrackExtra_as<TrackCandidates>();
-        auto postrack2 = t2.template posTrackExtra_as<TrackCandidates>();
-        auto negtrack2 = t2.template negTrackExtra_as<TrackCandidates>();
-
-        if (postrack1.globalIndex() == postrack2.globalIndex()) {
-          continue;
-        }
-        if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
-          continue;
-        }
-        double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
-        double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
-        double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
-        double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
-
-        if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
+        if (!isSelectedK0sDaughtersDerived(t1) || !isSelectedK0sDaughtersDerived(t2)) {
           continue;
         }
 
@@ -1462,6 +1536,5 @@ struct HigherMassResonances {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HigherMassResonances>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HigherMassResonances>(cfgc)};
 }

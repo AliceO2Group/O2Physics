@@ -9,18 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// q vector framework with ESE (20/08/2024)
-//
-/// \author Joachim Hansen <joachim.hansen@cern.ch>
+/// \file EseTable.h
+/// \brief ESE Framework (20/08/2024)
+/// \author Joachim C. K. B. Hansen, Lund University, joachim.hansen@cern.ch
+
 //
 
 #ifndef COMMON_DATAMODEL_ESETABLE_H_
 #define COMMON_DATAMODEL_ESETABLE_H_
 
-#include <vector>
+#include <Framework/ASoA.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
+#include <vector>
 
 namespace o2::aod
 {
@@ -46,6 +46,16 @@ using QPercentileFV0A = QPercentileFV0As::iterator;
 using QPercentileTPCall = QPercentileTPCalls::iterator;
 using QPercentileTPCneg = QPercentileTPCnegs::iterator;
 using QPercentileTPCpos = QPercentileTPCposs::iterator;
+
+namespace meanptshape
+{
+DECLARE_SOA_COLUMN(FMEANPT, fMEANPT, std::vector<float>);
+DECLARE_SOA_COLUMN(FMEANPTSHAPE, fMEANPTSHAPE, std::vector<float>);
+} // namespace meanptshape
+DECLARE_SOA_TABLE(MeanPts, "AOD", "MEANPT", meanptshape::FMEANPT);
+DECLARE_SOA_TABLE(MeanPtShapes, "AOD", "MEANPTSHAPE", meanptshape::FMEANPTSHAPE);
+using MeanPt = MeanPts::iterator;
+using MeanPtShape = MeanPtShapes::iterator;
 
 } // namespace o2::aod
 

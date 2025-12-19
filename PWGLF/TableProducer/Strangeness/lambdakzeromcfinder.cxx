@@ -24,39 +24,40 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <vector>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include "Math/Vector4D.h"
 #include <TFile.h>
-#include <TLorentzVector.h>
 #include <TH1F.h>
 #include <TH2F.h>
-#include <TProfile.h>
+#include <TLorentzVector.h>
 #include <TPDGCode.h>
+#include <TProfile.h>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -228,7 +229,7 @@ struct lambdakzeromcfinder {
                 nPosReco++;
               }
             } // end track list loop
-          }   // end positive pdg check
+          } // end positive pdg check
           if (daughter.pdgCode() == negativePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             bool tpcOnlyFound = false;
@@ -245,7 +246,7 @@ struct lambdakzeromcfinder {
                 nNegReco++;
               }
             } // end track list loop
-          }   // end negative pdg check
+          } // end negative pdg check
         }
       }
     }

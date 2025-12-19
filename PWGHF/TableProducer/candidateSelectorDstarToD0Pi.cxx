@@ -15,11 +15,12 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
@@ -97,6 +98,7 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  Configurable<bool> isTriggerBDT{"isTriggerBDT", false, "Flag to enable / disable features for software trigger BDTs"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -105,9 +107,8 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponse;
-  std::vector<float> outputMlDstarToD0Pi = {};
+  std::vector<float> outputMlDstarToD0Pi;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -392,7 +393,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for Dstar
-      bool topoDstar = selectionTopolConjugate(candDstar);
+      bool const topoDstar = selectionTopolConjugate(candDstar);
       if (!topoDstar) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         if (applyMl) {
@@ -461,7 +462,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       if (applyMl) {
         // ML selections
         bool isSelectedMlDstar = false;
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar, !isTriggerBDT);
         isSelectedMlDstar = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMlDstarToD0Pi);
 
         hfMlDstarCandidate(outputMlDstarToD0Pi);

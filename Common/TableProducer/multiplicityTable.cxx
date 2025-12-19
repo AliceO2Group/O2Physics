@@ -24,20 +24,34 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/ConfigParamSpec.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TList.h>
+#include <TProfile.h>
+#include <TString.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <string>
 #include <vector>
+
+#include <stdlib.h>
 
 using namespace o2;
 using namespace o2::framework;

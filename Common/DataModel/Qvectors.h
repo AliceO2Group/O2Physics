@@ -21,8 +21,9 @@
 #ifndef COMMON_DATAMODEL_QVECTORS_H_
 #define COMMON_DATAMODEL_QVECTORS_H_
 
+#include <Framework/AnalysisDataModel.h>
+
 #include <vector>
-#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
@@ -49,6 +50,24 @@ DECLARE_SOA_COLUMN(QvecTPCnegReVec, qvecTPCnegReVec, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecTPCnegImVec, qvecTPCnegImVec, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecTPCallReVec, qvecTPCallReVec, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecTPCallImVec, qvecTPCallImVec, std::vector<float>);
+
+DECLARE_SOA_COLUMN(QvecShiftedRe, qvecShiftedRe, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedIm, qvecShiftedIm, std::vector<float>);
+
+DECLARE_SOA_COLUMN(QvecShiftedFT0CReVec, qvecShiftedFT0CReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedFT0CImVec, qvecShiftedFT0CImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedFT0AReVec, qvecShiftedFT0AReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedFT0AImVec, qvecShiftedFT0AImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedFT0MReVec, qvecShiftedFT0MReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedFT0MImVec, qvecShiftedFT0MImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedFV0AReVec, qvecShiftedFV0AReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedFV0AImVec, qvecShiftedFV0AImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedTPCposReVec, qvecShiftedTPCposReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedTPCposImVec, qvecShiftedTPCposImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedTPCnegReVec, qvecShiftedTPCnegReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedTPCnegImVec, qvecShiftedTPCnegImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedTPCallReVec, qvecShiftedTPCallReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(QvecShiftedTPCallImVec, qvecShiftedTPCallImVec, std::vector<float>);
 
 DECLARE_SOA_COLUMN(QvecFT0CRe, qvecFT0CRe, float);
 DECLARE_SOA_COLUMN(QvecFT0CIm, qvecFT0CIm, float);
@@ -103,6 +122,9 @@ DECLARE_SOA_COLUMN(LabelsBTot, labelsBTot, std::vector<int>);
 DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORDEVS", //! Table with all Qvectors.
                   qvec::Cent, qvec::IsCalibrated, qvec::QvecRe, qvec::QvecIm, qvec::QvecAmp);
 using Qvector = Qvectors::iterator;
+DECLARE_SOA_TABLE(QvectorsShifteds, "AOD", "QVECTORSCDEVS", //! Table with all shifted Qvectors.
+                  qvec::Cent, qvec::IsCalibrated, qvec::QvecShiftedRe, qvec::QvecShiftedIm, qvec::QvecAmp);
+using QvectorShifted = QvectorsShifteds::iterator;
 
 DECLARE_SOA_TABLE(QvectorFT0Cs, "AOD", "QVECTORSFT0C", qvec::IsCalibrated, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C);
 DECLARE_SOA_TABLE(QvectorFT0As, "AOD", "QVECTORSFT0A", qvec::IsCalibrated, qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
@@ -120,6 +142,14 @@ DECLARE_SOA_TABLE(QvectorTPCposVecs, "AOD", "QVECTORSTPCPVEC", qvec::IsCalibrate
 DECLARE_SOA_TABLE(QvectorTPCnegVecs, "AOD", "QVECTORSTPCNVEC", qvec::IsCalibrated, qvec::QvecTPCnegReVec, qvec::QvecTPCnegImVec, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
 DECLARE_SOA_TABLE(QvectorTPCallVecs, "AOD", "QVECTORSTPCAVEC", qvec::IsCalibrated, qvec::QvecTPCallReVec, qvec::QvecTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
 
+DECLARE_SOA_TABLE(QvectorShiftedFT0CVecs, "AOD", "QVECSHIFTEDFT0C", qvec::IsCalibrated, qvec::QvecShiftedFT0CReVec, qvec::QvecShiftedFT0CImVec, qvec::SumAmplFT0C);
+DECLARE_SOA_TABLE(QvectorShiftedFT0AVecs, "AOD", "QVECSHIFTEDFT0A", qvec::IsCalibrated, qvec::QvecShiftedFT0AReVec, qvec::QvecShiftedFT0AImVec, qvec::SumAmplFT0A);
+DECLARE_SOA_TABLE(QvectorShiftedFT0MVecs, "AOD", "QVECSHIFTEDFT0M", qvec::IsCalibrated, qvec::QvecShiftedFT0MReVec, qvec::QvecShiftedFT0MImVec, qvec::SumAmplFT0M);
+DECLARE_SOA_TABLE(QvectorShiftedFV0AVecs, "AOD", "QVECSHIFTEDFV0A", qvec::IsCalibrated, qvec::QvecShiftedFV0AReVec, qvec::QvecShiftedFV0AImVec, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(QvectorShiftedTPCposVecs, "AOD", "QVECSHIFTEDTPCP", qvec::IsCalibrated, qvec::QvecShiftedTPCposReVec, qvec::QvecShiftedTPCposImVec, qvec::NTrkTPCpos, qvec::LabelsTPCpos);
+DECLARE_SOA_TABLE(QvectorShiftedTPCnegVecs, "AOD", "QVECSHIFTEDTPCN", qvec::IsCalibrated, qvec::QvecShiftedTPCnegReVec, qvec::QvecShiftedTPCnegImVec, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
+DECLARE_SOA_TABLE(QvectorShiftedTPCallVecs, "AOD", "QVECSHIFTEDTPCA", qvec::IsCalibrated, qvec::QvecShiftedTPCallReVec, qvec::QvecShiftedTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
+
 using QvectorFT0C = QvectorFT0Cs::iterator;
 using QvectorFT0A = QvectorFT0As::iterator;
 using QvectorFT0M = QvectorFT0Ms::iterator;
@@ -135,6 +165,14 @@ using QvectorFV0AVec = QvectorFV0AVecs::iterator;
 using QvectorTPCposVec = QvectorTPCposVecs::iterator;
 using QvectorTPCnegVec = QvectorTPCnegVecs::iterator;
 using QvectorTPCallVec = QvectorTPCallVecs::iterator;
+
+using QvectorShiftedFT0CVec = QvectorShiftedFT0CVecs::iterator;
+using QvectorShiftedFT0AVec = QvectorShiftedFT0AVecs::iterator;
+using QvectorShiftedFT0MVec = QvectorShiftedFT0MVecs::iterator;
+using QvectorShiftedFV0AVec = QvectorShiftedFV0AVecs::iterator;
+using QvectorShiftedTPCposVec = QvectorShiftedTPCposVecs::iterator;
+using QvectorShiftedTPCnegVec = QvectorShiftedTPCnegVecs::iterator;
+using QvectorShiftedTPCallVec = QvectorShiftedTPCallVecs::iterator;
 
 // Deprecated, will be removed in future after transition time //
 DECLARE_SOA_TABLE(QvectorBPoss, "AOD", "QVECTORSBPOS", qvec::IsCalibrated, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::NTrkBPos, qvec::LabelsBPos);

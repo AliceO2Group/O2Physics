@@ -13,27 +13,34 @@
 /// \brief Analysis of cascades in pp collisions
 /// \author Roman Nepeivoda (roman.nepeivoda@cern.ch)
 
-#include <algorithm>
-#include <vector>
+#include "PWGLF/DataModel/cascqaanalysis.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TRandom2.h"
 #include <TPDGCode.h>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/cascqaanalysis.h"
-#include "TRandom2.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/DataModel/mcCentrality.h"
+#include <algorithm>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 // using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFPi, aod::pidTOFPr>;
 using TrkPidInfo = soa::Join<aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
@@ -79,6 +86,14 @@ struct Cascqaanalysis {
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "ITS ROF border cut"};
   Configurable<bool> isNoCollInTimeRangeNarrow{"isNoCollInTimeRangeNarrow", 1, "No collisions in +-2us window"};
 
+  Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+  Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+  Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+  Configurable<bool> cfgEvtRCTFlagCheckerFV0Check{"cfgEvtRCTFlagCheckerFV0Check", false, "Evt sel: RCT flag checker FV0 check"};
+  Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+
+  RCTFlagsChecker rctChecker;
+
   // Cascade selection criteria
   Configurable<float> scalefactor{"scalefactor", 1.0, "Scaling factor"};
   Configurable<double> casccospa{"casccospa", 0.97, "Casc CosPA"};
@@ -119,9 +134,9 @@ struct Cascqaanalysis {
   {
     TString hCandidateCounterLabels[4] = {"All candidates", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
-    TString hNEventsLabels[13] = {"All", "kIsTriggerTVX", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "isVertexTOFmatched", "kNoCollInTimeRangeNarrow", "z vrtx", "INEL", "INEL>0", "INEL>1"};
+    TString hNEventsLabels[14] = {"All", "kIsTriggerTVX", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "isVertexTOFmatched", "kNoCollInTimeRangeNarrow", "z vrtx", "RCTFlagsChecker", "INEL", "INEL>0", "INEL>1"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{13, 0.f, 13.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{14, 0.f, 14.f}}});
 
     for (int n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
@@ -168,6 +183,11 @@ struct Cascqaanalysis {
       registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3D, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
       registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2D, {signalFT0MAxis, signalFV0AAxis}});
       registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3D, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
+    }
+
+    rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+    if (cfgEvtRCTFlagCheckerFV0Check) {
+      rctChecker.set(o2::aod::rctsel::kFV0Bad);
     }
   }
 
@@ -256,14 +276,14 @@ struct Cascqaanalysis {
   {
     // 0 - INEL, 1 - INEL>0, 2 - INEL>1
     int evFlag = 0;
-    registry.fill(HIST("hNEvents"), 10.5); // INEL
+    registry.fill(HIST("hNEvents"), 11.5); // INEL
     if (collision.isInelGt0()) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 11.5); // INEL>0
+      registry.fill(HIST("hNEvents"), 12.5); // INEL>0
     }
     if (collision.isInelGt1()) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 12.5); // INEL>1
+      registry.fill(HIST("hNEvents"), 13.5); // INEL>1
     }
     return evFlag;
   }
@@ -345,6 +365,14 @@ struct Cascqaanalysis {
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 9.5);
       registry.fill(HIST("hZCollision"), collision.posZ());
+    }
+
+    // RCTFlagChecker selection
+    if (requireRCTFlagChecker && !rctChecker(collision)) {
+      return false;
+    }
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 10.5);
     }
 
     return true;
@@ -483,15 +511,15 @@ struct Cascqaanalysis {
     uint16_t nchFV0 = getGenNchInFV0Aregion(mcPartSlice);
 
     int evType = 0;
-    registry.fill(HIST("hNEvents"), 10.5); // INEL
+    registry.fill(HIST("hNEvents"), 11.5); // INEL
     // Rec. collision associated with INEL>0 gen. one
     if (pwglf::isINELgtNmc(mcPartSlice, 0, pdgDB)) {
-      registry.fill(HIST("hNEvents"), 11.5); // INEL
+      registry.fill(HIST("hNEvents"), 12.5); // INEL
       evType++;
     }
     // Rec. collision associated with INEL>1 gen. one
     if (pwglf::isINELgtNmc(mcPartSlice, 1, pdgDB)) {
-      registry.fill(HIST("hNEvents"), 12.5); // INEL
+      registry.fill(HIST("hNEvents"), 13.5); // INEL
       evType++;
     }
 

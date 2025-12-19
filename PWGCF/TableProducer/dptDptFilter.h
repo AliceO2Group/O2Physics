@@ -39,6 +39,8 @@
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <Rtypes.h>
+
 #include <bitset>
 #include <fstream>
 #include <functional>
@@ -83,6 +85,25 @@ enum SystemType {
   SystemPORun3,       ///< **p-O Run 3** system
   SystemNoOfSystems   ///< number of handled systems
 };
+
+/// @brief SystemType prefix increment operator
+/// @param ipar value
+/// @return the incremented value
+inline SystemType& operator++(SystemType& ipar)
+{
+  return ipar = static_cast<SystemType>(static_cast<int>(ipar) + 1);
+}
+
+/// @brief SystemType postfix increment operator
+/// @param ipar the value
+/// @param empty
+/// @return the same value
+inline SystemType operator++(SystemType& ipar, int)
+{
+  SystemType iparTmp(ipar);
+  ++ipar;
+  return iparTmp;
+}
 
 /// \std::map systemInternalCodesMap
 /// \brief maps system names to internal system codes
@@ -413,6 +434,9 @@ enum CollisionSelectionFlags {
   CollSelNOOFFLAGS         ///< number of flags
 };
 
+constexpr std::bitset<32> CollSelACCEPTEDRUN3 = BIT(CollSelTRIGGSELBIT) | BIT(CollSelRCTBIT) | BIT(CollSelOCCUPANCYBIT) | BIT(CollSelCENTRALITYBIT) | BIT(CollSelZVERTEXBIT) | BIT(CollSelMULTCORRELATIONS);
+constexpr std::bitset<32> CollSelPREMULTACCEPTEDRUN3 = BIT(CollSelTRIGGSELBIT) | BIT(CollSelRCTBIT) | BIT(CollSelOCCUPANCYBIT) | BIT(CollSelCENTRALITYBIT) | BIT(CollSelZVERTEXBIT);
+
 /// \std::mag collisionSelectionExternalNamesMap
 /// \brief maps collision selection bits to external names
 static const std::map<int, std::string_view> collisionSelectionExternalNamesMap{
@@ -499,7 +523,7 @@ bool onlyInOneSide = false;         ///< select only tracks that don't cross the
 extern TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
 
 /* selection criteria from PWGMM */
-static constexpr int kTrackTypePWGMM = 4;
+static constexpr int TrackTypePWGMM = 4;
 // default quality criteria for tracks with ITS contribution
 static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionITS =
   o2::aod::track::TrackSelectionFlags::kITSNCls | o2::aod::track::TrackSelectionFlags::kITSChi2NDF |
@@ -745,6 +769,11 @@ struct DptDptTrackSelection {
     }
     if (tune.mUseIt) {
       for (auto const& filter : trackFilters) {
+        if (tune.mUseITSclusters) {
+          filter->stdTrackSelection->ResetITSRequirements();
+          filter->stdTrackSelection->SetRequireHitsInITSLayers(1, {0, 1, 2});
+          filter->stdTrackSelection->SetMinNClustersITS(tune.mITSclusters);
+        }
         if (tune.mUseTPCclusters) {
           filter->stdTrackSelection->SetMinNClustersTPC(tune.mTPCclusters);
         }
@@ -780,7 +809,7 @@ struct DptDptTrackSelection {
   bool requirePvContributor = false;
 };
 
-inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, const char* period = "")
+inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
 {
   std::tm cfgtm = {};
   std::stringstream ss(ccdbdate);
@@ -788,13 +817,27 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   cfgtm.tm_hour = 12;
   int64_t timestamp = std::mktime(&cfgtm) * 1000;
 
-  TList* lst = nullptr;
-  if (std::strlen(period) != 0) {
-    std::map<std::string, std::string> metadata{{"Period", period}};
-    lst = ccdb->template getSpecific<TList>(ccdbpath, timestamp, metadata);
-  } else {
-    lst = ccdb->template getForTimeStamp<TList>(ccdbpath, timestamp);
+  auto cleanPeriod = [](const auto& str) {
+    std::string tmpStr = str;
+    size_t pos = tmpStr.find('_');
+    if (pos != std::string::npos) {
+      tmpStr.erase(pos);
+    }
+    return tmpStr;
+  };
+
+  std::string actualPeriod = cleanPeriod(metadataInfo.get("LPMProductionTag"));
+  std::string actualPath = ccdbpath;
+  if (periodInPath) {
+    actualPath = actualPath + "/" + actualPeriod;
   }
+  if (suffix.length() > 0) {
+    actualPeriod = actualPeriod + "_" + suffix;
+  }
+
+  TList* lst = nullptr;
+  std::map<std::string, std::string> metadata{{"Period", actualPeriod}};
+  lst = ccdb->template getSpecific<TList>(actualPath, timestamp, metadata);
   if (lst != nullptr) {
     LOGF(info, "Correctly loaded CCDB input object");
   } else {
@@ -851,40 +894,28 @@ inline std::bitset<32> getTriggerSelection(std::string_view const& triggstr)
   return flags;
 }
 
-inline SystemType getSytemTypeFromMetaData()
+inline SystemType getSystemType(auto const& periodsForSysType)
 {
   auto period = metadataInfo.get("LPMProductionTag");
   auto anchoredPeriod = metadataInfo.get("AnchorProduction");
+  bool checkAnchor = anchoredPeriod.length() > 0;
 
-  if (period == "LHC25ad" || anchoredPeriod == "LHC25ad") {
-    LOGF(info, "Configuring for p-O (anchored to) LHC25ad period");
-    return SystemPORun3;
-  } else if (period == "LHC25ae" || anchoredPeriod == "LHC25ae") {
-    LOGF(info, "Configuring for O-O (anchored to) LHC25ae period");
-    return SystemOORun3;
-  } else if (period == "LHC25af" || anchoredPeriod == "LHC25af") {
-    LOGF(info, "Configuring for Ne-Ne (anchored to) LHC25af period");
-    return SystemNeNeRun3;
-  } else {
-    LOGF(fatal, "DptDptCorrelations::getSystemTypeFromMetadata(). No automatic system type configuration for %s period", period.c_str());
-  }
-  return SystemPbPb;
-}
-
-inline SystemType getSystemType(std::string_view const& sysstr)
-{
-  /* we have to figure out how extract the system type */
-  if (sysstr == "Auto") {
-    /* special treatment for self configuration */
-    /* TODO: expand it to all systems */
-    return getSytemTypeFromMetaData();
-  } else {
-    if (systemInternalCodesMap.contains(sysstr)) {
-      return static_cast<SystemType>(systemInternalCodesMap.at(sysstr));
-    } else {
-      LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.data());
+  for (SystemType sT = SystemNoSystem; sT < SystemNoOfSystems; ++sT) {
+    const std::string& periods = periodsForSysType[static_cast<int>(sT)][0];
+    auto contains = [periods](auto const& period) {
+      if (periods.find(period) != std::string::npos) {
+        return true;
+      }
+      return false;
+    };
+    if (periods.length() > 0) {
+      if (contains(period) || (checkAnchor && contains(anchoredPeriod))) {
+        LOGF(info, "DptDptCorrelations::getSystemType(). Assigned system type %s for period %s", systemExternalNamesMap.at(static_cast<int>(sT)).data(), period.c_str());
+        return sT;
+      }
     }
   }
+  LOGF(fatal, "DptDptCorrelations::getSystemType(). No system type for period: %s", period.c_str());
   return SystemPbPb;
 }
 
@@ -949,11 +980,11 @@ inline OccupancyEstimationType getOccupancyEstimator(const std::string_view& est
 /// @return the expression TFormula
 inline TFormula* getExclusionFormula(std::string_view formula)
 {
+  collisionMultiplicityCentralityObservables.resize(CentMultCorrelationsNOOFPARAMS);
   if (formula.length() != 0) {
     useCentralityMultiplicityCorrelationsExclusion = true;
     TFormula* f = new TFormula("Exclussion expression", formula.data());
     int nParameters = f->GetNpar();
-    collisionMultiplicityCentralityObservables.resize(CentMultCorrelationsNOOFPARAMS);
     observableIndexForCentralityMultiplicityParameter.resize(nParameters);
     LOGF(info, "Configuring outliers exclusion with the formula %s which has %d parameters", formula.data(), nParameters);
     for (int iPar = 0; iPar < nParameters; ++iPar) {
@@ -1110,8 +1141,8 @@ inline bool triggerSelection<aod::McCollision>(aod::McCollision const&)
 //////////////////////////////////////////////////////////////////////////////////
 /// Multiplicity extraction
 //////////////////////////////////////////////////////////////////////////////////
-static constexpr float kValidPercentileLowLimit = 0.0f;
-static constexpr float kValidPercentileUpLimit = 100.0f;
+static constexpr float ValidPercentileLowLimit = 0.0f;
+static constexpr float ValidPercentileUpLimit = 100.0f;
 
 /// \brief Extract the collision multiplicity from the event selection information
 template <typename CollisionObject>
@@ -1137,7 +1168,7 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
       return collision.multFT0A();
       break;
     case CentMultFT0C:
-      return collision.multFT0M();
+      return collision.multFT0C();
       break;
     case CentMultNTPV:
       return collision.multNTracksPV();
@@ -1198,7 +1229,7 @@ template <typename CollisionObject>
 inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 {
   float mult = getCentMultPercentile(collision);
-  if (mult < kValidPercentileUpLimit && kValidPercentileLowLimit < mult) {
+  if (mult < ValidPercentileUpLimit && ValidPercentileLowLimit < mult) {
     centmult = mult;
     collisionFlags.set(CollSelCENTRALITYBIT);
     return true;
@@ -1277,7 +1308,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McC
 template <>
 inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
-  if (centmult < kValidPercentileUpLimit && kValidPercentileLowLimit < centmult) {
+  if (centmult < ValidPercentileUpLimit && ValidPercentileLowLimit < centmult) {
     return true;
   } else {
     return false;
@@ -1287,17 +1318,21 @@ inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float
 /// @brief evalues the exclusion formula for the current multiplicity / centrality parameters
 /// @return true if the collision is not excluded according to the formula false otherwise
 /// WARNING: it has always to be called after filling the multiplicity / centrality observables
+/// NOTE: for MC generator level does nothing, as expected
+template <typename CollisionObject>
 inline bool isCollisionNotExcluded()
 {
   bool notExcluded = true;
-  if (useCentralityMultiplicityCorrelationsExclusion) {
-    [&]() {
-      /* set the formula parameter values */
-      for (size_t iPar = 0; iPar < observableIndexForCentralityMultiplicityParameter.size(); ++iPar) {
-        multiplicityCentralityCorrelationsExclusion->SetParameter(iPar, collisionMultiplicityCentralityObservables[observableIndexForCentralityMultiplicityParameter[iPar]]);
-      }
-    }();
-    notExcluded = multiplicityCentralityCorrelationsExclusion->Eval() != 0;
+  if constexpr (!framework::has_type_v<aod::mccollision::GeneratorsID, typename CollisionObject::all_columns>) {
+    if (useCentralityMultiplicityCorrelationsExclusion) {
+      [&]() {
+        /* set the formula parameter values */
+        for (size_t iPar = 0; iPar < observableIndexForCentralityMultiplicityParameter.size(); ++iPar) {
+          multiplicityCentralityCorrelationsExclusion->SetParameter(iPar, collisionMultiplicityCentralityObservables[observableIndexForCentralityMultiplicityParameter[iPar]]);
+        }
+      }();
+      notExcluded = multiplicityCentralityCorrelationsExclusion->Eval() != 0;
+    }
   }
   collisionFlags.set(CollSelMULTCORRELATIONS, notExcluded);
   return notExcluded;
@@ -1405,20 +1440,22 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool trigsel = triggerSelection(collision);
 
-  bool rctsel = false;
+  /* run condition table information */
+  bool rctsel = true;
   if (useRctInformation) {
-    if constexpr (framework::has_type_v<aod::evsel::Rct, typename CollisionObject::all_columns>) {
-      if (rctChecker.checkTable(collision)) {
-        rctsel = true;
-        collisionFlags.set(CollSelRCTBIT);
-      }
+    if constexpr (framework::has_type_v<aod::mccollision::GeneratorsID, typename CollisionObject::all_columns>) {
+      /* RCT condition not considered for generator level */
     } else {
-      LOGF(fatal, "RCT check required but the dataset does not have RCT information associated. Please, fix it");
+      if constexpr (framework::has_type_v<aod::evsel::Rct, typename CollisionObject::all_columns>) {
+        if (!rctChecker.checkTable(collision)) {
+          rctsel = false;
+        }
+      } else {
+        LOGF(fatal, "RCT check required but the dataset does not have RCT information associated. Please, fix it");
+      }
     }
-  } else {
-    collisionFlags.set(CollSelRCTBIT);
-    rctsel = true;
   }
+  collisionFlags.set(CollSelRCTBIT, rctsel);
 
   bool occupancysel = occupancySelection(collision);
 
@@ -1439,7 +1476,7 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  bool centmultexclusion = isCollisionNotExcluded();
+  bool centmultexclusion = isCollisionNotExcluded<CollisionObject>();
 
   bool accepted = trigsel && rctsel && occupancysel && zvtxsel && centmultsel && centmultexclusion;
 
@@ -1461,14 +1498,14 @@ struct TpcExcludeTrack {
   }
   explicit TpcExcludeTrack(TpcExclusionMethod m)
   {
-    static constexpr float kDefaultPhiBinShift = 0.5f;
-    static constexpr int kDefaultNoOfPhiBins = 72;
+    static constexpr float DefaultPhiBinShift = 0.5f;
+    static constexpr int DefaultNoOfPhiBins = 72;
     switch (m) {
       case kNOEXCLUSION:
         method = m;
         break;
       case kSTATIC:
-        if (phibinshift == kDefaultPhiBinShift && phibins == kDefaultNoOfPhiBins) {
+        if (phibinshift == DefaultPhiBinShift && phibins == DefaultNoOfPhiBins) {
           method = m;
         } else {
           LOGF(fatal, "Static TPC exclusion method with bin shift: %.2f and number of bins %d. Please fix it", phibinshift, phibins);
@@ -1497,8 +1534,8 @@ struct TpcExcludeTrack {
   template <typename TrackObject>
   bool exclude(TrackObject const& track)
   {
-    constexpr int kNoOfTpcSectors = 18;
-    constexpr float kTpcPhiSectorWidth = (constants::math::TwoPI) / kNoOfTpcSectors;
+    constexpr int NoOfTpcSectors = 18;
+    constexpr float TpcPhiSectorWidth = (constants::math::TwoPI) / NoOfTpcSectors;
 
     switch (method) {
       case kNOEXCLUSION: {
@@ -1514,7 +1551,7 @@ struct TpcExcludeTrack {
         }
       } break;
       case kDYNAMIC: {
-        float phiInTpcSector = std::fmod(track.phi(), kTpcPhiSectorWidth);
+        float phiInTpcSector = std::fmod(track.phi(), TpcPhiSectorWidth);
         if (track.sign() > 0) {
           return (phiInTpcSector < positiveUpCut->Eval(track.pt())) && (positiveLowCut->Eval(track.pt()) < phiInTpcSector);
         } else {
@@ -1548,7 +1585,7 @@ inline bool matchTrackType(TrackObject const& track)
 {
   using namespace o2::aod::track;
 
-  if (tracktype == kTrackTypePWGMM) {
+  if (tracktype == TrackTypePWGMM) {
     // under tests MM track selection
     // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf
     // it should be equivalent to this
@@ -1640,8 +1677,8 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 
 inline float getCharge(float pdgCharge)
 {
-  static constexpr int kNoOfBasicChargesPerUnitCharge = 3;
-  float charge = (pdgCharge / kNoOfBasicChargesPerUnitCharge >= 1) ? 1.0 : ((pdgCharge / kNoOfBasicChargesPerUnitCharge <= -1) ? -1.0 : 0);
+  static constexpr int NoOfBasicChargesPerUnitCharge = 3;
+  float charge = (pdgCharge / NoOfBasicChargesPerUnitCharge >= 1) ? 1.0 : ((pdgCharge / NoOfBasicChargesPerUnitCharge <= -1) ? -1.0 : 0);
   return charge;
 }
 

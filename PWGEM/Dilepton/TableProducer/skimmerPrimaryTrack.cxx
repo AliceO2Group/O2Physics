@@ -18,7 +18,6 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -47,7 +46,7 @@ using namespace o2::constants::physics;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using MyTrack = MyTracks::iterator;

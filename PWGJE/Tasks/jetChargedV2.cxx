@@ -127,6 +127,8 @@ struct JetChargedV2 {
   Configurable<bool> checkLeadConstituentPtForMcpJets{"checkLeadConstituentPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
   Configurable<bool> cfgChkFitQuality{"cfgChkFitQuality", false, "check fit quality"};
   Configurable<bool> subtractMCPBackground{"subtractMCPBackground", true, "subtract MCP Background with General Purpose anchored MC"};
+  Configurable<bool> useMedianRho{"useMedianRho", false, "use median rho for subtract MCP Background"};
+  Configurable<bool> useLocalRho{"useLocalRho", false, "use local rho for subtract MCP Background"};
 
   template <typename T>
   int getDetId(const T& name)
@@ -371,23 +373,51 @@ struct JetChargedV2 {
       registry.add("h_mc_zvertex", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}});
     }
 
-    if (doprocessJetsMatched) {
+    if (doprocessJetsMatchedSubtracted) {
       registry.add("h_mc_collisions_matched", "mc collisions status;event status;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
       registry.add("h_mcd_events_matched", "mcd event status;event status;entries", {HistType::kTH1F, {{6, 0.0, 6.0}}});
       registry.add("h_mc_rho_matched", "mc collision rho;#rho (GeV/#it{c}); counts", {HistType::kTH1F, {{500, -100.0, 500.0}}});
       registry.add("h_accept_Track_Match", "all and accept track;Track;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
 
-      registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_rhoareasubtracted_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
-      registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_rhoareasubtracted_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
-      registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_in_rhoareasubtracted", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
-      registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_in_rhoareasubtracted", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
-      registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_in_rhoareasubtracted", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+      if (useMedianRho) {
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_mcdetaconstraint", "pT mcd vs. pT mcp;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_mcpetaconstraint", "pT mcd vs. pT mcp;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo", "jet mcp pT vs. delta pT / jet mcp pt;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo", "jet mcd pT vs. delta pT / jet mcd pt;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 2.0}}});
+        registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo", "jet mcp pT vs. jet mcd pT / jet mcp pt;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxis, {1000, -5.0, 5.0}}});
 
-      registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_rhoareasubtracted_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
-      registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_rhoareasubtracted_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
-      registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_out_rhoareasubtracted", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt out-of-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
-      registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_out_rhoareasubtracted", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
-      registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_out_rhoareasubtracted", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt out-of-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_in", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_in", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_in", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_out", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt out-of-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_out", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_out", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt out-of-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+      }
+
+      if (useLocalRho) {
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_incl_rhoareasubtracted_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_incl_rhoareasubtracted_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_incl_rhoareasubtracted", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_incl_rhoareasubtracted", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_incl_rhoareasubtracted", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_rhoareasubtracted_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_rhoareasubtracted_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_in_rhoareasubtracted", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_in_rhoareasubtracted", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt in-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_in_rhoareasubtracted", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt in-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_rhoareasubtracted_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_rhoareasubtracted_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}});
+        registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_out_rhoareasubtracted", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt out-of-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_out_rhoareasubtracted", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt out-of-plane;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+        registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_out_rhoareasubtracted", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt out-of-plane;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}});
+      }
     }
 
     registry.add("h_accept_Track", "all and accept track;Track;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
@@ -554,17 +584,14 @@ struct JetChargedV2 {
     fFitModulationV2v3P->SetParameter(1, 0.01);
     fFitModulationV2v3P->SetParameter(3, 0.01);
 
-    double ep2fix = 0.;
-    double ep3fix = 0.;
-
     if (ep2 < 0) {
-      ep2fix = RecoDecay::constrainAngle(ep2);
+      double ep2fix = RecoDecay::constrainAngle(ep2);
       fFitModulationV2v3P->FixParameter(2, ep2fix);
     } else {
       fFitModulationV2v3P->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      ep3fix = RecoDecay::constrainAngle(ep3);
+      double ep3fix = RecoDecay::constrainAngle(ep3);
       fFitModulationV2v3P->FixParameter(4, ep3fix);
     } else {
       fFitModulationV2v3P->FixParameter(4, ep3);
@@ -763,6 +790,56 @@ struct JetChargedV2 {
   }
 
   template <typename TBase, typename TTag>
+  void fillGeoMatchedHistograms(TBase const& jetMCD, double ep2, float rho, float mcrho = 0.0, float weight = 1.0)
+  {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jetMCD.pt() > pTHatMaxMCD * pTHat) {
+      return;
+    }
+    if (jetMCD.has_matchedJetGeo()) {
+      for (const auto& jetMCP : jetMCD.template matchedJetGeo_as<std::decay_t<TTag>>()) {
+        if (jetMCP.pt() > pTHatMaxMCD * pTHat) {
+          continue;
+        }
+        if (jetMCD.r() == round(selectedJetsRadius * 100.0f)) {
+          int evtPlnAngleA = 7;
+          int evtPlnAngleB = 3;
+          int evtPlnAngleC = 5;
+          double phiMinusPsi2 = jetMCD.phi() - ep2;
+          double corrTagjetpt = jetMCP.pt() - (mcrho * jetMCP.area());
+          double corrBasejetpt = jetMCD.pt() - (rho * jetMCD.area());
+          double dcorrpt = corrTagjetpt - corrBasejetpt;
+          if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
+            if ((phiMinusPsi2 < o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleA * o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleB * o2::constants::math::PIQuarter && phiMinusPsi2 < evtPlnAngleC * o2::constants::math::PIQuarter)) {
+              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_in"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
+            } else {
+              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_out"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
+            }
+          }
+          if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_mcpetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcp_jet_pt_diff_matchedgeo"), corrTagjetpt, dcorrpt / corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo"), corrTagjetpt, corrBasejetpt / corrTagjetpt, weight);
+            if ((phiMinusPsi2 < o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleA * o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleB * o2::constants::math::PIQuarter && phiMinusPsi2 < evtPlnAngleC * o2::constants::math::PIQuarter)) {
+              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_mcpetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+              registry.fill(HIST("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_in"), corrTagjetpt, dcorrpt / corrTagjetpt, weight);
+              registry.fill(HIST("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_in"), corrTagjetpt, corrBasejetpt / corrTagjetpt, weight);
+            } else {
+              registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_out_mcpetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+              registry.fill(HIST("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_out"), corrTagjetpt, dcorrpt / corrTagjetpt, weight);
+              registry.fill(HIST("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_out"), corrTagjetpt, corrBasejetpt / corrTagjetpt, weight);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  template <typename TBase, typename TTag>
   void fillGeoMatchedCorrHistograms(TBase const& jetMCD, TF1* fFitModulationRM, float tempparaA, double ep2, float rho, bool subtractMCPBackground, float mcrho, float weight = 1.0)
   {
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
@@ -792,6 +869,8 @@ struct JetChargedV2 {
           double dcorrpt = corrTagjetpt - corrBasejetpt;
           double phiMinusPsi2 = jetMCD.phi() - ep2;
           if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_incl_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_incl_rhoareasubtracted"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
             if ((phiMinusPsi2 < o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleA * o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleB * o2::constants::math::PIQuarter && phiMinusPsi2 < evtPlnAngleC * o2::constants::math::PIQuarter)) {
               registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
               registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_in_rhoareasubtracted"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
@@ -801,6 +880,9 @@ struct JetChargedV2 {
             }
           }
           if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+            registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_incl_rhoareasubtracted_mcpetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_incl_rhoareasubtracted"), corrTagjetpt, dcorrpt / corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_incl_rhoareasubtracted"), corrTagjetpt, corrBasejetpt / corrTagjetpt, weight);
             if ((phiMinusPsi2 < o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleA * o2::constants::math::PIQuarter) || (phiMinusPsi2 >= evtPlnAngleB * o2::constants::math::PIQuarter && phiMinusPsi2 < evtPlnAngleC * o2::constants::math::PIQuarter)) {
               registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_in_rhoareasubtracted_mcpetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
               registry.fill(HIST("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_in_rhoareasubtracted"), corrTagjetpt, dcorrpt / corrTagjetpt, weight);
@@ -1102,17 +1184,14 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
-    double ep2fix = 0.;
-    double ep3fix = 0.;
-
     if (ep2 < 0) {
-      ep2fix = RecoDecay::constrainAngle(ep2);
+      double ep2fix = RecoDecay::constrainAngle(ep2);
       fFitModulationV2v3->FixParameter(2, ep2fix);
     } else {
       fFitModulationV2v3->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      ep3fix = RecoDecay::constrainAngle(ep3);
+      double ep3fix = RecoDecay::constrainAngle(ep3);
       fFitModulationV2v3->FixParameter(4, ep3fix);
     } else {
       fFitModulationV2v3->FixParameter(4, ep3);
@@ -1156,12 +1235,12 @@ struct JetChargedV2 {
     chiSqr = chi2;
     cDF = 1. - chiSquareCDF(nDF, chiSqr);
 
-    int evtCentAreaMin = 0;
-    int evtCentAreaMax = 5;
-    int evtMidAreaMin = 30;
-    int evtMidAreaMax = 50;
     double evtcent = collision.centFT0M();
     if (cfgChkFitQuality) {
+      int evtCentAreaMin = 0;
+      int evtCentAreaMax = 5;
+      int evtMidAreaMin = 30;
+      int evtMidAreaMax = 50;
       registry.fill(HIST("h_PvalueCDF_CombinFit"), cDF);
       registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centFT0M(), cDF);
       registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centFT0M(), chiSqr / (static_cast<float>(nDF)));
@@ -1237,7 +1316,6 @@ struct JetChargedV2 {
       TRandom3 randomNumber(0);
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
-      float randomConePt = 0;
       double integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
       double rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
 
@@ -1245,6 +1323,7 @@ struct JetChargedV2 {
       if (nmode == cfgNmodA) {
         double rcPhiPsi2;
         rcPhiPsi2 = randomConePhi - ep2;
+        float randomConePt = 0;
 
         for (auto const& track : tracks) {
           if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -1359,17 +1438,14 @@ struct JetChargedV2 {
     fFitModulationV2v3->SetParameter(1, 0.01);
     fFitModulationV2v3->SetParameter(3, 0.01);
 
-    double ep2fix = 0.;
-    double ep3fix = 0.;
-
     if (ep2 < 0) {
-      ep2fix = RecoDecay::constrainAngle(ep2);
+      double ep2fix = RecoDecay::constrainAngle(ep2);
       fFitModulationV2v3->FixParameter(2, ep2fix);
     } else {
       fFitModulationV2v3->FixParameter(2, ep2);
     }
     if (ep3 < 0) {
-      ep3fix = RecoDecay::constrainAngle(ep3);
+      double ep3fix = RecoDecay::constrainAngle(ep3);
       fFitModulationV2v3->FixParameter(4, ep3fix);
     } else {
       fFitModulationV2v3->FixParameter(4, ep3);
@@ -1413,12 +1489,12 @@ struct JetChargedV2 {
     chiSqr = chi2;
     cDF = 1. - chiSquareCDF(nDF, chiSqr);
 
-    int evtCentAreaMin = 0;
-    int evtCentAreaMax = 5;
-    int evtMidAreaMin = 30;
-    int evtMidAreaMax = 50;
     double evtcent = collision.centFT0M();
     if (cfgChkFitQuality) {
+      int evtCentAreaMin = 0;
+      int evtCentAreaMax = 5;
+      int evtMidAreaMin = 30;
+      int evtMidAreaMax = 50;
       registry.fill(HIST("h_PvalueCDF_CombinFit"), cDF);
       registry.fill(HIST("h2_PvalueCDFCent_CombinFit"), collision.centFT0M(), cDF);
       registry.fill(HIST("h2_Chi2Cent_CombinFit"), collision.centFT0M(), chiSqr / (static_cast<float>(nDF)));
@@ -1488,7 +1564,6 @@ struct JetChargedV2 {
       TRandom3 randomNumber(0);
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
-      float randomConePt = 0;
       double integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
       double rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
 
@@ -1496,6 +1571,7 @@ struct JetChargedV2 {
       if (nmode == cfgNmodA) {
         double rcPhiPsi2;
         rcPhiPsi2 = randomConePhi - ep2;
+        float randomConePt = 0;
 
         for (auto const& track : tracks) {
           if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -1736,11 +1812,11 @@ struct JetChargedV2 {
   }
   PROCESS_SWITCH(JetChargedV2, processSigmaPtMCP, "jet spectra with area-based subtraction for MC particle level", false);
 
-  void processJetsMatched(McParticleCollision::iterator const& mccollision,
-                          soa::SmallGroups<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::Qvectors>> const& collisions,
-                          ChargedMCDMatchedJets const& mcdjets,
-                          ChargedMCPMatchedJets const&,
-                          aod::JetTracks const& tracks, aod::JetParticles const&)
+  void processJetsMatchedSubtracted(McParticleCollision::iterator const& mccollision,
+                                    soa::SmallGroups<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::Qvectors>> const& collisions,
+                                    ChargedMCDMatchedJets const& mcdjets,
+                                    ChargedMCPMatchedJets const&,
+                                    aod::JetTracks const& tracks, aod::JetParticles const&)
   {
     registry.fill(HIST("h_mc_collisions_matched"), 0.5);
     if (mccollision.size() < 1) {
@@ -1827,17 +1903,14 @@ struct JetChargedV2 {
         fFitModulationRM->SetParameter(1, 0.01);
         fFitModulationRM->SetParameter(3, 0.01);
 
-        double ep2fix = 0.;
-        double ep3fix = 0.;
-
         if (ep2 < 0) {
-          ep2fix = RecoDecay::constrainAngle(ep2);
+          double ep2fix = RecoDecay::constrainAngle(ep2);
           fFitModulationRM->FixParameter(2, ep2fix);
         } else {
           fFitModulationRM->FixParameter(2, ep2);
         }
         if (ep3 < 0) {
-          ep3fix = RecoDecay::constrainAngle(ep3);
+          double ep3fix = RecoDecay::constrainAngle(ep3);
           fFitModulationRM->FixParameter(4, ep3fix);
         } else {
           fFitModulationRM->FixParameter(4, ep3);
@@ -1851,15 +1924,19 @@ struct JetChargedV2 {
         if (tempparaA == 0) {
           return;
         }
-
-        fillGeoMatchedCorrHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, fFitModulationRM, tempparaA, ep2, collision.rho(), subtractMCPBackground, collision.rho());
+        if (useMedianRho) {
+          fillGeoMatchedHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, ep2, collision.rho(), mcrho);
+        }
+        if (useLocalRho) {
+          fillGeoMatchedCorrHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, fFitModulationRM, tempparaA, ep2, collision.rho(), subtractMCPBackground, collision.rho());
+        }
         delete hPtsumSumptFitRM;
         delete fFitModulationRM;
         evtnum += 1;
       }
     }
   }
-  PROCESS_SWITCH(JetChargedV2, processJetsMatched, "matched mcp and mcd jets", false);
+  PROCESS_SWITCH(JetChargedV2, processJetsMatchedSubtracted, "matched mcp and mcd jets", false);
 
   void processTracksQA(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                        soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)

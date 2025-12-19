@@ -21,8 +21,10 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsMcGen.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
@@ -104,11 +106,10 @@ struct HfCandidateCreatorBplus {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
+  int runNumber{};
 
   double invMass2D0PiMin{0.};
   double invMass2D0PiMax{0.};
@@ -222,11 +223,11 @@ struct HfCandidateCreatorBplus {
         if (!TESTBIT(candD0.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(hfHelper.yD0(candD0)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(HfHelper::yD0(candD0)) > yCandMax) {
           continue;
         }
 
-        hRapidityD0->Fill(hfHelper.yD0(candD0));
+        hRapidityD0->Fill(HfHelper::yD0(candD0));
 
         // track0 <-> pi, track1 <-> K
         auto prong0 = candD0.prong0_as<TracksWithSel>();
@@ -268,13 +269,13 @@ struct HfCandidateCreatorBplus {
         df.getTrack(0).getPxPyPzGlo(pVec0);
         df.getTrack(1).getPxPyPzGlo(pVec1);
         // Get D0 momentum
-        std::array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1);
+        std::array<float, 3> const pVecD = RecoDecay::pVec(pVec0, pVec1);
 
         // build a D0 neutral track
         auto trackD0 = o2::dataformats::V0(vertexD0, pVecD, df.calcPCACovMatrixFlat(), trackParCovProng0, trackParCovProng1);
 
-        int indexTrack0 = prong0.globalIndex();
-        int indexTrack1 = prong1.globalIndex();
+        int const indexTrack0 = prong0.globalIndex();
+        int const indexTrack1 = prong1.globalIndex();
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
@@ -288,7 +289,7 @@ struct HfCandidateCreatorBplus {
           }
 
           // Select D0pi- and D0(bar)pi+ pairs only
-          if (!((candD0.isSelD0() >= selectionFlagD0 && trackPion.sign() < 0) || (candD0.isSelD0bar() >= selectionFlagD0bar && trackPion.sign() > 0))) {
+          if ((candD0.isSelD0() < selectionFlagD0 || trackPion.sign() >= 0) && (candD0.isSelD0bar() < selectionFlagD0bar || trackPion.sign() <= 0)) {
             // LOGF(debug, "D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
             continue;
           }

@@ -21,17 +21,16 @@
 #ifndef COMMON_CORE_EVENTPLANEHELPER_H_
 #define COMMON_CORE_EVENTPLANEHELPER_H_
 
-#include <vector>
-#include <memory>
-
-#include "TNamed.h"
+#include <FT0Base/Geometry.h>
+#include <FV0Base/Geometry.h>
 
 #include <TComplex.h>
-#include <TH2D.h>
-#include <TProfile.h>
+#include <TH2.h>
 
-#include "FV0Base/Geometry.h"
-#include "FT0Base/Geometry.h"
+#include <Rtypes.h>
+
+#include <memory>
+#include <vector>
 
 class EventPlaneHelper
 {

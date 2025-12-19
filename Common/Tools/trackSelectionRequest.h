@@ -24,10 +24,9 @@
 #ifndef COMMON_TOOLS_TRACKSELECTIONREQUEST_H_
 #define COMMON_TOOLS_TRACKSELECTIONREQUEST_H_
 
-#include <TMath.h>
-
 #include <Rtypes.h>
 
+#include <cmath>
 #include <iosfwd>
 
 class trackSelectionRequest
