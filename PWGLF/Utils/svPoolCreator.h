@@ -150,13 +150,13 @@ class svPoolCreator
       float trackTimeRes{0.};
       if (trackCand.isPVContributor()) {
         trackTime = trackCand.template collision_as<C>().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
-        trackTimeRes = constants::lhc::LHCBunchSpacingNS;                 // 1 BC
+        trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS;                 // 1 BC
       } else {
         trackTime = trackCand.trackTime();
         trackTimeRes = trackCand.trackTimeRes();
       }
 
-      const float deltaTime = trackTime - collTime + bcOffset * constants::lhc::LHCBunchSpacingNS;
+      const float deltaTime = trackTime - collTime + bcOffset * o2::constants::lhc::LHCBunchSpacingNS;
       float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
 
       float thresholdTime = 0.;
