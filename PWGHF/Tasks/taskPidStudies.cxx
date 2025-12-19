@@ -501,7 +501,7 @@ struct HfTaskPidStudies {
 
   void processV0Mc(CollisionsMc const& /*mcCollisions*/,
                    V0sMcRec const& v0s,
-                   aod::V0MCCores const& v0MCCores,
+                   aod::V0MCCores const&,
                    aod::McParticles const& /*particlesMc*/,
                    PidTracks const& /*tracks*/,
                    aod::BCsWithTimestamps const&)
@@ -544,7 +544,7 @@ struct HfTaskPidStudies {
 
   void processCascMc(CollisionsMc const& /*mcCollisions*/,
                      CascsMcRec const& cascades,
-                     aod::CascMCCores const& cascMCCores,
+                     aod::CascMCCores const&,
                      aod::McParticles const& /*particlesMc*/,
                      PidTracks const&,
                      aod::BCsWithTimestamps const&)
