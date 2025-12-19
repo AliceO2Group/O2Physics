@@ -54,7 +54,7 @@
 
 // NB: runDataProcessing.h must be included after customize!
 
-template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTableDataSub, typename CandidateTable, typename CandidateTableMCP, typename SubstructureTableData, typename SplittingsTableData, typename PairsTableData, typename SubstructureTableMCD, typename SplittingsTableMCD, typename PairsTableMCD, typename SubstructureTableMCP, typename SplittingsTableMCP, typename PairsTableMCP, typename SubstructureTableDataSub, typename SplittingsTableDataSub, typename PairsTableDataSub, typename TracksSub>
+template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTableDataSub, typename CandidateTable, typename CandidateTableMCP, typename SubstructureTableData, typename RecoilTableData, typename SplittingsTableData, typename PairsTableData, typename SubstructureTableMCD, typename RecoilTableMCD, typename SplittingsTableMCD, typename PairsTableMCD, typename SubstructureTableMCP, typename RecoilTableMCP, typename SplittingsTableMCP, typename PairsTableMCP, typename SubstructureTableDataSub, typename SplittingsTableDataSub, typename PairsTableDataSub, typename TracksSub>
 struct JetSubstructureHFTask {
   o2::framework::Produces<SubstructureTableData> jetSubstructureDataTable;
   o2::framework::Produces<SubstructureTableMCD> jetSubstructureMCDTable;
@@ -71,6 +71,10 @@ struct JetSubstructureHFTask {
   o2::framework::Produces<PairsTableMCP> jetPairsMCPTable;
   o2::framework::Produces<PairsTableDataSub> jetPairsDataSubTable;
 
+  o2::framework::Produces<RecoilTableData> jetRecoilDataTable;
+  o2::framework::Produces<RecoilTableMCD> jetRecoilMCDTable;
+  o2::framework::Produces<RecoilTableMCP> jetRecoilMCPTable;
+
   // Jet level configurables
   o2::framework::Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   o2::framework::Configurable<float> beta{"beta", 0.0, "soft drop beta"};
@@ -82,6 +86,7 @@ struct JetSubstructureHFTask {
   o2::framework::Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
   o2::framework::Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
   o2::framework::Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
+  o2::framework::Configurable<float> recoilRegion{"recoilRegion", 0.6, "recoil acceptance in phi"};
 
   o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
   float candMass;
@@ -472,6 +477,19 @@ struct JetSubstructureHFTask {
     outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
   }
 
+  template <typename T, typename U, typename V, typename M>
+  void analyseRecoilCharged(T const& jets, U const& /*tracks*/, V const& candidates, M& outputRecoilTable)
+  {
+    for (auto const& candidate : candidates) {
+      for (auto const& jet : jets) {
+        if (std::abs(RecoDecay::constrainAngle(jet.phi() - candidate.phi(), -M_PI)) > (M_PI - recoilRegion)) {
+          outputRecoilTable(jet.globalIndex(), candidate.globalIndex(), jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracksIds().size()); // add variables for recoil jet tagging
+          break;
+        }
+      }
+    }
+  }
+
   void processChargedJetsData(typename JetTableData::iterator const& jet,
                               CandidateTable const& candidates,
                               o2::aod::JetTracks const& tracks)
@@ -514,6 +532,33 @@ struct JetSubstructureHFTask {
     jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);
+
+  void processChargedRecoilJetsData(o2::aod::JetCollision const& /*collision*/,
+                                    o2::soa::Join<o2::aod::ChargedJets, o2::aod::ChargedJetConstituents> const& jets,
+                                    CandidateTable const& candidates,
+                                    o2::aod::JetTracks const& tracks)
+  {
+    analyseRecoilCharged(jets, tracks, candidates, jetRecoilDataTable);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processChargedRecoilJetsData, "HF recoil jet data", false);
+
+  void processChargedRecoilJetsMCD(o2::aod::JetCollision const& /*collision*/,
+                                   o2::soa::Join<o2::aod::ChargedMCDetectorLevelJets, o2::aod::ChargedMCDetectorLevelJetConstituents> const& jets,
+                                   CandidateTable const& candidates,
+                                   o2::aod::JetTracks const& tracks)
+  {
+    analyseRecoilCharged(jets, tracks, candidates, jetRecoilMCDTable);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processChargedRecoilJetsMCD, "HF recoil jet mcd", false);
+
+  void processChargedRecoilJetsMCP(o2::aod::JetCollision const& /*collision*/,
+                                   o2::soa::Join<o2::aod::ChargedMCParticleLevelJets, o2::aod::ChargedMCParticleLevelJetConstituents> const& jets,
+                                   CandidateTableMCP const& candidates,
+                                   o2::aod::JetParticles const& tracks)
+  {
+    analyseRecoilCharged(jets, tracks, candidates, jetRecoilMCPTable);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processChargedRecoilJetsMCP, "HF recoil jet mcp", false);
 };
 
 #endif // PWGJE_TASKS_JETSUBSTRUCTUREHF_H_

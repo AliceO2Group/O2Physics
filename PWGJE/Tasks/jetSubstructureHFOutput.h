@@ -38,13 +38,14 @@
 
 // NB: runDataProcessing.h must be included after customize!
 
-template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateMcOnlyCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename CandidateRhosTable, typename CandidateMCRhosTable, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename SplittingTableData, typename PairTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename SplittingTableMCD, typename PairTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename JetTableMatchedMCP, typename SplittingTableMCP, typename PairTableMCP, typename OutputCollisionTableMCP, typename CandidateMcOnlyCollisionOutputTable, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename SplittingTableDataSub, typename PairTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateParDaughterOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMlDaughterOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
+template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateMcOnlyCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename CandidateRhosTable, typename CandidateMCRhosTable, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename RecoilTableData, typename SplittingTableData, typename PairTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename RecoilOutputTableData, typename JetTableMCD, typename RecoilTableMCD, typename SplittingTableMCD, typename PairTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename RecoilOutputTableMCD, typename MatchingRecoilOutputTableMCD, typename JetTableMCP, typename JetTableMatchedMCP, typename RecoilTableMCP, typename SplittingTableMCP, typename PairTableMCP, typename OutputCollisionTableMCP, typename CandidateMcOnlyCollisionOutputTable, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename RecoilOutputTableMCP, typename MatchingRecoilOutputTableMCP, typename JetTableDataSub, typename SplittingTableDataSub, typename PairTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateParDaughterOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMlDaughterOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
 struct JetSubstructureHFOutputTask {
 
   struct : o2::framework::ProducesGroup {
     o2::framework::Produces<OutputCollisionTableData> collisionOutputTableData;
     o2::framework::Produces<OutputTableData> jetOutputTableData;
     o2::framework::Produces<SubstructureOutputTableData> jetSubstructureOutputTableData;
+    o2::framework::Produces<RecoilOutputTableData> jetRecoilOutputTableData;
     o2::framework::Produces<MatchingOutputTableData> jetMatchingOutputTableData;
     o2::framework::Produces<OutputCollisionTableDataSub> collisionOutputTableDataSub;
     o2::framework::Produces<OutputTableDataSub> jetOutputTableDataSub;
@@ -53,12 +54,16 @@ struct JetSubstructureHFOutputTask {
     o2::framework::Produces<OutputCollisionTableMCD> collisionOutputTableMCD;
     o2::framework::Produces<OutputTableMCD> jetOutputTableMCD;
     o2::framework::Produces<SubstructureOutputTableMCD> jetSubstructureOutputTableMCD;
+    o2::framework::Produces<RecoilOutputTableMCD> jetRecoilOutputTableMCD;
     o2::framework::Produces<MatchingOutputTableMCD> jetMatchingOutputTableMCD;
+    o2::framework::Produces<MatchingRecoilOutputTableMCD> jetRecoilMatchingOutputTableMCD;
     o2::framework::Produces<OutputCollisionTableMCP> collisionOutputTableMCP;
     o2::framework::Produces<CandidateMcOnlyCollisionOutputTable> hfMcOnlyCollisionsTable;
     o2::framework::Produces<OutputTableMCP> jetOutputTableMCP;
     o2::framework::Produces<SubstructureOutputTableMCP> jetSubstructureOutputTableMCP;
+    o2::framework::Produces<RecoilOutputTableMCP> jetRecoilOutputTableMCP;
     o2::framework::Produces<MatchingOutputTableMCP> jetMatchingOutputTableMCP;
+    o2::framework::Produces<MatchingRecoilOutputTableMCP> jetRecoilMatchingOutputTableMCP;
     o2::framework::Produces<CandidateCollisionOutputTable> hfCollisionsTable;
     o2::framework::Produces<CandidateOutputTable> candidateTable;
     o2::framework::Produces<CandidateParOutputTable> candidateParsTable;
@@ -78,7 +83,11 @@ struct JetSubstructureHFOutputTask {
     o2::framework::Configurable<float> jetPtMinDataSub{"jetPtMinDataSub", 0.0, "minimum jet pT cut for eventwise constituent subtracted data jets"};
     o2::framework::Configurable<float> jetPtMinMCD{"jetPtMinMCD", 0.0, "minimum jet pT cut for mcd jets"};
     o2::framework::Configurable<float> jetPtMinMCP{"jetPtMinMCP", 0.0, "minimum jet pT cut for mcp jets"};
+    o2::framework::Configurable<float> recoilJetPtMinData{"recoilJetPtMinData", 0.0, "minimum jet pT cut for data recoil jets"};
+    o2::framework::Configurable<float> recoilJetPtMinMCD{"recoilJetPtMinMCD", 0.0, "minimum jet pT cut for mcd recoil jets"};
+    o2::framework::Configurable<float> recoilJetPtMinMCP{"recoilJetPtMinMCP", 0.0, "minimum jet pT cut for mcp recoil jets"};
     o2::framework::Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
+    o2::framework::Configurable<std::vector<double>> recoilJetRadii{"recoilJetRadii", std::vector<double>{0.4}, "recoil jet resolution parameters"};
     o2::framework::Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
     o2::framework::Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
     o2::framework::Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track pseudorapidity"};
@@ -95,6 +104,13 @@ struct JetSubstructureHFOutputTask {
   std::map<int32_t, int32_t> candidateMappingMCP;
   std::map<int32_t, int32_t> candidateCollisionMapping;
   std::map<int32_t, int32_t> candidateMcCollisionMapping;
+  std::map<int32_t, int32_t> recoilJetMappingData; // not doing anything yet
+  std::map<int32_t, int32_t> recoilJetMappingMCD;
+  std::map<int32_t, int32_t> recoilJetMappingMCP;
+
+  std::vector<bool> candidateSelectionFlagsData;
+  std::vector<bool> candidateSelectionFlagsMCD;
+  std::vector<bool> candidateSelectionFlagsMCP;
 
   std::vector<std::vector<int32_t>> splittingMatchesGeoVecVecData;
   std::vector<std::vector<int32_t>> splittingMatchesPtVecVecData;
@@ -115,6 +131,7 @@ struct JetSubstructureHFOutputTask {
   std::vector<std::vector<int32_t>> pairMatchesVecVecMCP;
 
   std::vector<double> jetRadiiValues;
+  std::vector<double> recoilJetRadiiValues;
 
   std::vector<bool> collisionFlag;
   std::vector<bool> mcCollisionFlag;
@@ -122,6 +139,7 @@ struct JetSubstructureHFOutputTask {
   void init(o2::framework::InitContext const&)
   {
     jetRadiiValues = (std::vector<double>)configs.jetRadii;
+    recoilJetRadiiValues = (std::vector<double>)configs.recoilJetRadii;
   }
 
   struct : o2::framework::PresliceGroup {
@@ -362,43 +380,102 @@ struct JetSubstructureHFOutputTask {
     }
   }
 
-  template <bool isMCD, bool isMCP, typename T, typename U>
-  void analyseCandidates(T const& jets, U const& /*candidates*/, std::map<int32_t, int32_t>& candidateMap, float jetPtMin)
+  template <typename T, typename U>
+  void analyseRecoilCharged(T const& jet, U& jetOutputTable, std::map<int32_t, int32_t>& jetMap, std::map<int32_t, int32_t>& candidateMap, float jetPtMin)
+  {
+    if (jet.pt() < jetPtMin) {
+      return;
+    }
+    if (!jetfindingutilities::isInEtaAcceptance(jet, configs.jetEtaMin, configs.jetEtaMax, configs.trackEtaMin, configs.trackEtaMax)) {
+      return;
+    }
+    for (const auto& jetRadiiValue : recoilJetRadiiValues) {
+      if (jet.r() == round(jetRadiiValue * 100.0f)) {
+        int32_t candidateIndex = -1;
+        auto candidateTableIndex = candidateMap.find(jet.candidateId());
+        if (candidateTableIndex != candidateMap.end()) {
+          candidateIndex = candidateTableIndex->second;
+        }
+        jetOutputTable(candidateIndex, jet.jetPt(), jet.jetPhi(), jet.jetEta(), jet.jetR(), jet.jetNConstituents());
+        jetMap.insert(std::make_pair(jet.jetId(), jetOutputTable.lastIndex())); // this is filled with the standard jet Id and the recoil jet table position
+      }
+    }
+  }
+
+  template <typename T, typename U>
+  void selectCandidates(T const& jets, U const& /*candidates*/, float jetPtMin, std::vector<bool>& candidateSelectionFlags)
   {
     for (const auto& jet : jets) {
+      auto candidate = jet.template candidates_first_as<U>();
+      auto candidateId = candidate.globalIndex();
       if (jet.pt() < jetPtMin) {
+        candidateSelectionFlags[candidateId] = false;
         continue;
       }
       if (!jetfindingutilities::isInEtaAcceptance(jet, configs.jetEtaMin, configs.jetEtaMax, configs.trackEtaMin, configs.trackEtaMax)) {
+        candidateSelectionFlags[candidateId] = false;
         continue;
       }
+      bool radiusSelected = false;
       for (const auto& jetRadiiValue : jetRadiiValues) {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
-
-          auto candidate = jet.template candidates_first_as<U>();
-
-          auto candidateTableIndex = candidateMap.find(candidate.globalIndex());
-          if (candidateTableIndex != candidateMap.end()) {
-            continue;
-          }
-          int32_t candidateCollisionIndex = -1;
-          if constexpr (isMCP) {
-            auto hfMcCollisionIndex = candidateMcCollisionMapping.find(jetcandidateutilities::getMcCandidateCollisionId(candidate));
-            if (hfMcCollisionIndex != candidateMcCollisionMapping.end()) {
-              candidateCollisionIndex = hfMcCollisionIndex->second;
-            }
-            jetcandidateutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, products.hfParticlesTable);
-            candidateMap.insert(std::make_pair(candidate.globalIndex(), products.hfParticlesTable.lastIndex()));
-          } else {
-            auto hfCollisionIndex = candidateCollisionMapping.find(jetcandidateutilities::getCandidateCollisionId(candidate));
-            if (hfCollisionIndex != candidateCollisionMapping.end()) {
-              candidateCollisionIndex = hfCollisionIndex->second;
-            }
-            jetcandidateutilities::fillCandidateTable<isMCD>(candidate, candidateCollisionIndex, products.candidateTable, products.candidateParsTable, products.candidateParExtrasTable, products.candidateParsDaughterTable, products.candidateSelsTable, products.candidateMlsTable, products.candidateMlsDaughterTable, products.candidateMcsTable);
-            candidateMap.insert(std::make_pair(candidate.globalIndex(), products.candidateTable.lastIndex()));
-          }
+          radiusSelected = true;
         }
       }
+      if (!radiusSelected) {
+        candidateSelectionFlags[candidateId] = false;
+        continue;
+      }
+    }
+  }
+
+  template <typename T>
+  void selectRecoilCandidates(T const& jets, float jetPtMin, std::vector<bool>& candidateSelectionFlags)
+  {
+    for (const auto& jet : jets) {
+      auto candidateId = jet.candidateId();
+      if (jet.pt() < jetPtMin) {
+        candidateSelectionFlags[candidateId] = false;
+        continue;
+      }
+      if (!jetfindingutilities::isInEtaAcceptance(jet, configs.jetEtaMin, configs.jetEtaMax, configs.trackEtaMin, configs.trackEtaMax)) {
+        candidateSelectionFlags[candidateId] = false;
+        continue;
+      }
+      bool radiusSelected = false;
+      for (const auto& jetRadiiValue : recoilJetRadiiValues) {
+        if (jet.r() == round(jetRadiiValue * 100.0f)) {
+          radiusSelected = true;
+        }
+      }
+      if (!radiusSelected) {
+        candidateSelectionFlags[candidateId] = false;
+        continue;
+      }
+    }
+  }
+
+  template <bool isMCD, bool isMCP, typename T>
+  void analyseCandidate(T const& candidate, std::map<int32_t, int32_t>& candidateMap, std::vector<bool>& candidateSelectionFlags)
+  {
+    if (!candidateSelectionFlags[candidate.globalIndex()]) {
+      return;
+    }
+    int32_t candidateCollisionIndex = -1;
+    if constexpr (isMCP) {
+      auto hfMcCollisionIndex = candidateMcCollisionMapping.find(jetcandidateutilities::getMcCandidateCollisionId(candidate));
+      if (hfMcCollisionIndex != candidateMcCollisionMapping.end()) {
+        candidateCollisionIndex = hfMcCollisionIndex->second;
+      }
+      jetcandidateutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, products.hfParticlesTable);
+      candidateMap.insert(std::make_pair(candidate.globalIndex(), products.hfParticlesTable.lastIndex()));
+    } else {
+      auto hfCollisionIndex = candidateCollisionMapping.find(jetcandidateutilities::getCandidateCollisionId(candidate));
+      if (hfCollisionIndex != candidateCollisionMapping.end()) {
+        candidateCollisionIndex = hfCollisionIndex->second;
+      }
+      jetcandidateutilities::fillCandidateTable<isMCD>(candidate, candidateCollisionIndex, products.candidateTable, products.candidateParsTable, products.candidateParExtrasTable, products.candidateParsDaughterTable, products.candidateSelsTable, products.candidateMlsTable, products.candidateMlsDaughterTable, products.candidateMcsTable);
+      candidateMap.insert(std::make_pair(candidate.globalIndex(), products.candidateTable.lastIndex()));
     }
   }
 
@@ -466,6 +543,59 @@ struct JetSubstructureHFOutputTask {
           auto jetIndex = jetMapping.find(jet.globalIndex());
           if (jetIndex != jetMapping.end()) {
             storedJetIndex = jetIndex->second;
+          }
+          matchingOutputTable(storedJetIndex, geoMatching, ptMatching, candMatching);
+        }
+      }
+    }
+  }
+
+  template <typename T, typename U, typename V>
+  void analyseRecoilJetMatched(T const& recoilJets, U const& /*jets*/, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
+  {
+    for (const auto& recoilJet : recoilJets) {
+      if (recoilJet.pt() < jetPtMin) {
+        continue;
+      }
+      if (!jetfindingutilities::isInEtaAcceptance(recoilJet, configs.jetEtaMin, configs.jetEtaMax, configs.trackEtaMin, configs.trackEtaMax)) {
+        continue;
+      }
+      int storedJetIndex = -1;
+      auto jetIndex = jetMapping.find(recoilJet.jetId());
+      if (jetIndex != jetMapping.end()) {
+        storedJetIndex = jetIndex->second;
+      } else {
+        continue;
+      }
+      for (const auto& jetRadiiValue : jetRadiiValues) {
+        if (recoilJet.r() == round(jetRadiiValue * 100.0f)) {
+          auto const& jet = recoilJet.template jet_as<U>();
+          std::vector<int> geoMatching;
+          std::vector<int> ptMatching;
+          std::vector<int> candMatching;
+          if (jet.has_matchedJetGeo()) {
+            for (auto& jetTagId : jet.matchedJetGeoIds()) {
+              auto jetTagIndex = jetTagMapping.find(jetTagId);
+              if (jetTagIndex != jetTagMapping.end()) {
+                geoMatching.push_back(jetTagIndex->second);
+              }
+            }
+          }
+          if (jet.has_matchedJetPt()) {
+            for (auto& jetTagId : jet.matchedJetPtIds()) {
+              auto jetTagIndex = jetTagMapping.find(jetTagId);
+              if (jetTagIndex != jetTagMapping.end()) {
+                ptMatching.push_back(jetTagIndex->second);
+              }
+            }
+          }
+          if (jet.has_matchedJetCand()) {
+            for (auto& jetTagId : jet.matchedJetCandIds()) {
+              auto jetTagIndex = jetTagMapping.find(jetTagId);
+              if (jetTagIndex != jetTagMapping.end()) {
+                candMatching.push_back(jetTagIndex->second);
+              }
+            }
           }
           matchingOutputTable(storedJetIndex, geoMatching, ptMatching, candMatching);
         }
@@ -569,24 +699,37 @@ struct JetSubstructureHFOutputTask {
     }
   }
 
-  void processClearMaps(o2::aod::JetCollisions const&)
+  void processClearMaps(CandidateTable const& candidates)
   {
     candidateMapping.clear();
     jetMappingData.clear();
     jetMappingDataSub.clear();
     jetMappingMCD.clear();
+    recoilJetMappingData.clear();
+    recoilJetMappingMCD.clear();
     candidateCollisionMapping.clear();
+    if (doprocessOutputCandidatesData) {
+      candidateSelectionFlagsData.clear();
+      candidateSelectionFlagsData.resize(candidates.size(), true);
+    }
+    if (doprocessOutputCandidatesMCD) {
+      candidateSelectionFlagsMCD.clear();
+      candidateSelectionFlagsMCD.resize(candidates.size(), true);
+    }
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the non-mcp maps in each dataframe", true);
 
-  void processClearMapsMCP(o2::aod::JetMcCollisions const& mcCollisions)
+  void processClearMapsMCP(o2::aod::JetMcCollisions const& mcCollisions, CandidateTableMCP const& candidates)
   {
     candidateMappingMCP.clear();
     jetMappingMCP.clear();
+    recoilJetMappingMCP.clear();
     candidateMcCollisionMapping.clear();
     for (auto mcCollision : mcCollisions) {
       products.hfMcOnlyCollisionsTable(mcCollision.posZ(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.weight());
     }
+    candidateSelectionFlagsMCP.clear();
+    candidateSelectionFlagsMCP.resize(candidates.size(), true);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMapsMCP, "process function that clears all the mcp maps in each dataframe", true);
 
@@ -630,36 +773,58 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsMCPOnly, "hf collision output MCP only", false);
 
-  void processOutputCandidatesData(o2::aod::JetCollision const&,
-                                   JetTableData const& jets,
-                                   CandidateTable const& candidates)
+  void processSelectCandidatesData(JetTableData const& jets, CandidateTable const& candidates)
   {
-    analyseCandidates<false, false>(jets, candidates, candidateMapping, configs.jetPtMinData);
+    selectCandidates(jets, candidates, configs.jetPtMinData, candidateSelectionFlagsData);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectCandidatesData, "select HF candidates for data", false);
+
+  void processSelectRecoilCandidatesData(RecoilTableData const& jets)
+  {
+    selectRecoilCandidates(jets, configs.recoilJetPtMinData, candidateSelectionFlagsData);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectRecoilCandidatesData, "select HF candidates for recoil data", false);
+
+  void processSelectCandidatesMCD(JetTableMCD const& jets, CandidateTableMCD const& candidates)
+  {
+    selectCandidates(jets, candidates, configs.jetPtMinMCD, candidateSelectionFlagsMCD);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectCandidatesMCD, "select HF candidates for mcd", false);
+
+  void processSelectRecoilCandidatesMCD(RecoilTableMCD const& jets)
+  {
+    selectRecoilCandidates(jets, configs.recoilJetPtMinMCD, candidateSelectionFlagsMCD);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectRecoilCandidatesMCD, "select HF candidates for recoil mcd", false);
+
+  void processSelectCandidatesMCP(JetTableMCP const& jets, CandidateTableMCP const& candidates)
+  {
+    selectCandidates(jets, candidates, configs.jetPtMinMCP, candidateSelectionFlagsMCP);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectCandidatesMCP, "select HF candidates for MCP", false);
+
+  void processSelectRecoilCandidatesMCP(RecoilTableMCP const& jets)
+  {
+    selectRecoilCandidates(jets, configs.recoilJetPtMinMCP, candidateSelectionFlagsMCP);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectRecoilCandidatesMCP, "select HF candidates for recoil MCP", false);
+
+  void processOutputCandidatesData(typename CandidateTable::iterator const& candidate)
+  {
+    analyseCandidate<false, false>(candidate, candidateMapping, candidateSelectionFlagsData);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesData, "hf candidate output data", false);
 
-  void processOutputCandidatesDataSub(o2::aod::JetCollision const&,
-                                      JetTableDataSub const& jets,
-                                      CandidateTable const& candidates)
-  {
-    analyseCandidates<false, false>(jets, candidates, candidateMapping, configs.jetPtMinDataSub);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesDataSub, "hf candidate output data eventwise constituent subtracted", false);
-
-  void processOutputCandidatesMCD(o2::aod::JetCollision const&,
-                                  JetTableMCD const& jets,
-                                  CandidateTableMCD const& candidates)
+  void processOutputCandidatesMCD(typename CandidateTableMCD::iterator const& candidate)
   {
 
-    analyseCandidates<true, false>(jets, candidates, candidateMapping, configs.jetPtMinMCD);
+    analyseCandidate<true, false>(candidate, candidateMapping, candidateSelectionFlagsMCD);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesMCD, "hf candidate output MCD", false);
 
-  void processOutputCandidatesMCP(o2::aod::JetMcCollision const&,
-                                  JetTableMCP const& jets,
-                                  CandidateTableMCP const& candidates)
+  void processOutputCandidatesMCP(typename CandidateTableMCP::iterator const& candidate)
   {
-    analyseCandidates<false, true>(jets, candidates, candidateMappingMCP, configs.jetPtMinMCP);
+    analyseCandidate<false, true>(candidate, candidateMappingMCP, candidateSelectionFlagsMCP);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesMCP, "hf candidate output MCP", false);
 
@@ -753,6 +918,34 @@ struct JetSubstructureHFOutputTask {
     analyseJetMatched(jetsMCP, jetMappingMCP, jetMappingMCD, products.jetMatchingOutputTableMCP, configs.jetPtMinMCP);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputJetMatchingMC, "jet matching output MC", false);
+
+  void processOutputRecoilJetsData(typename RecoilTableData::iterator const& recoilJet)
+  {
+    analyseRecoilCharged(recoilJet, products.jetRecoilOutputTableData, recoilJetMappingData, candidateMapping, configs.recoilJetPtMinData);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputRecoilJetsData, "hf recoil jet output Data", false);
+
+  void processOutputRecoilJetsMCD(typename RecoilTableMCD::iterator const& recoilJet)
+  {
+    analyseRecoilCharged(recoilJet, products.jetRecoilOutputTableMCD, recoilJetMappingMCD, candidateMapping, configs.recoilJetPtMinMCD);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputRecoilJetsMCD, "hf recoil jet output mcd", false);
+
+  void processOutputRecoilJetsMCP(typename RecoilTableMCP::iterator const& recoilJet)
+  {
+    analyseRecoilCharged(recoilJet, products.jetRecoilOutputTableMCP, recoilJetMappingMCP, candidateMappingMCP, configs.recoilJetPtMinMCP);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputRecoilJetsMCP, "hf recoil jet output mcp", false);
+
+  void processOutputRecoilJetMatchingMC(RecoilTableMCD const& recoilJetsMCD,
+                                        RecoilTableMCP const& recoilJetsMCP,
+                                        o2::soa::Join<o2::aod::ChargedMCDetectorLevelJets, o2::aod::ChargedMCDetectorLevelJetConstituents, o2::aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& jetsMCD,
+                                        o2::soa::Join<o2::aod::ChargedMCParticleLevelJets, o2::aod::ChargedMCParticleLevelJetConstituents, o2::aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const& jetsMCP)
+  {
+    analyseRecoilJetMatched(recoilJetsMCD, jetsMCD, recoilJetMappingMCD, recoilJetMappingMCP, products.jetRecoilMatchingOutputTableMCD, configs.recoilJetPtMinMCD);
+    analyseRecoilJetMatched(recoilJetsMCP, jetsMCP, recoilJetMappingMCP, recoilJetMappingMCD, products.jetRecoilMatchingOutputTableMCP, configs.recoilJetPtMinMCP);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputRecoilJetMatchingMC, "recoil jet matching output MC", false);
 };
 
 #endif // PWGJE_TASKS_JETSUBSTRUCTUREHFOUTPUT_H_
