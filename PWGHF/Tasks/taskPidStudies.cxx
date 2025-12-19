@@ -312,7 +312,7 @@ struct HfTaskPidStudies {
         return Particle::NotMatched;
       }
       auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();
-      int v0MCId = cand.template v0MCCoreId();
+      int v0MCId = cand.v0MCCoreId();
       if (v0MCId >= mcCoresSize) {
         // LOG(warn) << "v0MCId (" << v0MCId << ") >= MCCores size (" << mcCoresSize << "). Some issue in the data model?";
         return Particle::NotMatched;
