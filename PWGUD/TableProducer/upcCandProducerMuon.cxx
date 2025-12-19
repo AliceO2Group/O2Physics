@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file UpcCandProducerMuon.cxx
-/// \brief UPC candidate producer for forward muons without MFT
+/// \file   upcCandProducerMuon.cxx
+/// \brief  UPC candidate producer for forward muons without MFT
 /// \author Nazar Burmasov, nazar.burmasov@cern.ch
-/// \since 19.12.2025
+/// \since  19.12.2025
 
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"

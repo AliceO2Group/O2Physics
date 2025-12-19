@@ -90,10 +90,10 @@ struct FwdTrackPropagation {
       double centerMFT[3] = {0, 0, -61.4};
       o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
       auto* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+      auto bz = field->getBz(centerMFT); // Get field at centre of MFT
       auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), vtx[0], vtx[1], vtx[2]);
       auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-      fwdtrack.propagateToVtxhelixWithMCS(vtx[2], {vtx[0], vtx[1]}, {vtxCov[0], vtxCov[1]}, Bz, x2x0);
+      fwdtrack.propagateToVtxhelixWithMCS(vtx[2], {vtx[0], vtx[1]}, {vtxCov[0], vtxCov[1]}, bz, x2x0);
       propmuon.setParameters(fwdtrack.getParameters());
       propmuon.setZ(fwdtrack.getZ());
       propmuon.setCovariances(fwdtrack.getCovariances());
@@ -146,11 +146,11 @@ struct FwdTrackPropagation {
         // LOGP(info, "track {}, before: {} {} {} {} {} {}", t.globalIndex(), t.x(), t.y(), t.z(), t.phi(), t.tgl(), t.signed1Pt());
         // LOGP(info, "track {}, after: {} {} {} {} {} {}", t.globalIndex(), pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt());
         SMatrix55 cov = pft.getCovariances();
-        float sigX = TMath::Sqrt(cov(0, 0));
-        float sigY = TMath::Sqrt(cov(1, 1));
-        float sigPhi = TMath::Sqrt(cov(2, 2));
-        float sigTgl = TMath::Sqrt(cov(3, 3));
-        float sig1Pt = TMath::Sqrt(cov(4, 4));
+        float sigX = std::sqrt(cov(0, 0));
+        float sigY = std::sqrt(cov(1, 1));
+        float sigPhi = std::sqrt(cov(2, 2));
+        float sigTgl = std::sqrt(cov(3, 3));
+        float sig1Pt = std::sqrt(cov(4, 4));
         auto rhoXY = static_cast<int8_t>(128. * cov(0, 1) / (sigX * sigY));
         auto rhoPhiX = static_cast<int8_t>(128. * cov(0, 2) / (sigPhi * sigX));
         auto rhoPhiY = static_cast<int8_t>(128. * cov(1, 2) / (sigPhi * sigY));
