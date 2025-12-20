@@ -1041,6 +1041,7 @@ struct HfCorrelatorLcScHadrons {
 
     double yCand = -999.;
     double ptCand = -999.;
+    double ptCandLc = -999.;
     int8_t chargeCand = 3;
     double massCandPKPi = -999.0;
     double massCandPiKP = -999.0;
@@ -1069,6 +1070,7 @@ struct HfCorrelatorLcScHadrons {
         if constexpr (IsCandSc) {
           const auto& candidateLc = candidate.template prongLc_as<CandsLcData>();
           chargeCand = candidate.charge();
+          ptCandLc = candidateLc.pt();
 
           selLcPKPi = (candidateLc.isSelLcToPKPi() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPKPiFromPDG());
           selLcPiKP = (candidateLc.isSelLcToPiKP() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPiKPFromPDG());
