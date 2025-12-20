@@ -175,7 +175,7 @@ DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! A
 DECLARE_SOA_TABLE(PtLcFromScHPair, "AOD", "PTLCSCHPAIR", //! Sc-->Lc pT for paired Sc-proton
                   aod::hf_correlation_lc_hadron::PtLc);
 
-DECLARE_SOA_TABLE(PtLcFromSc, "AOD", "PTLCSC", //! Sc-->Lc pT 
+DECLARE_SOA_TABLE(PtLcFromSc, "AOD", "PTLCSC", //! Sc-->Lc pT
                   aod::hf_correlation_lc_hadron::PtLc);
 
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations
