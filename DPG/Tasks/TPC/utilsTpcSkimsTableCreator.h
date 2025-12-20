@@ -108,7 +108,7 @@ inline double tpcSignalGeneric(const TrkType& track)
   }
 }
 
-struct occupancyValues {
+struct OccupancyValues {
   float tmoPrimUnfm80{UndefValueFloat};
   float tmoFV0AUnfm80{UndefValueFloat};
   float tmoFT0AUnfm80{UndefValueFloat};
@@ -125,7 +125,7 @@ using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoToTrackQA, aod::TmoPri
 
 /// Evaluate occupancy-related variables
 template <typename TrkType>
-inline void evaluateOccupancyVariables(const TrkType& track, occupancyValues& occValues)
+inline void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues)
 {
   if (track.tmoId() == -1) {
     return;
