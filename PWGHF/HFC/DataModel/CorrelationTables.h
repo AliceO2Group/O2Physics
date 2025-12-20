@@ -172,6 +172,12 @@ DECLARE_SOA_COLUMN(KaNsigmTOF, kaNsigmTOF, float);                         //! A
 DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! Associated Particle TOF nSigma Pion
 } // namespace hf_correlation_lc_hadron
 
+DECLARE_SOA_TABLE(PtLcFromScHPair, "AOD", "PTLCSCHPAIR", //! Sc-->Lc pT for paired Sc-proton
+                  aod::hf_correlation_lc_hadron::PtLc);
+
+DECLARE_SOA_TABLE(PtLcFromSc, "AOD", "PTLCSC", //! Sc-->Lc pT 
+                  aod::hf_correlation_lc_hadron::PtLc);
+
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations
                   aod::hf_correlation_lc_hadron::DeltaPhi,
                   aod::hf_correlation_lc_hadron::DeltaEta,
