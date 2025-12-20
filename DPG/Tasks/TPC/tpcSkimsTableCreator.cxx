@@ -255,6 +255,7 @@ struct TreeWriterTpcV0 {
     const int multTPC = collision.multTPC();
     const auto trackOcc = collision.trackOccupancyInTimeRange();
     const auto ft0Occ = collision.ft0cOccupancyInTimeRange();
+    const auto occMedianTime = collision.occupancyMedianTime();
 
     const float alpha = v0casc.alpha();
     const float qt = v0casc.qtarm();
@@ -291,6 +292,7 @@ struct TreeWriterTpcV0 {
                    runnumber,
                    trackOcc,
                    ft0Occ,
+                   occMedianTime,
                    hadronicRate,
                    tpcdEdxNorm,
                    alpha,
@@ -320,6 +322,7 @@ struct TreeWriterTpcV0 {
                             runnumber,
                             trackOcc,
                             ft0Occ,
+                            occMedianTime,
                             hadronicRate,
                             tpcdEdxNorm,
                             alpha,
@@ -671,6 +674,7 @@ struct TreeWriterTpcTof {
     const int multTPC = collision.multTPC();
     const auto trackOcc = collision.trackOccupancyInTimeRange();
     const auto ft0Occ = collision.ft0cOccupancyInTimeRange();
+    const auto occMedianTime = collision.occupancyMedianTime();
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
@@ -700,6 +704,7 @@ struct TreeWriterTpcTof {
                       runnumber,
                       trackOcc,
                       ft0Occ,
+                      occMedianTime,
                       hadronicRate,
                       tpcdEdxNorm);
       } else {
@@ -723,6 +728,7 @@ struct TreeWriterTpcTof {
                                runnumber,
                                trackOcc,
                                ft0Occ,
+                               occMedianTime,
                                hadronicRate,
                                tpcdEdxNorm,
                                bcGlobalIndex,

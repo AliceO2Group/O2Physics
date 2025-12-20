@@ -50,6 +50,7 @@ DECLARE_SOA_COLUMN(GammaPsiPair, gammaPsiPair, float);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(TrackOcc, trackOcc, float);
 DECLARE_SOA_COLUMN(Ft0Occ, ft0Occ, float);
+DECLARE_SOA_COLUMN(OccMedianTime, occMedianTime, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(BcGlobalIndex, bcGlobalIndex, int);
 DECLARE_SOA_COLUMN(BcTimeFrameId, bcTimeFrameId, int);
@@ -77,6 +78,7 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::RunNumber,           \
     tpcskims::TrackOcc,            \
     tpcskims::Ft0Occ,              \
+    tpcskims::OccMedianTime,       \
     tpcskims::HadronicRate,        \
     o2::aod::trackqa::TPCdEdxNorm
 
