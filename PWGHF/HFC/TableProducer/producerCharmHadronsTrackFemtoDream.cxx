@@ -269,6 +269,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
     bool useLcMl = doprocessDataLcToPKPiWithML || doprocessMcLcToPKPiWithML;
     bool useDplusMl = doprocessDataDplusToPiKPiWithML || doprocessMcDplusToPiKPiWithML;
+    bool useD0Ml = doprocessDataD0ToPiKWithML || doprocessMcD0ToPiKWithML;
+    bool useDstarMl = doprocessDataDstarToD0PiWithML || doprocessMcDstarToD0PiWithML;
 
     if (applyMlMode == FillMlFromNewBDT) {
       if (useLcMl) {
@@ -281,6 +283,16 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         hfMlResponseDplus.cacheInputFeaturesIndices(namesInputFeatures);
         hfMlResponseDplus.init();
       }
+      if (useD0Ml) {
+        hfMlResponseD0.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseD0.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseD0.init();
+      }
+      if (useDstarMl) {
+        hfMlResponseDstar.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseDstar.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDstar.init();
+      }
 
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
@@ -290,12 +302,25 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         if (useDplusMl) {
           hfMlResponseDplus.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
         }
+        if (useD0Ml) {
+          hfMlResponseD0.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+        if (useDstarMl) {
+          hfMlResponseDstar.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+
       } else {
         if (useLcMl) {
           hfMlResponseLc.setModelPathsLocal(onnxFileNames);
         }
         if (useDplusMl) {
           hfMlResponseDplus.setModelPathsLocal(onnxFileNames);
+        }
+        if (useD0Ml) {
+          hfMlResponseD0.setModelPathsLocal(onnxFileNames);
+        }
+        if (useDstarMl) {
+          hfMlResponseDstar.setModelPathsLocal(onnxFileNames);
         }
       }
     }
@@ -679,9 +704,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               outputMlD0.at(2) = candidate.mlProbD0()[2]; /// non-prompt score
             }
             if (candidate.mlProbD0bar().size() > 0) {
-              outputMlD0bar.at(0) = candidate.mlProbD0()[0]; /// bkg score
-              outputMlD0bar.at(1) = candidate.mlProbD0()[1]; /// prompt score
-              outputMlD0bar.at(2) = candidate.mlProbD0()[2]; /// non-prompt score
+              outputMlD0bar.at(0) = candidate.mlProbD0bar()[0]; /// bkg score
+              outputMlD0bar.at(1) = candidate.mlProbD0bar()[1]; /// prompt score
+              outputMlD0bar.at(2) = candidate.mlProbD0bar()[2]; /// non-prompt score
             }
 
           } else if (applyMlMode == FillMlFromNewBDT) {
@@ -703,8 +728,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
             LOGF(fatal, "Please check your Ml configuration!!");
           }
         }
-        fillTable(1, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
-        fillTable(2, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
+        fillTable(0, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
+        fillTable(1, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
 
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         if constexpr (UseCharmMl) {
