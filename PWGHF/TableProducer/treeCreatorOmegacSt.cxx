@@ -269,12 +269,12 @@ struct HfTreeCreatorOmegacSt {
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
   // TOF nsigma configurable cuts (defaults: very loose = 9999)
-  Configurable<float> maxAbsTofnSigmaTrackPi{"maxAbsTofnSigmaTrackPi", 9999.f, "Max abs TOF nsigma for charm bachelor track as pion"};
-  Configurable<float> maxAbsTofnSigmaTrackKa{"maxAbsTofnSigmaTrackKa", 9999.f, "Max abs TOF nsigma for charm bachelor track as kaon"};
-  Configurable<float> maxAbsTofnSigmaV0Pr{"maxAbsTofnSigmaV0Pr", 9999.f, "Max abs TOF nsigma for V0 proton"};
-  Configurable<float> maxAbsTofnSigmaV0Pi{"maxAbsTofnSigmaV0Pi", 9999.f, "Max abs TOF nsigma for V0 pion"};
-  Configurable<float> maxAbsTofnSigmaBachelorPi{"maxAbsTofnSigmaBachelorPi", 9999.f, "Max abs TOF nsigma for cascade bachelor as pion"};
-  Configurable<float> maxAbsTofnSigmaBachelorKa{"maxAbsTofnSigmaBachelorKa", 9999.f, "Max abs TOF nsigma for cascade bachelor as kaon"};
+  Configurable<float> nSigmaAbsTofTrackPiMax{"nSigmaAbsTofTrackPiMax", 9999.f, "Max abs TOF nsigma for charm bachelor track as pion"};
+  Configurable<float> nSigmaAbsTofTrackKaMax{"nSigmaAbsTofTrackKaMax", 9999.f, "Max abs TOF nsigma for charm bachelor track as kaon"};
+  Configurable<float> nSigmaAbsTofV0PrMax{"nSigmaAbsTofV0PrMax", 9999.f, "Max abs TOF nsigma for V0 proton"};
+  Configurable<float> nSigmaAbsTofV0PiMax{"nSigmaAbsTofV0PiMax", 9999.f, "Max abs TOF nsigma for V0 pion"};
+  Configurable<float> nSigmaAbsTofBachelorPiMax{"nSigmaAbsTofBachelorPiMax", 9999.f, "Max abs TOF nsigma for cascade bachelor as pion"};
+  Configurable<float> nSigmaAbsTofBachelorKaMax{"nSigmaAbsTofBachelorKaMax", 9999.f, "Max abs TOF nsigma for cascade bachelor as kaon"};
   // whether to require TOF in addition to TPC
   Configurable<bool> useTofPid{"useTofPid", false, "Require TOF PID together with TPC PID when true; otherwise use TPC only"};
 
@@ -654,8 +654,8 @@ struct HfTreeCreatorOmegacSt {
           const bool tpcBachelor = (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) || (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelor);
           const float tofBachelorPiAbs = std::abs(bachelor.tofNSigmaPi());
           const float tofBachelorKaAbs = std::abs(bachelor.tofNSigmaKa());
-          const bool tofBachelorPiPass = (tofBachelorPiAbs > TofWoSignalRange[0] && tofBachelorPiAbs < TofWoSignalRange[1]) || (tofBachelorPiAbs < maxAbsTofnSigmaBachelorPi);
-          const bool tofBachelorKaPass = (tofBachelorKaAbs > TofWoSignalRange[0] && tofBachelorKaAbs < TofWoSignalRange[1]) || (tofBachelorKaAbs < maxAbsTofnSigmaBachelorKa);
+          const bool tofBachelorPiPass = (tofBachelorPiAbs > TofWoSignalRange[0] && tofBachelorPiAbs < TofWoSignalRange[1]) || (tofBachelorPiAbs < nSigmaAbsTofBachelorPiMax);
+          const bool tofBachelorKaPass = (tofBachelorKaAbs > TofWoSignalRange[0] && tofBachelorKaAbs < TofWoSignalRange[1]) || (tofBachelorKaAbs < nSigmaAbsTofBachelorKaMax);
           const bool tofBachelorPass = tofBachelorPiPass || tofBachelorKaPass;
           const bool bachelorPass = useTofPid.value ? (tpcBachelor && tofBachelorPass) : tpcBachelor;
 
@@ -663,8 +663,8 @@ struct HfTreeCreatorOmegacSt {
           const bool tpcV0Pi = (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi);
           const float tofV0PrAbs = std::abs(v0TrackPr.tofNSigmaPr());
           const float tofV0PiAbs = std::abs(v0TrackPi.tofNSigmaPi());
-          const bool tofV0PrPass = (tofV0PrAbs > TofWoSignalRange[0] && tofV0PrAbs < TofWoSignalRange[1]) || (tofV0PrAbs < maxAbsTofnSigmaV0Pr);
-          const bool tofV0PiPass = (tofV0PiAbs > TofWoSignalRange[0] && tofV0PiAbs < TofWoSignalRange[1]) || (tofV0PiAbs < maxAbsTofnSigmaV0Pi);
+          const bool tofV0PrPass = (tofV0PrAbs > TofWoSignalRange[0] && tofV0PrAbs < TofWoSignalRange[1]) || (tofV0PrAbs < nSigmaAbsTofV0PrMax);
+          const bool tofV0PiPass = (tofV0PiAbs > TofWoSignalRange[0] && tofV0PiAbs < TofWoSignalRange[1]) || (tofV0PiAbs < nSigmaAbsTofV0PiMax);
           const bool v0PrPass = useTofPid.value ? (tpcV0Pr && tofV0PrPass) : tpcV0Pr;
           const bool v0PiPass = useTofPid.value ? (tpcV0Pi && tofV0PiPass) : tpcV0Pi;
 
@@ -708,8 +708,8 @@ struct HfTreeCreatorOmegacSt {
                 const bool passTPCpid = (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) || (std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon);
                 const float tofPiAbs = std::abs(track.tofNSigmaPi());
                 const float tofKaAbs = std::abs(track.tofNSigmaKa());
-                const bool tofPiPass = (tofPiAbs > TofWoSignalRange[0] && tofPiAbs < TofWoSignalRange[1]) || (tofPiAbs < maxAbsTofnSigmaTrackPi);
-                const bool tofKaPass = (tofKaAbs > TofWoSignalRange[0] && tofKaAbs < TofWoSignalRange[1]) || (tofKaAbs < maxAbsTofnSigmaTrackKa);
+                const bool tofPiPass = (tofPiAbs > TofWoSignalRange[0] && tofPiAbs < TofWoSignalRange[1]) || (tofPiAbs < nSigmaAbsTofTrackPiMax);
+                const bool tofKaPass = (tofKaAbs > TofWoSignalRange[0] && tofKaAbs < TofWoSignalRange[1]) || (tofKaAbs < nSigmaAbsTofTrackKaMax);
                 const bool passTOFpid = tofPiPass || tofKaPass;
                 if (useTofPid.value) {
                   if (!(passTPCpid && passTOFpid)) {
