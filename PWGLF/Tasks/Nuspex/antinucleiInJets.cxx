@@ -49,11 +49,15 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "TGrid.h"
+#include <Math/Vector4D.h>
 #include <TList.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
 #include <TVector2.h>
 #include <TVector3.h>
+
+#include <ROOT/Math/PxPyPzMVector.h>
+#include <ROOT/Math/Boost.h>
 
 #include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
@@ -63,10 +67,6 @@
 #include <fastjet/Selector.hh>
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
-
-#include <Math/Vector4D.h>
-#include <ROOT/Math/PxPyPzMVector.h>
-#include <ROOT/Math/Boost.h>
 
 #include <chrono>
 #include <cmath>
@@ -99,12 +99,13 @@ struct ReducedParticle {
   double px;
   double py;
   double pz;
-  int    pdgCode;
-  int    mcIndex;
-  bool   used;
+  int pdgCode;
+  int mcIndex;
+  bool used;
 
   // Pseudorapidity
-  double eta() const {
+  double eta() const
+  {
     double p = std::sqrt(px * px + py * py + pz * pz);
     if (p == std::abs(pz)) {
       return (pz >= 0) ? 1e10 : -1e10;
@@ -113,13 +114,15 @@ struct ReducedParticle {
   }
 
   // Azimuthal Angle
-  double phi() const {
+  double phi() const
+  {
     double angle = PI + std::atan2(-py, -px);
     return angle;
   }
 
   // Transverse Momentum
-  double pt() const {
+  double pt() const
+  {
     return std::sqrt(px*px + py*py);
   }
 };
@@ -3170,17 +3173,17 @@ struct AntinucleiInJets {
       registryMC.fill(HIST("genEventsCoalescence"), 2.5);
 
       // Build deuterons
-      for (int ip=0 ; ip<protons.size() ; ip++) {
+      for (int ip = 0 ; ip < protons.size() ; ip++) {
         auto& proton = protons[ip];
         if (proton.used)
           continue;
 
-        for (int in=0 ; in<neutrons.size() ; in++) {
+        for (int in = 0 ; in < neutrons.size() ; in++) {
           auto& neutron = neutrons[in];
           if (neutron.used)
             continue;
 
-          if (passDeuteronCoalescence(proton,neutron,coalescenceMomentum,mRand)) {
+          if (passDeuteronCoalescence(proton, neutron, coalescenceMomentum, mRand)) {
 
             int sign = (proton.pdgCode > 0) ? +1 : -1;
             int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
