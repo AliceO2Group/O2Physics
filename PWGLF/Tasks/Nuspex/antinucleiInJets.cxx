@@ -49,15 +49,16 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "TGrid.h"
+#include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
+#include <Math/Vector3D.h>
 #include <TList.h>
+#include <TMath.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
 #include <TVector2.h>
 #include <TVector3.h>
 
-#include <ROOT/Math/Boost.h>
-#include <ROOT/Math/PxPyPzMVector.h>
 #include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
