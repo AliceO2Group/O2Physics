@@ -92,6 +92,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<bool> confIsCPRkT{"confIsCPRkT", true, "kT dependent deltaEta-deltaPhi cut for Close Pair Rejection"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
     Configurable<bool> confUseCCImCut{"confUseCCImCut", false, "Fill SH within specific quadrants of qout-qside"};
+    Configurable<bool> confUseMinqTcut{"confUseMinqTcut", false, "Fill SH with min. qT cut"};
+    Configurable<float> confMinqTcut{"confMinqTcut", 0.005, "Min. qT cut on filling SH"};
     Configurable<bool> confUse1stand3rd{"confUse1stand3rd", false, "Use first and third quadrants of qout-qside"};
     Configurable<bool> confUse2ndand4th{"confUse2ndand4th", false, "Use second and fourth quadrants of qout-qside"};
   } twotracksconfigs;
@@ -600,13 +602,20 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         std::vector<double> f3d;
         double kv;
         float outsideref = 0.0;
-
+        float qTmin = 0.0;
         switch (ContType) {
           case 2: {
             if (rand > 0.5) {
               f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, confIsIden);
+              qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
               if (!twotracksconfigs.confUseCCImCut) {
-                sameEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                if (!twotracksconfigs.confUseMinqTcut) {
+                  sameEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                } else {
+                  if (qTmin > twotracksconfigs.confMinqTcut) {
+                    sameEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                  }
+                }
               } else {
                 if (twotracksconfigs.confUse1stand3rd) {
                   if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {
@@ -624,8 +633,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
               }
             } else if (rand <= 0.5) {
               f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, confIsIden);
+              qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
               if (!twotracksconfigs.confUseCCImCut) {
-                sameEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                if (!twotracksconfigs.confUseMinqTcut) {
+                  sameEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                } else {
+                  if (qTmin > twotracksconfigs.confMinqTcut) {
+                    sameEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                  }
+                }
               } else {
                 if (twotracksconfigs.confUse1stand3rd) {
                   if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {
@@ -652,8 +668,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           case 3: {
             if (rand > 0.5) {
               f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, confIsIden);
+              qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
               if (!twotracksconfigs.confUseCCImCut) {
-                sameEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                if (!twotracksconfigs.confUseMinqTcut) {
+                  sameEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                } else {
+                  if (qTmin > twotracksconfigs.confMinqTcut) {
+                    sameEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                  }
+                }
               } else {
                 if (twotracksconfigs.confUse1stand3rd) {
                   if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {
@@ -671,8 +694,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
               }
             } else if (rand <= 0.5) {
               f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, confIsIden);
+              qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
               if (!twotracksconfigs.confUseCCImCut) {
-                sameEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                if (!twotracksconfigs.confUseMinqTcut) {
+                  sameEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                } else {
+                  if (qTmin > twotracksconfigs.confMinqTcut) {
+                    sameEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, confIsIden);
+                  }
+                }
               } else {
                 if (twotracksconfigs.confUse1stand3rd) {
                   if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {
@@ -977,6 +1007,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       std::vector<double> f3d;
       double kv;
       float outsideref = 0.0;
+      float qTmin = 0.0;
 
       switch (ContType) {
         case 1: {
@@ -991,8 +1022,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         case 2: {
           if (rand > 0.5) {
             f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, confIsIden);
+            qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
             if (!twotracksconfigs.confUseCCImCut) {
-              mixedEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              if (!twotracksconfigs.confUseMinqTcut) {
+                mixedEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              } else {
+                if (qTmin > twotracksconfigs.confMinqTcut) {
+                  mixedEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+                }
+              }
             } else {
               if (twotracksconfigs.confUse1stand3rd) {
                 if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {
@@ -1006,8 +1044,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
             }
           } else {
             f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, confIsIden);
+            qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
             if (!twotracksconfigs.confUseCCImCut) {
-              mixedEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              if (!twotracksconfigs.confUseMinqTcut) {
+                mixedEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              } else {
+                if (qTmin > twotracksconfigs.confMinqTcut) {
+                  mixedEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+                }
+              }
             } else {
               if (twotracksconfigs.confUse1stand3rd) {
                 if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {
@@ -1030,8 +1075,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         case 3: {
           if (rand > 0.5) {
             f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, confIsIden);
+            qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
             if (!twotracksconfigs.confUseCCImCut) {
-              mixedEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              if (!twotracksconfigs.confUseMinqTcut) {
+                mixedEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              } else {
+                if (qTmin > twotracksconfigs.confMinqTcut) {
+                  mixedEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+                }
+              }
             } else {
               if (twotracksconfigs.confUse1stand3rd) {
                 if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {
@@ -1045,8 +1097,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
             }
           } else {
             f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, confIsIden);
+            qTmin = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2]);
             if (!twotracksconfigs.confUseCCImCut) {
-              mixedEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              if (!twotracksconfigs.confUseMinqTcut) {
+                mixedEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+              } else {
+                if (qTmin > twotracksconfigs.confMinqTcut) {
+                  mixedEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, confIsIden);
+                }
+              }
             } else {
               if (twotracksconfigs.confUse1stand3rd) {
                 if ((f3d[1] >= outsideref && f3d[2] >= outsideref) || (f3d[1] < outsideref && f3d[2] < outsideref)) {

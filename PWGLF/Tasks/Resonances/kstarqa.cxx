@@ -113,6 +113,7 @@ struct Kstarqa {
     Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 36.0, "ITS Chi2/NCl"};
     Configurable<float> cfgTPCChi2NClMax{"cfgTPCChi2NClMax", 4.0, "TPC Chi2/NCl"};
     Configurable<float> cfgTPCChi2NClMin{"cfgTPCChi2NClMin", 0.0, "TPC Chi2/NCl"};
+    Configurable<bool> hasITS{"hasITS", true, "Required ITS"};
     Configurable<bool> isITSTPCRefit{"isITSTPCRefit", false, "Require ITS Refit"};
     Configurable<bool> isVertexITSTPC{"isVertexITSTPC", false, "Vertex ITS TPC"};
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
@@ -550,6 +551,8 @@ struct Kstarqa {
       if (candidate.tpcChi2NCl() >= selectionConfig.cfgTPCChi2NClMax || candidate.tpcChi2NCl() < selectionConfig.cfgTPCChi2NClMin)
         return false;
       if (selectionConfig.cfgPVContributor && !candidate.isPVContributor())
+        return false;
+      if (selectionConfig.hasITS && !candidate.hasITS())
         return false;
       if (selectionConfig.isITSTPCRefit && (!(o2::aod::track::ITSrefit) || !(o2::aod::track::TPCrefit)))
         return false;
@@ -2135,7 +2138,9 @@ struct Kstarqa {
     hInvMass.fill(HIST("h1RecMult"), multiplicity);
     hInvMass.fill(HIST("h1RecMult2"), multiplicityRec);
 
-    hInvMass.fill(HIST("h1RecMult"), multiplicity);
+    if (cQAevents) {
+      rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+    }
 
     auto oldindex = -999;
     for (const auto& track1 : tracks) {
@@ -2145,6 +2150,11 @@ struct Kstarqa {
 
       if (!track1.has_mcParticle()) {
         continue;
+      }
+
+      if (cQAevents) {
+        rEventSelection.fill(HIST("hDcaxy_cent_pt"), track1.dcaXY(), multiplicity, track1.pt());
+        rEventSelection.fill(HIST("hDcaz_cent_pt"), track1.dcaZ(), multiplicity, track1.pt());
       }
 
       auto track1ID = track1.index();
@@ -2188,13 +2198,13 @@ struct Kstarqa {
           hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
           hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
         }
-        if (cQAplots && (mctrack2.pdgCode() == -PDG_t::kPiMinus)) { // negative track pion
+        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiMinus)) { // negative track pion
           hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
           hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
           hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
           hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
         }
-        if (cQAplots && (mctrack2.pdgCode() == -PDG_t::kKMinus)) { // negative track kaon
+        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKMinus)) { // negative track kaon
           hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track2.tpcNSigmaKa());
           hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track2.tofNSigmaKa());
           hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
@@ -2203,6 +2213,10 @@ struct Kstarqa {
         if (cQAplots && (std::abs(mctrack1.pdgCode()) == PDG_t::kKPlus && std::abs(mctrack2.pdgCode()) == PDG_t::kPiPlus)) {
           hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
           hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+          hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
+          hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+          hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
         }
 
         if (!mctrack1.isPhysicalPrimary()) {
