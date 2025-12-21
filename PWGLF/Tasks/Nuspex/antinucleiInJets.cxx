@@ -204,7 +204,7 @@ struct AntinucleiInJets {
   Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};
 
   // Coalescence momentum
-  Configurable<bool> coalescenceMomentum{"coalescenceMomentum", 0.15, "p0 (GeV/c)"};
+  Configurable<double> coalescenceMomentum{"coalescenceMomentum", 0.15, "p0 (GeV/c)"};
 
   // Reweighting histograms
   TH1F* primaryAntiprotons;
@@ -678,7 +678,7 @@ struct AntinucleiInJets {
     // Boost individual nucleons to the pair center-of-mass frame
     ROOT::Math::Boost boostToCM(p4tot.BoostToCM());
     const LorentzVector p4pcm = boostToCM(p4p);
-    const LorentzVector p4ncm = boostToCM(p4n);
+    // const LorentzVector p4ncm = boostToCM(p4n);
 
     // Relative momentum magnitude in the CM frame
     const double relativeMomentum = p4pcm.P();
@@ -3173,12 +3173,12 @@ struct AntinucleiInJets {
       registryMC.fill(HIST("genEventsCoalescence"), 2.5);
 
       // Build deuterons
-      for (int ip = 0; ip < protons.size(); ip++) {
+      for (int ip = 0; ip < static_cast<int>(protons.size()); ip++) {
         auto& proton = protons[ip];
         if (proton.used)
           continue;
 
-        for (int in = 0; in < neutrons.size(); in++) {
+        for (int in = 0; in < static_cast<int>(neutrons.size()); in++) {
           auto& neutron = neutrons[in];
           if (neutron.used)
             continue;
@@ -3197,7 +3197,7 @@ struct AntinucleiInJets {
               continue;
 
             // Store Deuteron
-            chargedParticles.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, proton.mcId, false});
+            chargedParticles.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, proton.mcIndex, false});
 
             neutron.used = true;
             proton.used = true;
