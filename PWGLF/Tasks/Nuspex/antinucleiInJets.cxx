@@ -56,8 +56,8 @@
 #include <TVector2.h>
 #include <TVector3.h>
 
-#include <ROOT/Math/PxPyPzMVector.h>
 #include <ROOT/Math/Boost.h>
+#include <ROOT/Math/PxPyPzMVector.h>
 
 #include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
@@ -123,7 +123,7 @@ struct ReducedParticle {
   // Transverse Momentum
   double pt() const
   {
-    return std::sqrt(px*px + py*py);
+    return std::sqrt(px * px + py * py);
   }
 };
 
@@ -3173,12 +3173,12 @@ struct AntinucleiInJets {
       registryMC.fill(HIST("genEventsCoalescence"), 2.5);
 
       // Build deuterons
-      for (int ip = 0 ; ip < protons.size() ; ip++) {
+      for (int ip = 0; ip < protons.size(); ip++) {
         auto& proton = protons[ip];
         if (proton.used)
           continue;
 
-        for (int in = 0 ; in < neutrons.size() ; in++) {
+        for (int in = 0; in < neutrons.size(); in++) {
           auto& neutron = neutrons[in];
           if (neutron.used)
             continue;
