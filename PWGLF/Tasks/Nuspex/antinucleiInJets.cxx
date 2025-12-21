@@ -64,6 +64,10 @@
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
 
+#include <Math/Vector4D.h>
+#include <ROOT/Math/PxPyPzMVector.h>
+#include <ROOT/Math/Boost.h>
+
 #include <chrono>
 #include <cmath>
 #include <memory>
@@ -87,6 +91,38 @@ using RecCollisionsMc = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, 
 using GenCollisionsMc = aod::McCollisions;
 using AntiNucleiTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
 using AntiNucleiTracksMc = soa::Join<AntiNucleiTracks, aod::McTrackLabels>;
+
+using LorentzVector = ROOT::Math::PxPyPzEVector;
+
+// Lightweight particle container for fast kinematic access
+struct ReducedParticle {
+  double px;
+  double py;
+  double pz;
+  int    pdgCode;
+  int    mcIndex;
+  bool   used;
+
+  // Pseudorapidity
+  double eta() const {
+    double p = std::sqrt(px * px + py * py + pz * pz);
+    if (p == std::abs(pz)) {
+      return (pz >= 0) ? 1e10 : -1e10;
+    }
+    return 0.5 * std::log((p + pz) / (p - pz));
+  }
+    
+  // Azimuthal Angle
+  double phi() const {
+    double angle = PI + std::atan2(-py, -px);
+    return angle;
+  }
+
+  // Transverse Momentum
+  double pt() const {
+    return std::sqrt(px*px + py*py);
+  }
+};
 
 struct AntinucleiInJets {
 
@@ -164,6 +200,9 @@ struct AntinucleiInJets {
   // Number of events
   Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};
 
+  // Coalescence momentum
+  Configurable<bool> coalescenceMomentum{"coalescenceMomentum", 0.15, "p0 (GeV/c)"};
+
   // Reweighting histograms
   TH1F* primaryAntiprotons;
   TH1F* primaryAntiLambda;
@@ -211,8 +250,8 @@ struct AntinucleiInJets {
     }
 
     // Initialize random seed using high-resolution clock to ensure unique sequences across parallel Grid jobs
-    auto time_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    mRand.SetSeed(time_seed);
+    auto timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    mRand.SetSeed(timeSeed);
 
     // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
     if (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec) {
@@ -431,6 +470,15 @@ struct AntinucleiInJets {
       registryMC.add("antip_sec_low", "antip_sec_low", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
     }
 
+    // Coalescence
+    if (doprocessCoalescence) {
+      registryMC.add("genEventsCoalescence", "genEventsCoalescence", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryMC.add("antideuteron_coal_jet", "antideuteron_coal_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antideuteron_coal_ue", "antideuteron_coal_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_coal_jet", "antiproton_coal_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_coal_ue", "antiproton_coal_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+    }
+
     // Systematic uncertainties (Data)
     if (doprocessSystData) {
       registryData.add("number_of_events_data_syst", "event counter", HistType::kTH1F, {{20, 0, 20, "counter"}});
@@ -579,76 +627,70 @@ struct AntinucleiInJets {
       return false;
 
     // Constants for identifying heavy-flavor (charm and bottom) content from PDG codes
-    static constexpr int kCharmQuark = 4;
-    static constexpr int kBottomQuark = 5;
-    static constexpr int hundreds = 100;
-    static constexpr int thousands = 1000;
+    static constexpr int CharmQuark = 4;
+    static constexpr int BottomQuark = 5;
+    static constexpr int Hundreds = 100;
+    static constexpr int Thousands = 1000;
 
     // Check if particle is from heavy-flavor decay
     bool fromHF = false;
     if (particle.has_mothers()) {
       auto mother = mcParticles.iteratorAt(particle.mothersIds()[0]);
       int motherPdg = std::abs(mother.pdgCode());
-      fromHF = (motherPdg / hundreds == kCharmQuark || motherPdg / hundreds == kBottomQuark || motherPdg / thousands == kCharmQuark || motherPdg / thousands == kBottomQuark);
+      fromHF = (motherPdg / Hundreds == CharmQuark || motherPdg / Hundreds == BottomQuark || motherPdg / Thousands == CharmQuark || motherPdg / Thousands == BottomQuark);
     }
 
     // Select only physical primary particles or from heavy-flavor
     return (particle.isPhysicalPrimary() || fromHF);
   }
 
-  /*
-  // Compute two unit vectors perpendicular to p
-  void getPerpendicularAxis(const TVector3& p, TVector3& u, double sign)
+  // Evaluate proton–neutron coalescence for deuteron formation
+  template <typename ReducedPart>
+  bool passDeuteronCoalescence(const ReducedPart& p, const ReducedPart& n, double p0, TRandom3& mRand)
   {
-    double px = p.X();
-    double py = p.Y();
-    double pz = p.Z();
+    // Nucleon masses
+    const double mp = o2::constants::physics::MassProton;
+    const double mn = o2::constants::physics::MassNeutron;
 
-    double px2 = px * px;
-    double py2 = py * py;
-    double pz2 = pz * pz;
-    double pz4 = pz2 * pz2;
+    // Spin-statistical factor for deuteron formation (S = 1)
+    static constexpr double SpinFactor = 3.0 / 4.0;
 
-    // px and py are both zero
-    if (px == 0 && py == 0) {
-      u.SetXYZ(0, 0, 0);
-      return;
+    // Require proton and neutron to be both matter or both antimatter
+    const int signP = p.pdgCode / std::abs(p.pdgCode);
+    const int signN = n.pdgCode / std::abs(n.pdgCode);
+    if (signP != signN) {
+      return false;
     }
 
-    // protection 1
-    if (px == 0 && py != 0) {
-      double ux = sign * std::sqrt(py2 - pz4 / py2);
-      double uy = -pz2 / py;
-      u.SetXYZ(ux, uy, pz);
-      return;
+    // Build on-shell nucleon four-momenta
+    const double ep = std::sqrt(p.px * p.px + p.py * p.py + p.pz * p.pz + mp * mp);
+    const double en = std::sqrt(n.px * n.px + n.py * n.py + n.pz * n.pz + mn * mn);
+
+    LorentzVector p4p(p.px, p.py, p.pz, ep);
+    LorentzVector p4n(n.px, n.py, n.pz, en);
+
+    // Total four-momentum of the nucleon pair
+    const LorentzVector p4tot = p4p + p4n;
+
+    // Boost individual nucleons to the pair center-of-mass frame
+    ROOT::Math::Boost boostToCM(p4tot.BoostToCM());
+    const LorentzVector p4pcm = boostToCM(p4p);
+    const LorentzVector p4ncm = boostToCM(p4n);
+
+    // Relative momentum magnitude in the CM frame
+    const double relativeMomentum = p4pcm.P();
+
+    // Momentum-space coalescence condition
+    if (relativeMomentum > p0) {
+      return false;
     }
 
-    // protection 2
-    if (py == 0 && px != 0) {
-      double ux = -pz2 / px;
-      double uy = sign * std::sqrt(px2 - pz4 / px2);
-      u.SetXYZ(ux, uy, pz);
-      return;
+    // Spin-statistical acceptance
+    if (mRand.Uniform() > SpinFactor) {
+      return false;
     }
-
-    // General case
-    double a = px2 + py2;
-    double b = 2.0 * px * pz2;
-    double c = pz4 - py2 * py2 - px2 * py2;
-
-    double delta = b * b - 4.0 * a * c;
-
-    if (delta < 0 || a == 0) {
-      LOGP(warn, "Invalid input in getPerpendicularAxis: delta = {}, a = {}", delta, a);
-      u.SetXYZ(0, 0, 0);
-      return;
-    }
-
-    double ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
-    double uy = (-pz2 - px * ux) / py;
-    u.SetXYZ(ux, uy, pz);
+    return true;
   }
-  */
 
   // Compute two transverse directions orthogonal to vector p
   void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2)
@@ -893,8 +935,8 @@ struct AntinucleiInJets {
   bool isProton(const ProtonTrack& track)
   {
     // Constants
-    static constexpr double kPtThreshold = 0.6;
-    static constexpr double kNsigmaMax = 3.0;
+    static constexpr double PtThreshold = 0.6;
+    static constexpr double NsigmaMax = 3.0;
 
     // PID variables and transverse momentum of the track
     const double nsigmaTPC = track.tpcNSigmaPr();
@@ -902,15 +944,15 @@ struct AntinucleiInJets {
     const double pt = track.pt();
 
     // Apply TPC PID cut
-    if (std::abs(nsigmaTPC) > kNsigmaMax)
+    if (std::abs(nsigmaTPC) > NsigmaMax)
       return false;
 
     // Low-pt: TPC PID is sufficient
-    if (pt < kPtThreshold)
+    if (pt < PtThreshold)
       return true;
 
     // High-pt: require valid TOF match and pass TOF PID
-    return (track.hasTOF() && std::abs(nsigmaTOF) < kNsigmaMax);
+    return (track.hasTOF() && std::abs(nsigmaTOF) < NsigmaMax);
   }
 
   // Selection of (anti)deuterons
@@ -918,8 +960,8 @@ struct AntinucleiInJets {
   bool isDeuteron(const DeuteronTrack& track)
   {
     // Constants
-    static constexpr double kPtThreshold = 1.0;
-    static constexpr double kNsigmaMax = 3.0;
+    static constexpr double PtThreshold = 1.0;
+    static constexpr double NsigmaMax = 3.0;
 
     // PID variables and transverse momentum of the track
     const double nsigmaTPC = track.tpcNSigmaDe();
@@ -927,15 +969,15 @@ struct AntinucleiInJets {
     const double pt = track.pt();
 
     // Apply TPC PID cut
-    if (std::abs(nsigmaTPC) > kNsigmaMax)
+    if (std::abs(nsigmaTPC) > NsigmaMax)
       return false;
 
     // Low-pt: TPC PID is sufficient
-    if (pt < kPtThreshold)
+    if (pt < PtThreshold)
       return true;
 
     // High-pt: require valid TOF match and pass TOF PID
-    return (track.hasTOF() && std::abs(nsigmaTOF) < kNsigmaMax);
+    return (track.hasTOF() && std::abs(nsigmaTOF) < NsigmaMax);
   }
 
   // Process Data
@@ -3056,6 +3098,212 @@ struct AntinucleiInJets {
     */
   }
   PROCESS_SWITCH(AntinucleiInJets, processCorr, "Process Correlation analysis", false);
+
+  // Process coalescence
+  void processCoalescence(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
+  {
+    // Deuteron Mass and minimum pt
+    double massDeut = o2::constants::physics::MassDeuteron;
+    static constexpr double MinPtParticle = 0.1;
+
+    // Define per-event particle containers
+    std::vector<ReducedParticle> chargedParticles;
+    std::vector<ReducedParticle> protons;
+    std::vector<ReducedParticle> neutrons;
+    std::vector<fastjet::PseudoJet> fjParticles;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over all simulated collisions
+    for (const auto& collision : collisions) {
+
+      // Clear containers at the start of the event loop
+      chargedParticles.clear();
+      protons.clear();
+      neutrons.clear();
+      fjParticles.clear();
+
+      // Event counter: before event selection
+      registryMC.fill(HIST("genEventsCoalescence"), 0.5);
+
+      // Apply event selection: require vertex position to be within the allowed z range
+      if (std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Event counter: after event selection
+      registryMC.fill(HIST("genEventsCoalescence"), 1.5);
+
+      // Get particles in this MC collision
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
+
+      // Loop over MC particles
+      for (const auto& particle : mcParticlesThisMcColl) {
+
+        // Monte Carlo index
+        int mcId = particle.globalIndex();
+
+        // Store Protons
+        if (particle.isPhysicalPrimary() && std::abs(particle.pdgCode()) == PDG_t::kProton) {
+          protons.push_back({particle.px(), particle.py(), particle.pz(), particle.pdgCode(), mcId, false});
+        }
+
+        // Store Neutrons
+        if (particle.isPhysicalPrimary() && std::abs(particle.pdgCode()) == PDG_t::kNeutron) {
+          neutrons.push_back({particle.px(), particle.py(), particle.pz(), particle.pdgCode(), mcId, false});
+        }
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
+          continue;
+
+        // Select particles within acceptance
+        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle)
+          continue;
+        chargedParticles.push_back({particle.px(), particle.py(), particle.pz(), particle.pdgCode(), mcId, false});
+      }
+
+      // Reject empty events
+      if (chargedParticles.empty())
+        continue;
+      registryMC.fill(HIST("genEventsCoalescence"), 2.5);
+
+      // Build deuterons
+      for (int ip=0 ; ip<protons.size() ; ip++) {
+        auto& proton = protons[ip];
+        if (proton.used)
+          continue;
+
+        for (int in=0 ; in<neutrons.size() ; in++) {
+          auto& neutron = neutrons[in];
+          if (neutron.used)
+            continue;
+
+          if (passDeuteronCoalescence(proton,neutron,coalescenceMomentum,mRand)) {
+
+            int sign = (proton.pdgCode > 0) ? +1 : -1;
+            int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
+
+            double pxDeut = proton.px + neutron.px;
+            double pyDeut = proton.py + neutron.py;
+            double pzDeut = proton.pz + neutron.pz;
+            double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
+            LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
+            if (pd.Eta() < minEta || pd.Eta() > maxEta || pd.Pt() < MinPtParticle)
+              continue;
+
+            // Store Deuteron
+            chargedParticles.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, proton.mcId, false});
+
+            neutron.used = true;
+            proton.used = true;
+            break;
+          }
+        }
+      }
+
+      // Fill particle array to feed to Fastjet
+      for (const auto& part : chargedParticles) {
+
+        if (part.used)
+          continue;
+
+        double energy = std::sqrt(part.px * part.px + part.py * part.py + part.pz * part.pz + MassPionCharged * MassPionCharged);
+        fastjet::PseudoJet fourMomentum(part.px, part.py, part.pz, energy);
+        fourMomentum.set_user_index(part.pdgCode);
+        fjParticles.emplace_back(fourMomentum);
+      }
+
+      // Reject empty events
+      if (fjParticles.empty())
+        continue;
+      registryMC.fill(HIST("genEventsCoalescence"), 3.5);
+
+      // Cluster MC particles into jets using anti-kt algorithm
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+      if (jets.empty())
+        continue;
+      registryMC.fill(HIST("genEventsCoalescence"), 4.5);
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
+
+      // Loop over clustered jets
+      bool isAtLeastOneJetSelected = false;
+      for (const auto& jet : jets) {
+
+        // Jet must be fully contained in the acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+          continue;
+
+        // Jet pt must be larger than threshold
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+        if (jetMinusBkg.pt() < minJetPt)
+          continue;
+
+        // Apply area cut if required
+        double normalizedJetArea = jet.area() / (PI * rJet * rJet);
+        if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+          continue;
+        isAtLeastOneJetSelected = true;
+
+        // Analyze jet constituents
+        std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
+        for (const auto& particle : jetConstituents) {
+          if (particle.user_index() == PDG_t::kProtonBar)
+            registryMC.fill(HIST("antiproton_coal_jet"), particle.pt());
+          if (particle.user_index() == -o2::constants::physics::Pdg::kDeuteron)
+            registryMC.fill(HIST("antideuteron_coal_jet"), particle.pt());
+        }
+
+        // Set up two perpendicular cone axes for underlying event estimation
+        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+        double coneRadius = std::sqrt(jet.area() / PI);
+        TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
+        getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+        if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
+          continue;
+        }
+
+        // Loop over MC particles to analyze underlying event region
+        for (const auto& chParticle : chargedParticles) {
+
+          // Skip used particles
+          if (chParticle.used)
+            continue;
+
+          // Compute distance of particle from both perpendicular cone axes
+          double deltaEtaUe1 = chParticle.eta() - ueAxis1.Eta();
+          double deltaPhiUe1 = getDeltaPhi(chParticle.phi(), ueAxis1.Phi());
+          double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          double deltaEtaUe2 = chParticle.eta() - ueAxis2.Eta();
+          double deltaPhiUe2 = getDeltaPhi(chParticle.phi(), ueAxis2.Phi());
+          double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Determine the maximum allowed distance from UE axes for particle selection
+          double maxConeRadius = coneRadius;
+          if (applyAreaCut) {
+            maxConeRadius = std::sqrt(maxNormalizedJetArea) * rJet;
+          }
+
+          // Reject tracks that lie outside the maxConeRadius from both UE axes
+          if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
+            continue;
+
+          // Fill histograms for UE
+          if (chParticle.pdgCode == PDG_t::kProtonBar)
+            registryMC.fill(HIST("antiproton_coal_ue"), chParticle.pt());
+          if (chParticle.pdgCode == -o2::constants::physics::Pdg::kDeuteron)
+            registryMC.fill(HIST("antideuteron_coal_ue"), chParticle.pt());
+        }
+      }
+      if (isAtLeastOneJetSelected) {
+        registryMC.fill(HIST("genEventsCoalescence"), 5.5);
+      }
+    }
+  }
+  PROCESS_SWITCH(AntinucleiInJets, processCoalescence, "process coalescence", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
