@@ -111,7 +111,7 @@ struct ReducedParticle {
     }
     return 0.5 * std::log((p + pz) / (p - pz));
   }
-    
+
   // Azimuthal Angle
   double phi() const {
     double angle = PI + std::atan2(-py, -px);
