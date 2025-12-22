@@ -220,6 +220,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   // important for RCT, Zorro
   bool isInitCalled{false};
 
+  // guard variable to guarantee that histograms are added to the registry before filling them
+  bool areHistosInRegistry{false};
+
   /// Set standard preselection gap trigger (values taken from UD group)
   SGCutParHolder setSgPreselection()
   {
@@ -254,6 +257,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
     hCollisionsCentIR = registry.add<TH2>(NameHistCollisionsCentIR, "selected events;Centrality; Interaction Rate [Hz]", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisInteractionRate}});
+
+    // histograms in registry
+    // let's update the guard variable
+    areHistosInRegistry = true;
   }
 
   /// \brief Inits the HF event selection object
@@ -445,6 +452,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
                       const float occupancy = -1.f,
                       const float ir = -1.f)
   {
+    if (!areHistosInRegistry) {
+      // protect against missing histograms in registry
+      LOG(fatal) << "You are trying to fill histograms, but they are not in the histogram registry. Call the function HfEventSelectionMc::addHistograms() to fix.";
+    }
+
     hCollisions->Fill(EventRejection::None);
     const auto posZ = collision.posZ();
     hPosZBeforeEvSel->Fill(posZ);
@@ -498,6 +510,7 @@ struct HfEventSelectionMc {
   bool rctCheckZDC{false};                    // require ZDC from RCT
   bool rctTreatLimitedAcceptanceAsBad{false}; // RCT flag to reject events with limited acceptance for selected detectors
   bool isInitCalled{false};                   // guard variable to guarantee full configuration, important for RCT
+  bool areHistosInRegistry{false};            // guard variable to guarantee that histograms are added to the registry before filling them
 
   // util to retrieve the RCT info from CCDB
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -523,6 +536,10 @@ struct HfEventSelectionMc {
     hGenCollisions = registry.add<TH1>(NameHistGenCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
     setEventRejectionLabels(hGenCollisions);
+
+    // histograms in registry
+    // let's update the guard variable
+    areHistosInRegistry = true;
   }
 
   /// \brief Configures the object from the reco workflow
@@ -644,6 +661,11 @@ struct HfEventSelectionMc {
                       const HfCollisionRejectionMask rejectionMask,
                       const int nSplitColl = 0)
   {
+    if (!areHistosInRegistry) {
+      // protect against missing histograms in registry
+      LOG(fatal) << "You are trying to fill histograms, but they are not in the histogram registry. Call the function HfEventSelectionMc::addHistograms() to fix.";
+    }
+
     hGenCollisions->Fill(EventRejection::None);
 
     if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
