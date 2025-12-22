@@ -529,8 +529,8 @@ struct HfTaskFlowCharmHadrons {
       float massCand = 0.;
       float signCand = 0.;
       std::vector<float> outputMl = {-999., -999.};
-      auto trackprong0 = candidate.template prong0_as<Trk>();
       if constexpr (std::is_same_v<T1, CandDsData> || std::is_same_v<T1, CandDsDataWMl>) {
+        auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
         switch (Channel) {
           case DecayChannel::DsToKKPi:
@@ -554,6 +554,7 @@ struct HfTaskFlowCharmHadrons {
         }
       } else if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = HfHelper::invMassDplusToPiKPi(candidate);
+        auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -584,6 +585,7 @@ struct HfTaskFlowCharmHadrons {
             break;
         }
       } else if constexpr (std::is_same_v<T1, CandLcData> || std::is_same_v<T1, CandLcDataWMl>) {
+        auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
         switch (Channel) {
           case DecayChannel::LcToPKPi:
@@ -606,6 +608,7 @@ struct HfTaskFlowCharmHadrons {
             break;
         }
       } else if constexpr (std::is_same_v<T1, CandXicData> || std::is_same_v<T1, CandXicDataWMl>) {
+        auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
         switch (Channel) {
           case DecayChannel::XicToPKPi:
@@ -635,13 +638,6 @@ struct HfTaskFlowCharmHadrons {
             outputMl[iclass] = candidate.mlProbToXiPi()[classMl->at(iclass)];
           }
         }
-      }
-
-      if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
-        signCand = candidate.signDecay();
-      } else {
-        auto trackprong0 = candidate.template prong0_as<Trk>();
-        signCand = trackprong0.sign();
       }
 
       float ptCand = 0.;
