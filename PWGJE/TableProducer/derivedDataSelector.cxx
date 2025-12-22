@@ -90,9 +90,11 @@ struct JetDerivedDataSelector {
     Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
     Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
     Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-    Configurable<std::string> eventSelections{"eventSelections", "", "choose event selection"};
+    Configurable<std::string> eventSelectionsCharged{"eventSelectionsCharged", "", "choose charged event selection"};
+    Configurable<std::string> eventSelectionsFull{"eventSelectionsFull", "", "choose full event selection"};
     Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
-    Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
+    Configurable<bool> applyRCTSelectionsCharged{"applyRCTSelectionsCharged", true, "decide to apply RCT selections"};
+    Configurable<bool> applyRCTSelectionsFull{"applyRCTSelectionsFull", true, "decide to apply RCT selections to full analyses"};
     Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
     Configurable<float> trackPtSelectionMin{"trackPtSelectionMin", 0.15, "only save tracks that have a pT larger than this pT"};
     Configurable<float> trackEtaSelectionMax{"trackEtaSelectionMax", 0.9, "only save tracks that have an eta smaller than this eta"};
@@ -105,11 +107,13 @@ struct JetDerivedDataSelector {
 
   TRandom3 randomNumber;
 
-  std::vector<int> eventSelectionBits;
+  std::vector<int> eventSelectionBitsCharged;
+  std::vector<int> eventSelectionBitsFull;
   std::vector<int> triggerMaskBits;
   void init(InitContext&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(config.eventSelections));
+    eventSelectionBitsCharged = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(config.eventSelectionsCharged));
+    eventSelectionBitsFull = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(config.eventSelectionsFull));
     randomNumber.SetSeed(0);
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(config.triggerMasks);
   }
@@ -195,7 +199,20 @@ struct JetDerivedDataSelector {
 
   void processDoCollisionSelections(aod::JetCollision const& collision)
   { // can also add event selection like sel8 but goes a little against the derived data idea
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+    if (collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      collisionFlag[collision.globalIndex()] = false;
+    }
+    bool barrelRCTFlagSelection = false;
+    bool emcalRCTFlagSelection = false;
+    if (jetderiveddatautilities::selectCollision(collision, eventSelectionBitsCharged, config.skipMBGapEvents, config.applyRCTSelectionsCharged)) {
+      barrelRCTFlagSelection = true;
+    }
+    if (doprocessSelectingNeutralJets || doprocessSelectingNeutralMCDJets || doprocessSelectingNeutralMCPJets || doprocessSelectingFullJets || doprocessSelectingFullMCDJets || doprocessSelectingFullMCPJets || doprocessSelectingClusters) {
+      if (jetderiveddatautilities::selectCollision(collision, eventSelectionBitsFull, config.skipMBGapEvents, config.applyRCTSelectionsFull, "CBT_calo")) {
+        emcalRCTFlagSelection = true;
+      }
+    }
+    if (!barrelRCTFlagSelection && !emcalRCTFlagSelection) {
       collisionFlag[collision.globalIndex()] = false;
     }
   }
