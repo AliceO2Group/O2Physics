@@ -755,7 +755,7 @@ struct HfTaskFlowCharmHadrons {
 
   // D0 with rectangular cuts
   void processD0(CollsWithQvecs::iterator const& collision,
-                 CandD0Data const&/*candidatesD0*/,
+                 CandD0Data const& /*candidatesD0*/,
                  TracksWithExtra const& tracks)
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -767,7 +767,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Lc with ML
   void processLcMl(CollsWithQvecs::iterator const& collision,
-                   CandLcDataWMl const&/*candidatesLc*/,
+                   CandLcDataWMl const& /*candidatesLc*/,
                    TracksWithExtra const& tracks)
   {
     auto candsLcToPKPiWMl = selectedLcToPKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -779,7 +779,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Lc with rectangular cuts
   void processLc(CollsWithQvecs::iterator const& collision,
-                 CandLcData const&/*candidatesLc*/,
+                 CandLcData const& /*candidatesLc*/,
                  TracksWithExtra const& tracks)
   {
     auto candsLcToPKPi = selectedLcToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -791,7 +791,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Xic with ML
   void processXicMl(CollsWithQvecs::iterator const& collision,
-                    CandXicDataWMl const&/*candidatesXic*/,
+                    CandXicDataWMl const& /*candidatesXic*/,
                     TracksWithExtra const& tracks)
   {
     auto candsXicToPKPiWMl = selectedXicToPKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -803,7 +803,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Xic with rectangular cuts
   void processXic(CollsWithQvecs::iterator const& collision,
-                  CandXicData const&/*candidatesXic*/,
+                  CandXicData const& /*candidatesXic*/,
                   TracksWithExtra const& tracks)
   {
     auto candsXicToPKPi = selectedXicToPKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -815,7 +815,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Xic0 with ML
   void processXic0Ml(CollsWithQvecs::iterator const& collision,
-                     CandXic0DataWMl const&/*candidatesXic0*/,
+                     CandXic0DataWMl const& /*candidatesXic0*/,
                      TracksWithExtra const& tracks)
   {
     auto candsXic0WMl = selectedXic0WMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -825,7 +825,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Xic0
   void processXic0(CollsWithQvecs::iterator const& collision,
-                   CandXic0Data const&/*candidatesXic0*/,
+                   CandXic0Data const& /*candidatesXic0*/,
                    TracksWithExtra const& tracks)
   {
     auto candsXic0 = selectedXic0->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
