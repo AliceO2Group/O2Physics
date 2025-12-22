@@ -18,16 +18,18 @@
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
 using namespace o2;
+using namespace o2::soa;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyV0Photons = o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>;
-using MyPrimaryElectrons = o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>;
+using MyV0Photons = Filtered<Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>;
+using MyPrimaryElectrons = Filtered<Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
