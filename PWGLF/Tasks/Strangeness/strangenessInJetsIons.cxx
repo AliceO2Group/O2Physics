@@ -76,11 +76,11 @@ using namespace o2::constants::math;
 using std::array;
 
 // Define convenient aliases for joined AOD tables
-using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 using SimCollisions = soa::Join<aod::McCollisionLabels,
                                 aod::Collisions,
                                 aod::EvSels,
-                                aod::CentFT0Ms>;
+                                aod::CentFT0Cs>;
 using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -204,7 +204,7 @@ struct StrangenessInJetsIons {
 
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-    AxisSpec multAxis = {multBinning, "FT0M percentile"};
+    AxisSpec multAxis = {multBinning, "FT0C percentile"};
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
@@ -356,12 +356,12 @@ struct StrangenessInJetsIons {
         registryMC.add("AntiLambda_reconstructed_jet", "AntiLambda_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_ue", "AntiLambda_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
         // Histograms for secondary hadrons
-        registryMC.add("K0s_reconstructed_jet_incl", "K0s_reconstructed_jet_incl", HistType::kTH2F, {multBinning, ptAxis});
-        registryMC.add("K0s_reconstructed_ue_incl", "K0s_reconstructed_ue_incl", HistType::kTH2F, {multBinning, ptAxis});
-        registryMC.add("Lambda_reconstructed_jet_incl", "Lambda_reconstructed_jet_incl", HistType::kTH2F, {multBinning, ptAxis});
-        registryMC.add("Lambda_reconstructed_ue_incl", "Lambda_reconstructed_ue_incl", HistType::kTH2F, {multBinning, ptAxis});
-        registryMC.add("AntiLambda_reconstructed_jet_incl", "AntiLambda_reconstructed_jet_incl", HistType::kTH2F, {multBinning, ptAxis});
-        registryMC.add("AntiLambda_reconstructed_ue_incl", "AntiLambda_reconstructed_ue_incl", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("K0s_reconstructed_jet_incl", "K0s_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_reconstructed_ue_incl", "K0s_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_reconstructed_jet_incl", "Lambda_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_reconstructed_ue_incl", "Lambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_reconstructed_jet_incl", "AntiLambda_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_reconstructed_ue_incl", "AntiLambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_reconstructed_jet", "XiPos_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -1131,7 +1131,7 @@ struct StrangenessInJetsIons {
     registryData.fill(HIST("number_of_events_data"), 7.5);
 
     // Event multiplicity
-    const float multiplicity = collision.centFT0M();
+    const float multiplicity = collision.centFT0C();
 
     // Fill event multiplicity
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
@@ -1339,7 +1339,7 @@ struct StrangenessInJetsIons {
           if (!selectRecoEvent(recoColl))
             continue;
 
-          multiplicity = recoColl.centFT0M();
+          multiplicity = recoColl.centFT0C();
           // LOGF(info, "  MC GEN index:  %d", collision.globalIndex());
           // LOGF(info, "  MC RECO index: %d", recoColl.mcCollisionId());
           // LOGF(info, "  multiplicity:  %f", multiplicity);
@@ -1656,7 +1656,7 @@ struct StrangenessInJetsIons {
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
 
       // Event multiplicity
-      const float multiplicity = collision.centFT0M();
+      const float multiplicity = collision.centFT0C();
 
       // Number of V0 and cascades per collision
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
