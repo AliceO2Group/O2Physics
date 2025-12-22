@@ -260,8 +260,6 @@ struct TableMakerMC {
   std::array<double, 1> cutValues;
   std::vector<int> cutDirMl;
 
-  std::unordered_set<int> labelsToReserve;
-
   void init(o2::framework::InitContext& context)
   {
     // Check whether barrel or muon are enabled
@@ -543,24 +541,6 @@ struct TableMakerMC {
       if (mcflags == 0) {
         continue;
       }
-      
-      auto mcCollision = mctrack.template mcCollision_as<MyEventsMcWithMults>();
-      
-      bool isjpsi = false;
-      if(mctrack.pdgCode() == 443) {
-        isjpsi = true;
-      }
-
-       //add rapidity and pT cuts for mcparticles
-       if(isjpsi && (fConfigJpsiMinPtMC.value > 0 && std::abs(mctrack.pt()) < fConfigJpsiMinPtMC.value)) continue;
-       if(isjpsi && (fConfigJpsiMaxPtMC.value > 0 && std::abs(mctrack.pt()) > fConfigJpsiMaxPtMC.value)) continue;
-       if(isjpsi && (fConfigTrackMaxRapidityMC.value > 0  && std::abs(mctrack.y()) > fConfigTrackMaxRapidityMC.value)) continue;
-
-       //Save jpsi events that satisfied the cut conditions
-       if(fConfigApplyselctionMC && isjpsi && ((std::abs(mctrack.pt()) > fConfigJpsiMinPtMC.value) && (std::abs(mctrack.pt()) < fConfigJpsiMaxPtMC.value) && (std::abs(mctrack.y()) < fConfigTrackMaxRapidityMC.value)))
-       { 
-        labelsToReserve.insert(mcCollision.globalIndex());
-       }
 
       // If this MC track was not already added to the map, add it now
       if (fLabelsMap.find(mctrack.globalIndex()) == fLabelsMap.end()) {
@@ -785,12 +765,6 @@ struct TableMakerMC {
       //       However, in data analysis one should loop over associations, so this one should not be used.
       //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
       uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()];
-       
-      // apply the event selection for reconstrcted tracks
-      if (fConfigApplyselctionMC && track.has_mcParticle()) {
-      auto mcCollision = collision.template mcCollision_as<MyEventsMcWithMults>();
-      if ((labelsToReserve.count(mcCollision.globalIndex()) == 0)) continue;
-      }
 
       // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
       //   in workflows where the original AO2Ds are also present)
