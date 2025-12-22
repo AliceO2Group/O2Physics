@@ -683,35 +683,72 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processReco, "process reconstructed simulation information", true);
 
-  void processSim(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision, aod::ChargedMCParticleLevelJets const& mcpjets, aod::McParticles const& mcParticles)
+  void processSim(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
+                  aod::ChargedMCParticleLevelJets const& mcpjets,
+                  aod::McParticles const& mcParticles)
   {
-
+    if (std::abs(mcCollision.posZ()) > vertexZCut) {
+      return;
+    }
+    // --- centrality ---
     float centrality = mcCollision.centFT0M();
     registry.fill(HIST("mcCentralitySim"), centrality);
 
-    for (const auto& mcpjet : mcpjets) {
+    const float maxR2 = distanceMax * distanceMax;
 
-      for (const auto& mcParticle : mcParticles) {
+    // --- loop over MC particles only once ---
+    for (const auto& mcParticle : mcParticles) {
 
-        float dEta = mcParticle.eta() - mcpjet.eta();
-        float dPhi = std::abs(mcParticle.phi() - mcpjet.phi());
+      // --- early cuts on particle ---
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
 
+      if (std::abs(mcParticle.y()) > mcRapidityMax) {
+        continue;
+      }
+
+      int absPdg = std::abs(mcParticle.pdgCode());
+      if (absPdg != PDG_t::kPiPlus &&
+          absPdg != PDG_t::kKPlus &&
+          absPdg != PDG_t::kProton) {
+        continue;
+      }
+
+      const float partPt = mcParticle.pt();
+      const float partEta = mcParticle.eta();
+      const float partPhi = mcParticle.phi();
+
+      // --- loop over jets ---
+      for (const auto& mcpjet : mcpjets) {
+
+        // --- delta eta cut first ---
+        float dEta = partEta - mcpjet.eta();
+        if (std::abs(dEta) > distanceMax) {
+          continue;
+        }
+
+        // --- delta phi ---
+        float dPhi = std::abs(partPhi - mcpjet.phi());
         if (dPhi > o2::constants::math::PI) {
           dPhi = o2::constants::math::TwoPI - dPhi;
         }
 
-        float deltaR = std::sqrt(dEta * dEta + dPhi * dPhi);
-        if (deltaR > distanceMax) {
+        // --- delta R^2 ---
+        float dR2 = dEta * dEta + dPhi * dPhi;
+        if (dR2 > maxR2) {
           continue;
         }
 
-        if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.y()) < mcRapidityMax) {
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
-            registry.fill(HIST("ptGeneratedPion"), mcParticle.pt(), mcpjet.pt(), centrality);
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
-            registry.fill(HIST("ptGeneratedKaon"), mcParticle.pt(), mcpjet.pt(), centrality);
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton)
-            registry.fill(HIST("ptGeneratedProton"), mcParticle.pt(), mcpjet.pt(), centrality);
+        const float jetPt = mcpjet.pt();
+
+        // --- histogram fill ---
+        if (absPdg == PDG_t::kPiPlus) {
+          registry.fill(HIST("ptGeneratedPion"), partPt, jetPt, centrality);
+        } else if (absPdg == PDG_t::kKPlus) {
+          registry.fill(HIST("ptGeneratedKaon"), partPt, jetPt, centrality);
+        } else {
+          registry.fill(HIST("ptGeneratedProton"), partPt, jetPt, centrality);
         }
       }
     }
