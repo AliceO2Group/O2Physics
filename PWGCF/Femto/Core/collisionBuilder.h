@@ -59,6 +59,7 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> sphericityMax{"sphericityMax", 1.f, "Maximum sphericity"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
+  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", 0, "MC ONLY: If positive, keep 0 = MB, <0 triggered on something"};
 };
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
@@ -390,6 +391,7 @@ class CollisionBuilder
       mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
     }
     mGrpPath = confCcdb.grpPath.value;
+    mSubGeneratorId = confFilter.subGeneratorId.value;
 
     mCollisionSelection.configure(registry, confFilter, confBits);
     mCollisionSelection.printSelections(colSelsName);
@@ -430,6 +432,28 @@ class CollisionBuilder
   template <typename T1>
   bool checkCollision(T1 const& col)
   {
+    // check RCT flags first
+    if (mUseRctFlags && !mRctFlagsChecker(col)) {
+      return false;
+    }
+    // make other checks
+    return mCollisionSelection.checkFilters(col) &&
+           mCollisionSelection.passesAllRequiredSelections();
+  }
+
+  template <typename T1, typename T2>
+  bool checkCollision(T1 const& col, T2 const& /*mcCols*/)
+  {
+    // check sub generator id of associated generated collision
+    if (mSubGeneratorId >= 0) {
+      if (col.has_mcCollision()) {
+        auto mcCol = col.template mcCollision_as<T2>();
+        if (mcCol.getSubGeneratorId() != mSubGeneratorId) {
+          return false;
+        }
+      }
+    }
+
     // check RCT flags first
     if (mUseRctFlags && !mRctFlagsChecker(col)) {
       return false;
@@ -518,6 +542,7 @@ class CollisionBuilder
   aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
   bool mUseRctFlags = false;
   std::string mTriggerNames = std::string("");
+  int mSubGeneratorId = -1;
   bool mFillAnyTable = false;
   bool mProducedCollisions = false;
   bool mProducedCollisionMasks = false;

@@ -711,28 +711,34 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcParticles_001, "FMCPARTICLE", 1, //! femto
 using FMcParticles = FMcParticles_001;
 using FMcParticle = FMcParticles::iterator;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the femto particle
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first direct mother of the monte carlo particle
                                    o2::soa::Index<>,
                                    femtomcparticle::PdgCode);
 using FMcMothers = FMcMothers_001;
+using FMcMother = FMcMothers::iterator;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMcPartMoth", 1, //! last partonic mother of the femto particle
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! last partonic mother of the monte carlo particle
                                    o2::soa::Index<>,
                                    femtomcparticle::PdgCode);
 using FMcPartMoths = FMcPartMoths_001;
+using FMcPartMoth = FMcPartMoths::iterator;
 
 namespace femtolabels
 {
-DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);           //! collision index of femto collision table
-DECLARE_SOA_INDEX_COLUMN(FMcParticle, fMcParticle); //! collision index of femto collision table
+DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);           //!
+DECLARE_SOA_INDEX_COLUMN(FMcParticle, fMcParticle); //!
+
+DECLARE_SOA_INDEX_COLUMN(FMcMother, fMcMother);     //!
+DECLARE_SOA_INDEX_COLUMN(FMcPartMoth, fMcPartMoth); //!
 } // namespace femtolabels
 
 DECLARE_SOA_TABLE(FColLabels, "AOD", "FCOLMCLABEL",
-                  o2::soa::Index<>,
                   femtolabels::FMcColId);
 
 DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL",
-                  o2::soa::Index<>,
-                  femtolabels::FMcParticleId);
+                  femtolabels::FMcParticleId,
+                  femtolabels::FMcMotherId,
+                  femtolabels::FMcPartMothId);
+
 } // namespace o2::aod
 #endif // PWGCF_FEMTO_DATAMODEL_FEMTOTABLES_H_

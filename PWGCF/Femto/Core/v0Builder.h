@@ -271,11 +271,11 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
   bool checkFilters(const T& v0) const
   {
     // check kinematics first
-    const bool kinematicsOK =
+    const bool kinematicsOk =
       (v0.pt() > mPtMin && v0.pt() < mPtMax) &&
       (v0.eta() > mEtaMin && v0.eta() < mEtaMax) &&
       (v0.phi() > mPhiMin && v0.phi() < mPhiMax);
-    if (!kinematicsOK) {
+    if (!kinematicsOk) {
       return false;
     }
     // now check mass hypothesis
@@ -371,8 +371,8 @@ class V0Builder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0products, T6 const& v0s, T7 const& tracks, T8& trackBuilder)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0products, T6 const& v0s, T7 const& tracks, T8 const& tracksWithItsPid, T9& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -387,8 +387,10 @@ class V0Builder
       if (!mV0Selection.passesAllRequiredSelections()) {
         continue;
       }
-      auto posDaughter = v0.template posTrack_as<T7>();
-      auto negDaughter = v0.template negTrack_as<T7>();
+      // cleaner, but without ITS pid: auto posDaughter = v0.template posTrack_as<T7>();
+      auto posDaughter = tracksWithItsPid.iteratorAt(v0.posTrackId() - tracksWithItsPid.offset());
+      // cleaner, but without ITS pid: auto negDaughter = v0.template negTrack_as<T7>();
+      auto negDaughter = tracksWithItsPid.iteratorAt(v0.negTrackId() - tracksWithItsPid.offset());
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 

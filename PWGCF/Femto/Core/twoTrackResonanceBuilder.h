@@ -294,11 +294,11 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     this->addSelection(kDauTpcClusterMin, twoTrackResonanceSelectionNames.at(kDauTpcClusterMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDauDcaxyAbsMax, twoTrackResonanceSelectionNames.at(kDauDcaxyAbsMax), daughterFilter.ptMin.value, daughterFilter.ptMax.value, config.dauDcaxyMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
     this->addSelection(kDauDcazAbsMax, twoTrackResonanceSelectionNames.at(kDauDcazAbsMax), daughterFilter.ptMin.value, daughterFilter.ptMax.value, config.dauDcazMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
-    this->addSelection(kPosDauMinMomForTof, twoTrackResonanceSelectionNames.at(kPosDauMinMomForTof), config.posDauMinMomForTof.value, limits::kUpperLimit, false, false, false); // momentum threshold for TOF is no minimal/optional cut
+    this->addSelection(kPosDauMinMomForTof, twoTrackResonanceSelectionNames.at(kPosDauMinMomForTof), config.posDauMinMomForTof.value, limits::kUpperLimit, false, false, true); // momentum threshold for TOF is no minimal/optional cut
     this->addSelection(kPosDauPtMin, twoTrackResonanceSelectionNames.at(kPosDauPtMin), config.posDauPtMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kPosDauPtMax, twoTrackResonanceSelectionNames.at(kPosDauPtMax), config.posDauPtMax.value, limits::kUpperLimit, true, true, false);
 
-    this->addSelection(kNegDauMinMomForTof, twoTrackResonanceSelectionNames.at(kNegDauMinMomForTof), config.negDauMinMomForTof.value, limits::kUpperLimit, false, false, false); // momentum threshold for TOF is no minimal/optional cut
+    this->addSelection(kNegDauMinMomForTof, twoTrackResonanceSelectionNames.at(kNegDauMinMomForTof), config.negDauMinMomForTof.value, limits::kUpperLimit, false, false, true); // momentum threshold for TOF is no minimal/optional cut
     this->addSelection(kNegDauPtMin, twoTrackResonanceSelectionNames.at(kNegDauPtMin), config.negDauPtMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kNegDauPtMax, twoTrackResonanceSelectionNames.at(kNegDauPtMax), config.negDauPtMax.value, limits::kUpperLimit, true, true, false);
 
@@ -367,14 +367,12 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     bitmaskDca = bitmaskDcaPos & bitmaskDcaNeg;
     this->setBitmask(kDauDcazAbsMax, bitmaskDca);
 
-    float tofThreshold = 99.;
-
     // positive daughter selections
     this->evaluateObservable(kPosDauMinMomForTof, posDaughter.p());
     this->evaluateObservable(kPosDauPtMin, posDaughter.pt());
     this->evaluateObservable(kPosDauPtMax, posDaughter.pt());
 
-    tofThreshold = this->getLoosestSelection(kPosDauMinMomForTof);
+    float tofThreshold = this->getLoosestSelection(kPosDauMinMomForTof);
     if (posDaughter.p() <= tofThreshold) {
       this->evaluateObservable(kPosDauTpcPion, posDaughter.tpcNSigmaPi());
       this->evaluateObservable(kPosDauTofPion, posDaughter.tofNSigmaPi());
@@ -510,14 +508,17 @@ class TwoTrackResonanceBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void fillResonances(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& resonanceProducts, T6& groupPositiveTracks, T7& groupNegativeTracks, T8& trackBuilder)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void fillResonances(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& resonanceProducts, T6 const& groupPositiveTracks, T7 const& groupNegativeTracks, T8 const& tracks, T9 const& tracksWithItsPid, T10& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
     }
     for (auto const& [positiveTrack, negativeTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupPositiveTracks, groupNegativeTracks))) {
-      this->fillResonance<system>(col, collisionBuilder, collisionProducts, trackProducts, resonanceProducts, positiveTrack, negativeTrack, trackBuilder);
+      auto positiveTrackWithItsPid = tracksWithItsPid.iteratorAt(positiveTrack.index() - tracks.offset());
+      auto negativeTrackWithItsPid = tracksWithItsPid.iteratorAt(negativeTrack.index() - tracks.offset());
+
+      this->fillResonance<system>(col, collisionBuilder, collisionProducts, trackProducts, resonanceProducts, positiveTrackWithItsPid, negativeTrackWithItsPid, trackBuilder);
     }
   }
 

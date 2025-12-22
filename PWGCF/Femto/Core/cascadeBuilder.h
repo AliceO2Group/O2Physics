@@ -379,8 +379,8 @@ class CascadeBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void fillCascades(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& cascadeProducts, T6 const& fullCascades, T7 const& fullTracks, T8& trackBuilder)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillCascades(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& cascadeProducts, T6 const& cascades, T7 const& tracks, T8 const& tracksWithItsPid, T9& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -389,18 +389,21 @@ class CascadeBuilder
     int64_t bachelorIndex = 0;
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
-    for (const auto& cascade : fullCascades) {
+    for (const auto& cascade : cascades) {
       if (!mCascadeSelection.checkFilters(cascade)) {
         continue;
       }
-      mCascadeSelection.applySelections(cascade, fullTracks, col);
+      mCascadeSelection.applySelections(cascade, tracks, col);
       if (!mCascadeSelection.passesAllRequiredSelections()) {
         continue;
       }
 
-      auto bachelor = cascade.template bachelor_as<T7>();
-      auto posDaughter = cascade.template posTrack_as<T7>();
-      auto negDaughter = cascade.template negTrack_as<T7>();
+      // cleaner, but without ITS pid: auto bachelor = cascade.template bachelor_as<T7>();
+      auto bachelor = tracksWithItsPid.iteratorAt(cascade.bachelorId() - tracksWithItsPid.offset());
+      // cleaner, but without ITS pid: auto posDaughter = cascade.template posTrack_as<T7>();
+      auto posDaughter = tracksWithItsPid.iteratorAt(cascade.posTrackId() - tracksWithItsPid.offset());
+      // cleaner, but without ITS pid: auto negDaughter = cascade.template negTrack_as<T7>();
+      auto negDaughter = tracksWithItsPid.iteratorAt(cascade.negTrackId() - tracksWithItsPid.offset());
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 

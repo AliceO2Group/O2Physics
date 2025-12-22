@@ -79,23 +79,26 @@ enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
 };
 
 enum class Particle : o2::aod::femtodatatypes::ParticleType {
-  kTrack,
-  kTwoTrackResonance,
-  kV0,
-  kKink,
-  kCascade,
+  kTrack = 0,
+  kTwoTrackResonance = 1,
+  kV0 = 2,
+  kKink = 3,
+  kCascade = 4,
 };
 
 enum class McOrigin : o2::aod::femtodatatypes::McOriginType {
-  kPhysicalPrimary = 0,
-  kFromSecondaryDecay = 1,
-  kFromMaterial = 2,
-  kFromWrongCollision = 3,
-  kFromFakeRecoCollision = 4,
-  kFromUnkown = 100,
+  kNoMcParticle,
+  kFromWrongCollision,
+  kPhysicalPrimary,
+  kFromSecondaryDecay,
+  kFromMaterial,
+  kMcOriginLast
+  // kFromFakeRecoCollision,
+  // kFromUnkown
 };
 
-constexpr bool hasMass(Particle p)
+constexpr bool
+  hasMass(Particle p)
 {
   switch (p) {
     case Particle::kV0:
@@ -109,7 +112,7 @@ constexpr bool hasMass(Particle p)
 }
 
 enum class Track : o2::aod::femtodatatypes::TrackType {
-  kPrimaryTrack,
+  kTrack,
   kV0Daughter,
   kCascadeBachelor,
   kResonanceDaughter,

@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace o2::analysis::femto
 {
@@ -96,57 +97,44 @@ class McBuilder
   template <modes::System system, typename T1, typename T2>
   void fillMcCollision(T1 const& mcCol, T2& mcProducts)
   {
-    const auto originalIndex = mcCol.globalIndex();
-    auto it = mCollisionMap.find(originalIndex);
-
-    // If already filled, stop here
-    if (it != mCollisionMap.end()) {
-      return;
-    }
-
-    // Fill MC collision table
     mcProducts.producedMcCollisions(
-      1, 1);
-    // mcCol.multMCNParticlesEta08(),
-    // mcCol.centFT0M());
-
-    // Record the new index
-    const int newIndex = mcProducts.producedMcCollisions.lastIndex();
-    mCollisionMap.emplace(originalIndex, newIndex);
+      mcCol.multMCNParticlesEta08(),
+      mcCol.centFT0M());
+    mCollisionMap.emplace(mcCol.globalIndex(), mcProducts.producedMcCollisions.lastIndex());
   }
 
   template <modes::System system, typename T1, typename T2, typename T3>
-  void fillMcCollisionWithLabel(T1& mcProducts, T2 const& col, T3 const& mcCols)
+  void fillMcCollisionWithLabel(T1& mcProducts, T2 const& col, T3 const& /*mcCols*/)
   {
     if (!mFillAnyTable) {
       return;
     }
-
     // Case: This reconstructed collision has an MC collision
     if (col.has_mcCollision()) {
-
-      // auto genCol = col.template mcCollision_as<T3>();
-      auto genCol = mcCols.rawIteratorAt(col.mcCollisionId() - mcCols.offset());
-      const auto originalIndex = genCol.globalIndex();
-
-      // Ensure MC collision exists
+      const auto originalIndex = col.mcCollisionId();
+      // check if MC collision already exists in femto table
       auto it = mCollisionMap.find(originalIndex);
       if (it == mCollisionMap.end()) {
         // Not yet created → create it
-        this->fillMcCollision<system>(genCol, mcProducts);
+        auto mcCol = col.template mcCollision_as<T3>();
+        this->fillMcCollision<system>(mcCol, mcProducts);
         it = mCollisionMap.find(originalIndex);
       }
       // Add label
       mcProducts.producedCollisionLabels(it->second);
-      return;
+    } else {
+      // Case: No MC collision associated
+      mcProducts.producedCollisionLabels(-1);
     }
-    // Case: No MC collision associated
-    mcProducts.producedCollisionLabels(-1);
   }
 
   template <typename T1, typename T2, typename T3>
-  modes::McOrigin getOrigin(T1 const& col, T2 const& /*mcCols*/, T3& mcParticle)
+  modes::McOrigin getOrigin(T1 const& col, T2 const& /*mcCols*/, T3 const& mcParticle)
   {
+    // constants
+    // const int producedDuringTransport = -1;
+    // const int producedByDecay = 4;
+    // const int producedByInelaticHadronicScattering = 4;
     // check if reconstructed collision has a generated collision
     if (col.has_mcCollision()) {
       // now check  collision ids,  if  they  not  match,  then the  track  does belong   to  the  wrong collision
@@ -155,173 +143,177 @@ class McBuilder
       }
       if (mcParticle.isPhysicalPrimary()) {
         return modes::McOrigin::kPhysicalPrimary;
-        //  getGenStatusCode  ==  -1  means  production  during  transport
-        //  getProcess  ==  4  means production through  decay
-        //  getProcess  ==  23  means production through  inelastic  hadronic  interaction
-      } else if ((mcParticle.getProcess() == 4) && (mcParticle.getGenStatusCode() == -1) && mcParticle.has_mothers()) {
+        // } else if ((mcParticle.getProcess() == producedByDecay) && (mcParticle.getGenStatusCode() == producedDuringTransport) && mcParticle.has_mothers()) {
+      } else if (mcParticle.has_mothers()) {
         return modes::McOrigin::kFromSecondaryDecay;
-      } else if ((mcParticle.getProcess() == 23) && (mcParticle.getGenStatusCode() == -1) && mcParticle.has_mothers()) {
-        return modes::McOrigin::kFromMaterial;
+        // } else if ((mcParticle.getProcess() == producedByInelaticHadronicScattering) && (mcParticle.getGenStatusCode() == producedDuringTransport) && mcParticle.has_mothers()) {
       } else {
-        return modes::McOrigin::kFromUnkown;
+        return modes::McOrigin::kFromMaterial;
+        // } else {
+        //   return modes::McOrigin::kFromUnkown;
       }
     }
-    return modes::McOrigin::kFromFakeRecoCollision;
+    return modes::McOrigin::kFromWrongCollision;
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3>
-  int64_t getMcColId(T1 const& /*mcCols*/, T2 const& mcParticle, T3& mcProducts)
+  template <modes::System system, typename T1, typename T2>
+  int64_t getMcColId(T1 const& mcCol, T2& mcProducts)
   {
-    auto mcCol = mcParticle.mcCollision(); // <-- no template param
-    const auto gid = mcCol.globalIndex();
-
+    auto gid = mcCol.globalIndex();
     // Find or create
     auto it = mCollisionMap.find(gid);
     if (it == mCollisionMap.end()) {
       this->fillMcCollision<system>(mcCol, mcProducts);
       it = mCollisionMap.find(gid);
+      return it->second;
     }
     return it->second;
-    // auto mcCol = mcParticle.template mcCollision_as<T1>();
-    // this->fillMcCollision<system>(mcCol, mcProducts);
-    // return mCollisionMap.at(mcCol.globalIndex());
   }
+
   template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcTrackWithLabel(T1 const& col, T2 const& mcCols, T3 const& track, T4 const& /*mcParticles*/, T5& mcProducts)
+  void fillMcTrackWithLabel(T1 const& col, T2 const& mcCols, T3 const& track, T4 const& mcParticles, T5& mcProducts)
   {
     if (!mFillAnyTable) {
       return;
     }
 
-    // No MC particle → label = -1
     if (!track.has_mcParticle()) {
-      mcProducts.producedTrackLabels(-1);
+      mcProducts.producedTrackLabels(-1, -1, -1);
       return;
     }
 
     auto mcParticle = track.template mcParticle_as<T4>();
-    auto mcGlob = mcParticle.globalIndex();
+    auto mcCol = mcParticle.template mcCollision_as<T2>();
 
-    int mcIdx = -1;
+    int64_t particleIndex = mcParticle.globalIndex();
+    int64_t trackIndex = track.globalIndex();
 
-    // Already processed?
-    auto it = mMcTrackMap.find(mcGlob);
-    if (it == mMcTrackMap.end()) {
+    int64_t mcParticleRow = -1;
 
-      // ---- Fill new MC particle entry ----
+    // MC PARTICLE
+    auto itP = mMcTrackToMcParticleMap.find(particleIndex);
+    if (itP != mMcTrackToMcParticleMap.end()) {
+      mcParticleRow = itP->second;
+    } else {
       auto origin = this->getOrigin(col, mcCols, mcParticle);
-      int64_t mcColId = this->getMcColId<system>(mcCols, mcParticle, mcProducts);
+      int64_t mcColId = this->getMcColId<system>(mcCol, mcProducts);
 
       mcProducts.producedMcParticles(
         mcColId,
         static_cast<aod::femtodatatypes::McOriginType>(origin),
         mcParticle.pdgCode(),
-        mcParticle.pt(),
+        mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
         mcParticle.eta(),
         mcParticle.phi());
 
-      mcIdx = mcProducts.producedMcParticles.lastIndex();
-      mMcTrackMap.emplace(mcGlob, mcIdx);
-
-      // ---- Mothers ----
-      int firstMotherPdg = 0;
-      int partonicMotherPdg = 0;
-
-      if (mcParticle.has_mothers()) {
-        auto Mothers = mcParticle.template mothers_as<T4>();
-
-        bool firstDone = false;
-        for (auto const& m : Mothers) {
-          if (!firstDone) {
-            firstMotherPdg = m.pdgCode();
-            firstDone = true;
-          }
-          if (isPartonic(m)) {
-            partonicMotherPdg = m.pdgCode();
-            break;
-          }
-        }
-      }
-
-      mcProducts.producedMothers(firstMotherPdg);
-      mcProducts.producedPartonicMothers(partonicMotherPdg);
-
-    } else {
-      mcIdx = it->second;
+      mcParticleRow = mcProducts.producedMcParticles.lastIndex();
+      mMcTrackToMcParticleMap[particleIndex] = mcParticleRow;
     }
 
-    // ---- Label track ----
-    mcProducts.producedTrackLabels(mcIdx);
+    // MOTHERS (fill only if exists)
+    int64_t mothersRow = -1;
+    auto itM = mMcTrackToMcMotherMap.find(trackIndex);
+
+    if (itM != mMcTrackToMcMotherMap.end()) {
+      mothersRow = itM->second;
+    } else {
+
+      auto mothers = mcParticle.template mothers_as<T4>();
+      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
+
+      if (motherExists) {
+        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
+
+        mcProducts.producedMothers(motherPdg);
+        mothersRow = mcProducts.producedMothers.lastIndex();
+        mMcTrackToMcMotherMap[trackIndex] = mothersRow;
+      }
+    }
+
+    // PARTONIC MOTHER (fill only if exists)
+    int64_t partonicRow = -1;
+    auto itPM = mMcTrackToMcPartonicMap.find(trackIndex);
+
+    if (itPM != mMcTrackToMcPartonicMap.end()) {
+      partonicRow = itPM->second;
+    } else {
+      int partIdx = -1;
+      if (mcParticle.has_mothers()) {
+        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
+      }
+
+      bool partonicExists = (partIdx >= 0);
+
+      if (partonicExists) {
+        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
+
+        mcProducts.producedPartonicMothers(partonicPdg);
+        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
+        mMcTrackToMcPartonicMap[trackIndex] = partonicRow;
+      }
+    }
+
+    // FINAL LABELS
+    mcProducts.producedTrackLabels(mcParticleRow, mothersRow, partonicRow);
   }
 
-  // template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  // void fillMcTrackWithLabel(T1 const& col, T2 const& mcCols, T3 const& track, T4& trackProducts, T5 const& /*mcParticles*/, T6& mcProducts)
-  // {
-  //   if (!mFillAnyTable) {
-  //     return;
-  //   }
-  //   if (track.has_mcParticle()) {
-  //     // check if track has a corresponding mc particle
-  //     auto mcParticle = track.template mcParticle_as<T4>();
-  //     // check if we filled the mc particle already
-  //     if (mMcTrackMap.find(mcParticle.globalIndex()) == mMcTrackMap.end()) {
-  //       auto origin = this->getOrigin(col, mcCols, mcParticle);
-  //       int64_t mcColId = this->getMcColId<system>(mcCols, mcParticle, mcProducts);
-  //       mcProducts.producedMcParticles(
-  //         mcColId,
-  //         static_cast<aod::femtodatatypes::McOriginType>(origin),
-  //         mcParticle.pdgCode(),
-  //         mcParticle.pt(),
-  //         mcParticle.eta(),
-  //         mcParticle.phi());
-  //       mMcTrackMap.emplace(mcParticle.globalIndex(), mcProducts.producedMcParticles.lastIndex());
-  //       mcProducts.producedTrackLabels(mcProducts.producedMcParticles.lastIndex());
-  //       mMcTrackLabelMap.emplace(trackProducts.lastIndex(), mcProducts.producedMcParticles.lastIndex());
-  //
-  //       if (mcParticle.has_mothers()) {
-  //         auto Mothers = mcParticle.template mothers_as<T4>();
-  //         bool isFirstMother = true;
-  //         bool foundPartonicMother = false;
-  //         for (auto const& mother : Mothers) {
-  //           if (isFirstMother) {
-  //             if (!isPartonic(mother)) {
-  //               mcProducts.producedMothers(mother.pdgCode());
-  //             } else {
-  //               mcProducts.producedMothers(0);
-  //             }
-  //             isFirstMother = false;
-  //           }
-  //
-  //           if (isPartonic(mother)) {
-  //             mcProducts.producedPartonicMothers(mother.pdgCode());
-  //             foundPartonicMother = true;
-  //             break;
-  //           }
-  //         }
-  //         if (!foundPartonicMother) {
-  //           mcProducts.producedPartonicMothers(0);
-  //         }
-  //       } else {
-  //         mcProducts.producedMothers(mcColId, 0);
-  //         mcProducts.producedPartonicMothers(mcColId, 0);
-  //       }
-  //     } else {
-  //       // if already filled, recall the index
-  //       mcProducts.producedTrackLabels(mMcTrackMap.at(track.globalIndex()));
-  //       mMcTrackLabelMap.emplace(trackProducts.lastIndex(), mcProducts.producedMcParticles.lastIndex());
-  //     }
-  //   } else {
-  //     // if no corresponding mc particle exists, we fill empty label
-  //     mcProducts.producedTrackLabels(-1);
-  //     mMcTrackLabelMap.emplace(trackProducts.lastIndex(), mcProducts.producedMcParticles.lastIndex());
-  //   }
-  // }
-
-  template <typename T1>
-  inline bool isPartonic(T1 const& mcParticle)
+  template <typename TParticle, typename TContainer>
+  int findFirstPartonicMother(const TParticle& p, const TContainer& mcParticles)
   {
-    int pdgCode = std::abs(mcParticle.pdgCode());
-    return (pdgCode >= 1 && pdgCode <= 6) || (pdgCode == 21);
+    if (!p.has_mothers()) {
+      return -1;
+    }
+
+    auto motherIds = p.mothersIds();
+
+    // adapted these checks from MCUtils in PWGEM
+    const int defaultMotherSize = 2;
+    std::vector<int> allMotherIds;
+    if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
+      // keep for now, might be needed later
+      // && ((80 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110))) {
+      // Pythia: mother range
+      for (int i = motherIds[0]; i <= motherIds[1]; i++)
+        allMotherIds.push_back(i);
+    } else {
+      // Otherwise just use them as given
+      for (const int& id : motherIds)
+        allMotherIds.push_back(id);
+    }
+
+    // Loop over all mothers
+    for (const int& i : allMotherIds) {
+
+      if (i < 0 || i >= mcParticles.size())
+        continue;
+
+      const auto& mother = mcParticles.iteratorAt(i);
+      int apdg = std::abs(mother.pdgCode());
+
+      // Is it a parton? (quark or gluon)
+      if (apdg <= PDG_t::kTop || apdg == PDG_t::kGluon) {
+        return i; // Found a parton → return index
+      }
+
+      // Recurse upward
+      int found = this->findFirstPartonicMother(mother, mcParticles);
+      if (found != -1)
+        return found;
+    }
+
+    // No partonic ancestor found
+    return -1;
+  }
+
+  void reset()
+  {
+    mCollisionMap.clear();
+
+    mMcTrackToMcParticleMap.clear();
+    mMcTrackToMcMotherMap.clear();
+    mMcTrackToMcPartonicMap.clear();
+
+    mV0Map.clear();
   }
 
  private:
@@ -336,8 +328,11 @@ class McBuilder
   bool mProduceTrackLabels = false;
 
   std::unordered_map<int64_t, int64_t> mCollisionMap;
-  std::unordered_map<int64_t, int64_t> mMcTrackMap;
-  std::unordered_map<int64_t, int64_t> mMcTrackLabelMap;
+
+  std::unordered_map<int64_t, int64_t> mMcTrackToMcParticleMap;
+  std::unordered_map<int64_t, int64_t> mMcTrackToMcMotherMap;
+  std::unordered_map<int64_t, int64_t> mMcTrackToMcPartonicMap;
+
   std::unordered_map<int64_t, int64_t> mV0Map;
 };
 
