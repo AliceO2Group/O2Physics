@@ -339,8 +339,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   /// Compute the charm hadron candidates mass with the daughter masses
   /// assumes the candidate is either a D+ or Λc+ or D0 or Dstar
-  template <DecayChannel Channel, bool ReturnDaughMass, typename Candidate>
-  float getCharmHadronMass(const Candidate& cand)
+  template <DecayChannel Channel, typename Candidate>
+  float getCharmHadronMass(const Candidate& cand, bool ReturnDaughMass = false)
   {
     float invMass = 0.0f;
     if constexpr (Channel == DecayChannel::LcToPKPi) {
@@ -350,29 +350,20 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassProton});
       return invMass;
-    }
-    // D+ → π K π (PDG: 411)
-    if constexpr (Channel == DecayChannel::DplusToPiKPi) {
+    } else if constexpr (Channel == DecayChannel::DplusToPiKPi) { // D+ → π K π (PDG: 411)
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
       return invMass;
-    }
-    // D0 → π K  (PDG: 421)
-    if constexpr (Channel == DecayChannel::D0ToPiK) {
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) { // D0 → π K  (PDG: 421)
       if (cand.candidateSelFlag() == 1) {
-
         invMass = cand.m(std::array{MassPiPlus, MassKPlus});
         return invMass;
       } else {
-
         invMass = cand.m(std::array{MassKPlus, MassPiPlus});
         return invMass;
       }
-    }
-    // D* → D0π (PDG: 413)
-    if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* → D0π (PDG: 413)
       float mDstar = 0.f;
       float mD0 = 0.f;
-
       if (cand.charge() > 0.f) {
         mDstar = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
         mD0 = cand.mDaughD0(std::array{MassPiPlus, MassKPlus});
@@ -380,14 +371,12 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         mDstar = cand.m(std::array{MassKPlus, MassPiPlus, MassPiPlus});
         mD0 = cand.mDaughD0(std::array{MassKPlus, MassPiPlus});
       }
-
-      if constexpr (ReturnDaughMass) {
+      if (ReturnDaughMass) {
         return mD0;
       } else {
         return mDstar - mD0;
       }
     }
-
     // Add more channels as needed
     return 0.f;
   }
@@ -518,7 +507,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if (kstar > highkstarCut) {
         continue;
       }
-      float invMass = getCharmHadronMass<Channel, false>(p2);
+      float invMass = getCharmHadronMass<Channel>(p2);
 
       if (invMass < charmSel.charmHadMinInvMass || invMass > charmSel.charmHadMaxInvMass) {
         continue;
@@ -644,7 +633,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           continue;
         }
 
-        float invMass = getCharmHadronMass<Channel, false>(p2);
+        float invMass = getCharmHadronMass<Channel>(p2);
 
         if (invMass < charmSel.charmHadMinInvMass || invMass > charmSel.charmHadMaxInvMass) {
           continue;
@@ -709,7 +698,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
     // ---- Fill Charm-Hadron Table ----
     for (auto const& part : sliceCharmHad) {
-      float invMass = getCharmHadronMass<Channel, false>(part);
+      float invMass = getCharmHadronMass<Channel>(part);
       registryCharmHadronQa.fill(
         HIST("CharmHadronQA/hPtVsMass"),
         part.pt(), invMass);
@@ -747,7 +736,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.bdtPrompt(),
           part.bdtFD());
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        float invMassD0 = getCharmHadronMass<Channel, true>(part);
+        float invMassD0 = getCharmHadronMass<Channel>(part, true);
         rowFemtoResultCharmDstar(
           col.globalIndex(),
           timeStamp,
