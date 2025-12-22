@@ -55,6 +55,7 @@ struct Alice3Dilepton {
   SliceCache cache_rec;
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
+  Configurable<bool> requireHFEid{"requireHFEid", true, "Require HFE identification for both leptons"};
   Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
   Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
   Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
@@ -97,7 +98,9 @@ struct Alice3Dilepton {
     registry.add("Generated/Particle/prodVx", "Particle Prod. Vertex X", kTH1F, {axisProdx});
     registry.add("Generated/Particle/prodVy", "Particle Prod. Vertex Y", kTH1F, {axisPrody});
     registry.add("Generated/Particle/prodVz", "Particle Prod. Vertex Z", kTH1F, {axisProdz});
+    registry.add("Generated/Particle/ParticlesPerEvent", "Particles per event", kTH1F, {{100, 0, 100}});
 
+    registry.add("Generated/Pair/ULS/Tried", "Pair tries", kTH1F, {{10, -0.5, 9.5}});
     registry.add("Generated/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
     registry.add("Generated/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
     registry.add("Generated/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
@@ -451,24 +454,29 @@ struct Alice3Dilepton {
   {
     if constexpr (pairtype == PairType::kULS) {
       for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        registry.fill(HIST("Generated/Pair/ULS/Tried"), 0);
         if (std::abs(t1.pdgCode()) != pdg || std::abs(t2.pdgCode()) != pdg) {
           continue;
         }
+        registry.fill(HIST("Generated/Pair/ULS/Tried"), 1);
 
         if (!t1.isPhysicalPrimary() || !t2.isPhysicalPrimary()) {
           continue;
         }
+        registry.fill(HIST("Generated/Pair/ULS/Tried"), 2);
 
         if (!IsInAcceptance(t1) || !IsInAcceptance(t2)) {
           continue;
         }
+        registry.fill(HIST("Generated/Pair/ULS/Tried"), 3);
 
-        int motherid = IsSameMother(t1, t2, mcParticles);
-        int hfee_type = IsHFULS(t1, t2, mcParticles);
+        const int motherid = IsSameMother(t1, t2, mcParticles);
+        const int hfee_type = IsHFULS(t1, t2, mcParticles);
 
-        if (motherid < 0 && hfee_type == HFllType::kUndef) {
+        if (requireHFEid.value && motherid < 0 && hfee_type == HFllType::kUndef) {
           continue;
         }
+        registry.fill(HIST("Generated/Pair/ULS/Tried"), 4);
         // auto mother = mcparticles.iteratorAt(motherid);
 
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
@@ -484,23 +492,48 @@ struct Alice3Dilepton {
 
     } else if constexpr (pairtype == PairType::kLSpp || pairtype == PairType::kLSnn) {
       for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Generated/Pair/LSpp/Tried"), 0);
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Generated/Pair/LSnn/Tried"), 0);
+        }
         if (std::abs(t1.pdgCode()) != pdg || std::abs(t2.pdgCode()) != pdg) {
           continue;
+        }
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Generated/Pair/LSpp/Tried"), 1);
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Generated/Pair/LSnn/Tried"), 1);
         }
 
         if (!t1.isPhysicalPrimary() || !t2.isPhysicalPrimary()) {
           continue;
         }
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Generated/Pair/LSpp/Tried"), 2);
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Generated/Pair/LSnn/Tried"), 2);
+        }
 
         if (!IsInAcceptance(t1) || !IsInAcceptance(t2)) {
           continue;
         }
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Generated/Pair/LSpp/Tried"), 3);
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Generated/Pair/LSnn/Tried"), 3);
+        }
 
-        int motherid = -1;
-        int hfee_type = IsHFLS(t1, t2, mcParticles);
+        const int motherid = -1;
+        const int hfee_type = IsHFLS(t1, t2, mcParticles);
 
-        if (motherid < 0 && hfee_type == HFllType::kUndef) {
+        if (requireHFEid.value && motherid < 0 && hfee_type == HFllType::kUndef) {
           continue;
+        }
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Generated/Pair/LSpp/Tried"), 4);
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Generated/Pair/LSnn/Tried"), 4);
         }
         // auto mother = mcparticles.iteratorAt(motherid);
 
@@ -563,6 +596,7 @@ struct Alice3Dilepton {
       registry.fill(HIST("Generated/Event/VtxZ"), mccollision.posZ());
 
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
+      int nParticlesInEvent = 0;
       for (const auto& mcParticle : mcParticles_per_coll) {
         if (std::abs(mcParticle.pdgCode()) != pdg) {
           continue;
@@ -573,6 +607,7 @@ struct Alice3Dilepton {
         if (!IsInAcceptance(mcParticle)) {
           continue;
         }
+        nParticlesInEvent++;
 
         registry.fill(HIST("Generated/Particle/Pt"), mcParticle.pt());
         registry.fill(HIST("Generated/Particle/Eta"), mcParticle.eta());
@@ -584,6 +619,7 @@ struct Alice3Dilepton {
         registry.fill(HIST("Generated/Particle/prodVz"), mcParticle.vz());
 
       } // end of mc particle loop
+      registry.fill(HIST("Generated/Particle/ParticlesPerEvent"), nParticlesInEvent);
 
       auto neg_mcParticles_coll = neg_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);
       auto pos_mcParticles_coll = pos_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);

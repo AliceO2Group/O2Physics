@@ -21,7 +21,9 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
+#include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
 #include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -91,14 +93,18 @@ enum MlMode : uint8_t {
 
 // decay channels
 enum DecayChannel { DplusToPiKPi = 0,
-                    LcToPKPi
+                    LcToPKPi,
+                    D0ToPiK,
+                    DstarToD0Pi
 };
 
-struct HfFemtoDreamProducer {
+struct HfProducerCharmHadronsTrackFemtoDream {
 
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDColMasks> rowMasks;
-  Produces<aod::FDHfCand> rowCandCharmHad;
+  Produces<aod::FDHfCand3Prong> rowCandCharm3Prong;
+  Produces<aod::FDHfCand2Prong> rowCandCharm2Prong;
+  Produces<aod::FDHfCandDstar> rowCandCharmDstar;
   Produces<aod::FDHfCandMC> rowCandMcCharmHad;
   Produces<aod::FDHfCandMCGen> rowCandCharmHadGen;
   Produces<aod::FDParticlesIndex> outputPartsIndex;
@@ -158,8 +164,14 @@ struct HfFemtoDreamProducer {
 
   FemtoDreamTrackSelection trackCuts;
 
-  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponseLc;
   o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponseDplus;
+  o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponseD0;
+  o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponseDstar;
+
+  std::vector<float> outputMlD0;
+  std::vector<float> outputMlD0bar;
+  std::vector<float> outputMlDstar;
   std::vector<float> outputMlDplus;
   std::vector<float> outputMlPKPi;
   std::vector<float> outputMlPiKP;
@@ -171,6 +183,10 @@ struct HfFemtoDreamProducer {
 
   float magField{};
   int runNumber{};
+  using CandidateD0 = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>;
+  using CandidateD0Mc = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec>;
+  using CandidateDstar = soa::Join<aod::HfCandDstarsWPid, aod::HfD0FromDstar, aod::HfSelDstarToD0Pi>;
+  using CandidateDstarMc = soa::Join<aod::HfCandDstarsWPid, aod::HfD0FromDstar, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
   using CandidateDplus = soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>;
   using CandidateDplusMc = soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>;
   using CandidateLc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>;
@@ -187,7 +203,9 @@ struct HfFemtoDreamProducer {
 
   using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  Filter filterSelectCandidateDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagHadron || aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagHadron);
+  Filter filterSelectCandidateD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagHadron || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagHadron);
+  Filter filterSelectCandidateDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
+  Filter filterSelectCandidateDplus = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagHadron;
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagHadron || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagHadron);
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -195,8 +213,8 @@ struct HfFemtoDreamProducer {
 
   void init(InitContext&)
   {
-    std::array<bool, 10> processes = {doprocessDataDplusToPiKPi, doprocessMcDplusToPiKPi, doprocessDataDplusToPiKPiWithML, doprocessMcDplusToPiKPiWithML, doprocessMcDplusToPiKPiGen,
-                                      doprocessDataLcToPKPi, doprocessMcLcToPKPi, doprocessDataLcToPKPiWithML, doprocessMcLcToPKPiWithML, doprocessMcLcToPKPiGen};
+    std::array<bool, 20> processes = {doprocessDataDplusToPiKPi, doprocessMcDplusToPiKPi, doprocessDataDplusToPiKPiWithML, doprocessMcDplusToPiKPiWithML, doprocessMcDplusToPiKPiGen,
+                                      doprocessDataLcToPKPi, doprocessMcLcToPKPi, doprocessDataLcToPKPiWithML, doprocessMcLcToPKPiWithML, doprocessMcLcToPKPiGen, doprocessDataD0ToPiK, doprocessMcD0ToPiK, doprocessDataD0ToPiKWithML, doprocessMcD0ToPiKWithML, doprocessMcD0ToPiKGen, doprocessDataDstarToD0Pi, doprocessMcDstarToD0Pi, doprocessDataDstarToD0PiWithML, doprocessMcDstarToD0PiWithML, doprocessMcDstarToD0PiGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -249,16 +267,62 @@ struct HfFemtoDreamProducer {
     int64_t const now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
+    bool useLcMl = doprocessDataLcToPKPiWithML || doprocessMcLcToPKPiWithML;
+    bool useDplusMl = doprocessDataDplusToPiKPiWithML || doprocessMcDplusToPiKPiWithML;
+    bool useD0Ml = doprocessDataD0ToPiKWithML || doprocessMcD0ToPiKWithML;
+    bool useDstarMl = doprocessDataDstarToD0PiWithML || doprocessMcDstarToD0PiWithML;
+
     if (applyMlMode == FillMlFromNewBDT) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (useLcMl) {
+        hfMlResponseLc.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseLc.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseLc.init();
+      }
+      if (useDplusMl) {
+        hfMlResponseDplus.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseDplus.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDplus.init();
+      }
+      if (useD0Ml) {
+        hfMlResponseD0.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseD0.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseD0.init();
+      }
+      if (useDstarMl) {
+        hfMlResponseDstar.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseDstar.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDstar.init();
+      }
+
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        if (useLcMl) {
+          hfMlResponseLc.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+        if (useDplusMl) {
+          hfMlResponseDplus.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+        if (useD0Ml) {
+          hfMlResponseD0.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+        if (useDstarMl) {
+          hfMlResponseDstar.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+
       } else {
-        hfMlResponse.setModelPathsLocal(onnxFileNames);
+        if (useLcMl) {
+          hfMlResponseLc.setModelPathsLocal(onnxFileNames);
+        }
+        if (useDplusMl) {
+          hfMlResponseDplus.setModelPathsLocal(onnxFileNames);
+        }
+        if (useD0Ml) {
+          hfMlResponseD0.setModelPathsLocal(onnxFileNames);
+        }
+        if (useDstarMl) {
+          hfMlResponseDstar.setModelPathsLocal(onnxFileNames);
+        }
       }
-      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponse.init();
     }
   }
 
@@ -462,49 +526,104 @@ struct HfFemtoDreamProducer {
     }
 
     // Filling candidate properties
-    rowCandCharmHad.reserve(sizeCand);
+    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+      rowCandCharm3Prong.reserve(sizeCand);
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      rowCandCharm2Prong.reserve(sizeCand);
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      rowCandCharmDstar.reserve(sizeCand);
+    }
     bool isTrackFilled = false;
     bool isSelectedMlLcToPKPi = true;
     bool isSelectedMlLcToPiKP = true;
     bool isSelectedMlDplusToPiKPi = true;
+    bool isSelectedMlD0ToPiK = true;
+    bool isSelectedMlD0barToKPi = true;
+    bool isSelectedMlDstarToD0Pi = true;
+
     for (const auto& candidate : candidates) {
+      outputMlD0 = {-1.0f, -1.0f, -1.0f};
+      outputMlD0bar = {-1.0f, -1.0f, -1.0f};
       outputMlDplus = {-1.0f, -1.0f, -1.0f};
+      outputMlDstar = {-1.0f, -1.0f, -1.0f};
       outputMlPKPi = {-1.0f, -1.0f, -1.0f};
       outputMlPiKP = {-1.0f, -1.0f, -1.0f};
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)
 
       auto bc = col.template bc_as<aod::BCsWithTimestamps>();
       int64_t timeStamp = bc.timestamp();
+
       auto fillTable = [&](int candFlag,
                            int functionSelection,
                            float bdtScoreBkg,
                            float bdtScorePrompt,
                            float bdtScoreFd) {
         if (functionSelection >= 1) {
-          rowCandCharmHad(
-            outputCollision.lastIndex(),
-            timeStamp,
-            trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
-            trackPos1.globalIndex(),
-            trackNeg.globalIndex(),
-            trackPos2.globalIndex(),
-            trackPos1.pt(),
-            trackNeg.pt(),
-            trackPos2.pt(),
-            trackPos1.eta(),
-            trackNeg.eta(),
-            trackPos2.eta(),
-            trackPos1.phi(),
-            trackNeg.phi(),
-            trackPos2.phi(),
-            1 << candFlag,
-            bdtScoreBkg,
-            bdtScorePrompt,
-            bdtScoreFd);
+          if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+            auto trackPos2 = candidate.template prong2_as<TrackType>();
+            rowCandCharm3Prong(
+              outputCollision.lastIndex(),
+              timeStamp,
+              trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
+              trackPos1.globalIndex(),
+              trackNeg.globalIndex(),
+              trackPos2.globalIndex(),
+              trackPos1.pt(),
+              trackNeg.pt(),
+              trackPos2.pt(),
+              trackPos1.eta(),
+              trackNeg.eta(),
+              trackPos2.eta(),
+              trackPos1.phi(),
+              trackNeg.phi(),
+              trackPos2.phi(),
+              1 << candFlag,
+              bdtScoreBkg,
+              bdtScorePrompt,
+              bdtScoreFd);
 
-          // Row for MC candidate charm hadron (if constexpr isMc)
+          } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+            rowCandCharm2Prong(
+              outputCollision.lastIndex(),
+              timeStamp,
+              trackPos1.sign() + trackNeg.sign(),
+              trackPos1.globalIndex(),
+              trackNeg.globalIndex(),
+              trackPos1.pt(),
+              trackNeg.pt(),
+              trackPos1.eta(),
+              trackNeg.eta(),
+              trackPos1.phi(),
+              trackNeg.phi(),
+              1 << candFlag,
+              bdtScoreBkg,
+              bdtScorePrompt,
+              bdtScoreFd);
+          } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+            auto trackPos2 = candidate.template prongPi_as<TrackType>();
+            rowCandCharmDstar(
+              outputCollision.lastIndex(),
+              timeStamp,
+              candidate.template prongPi_as<TrackType>().sign(),
+              trackPos1.globalIndex(),
+              trackNeg.globalIndex(),
+              trackPos2.globalIndex(),
+              trackPos1.pt(),
+              trackNeg.pt(),
+              trackPos2.pt(),
+              trackPos1.eta(),
+              trackNeg.eta(),
+              trackPos2.eta(),
+              trackPos1.phi(),
+              trackNeg.phi(),
+              trackPos2.phi(),
+              1 << candFlag,
+              bdtScoreBkg,
+              bdtScorePrompt,
+              bdtScoreFd);
+          }
+
           if constexpr (IsMc) {
             rowCandMcCharmHad(
               candidate.flagMcMatchRec(),
@@ -557,12 +676,12 @@ struct HfFemtoDreamProducer {
             isSelectedMlLcToPKPi = false;
             isSelectedMlLcToPiKP = false;
             if (candidate.mlProbLcToPKPi().size() > 0) {
-              std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, true);
-              isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlPKPi);
+              std::vector<float> inputFeaturesLcToPKPi = hfMlResponseLc.getInputFeatures(candidate, true);
+              isSelectedMlLcToPKPi = hfMlResponseLc.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlPKPi);
             }
             if (candidate.mlProbLcToPiKP().size() > 0) {
-              std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, false);
-              isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlPKPi);
+              std::vector<float> inputFeaturesLcToPiKP = hfMlResponseLc.getInputFeatures(candidate, false);
+              isSelectedMlLcToPiKP = hfMlResponseLc.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlPKPi);
             }
             if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP) {
               continue;
@@ -573,6 +692,69 @@ struct HfFemtoDreamProducer {
         }
         fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));
         fillTable(1, candidate.isSelLcToPiKP(), outputMlPiKP.at(0), outputMlPiKP.at(1), outputMlPiKP.at(2));
+      } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+        if constexpr (UseCharmMl) {
+
+          /// fill with ML information
+          /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
+          if (applyMlMode == FillMlFromSelector) {
+            if (candidate.mlProbD0().size() > 0) {
+              outputMlD0.at(0) = candidate.mlProbD0()[0]; /// bkg score
+              outputMlD0.at(1) = candidate.mlProbD0()[1]; /// prompt score
+              outputMlD0.at(2) = candidate.mlProbD0()[2]; /// non-prompt score
+            }
+            if (candidate.mlProbD0bar().size() > 0) {
+              outputMlD0bar.at(0) = candidate.mlProbD0bar()[0]; /// bkg score
+              outputMlD0bar.at(1) = candidate.mlProbD0bar()[1]; /// prompt score
+              outputMlD0bar.at(2) = candidate.mlProbD0bar()[2]; /// non-prompt score
+            }
+
+          } else if (applyMlMode == FillMlFromNewBDT) {
+            isSelectedMlD0ToPiK = false;
+            isSelectedMlD0barToKPi = false;
+
+            if (candidate.mlProbD0().size() > 0) {
+              std::vector<float> inputFeaturesD0ToPiK = hfMlResponseD0.getInputFeatures(candidate, o2::constants::physics::kD0);
+              isSelectedMlD0ToPiK = hfMlResponseD0.isSelectedMl(inputFeaturesD0ToPiK, candidate.pt(), outputMlD0);
+            }
+            if (candidate.mlProbD0bar().size() > 0) {
+              std::vector<float> inputFeaturesD0barToKPi = hfMlResponseD0.getInputFeatures(candidate, o2::constants::physics::kD0);
+              isSelectedMlD0barToKPi = hfMlResponseD0.isSelectedMl(inputFeaturesD0barToKPi, candidate.pt(), outputMlD0bar);
+            }
+            if (!isSelectedMlD0ToPiK && !isSelectedMlD0barToKPi) {
+              continue;
+            }
+          } else {
+            LOGF(fatal, "Please check your Ml configuration!!");
+          }
+        }
+        fillTable(0, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
+        fillTable(1, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
+
+      } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+        if constexpr (UseCharmMl) {
+          /// fill with ML information
+          /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
+          if (applyMlMode == FillMlFromSelector) {
+            if (candidate.mlProbDstarToD0Pi().size() > 0) {
+              outputMlDstar.at(0) = candidate.mlProbDstarToD0Pi()[0]; /// bkg score
+              outputMlDstar.at(1) = candidate.mlProbDstarToD0Pi()[1]; /// prompt score
+              outputMlDstar.at(2) = candidate.mlProbDstarToD0Pi()[2]; /// non-prompt score
+            }
+          } else if (applyMlMode == FillMlFromNewBDT) {
+            isSelectedMlDstarToD0Pi = false;
+            if (candidate.mlProbDstarToD0Pi().size() > 0) {
+              std::vector<float> inputFeaturesDstarToD0Pi = hfMlResponseDstar.getInputFeatures(candidate, false);
+              isSelectedMlDstarToD0Pi = hfMlResponseDstar.isSelectedMl(inputFeaturesDstarToD0Pi, candidate.pt(), outputMlDstar);
+            }
+            if (!isSelectedMlDstarToD0Pi) {
+              continue;
+            }
+          } else {
+            LOGF(fatal, "Please check your Ml configuration!!");
+          }
+        }
+        fillTable(2, candidate.isSelDstarToD0Pi(), outputMlDstar.at(0), outputMlDstar.at(1), outputMlDstar.at(2));
       }
     }
     isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
@@ -637,8 +819,137 @@ struct HfFemtoDreamProducer {
             particle.originMcGen());
         }
       }
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      for (const auto& particle : particles) {
+        if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+          rowCandCharmHadGen(
+            particle.mcCollisionId(),
+            particle.flagMcMatchGen(),
+            particle.originMcGen());
+        }
+      }
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      for (const auto& particle : particles) {
+        if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+          rowCandCharmHadGen(
+            particle.mcCollisionId(),
+            particle.flagMcMatchGen(),
+            particle.originMcGen());
+        }
+      }
     }
   }
+
+  /// D0ToPiK
+  void processDataD0ToPiK(FemtoFullCollision const& col,
+                          aod::BCsWithTimestamps const&,
+                          FemtoHFTracks const& tracks,
+                          soa::Filtered<CandidateD0> const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::D0ToPiK, false, false>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataD0ToPiK, "Provide experimental data for D0ToPiK femto", false);
+
+  void processDataD0ToPiKWithML(FemtoFullCollision const& col,
+                                aod::BCsWithTimestamps const&,
+                                FemtoHFTracks const& tracks,
+                                soa::Filtered<soa::Join<CandidateD0,
+                                                        aod::HfMlD0>> const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::D0ToPiK, false, true>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataD0ToPiKWithML, "Provide experimental data for D0ToPiK with ml", false);
+
+  void processMcD0ToPiK(FemtoFullCollisionMc const& col,
+                        aod::BCsWithTimestamps const&,
+                        FemtoHFMcTracks const& tracks,
+                        aod::McParticles const&,
+                        CandidateD0Mc const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::D0ToPiK, true, false>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcD0ToPiK, "Provide Mc for D0ToPiK", false);
+
+  void processMcD0ToPiKWithML(FemtoFullCollisionMc const& col,
+                              aod::BCsWithTimestamps const&,
+                              FemtoHFMcTracks const& tracks,
+                              aod::McParticles const&,
+                              soa::Join<CandidateD0Mc,
+                                        aod::HfMlD0> const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::D0ToPiK, true, true>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcD0ToPiKWithML, "Provide Mc for D0ToPiK with ml", false);
+
+  void processMcD0ToPiKGen(GeneratedMc const& particles)
+  {
+    fillCharmHadMcGen<DecayChannel::D0ToPiK>(particles);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcD0ToPiKGen, "Provide Mc Generated D0ToPiK", false);
+
+  /// DstarToD0Pi
+  void processDataDstarToD0Pi(FemtoFullCollision const& col,
+                              aod::BCsWithTimestamps const&,
+                              FemtoHFTracks const& tracks,
+                              soa::Filtered<CandidateDstar> const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::DstarToD0Pi, false, false>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataDstarToD0Pi, "Provide experimental data for DstarToD0Pi femto", false);
+
+  void processDataDstarToD0PiWithML(FemtoFullCollision const& col,
+                                    aod::BCsWithTimestamps const&,
+                                    FemtoHFTracks const& tracks,
+                                    soa::Filtered<soa::Join<CandidateDstar,
+                                                            aod::HfMlDstarToD0Pi>> const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::DstarToD0Pi, false, true>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataDstarToD0PiWithML, "Provide experimental data for DstarToD0Pi with ml", false);
+
+  void processMcDstarToD0Pi(FemtoFullCollisionMc const& col,
+                            aod::BCsWithTimestamps const&,
+                            FemtoHFMcTracks const& tracks,
+                            aod::McParticles const&,
+                            CandidateDstarMc const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, false>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDstarToD0Pi, "Provide Mc for DstarToD0Pi", false);
+
+  void processMcDstarToD0PiWithML(FemtoFullCollisionMc const& col,
+                                  aod::BCsWithTimestamps const&,
+                                  FemtoHFMcTracks const& tracks,
+                                  aod::McParticles const&,
+                                  soa::Join<CandidateDstarMc,
+                                            aod::HfMlDstarToD0Pi> const& candidates)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, true>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDstarToD0PiWithML, "Provide Mc for DstarToD0Pi with ml", false);
+
+  void processMcDstarToD0PiGen(GeneratedMc const& particles)
+  {
+
+    fillCharmHadMcGen<DecayChannel::DstarToD0Pi>(particles);
+  }
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDstarToD0PiGen, "Provide Mc Generated DstarToD0Pi", false);
 
   /// DplusToPiKPi
   void processDataDplusToPiKPi(FemtoFullCollision const& col,
@@ -648,11 +959,9 @@ struct HfFemtoDreamProducer {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, false, false>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processDataDplusToPiKPi,
-                 "Provide experimental data for DplusToPiKPi femto", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataDplusToPiKPi, "Provide experimental data for DplusToPiKPi femto", false);
 
   void processDataDplusToPiKPiWithML(FemtoFullCollision const& col,
                                      aod::BCsWithTimestamps const&,
@@ -663,11 +972,9 @@ struct HfFemtoDreamProducer {
 
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, false, true>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processDataDplusToPiKPiWithML,
-                 "Provide experimental data for DplusToPiKPi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataDplusToPiKPiWithML, "Provide experimental data for DplusToPiKPi with ml", false);
 
   void processMcDplusToPiKPi(FemtoFullCollisionMc const& col,
                              aod::BCsWithTimestamps const&,
@@ -677,10 +984,9 @@ struct HfFemtoDreamProducer {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, false>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processMcDplusToPiKPi, "Provide Mc for DplusToPiKPi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDplusToPiKPi, "Provide Mc for DplusToPiKPi", false);
 
   void processMcDplusToPiKPiWithML(FemtoFullCollisionMc const& col,
                                    aod::BCsWithTimestamps const&,
@@ -691,17 +997,16 @@ struct HfFemtoDreamProducer {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, true>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
 
   void processMcDplusToPiKPiGen(GeneratedMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DplusToPiKPi>(particles);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processMcDplusToPiKPiGen, "Provide Mc Generated DplusToPiKPi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDplusToPiKPiGen, "Provide Mc Generated DplusToPiKPi", false);
 
   /// LcToPKPi
   void processDataLcToPKPi(FemtoFullCollision const& col,
@@ -711,11 +1016,9 @@ struct HfFemtoDreamProducer {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::LcToPKPi, false, false>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processDataLcToPKPi,
-                 "Provide experimental data for Lc(PKPi)-proton femto", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataLcToPKPi, "Provide experimental data for Lc(PKPi)-proton femto", false);
 
   void processDataLcToPKPiWithML(FemtoFullCollision const& col,
                                  aod::BCsWithTimestamps const&,
@@ -726,11 +1029,9 @@ struct HfFemtoDreamProducer {
 
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::LcToPKPi, false, true>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processDataLcToPKPiWithML,
-                 "Provide experimental data for Lc(PKPi)-proton femto with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processDataLcToPKPiWithML, "Provide experimental data for Lc(PKPi)-proton femto with ml", false);
 
   void processMcLcToPKPi(FemtoFullCollisionMc const& col,
                          aod::BCsWithTimestamps const&,
@@ -740,10 +1041,9 @@ struct HfFemtoDreamProducer {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::LcToPKPi, true, false>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processMcLcToPKPi, "Provide Mc for lctopkpi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcLcToPKPi, "Provide Mc for lctopkpi", false);
 
   void processMcLcToPKPiWithML(FemtoFullCollisionMc const& col,
                                aod::BCsWithTimestamps const&,
@@ -754,20 +1054,19 @@ struct HfFemtoDreamProducer {
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-
     fillCharmHadronTable<DecayChannel::LcToPKPi, true, true>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
 
   void processMcLcToPKPiGen(GeneratedMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::LcToPKPi>(particles);
   }
-  PROCESS_SWITCH(HfFemtoDreamProducer, processMcLcToPKPiGen, "Provide Mc Generated lctopkpi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcLcToPKPiGen, "Provide Mc Generated lctopkpi", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfFemtoDreamProducer>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfProducerCharmHadronsTrackFemtoDream>(cfgc)};
 }

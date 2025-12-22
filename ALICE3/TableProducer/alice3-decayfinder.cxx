@@ -79,7 +79,7 @@ struct alice3decayFinder {
 
   // Vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 1e9, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -324,19 +324,21 @@ struct alice3decayFinder {
     o2::track::TrackParCov trackParVar0 = getTrackParCov(prong0);
     o2::track::TrackParCov trackParVar1 = getTrackParCov(prong1);
     o2::track::TrackParCov trackParVar2 = getTrackParCov(prong2);
-
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
     // Move close to minima
     int nCand = 0;
     try {
+      histos.fill(HIST("hCandidateBuilderStatus3Prong"), 0.f); // builds candidate
       nCand = fitter3.process(trackParVar0, trackParVar1, trackParVar2);
     } catch (...) {
       LOG(info) << "Second vertex fit failed";
       return false;
     }
+    histos.fill(HIST("hCandidateBuilderStatus3Prong"), 1.f); // builds candidate
     if (nCand == 0) {
       return false;
     }
+    histos.fill(HIST("hCandidateBuilderStatus3Prong"), 2.f); // builds candidate
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
 
     auto covMatrixPCA = fitter3.calcPCACovMatrixFlat();
@@ -345,6 +347,7 @@ struct alice3decayFinder {
     if (cand3prong.dcaDau > dcaDaughtersSelection) {
       return false;
     }
+    histos.fill(HIST("hCandidateBuilderStatus3Prong"), 3.f); // builds candidate
 
     cand3prong.primaryVertex = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
     auto secondaryVertex = fitter3.getPCACandidate();
@@ -571,6 +574,7 @@ struct alice3decayFinder {
       }
     }
     if (doprocessFindLc) {
+      histos.add("hCandidateBuilderStatus3Prong", "hCandidateBuilderStatus3Prong", kTH1D, {{10, -0.5, 9.5}});
       histos.add("h2dGen3Prong", "h2dGen3Prong", kTH2F, {axisPt, axisEta});
       histos.add("h2dGen3ProngBar", "h2dGen3ProngBar", kTH2F, {axisPt, axisEta});
       histos.add("h3dRec3Prong", "h3dRec3Prong", kTH3F, {axisPt, axisEta, axisLcMass});

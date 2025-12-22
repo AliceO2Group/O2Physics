@@ -33,6 +33,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
   groupStr.ToLower();
   TString subGroupStr = subGroupName;
   subGroupStr.ToLower();
+  if (groupStr.Contains("timeframe")) {
+    hm->AddHistogram(histClass, "TF_NCollisions", "Number of collisions per TF", false, 1000, 0.0, 5000.0, VarManager::kTFNCollisions);
+    hm->AddHistogram(histClass, "TF_NMCCollisions", "Number of MC collisions per TF", false, 1000, 0.0, 5000.0, VarManager::kTFNMCCollisions);
+    hm->AddHistogram(histClass, "TF_NBCs", "Number of BCs per TF", false, 1000, 0.0, 50000.0, VarManager::kTFNBCs);
+    hm->AddHistogram(histClass, "TF_NTracks", "Number of tracks per TF", false, 1000, 0.0, 200000.0, VarManager::kTFNTracks);
+    hm->AddHistogram(histClass, "TF_NMuons", "Number of muons per TF", false, 1000, 0.0, 5000.0, VarManager::kTFNMuons);
+    hm->AddHistogram(histClass, "TF_NMFTs", "Number of MFT tracks per TF", false, 1000, 0.0, 200000.0, VarManager::kTFNMFTs);
+  }
   if (!groupStr.CompareTo("event")) {
     if (!subGroupStr.Contains("generator")) {
       hm->AddHistogram(histClass, "VtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ);
@@ -962,6 +970,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "YMC", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
     hm->AddHistogram(histClass, "CentFT0CMC", "MC Cent. FT0C", false, 18, 0., 90., VarManager::kMCEventCentrFT0C);
     hm->AddHistogram(histClass, "PtMC_YMC", "MC pT vs MC y", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY);
+    hm->AddHistogram(histClass, "PtMC_YMC_CentFT0CMC", "MC pT vs MC y vs MC Cent. FT0C", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY, 18, 0., 90., VarManager::kMCEventCentrFT0C);
     hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "VzMC", "MC vz", false, 100, -15.0, 15.0, VarManager::kMCVz);
     hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);

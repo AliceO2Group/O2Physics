@@ -4075,7 +4075,7 @@ struct AnalysisDileptonTrack {
               }
             }
             // fill mc truth vertexing (for the associated track as this will have a displaced vertex, while the B hadron is produced in the PV)
-            VarManager::FillTrackCollisionMC<VarManager::kBtoJpsiEEK>(trackMC, currentMCParticle, event.reducedMCevent(), fValuesHadron);
+            VarManager::FillTrackCollisionMC<VarManager::kBtoJpsiEEK, TEventFillMap>(trackMC, currentMCParticle, event.reducedMCevent(), fValuesHadron);
           }
 
           // table to be written out for ML analysis
