@@ -339,7 +339,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   /// Compute the charm hadron candidates mass with the daughter masses
   /// assumes the candidate is either a D+ or Λc+ or D0 or Dstar
-  template <DecayChannel Channel, typename Candidate>
+  template <DecayChannel Channel, bool ReturnDaughMass, typename Candidate>
   float getCharmHadronMass(const Candidate& cand)
   {
     float invMass = 0.0f;
@@ -370,12 +370,26 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     }
     // D* → D0π (PDG: 413)
     if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-      invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
-      return invMass;
+      float mDstar = 0.f;
+      float mD0 = 0.f;
+
+      if (cand.charge() > 0.f) {
+        mDstar = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
+        mD0 = cand.mDaughD0(std::array{MassPiPlus, MassKPlus});
+      } else {
+        mDstar = cand.m(std::array{MassKPlus, MassPiPlus, MassPiPlus});
+        mD0 = cand.mDaughD0(std::array{MassKPlus, MassPiPlus});
+      }
+
+      if constexpr (ReturnDaughMass) {
+        return mD0;
+      } else {
+        return mDstar - mD0;
+      }
     }
 
     // Add more channels as needed
-    return invMass;
+    return 0.f;
   }
 
   template <DecayChannel Channel, typename Candidate, typename Track>
@@ -437,7 +451,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         // D* → D0π
-        massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
+        if (cand.candidateSelFlag() == 1) {
+          massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
+        } else {
+          massCharmTrk = {MassKPlus, MassPiPlus, MassPiPlus, trackMassHyp};
+        }
       }
 
       return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
@@ -500,7 +518,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if (kstar > highkstarCut) {
         continue;
       }
-      float invMass = getCharmHadronMass<Channel>(p2);
+      float invMass = getCharmHadronMass<Channel, false>(p2);
 
       if (invMass < charmSel.charmHadMinInvMass || invMass > charmSel.charmHadMaxInvMass) {
         continue;
@@ -626,7 +644,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           continue;
         }
 
-        float invMass = getCharmHadronMass<Channel>(p2);
+        float invMass = getCharmHadronMass<Channel, false>(p2);
 
         if (invMass < charmSel.charmHadMinInvMass || invMass > charmSel.charmHadMaxInvMass) {
           continue;
@@ -691,14 +709,14 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
     // ---- Fill Charm-Hadron Table ----
     for (auto const& part : sliceCharmHad) {
-      float invMass = getCharmHadronMass<Channel>(part);
+      float invMass = getCharmHadronMass<Channel, false>(part);
       registryCharmHadronQa.fill(
         HIST("CharmHadronQA/hPtVsMass"),
         part.pt(), invMass);
 
       timeStamp = part.timeStamp();
 
-      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DstarToD0Pi) {
+      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
           col.globalIndex(),
@@ -728,9 +746,25 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.bdtBkg(),
           part.bdtPrompt(),
           part.bdtFD());
+      } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+        float invMassD0 = getCharmHadronMass<Channel, true>(part);
+        rowFemtoResultCharmDstar(
+          col.globalIndex(),
+          timeStamp,
+          invMass,
+          invMassD0,
+          part.pt(),
+          part.eta(),
+          part.phi(),
+          part.prong0Id(),
+          part.prong1Id(),
+          part.prong2Id(),
+          part.charge(),
+          part.bdtBkg(),
+          part.bdtPrompt(),
+          part.bdtFD());
       }
     }
-
     // ---- Fill Track Table ----
     for (auto const& part : sliceTrk1) {
       allTrackHisto.fillQA<IsMc, true>(
