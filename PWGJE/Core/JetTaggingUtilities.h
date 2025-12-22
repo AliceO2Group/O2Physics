@@ -541,7 +541,7 @@ bool svAcceptance(T const& sv, float svDispersionMax)
  * positive value is expected from secondary vertex
  *
  * @param jet
- * @param track which is needed aod::JTrackExtras
+ * @param track which is needed o2::aod::JTrackExtras
  */
 template <typename T, typename U>
 int getGeoSign(T const& jet, U const& track)

@@ -76,6 +76,15 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
       mCcdbManager->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
       // Add CCDB handling logic here if needed
       LOG(info) << " --- Now retrieving LUT file from CCDB to: " << filename;
+      if (mCleanupDownloadedFile) { // Clean up the downloaded file if needed
+        bool status = loadTable(pdg, filename, forceReload);
+        if (std::remove(filename) != 0) {
+          LOG(warn) << " --- Could not remove temporary LUT file: " << filename;
+        } else {
+          LOG(info) << " --- Removed temporary LUT file: " << filename;
+        }
+        return status;
+      }
     } else { // File exists, proceed to load
       LOG(info) << " --- LUT file already exists: " << filename << ". Skipping download.";
       checkFile.close();
@@ -157,9 +166,9 @@ lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, const floa
 {
   const int ipdg = getIndexPDG(pdg);
   if (!mLUTHeader[ipdg]) {
-    LOG(error) << " --- getLUTEntry: LUT header not loaded for pdg=" << pdg << ". Returning nullptr.";
     return nullptr;
   }
+
   auto inch = mLUTHeader[ipdg]->nchmap.find(nch);
   auto irad = mLUTHeader[ipdg]->radmap.find(radius);
   auto ieta = mLUTHeader[ipdg]->etamap.find(eta);
@@ -281,7 +290,6 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
 
 bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 {
-
   auto pt = o2track.getPt();
   switch (pdg) {
     case o2::constants::physics::kHelium3:

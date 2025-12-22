@@ -148,9 +148,9 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgCutPtPIDdauLaPrMin, float, 0.15f, "Minimal pT for daughter PID")
     O2_DEFINE_CONFIGURABLE(cfgCutPtPIDdauLaPiMin, float, 0.15f, "Minimal pT for daughter PID")
     // track quality selections for daughter track
-    O2_DEFINE_CONFIGURABLE(cfgCheckITSNCls, bool, false, "check minimum number of ITS clusters")
-    O2_DEFINE_CONFIGURABLE(cfgCheckITSHits, bool, false, "check minimum number of ITS hits")
-    O2_DEFINE_CONFIGURABLE(cfgCheckITSChi2NDF, bool, false, "check ITS Chi2NDF")
+    O2_DEFINE_CONFIGURABLE(cfgITSNCls, int, 5, "check minimum number of ITS clusters")
+    O2_DEFINE_CONFIGURABLE(cfgTPCNCls, int, 50, "check minimum number of TPC hits")
+    O2_DEFINE_CONFIGURABLE(cfgTPCCrossedRows, int, 70, "check minimum number of TPC crossed rows")
     O2_DEFINE_CONFIGURABLE(cfgCheckGlobalTrack, bool, false, "check global track")
   } trkQualityOpts;
 
@@ -655,7 +655,7 @@ struct FlowGfwOmegaXi {
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiXiPdpt refP10 {2, 2} refN10 {-2 -2}", "Xi10Gap24a", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiXiNdpt refN10 {2, 2} refP10 {-2 -2}", "Xi10Gap24b", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiOmegaPdpt refP10 {2, 2} refN10 {-2 -2}", "Omega10Gap24a", kTRUE)); // 45
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiOmegaPdpt refP10 {2, 2} refN10 {-2 -2}", "Omega10Gap24a", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiOmegaNdpt refN10 {2, 2} refP10 {-2 -2}", "Omega10Gap24b", kTRUE));
     fGFW->CreateRegions(); // finalize the initialization
 
@@ -1089,14 +1089,14 @@ struct FlowGfwOmegaXi {
         if (cfgOutputQA) {
           registry.fill(HIST("QAhisto/V0/hqaarm_podobefore"), v0.alpha(), v0.qtarm());
         }
-        // check daughter TPC and TOF
+        // check daughter ITS, TPC and TOF
         // K0short
         if (v0.pt() > trkQualityOpts.cfgCutPtK0sMin.value && v0.pt() < trkQualityOpts.cfgCutPtK0sMax.value) {
           if (v0.qtarm() / std::fabs(v0.alpha()) > v0BuilderOpts.cfgv0_ArmPodocut.value &&
               std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0BuilderOpts.cfgv0_mk0swindow.value &&
               (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
               ((std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt) && (std::fabs(v0negdau.tofNSigmaPi()) < cfgNSigma[3] || v0negdau.pt() < lowpt)) &&
-              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0posdau)) < cfgNSigma[6]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
+              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0posdau)) < cfgNSigma[6]) || v0posdau.pt() > lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() > lowpt)) {
             registry.fill(HIST("InvMassK0s_all"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
             isK0s = true;
             if (cfgOutputQA) {
@@ -1109,13 +1109,13 @@ struct FlowGfwOmegaXi {
           if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value &&
               (std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
               ((std::fabs(v0posdau.tofNSigmaPr()) < cfgNSigma[4] || v0posdau.pt() < lowpt) && (std::fabs(v0negdau.tofNSigmaPi()) < cfgNSigma[3] || v0negdau.pt() < lowpt)) &&
-              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
+              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() > lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() > lowpt)) {
             registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
             isLambda = true;
           } else if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value &&
                      (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
                      ((std::fabs(v0negdau.tofNSigmaPr()) < cfgNSigma[4] || v0negdau.pt() < lowpt) && (std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt)) &&
-                     ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
+                     ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() > lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() > lowpt)) {
             registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
             isLambda = true;
           }
@@ -1131,17 +1131,17 @@ struct FlowGfwOmegaXi {
         if (!isK0s && !isLambda)
           continue;
         // track quality check
-        if (!v0posdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+        if (v0posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
           continue;
-        if (!v0negdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+        if (v0negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
           continue;
-        if (!v0posdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+        if (v0posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
           continue;
-        if (!v0negdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+        if (v0negdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
           continue;
-        if (!v0posdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+        if (v0posdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
           continue;
-        if (!v0negdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+        if (v0negdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
           continue;
         if (trkQualityOpts.cfgCheckGlobalTrack.value) {
           if (!v0posdau.hasTPC() || !v0posdau.hasITS())
@@ -1216,7 +1216,7 @@ struct FlowGfwOmegaXi {
           registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
           registry.fill(HIST("hPhiLambda"), v0.phi());
           registry.fill(HIST("hPhiLambdacorr"), v0.phi(), wacc);
-          fGFW->Fill(v0.eta(), fK0sPtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nK0sPtBins), v0.phi(), wacc * weff * wloc, 16);
+          fGFW->Fill(v0.eta(), fLambdaPtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nLambdaPtBins), v0.phi(), wacc * weff * wloc, 16);
           if (cfgOutputNUAWeights)
             fWeightsLambda->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
           if (cfgOutputrunbyrun) {
@@ -1252,13 +1252,13 @@ struct FlowGfwOmegaXi {
           if (casc.sign() < 0 && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
               (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
               ((std::fabs(casc.tofNSigmaOmKa()) < cfgNSigma[5] || bachelor.pt() < bachPtcut) && (std::fabs(casc.tofNSigmaOmLaPr()) < cfgNSigma[4] || posdau.pt() < dauLaPrPtcut) && (std::fabs(casc.tofNSigmaOmLaPi()) < cfgNSigma[3] || negdau.pt() < dauLaPiPtcut)) &&
-              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() < bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < dauLaPiPtcut)) {
+              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() > dauLaPiPtcut)) {
             registry.fill(HIST("InvMassOmega_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
             isOmega = true;
           } else if (casc.sign() > 0 && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
                      (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
                      ((std::fabs(casc.tofNSigmaOmKa()) < cfgNSigma[5] || bachelor.pt() < bachPtcut) && (std::fabs(casc.tofNSigmaOmLaPr()) < cfgNSigma[4] || negdau.pt() < dauLaPrPtcut) && (std::fabs(casc.tofNSigmaOmLaPi()) < cfgNSigma[3] || posdau.pt() < dauLaPiPtcut)) &&
-                     ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() < bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(negdau)) < cfgNSigma[7]) || negdau.pt() < dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(posdau)) < cfgNSigma[6]) || posdau.pt() < dauLaPiPtcut)) {
+                     ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(negdau)) < cfgNSigma[7]) || negdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(posdau)) < cfgNSigma[6]) || posdau.pt() > dauLaPiPtcut)) {
             registry.fill(HIST("InvMassOmega_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
             isOmega = true;
           }
@@ -1268,13 +1268,13 @@ struct FlowGfwOmegaXi {
           if (casc.sign() < 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
               (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
               ((std::fabs(casc.tofNSigmaXiPi()) < cfgNSigma[3] || bachelor.pt() < bachPtcut) && (std::fabs(casc.tofNSigmaXiLaPr()) < cfgNSigma[4] || posdau.pt() < dauLaPrPtcut) && (std::fabs(casc.tofNSigmaXiLaPi()) < cfgNSigma[3] || negdau.pt() < dauLaPiPtcut)) &&
-              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() < bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < dauLaPiPtcut)) {
+              ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() > dauLaPiPtcut)) {
             registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
             isXi = true;
           } else if (casc.sign() > 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
                      (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
                      ((std::fabs(casc.tofNSigmaXiPi()) < cfgNSigma[3] || bachelor.pt() < bachPtcut) && (std::fabs(casc.tofNSigmaXiLaPr()) < cfgNSigma[4] || negdau.pt() < dauLaPrPtcut) && (std::fabs(casc.tofNSigmaXiLaPi()) < cfgNSigma[3] || posdau.pt() < dauLaPiPtcut)) &&
-                     ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() < bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(negdau)) < cfgNSigma[7]) || negdau.pt() < dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(posdau)) < cfgNSigma[6]) || posdau.pt() < dauLaPiPtcut)) {
+                     ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(negdau)) < cfgNSigma[7]) || negdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(posdau)) < cfgNSigma[6]) || posdau.pt() > dauLaPiPtcut)) {
             registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
             isXi = true;
           }
@@ -1320,24 +1320,24 @@ struct FlowGfwOmegaXi {
           continue;
         if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascBuilderOpts.cfgcasc_mlambdawindow.value)
           continue;
-        // // track quality check
-        if (!bachelor.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+        // track quality check
+        if (bachelor.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
           continue;
-        if (!posdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+        if (posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
           continue;
-        if (!negdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+        if (negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
           continue;
-        if (!bachelor.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+        if (bachelor.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
           continue;
-        if (!posdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+        if (posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
           continue;
-        if (!negdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+        if (negdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
           continue;
-        if (!bachelor.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+        if (bachelor.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
           continue;
-        if (!posdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+        if (posdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
           continue;
-        if (!negdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+        if (negdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
           continue;
         if (trkQualityOpts.cfgCheckGlobalTrack.value) {
           if (!bachelor.hasTPC() || !bachelor.hasITS())
@@ -1754,23 +1754,23 @@ struct FlowGfwOmegaXi {
         }
       }
       // track quality check
-      if (!bachelor.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+      if (bachelor.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
         continue;
-      if (!posdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+      if (posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
         continue;
-      if (!negdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+      if (negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
         continue;
-      if (!bachelor.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+      if (bachelor.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;
-      if (!posdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+      if (posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;
-      if (!negdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+      if (negdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;
-      if (!bachelor.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+      if (bachelor.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
         continue;
-      if (!posdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+      if (posdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
         continue;
-      if (!negdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+      if (negdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
         continue;
       if (trkQualityOpts.cfgCheckGlobalTrack.value) {
         if (!bachelor.hasTPC() || !bachelor.hasITS())
@@ -1923,17 +1923,17 @@ struct FlowGfwOmegaXi {
         registry.fill(HIST("QAhisto/V0/hqaarm_podobefore"), v0.alpha(), v0.qtarm());
       }
       // // track quality check
-      if (!v0posdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+      if (v0posdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
         continue;
-      if (!v0negdau.passedITSNCls() && trkQualityOpts.cfgCheckITSNCls.value)
+      if (v0negdau.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
         continue;
-      if (!v0posdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+      if (v0posdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;
-      if (!v0negdau.passedITSHits() && trkQualityOpts.cfgCheckITSHits.value)
+      if (v0negdau.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
         continue;
-      if (!v0posdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+      if (v0posdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
         continue;
-      if (!v0negdau.passedITSChi2NDF() && trkQualityOpts.cfgCheckITSChi2NDF.value)
+      if (v0negdau.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
         continue;
       if (trkQualityOpts.cfgCheckGlobalTrack.value) {
         if (!v0posdau.hasTPC() || !v0posdau.hasITS())

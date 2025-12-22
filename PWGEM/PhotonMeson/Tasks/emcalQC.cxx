@@ -199,8 +199,8 @@ struct EmcalQC {
         fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), 0., cluster.e(), collision.weight());
 
         // Define two boleans to see, whether the cluster "survives" the EMC cluster cuts to later check, whether the cuts in this task align with the ones in EMCPhotonCut.h:
-        bool survivesIsSelectedEMCalCuts = true;                        // Survives "manual" cuts listed in this task
-        bool survivesIsSelectedCuts = fEMCCut.IsSelected<int>(cluster); // Survives the cutlist defines in EMCPhotonCut.h, which is also used in the Pi0Eta task
+        bool survivesIsSelectedEMCalCuts = true;                   // Survives "manual" cuts listed in this task
+        bool survivesIsSelectedCuts = fEMCCut.IsSelected(cluster); // Survives the cutlist defines in EMCPhotonCut.h, which is also used in the Pi0Eta task
 
         for (int icut = 0; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables
           EMCPhotonCut::EMCPhotonCuts specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);

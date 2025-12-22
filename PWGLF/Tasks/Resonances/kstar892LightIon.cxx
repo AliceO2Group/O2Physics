@@ -316,6 +316,19 @@ struct Kstar892LightIon {
       hMC.add("CorrFactors/h2dGenKstar", "Centrality vs p_{T}", kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
       hMC.add("CorrFactors/h3dGenKstarVsMultMCVsCentrality", "MC centrality vs centrality vs p_{T}", kTH3D, {axisNch, {101, 0.0f, 101.0f}, ptAxis});
     }
+
+    if (doprocessRecMisID) {
+      hMC.add("RecMisID/hMassMisID", "Reconstruction misidentification", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+    }
+
+    if (doprocessLossMCMultiplicity) {
+      hMC.add("LossMult/hMultMC", "Charged Paticle multiplicity in generated MC before event selection", kTH1F, {axisNch});
+      hMC.add("LossMult/hCentVsMultMC", "Centrality vs Charged Particle Multiplicity", kTH2F, {centralityAxis, axisNch});
+      hMC.add("LossMult/hGenEvt_vs_multMC", "Charged Paticle multiplicity in generated MC after event selection", kTH1F, {axisNch});
+      hMC.add("LossMult/hGenEvtRecoEvt_vs_multMC", "Charged Paticle multiplicity in generated MC before event selection with reconstruction", kTH1F, {axisNch});
+      hMC.add("LossMult/hGenKstar_vs_pt_vs_multMC", "pT vs Charged particle multiplicity", kTH2F, {ptAxis, axisNch});
+      hMC.add("LossMult/hGenKstarRecoEvt_vs_pt_vs_multMC", "pT vs Charged particle multiplicity with reconstruction", kTH2F, {ptAxis, axisNch});
+    }
   }
 
   double massPi = o2::constants::physics::MassPiPlus;
@@ -1478,6 +1491,131 @@ struct Kstar892LightIon {
     hMC.fill(HIST("CorrFactors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 2.5);
   }
   PROCESS_SWITCH(Kstar892LightIon, processCorrFactors, "Process Signal Loss, Event Loss using chaged particle multiplicity", false);
+
+  void processRecMisID(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
+  {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+
+    centrality = collision.centFT0M();
+    if (!selectionEvent(collision, false)) {
+      return;
+    }
+
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+
+      if (!selectionTrack(track1) || !selectionTrack(track2))
+        continue;
+
+      if (track1.index() == track2.index())
+        continue;
+
+      if (track1.sign() * track2.sign() >= 0)
+        continue;
+
+      if (!track1.has_mcParticle() || !track2.has_mcParticle())
+        continue;
+
+      const auto mc1 = track1.mcParticle();
+      const auto mc2 = track2.mcParticle();
+
+      if (!mc1.isPhysicalPrimary() || !mc2.isPhysicalPrimary())
+        continue;
+
+      int pdg1 = std::abs(mc1.pdgCode());
+      int pdg2 = std::abs(mc2.pdgCode());
+
+      bool ok1 = (pdg1 == PDG_t::kPiPlus || pdg1 == PDG_t::kKPlus);
+      bool ok2 = (pdg2 == PDG_t::kPiPlus || pdg2 == PDG_t::kKPlus);
+      if (!ok1 || !ok2)
+        continue;
+
+      ROOT::Math::PxPyPzMVector p1(track1.px(), track1.py(), track1.pz(), pdg1 == PDG_t::kPiPlus ? massPi : massKa);
+      ROOT::Math::PxPyPzMVector p2(track2.px(), track2.py(), track2.pz(), pdg2 == PDG_t::kPiPlus ? massPi : massKa);
+
+      if (pdg1 == PDG_t::kPiPlus) {
+        ROOT::Math::PxPyPzMVector p1Fake(track1.px(), track1.py(), track1.pz(), massKa);
+        auto misIDMother = p1Fake + p2;
+        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
+      }
+
+      if (pdg2 == PDG_t::kPiPlus) {
+        ROOT::Math::PxPyPzMVector p2Fake(track2.px(), track2.py(), track2.pz(), massKa);
+        auto misIDMother = p1 + p2Fake;
+        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
+      }
+
+      if (pdg1 == PDG_t::kKPlus) {
+        ROOT::Math::PxPyPzMVector p1Fake(track1.px(), track1.py(), track1.pz(), massPi);
+        auto misIDMother = p1Fake + p2;
+        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
+      }
+
+      if (pdg2 == PDG_t::kKPlus) {
+        ROOT::Math::PxPyPzMVector p2Fake(track2.px(), track2.py(), track2.pz(), massPi);
+        auto misIDMother = p1 + p2Fake;
+        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstar892LightIon, processRecMisID, "Process Reconstructed MisID Background", false);
+
+  void processLossMCMultiplicity(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& mcParticles)
+  {
+    const int multMC = mcCollision.multMCNParticlesEta05();
+    hMC.fill(HIST("LossMult/hMultMC"), multMC);
+
+    bool hasRecoEvent = false;
+    float centrality = -1.f;
+
+    for (auto const& coll : collisions) {
+
+      if (!selectionEvent(coll, false))
+        continue;
+
+      if (selectCentEstimator == kFT0M) {
+        centrality = coll.centFT0M();
+      } else if (selectCentEstimator == kFT0A) {
+        centrality = coll.centFT0A();
+      } else if (selectCentEstimator == kFT0C) {
+        centrality = coll.centFT0C();
+      } else if (selectCentEstimator == kFV0A) {
+        centrality = coll.centFV0A();
+      } else {
+        centrality = coll.centFT0M(); // default
+      }
+
+      hasRecoEvent = true;
+    }
+
+    hMC.fill(HIST("LossMult/hCentVsMultMC"), centrality, multMC);
+
+    // Event loss histograms
+    hMC.fill(HIST("LossMult/hGenEvt_vs_multMC"), multMC);
+
+    if (hasRecoEvent) {
+      hMC.fill(HIST("LossMult/hGenEvtRecoEvt_vs_multMC"), multMC);
+    }
+
+    // Signal loss histograms
+    for (auto const& p : mcParticles) {
+
+      if (std::abs(p.pdgCode()) != o2::constants::physics::kK0Star892)
+        continue;
+      if (std::abs(p.y()) >= selectionConfig.motherRapidityCut)
+        continue;
+
+      const float pt = p.pt();
+
+      hMC.fill(HIST("LossMult/hGenKstar_vs_pt_vs_multMC"), pt, multMC);
+
+      if (hasRecoEvent) {
+        hMC.fill(HIST("LossMult/hGenKstarRecoEvt_vs_pt_vs_multMC"), pt, multMC);
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstar892LightIon, processLossMCMultiplicity, "Signal + Event loss (using MC multiplicity)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
