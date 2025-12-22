@@ -801,7 +801,7 @@ struct HfCorrelatorLcScHadrons {
       double efficiencyWeightCand = 1.;
       double yCand = -999.0;
       double etaCand = -999.0;
-      double ptCandLc = -999.0;
+      double  ptScProng0 = -999.0;
       double ptCand = -999.0;
       double phiCand = -999.0;
       double massCandPKPi = -999.0;
@@ -836,7 +836,7 @@ struct HfCorrelatorLcScHadrons {
       if constexpr (IsCandSc) {
         chargeCand = candidate.charge();
         const auto& candidateLc = candidate.template prongLc_as<CandsLcData>();
-        ptCandLc = candidateLc.pt();
+         ptScProng0 = candidateLc.pt();
         selLcPKPi = (candidateLc.isSelLcToPKPi() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPKPiFromPDG());
         selLcPiKP = (candidateLc.isSelLcToPiKP() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPiKPFromPDG());
         if (selLcPKPi) {
@@ -868,7 +868,7 @@ struct HfCorrelatorLcScHadrons {
           signSoftPion = candidate.template prong1_as<aod::Tracks>().sign();
           registry.fill(HIST("hPtProng1"), candidate.prong1().pt());
         }
-        registry.fill(HIST("hPtProng0"), ptCandLc);
+        registry.fill(HIST("hPtProng0"),  ptScProng0);
 
         if (chargeCand == ChargeZero) {
           chargeCand = (signSoftPion < ChargeZero) ? AssignedChargeSc0 : -AssignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
@@ -926,7 +926,7 @@ struct HfCorrelatorLcScHadrons {
         if (!skipMixedEventTableFilling) {
           entryCand(candidate.phi(), etaCand, ptCand, massCandPKPi, poolBin, gCollisionId, timeStamp);
           entryCandCharge(chargeCand);
-          entryPtLcFromSc(ptCandLc);
+          entryPtLcFromSc( ptScProng0);
         }
       }
 
@@ -947,7 +947,7 @@ struct HfCorrelatorLcScHadrons {
         if (!skipMixedEventTableFilling) {
           entryCand(candidate.phi(), etaCand, ptCand, massCandPiKP, poolBin, gCollisionId, timeStamp);
           entryCandCharge(chargeCand);
-          entryPtLcFromSc(ptCandLc);
+          entryPtLcFromSc( ptScProng0);
         }
       }
 
@@ -1004,11 +1004,11 @@ struct HfCorrelatorLcScHadrons {
         }
 
         if (selLcPKPi) {
-          fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand, ptCandLc, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand,  ptScProng0, *mcParticles);
           entryCandHadronRecoInfo(massCandPKPi, false);
         }
         if (selLcPiKP) {
-          fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand, ptCandLc, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand,  ptScProng0, *mcParticles);
           entryCandHadronRecoInfo(massCandPiKP, false);
         }
 
@@ -1041,7 +1041,7 @@ struct HfCorrelatorLcScHadrons {
 
     double yCand = -999.;
     double ptCand = -999.;
-    double ptCandLc = -999.;
+    double  ptScProng0 = -999.;
     int8_t chargeCand = 3;
     double massCandPKPi = -999.0;
     double massCandPiKP = -999.0;
@@ -1070,7 +1070,7 @@ struct HfCorrelatorLcScHadrons {
         if constexpr (IsCandSc) {
           const auto& candidateLc = candidate.template prongLc_as<CandsLcData>();
           chargeCand = candidate.charge();
-          ptCandLc = candidateLc.pt();
+           ptScProng0 = candidateLc.pt();
 
           selLcPKPi = (candidateLc.isSelLcToPKPi() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPKPiFromPDG());
           selLcPiKP = (candidateLc.isSelLcToPiKP() >= selectionFlagLc) && (candidate.statusSpreadLcMinvPiKPFromPDG());
@@ -1126,7 +1126,7 @@ struct HfCorrelatorLcScHadrons {
         }
 
         if (selLcPKPi) {
-          fillCorrelationTable<IsMcRec>(fillTrkPID, assocParticle, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand, ptCandLc, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, assocParticle, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand,  ptScProng0, *mcParticles);
           entryCandHadronRecoInfo(massCandPKPi, false);
 
           if (isPrompt) {
@@ -1139,7 +1139,7 @@ struct HfCorrelatorLcScHadrons {
         }
 
         if (selLcPiKP) {
-          fillCorrelationTable<IsMcRec>(fillTrkPID, assocParticle, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand, ptCandLc, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, assocParticle, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand,  ptScProng0, *mcParticles);
           entryCandHadronRecoInfo(massCandPiKP, false);
 
           if (isPrompt) {
