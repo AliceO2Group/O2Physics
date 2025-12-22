@@ -1883,7 +1883,7 @@ struct StrangenessInJets {
         continue;
 
       // PID selections
-      Bool_t isPIDK0s = false, is PIDLam = false, isPIDALam = false;
+      Bool_t isPIDK0s = false, isPIDLam = false, isPIDALam = false;
 
       // PID selections (TPC) -- K0s
       if (v0.ntpcsigmapospi() >= nsigmaTPCmin && v0.ntpcsigmapospi() <= nsigmaTPCmax &&
