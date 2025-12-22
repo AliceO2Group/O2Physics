@@ -454,7 +454,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   {
     if (!areHistosInRegistry) {
       // protect against missing histograms in registry
-      LOG(fatal) << "You are trying to fill histograms, but they are not in the histogram registry. Call the function HfEventSelectionMc::addHistograms() to fix.";
+      LOG(fatal) << "You are trying to fill histograms, but they are not in the histogram registry. Call the function HfEventSelection::addHistograms() to fix.";
     }
 
     hCollisions->Fill(EventRejection::None);
