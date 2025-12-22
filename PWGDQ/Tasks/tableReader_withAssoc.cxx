@@ -42,11 +42,13 @@
 #include "ITSMFTBase/DPLAlpideParam.h"
 
 #include "TGeoGlobalMagField.h"
+#include <TF1.h>
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TObjString.h>
+#include <TRandom.h>
 #include <TString.h>
 
 #include <algorithm>
@@ -3133,6 +3135,8 @@ struct AnalysisDileptonTrack {
   Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<bool> fConfigUseRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing"};
   Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
+  Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
+  Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{61199.9144, -19417.7588, 1709.4958, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts;      // number of dilepton leg cuts
@@ -3164,6 +3168,8 @@ struct AnalysisDileptonTrack {
   HistogramManager* fHistMan;
 
   NoBinningPolicy<aod::dqanalysisflags::MixingHash> fHashBin;
+
+  TF1* fMassBkg = nullptr;
 
   void init(o2::framework::InitContext& context)
   {
@@ -3389,6 +3395,12 @@ struct AnalysisDileptonTrack {
       LOG(info) << "Loading geometry from CCDB in dilepton-track task";
       fCCDB->get<TGeoManager>(fConfigGeoPath);
     }
+
+    // the background mass distribution in signal region
+    std::vector<float> fMassBkgpar = fConfigFitmassEC;
+    fMassBkg = new TF1("fMassBkg", "[0]+[1]*x+[2]*x*x", fMassBkgpar[3], fMassBkgpar[4]);
+    fMassBkg->SetParameters(fMassBkgpar[0], fMassBkgpar[1], fMassBkgpar[2]);
+    fMassBkg->SetNpx(10000);
   }
 
   // init parameters from CCDB
@@ -3490,6 +3502,10 @@ struct AnalysisDileptonTrack {
           // compute needed quantities
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
+
+          // for the energy correlator analysis
+          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fConfigApplyMassEC, fMassBkg->GetRandom());
+
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
                        fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
@@ -3684,6 +3700,9 @@ struct AnalysisDileptonTrack {
 
           // compute dilepton - track quantities
           VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
+
+          // for the energy correlator analysis
+          VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {
