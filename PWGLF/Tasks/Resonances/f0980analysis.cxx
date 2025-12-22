@@ -31,7 +31,6 @@
 #include "Math/LorentzVector.h"
 #include "Math/Vector4D.h"
 #include "TVector2.h"
-#include <TLorentzVector.h>
 
 #include <vector>
 
@@ -76,7 +75,7 @@ struct f0980analysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};
   Configurable<double> cMaxTPCnSigmaPionWoTOF{"cMaxTPCnSigmaPionWoTOF", 2.0, "TPC nSigma cut without TOF for Pion"};
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};
-  Configurable<int> selectType{"SelectType", 0, "PID selection type"};
+  Configurable<int> selectType{"selectType", 0, "PID selection type"};
 
   //  Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -94,7 +93,7 @@ struct f0980analysis {
     std::vector<double> lptBinning = {0, 5.0, 13.0, 20.0, 50.0, 1000.0};
 
     AxisSpec rtAxis = {3, 0, 3};
-    AxisSpec lptAxis = {lptBinning}; //  Minimum leading hadron pT selection
+    AxisSpec lptAxis = {lptBinning};                    //  Minimum leading hadron pT selection
     AxisSpec epAxis = {10, 0, o2::constants::math::PI}; //  Event Plane
     AxisSpec epqaAxis = {200, -o2::constants::math::PI, o2::constants::math::PI};
     AxisSpec epResAxis = {200, -2, 2};
@@ -103,9 +102,9 @@ struct f0980analysis {
     AxisSpec pTqaAxis = {200, 0, 20, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec phiqaAxis = {72, 0, o2::constants::math::TwoPI, "#Phi"}; //  Azimuthal angle axis
     AxisSpec etaqaAxis = {150, -2, 2, "#eta"};                        //  Pseudorapidity axis
-    AxisSpec rapqaAxis   = {60, -1.5, 1.5, "#it{y}"};                 //  Rapidity axis
+    AxisSpec rapqaAxis = {60, -1.5, 1.5, "#it{y}"};                   //  Rapidity axis
     AxisSpec dcaxyAxis = {200, -5.0, 5.0, "DCA_{xy} (cm)"};           //  DCAxy axis
-    AxisSpec dcazAxis  = {200, -5.0, 5.0, "DCA_{z} (cm)"};            //  DCAz axis
+    AxisSpec dcazAxis = {200, -5.0, 5.0, "DCA_{z} (cm)"};             //  DCAz axis
 
     AxisSpec collCutAxis = {4, -0.5, 3.5, "Collision cut index for MC"};
 
@@ -113,7 +112,7 @@ struct f0980analysis {
       histos.add("hInvMass_f0980_US_RT", "unlike invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, rtAxis, lptAxis}});
       histos.add("hInvMass_f0980_LSpp_RT", "++ invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, rtAxis, lptAxis}});
       histos.add("hInvMass_f0980_LSmm_RT", "-- invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, rtAxis, lptAxis}});
-    } else if (cfgFindEP){
+    } else if (cfgFindEP) {
       histos.add("hInvMass_f0980_US_EPA", "unlike invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, epAxis}});
       histos.add("hInvMass_f0980_LSpp_EPA", "++ invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, epAxis}});
       histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, epAxis}});
@@ -161,7 +160,7 @@ struct f0980analysis {
         histos.add("QAMCTrue/f0_pt_y", "Generated f0 ; #it{p}_{T} (GeV/#it{c}) ; #it{y}", HistType::kTH2F, {pTqaAxis, rapqaAxis});
         histos.add("QAMCTrue/f0_pt_cent", "Generated f0 ; #it{p}_{T} (GeV/#it{c}); Centrality (%)", HistType::kTH2F, {pTqaAxis, centAxis});
       }
-    } 
+    }
     histos.print();
   }
 
