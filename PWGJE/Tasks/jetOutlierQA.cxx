@@ -13,18 +13,18 @@
 //
 /// \author Jaime Norman <jaime.norman@cern.ch>
 
-#include "RecoDecay.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include "Common/Core/RecoDecay.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <map>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -607,7 +609,7 @@ struct JetOutlierQATask {
           registry.fill(HIST("h2_pt_hat_track_pt_outlier"), pTHat, track.pt());
           for (auto const& collisionOutlier : collisions) { // find collisions closeby
             int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
-            if (abs(diffColl) < 6) {
+            if (std::abs(diffColl) < 6) {
               float eventWeightOutlier = collisionOutlier.mcCollision().weight();
               double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
               registry.fill(HIST("h2_neighbour_pt_hat_outlier"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
@@ -712,7 +714,7 @@ struct JetOutlierQATask {
           double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
           int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
 
-          if (abs(diffColl) < 6) {
+          if (std::abs(diffColl) < 6) {
             // LOG(info) << "pThat = " << pTHat << "pThat neighbour = "<<pTHatOutlier;
             registry.fill(HIST("h2_neighbour_pt_hat_all"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
             registry.fill(HIST("h2_neighbour_track_pt_all"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);

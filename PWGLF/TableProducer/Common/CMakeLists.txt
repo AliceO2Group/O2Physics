@@ -20,6 +20,11 @@ o2physics_add_dpl_workflow(spvector
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(zdcvector
+    SOURCES zdcvector.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(tpcpid
     SOURCES lfTPCPID.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

@@ -17,9 +17,13 @@
 #ifndef PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
+#include "PWGUD/Core/SGSelector.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
+
+#include <CommonConstants/PhysicsConstants.h>
 
 #include <Rtypes.h>
 
@@ -33,7 +37,7 @@
 namespace jetderiveddatautilities
 {
 
-static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
+static constexpr float mPion = o2::constants::physics::MassPiPlus; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
 enum JCollisionSel {
   sel8 = 0,
@@ -45,7 +49,10 @@ enum JCollisionSel {
   selNoSameBunchPileup = 6,
   selIsGoodZvtxFT0vsPV = 7,
   selNoCollInTimeRangeStandard = 8,
-  selNoCollInRofStandard = 9
+  selNoCollInRofStandard = 9,
+  selUpcSingleGapA = 10,
+  selUpcSingleGapC = 11,
+  selUpcDoubleGap = 12,
 };
 
 enum JCollisionSubGeneratorId {
@@ -169,11 +176,21 @@ std::vector<int> initialiseEventSelectionBits(const std::string& eventSelectionM
     eventSelectionMaskBits.push_back(JCollisionSel::sel7);
     eventSelectionMaskBits.push_back(JCollisionSel::selKINT7);
   }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUPCSingleGapA")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selUpcSingleGapA);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUPCSingleGapC")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selUpcSingleGapC);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUPCDoubleGap")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selUpcDoubleGap);
+  }
+
   return eventSelectionMaskBits;
 }
 
 template <typename T>
-uint16_t setEventSelectionBit(T const& collision)
+uint16_t setEventSelectionBit(T const& collision, int upcSelectionResult = o2::aod::sgselector::TrueGap::NoGap)
 {
   uint16_t bit = 0;
   if (collision.sel8()) {
@@ -206,6 +223,16 @@ uint16_t setEventSelectionBit(T const& collision)
   if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
     SETBIT(bit, JCollisionSel::selNoCollInRofStandard);
   }
+  if (upcSelectionResult == o2::aod::sgselector::SingleGapA) {
+    SETBIT(bit, JCollisionSel::selUpcSingleGapA);
+  }
+  if (upcSelectionResult == o2::aod::sgselector::SingleGapC) {
+    SETBIT(bit, JCollisionSel::selUpcSingleGapC);
+  }
+  if (upcSelectionResult == o2::aod::sgselector::DoubleGap) {
+    SETBIT(bit, JCollisionSel::selUpcDoubleGap);
+  }
+
   return bit;
 }
 

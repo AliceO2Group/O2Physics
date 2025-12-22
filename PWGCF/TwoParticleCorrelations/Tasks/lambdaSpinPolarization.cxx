@@ -45,7 +45,7 @@ namespace lambdacollision
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Mult, mult, float);
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, float);
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, uint64_t);
 // DECALRE_SOA_
 } // namespace lambdacollision
 DECLARE_SOA_TABLE(LambdaCollisions, "AOD", "LAMBDACOLS", o2::soa::Index<>,
@@ -171,7 +171,7 @@ namespace lambdamixeventtracks
 // DECLARE_SOA_INDEX_COLUMN(LambdaMixEventCollision, lambdaMixEventCollision);
 DECLARE_SOA_COLUMN(LambdaMixEventCollisionIdx, lambdaMixEventCollisionIdx, int);
 DECLARE_SOA_COLUMN(LambdaMixEventTrackIdx, lambdaMixEventTrackIdx, int);
-DECLARE_SOA_COLUMN(LambdaMixEventTimeStamp, lambdaMixEventTimeStamp, float);
+DECLARE_SOA_COLUMN(LambdaMixEventTimeStamp, lambdaMixEventTimeStamp, uint64_t);
 
 } // namespace lambdamixeventtracks
 
