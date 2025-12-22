@@ -573,7 +573,7 @@ struct HfTaskFlowCharmHadrons {
             break;
           case DecayChannel::D0ToKPi:
             massCand = HfHelper::invMassD0barToKPi(candidate);
-            signCand = candidate.isSelD0() ? 4 : 2; // 4: reflected D0bar, 2: pure D0bar excluding reflected D0
+            signCand = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
