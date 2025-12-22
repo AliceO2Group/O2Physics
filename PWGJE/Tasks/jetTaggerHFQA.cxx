@@ -152,6 +152,7 @@ struct JetTaggerHFQA {
     AxisSpec axisFracSecPt = {100, 0, 1, "#frac{#Sigma#it{p}_{T}^{secondary track}}{#it{p}_{T, jet}}"};
     AxisSpec axisMultScaledFT0M = {binMultScaledFT0M, "Multiplicity classes"};
 
+    registry.add("h_collision_events", "data;mcd;mcp evnets", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     if (doprocessTracksDca) {
       if (fillIPxy) {
         registry.add("h_impact_parameter_xy", "", {HistType::kTH1F, {{axisImpactParameterXY}}});
@@ -1385,11 +1386,121 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processValFlavourDefMCP, "to check the validation of jet-flavour definition when compared to distance for mcp jets", false);
 
+  void processResponseMatrix(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
+        continue;
+      }
+      auto jetflavour = mcdjet.origin();
+      registry.fill(HIST("h2_jet_pt_flavour"), mcdjet.pt(), jetflavour);
+      registry.fill(HIST("h2_jet_eta_flavour"), mcdjet.eta(), jetflavour);
+      registry.fill(HIST("h2_jet_phi_flavour"), mcdjet.phi(), jetflavour);
+      if (!mcdjet.has_matchedJetGeo())
+        continue;
+      for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<JetTableMCP, JetTableMCPMCD>>()) {
+        registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour"), mcdjet.pt(), mcpjet.pt(), mcdjet.origin());
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processResponseMatrix, "create response matrix with flavour", false);
+
+  void processResponseMatrixWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    if (collision.isOutlier()) {
+      return;
+    }
+    auto eventWeight = collision.weight();
+    for (auto const& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
+        continue;
+      }
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
+      auto jetflavour = mcdjet.origin();
+      registry.fill(HIST("h2_jet_pt_flavour"), mcdjet.pt(), jetflavour, eventWeight);
+      registry.fill(HIST("h2_jet_eta_flavour"), mcdjet.eta(), jetflavour, eventWeight);
+      registry.fill(HIST("h2_jet_phi_flavour"), mcdjet.phi(), jetflavour, eventWeight);
+      if (!mcdjet.has_matchedJetGeo())
+        continue;
+      for (auto const& mcpjet : mcdjet.template matchedJetGeo_as<soa::Join<JetTableMCP, JetTableMCPMCD>>()) {
+        if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
+          continue;
+        }
+        registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour"), mcdjet.pt(), mcpjet.pt(), mcdjet.origin(), eventWeight);
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processResponseMatrixWeighted, "create response matrix with flavour weighted", false);
+
+  void processMCP(JetTableMCP const& mcpjets, aod::JetParticles const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
+  {
+    registry.fill(HIST("h_collision_events"), 2.5); // mcp events
+    for (auto const& mcpjet : mcpjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(mcpjet)) {
+        continue;
+      }
+      auto mcCollision = mcCollisions.sliceBy(McCollisionsPerMCPCollision, mcpjet.mcCollisionId());
+      if (checkMcCollisionIsMatched) {
+        auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, mcpjet.mcCollisionId());
+        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
+          fillHistogramMCP(mcpjet, 1., mcCollision.begin().ptHard());
+        }
+      } else {
+        fillHistogramMCP(mcpjet, 1., mcCollision.begin().ptHard());
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processMCP, "Fill impact parameter imformation for mcp jets", false);
+
+  void processMCPWeighted(JetTableMCP const& mcpjets, aod::JetParticles const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>> const& collisions)
+  {
+    registry.fill(HIST("h_collision_events"), 2.5); // mcp events
+    for (auto const& mcpjet : mcpjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(mcpjet)) {
+        continue;
+      }
+      auto mcCollision = mcCollisions.sliceBy(McCollisionsPerMCPCollision, mcpjet.mcCollisionId());
+      if (mcCollision.size() == 1) {
+        if (checkMcCollisionIsMatched) {
+          auto collisionspermcpjet = collisions.sliceBy(collisionsPerMCPCollision, mcpjet.mcCollisionId());
+          if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits) && !collisionspermcpjet.begin().isOutlier()) {
+            fillHistogramMCP(mcpjet, mcCollision.begin().weight(), mcCollision.begin().ptHard());
+          }
+        } else {
+          fillHistogramMCP(mcpjet, mcCollision.begin().weight(), mcCollision.begin().ptHard());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processMCPWeighted, "Fill impact parameter imformation for mcp jets weighted", false);
+
   void processIPsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const& tracks)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 0.5); // data events
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1407,6 +1518,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1424,6 +1536,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1480,6 +1593,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       auto const particlesPerColl = particles.sliceBy(particlesPerCollision, collision.mcCollisionId());
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
@@ -1504,6 +1618,10 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (collision.isOutlier()) {
+      return;
+    }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       auto const particlesPerColl = particles.sliceBy(particlesPerCollision, collision.mcCollisionId());
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
@@ -1535,6 +1653,8 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (!doprocessIPsData)
+      registry.fill(HIST("h_collision_events"), 0.5); // data events
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1552,6 +1672,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1569,6 +1690,10 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (collision.isOutlier()) {
+      return;
+    }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1586,6 +1711,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1606,6 +1732,10 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (collision.isOutlier()) {
+      return;
+    }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1626,6 +1756,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 0.5); // mcd events
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1643,6 +1774,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 0.5); // mcd events
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1681,6 +1813,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1698,6 +1831,10 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (collision.isOutlier()) {
+      return;
+    }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1715,6 +1852,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1736,6 +1874,10 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (collision.isOutlier()) {
+      return;
+    }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1757,6 +1899,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1774,6 +1917,10 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (collision.isOutlier()) {
+      return;
+    }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1791,6 +1938,7 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    registry.fill(HIST("h_collision_events"), 1.5); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
@@ -1812,6 +1960,10 @@ struct JetTaggerHFQA {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
+    if (collision.isOutlier()) {
+      return;
+    }
+    registry.fill(HIST("h_collision_events"), 1.5, collision.weight()); // mcd events
     for (auto const& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
         continue;
