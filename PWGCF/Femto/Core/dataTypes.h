@@ -49,6 +49,9 @@ using TwoTrackResonanceType = uint16_t;
 using CascadeMaskType = uint16_t;
 using CascadeType = uint16_t;
 
+// datatype for origin of mc particle
+using McOriginType = uint8_t;
+
 // datatype for particles
 using ParticleType = uint16_t;
 
