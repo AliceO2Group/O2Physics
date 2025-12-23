@@ -67,17 +67,27 @@ o2physics_add_dpl_workflow(candidate-selector-lb-to-lc-pi-reduced
 
 o2physics_add_dpl_workflow(data-creator-charm-had-pi-reduced
                     SOURCES dataCreatorCharmHadPiReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(data-creator-charm-reso-reduced
-                    SOURCES dataCreatorCharmResoReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(data-creator-charm-reso-to-dstar-reduced
+                    SOURCES dataCreatorCharmResoToDstarReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(data-creator-charm-reso-to-dplus-reduced
+                    SOURCES dataCreatorCharmResoToDplusReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(data-creator-charm-reso-to-d0-reduced
+                    SOURCES dataCreatorCharmResoToD0Reduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-jpsi-had-reduced
                     SOURCES dataCreatorJpsiHadReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 # Converters

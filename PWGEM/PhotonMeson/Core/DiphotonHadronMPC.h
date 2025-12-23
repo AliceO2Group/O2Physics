@@ -8,12 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
+
 /// \file DiphotonHadronMPC.h
 /// \brief This code is to analyze diphoton-hadron correlation. Keep in mind that cumulant method does not require event mixing.
-///
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_DIPHOTONHADRONMPC_H_
@@ -21,37 +18,46 @@
 
 #include "PWGEM/Dilepton/Core/EMTrackCut.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
-#include "PWGEM/PhotonMeson/Utils/NMHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
-#include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/Core/RecoDecay.h"
+#include <Common/CCDB/RCTSelectionFlags.h>
+#include <Common/Core/RecoDecay.h>
+#include <Common/DataModel/Centrality.h>
+#include <Common/DataModel/EventSelection.h>
+#include <Common/DataModel/PIDResponseTPC.h>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector4D.h"
-#include "TString.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
 
 #include <algorithm>
-#include <array>
-#include <cstring>
-#include <iterator>
+#include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -66,10 +72,10 @@ using namespace o2::aod::pwgem::photon;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMSWTriggerBits>;
+using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMSWTriggerBits>;
 using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
 
 using MyV0Photons = soa::Filtered<soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::V0PhotonsKFPrefilterBitDerived>>;
@@ -353,11 +359,11 @@ struct DiphotonHadronMPC {
 
     // diphoton-hadron info
     const AxisSpec axis_deta{ConfDEtaBins, deta_axis_title};
-    const AxisSpec axis_dphi{cfgNbinsDPhi, -M_PI / 2, +3 * M_PI / 2, dphi_axis_title};
+    const AxisSpec axis_dphi{cfgNbinsDPhi, -o2::constants::math::PIHalf, +3 * o2::constants::math::PIHalf, dphi_axis_title};
 
     const AxisSpec axis_pt_hadron{ConfPtHadronBins, "p_{T,h} (GeV/c)"};
     const AxisSpec axis_eta_hadron{40, -2, +2, "#eta_{h}"};
-    const AxisSpec axis_phi_hadron{36, 0, 2 * M_PI, "#varphi_{h} (rad.)"};
+    const AxisSpec axis_phi_hadron{36, 0, o2::constants::math::TwoPI, "#varphi_{h} (rad.)"};
 
     fRegistry.add("Hadron/hs", "hadron", kTHnSparseD, {axis_pt_hadron, axis_eta_hadron, axis_phi_hadron}, false);
     fRegistry.add("Hadron/hTrackBit", "track bit", kTH1D, {{65536, -0.5, 65535.5}}, false);
@@ -370,7 +376,7 @@ struct DiphotonHadronMPC {
 
     // hadron-hadron
     const AxisSpec axis_deta_hh{60, -3, +3, "#Delta#eta = #eta_{h}^{ref1} - #eta_{h}^{ref2}"};
-    const AxisSpec axis_dphi_hh{90, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
+    const AxisSpec axis_dphi_hh{90, -o2::constants::math::PIHalf, +3 * o2::constants::math::PIHalf, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
     // const AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{ref1}} - #varphi_{{h}}^{{ref2}}))", cfgNmod.value)};
     fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
     fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
@@ -564,7 +570,7 @@ struct DiphotonHadronMPC {
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
 
         for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons2_per_collision))) {
-          if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
+          if (!cut1.template IsSelected<decltype(g1), TSubInfos1>(g1) || !cut2.template IsSelected<decltype(g2), TSubInfos2>(g2)) {
             continue;
           }
 
@@ -594,7 +600,7 @@ struct DiphotonHadronMPC {
               float deta = v12.Eta() - v3.Eta();
               float dphi = v12.Phi() - v3.Phi();
               // o2::math_utils::bringTo02Pi(dphi);
-              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1U);
               fRegistry.fill(HIST("DiphotonHadron/same/hs"), v12.M(), v12.Pt(), deta, dphi);
               npair++;
             }
@@ -624,7 +630,7 @@ struct DiphotonHadronMPC {
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
         for (const auto& g1 : photons1_per_collision) {
-          if (!cut1.template IsSelected<TSubInfos1>(g1)) {
+          if (!cut1.template IsSelected<decltype(g1), TSubInfos1>(g1)) {
             continue;
           }
           auto pos1 = g1.template posTrack_as<TSubInfos1>();
@@ -670,7 +676,7 @@ struct DiphotonHadronMPC {
               float deta = veeg.Eta() - v3.Eta();
               float dphi = veeg.Phi() - v3.Phi();
               // o2::math_utils::bringTo02Pi(dphi);
-              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1U);
               fRegistry.fill(HIST("DiphotonHadron/same/hs"), veeg.M(), veeg.Pt(), deta, dphi);
               npair++;
 
@@ -720,7 +726,7 @@ struct DiphotonHadronMPC {
             float deta = ref1.eta() - ref2.eta();
             float dphi = ref1.phi() - ref2.phi();
             // o2::math_utils::bringTo02Pi(dphi);
-            dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+            dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1U);
             fRegistry.fill(HIST("HadronHadron/same/hDEtaDPhi"), dphi, deta);
           }
         }
@@ -794,7 +800,7 @@ struct DiphotonHadronMPC {
               float deta = trg.eta() - ref.eta();
               float dphi = trg.phi() - ref.phi();
               // o2::math_utils::bringTo02Pi(dphi);
-              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1U);
               fRegistry.fill(HIST("DiphotonHadron/mix/hs"), trg.mass(), trg.pt(), deta, dphi);
             }
           }
@@ -889,7 +895,7 @@ struct DiphotonHadronMPC {
               float deta = trg.eta() - ref.eta();
               float dphi = trg.phi() - ref.phi();
               // o2::math_utils::bringTo02Pi(dphi);
-              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1U);
               fRegistry.fill(HIST("DiphotonHadron/mix/hs"), trg.mass(), trg.pt(), deta, dphi);
             }
           }
@@ -917,7 +923,7 @@ struct DiphotonHadronMPC {
             float deta = ref1.eta() - ref2.eta();
             float dphi = ref1.phi() - ref2.phi();
             // o2::math_utils::bringTo02Pi(dphi);
-            dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+            dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1U);
             fRegistry.fill(HIST("HadronHadron/mix/hDEtaDPhi"), dphi, deta);
           }
         }

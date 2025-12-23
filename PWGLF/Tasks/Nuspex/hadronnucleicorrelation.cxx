@@ -59,8 +59,9 @@ struct hadronnucleicorrelation {
   static constexpr int pdgProton = 2212;
   static constexpr int pdgDeuteron = 1000010020;
 
-  Configurable<int> mode{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p"};
+  Configurable<int> mode{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p, 7: p-antip"};
 
+  Configurable<bool> dorapidity{"dorapidity", false, "do rapidity dependent analysis"};
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
   Configurable<bool> doMCQA{"doMCQA", false, "save MC QA histograms"};
   Configurable<bool> isMC{"isMC", false, "is MC"};
@@ -210,6 +211,7 @@ struct hadronnucleicorrelation {
     AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
     AxisSpec DeltaEtaAxis = {300, -1.5, 1.5, "#Delta#eta"};
+    AxisSpec DeltaRapAxis = {300, -1.5, 1.5, "#Delta y"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
@@ -220,65 +222,126 @@ struct hadronnucleicorrelation {
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "events with #bar{p}");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "events with p");
 
+    registry.add("hNtrig_total", "hNtrig_total", {HistType::kTH1D, {ptBinnedAxis}});
+
     nBinspT = pTBins.value.size() - 1;
 
     if (isMCGen) {
       for (int i = 0; i < nBinspT; i++) {
-        // antid-antip
-        auto htempSEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiDeAntiPr_SE.push_back(std::move(htempSEGen_AntiDeAntiPr));
-        auto htempMEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiDeAntiPr_ME.push_back(std::move(htempMEGen_AntiDeAntiPr));
 
-        // antip-antip
-        auto htempSEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiPrAntiPr_SE.push_back(std::move(htempSEGen_AntiPrAntiPr));
-        auto htempMEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiPrAntiPr_ME.push_back(std::move(htempMEGen_AntiPrAntiPr));
+        if (dorapidity) {
+          // antid-antip
+          auto htempSEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDeAntiPr_SE.push_back(std::move(htempSEGen_AntiDeAntiPr));
+          auto htempMEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDeAntiPr_ME.push_back(std::move(htempMEGen_AntiDeAntiPr));
 
-        // p-p
-        auto htempSEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                 Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_PrPr_SE.push_back(std::move(htempSEGen_PrPr));
-        auto htempMEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                 Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_PrPr_ME.push_back(std::move(htempMEGen_PrPr));
+          // antip-antip
+          auto htempSEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrAntiPr_SE.push_back(std::move(htempSEGen_AntiPrAntiPr));
+          auto htempMEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrAntiPr_ME.push_back(std::move(htempMEGen_AntiPrAntiPr));
 
-        // antip-p
-        auto htempSEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiPrPr_SE.push_back(std::move(htempSEGen_AntiPrPr));
-        auto htempMEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiPrPr_ME.push_back(std::move(htempMEGen_AntiPrPr));
+          // p-p
+          auto htempSEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta y #Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_PrPr_SE.push_back(std::move(htempSEGen_PrPr));
+          auto htempMEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta y #Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_PrPr_ME.push_back(std::move(htempMEGen_PrPr));
 
-        // d-p
-        auto htempSEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                 Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_DePr_SE.push_back(std::move(htempSEGen_DePr));
-        auto htempMEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                 Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_DePr_ME.push_back(std::move(htempMEGen_DePr));
+          // antip-p
+          auto htempSEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrPr_SE.push_back(std::move(htempSEGen_AntiPrPr));
+          auto htempMEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrPr_ME.push_back(std::move(htempMEGen_AntiPrPr));
 
-        // antid-p
-        auto htempSEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiDePr_SE.push_back(std::move(htempSEGen_AntiDePr));
-        auto htempMEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_AntiDePr_ME.push_back(std::move(htempMEGen_AntiDePr));
+          // d-p
+          auto htempSEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta y #Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DePr_SE.push_back(std::move(htempSEGen_DePr));
+          auto htempMEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta y #Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DePr_ME.push_back(std::move(htempMEGen_DePr));
 
-        // d-antip
-        auto htempSEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_DeAntiPr_SE.push_back(std::move(htempSEGen_DeAntiPr));
-        auto htempMEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
-                                                     Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhiGen_DeAntiPr_ME.push_back(std::move(htempMEGen_DeAntiPr));
+          // antid-p
+          auto htempSEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDePr_SE.push_back(std::move(htempSEGen_AntiDePr));
+          auto htempMEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta y #Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDePr_ME.push_back(std::move(htempMEGen_AntiDePr));
+
+          // d-antip
+          auto htempSEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta y #Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DeAntiPr_SE.push_back(std::move(htempSEGen_DeAntiPr));
+          auto htempMEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta y #Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DeAntiPr_ME.push_back(std::move(htempMEGen_DeAntiPr));
+        } else {
+          // antid-antip
+          auto htempSEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDeAntiPr_SE.push_back(std::move(htempSEGen_AntiDeAntiPr));
+          auto htempMEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDeAntiPr_ME.push_back(std::move(htempMEGen_AntiDeAntiPr));
+
+          // antip-antip
+          auto htempSEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrAntiPr_SE.push_back(std::move(htempSEGen_AntiPrAntiPr));
+          auto htempMEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                           Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrAntiPr_ME.push_back(std::move(htempMEGen_AntiPrAntiPr));
+
+          // p-p
+          auto htempSEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_PrPr_SE.push_back(std::move(htempSEGen_PrPr));
+          auto htempMEGen_PrPr = registry.add<TH3>(Form("hEtaPhiGen_PrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} p <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_PrPr_ME.push_back(std::move(htempMEGen_PrPr));
+
+          // antip-p
+          auto htempSEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrPr_SE.push_back(std::move(htempSEGen_AntiPrPr));
+          auto htempMEGen_AntiPrPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiPrPr_ME.push_back(std::move(htempMEGen_AntiPrPr));
+
+          // d-p
+          auto htempSEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DePr_SE.push_back(std::move(htempSEGen_DePr));
+          auto htempMEGen_DePr = registry.add<TH3>(Form("hEtaPhiGen_DePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                   Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DePr_ME.push_back(std::move(htempMEGen_DePr));
+
+          // antid-p
+          auto htempSEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDePr_SE.push_back(std::move(htempSEGen_AntiDePr));
+          auto htempMEGen_AntiDePr = registry.add<TH3>(Form("hEtaPhiGen_AntiDePr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_AntiDePr_ME.push_back(std::move(htempMEGen_AntiDePr));
+
+          // d-antip
+          auto htempSEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DeAntiPr_SE.push_back(std::move(htempSEGen_DeAntiPr));
+          auto htempMEGen_DeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_DeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                       Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} d <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhiGen_DeAntiPr_ME.push_back(std::move(htempMEGen_DeAntiPr));
+        }
       }
     }
 
@@ -302,20 +365,37 @@ struct hadronnucleicorrelation {
       case 6:
         name = "PrPr";
         break;
+      case 7:
+        name = "PrAntiPr";
+        break;
     }
 
     if (!isMC) {
       for (int i = 0; i < nBinspT; i++) {
 
-        auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhi_SE.push_back(std::move(htempSE_AntiDeAntiPr));
-        hEtaPhi_ME.push_back(std::move(htempME_AntiDeAntiPr));
+        if (dorapidity) {
 
-        auto hCorrtempSE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hCorrEtaPhi_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
-        hCorrEtaPhi_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
+          auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhi_SE.push_back(std::move(htempSE_AntiDeAntiPr));
+          hEtaPhi_ME.push_back(std::move(htempME_AntiDeAntiPr));
+
+          auto hCorrtempSE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta y #Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaRapAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hCorrEtaPhi_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
+          hCorrEtaPhi_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
+        } else {
+
+          auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hEtaPhi_SE.push_back(std::move(htempSE_AntiDeAntiPr));
+          hEtaPhi_ME.push_back(std::move(htempME_AntiDeAntiPr));
+
+          auto hCorrtempSE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}^{assoc} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+          hCorrEtaPhi_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
+          hCorrEtaPhi_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
+        }
       }
     }
 
@@ -600,7 +680,7 @@ struct hadronnucleicorrelation {
   }
 
   template <int ME, typename Type>
-  void mixTracks(Type const& tracks1, Type const& tracks2, bool isIdentical)
+  void mixTracks(Type const& tracks1, Type const& tracks2, bool isIdentical, bool dorapidity)
   { // last value: 0 -- SE; 1 -- ME
     for (auto const& it1 : tracks1) {
       for (auto const& it2 : tracks2) {
@@ -614,9 +694,25 @@ struct hadronnucleicorrelation {
           continue;
         }
 
+        float mass1 = 0.f, mass2 = 0.f;
+
+        if (mode < 4) {
+          // Deuteron-Proton combinations
+          mass1 = o2::constants::physics::MassDeuteron;
+          mass2 = o2::constants::physics::MassProton;
+        } else {
+          // Proton-Proton combinations
+          mass1 = o2::constants::physics::MassProton;
+          mass2 = o2::constants::physics::MassProton;
+        }
+
         // Calculate Delta-eta Delta-phi (reco)
-        float deltaEta = it2->eta() - it1->eta();
-        float deltaPhi = it2->phi() - it1->phi();
+        float deltaEta = it1->eta() - it2->eta();
+        float deltaRap = it1->rapidity(mass1) - it2->rapidity(mass2);
+        if (dorapidity) {
+          deltaEta = deltaRap;
+        }
+        float deltaPhi = it1->phi() - it2->phi();
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
 
         for (int k = 0; k < nBinspT; k++) {
@@ -655,6 +751,10 @@ struct hadronnucleicorrelation {
                   corr1 = hEffpTEta_proton->Interpolate(it1->pt(), it1->eta());
                   corr2 = hEffpTEta_proton->Interpolate(it2->pt(), it2->eta());
                   break;
+                case 7:
+                  corr1 = hEffpTEta_proton->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
+                  break;
               }
             }
 
@@ -675,13 +775,17 @@ struct hadronnucleicorrelation {
   }
 
   template <int ME, typename Type>
-  void mixMCParticles(Type const& particles1, Type const& particles2, int mode)
+  void mixMCParticles(Type const& particles1, Type const& particles2, int mode, bool dorapidity)
   {
     for (auto const& it1 : particles1) {
       for (auto const& it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
-        float deltaEtaGen = it2->eta() - it1->eta();
-        float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
+        float deltaEtaGen = it1->eta() - it2->eta();
+        float deltaPhiGen = RecoDecay::constrainAngle(it1->phi() - it2->phi(), -1 * o2::constants::math::PIHalf);
+        float deltaRapGen = it1->y() - it2->y();
+        if (dorapidity) {
+          deltaEtaGen = deltaRapGen;
+        }
 
         // Loop over pT bins
         for (int k = 0; k < nBinspT; k++) {
@@ -717,13 +821,17 @@ struct hadronnucleicorrelation {
   }
 
   template <int ME, typename Type>
-  void mixMCParticlesIdentical(Type const& particles1, Type const& particles2, bool ismatter)
+  void mixMCParticlesIdentical(Type const& particles1, Type const& particles2, bool ismatter, bool dorapidity)
   {
     for (auto const& it1 : particles1) {
       for (auto const& it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
-        float deltaEtaGen = it2->eta() - it1->eta();
-        float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
+        float deltaEtaGen = it1->eta() - it2->eta();
+        float deltaPhiGen = RecoDecay::constrainAngle(it1->phi() - it2->phi(), -1 * o2::constants::math::PIHalf);
+        float deltaRapGen = it1->y() - it2->y();
+        if (dorapidity) {
+          deltaEtaGen = deltaRapGen;
+        }
 
         if (!ME && std::abs(deltaPhiGen) < 0.0001 && std::abs(deltaEtaGen) < 0.0001) {
           continue;
@@ -842,9 +950,19 @@ struct hadronnucleicorrelation {
         isAntiDe = 0;
       }
 
+      float corr = 1.;
+
       // Deuterons Fill & QA
       if (isAntiDe) {
         selectedtracks_antid[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+
+        if (mode == 0 || mode == 2) {
+
+          if (docorrection && hEffpTEta_antideuteron->Interpolate(track.pt(), track.eta()) > 0) {
+            corr = 1. / hEffpTEta_antideuteron->Interpolate(track.pt(), track.eta());
+          }
+          registry.fill(HIST("hNtrig_total"), track.pt(), corr);
+        }
 
         if (doQA) {
           QA.fill(HIST("QA/hEtaAntiDe"), track.eta());
@@ -855,6 +973,15 @@ struct hadronnucleicorrelation {
       }
       if (isDe) {
         selectedtracks_d[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+
+        if (mode == 1 || mode == 3) {
+
+          corr = 1.;
+          if (docorrection && hEffpTEta_deuteron->Interpolate(track.pt(), track.eta()) > 0) {
+            corr = 1. / hEffpTEta_deuteron->Interpolate(track.pt(), track.eta());
+          }
+          registry.fill(HIST("hNtrig_total"), track.pt(), corr);
+        }
 
         if (doQA) {
           QA.fill(HIST("QA/hEtaDe"), track.eta());
@@ -868,6 +995,15 @@ struct hadronnucleicorrelation {
       if (isPr) {
         selectedtracks_p[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
+        if (mode == 6 || mode == 7) {
+
+          corr = 1.;
+          if (docorrection && hEffpTEta_proton->Interpolate(track.pt(), track.eta()) > 0) {
+            corr = 1. / hEffpTEta_proton->Interpolate(track.pt(), track.eta());
+          }
+          registry.fill(HIST("hNtrig_total"), track.pt(), corr);
+        }
+
         if (doQA) {
           QA.fill(HIST("QA/hEtaPr"), track.eta());
           QA.fill(HIST("QA/hPhiPr"), track.phi());
@@ -876,6 +1012,14 @@ struct hadronnucleicorrelation {
         }
       } else if (isAntiPr) {
         selectedtracks_antip[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
+
+        if (mode == 4 || mode == 5) {
+          corr = 1.;
+          if (docorrection && hEffpTEta_antiproton->Interpolate(track.pt(), track.eta()) > 0) {
+            corr = 1. / hEffpTEta_antiproton->Interpolate(track.pt(), track.eta());
+          }
+          registry.fill(HIST("hNtrig_total"), track.pt(), corr);
+        }
 
         if (doQA) {
           QA.fill(HIST("QA/hEtaAntiPr"), track.eta());
@@ -940,7 +1084,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
-            mixTracks<0>(selectedtracks_antid[col1->index()], selectedtracks_antip[col1->index()], 0); // mixing SE
+            mixTracks<0>(selectedtracks_antid[col1->index()], selectedtracks_antip[col1->index()], 0, dorapidity); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -952,7 +1096,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
-              mixTracks<1>(selectedtracks_antid[col1->index()], selectedtracks_antip[col2->index()], 0); // mixing ME
+              mixTracks<1>(selectedtracks_antid[col1->index()], selectedtracks_antip[col2->index()], 0, dorapidity); // mixing ME
             }
           }
         }
@@ -971,7 +1115,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
-            mixTracks<0>(selectedtracks_d[col1->index()], selectedtracks_p[col1->index()], 0); // mixing SE
+            mixTracks<0>(selectedtracks_d[col1->index()], selectedtracks_p[col1->index()], 0, dorapidity); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -983,7 +1127,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
-              mixTracks<1>(selectedtracks_d[col1->index()], selectedtracks_p[col2->index()], 0); // mixing ME
+              mixTracks<1>(selectedtracks_d[col1->index()], selectedtracks_p[col2->index()], 0, dorapidity); // mixing ME
             }
           }
         }
@@ -1002,7 +1146,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
-            mixTracks<0>(selectedtracks_antid[col1->index()], selectedtracks_p[col1->index()], 0); // mixing SE
+            mixTracks<0>(selectedtracks_antid[col1->index()], selectedtracks_p[col1->index()], 0, dorapidity); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1014,7 +1158,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
-              mixTracks<1>(selectedtracks_antid[col1->index()], selectedtracks_p[col2->index()], 0); // mixing ME
+              mixTracks<1>(selectedtracks_antid[col1->index()], selectedtracks_p[col2->index()], 0, dorapidity); // mixing ME
             }
           }
         }
@@ -1033,7 +1177,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
-            mixTracks<0>(selectedtracks_d[col1->index()], selectedtracks_antip[col1->index()], 0); // mixing SE
+            mixTracks<0>(selectedtracks_d[col1->index()], selectedtracks_antip[col1->index()], 0, dorapidity); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1045,7 +1189,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
-              mixTracks<1>(selectedtracks_d[col1->index()], selectedtracks_antip[col2->index()], 0); // mixing ME
+              mixTracks<1>(selectedtracks_d[col1->index()], selectedtracks_antip[col2->index()], 0, dorapidity); // mixing ME
             }
           }
         }
@@ -1064,7 +1208,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
-            mixTracks<0>(selectedtracks_antip[col1->index()], selectedtracks_p[col1->index()], 0); // mixing SE
+            mixTracks<0>(selectedtracks_antip[col1->index()], selectedtracks_p[col1->index()], 0, dorapidity); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1076,7 +1220,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
-              mixTracks<1>(selectedtracks_antip[col1->index()], selectedtracks_p[col2->index()], 0); // mixing ME
+              mixTracks<1>(selectedtracks_antip[col1->index()], selectedtracks_p[col2->index()], 0, dorapidity); // mixing ME
             }
           }
         }
@@ -1095,7 +1239,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
-            mixTracks<0>(selectedtracks_antip[col1->index()], selectedtracks_antip[col1->index()], 1); // mixing SE
+            mixTracks<0>(selectedtracks_antip[col1->index()], selectedtracks_antip[col1->index()], 1, dorapidity); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1107,7 +1251,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
-              mixTracks<1>(selectedtracks_antip[col1->index()], selectedtracks_antip[col2->index()], 1); // mixing ME
+              mixTracks<1>(selectedtracks_antip[col1->index()], selectedtracks_antip[col2->index()], 1, dorapidity); // mixing ME
             }
           }
         }
@@ -1126,7 +1270,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
-            mixTracks<0>(selectedtracks_p[col1->index()], selectedtracks_p[col1->index()], 1); // mixing SE
+            mixTracks<0>(selectedtracks_p[col1->index()], selectedtracks_p[col1->index()], 1, dorapidity); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1138,7 +1282,38 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
-              mixTracks<1>(selectedtracks_p[col1->index()], selectedtracks_p[col2->index()], 1); // mixing ME
+              mixTracks<1>(selectedtracks_p[col1->index()], selectedtracks_p[col2->index()], 1, dorapidity); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 7 && !mixbins_p.empty()) {
+
+      for (auto i = mixbins_p.begin(); i != mixbins_p.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+            mixTracks<0>(selectedtracks_p[col1->index()], selectedtracks_antip[col1->index()], 0, dorapidity); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
+              mixTracks<1>(selectedtracks_p[col1->index()], selectedtracks_antip[col2->index()], 0, dorapidity); // mixing ME
             }
           }
         }
@@ -1680,7 +1855,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedparticlesMC_antip.find(col1->index()) != selectedparticlesMC_antip.end()) {
-            mixMCParticlesIdentical<0>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_antip[col1->index()], 0); // mixing SE
+            mixMCParticlesIdentical<0>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_antip[col1->index()], 0, dorapidity); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1692,7 +1867,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedparticlesMC_antip.find(col2->index()) != selectedparticlesMC_antip.end()) {
-              mixMCParticlesIdentical<1>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_antip[col2->index()], 0); // mixing SE
+              mixMCParticlesIdentical<1>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_antip[col2->index()], 0, dorapidity); // mixing SE
             }
           }
         }
@@ -1709,7 +1884,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedparticlesMC_antip.find(col1->index()) != selectedparticlesMC_antip.end()) {
-            mixMCParticles<0>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_p[col1->index()], 0); // mixing SE
+            mixMCParticles<0>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_p[col1->index()], 0, dorapidity); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1721,7 +1896,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedparticlesMC_antip.find(col2->index()) != selectedparticlesMC_antip.end()) {
-              mixMCParticles<1>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_p[col2->index()], 0); // mixing SE
+              mixMCParticles<1>(selectedparticlesMC_antip[col1->index()], selectedparticlesMC_p[col2->index()], 0, dorapidity); // mixing SE
             }
           }
         }
@@ -1742,7 +1917,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedparticlesMC_p.find(col1->index()) != selectedparticlesMC_p.end()) {
-            mixMCParticlesIdentical<0>(selectedparticlesMC_p[col1->index()], selectedparticlesMC_p[col1->index()], 1); // mixing SE
+            mixMCParticlesIdentical<0>(selectedparticlesMC_p[col1->index()], selectedparticlesMC_p[col1->index()], 1, dorapidity); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1754,7 +1929,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedparticlesMC_p.find(col2->index()) != selectedparticlesMC_p.end()) {
-              mixMCParticlesIdentical<1>(selectedparticlesMC_p[col1->index()], selectedparticlesMC_p[col2->index()], 1); // mixing SE
+              mixMCParticlesIdentical<1>(selectedparticlesMC_p[col1->index()], selectedparticlesMC_p[col2->index()], 1, dorapidity); // mixing SE
             }
           }
         }
@@ -1774,7 +1949,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedparticlesMC_antid.find(col1->index()) != selectedparticlesMC_antid.end()) {
-            mixMCParticles<0>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_antip[col1->index()], 1); // mixing SE
+            mixMCParticles<0>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_antip[col1->index()], 1, dorapidity); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1786,7 +1961,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedparticlesMC_antid.find(col2->index()) != selectedparticlesMC_antid.end()) {
-              mixMCParticles<1>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_antip[col2->index()], 1); // mixing SE
+              mixMCParticles<1>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_antip[col2->index()], 1, dorapidity); // mixing SE
             }
           }
         }
@@ -1803,7 +1978,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedparticlesMC_antid.find(col1->index()) != selectedparticlesMC_antid.end()) {
-            mixMCParticles<0>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_p[col1->index()], 2); // mixing SE
+            mixMCParticles<0>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_p[col1->index()], 2, dorapidity); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1815,7 +1990,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedparticlesMC_antid.find(col2->index()) != selectedparticlesMC_antid.end()) {
-              mixMCParticles<1>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_p[col2->index()], 2); // mixing SE
+              mixMCParticles<1>(selectedparticlesMC_antid[col1->index()], selectedparticlesMC_p[col2->index()], 2, dorapidity); // mixing SE
             }
           }
         }
@@ -1836,7 +2011,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedparticlesMC_d.find(col1->index()) != selectedparticlesMC_d.end()) {
-            mixMCParticles<0>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_antip[col1->index()], 3); // mixing SE
+            mixMCParticles<0>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_antip[col1->index()], 3, dorapidity); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1848,7 +2023,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedparticlesMC_d.find(col2->index()) != selectedparticlesMC_d.end()) {
-              mixMCParticles<1>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_antip[col2->index()], 3); // mixing SE
+              mixMCParticles<1>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_antip[col2->index()], 3, dorapidity); // mixing SE
             }
           }
         }
@@ -1865,7 +2040,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedparticlesMC_d.find(col1->index()) != selectedparticlesMC_d.end()) {
-            mixMCParticles<0>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_p[col1->index()], 4); // mixing SE
+            mixMCParticles<0>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_p[col1->index()], 4, dorapidity); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1877,7 +2052,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedparticlesMC_d.find(col2->index()) != selectedparticlesMC_d.end()) {
-              mixMCParticles<1>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_p[col2->index()], 4); // mixing SE
+              mixMCParticles<1>(selectedparticlesMC_d[col1->index()], selectedparticlesMC_p[col2->index()], 4, dorapidity); // mixing SE
             }
           }
         }

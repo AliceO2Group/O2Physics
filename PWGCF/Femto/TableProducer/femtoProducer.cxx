@@ -10,18 +10,20 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoProducer.cxx
-/// \brief Tasks that produces the all femto tables
+/// \brief Tasks that produces all femto tables
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #include "PWGCF/Femto/Core/cascadeBuilder.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/kinkBuilder.h"
+#include "PWGCF/Femto/Core/mcBuilder.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/twoTrackResonanceBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -47,7 +49,6 @@
 #include <chrono>
 #include <cstdint>
 #include <string>
-#include <unordered_map>
 
 using namespace o2::aod;
 using namespace o2::soa;
@@ -60,18 +61,26 @@ namespace o2::analysis::femto
 namespace consumeddata
 {
 using Run3PpCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+using Run3PpMcRecoCollisions = soa::Join<Run3PpCollisions, aod::McCollisionLabels>;
+using Run3PpMcGenCollisions = soa::Join<aod::McCollisions, aod::MultsExtraMC, aod::McCentFT0Ms>;
 
 using Run3FullPidTracks =
   soa::Join<Tracks, TracksExtra, TracksDCA,
             pidTPCFullEl, pidTPCFullPi, pidTPCFullKa, pidTPCFullPr, pidTPCFullDe, pidTPCFullTr, pidTPCFullHe,
             pidTOFFullEl, pidTOFFullPi, pidTOFFullKa, pidTOFFullPr, pidTOFFullDe, pidTOFFullTr, pidTOFFullHe,
             pidTOFbeta, pidTOFmass>;
+using Run3McRecoTracks = soa::Join<Run3FullPidTracks, aod::McTrackLabels>;
 
-using Run3PpVzeros = V0Datas;
+using Run3PpVzeros = aod::V0Datas;
+using Run3PpRecoVzeros = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
 using Run3PpCascades = CascDatas;
+using Run3PpRecoCascades = soa::Join<CascDatas, aod::McCascLabels>;
 
 using Run3PpKinks = KinkCands;
+// using Run3PpRecoKinks = soa::Join<Run3PpKinks, >;
+
+using Run3McGenParticles = aod::McParticles;
 
 } // namespace consumeddata
 } // namespace o2::analysis::femto
@@ -154,13 +163,18 @@ struct FemtoProducer {
   twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0, twotrackresonancebuilder::Kstar0SelHistName> kstar0Builder;
   twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0Bar, twotrackresonancebuilder::Kstar0barSelHistName> kstar0barBuilder;
 
+  // mc builder
+  mcbuilder::ConfMc confMc;
+  mcbuilder::ConfMcTables confMcTables;
+  mcbuilder::McBuilderProducts mcProducts;
+  mcbuilder::McBuilder mcBuilder;
+
   // histogramming
   // add histograms in next iteration
   HistogramRegistry hRegistry{"FemtoProducer", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // data members
-  Service<o2::ccdb::BasicCCDBManager> ccdb;            /// Accessing the CCDB
-  std::unordered_map<int64_t, int64_t> indexMapTracks; // for mapping tracks to lambdas, cascades and resonances
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext& context)
   {
@@ -196,6 +210,9 @@ struct FemtoProducer {
     kstar0Builder.init(&hRegistry, confKstar0Bits, confKstarFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
     kstar0barBuilder.init(&hRegistry, confKstar0Bits, confKstarFilters, confResonanceDaughterFilters, confTwoTrackResonanceTables, context);
 
+    // configure mcBuilder
+    mcBuilder.init(confMc, confMcTables, context);
+
     if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) && (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesKinksRun3pp)) {
       LOG(fatal) << "At least one cascade table is enabled, but wrong process function is enabled. Breaking...";
     }
@@ -217,51 +234,82 @@ struct FemtoProducer {
     if (!collisionBuilder.checkCollision(col)) {
       return false;
     }
+    // do not fill collsions into the table here
+    // collisions are filled if at least one partilce is found in the collisions
+    return true;
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  bool processMcCollisions(T1 const& col, T2 const& mcCols, T3 const& /* bcs*/, T4 const& tracks)
+  {
+    collisionBuilder.reset();
+    auto bc = col.template bc_as<T3>();
+    collisionBuilder.initCollision<system>(bc, col, tracks, ccdb, hRegistry);
+    if (!collisionBuilder.checkCollision(col, mcCols)) {
+      return false;
+    }
+    // do not fill collsions into the table here
+    // collisions are filled if at least one partilce is found in the collisions
     return true;
   }
 
   template <modes::System system, typename T1, typename T2>
   void processTracks(T1 const& col, T2 const& tracksWithItsPid)
   {
-    trackBuilder.fillTracks<system>(col, collisionBuilder, collisionBuilderProducts, tracksWithItsPid, trackBuilderProducts, indexMapTracks);
+    trackBuilder.fillTracks<system>(col, collisionBuilder, collisionBuilderProducts, tracksWithItsPid, trackBuilderProducts);
   }
 
-  template <modes::System system, typename T1, typename T2>
-  void processResonances(T1 const& col, T2 const& /*tracks*/)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void processMcTracks(T1 const& col, T2 const& mcCol, T3 const& tracks, T4 const& tracksWithItsPid, T5 const& mcParticles)
+  {
+    trackBuilder.fillMcTracks<system>(col, collisionBuilder, collisionBuilderProducts, mcCol, tracks, tracksWithItsPid, trackBuilderProducts, mcParticles, mcBuilder, mcProducts);
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processResonances(T1 const& col, T2 const& tracks, T3 const& tracksWithItsPid)
   {
     auto groupPositiveTracks = partitionPositiveDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
     auto groupNegativeTracks = partitionNegativeDaughters->sliceByCached(track::collisionId, col.globalIndex(), cache);
-    rho0Builder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
-    phiBuilder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
-    kstar0Builder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
-    kstar0barBuilder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, trackBuilder, indexMapTracks);
+    rho0Builder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, tracks, tracksWithItsPid, trackBuilder);
+    phiBuilder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, tracks, tracksWithItsPid, trackBuilder);
+    kstar0Builder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, tracks, tracksWithItsPid, trackBuilder);
+    kstar0barBuilder.fillResonances<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, twoTrackResonanceBuilderProducts, groupPositiveTracks, groupNegativeTracks, tracks, tracksWithItsPid, trackBuilder);
   }
 
   // add v0s
-  template <modes::System system, typename T1, typename T2, typename T3>
-  void processV0s(T1 const& col, T2 const& tracks, T3 const& v0s)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void processV0s(T1 const& col, T2 const& tracks, T3 const& tracksWithItsPid, T4 const& v0s)
   {
-    lambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
-    antilambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
-    k0shortBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, indexMapTracks);
+    lambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder);
+    antilambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder);
+    k0shortBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder);
   }
 
   // add kinks
-  template <modes::System system, typename T1, typename T2, typename T3>
-  void processKinks(T1 const& col, T2 const& tracks, T3 const& kinks)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void processKinks(T1 const& col, T2 const& tracks, T3 const& tracksWithItsPid, T4 const& kinks)
   {
-    sigmaBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
-    sigmaPlusBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, indexMapTracks);
+    sigmaBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder);
+    sigmaPlusBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder);
   }
 
+  // TODO
+  // prepare to add kinks in MC
+  // template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  // void processMcKinks(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& tracksWithItsPid, T5 const& kinks, T6 const& mcParticles)
+  // {
+  // sigmaBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder);
+  // sigmaPlusBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder);
+  // }
+
   // add cascades
-  template <modes::System system, typename T1, typename T2, typename T3>
-  void processCascades(T1 const& col, T2 const& tracks, T3 const& cascades)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void processCascades(T1 const& col, T2 const& tracks, T3 const& tracksWithItsPid, T4 const& cascades)
   {
     xiBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                                   cascades, tracks, trackBuilder, indexMapTracks);
+                                   cascades, tracks, tracksWithItsPid, trackBuilder);
     omegaBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                                      cascades, tracks, trackBuilder, indexMapTracks);
+                                      cascades, tracks, tracksWithItsPid, trackBuilder);
   }
 
   // proccess functions
@@ -272,11 +320,10 @@ struct FemtoProducer {
     if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
       return;
     }
-    indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processResonances<modes::System::kPP_Run3>(col, tracks);
+    processResonances<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3pp, "Process tracks", true);
 
@@ -289,12 +336,11 @@ struct FemtoProducer {
     if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
       return;
     }
-    indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processResonances<modes::System::kPP_Run3>(col, tracks);
-    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
+    processResonances<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid);
+    processV0s<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, v0s);
   };
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3pp, "Process tracks and v0s", false);
 
@@ -307,12 +353,11 @@ struct FemtoProducer {
     if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
       return;
     }
-    indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processResonances<modes::System::kPP_Run3>(col, tracks);
-    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
+    processResonances<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid);
+    processKinks<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, kinks);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksKinksRun3pp, "Process tracks and kinks", false);
 
@@ -326,13 +371,12 @@ struct FemtoProducer {
     if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
       return;
     }
-    indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processResonances<modes::System::kPP_Run3>(col, tracks);
-    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
-    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
+    processResonances<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid);
+    processV0s<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, v0s);
+    processCascades<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
 
@@ -347,16 +391,32 @@ struct FemtoProducer {
     if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
       return;
     }
-    indexMapTracks.clear();
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
                                             pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processResonances<modes::System::kPP_Run3>(col, tracks);
-    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
-    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
-    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
+    processResonances<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid);
+    processV0s<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, v0s);
+    processKinks<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, kinks);
+    processCascades<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
+
+  // process monte carlo tracks
+  void processTracksRun3ppMc(consumeddata::Run3PpMcRecoCollisions::iterator const& col,
+                             consumeddata::Run3PpMcGenCollisions const& mcCols,
+                             BCsWithTimestamps const& bcs,
+                             consumeddata::Run3McRecoTracks const& tracks,
+                             consumeddata::Run3McGenParticles const& mcParticles)
+  {
+    if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
+                                            pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
+    mcBuilder.reset();
+    processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksRun3ppMc, "Provide reconstructed and generated Tracks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

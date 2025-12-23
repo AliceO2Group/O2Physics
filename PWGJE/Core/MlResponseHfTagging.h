@@ -18,12 +18,12 @@
 
 #include "Tools/ML/MlResponse.h"
 
-#include <onnxruntime_cxx_api.h>
-
 #include <Framework/Logger.h>
 
 #include <onnxruntime_c_api.h>
+#include <onnxruntime_cxx_api.h>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -209,7 +209,7 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
   static int replaceNaN(std::vector<T>& vec, T value)
   {
     int numNaN = 0;
-    for (auto& el : vec) {
+    for (auto& el : vec) { // o2-linter: disable=const-ref-in-for-loop
       if (std::isnan(el) || std::isinf(el)) {
         el = value;
         ++numNaN;
@@ -330,6 +330,7 @@ class TensorAllocator
 {
  protected:
   Ort::MemoryInfo memInfo;
+
  public:
   TensorAllocator()
     : memInfo(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
@@ -364,14 +365,14 @@ class GNNBjetAllocator : public TensorAllocator
   template <typename T>
   T jetFeatureTransform(T feat, int idx) const
   {
-    return (feat - tfJetMean[idx]) / tfJetStdev[idx];
+    return std::tanh((feat - tfJetMean[idx]) / tfJetStdev[idx]);
   }
 
   // Track feature normalization
   template <typename T>
   T trkFeatureTransform(T feat, int idx) const
   {
-    return (feat - tfTrkMean[idx]) / tfTrkStdev[idx];
+    return std::tanh((feat - tfTrkMean[idx]) / tfTrkStdev[idx]);
   }
 
   // Edge input of GNN (fully-connected graph)
@@ -426,7 +427,7 @@ class GNNBjetAllocator : public TensorAllocator
   }
   ~GNNBjetAllocator() = default;
 
-  // Copy operator for initializing GNNBjetAllocator using Configurable values
+  // Copy operator for initializing GNNBjetAllocator using o2::framework::Configurable values
   GNNBjetAllocator& operator=(const GNNBjetAllocator& other)
   {
     nJetFeat = other.nJetFeat;

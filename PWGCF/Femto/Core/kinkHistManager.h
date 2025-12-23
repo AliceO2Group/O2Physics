@@ -176,7 +176,6 @@ constexpr std::string_view QaDir = "QA/";
 // template <femtomodes::Mode mode>
 template <const char* kinkPrefix,
           const char* chaDauPrefix,
-          modes::Mode mode,
           modes::Kink kink>
 class KinkHistManager
 {
@@ -184,12 +183,13 @@ class KinkHistManager
   KinkHistManager() = default;
   ~KinkHistManager() = default;
 
+  template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs)
   {
     mHistogramRegistry = registry;
-    mChaDauManager.init(registry, ChaDauSpecs);
+    mChaDauManager.template init<mode>(registry, ChaDauSpecs);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(KinkSpecs);
     }
@@ -205,7 +205,7 @@ class KinkHistManager
     mPlot2d = KinkConfBinningQa.plot2d.value;
   }
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs,
             T1 const& KinkConfBinningQa,
@@ -213,16 +213,16 @@ class KinkHistManager
             T2 const& ChaDauConfBinningQa)
   {
     enableOptionalHistograms(KinkConfBinningQa, ChaDauConfBinningQa);
-    init(registry, KinkSpecs, ChaDauSpecs);
+    this->template init<mode>(registry, KinkSpecs, ChaDauSpecs);
   }
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& kinkcandidate, T2 const& tracks)
   {
     // this used to work, still under investigation
     // auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
     auto chaDaughter = tracks.rawIteratorAt(kinkcandidate.chaDauId() - tracks.offset());
-    mChaDauManager.fill(chaDaughter, tracks);
+    mChaDauManager.template fill<mode>(chaDaughter, tracks);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       fillAnalysis(kinkcandidate);
     }
@@ -302,7 +302,7 @@ class KinkHistManager
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-  trackhistmanager::TrackHistManager<chaDauPrefix, mode> mChaDauManager;
+  trackhistmanager::TrackHistManager<chaDauPrefix> mChaDauManager;
   bool mPlot2d = true;
 };
 }; // namespace kinkhistmanager

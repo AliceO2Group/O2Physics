@@ -177,6 +177,8 @@ struct NucleitpcPbPb {
   Configurable<float> cfgmaxmassrejection{"cfgmaxmassrejection", 9.138, "Max side of He3 particle rejection"};
   Configurable<float> correctionsigma{"correctionsigma", 2, "Max sigma value outside which correction is require"};
   Configurable<bool> cfghe3massrejreq{"cfghe3massrejreq", true, "Require mass cut on He4 particles"};
+  Configurable<bool> cfgUseNewDCAxyCut{"cfgUseNewDCAxyCut", false, "Use new pT-dependent DCAxy sigma cut for He3"};
+  Configurable<bool> cfgUseNewDCAzCut{"cfgUseNewDCAzCut", false, "Use new pT-dependent DCAz sigma cut for He3"};
 
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
   // Binning configuration
@@ -185,10 +187,10 @@ struct NucleitpcPbPb {
   ConfigurableAxis axisRigidity{"axisRigidity", {4000, -10., 10.}, "#it{p}^{TPC}/#it{z}"};
   ConfigurableAxis axisdEdx{"axisdEdx", {4000, 0, 4000}, "d#it{E}/d#it{x}"};
   ConfigurableAxis axisCent{"axisCent", {100, 0, 100}, "centrality"};
+
+  ConfigurableAxis axisOccupancy{"axisOccupancy", {5000, 0, 50000}, "axis for Occupancy of event"};
   ConfigurableAxis axisVtxZ{"axisVtxZ", {120, -20, 20}, "z"};
-
   ConfigurableAxis ptAxis{"ptAxis", {200, 0, 10}, "#it{p}_{T} (GeV/#it{c})"};
-
   ConfigurableAxis ptAxisa{"ptAxisa", {20, 0, 10}, "#it{p}_{T} (GeV/#it{c})"}; // just check
 
   ConfigurableAxis axiseta{"axiseta", {100, -1, 1}, "eta"};
@@ -241,9 +243,10 @@ struct NucleitpcPbPb {
       histos.add("histCentFT0C", "histCentFT0C", kTH1F, {axisCent});
       histos.add("histCentFT0M", "histCentFT0M", kTH1F, {axisCent});
       histos.add("histCentFTOC_cut", "histCentFTOC_cut", kTH1F, {axisCent});
-      histos.add<THnSparse>("hSpectra", " ", HistType::kTHnSparseF, {speciesBitAxis, ptAxis, nsigmaAxis, {5, -2.5, 2.5}, axisCent, axisDCA, axisDCA});
+      histos.add<THnSparse>("hSpectra", " ", HistType::kTHnSparseF, {speciesBitAxis, ptAxis, nsigmaAxis, {5, -2.5, 2.5}, axisCent, axisDCA, axisDCA, axisOccupancy});
     }
     histos.add("histeta", "histeta", kTH1F, {axiseta});
+    histos.add("histEvents", "histEvents", kTH2F, {axisCent, axisOccupancy});
     histos.add("dcaZ", "dcaZ", kTH2F, {ptAxis, axisDCA});
     histos.add("dcaXY", "dcaXY", kTH2F, {ptAxis, axisDCA});
     histos.add("Tofsignal", "Tofsignal", kTH2F, {axisRigidity, {4000, 0.2, 1.2, "#beta"}});
@@ -376,7 +379,7 @@ struct NucleitpcPbPb {
           float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
           if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
             continue;
-          if (tpcNsigma > correctionsigma) {
+          if (tpcNsigma < correctionsigma && cfgmccorrectionhe4Require) {
             double a = 0, b = 0, c = 0;
 
             int param = -1;
@@ -397,11 +400,7 @@ struct NucleitpcPbPb {
             }
 
             if (i == he3 && cfgmccorrectionhe4Require) {
-              int pidGuess = track.pidForTracking();
-              int antitriton = 6;
-              if (pidGuess == antitriton) {
-                ptMomn = ptMomn - a + b * ptMomn - c * ptMomn * ptMomn;
-              }
+              ptMomn = ptMomn - a + b * ptMomn - c * ptMomn * ptMomn;
             }
           }
           int sign = (track.sign() > 0) ? 1 : ((track.sign() < 0) ? -1 : 0);
@@ -431,11 +430,46 @@ struct NucleitpcPbPb {
           if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
             continue;
 
-          // DCA XY cut
-          bool insideDCAxy = cfgdcaxynopt ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY")) : (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f))));
+          // --- DCAxy cut with configurable new cut and configurable sigma factor ---
+          bool insideDCAxy = false;
 
-          // DCA Z cut
-          bool insideDCAz = cfgdcaznopt ? (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ")) : (std::abs(track.dcaZ()) <= dcazSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ")));
+          if (cfgUseNewDCAxyCut) {
+            double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
+            double sigma_base = (0.0118 * std::exp(-0.6889 * ptMomn) + 0.0017);
+            double sigma_new = sigmaFactor * sigma_base;
+
+            insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
+          } else {
+            insideDCAxy =
+              cfgdcaxynopt
+                ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
+                : (std::abs(track.dcaXY()) <=
+                   (cfgTrackPIDsettings->get(i, "maxDcaXY") *
+                    (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f))));
+          }
+
+          bool insideDCAz = false;
+
+          if (cfgUseNewDCAzCut) {
+
+            double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
+
+            double p0 = 0.1014;
+            double p1 = 1.7512;
+            double p2 = 0.0024;
+
+            double sigma_base_z = p0 * std::exp(-p1 * ptMomn) + p2;
+
+            double sigma_new_z = sigmaFactorZ * sigma_base_z;
+
+            insideDCAz = (std::abs(track.dcaZ()) <= sigma_new_z);
+          } else {
+            insideDCAz =
+              cfgdcaznopt
+                ? (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ"))
+                : (std::abs(track.dcaZ()) <=
+                   dcazSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ")));
+          }
 
           if ((!insideDCAxy || !insideDCAz)) {
             continue;
@@ -455,11 +489,11 @@ struct NucleitpcPbPb {
           if (cfgFillhspectra && cfgTrackPIDsettings2->get(i, "fillsparsh") == 1) {
 
             if (i != he4) {
-              histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY());
+              histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY(), collision.trackOccupancyInTimeRange());
             } else {
               if (!track.hasTOF()) {
                 // Fill without TOF
-                histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY());
+                histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY(), collision.trackOccupancyInTimeRange());
               } else {
                 // Has TOF - apply mass cut
                 float beta = o2::pid::tof::Beta::GetBeta(track);
@@ -476,7 +510,7 @@ struct NucleitpcPbPb {
                   continue; // Skip if mass cut fails
                 }
 
-                histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY());
+                histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY(), collision.trackOccupancyInTimeRange());
               }
             }
           }
@@ -807,11 +841,46 @@ struct NucleitpcPbPb {
               if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
                 continue;
 
-              // DCA XY cut
-              bool insideDCAxy = cfgdcaxynopt ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY")) : (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptReco, 1.1f))));
+              // --- DCAxy cut with configurable new cut and configurable sigma factor ---
+              bool insideDCAxy = false;
 
-              // DCA Z cut
-              bool insideDCAz = cfgdcaznopt ? (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ")) : (std::abs(track.dcaZ()) <= dcazSigma(ptReco, cfgTrackPIDsettings->get(i, "maxDcaZ")));
+              if (cfgUseNewDCAxyCut) {
+                double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
+                double sigma_base = (0.0118 * std::exp(-0.6889 * ptReco) + 0.0017);
+                double sigma_new = sigmaFactor * sigma_base;
+
+                insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
+              } else {
+                insideDCAxy =
+                  cfgdcaxynopt
+                    ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
+                    : (std::abs(track.dcaXY()) <=
+                       (cfgTrackPIDsettings->get(i, "maxDcaXY") *
+                        (0.0105f + 0.0350f / std::pow(ptReco, 1.1f))));
+              }
+
+              bool insideDCAz = false;
+
+              if (cfgUseNewDCAzCut) {
+
+                double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
+
+                double p0 = 0.1014;
+                double p1 = 1.7512;
+                double p2 = 0.0024;
+
+                double sigma_base_z = p0 * std::exp(-p1 * ptReco) + p2;
+
+                double sigma_new_z = sigmaFactorZ * sigma_base_z;
+
+                insideDCAz = (std::abs(track.dcaZ()) <= sigma_new_z);
+              } else {
+                insideDCAz =
+                  cfgdcaznopt
+                    ? (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ"))
+                    : (std::abs(track.dcaZ()) <=
+                       dcazSigma(ptReco, cfgTrackPIDsettings->get(i, "maxDcaZ")));
+              }
 
               if ((!insideDCAxy || !insideDCAz)) {
                 continue;
@@ -1046,11 +1115,46 @@ struct NucleitpcPbPb {
               if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
                 continue;
 
-              // DCA XY cut
-              bool insideDCAxy = cfgdcaxynopt ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY")) : (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptReco, 1.1f))));
+              // --- DCAxy cut with configurable new cut and configurable sigma factor ---
+              bool insideDCAxy = false;
 
-              // DCA Z cut
-              bool insideDCAz = cfgdcaznopt ? (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ")) : (std::abs(track.dcaZ()) <= dcazSigma(ptReco, cfgTrackPIDsettings->get(i, "maxDcaZ")));
+              if (cfgUseNewDCAxyCut) {
+                double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
+                double sigma_base = (0.0118 * std::exp(-0.6889 * ptReco) + 0.0017);
+                double sigma_new = sigmaFactor * sigma_base;
+
+                insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
+              } else {
+                insideDCAxy =
+                  cfgdcaxynopt
+                    ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
+                    : (std::abs(track.dcaXY()) <=
+                       (cfgTrackPIDsettings->get(i, "maxDcaXY") *
+                        (0.0105f + 0.0350f / std::pow(ptReco, 1.1f))));
+              }
+
+              bool insideDCAz = false;
+
+              if (cfgUseNewDCAzCut) {
+
+                double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
+
+                double p0 = 0.1014;
+                double p1 = 1.7512;
+                double p2 = 0.0024;
+
+                double sigma_base_z = p0 * std::exp(-p1 * ptReco) + p2;
+
+                double sigma_new_z = sigmaFactorZ * sigma_base_z;
+
+                insideDCAz = (std::abs(track.dcaZ()) <= sigma_new_z);
+              } else {
+                insideDCAz =
+                  cfgdcaznopt
+                    ? (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ"))
+                    : (std::abs(track.dcaZ()) <=
+                       dcazSigma(ptReco, cfgTrackPIDsettings->get(i, "maxDcaZ")));
+              }
 
               if ((!insideDCAxy || !insideDCAz)) {
                 continue;
@@ -1144,6 +1248,7 @@ struct NucleitpcPbPb {
       histos.fill(HIST("histVtxZ"), collision.posZ());
       histos.fill(HIST("histCentFT0C"), collision.centFT0C());
       histos.fill(HIST("histCentFT0M"), collision.centFT0M());
+      histos.fill(HIST("histEvents"), collision.centFT0C(), occupancy);
     }
     primVtx.assign({collision.posX(), collision.posY(), collision.posZ()});
     cents.assign({collision.centFT0A(), collision.centFT0C(), collision.centFT0M()});

@@ -65,8 +65,9 @@ using MyCollisionsMCCent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT
 using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
-  Produces<o2::aod::EMBCs> embc;
+  // Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::EMEventsAlias> eventalias;
   // Produces<o2::aod::EMEventsCov> eventCov;
   Produces<o2::aod::EMEventsMult> eventMult;
   Produces<o2::aod::EMEventsCent> eventCent;
@@ -83,11 +84,11 @@ struct CreateEMEventPhoton {
   };
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
+  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  // Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  // Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
@@ -106,8 +107,8 @@ struct CreateEMEventPhoton {
   }
 
   int mRunNumber;
-  float dBz;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // float dBz;
+  // Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   template <typename TBC>
   void initCCDB(TBC const& bc)
@@ -116,46 +117,46 @@ struct CreateEMEventPhoton {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (dBzInput > -990) {
-      dBz = dBzInput;
-      o2::parameters::GRPMagField grpmag;
-      if (std::fabs(dBz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (dBz / 5.0f));
-      }
-      mRunNumber = bc.runNumber();
-      return;
-    }
+    // // In case override, don't proceed, please - no CCDB access required
+    // if (dBzInput > -990) {
+    //   dBz = dBzInput;
+    //   o2::parameters::GRPMagField grpmag;
+    //   if (std::fabs(dBz) > 1e-5) {
+    //     grpmag.setL3Current(30000.f / (dBz / 5.0f));
+    //   }
+    //   mRunNumber = bc.runNumber();
+    //   return;
+    // }
 
-    auto run3GRPTimestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      dBz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    }
+    // auto run3GRPTimestamp = bc.timestamp();
+    // o2::parameters::GRPObject* grpo = 0x0;
+    // o2::parameters::GRPMagField* grpmag = 0x0;
+    // if (!skipGRPOquery)
+    //   grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
+    // if (grpo) {
+    //   // Fetch magnetic field from ccdb for current collision
+    //   dBz = grpo->getNominalL3Field();
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
+    // } else {
+    //   grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
+    //   if (!grpmag) {
+    //     LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
+    //   }
+    //   // Fetch magnetic field from ccdb for current collision
+    //   dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
+    // }
     mRunNumber = bc.runNumber();
   }
 
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
+  void skimEvent(TCollisions const& collisions, TBCs const&)
   {
-    for (const auto& bc : bcs) {
-      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        embc(bc.alias_raw(), bc.selection_raw(), bc.rct_raw()); // TVX is fired.
-      }
-    } // end of bc loop
+    // for (const auto& bc : bcs) {
+    //   if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    //     embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
+    //   }
+    // } // end of bc loop
 
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
@@ -164,7 +165,8 @@ struct CreateEMEventPhoton {
         }
       }
 
-      auto bc = collision.template foundBC_as<TBCs>();
+      // auto bc = collision.template foundBC_as<TBCs>();
+      auto bc = collision.template bc_as<TBCs>(); // use this for Zorro
       initCCDB(bc);
 
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
@@ -175,12 +177,20 @@ struct CreateEMEventPhoton {
       }
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        int16_t posZint16 = static_cast<int16_t>(collision.posZ() * 100.f);
+        if (posZint16 == 0.f) {
+          if (collision.posZ() < 0) {
+            posZint16 = -1;
+          } else {
+            posZint16 = +1;
+          }
+        }
         if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
         } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(collision.centFT0C() * 500.f));
         } else {
-          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
         }
       }
 
@@ -208,9 +218,10 @@ struct CreateEMEventPhoton {
         registry.fill(HIST("hEventCounter"), 2);
       }
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
             collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      eventalias(collision.alias_raw());
 
       // eventCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 

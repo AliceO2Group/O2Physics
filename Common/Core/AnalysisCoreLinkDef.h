@@ -28,8 +28,4 @@
 
 #pragma link C++ class FFitWeights + ;
 
-#pragma link C++ class ZorroHelper + ;
-#pragma link C++ class ZorroSummary + ;
-#pragma link C++ class std::vector < ZorroHelper> + ;
-
 #endif // COMMON_CORE_ANALYSISCORELINKDEF_H_

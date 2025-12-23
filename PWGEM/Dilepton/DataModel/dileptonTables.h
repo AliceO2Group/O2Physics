@@ -27,6 +27,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -66,7 +67,7 @@ const std::unordered_map<std::string, int> aliasLabels = {
 } // namespace pwgem::dilepton::swt
 
 DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct);
+                  o2::soa::Index<>, evsel::Selection, evsel::Rct);
 using EMBC = EMBCs::iterator;
 
 namespace emevent
@@ -128,13 +129,15 @@ DECLARE_SOA_COLUMN(Q4yBTot, q4ybtot, float);                                //! 
 DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocity_ptweighted, float);     //! transverse spherocity
 DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! transverse spherocity
 DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
-DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);  //! MB event selection info
-DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);            //! lepton or photon exists in MB event (not for CEFP)
-DECLARE_SOA_COLUMN(PosX, posX, float);             //! only for treeCreatetorML.cxx
-DECLARE_SOA_COLUMN(PosY, posY, float);             //! only for treeCreatetorML.cxx
-DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t); //! this is only to reduce data size
-DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int16_t posZint16) -> float { return static_cast<float>(posZint16) * 0.1f; });
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);             //! MB event selection info
+DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);                       //! lepton or photon exists in MB event (not for CEFP)
+DECLARE_SOA_COLUMN(PosX, posX, float);                        //! only for treeCreatetorML.cxx
+DECLARE_SOA_COLUMN(PosY, posY, float);                        //! only for treeCreatetorML.cxx
+DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t);            //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Cuint16, centFT0Cuint16, uint16_t); //! this is only to reduce data size
 
+DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int16_t posZint16) -> float { return (posZint16 < 0 ? std::nextafter(posZint16 * 0.01f, -std::numeric_limits<float>::infinity()) : std::nextafter(posZint16 * 0.01f, std::numeric_limits<float>::infinity())); }); //! poZ is multiplied by 100 in createEMEventDileton.cxx
+DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, [](uint16_t centuint16) -> float { return std::nextafter(centuint16 * 0.002f, std::numeric_limits<float>::infinity()); });                                                                                    //! centrality is multiplied by 500 in createEMEventDilepton.cxx
 DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)); });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0M, ep2ft0m, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0A, ep2ft0a, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
@@ -174,8 +177,17 @@ DECLARE_SOA_TABLE_VERSIONED(EMEvents_003, "AOD", "EMEVENT", 3, //!   Main event 
                             collision::PosZ,
                             collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
 
-using EMEvents = EMEvents_003;
+DECLARE_SOA_TABLE_VERSIONED(EMEvents_004, "AOD", "EMEVENT", 4, //!   Main event information table
+                            o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Selection, evsel::Rct, timestamp::Timestamp,
+                            collision::PosZ,
+                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
+
+using EMEvents = EMEvents_004;
 using EMEvent = EMEvents::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventsAlias_000, "AOD", "EMEVENTALIAS", 0, evsel::Alias) //! joinable to EMEvents
+using EMEventsAlias = EMEventsAlias_000;
+using EMEventAlias = EMEventsAlias::iterator;
 
 DECLARE_SOA_TABLE(EMEventsXY, "AOD", "EMEVENTXY", emevent::PosX, emevent::PosY); // joinable to EMEvents, only for treeCreatetorML.cxx
 using EMEventXY = EMEventsXY::iterator;
@@ -201,8 +213,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_000, "AOD", "EMEVENTQVEC", 0, //!   eve
                             emevent::Q2xBPos, emevent::Q2yBPos, emevent::Q2xBNeg, emevent::Q2yBNeg, emevent::Q2xBTot, emevent::Q2yBTot,
                             emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C,
                             emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg, emevent::Q3xBTot, emevent::Q3yBTot,
-                            // emevent::Q4xFT0M, emevent::Q4yFT0M, emevent::Q4xFT0A, emevent::Q4yFT0A, emevent::Q4xFT0C, emevent::Q4yFT0C,
-                            // emevent::Q4xBPos, emevent::Q4yBPos, emevent::Q4xBNeg, emevent::Q4yBNeg, emevent::Q4xBTot, emevent::Q4yBTot,
 
                             // Dynamic columns
                             emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
@@ -217,12 +227,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_000, "AOD", "EMEVENTQVEC", 0, //!   eve
                             emevent::EP3BPos<emevent::Q3xBPos, emevent::Q3yBPos>,
                             emevent::EP3BNeg<emevent::Q3xBNeg, emevent::Q3yBNeg>,
                             emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>);
-// emevent::EP4FT0M<emevent::Q4xFT0M, emevent::Q4yFT0M>,
-// emevent::EP4FT0A<emevent::Q4xFT0A, emevent::Q4yFT0A>,
-// emevent::EP4FT0C<emevent::Q4xFT0C, emevent::Q4yFT0C>,
-// emevent::EP4BPos<emevent::Q4xBPos, emevent::Q4yBPos>,
-// emevent::EP4BNeg<emevent::Q4xBNeg, emevent::Q4yBNeg>,
-// emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>
 
 DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_001, "AOD", "EMEVENTQVEC", 1, //!   Main event information table
                             emevent::Q2xFT0M, emevent::Q2yFT0M, emevent::Q2xFT0A, emevent::Q2yFT0A, emevent::Q2xFT0C, emevent::Q2yFT0C,
@@ -231,8 +235,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_001, "AOD", "EMEVENTQVEC", 1, //!   Mai
                             emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C,
                             emevent::Q3xFV0A, emevent::Q3yFV0A,
                             emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg, emevent::Q3xBTot, emevent::Q3yBTot,
-                            // emevent::Q4xFT0M, emevent::Q4yFT0M, emevent::Q4xFT0A, emevent::Q4yFT0A, emevent::Q4xFT0C, emevent::Q4yFT0C,
-                            // emevent::Q4xBPos, emevent::Q4yBPos, emevent::Q4xBNeg, emevent::Q4yBNeg, emevent::Q4xBTot, emevent::Q4yBTot,
 
                             // Dynamic columns
                             emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
@@ -292,8 +294,14 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
                   emevent::IsEoI);
 using EMEoI = EMEoIs::iterator;
 
-DECLARE_SOA_TABLE(EMEventNormInfos, "AOD", "EMEVENTNORMINFO", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
+DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_000, "AOD", "EMEVENTNORMINFO", 0, //! event information for normalization
+                            o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C,
+                            emevent::Sel8<evsel::Selection>);
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_001, "AOD", "EMEVENTNORMINFO", 1, //! event information for normalization
+                            o2::soa::Index<>, evsel::Selection, evsel::Rct, emevent::PosZint16, emevent::CentFT0Cuint16,
+                            emevent::Sel8<evsel::Selection>, emevent::PosZ<emevent::PosZint16>, emevent::CentFT0C<emevent::CentFT0Cuint16>, o2::soa::Marker<1>);
+using EMEventNormInfos = EMEventNormInfos_001;
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
@@ -936,6 +944,46 @@ using EMPrimaryTrackEMEventId = EMPrimaryTrackEMEventIds::iterator;
 DECLARE_SOA_TABLE(EMPrimaryTrackEMEventIdsTMP, "AOD", "PRMTRKEVIDTMP", track::CollisionId); // To be joined with EMPrimaryTracks in associateDileptonToEMEvent
 // iterators
 using EMPrimaryTrackEMEventIdTMP = EMPrimaryTrackEMEventIdsTMP::iterator;
+
+namespace emthinevent
+{
+DECLARE_SOA_COLUMN(EP2, ep2, float); //!
+} // namespace emthinevent
+DECLARE_SOA_TABLE_VERSIONED(EMThinEvents_000, "AOD", "EMTHINEVENT", 0, //! Thin event information table
+                            o2::soa::Index<>, bc::RunNumber, bc::GlobalBC, timestamp::Timestamp, collision::PosZ,
+                            evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, cent::CentFT0C, emthinevent::EP2);
+using EMThinEvents = EMThinEvents_000;
+using EMThinEvent = EMThinEvents::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(EMThinEventNormInfos_000, "AOD", "EMTHINEVENTNORM", 0, //! event information for normalization
+                            o2::soa::Index<>, evsel::Selection, evsel::Rct, emevent::PosZint16, emevent::CentFT0Cuint16,
+                            emevent::Sel8<evsel::Selection>, emevent::PosZ<emevent::PosZint16>, emevent::CentFT0C<emevent::CentFT0Cuint16>, o2::soa::Marker<2>);
+using EMThinEventNormInfos = EMThinEventNormInfos_000;
+using EMThinEventNormInfo = EMThinEventNormInfos::iterator;
+
+namespace emdilepton
+{
+DECLARE_SOA_INDEX_COLUMN(EMThinEvent, emthinevent); //!
+DECLARE_SOA_COLUMN(Pt1, pt1, float);                //!
+DECLARE_SOA_COLUMN(Eta1, eta1, float);              //!
+DECLARE_SOA_COLUMN(Phi1, phi1, float);              //!
+DECLARE_SOA_COLUMN(Sign1, sign1, short);            //!
+DECLARE_SOA_COLUMN(DCA1, dca1, float);              //! DCA in sigma. Users should decide 3D or XY or Z
+DECLARE_SOA_COLUMN(Pt2, pt2, float);                //!
+DECLARE_SOA_COLUMN(Eta2, eta2, float);              //!
+DECLARE_SOA_COLUMN(Phi2, phi2, float);              //!
+DECLARE_SOA_COLUMN(DCA2, dca2, float);              //! DCA in sigma. Users should decide 3D or XY or Z
+DECLARE_SOA_COLUMN(Sign2, sign2, short);            //!
+DECLARE_SOA_COLUMN(Weight, weight, float);          //! possible pair weight
+} // namespace emdilepton
+
+DECLARE_SOA_TABLE_VERSIONED(EMDileptons_000, "AOD", "EMDILEPTON", 0,
+                            o2::soa::Index<>, emdilepton::EMThinEventId,
+                            emdilepton::Pt1, emdilepton::Eta1, emdilepton::Phi1, emdilepton::Sign1, emdilepton::DCA1,
+                            emdilepton::Pt2, emdilepton::Eta2, emdilepton::Phi2, emdilepton::Sign2, emdilepton::DCA2,
+                            emdilepton::Weight);
+using EMDileptons = EMDileptons_000;
+using EMDilepton = EMDileptons::iterator;
 
 // Dummy data for MC
 namespace emdummydata

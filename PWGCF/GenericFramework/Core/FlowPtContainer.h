@@ -16,17 +16,20 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 
-#include <algorithm>
-#include <vector>
-#include <complex>
-#include <variant>
 #include "BootstrapProfile.h"
-#include "TNamed.h"
-#include "TList.h"
-#include "TCollection.h"
-#include "Framework/HistogramSpec.h"
 #include "GFW.h"
 #include "GFWConfig.h"
+
+#include "Framework/HistogramSpec.h"
+
+#include "TCollection.h"
+#include "TList.h"
+#include "TNamed.h"
+
+#include <algorithm>
+#include <complex>
+#include <variant>
+#include <vector>
 
 namespace o2::analysis::genericframework::eventweight
 {
@@ -51,12 +54,13 @@ class FlowPtContainer : public TNamed
   void initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
   void initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub = 10);
   // initial pt-pt correlations with two subevents
-  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsub = 10);
-  void initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsub = 10);
-  void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsub = 10);
+  void initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsubev = 2, const int& nsub = 10);
+  void initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsubev = 2, const int& nsub = 10);
+  void initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsubev = 2, const int& nsub = 10);
   void fill(const double& w, const double& pt);
-  void fillSub1(const double& w, const double& pt);
-  void fillSub2(const double& w, const double& pt);
+  void fillSub(const double& w, const double& pt, int subIndex);
+  void fillSub1(const double& w, const double& pt) { fillSub(w, pt, 0); }
+  void fillSub2(const double& w, const double& pt) { fillSub(w, pt, nSubevents - 1); }
   void fillArray(FillType a, FillType b, double c, double d);
   int getVectorIndex(const int i, const int j) { return j * (mpar + 1) + i; }                                              // index for 2d array for storing pt correlations
   int getVectorIndex(const int i, const int j, const int k, const int l) { return i + j * 3 + k * 3 * 3 + l * 3 * 3 * 5; } // index for 4d array for std vnpt correlation - size 3x3x3x3
@@ -134,16 +138,14 @@ class FlowPtContainer : public TNamed
   {
     sumP.clear();
     sumP.resize((mpar + 1) * (mpar + 1));
-    insub1.clear();
-    insub1.resize((mpar + 1) * (mpar + 1));
-    insub2.clear();
-    insub2.resize((mpar + 1) * (mpar + 1));
+    insub.clear();
+    insub.resize(nSubevents, std::vector<double>((mpar + 1) * (mpar + 1)));
     cmVal.clear();
-    cmVal1.clear();
-    cmVal2.clear();
+    cmValSub.clear();
+    cmValSub.resize(nSubevents);
     cmDen.clear();
-    cmDen1.clear();
-    cmDen2.clear();
+    cmDenSub.clear();
+    cmDenSub.resize(nSubevents);
     fillCounter = 0;
     arr.clear();
     arr.resize(3 * 3 * 5 * 5, {0.0, 0.0});
@@ -160,30 +162,26 @@ class FlowPtContainer : public TNamed
   TList* fCentralMomentList;
 
   int mpar;
+  int nSubevents;            //!
   int fillCounter;           //!
   unsigned int fEventWeight; //!
   bool fUseCentralMoments;
   bool fUseGap;
   void mergeBSLists(TList* source, TList* target);
   TH1* raiseHistToPower(TH1* inh, double p);
-  std::vector<double> sumP;              //!
-  std::vector<double> insub1;            //!
-  std::vector<double> insub2;            //!
-  std::vector<double> corrNum;           //!
-  std::vector<double> corrNum1;          //!
-  std::vector<double> corrNum2;          //!
-  std::vector<double> corrDen;           //!
-  std::vector<double> corrDen1;          //!
-  std::vector<double> corrDen2;          //!
-  std::vector<double> cmVal;             //!
-  std::vector<double> cmVal1;            //!
-  std::vector<double> cmVal2;            //!
-  std::vector<double> cmDen;             //!
-  std::vector<double> cmDen1;            //!
-  std::vector<double> cmDen2;            //!
-  std::vector<std::complex<double>> arr; //!
-  std::vector<double> warr;              //!
-  std::vector<int> fCovFirstIndex;       //!
+  std::vector<double> sumP;                    //!
+  std::vector<std::vector<double>> insub;      //!
+  std::vector<double> corrNum;                 //!
+  std::vector<std::vector<double>> corrNumSub; //!
+  std::vector<double> corrDen;                 //!
+  std::vector<std::vector<double>> corrDenSub; //!
+  std::vector<double> cmVal;                   //!
+  std::vector<std::vector<double>> cmValSub;   //!
+  std::vector<double> cmDen;                   //!
+  std::vector<std::vector<double>> cmDenSub;   //!
+  std::vector<std::complex<double>> arr;       //!
+  std::vector<double> warr;                    //!
+  std::vector<int> fCovFirstIndex;             //!
   template <typename T>
   double getStdAABBCC(T& inarr);
   template <typename T>
@@ -224,6 +222,8 @@ class FlowPtContainer : public TNamed
   double getStdABDDD(T& inarr);
 
  private:
+  std::vector<std::vector<int>> subevents;
+  void getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents);
   static constexpr float FactorialArray[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};
   static constexpr int SignArray[9] = {1, -1, 1, -1, 1, -1, 1, -1, 1};
   ClassDef(FlowPtContainer, 2);

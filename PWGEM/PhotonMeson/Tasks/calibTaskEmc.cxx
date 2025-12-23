@@ -13,9 +13,11 @@
 /// \brief Task to produce calibration values for EMCal
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
+#include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
@@ -156,33 +158,38 @@ struct CalibTaskEmc {
   } emccuts;
 
   V0PhotonCut fPCMPhotonCut;
-  struct : ConfigurableGroup {
+  struct : o2::framework::ConfigurableGroup {
     std::string prefix = "pcmcuts";
-    Configurable<bool> cfgRequireV0WithITSTPC{"cfgRequireV0WithITSTPC", false, "flag to select V0s with ITS-TPC matched tracks"};
-    Configurable<bool> cfgRequireV0WithITSonly{"cfgRequireV0WithITSonly", false, "flag to select V0s with ITSonly tracks"};
-    Configurable<bool> cfgRequireV0WithTPConly{"cfgRequireV0WithTPConly", false, "flag to select V0s with TPConly tracks"};
-    Configurable<float> cfgMinPtV0{"cfgMinPtV0", 0.1, "min pT for v0 photons at PV"};
-    Configurable<float> cfgMaxPtV0{"cfgMaxPtV0", 1e+10, "max pT for v0 photons at PV"};
-    Configurable<float> cfgMinEtaV0{"cfgMinEtaV0", -0.8, "min eta for v0 photons at PV"};
-    Configurable<float> cfgMaxEtaV0{"cfgMaxEtaV0", 0.8, "max eta for v0 photons at PV"};
-    Configurable<float> cfgMinV0Radius{"cfgMinV0Radius", 4.0, "min v0 radius"};
-    Configurable<float> cfgMaxV0Radius{"cfgMaxV0Radius", 90.0, "max v0 radius"};
-    Configurable<float> cfgMaxAlphaAP{"cfgMaxAlphaAP", 0.95, "max alpha for AP cut"};
-    Configurable<float> cfgMaxQtAP{"cfgMaxQtAP", 0.01, "max qT for AP cut"};
-    Configurable<float> cfgMinCosPA{"cfgMinCosPA", 0.999, "min V0 CosPA"};
-    Configurable<float> cfgMaxPCA{"cfgMaxPCA", 1.5, "max distance btween 2 legs"};
-    Configurable<float> cfgMaxChi2KF{"cfgMaxChi2KF", 1e+10, "max chi2/ndf with KF"};
-    Configurable<bool> cfgRejectV0OnITSib{"cfgRejectV0OnITSib", true, "flag to reject V0s on ITSib"};
+    o2::framework::Configurable<bool> requireV0WithITSTPC{"requireV0WithITSTPC", false, "flag to enforce V0s have ITS and TPC"};
+    o2::framework::Configurable<bool> requireV0WithITSOnly{"requireV0WithITSOnly", false, "flag to select V0s with ITSonly tracks"};
+    o2::framework::Configurable<bool> requireV0WithTPCOnly{"requireV0WithTPCOnly", false, "flag to select V0s with TPConly tracks"};
+    o2::framework::Configurable<float> minPtV0{"minPtV0", 0.1, "min pT for v0 photons at PV"};
+    o2::framework::Configurable<float> maxPtV0{"maxPtV0", 1e+10, "max pT for v0 photons at PV"};
+    o2::framework::Configurable<float> minEtaV0{"minEtaV0", -0.8, "min eta for v0 photons at PV"};
+    o2::framework::Configurable<float> maxEtaV0{"maxEtaV0", 0.8, "max eta for v0 photons at PV"};
+    o2::framework::Configurable<float> minRV0{"minRV0", 4.0, "min v0 radius"};
+    o2::framework::Configurable<float> maxRV0{"maxRV0", 90.0, "max v0 radius"};
+    o2::framework::Configurable<float> maxAlphaAP{"maxAlphaAP", 0.95, "max alpha for AP cut"};
+    o2::framework::Configurable<float> maxQtAP{"maxQtAP", 0.01, "max qT for AP cut"};
+    o2::framework::Configurable<float> minCosPA{"minCosPA", 0.999, "min V0 CosPA"};
+    o2::framework::Configurable<float> maxPCA{"maxPCA", 1.5, "max distance btween 2 legs"};
+    o2::framework::Configurable<float> maxChi2KF{"maxChi2KF", 1.e+10f, "max chi2/ndf with KF"};
+    o2::framework::Configurable<bool> rejectV0onITSib{"rejectV0onITSib", true, "flag to reject V0s on ITSib"};
+    o2::framework::Configurable<bool> applyPrefilter{"applyPrefilter", false, "flag to apply prefilter to V0"};
 
-    Configurable<int> cfgMinNClusterTPC{"cfgMinNClusterTPC", 0, "min ncluster tpc"};
-    Configurable<int> cfgMinNCrossedRows{"cfgMinNCrossedRows", 40, "min ncrossed rows"};
-    Configurable<float> cfgMaxFracSharedClusterTPC{"cfgMaxFracSharedClusterTPC", 999.f, "max fraction of shared clusters in TPC"};
-    Configurable<float> cfgMaxChi2TPC{"cfgMaxChi2TPC", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfgMaxChi2ITS{"cfgMaxChi2ITS", 36.0, "max chi2/NclsITS"};
-    Configurable<float> cfgMinTPCNSigmaEl{"cfgMinTPCNSigmaEl", -3.0, "min. TPC n sigma for electron"};
-    Configurable<float> cfgMaxTPCNSigmaEl{"cfgMaxTPCNSigmaEl", +3.0, "max. TPC n sigma for electron"};
-    Configurable<bool> cfgDisableITSOnly{"cfgDisableITSOnly", false, "flag to disable ITSonly tracks"};
-    Configurable<bool> cfgDisableTPCOnly{"cfgDisableTPCOnly", false, "flag to disable TPConly tracks"};
+    o2::framework::Configurable<int> minNClusterTPC{"minNClusterTPC", 0, "min NCluster TPC"};
+    o2::framework::Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 40, "min ncrossed rows in TPC"};
+    o2::framework::Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "min fraction of crossed rows over findable clusters in TPC"};
+    o2::framework::Configurable<float> maxFracSharedClustersTPC{"maxFracSharedClustersTPC", 999.f, "max fraction of shared clusters in TPC"};
+    o2::framework::Configurable<int> minNClusterITS{"minNClusterITS", 0, "min NCluster ITS"};
+    o2::framework::Configurable<float> minMeanClusterSizeITSob{"minMeanClusterSizeITSob", 0.f, "min <cluster size> ITSob"};
+    o2::framework::Configurable<float> maxMeanClusterSizeITSob{"maxMeanClusterSizeITSob", 16.f, "max <cluster size> ITSob"};
+    o2::framework::Configurable<float> macChi2TPC{"macChi2TPC", 4.f, "max chi2/NclsTPC"};
+    o2::framework::Configurable<float> macChi2ITS{"macChi2ITS", 36.f, "max chi2/NclsITS"};
+    o2::framework::Configurable<float> minTPCNSigmaEl{"minTPCNSigmaEl", -3.0f, "min. TPC n sigma for electron"};
+    o2::framework::Configurable<float> maxTPCNSigmaEl{"maxTPCNSigmaEl", +3.0f, "max. TPC n sigma for electron"};
+    o2::framework::Configurable<bool> disableITSOnly{"disableITSOnly", false, "flag to disable ITSonly tracks"};
+    o2::framework::Configurable<bool> disableTPCOnly{"disableTPCOnly", false, "flag to disable TPConly tracks"};
   } pcmcuts;
 
   struct : ConfigurableGroup {
@@ -206,20 +213,17 @@ struct CalibTaskEmc {
   int runNow = 0;
   int runBefore = -1;
 
-  // Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && skimmedcluster::e >= emccuts.cfgEMCminE;
-  // Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
-  // using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>>;
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
   using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
-  using Colls = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+  using Colls = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
 
   // for event mixing
   using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>;
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
 
-  Preslice<EMCalPhotons> perCollisionEMC = aod::emccluster::emeventId;
-  Preslice<PCMPhotons> perCollisionPCM = aod::v0photonkf::emeventId;
+  PresliceOptional<EMCalPhotons> perCollisionEMC = aod::emccluster::emeventId;
+  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::emeventId;
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
@@ -301,35 +305,35 @@ struct CalibTaskEmc {
     fEMCCut.SetUseSecondaryTM(emccuts.emcUseSecondaryTM.value); // disables or enables secondary TM
   }
 
-  void DefinePCMCut()
+  void definePCMCut()
   {
     fPCMPhotonCut = V0PhotonCut("fPCMPhotonCut", "fPCMPhotonCut");
 
     // for v0
-    fPCMPhotonCut.SetV0PtRange(pcmcuts.cfgMinPtV0, pcmcuts.cfgMaxPtV0);
-    fPCMPhotonCut.SetV0EtaRange(pcmcuts.cfgMinEtaV0, pcmcuts.cfgMaxEtaV0);
-    fPCMPhotonCut.SetMinCosPA(pcmcuts.cfgMinCosPA);
-    fPCMPhotonCut.SetMaxPCA(pcmcuts.cfgMaxPCA);
-    fPCMPhotonCut.SetMaxChi2KF(pcmcuts.cfgMaxChi2KF);
-    fPCMPhotonCut.SetRxyRange(pcmcuts.cfgMinV0Radius, pcmcuts.cfgMaxV0Radius);
-    fPCMPhotonCut.SetAPRange(pcmcuts.cfgMaxAlphaAP, pcmcuts.cfgMaxQtAP);
-    fPCMPhotonCut.RejectITSib(pcmcuts.cfgRejectV0OnITSib);
+    fPCMPhotonCut.SetV0PtRange(pcmcuts.minPtV0, pcmcuts.maxPtV0);
+    fPCMPhotonCut.SetV0EtaRange(pcmcuts.minEtaV0, pcmcuts.maxEtaV0);
+    fPCMPhotonCut.SetMinCosPA(pcmcuts.minCosPA);
+    fPCMPhotonCut.SetMaxPCA(pcmcuts.maxPCA);
+    fPCMPhotonCut.SetMaxChi2KF(pcmcuts.maxChi2KF);
+    fPCMPhotonCut.SetRxyRange(pcmcuts.minRV0, pcmcuts.maxRV0);
+    fPCMPhotonCut.SetAPRange(pcmcuts.maxAlphaAP, pcmcuts.maxQtAP);
+    fPCMPhotonCut.RejectITSib(pcmcuts.rejectV0onITSib);
 
     // for track
-    fPCMPhotonCut.SetMinNClustersTPC(pcmcuts.cfgMinNClusterTPC);
-    fPCMPhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfgMinNCrossedRows);
-    fPCMPhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    fPCMPhotonCut.SetMaxFracSharedClustersTPC(pcmcuts.cfgMaxFracSharedClusterTPC);
-    fPCMPhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfgMaxChi2TPC);
-    fPCMPhotonCut.SetTPCNsigmaElRange(pcmcuts.cfgMinTPCNSigmaEl, pcmcuts.cfgMaxTPCNSigmaEl);
-    fPCMPhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfgMaxChi2ITS);
-    fPCMPhotonCut.SetNClustersITS(0, 7);
-    fPCMPhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
-    fPCMPhotonCut.SetDisableITSonly(pcmcuts.cfgDisableITSOnly);
-    fPCMPhotonCut.SetDisableTPConly(pcmcuts.cfgDisableTPCOnly);
-    fPCMPhotonCut.SetRequireITSTPC(pcmcuts.cfgRequireV0WithITSTPC);
-    fPCMPhotonCut.SetRequireITSonly(pcmcuts.cfgRequireV0WithITSonly);
-    fPCMPhotonCut.SetRequireTPConly(pcmcuts.cfgRequireV0WithTPConly);
+    fPCMPhotonCut.SetMinNClustersTPC(pcmcuts.minNClusterTPC);
+    fPCMPhotonCut.SetMinNCrossedRowsTPC(pcmcuts.minNCrossedRowsTPC);
+    fPCMPhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(pcmcuts.minNCrossedRowsOverFindableClustersTPC);
+    fPCMPhotonCut.SetMaxFracSharedClustersTPC(pcmcuts.maxFracSharedClustersTPC);
+    fPCMPhotonCut.SetChi2PerClusterTPC(0.f, pcmcuts.macChi2TPC);
+    fPCMPhotonCut.SetTPCNsigmaElRange(pcmcuts.minTPCNSigmaEl, pcmcuts.maxTPCNSigmaEl);
+    fPCMPhotonCut.SetChi2PerClusterITS(0.f, pcmcuts.macChi2ITS);
+    fPCMPhotonCut.SetNClustersITS(pcmcuts.minNClusterITS, 7);
+    fPCMPhotonCut.SetMeanClusterSizeITSob(pcmcuts.minMeanClusterSizeITSob, pcmcuts.maxMeanClusterSizeITSob);
+    fPCMPhotonCut.SetDisableITSonly(pcmcuts.disableITSOnly);
+    fPCMPhotonCut.SetDisableTPConly(pcmcuts.disableTPCOnly);
+    fPCMPhotonCut.SetRequireITSTPC(pcmcuts.requireV0WithITSTPC);
+    fPCMPhotonCut.SetRequireITSonly(pcmcuts.requireV0WithITSOnly);
+    fPCMPhotonCut.SetRequireTPConly(pcmcuts.requireV0WithTPCOnly);
   }
 
   void init(InitContext&)
@@ -666,7 +670,7 @@ struct CalibTaskEmc {
         if (photon.globalIndex() == ig2) {
           continue;
         }
-        if (!(fPCMPhotonCut.IsSelected<aod::V0Legs>(photon))) {
+        if (!(fPCMPhotonCut.IsSelected<decltype(photon), aod::V0Legs>(photon))) {
           continue;
         }
         ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
@@ -692,10 +696,14 @@ struct CalibTaskEmc {
   }
 
   // EMCal calibration same event
-  void processEMCalCalib(Colls const& collisions, EMCalPhotons const& clusters, PCMPhotons const&)
+  void processEMCalCalib(Colls const& collisions, EMCalPhotons const& clusters, PCMPhotons const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     float energyCorrectionFactor = 1.f;
     int nColl = 1;
+
+    EMBitFlags emcFlags(clusters.size());
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+
     for (const auto& collision : collisions) {
       auto photonsPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
@@ -731,7 +739,7 @@ struct CalibTaskEmc {
         }
       }
       for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
+        if (!(emcFlags.test(g1.globalIndex())) || !(emcFlags.test(g2.globalIndex()))) {
           continue;
         }
 
@@ -798,10 +806,14 @@ struct CalibTaskEmc {
   PROCESS_SWITCH(CalibTaskEmc, processEMCalCalib, "Process EMCal calibration same event", true);
 
   // EMCal calibration
-  void processEMCalPCMCalib(Colls const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&)
+  void processEMCalPCMCalib(Colls const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     float energyCorrectionFactor = 1.f;
     int nColl = 1;
+
+    EMBitFlags emcFlags(clusters.size());
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+
     for (const auto& collision : collisions) {
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
       if (!(fEMEventCut.IsSelected(collision))) {
@@ -839,7 +851,7 @@ struct CalibTaskEmc {
         }
       }
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonsEMCPerCollision, photonsPCMPerCollision))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fPCMPhotonCut.IsSelected<aod::V0Legs>(g2))) {
+        if (!(emcFlags.test(g1.globalIndex())) || !(fPCMPhotonCut.IsSelected<decltype(g2), aod::V0Legs>(g2))) {
           continue;
         }
 
@@ -901,9 +913,11 @@ struct CalibTaskEmc {
   PROCESS_SWITCH(CalibTaskEmc, processEMCalPCMCalib, "Process EMCal calibration using PCM-EMC same event", true);
 
   // EMCal calibration mixed event
-  void processEMCalCalibMixed(Colls const&, EMCalPhotons const&, PCMPhotons const&)
+  void processEMCalCalibMixed(Colls const&, EMCalPhotons const& clusters, PCMPhotons const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     float energyCorrectionFactor = 1.f;
+    EMBitFlags emcFlags(clusters.size());
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
 
     SameKindPair<Colls, EMCalPhotons, BinningType> pair{binningOnPositions, mixingConfig.cfgMixingDepth, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
@@ -926,7 +940,7 @@ struct CalibTaskEmc {
         runBefore = runNow;
       }
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(clusters1, clusters2))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
+        if (!(emcFlags.test(g1.globalIndex())) || !(emcFlags.test(g2.globalIndex()))) {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
@@ -980,11 +994,11 @@ struct CalibTaskEmc {
   PROCESS_SWITCH(CalibTaskEmc, processEMCalCalibMixed, "Process EMCal calibration mixed event", false);
 
   // EMCal calibration
-  void processEMCalPCMCalibMixed(Colls const&, EMCalPhotons const&, PCMPhotons const&, aod::V0Legs const&)
+  void processEMCalPCMCalibMixed(Colls const&, EMCalPhotons const& clusters, PCMPhotons const&, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     float energyCorrectionFactor = 1.f;
-
-    LOG(info) << "Beginning of processEMCalPCMCalibMixed";
+    EMBitFlags emcFlags(clusters.size());
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
 
     for (const auto& [c1, photonEMC, c2, photonPCM] : pairPCMEMC) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
@@ -1005,7 +1019,7 @@ struct CalibTaskEmc {
         runBefore = runNow;
       }
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonEMC, photonPCM))) {
-        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fPCMPhotonCut.IsSelected<aod::V0Legs>(g2))) {
+        if (!(emcFlags.test(g1.globalIndex())) || !(fPCMPhotonCut.IsSelected<decltype(g2), aod::V0Legs>(g2))) {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used

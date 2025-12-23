@@ -133,11 +133,6 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hLSEHCorrel", "Sparse for Delta phi and Delta eta Like sign Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hTpcTofNSigmaVsPt", " TPC and TOF nSigma info vs pt; n#sigma; n#sigma;#it{pt} (GeV/#it{c});", {HistType::kTH3F, {{axisNSigma}, {axisNSigma}, {axisPt}}});
-
-    // After electron selection Information
-    registry.add("hTofNSigmaVsPt", " TOF nSigma info vs pt; n#sigma;#it{pt} (GeV/#it{c});", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
-    registry.add("hTpcNSigmaVsPt", " TPC nSigma info vs pt; n#sigma;#it{pt} (GeV/#it{c});", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
 
     registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
@@ -231,17 +226,7 @@ struct HfCorrelatorHfeHadrons {
       if (eTrack.isEmcal() && requireEmcal) {
         acceptElectron = true;
       } else if (!eTrack.isEmcal() && !requireEmcal) {
-
-        registry.fill(HIST("hTpcTofNSigmaVsPt"), eTrack.tofNSigmaElTrack(), eTrack.tpcNSigmaElTrack(), eTrack.ptTrack());
-
-        // After electron selection Information
-        if (std::abs(eTrack.tofNSigmaElTrack()) < tofNSigmaEl && eTrack.tpcNSigmaElTrack() > tpcNsigmaElectronMin &&
-            eTrack.tpcNSigmaElTrack() < tpcNsigmaElectronMax) {
-
-          registry.fill(HIST("hTofNSigmaVsPt"), eTrack.tofNSigmaElTrack(), eTrack.ptTrack());
-          registry.fill(HIST("hTpcNSigmaVsPt"), eTrack.tpcNSigmaElTrack(), eTrack.ptTrack());
-          acceptElectron = true;
-        }
+        acceptElectron = true;
       }
 
       if (!acceptElectron) {
@@ -251,31 +236,33 @@ struct HfCorrelatorHfeHadrons {
       registry.fill(HIST("hptElectron"), ptElectron);
       int nElectronLS = 0;
       int nElectronUS = 0;
-      float massLike = 0;
-      float massUnLike = 0;
-      if (eTrack.nElPairLS() > 0) {
-        for (int i = 0; i < eTrack.nElPairLS(); ++i) {
-          massLike = eTrack.invariantMassEE();
+
+      auto spanLS = eTrack.lSMassEE();
+      auto spanUS = eTrack.uLSMassEE();
+
+      if (!spanLS.empty()) {
+        for (size_t i = 0; i < spanLS.size(); ++i) {
+          float massLike = spanLS[i]; // <-- access i-th element
 
           registry.fill(HIST("hLSElectronBin"), poolBin);
           registry.fill(HIST("hLikeMass"), massLike);
+          registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
 
           if (massLike <= invMassEEMax) {
             ++nElectronLS;
-            registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
           }
         }
       }
-      if (eTrack.nElPairUS() > 0) {
-        for (int i = 0; i < eTrack.nElPairUS(); ++i) {
-          massUnLike = eTrack.invariantMassEE();
+      if (!spanUS.empty()) {
+        for (size_t i = 0; i < spanUS.size(); ++i) {
+          float massUnLike = spanUS[i]; // <-- access i-th element
 
           registry.fill(HIST("hULSElectronBin"), poolBin);
           registry.fill(HIST("hUnLikeMass"), massUnLike);
+          registry.fill(HIST("hUnLikeSignPt"), eTrack.ptTrack());
 
           if (massUnLike <= invMassEEMax) {
             ++nElectronUS;
-            registry.fill(HIST("hLikeSignPt"), eTrack.ptTrack());
           }
         }
       }
@@ -309,18 +296,15 @@ struct HfCorrelatorHfeHadrons {
         int nElHadUSCorr = 0;
         if (eTrack.nElPairLS() > 0) {
           for (int i = 0; i < eTrack.nElPairLS(); ++i) {
-            if (eTrack.invariantMassEE() <= invMassEEMax) {
-              ++nElHadLSCorr;
-              registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-            }
+            ++nElHadLSCorr;
+            registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
           }
         }
         if (eTrack.nElPairUS() > 0) {
           for (int i = 0; i < eTrack.nElPairUS(); ++i) {
-            if (eTrack.invariantMassEE() <= invMassEEMax) {
-              registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-              ++nElHadUSCorr;
-            }
+
+            registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
+            ++nElHadUSCorr;
           }
         }
         entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, nElHadLSCorr, nElHadUSCorr);

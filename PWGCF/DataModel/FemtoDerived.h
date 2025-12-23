@@ -112,7 +112,7 @@ enum ParticleType {
   kCascadeV0,
   kCascadeV0Child,
   kCascadeBachelor,             //! Bachelor track of a cascade
-  kCharmHadron,                 //! Bachelor track of a cascade
+  kCharmHadron3Prong,           //! Charm 3prong Candidates
   kReso,                        //! Resonances (phi)
   kResoChild,                   // Child track of a Resonance
   kResoPosdaughTPC_NegdaughTPC, // cases for Phi-daughters for TPC or TOF combinations
@@ -131,7 +131,9 @@ enum ParticleType {
   kOmegaV0,
   kOmegaV0Child,
   kOmegaBachelor,
-  kNParticleTypes //! Number of particle types
+  kCharmHadron2Prong, //! Charm 2prong Candidates
+  kCharmHadronDstar,  //! Charm Dstar Candidates
+  kNParticleTypes     //! Number of particle types
 };
 
 enum MomentumType {
@@ -140,9 +142,9 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF", "ResoKStarPosdaughTPC_NegdaughTPC", "ResoKStarPosdaughTPC_NegdaughTOF", "ResoKStarPosdaughTOF_NegdaughTPC", "ResoKStarPosdaughTOF_NegdaughTOF", "V0K0Short", "V0K0ShortChild", "ResoKStarChild", "ResoKStar", "Omega", "OmegaV0", "OmegaV0Child", "OmegaBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron3Prong", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF", "ResoKStarPosdaughTPC_NegdaughTPC", "ResoKStarPosdaughTPC_NegdaughTOF", "ResoKStarPosdaughTOF_NegdaughTPC", "ResoKStarPosdaughTOF_NegdaughTOF", "V0K0Short", "V0K0ShortChild", "ResoKStarChild", "ResoKStar", "Omega", "OmegaV0", "OmegaV0Child", "OmegaBachelor", "CharmHadron2Prong", "CharmHadronDstar"}; //! Naming of the different particle types
 
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -239,12 +241,6 @@ DECLARE_SOA_COLUMN(MOmega, mOmega, float);                   //! The invariant m
 namespace fdhf
 {
 
-enum CharmHadronMassHypo {
-  wrongParticle = 0,
-  lcToPKPi = 1,
-  lcToPiKP = 2,
-  dplusToPiKPi = 4
-};
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                   //! Global index for the collision
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);               //! Timestamp for the collision
 DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);                     //! VertexZ for the collision
@@ -277,6 +273,7 @@ DECLARE_SOA_COLUMN(Kstar, kstar, float);                         //! Relative mo
 DECLARE_SOA_COLUMN(KT, kT, float);                               //! kT distribution of particle pairs
 DECLARE_SOA_COLUMN(MT, mT, float);                               //! Transverse mass distribution
 DECLARE_SOA_COLUMN(CharmM, charmM, float);                       //! Charm hadron mass
+DECLARE_SOA_COLUMN(CharmDaughM, charmDaughM, float);             //! Charm hadron daughter mass
 DECLARE_SOA_COLUMN(CharmTrkM, charmtrkM, float);                 //! Charm hadron track mass
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                     //! Transverse momentum of charm hadron for result task
 DECLARE_SOA_COLUMN(CharmEta, charmEta, float);                   //! Eta of charm hadron for result task
@@ -320,7 +317,82 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                            
 
 } // namespace fdhf
 
-DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived data for charm hadron candidates
+namespace fdhf_2prong
+{
+
+DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, const std::array<double, 2>& m) -> float { return RecoDecay::m(std::array{
+                                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1)},
+                                                                                                                                                                   m); }); //! Charm hadron mass
+DECLARE_SOA_DYNAMIC_COLUMN(P, p,                                                                                                                                                                                                                                                 //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1) -> float { return RecoDecay::p(RecoDecay::pVec(
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1))); }); //! Momentum of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                                                                                                                                                                                                                 //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1) -> float { return RecoDecay::pt(RecoDecay::pVec(
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1))); }); //! Transverse momentum of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,                                                                                                                                                                                                                //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1) -> float { return RecoDecay::phi(RecoDecay::pVec(
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1))); }); //! Phi distribution of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y,                                                                                                                                                                                                                     //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1) -> float { return RecoDecay::y(RecoDecay::pVec(
+                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1)),
+                                                                                                                                   o2::constants::physics::MassD0); }); //! Rapidity distribution of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                                                                                                                                                                                                                               //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1) -> float { return RecoDecay::eta(RecoDecay::pVec(
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                 RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1))); }); //! Eta distribution of charm hadron
+
+} // namespace fdhf_2prong
+
+namespace fdhf_dstar
+{
+DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{
+                                                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2)},
+                                                                                                                                                                                                      m); }); //! Charm hadron mass
+
+DECLARE_SOA_DYNAMIC_COLUMN(MDaughD0, mDaughD0, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, const std::array<double, 2>& m) -> float { return RecoDecay::m(std::array{
+                                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1)},
+                                                                                                                                                                   m); }); //! Charm hadron mass
+
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::p(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); }); //! Momentum of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                                                                                                                                                                                                                                                                                                 //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::pt(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); }); //! Transverse momentum of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,                                                                                                                                                                                                                                                                                                //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::phi(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); }); //! Phi distribution of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y,                                                                                                                                                                                                                                                                                                     //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::y(RecoDecay::pVec(
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2)),
+                                                                                                                                                                      o2::constants::physics::MassLambdaCPlus); }); //! Rapidity distribution of charm hadron
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                                                                                                                                                                                                                                                                                                                        //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::eta(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); }); //! Eta distribution of charm hadron
+} // namespace fdhf_dstar
+
+DECLARE_SOA_TABLE(FDHfCand3Prong, "AOD", "FDHFCAND3PRONG", //! Table to store the derived data for charm 3prong candidates
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
                   fdhf::TimeStamp,
@@ -348,7 +420,60 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived da
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDHfPairs, "AOD", "FDHFPAIRS", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDHfCand2Prong, "AOD", "FDHFCAND2PRONG", //! Table to store the derived data for charm 3prong candidates
+                  o2::soa::Index<>,
+                  femtodreamparticle::FDCollisionId,
+                  fdhf::TimeStamp,
+                  fdhf::Charge,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong0Pt,
+                  fdhf::Prong1Pt,
+                  fdhf::Prong0Eta,
+                  fdhf::Prong1Eta,
+                  fdhf::Prong0Phi,
+                  fdhf::Prong1Phi,
+                  fdhf::CandidateSelFlag,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf_2prong::M<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>,
+                  fdhf_2prong::P<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>,
+                  fdhf_2prong::Y<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>,
+                  fdhf_2prong::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>,
+                  fdhf_2prong::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>,
+                  fdhf_2prong::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>);
+
+DECLARE_SOA_TABLE(FDHfCandDstar, "AOD", "FDHFCANDDSTAR", //! Table to store the derived data for charm dstar candidates
+                  o2::soa::Index<>,
+                  femtodreamparticle::FDCollisionId,
+                  fdhf::TimeStamp,
+                  fdhf::Charge,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong2Id,
+                  fdhf::Prong0Pt,
+                  fdhf::Prong1Pt,
+                  fdhf::Prong2Pt,
+                  fdhf::Prong0Eta,
+                  fdhf::Prong1Eta,
+                  fdhf::Prong2Eta,
+                  fdhf::Prong0Phi,
+                  fdhf::Prong1Phi,
+                  fdhf::Prong2Phi,
+                  fdhf::CandidateSelFlag,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf_dstar::M<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf_dstar::MDaughD0<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>,
+                  fdhf_dstar::P<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf_dstar::Y<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf_dstar::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf_dstar::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf_dstar::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
+
+DECLARE_SOA_TABLE(FDHfCharmTrkPairs, "AOD", "FDHFCHARMTRKPAIRS", //! table to store results for HF femtoscopy
                   fdhf::CharmM,
                   fdhf::CharmPt,
                   fdhf::TrkPt,
@@ -367,10 +492,40 @@ DECLARE_SOA_TABLE(FDHfPairs, "AOD", "FDHFPAIRS", //! table to store results for 
                   fdhf::FlagMc,
                   fdhf::OriginMcRec);
 
-DECLARE_SOA_TABLE(FDHfCharm, "AOD", "FDHFCHARM", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDHfCharm3Prong, "AOD", "FDHFCHARM3PRONG", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
                   fdhf::CharmM,
+                  fdhf::CharmPt,
+                  fdhf::CharmEta,
+                  fdhf::CharmPhi,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong2Id,
+                  fdhf::Charge,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD);
+
+DECLARE_SOA_TABLE(FDHfCharm2Prong, "AOD", "FDHFCHARM2PRONG", //! table to store results for HF femtoscopy
+                  fdhf::GIndexCol,
+                  fdhf::TimeStamp,
+                  fdhf::CharmM,
+                  fdhf::CharmPt,
+                  fdhf::CharmEta,
+                  fdhf::CharmPhi,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Charge,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD);
+
+DECLARE_SOA_TABLE(FDHfCharmDstar, "AOD", "FDHFCHARMDSTAR", //! table to store results for HF femtoscopy
+                  fdhf::GIndexCol,
+                  fdhf::TimeStamp,
+                  fdhf::CharmM,
+                  fdhf::CharmDaughM,
                   fdhf::CharmPt,
                   fdhf::CharmEta,
                   fdhf::CharmPhi,
@@ -390,6 +545,22 @@ DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF f
                   fdhf::TrkPhi,
                   fdhf::TrackId,
                   femtodreamparticle::Sign,
+                  femtodreamparticle::TPCNClsFound,
+                  track::TPCNClsFindable,
+                  femtodreamparticle::TPCNClsCrossedRows,
+                  femtodreamparticle::TPCNSigmaPr,
+                  femtodreamparticle::TOFNSigmaPr);
+
+DECLARE_SOA_TABLE(FDHfV0, "AOD", "FDHFV0", //! table to store results for HF femtoscopy
+                  fdhf::GIndexCol,
+                  fdhf::TimeStamp,
+                  femtodreamparticle::Pt,
+                  femtodreamparticle::Eta,
+                  femtodreamparticle::Phi,
+                  femtodreamparticle::ChildrenIds,
+                  femtodreamparticle::PartType,
+                  femtodreamparticle::MLambda,
+                  femtodreamparticle::MAntiLambda,
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtodreamparticle::TPCNClsCrossedRows,

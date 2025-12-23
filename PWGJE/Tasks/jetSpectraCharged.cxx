@@ -44,8 +44,6 @@ struct JetSpectraCharged {
   using JetBkgRhoMcCollisions = soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>;
   using ChargedMCDMatchedJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
   using ChargedMCPMatchedJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
-  using ChargedMCDMatchedJetsWeighted = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>;
-  using ChargedMCPMatchedJetsWeighted = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights>;
 
   HistogramRegistry registry;
 
@@ -890,7 +888,7 @@ struct JetSpectraCharged {
   PROCESS_SWITCH(JetSpectraCharged, processSpectraAreaSubMCD, "jet spectra with rho-area subtraction for MCD", false);
 
   void processSpectraMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision,
-                                 soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets,
+                                 soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
                                  aod::JetTracks const&)
   {
     bool fillHistograms = false;
@@ -910,14 +908,13 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      float jetweight = jet.eventWeight();
-      fillJetHistograms(jet, centrality, jetweight);
+      fillJetHistograms(jet, centrality, eventWeight);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraMCDWeighted, "jet finder QA mcd with weighted events", false);
 
   void processSpectraAreaSubMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
-                                        soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets,
+                                        soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
                                         aod::JetTracks const&)
   {
     bool fillHistograms = false;
@@ -937,8 +934,7 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      float jetweight = jet.eventWeight();
-      fillJetAreaSubHistograms(jet, centrality, collision.rho(), jetweight);
+      fillJetAreaSubHistograms(jet, centrality, collision.rho(), eventWeight);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraAreaSubMCDWeighted, "jet spectra with rho-area subtraction for MCD", false);
@@ -1052,7 +1048,7 @@ struct JetSpectraCharged {
 
   void processCrossSectionEfficiencyWeighted(aod::JetMcCollisions::iterator const& mccollision,
                                              soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                                             soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights> const& jets,
+                                             soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
                                              aod::JetParticles const&)
   {
     bool mcLevelIsParticleLevel = true;
@@ -1091,6 +1087,7 @@ struct JetSpectraCharged {
       }
     }
 
+    float eventWeight = mccollision.weight();
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1098,38 +1095,37 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
-      float jetweight = jet.eventWeight();
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 1.0, jetweight); // INEL
+      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 1.0, eventWeight); // INEL
 
       if (!passesZvtxCut) {
         continue;
       }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 2.0, jetweight); // zvtx
+      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 2.0, eventWeight); // zvtx
 
       if (!hasRecoColl) {
         continue;
       }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 3.0, jetweight); // noRecoColl
+      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 3.0, eventWeight); // noRecoColl
 
       if (!passesSplitCollCut) {
         continue;
       }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 4.0, jetweight); // splitColl
+      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 4.0, eventWeight); // splitColl
 
       if (!hasSel8Coll) {
         continue;
       }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 5.0, jetweight); // recoEvtSel
+      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 5.0, eventWeight); // recoEvtSel
 
       if (!centralityIsGood) {
         continue;
       }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 6.0, jetweight); // centralitycut
+      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 6.0, eventWeight); // centralitycut
 
       if (!occupancyIsGood) {
         continue;
       }
-      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 7.0, jetweight); // occupancycut
+      registry.fill(HIST("h2_jet_pt_part_eventselection"), jet.pt(), 7.0, eventWeight); // occupancycut
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processCrossSectionEfficiencyWeighted, "jet spectra QC for MC particle level with step-by-step cuts (weighted)", false);
@@ -1160,7 +1156,7 @@ struct JetSpectraCharged {
 
   void processSpectraMCPWeighted(soa::Filtered<aod::JetMcCollisions>::iterator const& mccollision,
                                  soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                                 soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights> const& jets,
+                                 soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
                                  aod::JetParticles const&)
   {
     bool mcLevelIsParticleLevel = true;
@@ -1179,22 +1175,21 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
-      float jetweight = jet.eventWeight();
-      double pTHat = 10. / (std::pow(jetweight, 1.0 / pTHatExponent));
+      double pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       int Nmax = 21;
       for (int N = 1; N < Nmax; N++) {
         if (jet.pt() < N * 0.25 * pTHat && jet.r() == round(selectedJetsRadius * 100.0f)) {
-          registry.fill(HIST("h2_jet_ptcut_part"), jet.pt(), N * 0.25, jetweight);
+          registry.fill(HIST("h2_jet_ptcut_part"), jet.pt(), N * 0.25, eventWeight);
         }
       }
-      fillMCPHistograms(jet, jetweight);
+      fillMCPHistograms(jet, eventWeight);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraMCPWeighted, "jet spectra for MC particle level weighted", false);
 
   void processSpectraAreaSubMCPWeighted(soa::Filtered<JetBkgRhoMcCollisions>::iterator const& mccollision,
                                         soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
-                                        soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights> const& jets,
+                                        soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
                                         aod::JetParticles const&)
   {
     bool mcLevelIsParticleLevel = true;
@@ -1214,8 +1209,7 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
-      float jetweight = jet.eventWeight();
-      fillMCPAreaSubHistograms(jet, mccollision.rho(), jetweight);
+      fillMCPAreaSubHistograms(jet, mccollision.rho(), eventWeight);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraAreaSubMCPWeighted, "jet spectra with area-based subtraction for MC particle level", false);
@@ -1285,8 +1279,8 @@ struct JetSpectraCharged {
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatched, "matched mcp and mcd jets", false);
 
   void processJetsMatchedWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision,
-                                  ChargedMCDMatchedJetsWeighted const& mcdjets,
-                                  ChargedMCPMatchedJetsWeighted const&,
+                                  ChargedMCDMatchedJets const& mcdjets,
+                                  ChargedMCPMatchedJets const&,
                                   aod::JetTracks const&, aod::JetParticles const&)
   {
     bool fillHistograms = false;
@@ -1300,7 +1294,7 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillMatchedHistograms<ChargedMCDMatchedJetsWeighted::iterator, ChargedMCPMatchedJetsWeighted>(mcdjet, mcdjet.eventWeight());
+      fillMatchedHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, eventWeight);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedWeighted, "matched mcp and mcd jets with weighted events", false);
@@ -1328,8 +1322,8 @@ struct JetSpectraCharged {
 
   void processJetsMatchedAreaSubWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
                                          JetBkgRhoMcCollisions const&,
-                                         ChargedMCDMatchedJetsWeighted const& mcdjets,
-                                         ChargedMCPMatchedJetsWeighted const&,
+                                         ChargedMCDMatchedJets const& mcdjets,
+                                         ChargedMCPMatchedJets const&,
                                          aod::JetTracks const&, aod::JetParticles const&)
   {
     bool fillHistograms = false;
@@ -1345,7 +1339,7 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillGeoMatchedAreaSubHistograms<ChargedMCDMatchedJetsWeighted::iterator, ChargedMCPMatchedJetsWeighted>(mcdjet, collision.rho(), mcrho, eventWeight);
+      fillGeoMatchedAreaSubHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, collision.rho(), mcrho, eventWeight);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedAreaSubWeighted, "matched mcp and mcd jets after area-based pt subtraction with weighted events", false);
