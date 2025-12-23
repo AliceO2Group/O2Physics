@@ -329,12 +329,6 @@ void runMassFitter(const std::string& configFileName)
   TH1* hSecondSigmaToFix = getHistToFix(fixSecondSigma, fixSecondSigmaManual, secondSigmaFile, "SecSigma");
   TH1* hFracDoubleGausToFix = getHistToFix(fixFracDoubleGaus, fixFracDoubleGausManual, fracDoubleGausFile, "FracDoubleGaus");
 
-  // fit histograms
-
-  std::vector<TH1*> hMassForFit(nSliceVarBins);
-  std::vector<TH1*> hMassForRefl(nSliceVarBins);
-  std::vector<TH1*> hMassForSgn(nSliceVarBins);
-
   int canvasSize[2] = {1920, 1080};
   if (nSliceVarBins == 1) {
     canvasSize[0] = 500;
@@ -367,22 +361,22 @@ void runMassFitter(const std::string& configFileName)
   for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     const int iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
-    hMassForFit[iSliceVar] = hMass[iSliceVar]->Rebin(nRebin[iSliceVar]);
+    hMass[iSliceVar]->Rebin(nRebin[iSliceVar]);
     TString const ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
-    hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
-                                          ptTitle.Data(), massAxisTitle.c_str(),
-                                          hMassForFit[iSliceVar]->GetBinWidth(1) * 1000));
-    hMassForFit[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
+    hMass[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
+                                    ptTitle.Data(), massAxisTitle.c_str(),
+                                    hMass[iSliceVar]->GetBinWidth(1) * 1000));
+    hMass[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
 
     if (enableRefl) {
-      hMassForRefl[iSliceVar] = hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]);
-      hMassForSgn[iSliceVar] = hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]);
+      hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]);
+      hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]);
     }
 
     double reflOverSgn = 0;
 
-    HFInvMassFitter* massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
+    HFInvMassFitter* massFitter = new HFInvMassFitter(hMass[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
     massFitter->setDrawBgPrefit(drawBgPrefit);
     massFitter->setHighlightPeakRegion(highlightPeakRegion);
     massFitter->setInitialGaussianMean(massPDG);
@@ -413,8 +407,8 @@ void runMassFitter(const std::string& configFileName)
     setFixedValue(fixFracDoubleGaus, fixFracDoubleGausManual, hFracDoubleGausToFix, std::bind(&HFInvMassFitter::setFixFrac2Gaus, massFitter, std::placeholders::_1), "FRAC DOUBLE GAUS");
 
     if (!isMc && enableRefl) {
-      reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
-      reflOverSgn = hMassForRefl[iSliceVar]->Integral(hMassForRefl[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForRefl[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgn;
+      reflOverSgn = hMassSgn[iSliceVar]->Integral(hMassSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
+      reflOverSgn = hMassRefl[iSliceVar]->Integral(hMassRefl[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassRefl[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgn;
       massFitter->setFixReflOverSgn(reflOverSgn);
       massFitter->setTemplateReflections(hMassRefl[iSliceVar]);
     }
