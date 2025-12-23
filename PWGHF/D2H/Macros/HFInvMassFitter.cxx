@@ -54,7 +54,7 @@
 
 using namespace RooFit;
 
-HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit,
+HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                  double minValue,
                                  double maxValue,
                                  int fitTypeBkg,
@@ -130,7 +130,8 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit,
                                                    mHighlightPeakRegion(false)
 {
   // standard constructor
-  mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
+  mHistoInvMass = histoToFit;
+  mHistoInvMass->SetName("mHistoInvMass");
   mHistoInvMass->SetDirectory(nullptr);
 }
 

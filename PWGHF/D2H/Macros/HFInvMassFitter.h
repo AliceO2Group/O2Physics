@@ -68,14 +68,12 @@ class HFInvMassFitter : public TNamed
   };
   std::array<std::string, NTypesOfReflPdf> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
   HFInvMassFitter() = delete;
-  HFInvMassFitter(const TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg = Expo, int fitTypeSgn = SingleGaus);
+  HFInvMassFitter(TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg = Expo, int fitTypeSgn = SingleGaus);
   ~HFInvMassFitter() override;
-  void setHistogramForFit(const TH1* histoToFit)
+  void setHistogramForFit(TH1* histoToFit)
   {
-
     delete mHistoInvMass;
-
-    mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
+    mHistoInvMass = histoToFit;
     mHistoInvMass->SetDirectory(nullptr);
   }
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
@@ -190,13 +188,14 @@ class HFInvMassFitter : public TNamed
     setInitialReflOverSgn(reflOverSgn);
     mFixReflOverSgn = true;
   }
-  void setTemplateReflections(const TH1* histoRefl)
+  void setTemplateReflections(TH1* histoRefl)
   {
     if (histoRefl == nullptr) {
       mEnableReflections = false;
       return;
     }
-    mHistoTemplateRefl = dynamic_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
+    mHistoTemplateRefl = histoRefl;
+    mHistoTemplateRefl->SetName("mHistoTemplateRefl");
   }
   void setDrawBgPrefit(bool value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(bool value = true) { mHighlightPeakRegion = value; }
