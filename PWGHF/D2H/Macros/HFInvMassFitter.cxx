@@ -228,11 +228,10 @@ void HFInvMassFitter::doFit()
     mBkgPdf->plotOn(frameTemporary, Range("SBL", true), Name("Bkg_sidebands"));
     mChiSquareOverNdfBkg = frameTemporary->chiSquare("Bkg_sidebands", "data_for_bkgchi2"); // calculate reduced chi2 / NDF of background sidebands (pre-fit)
     delete frameTemporary;
-    RooAbsPdf* mBkgPdfPrefit{nullptr};
     if (mDrawBgPrefit) {
-      mBkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
-      mBkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), LineColor(kGray));
-      delete mBkgPdfPrefit;
+      RooAbsPdf* bkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
+      bkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), LineColor(kGray));
+      delete bkgPdfPrefit;
     }
 
     // estimate signal yield
