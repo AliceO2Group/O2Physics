@@ -47,6 +47,7 @@
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
+#include <TVector2.h>
 
 #include <algorithm>
 #include <array>
@@ -101,7 +102,7 @@ struct HigherMassResonances {
     Configurable<bool> isapplyPairRapidityRec{"isapplyPairRapidityRec", false, "Apply pair rapidity cut on reconstructed mother (after already applying rapidity cut on generated mother)"};
     Configurable<bool> isapplyPairRapidityGen{"isapplyPairRapidityGen", false, "Apply pair rapidity cut on generated mother (before applying rapidity cut on reconstructed mother)"};
     Configurable<int> cSelectMultEstimator{"cSelectMultEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
-    Configurable<int> configOccCut{"configOccCut", 1000, "Occupancy cut"};
+    // Configurable<int> configOccCut{"configOccCut", 1000, "Occupancy cut"};
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
     Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "No collision in time range standard"};
     Configurable<bool> isSel8{"isSel8", false, "Event Selection 8"};
@@ -109,19 +110,20 @@ struct HigherMassResonances {
     // Configurables for event selection
     // Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
     Configurable<bool> isTriggerTVX{"isTriggerTVX", false, "TriggerTVX"};
-    Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", false, "IsGoodZvtxFT0vsPV"};
-    Configurable<bool> isApplyOccCut{"isApplyOccCut", true, "Apply occupancy cut"};
+    // Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", false, "IsGoodZvtxFT0vsPV"};
+    // Configurable<bool> isApplyOccCut{"isApplyOccCut", true, "Apply occupancy cut"};
     Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
-    Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", true, "kNoSameBunchPileup"};
+    // Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", true, "kNoSameBunchPileup"};
     Configurable<bool> isAllLayersGoodITS{"isAllLayersGoodITS", true, "Require all ITS layers to be good"};
     Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", true, "kNoTimeFrameBorder"};
     Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", true, "kNoITSROFrameBorder"};
 
     // Configurable parameters for V0 selection
+    Configurable<float> cMaxDeltaM{"cMaxDeltaM", 0.01f, "Sqrt((m1-mPDG)^2 + (m2-mPDG)^2) < cMaxDeltaM)"};
     Configurable<float> confV0DCADaughMax{"confV0DCADaughMax", 1.0f, "DCA b/w V0 daughters"};
-    Configurable<float> v0settingDcapostopv{"v0settingDcapostopv", 0.06, "DCA Pos To PV"};
-    Configurable<float> v0settingDcanegtopv{"v0settingDcanegtopv", 0.06, "DCA Neg To PV"};
+    Configurable<float> v0DCApostoPV{"v0DCApostoPV", 0.06, "DCA Pos To PV"};
+    Configurable<float> v0DCAnegtoPV{"v0DCAnegtoPV", 0.06, "DCA Neg To PV"};
     Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.5, "DCA V0 to PV"};
     Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
     Configurable<float> confV0CPAMin{"confV0CPAMin", 0.97f, "Minimum CPA of V0"};
@@ -137,7 +139,7 @@ struct HigherMassResonances {
     Configurable<float> confKsrapidity{"confKsrapidity", 0.5f, "Rapidity cut on K0s"};
     Configurable<float> angSepCut{"angSepCut", 0.01f, "Angular separation cut"};
     Configurable<bool> isapplyAngSepCut{"isapplyAngSepCut", false, "Apply angular separation cut"};
-    Configurable<bool> isStandardV0{"isStandardV0", false, "Standard V0 selection"};
+    // Configurable<bool> isStandardV0{"isStandardV0", false, "Standard V0 selection"};
     Configurable<bool> isApplyEtaCutK0s{"isApplyEtaCutK0s", false, "Apply eta cut on K0s daughters"};
     Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
 
@@ -147,9 +149,8 @@ struct HigherMassResonances {
     ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 5., 10., 30., 50., 70., 100., 110., 150.}, "Binning of the centrality axis"};
 
     // Configurable for MC
-    Configurable<bool> isMC{"isMC", false, "Is MC"};
+    // Configurable<bool> isMC{"isMC", false, "Is MC"};
     Configurable<bool> isallGenCollisions{"isallGenCollisions", true, "To fill all generated collisions for the signal loss calculations"};
-    Configurable<bool> iscTVXEvsel{"iscTVXEvsel", true, "Triggger selection"};
     Configurable<bool> isavoidsplitrackMC{"isavoidsplitrackMC", false, "avoid split track in MC"};
     Configurable<bool> isapplyRapidityMC{"isapplyRapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
     Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500), 5: f2(1270)"};
@@ -324,7 +325,7 @@ struct HigherMassResonances {
     if (config.qAv0) {
       // Invariant Mass
       rKzeroShort.add("hMassK0Shortbefore", "hMassK0Shortbefore", kTHnSparseF, {k0ShortMassAxis, ptAxis});
-      rKzeroShort.add("hMasscorrelationbefore", "hMasscorrelationbefore", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
+      rKzeroShort.add("hK0ShortMassCorr", "hK0ShortMassCorr", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
       rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", kTHnSparseF, {k0ShortMassAxis, ptAxis});
       // Topological histograms (after the selection)
       rKzeroShort.add("hDCAV0Daughters", "DCA between v0 daughters", {HistType::kTH1F, {{60, -3.0f, 3.0f}}});
@@ -343,7 +344,7 @@ struct HigherMassResonances {
     }
 
     // For MC
-    if (config.isMC) {
+    if (doprocessGen || doprocessRec) {
       hMChists.add("Genf1710", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Genf17102", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Recf1710_pt1", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
@@ -394,8 +395,8 @@ struct HigherMassResonances {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 4);
 
-    if (config.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
-      return false;
+    // if (config.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
+    //   return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 5);
 
@@ -407,8 +408,8 @@ struct HigherMassResonances {
     // if (config.isNoCollInTimeRangeStandard && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
     //   return false;
 
-    if (config.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > config.configOccCut))
-      return false;
+    // if (config.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > config.configOccCut))
+    //   return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 7);
 
@@ -422,8 +423,8 @@ struct HigherMassResonances {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 9);
 
-    if (config.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
-      return false;
+    // if (config.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+    //   return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 10);
 
@@ -526,9 +527,9 @@ struct HigherMassResonances {
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
     }
 
-    if (config.isStandardV0 && candidate.v0Type() != 1) {
-      return false; // Only standard V0s are selected
-    }
+    // if (config.isStandardV0 && candidate.v0Type() != 1) {
+    //   return false; // Only standard V0s are selected
+    // }
     rEventSelection.fill(HIST("htrackscheck_v0"), 10.5);
 
     if (candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
@@ -604,6 +605,13 @@ struct HigherMassResonances {
     return true;
   }
 
+  double deltaM(double m1, double m2)
+  {
+    const double d1 = m1 - o2::constants::physics::MassK0Short;
+    const double d2 = m2 - o2::constants::physics::MassK0Short;
+    return std::sqrt(d1 * d1 + d2 * d2);
+  }
+
   using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
   using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
   // using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
@@ -671,7 +679,9 @@ struct HigherMassResonances {
     phi1 = candidate1.phi();
     phi2 = candidate2.phi();
 
-    double angle = std::sqrt(std::pow(eta1 - eta2, 2) + std::pow(phi1 - phi2, 2));
+    const double dphi = TVector2::Phi_mpi_pi(phi1 - phi2);
+    const double deta = eta1 - eta2;
+    double angle = std::sqrt(dphi * dphi + deta * deta);
     if (config.qAv0) {
       rKzeroShort.fill(HIST("angularSeparation"), angle);
     }
@@ -687,7 +697,7 @@ struct HigherMassResonances {
   Filter acceptenceFilter = (nabs(aod::track::eta) < config.cfgETAcut && nabs(aod::track::pt) > config.cfgPTcut);
 
   // Filters on V0s
-  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > config.v0settingDcapostopv && nabs(aod::v0data::dcanegtopv) > config.v0settingDcanegtopv);
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > config.v0DCApostoPV && nabs(aod::v0data::dcanegtopv) > config.v0DCAnegtoPV);
 
   // Defining the type of the daughter tracks
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>>;
@@ -1002,15 +1012,21 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (config.qAv0) {
-        rKzeroShort.fill(HIST("hMasscorrelationbefore"), v1.mK0Short(), v2.mK0Short());
-      }
       allConditionsMet = 1;
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
       daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
       mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
+
+      if (config.qAv0) {
+        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short());
+      }
+
+      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
+      if (deltaMass > config.cMaxDeltaM) {
+        continue;
+      }
 
       if (!config.isselectTWOKsOnly)
         fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
@@ -1129,9 +1145,9 @@ struct HigherMassResonances {
 
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
-    if (config.isMC == false) {
-      return;
-    }
+    // if (config.isMC == false) {
+    //   return;
+    // }
     hMChists.fill(HIST("events_check"), 0.5);
 
     std::vector<int64_t> selectedEvents(collisions.size());
@@ -1240,9 +1256,9 @@ struct HigherMassResonances {
   std::vector<int> gindex1, gindex2;
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const&, V0TrackCandidatesMC const& V0s, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
   {
-    if (config.isMC == false) {
-      return;
-    }
+    // if (config.isMC == false) {
+    //   return;
+    // }
 
     auto multiplicity = -999.0;
     if (config.cSelectMultEstimator == kFT0M) {
@@ -1392,6 +1408,11 @@ struct HigherMassResonances {
 
             auto helicityRec2 = mother1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(mother1.Vect().Mag2()));
 
+            // const double deltaMassRec = deltaM(mctrackv01.mK0Short(), mctrackv02.mK0Short());
+            // if (deltaMassRec > config.cMaxDeltaM) {
+            //   continue;
+            // }
+
             hMChists.fill(HIST("Recf1710_pt1"), multiplicity, mothertrack1.pt(), mother1.M(), helicityRec2);
             hMChists.fill(HIST("RecRapidity"), mothertrack1.y());
             hMChists.fill(HIST("RecPhi"), mothertrack1.phi());
@@ -1470,15 +1491,21 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (config.qAv0) {
-        rKzeroShort.fill(HIST("hMasscorrelationbefore"), v1.mK0Short(), v2.mK0Short());
-      }
       allConditionsMet = 1;
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
       daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
       mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
+
+      if (config.qAv0) {
+        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short());
+      }
+
+      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
+      if (deltaMass > config.cMaxDeltaM) {
+        continue;
+      }
 
       if (!config.isselectTWOKsOnly)
         fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
