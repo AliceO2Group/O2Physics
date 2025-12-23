@@ -845,15 +845,17 @@ void HFInvMassFitter::setReflFuncFixed()
       fracRefl->setConstant(true);
     } break;
     case Poly3Refl: {
-      std::array<RooRealVar*, 4> polyReflParam{nullptr};
-      for (int iPar = 0; iPar < 4; ++iPar) {
+      constexpr int NParsPoly3{4};
+      std::array<RooRealVar*, NParsPoly3> polyReflParam{nullptr};
+      for (int iPar = 0; iPar < NParsPoly3; ++iPar) {
         polyReflParam.at(iPar) = mWorkspace->var(Form("polyReflParam%d", iPar));
         polyReflParam.at(iPar)->setConstant(true);
       }
     } break;
     case Poly6Refl: {
-      std::array<RooRealVar*, 6> polyReflParam{nullptr};
-      for (int iPar = 0; iPar < 6; ++iPar) {
+      constexpr int NParsPoly6{7};
+      std::array<RooRealVar*, NParsPoly6> polyReflParam{nullptr};
+      for (int iPar = 0; iPar < NParsPoly6; ++iPar) {
         polyReflParam.at(iPar) = mWorkspace->var(Form("polyReflParam%d", iPar));
         polyReflParam.at(iPar)->setConstant(true);
       }
