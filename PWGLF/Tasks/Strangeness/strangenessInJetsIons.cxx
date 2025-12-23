@@ -125,8 +125,8 @@ struct StrangenessInJetsIons {
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
 
   // Event selection
-  Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
-  Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
+  Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection"};
 
   // Track analysis parameters
   Configurable<int> minITSnCls{"minITSnCls", 4, "Minimum number of ITS clusters"};
@@ -134,12 +134,12 @@ struct StrangenessInJetsIons {
   Configurable<double> maxChi2TPC{"maxChi2TPC", 4.0f, "Maximum chi2 per cluster TPC"};
   Configurable<double> etaMin{"etaMin", -0.8f, "Minimum eta"};
   Configurable<double> etaMax{"etaMax", +0.8f, "Maximum eta"};
-  Configurable<double> ptMinV0Proton{"ptMinV0Proton", 0.3f, "Minimum pt of protons from V0"};
-  Configurable<double> ptMaxV0Proton{"ptMaxV0Proton", 10.0f, "Maximum pt of protons from V0"};
-  Configurable<double> ptMinV0Pion{"ptMinV0Pion", 0.1f, "Minimum pt of pions from V0"};
-  Configurable<double> ptMaxV0Pion{"ptMaxV0Pion", 1.5f, "Maximum pt of pions from V0"};
-  Configurable<double> ptMinK0Pion{"ptMinK0Pion", 0.3f, "Minimum pt of pions from K0"};
-  Configurable<double> ptMaxK0Pion{"ptMaxK0Pion", 10.0f, "Maximum pt of pions from K0"};
+  Configurable<double> ptMinV0Proton{"ptMinV0Proton", 0.0f, "Minimum pt of protons from V0"};
+  Configurable<double> ptMaxV0Proton{"ptMaxV0Proton", 100.0f, "Maximum pt of protons from V0"};
+  Configurable<double> ptMinV0Pion{"ptMinV0Pion", 0.0f, "Minimum pt of pions from V0"};
+  Configurable<double> ptMaxV0Pion{"ptMaxV0Pion", 100.0f, "Maximum pt of pions from V0"};
+  Configurable<double> ptMinK0Pion{"ptMinK0Pion", 0.0f, "Minimum pt of pions from K0"};
+  Configurable<double> ptMaxK0Pion{"ptMaxK0Pion", 100.0f, "Maximum pt of pions from K0"};
   Configurable<double> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
   Configurable<double> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
   Configurable<double> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
@@ -158,7 +158,7 @@ struct StrangenessInJetsIons {
   Configurable<double> dcaNegToPVminK0s{"dcaNegToPVminK0s", 0.1f, "Minimum DCA of negative track to primary vertex in K0S decays (cm)"};
   Configurable<double> dcaPosToPVminK0s{"dcaPosToPVminK0s", 0.1f, "Minimum DCA of positive track to primary vertex in K0S decays (cm)"};
   Configurable<bool> requireArmenterosCut{"requireArmenterosCut", true, "Require Armenteros Cut"};
-  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 2.0f, "Parameter Armenteros Cut (K0S only). This parameters multiplies qtarm"};
+  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter Armenteros Cut (K0S only). This parameters multiplies alphaArm (Check if: qtarm >= this * |alphaArm|)"};
   Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0S (cm)"};
   // Lambda/anti-Lambda paramaters
   Configurable<double> dcaProtonToPVmin{"dcaProtonToPVmin", 0.05f, "Minimum DCA of proton/anti-proton track to primary vertex in Lambda/anti-Lambda decays (cm)"};
@@ -214,6 +214,8 @@ struct StrangenessInJetsIons {
     const AxisSpec nsigmaTOFAxis{longLivedOptions.longLivedBinsNsigma, "n#sigma_{TOF}"};
     const AxisSpec nsigmaTPCAxis{longLivedOptions.longLivedBinsNsigma, "n#sigma_{TPC}"};
     const AxisSpec dcaAxis{longLivedOptions.longLivedBinsDca, "DCA_{xy} (cm)"};
+    const AxisSpec alphaArmAxis{1000, -1.0f, 1.0f, "#alpha^{arm}"};
+    const AxisSpec qtarmAxis{1000, 0.0f, 0.30f, "q_{T}^{arm}"};
 
     // Join enum ParticleOfInterest and the configurable vector particlesOfInterest in a map particleOfInterestDict
     const std::vector<int>& particleOnOff = particleOfInterest;
@@ -249,6 +251,9 @@ struct StrangenessInJetsIons {
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(7, "No empty events");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(8, "At least one jet");
+
+      // Armenteros-Podolanski plot
+      registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
       // Histograms for analysis of strange hadrons
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -346,6 +351,9 @@ struct StrangenessInJetsIons {
 
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, -0.5, 100.5, "Multiplicity percentile"}});
+
+      // Armenteros-Podolanski plot
+      registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -710,10 +718,6 @@ struct StrangenessInJetsIons {
     if (pionNeg.Pt() < ptMinK0Pion || pionNeg.Pt() > ptMaxK0Pion)
       return false;
 
-    // Armenteros-Podolanski cut
-    if (std::abs(v0.alpha()) >= (paramArmenterosCut * v0.qtarm()) && (requireArmenterosCut))
-      return false;
-
     // V0 selections
     if (v0.v0cosPA() < v0cospaMin)
       return false;
@@ -727,6 +731,11 @@ struct StrangenessInJetsIons {
       return false;
     if (std::fabs(v0.dcanegtopv()) < dcaNegToPVminK0s)
       return false;
+
+    // Armenteros-Podolanski cut
+    if (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())) && (requireArmenterosCut))
+      return false;
+
     if (v0.v0Type() != v0type && requireV0type) {
       registryQC.fill(HIST("V0_type"), v0.v0Type());
       return false;
@@ -1007,10 +1016,10 @@ struct StrangenessInJetsIons {
     if (std::fabs(recoColl.posZ()) > zVtx)
       return false;
 
-    if (isApplySameBunchPileup && !recoColl.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    if (requireNoSameBunchPileup && !recoColl.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
       return false;
 
-    if (isApplyGoodZvtxFT0vsPV && !recoColl.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (requireGoodZvtxFT0vsPV && !recoColl.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
 
     return true;
@@ -1053,14 +1062,14 @@ struct StrangenessInJetsIons {
     registryData.fill(HIST("number_of_events_data"), 3.5);
 
     // Reject collisions associated to the same found BC
-    if (isApplySameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    if (requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
       return;
 
     // Fill event counter after selection kNoSameBunchPileup
     registryData.fill(HIST("number_of_events_data"), 4.5);
 
     // Compatible z_vtx from FT0 and from PV
-    if (isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (requireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return;
 
     // Fill event counter after selection kIsGoodZvtxFT0vsPV
@@ -1159,6 +1168,9 @@ struct StrangenessInJetsIons {
 
           // Vertex position vector
           TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
+          // Fill Armenteros-Podolanski TH2
+          registryQC.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
 
           // K0s
           if (passedK0ShortSelection(v0, pos, neg, vtxPos)) {
@@ -1642,14 +1654,14 @@ struct StrangenessInJetsIons {
       registryMC.fill(HIST("number_of_events_mc_rec"), 2.5);
 
       // Reject collisions associated to the same found BC
-      if (isApplySameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      if (requireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
         continue;
 
       // Fill event counter after selection kNoSameBunchPileup
       registryMC.fill(HIST("number_of_events_mc_rec"), 3.5);
 
       // Compatible z_vtx from FT0 and from PV
-      if (isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (requireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
 
       // Fill event counter after selection kIsGoodZvtxFT0vsPV
@@ -1765,6 +1777,9 @@ struct StrangenessInJetsIons {
 
             // Vertex position vector
             TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
+            // Fill Armenteros-Podolanski TH2
+            registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
 
             // K0s
             if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short && isPhysPrim) {
