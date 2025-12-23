@@ -68,8 +68,6 @@ T readJsonField(const Document& config, const std::string& fieldName);
 template <typename T>
 void readJsonVector(std::vector<T>& vec, const Document& config, const std::string& fieldName, bool isRequired = false);
 
-void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName);
-
 void divideCanvas(TCanvas* c, int nSliceVarBins);
 
 void setHistoStyle(TH1* histo, Color_t color = kBlack, Size_t markerSize = 1);
@@ -155,8 +153,8 @@ void runMassFitter(const std::string& configFileName)
   readJsonVector(sgnFunc, config, "SgnFunc", true);
 
   const bool enableRefl = readJsonField<bool>(config, "EnableRefl", false);
-  const bool drawBgPrefit = readJsonField<bool>(config, "drawBgPrefit", true);
-  const bool highlightPeakRegion = readJsonField<bool>(config, "highlightPeakRegion", true);
+  const bool drawBgPrefit = readJsonField<bool>(config, "DrawBgPrefit", true);
+  const bool highlightPeakRegion = readJsonField<bool>(config, "HighlightPeakRegion", true);
 
   const int nSliceVarBins = static_cast<int>(sliceVarMin.size());
   std::vector<double> sliceVarLimits(nSliceVarBins + 1);
@@ -229,10 +227,7 @@ void runMassFitter(const std::string& configFileName)
   // load inv-mass histograms
   auto* inputFile = openFileWithNullptrCheck(inputFileName);
 
-  TFile* inputFileRefl = nullptr;
-  if (enableRefl) {
-    inputFileRefl = openFileWithNullptrCheck(reflFileName);
-  }
+  TFile* inputFileRefl = enableRefl ? openFileWithNullptrCheck(reflFileName) : nullptr;
 
   std::vector<TH1*> hMassSgn(nSliceVarBins);
   std::vector<TH1*> hMassRefl(nSliceVarBins);
@@ -630,24 +625,6 @@ void readJsonVector(std::vector<T>& vec, const Document& config, const std::stri
   } else if (isRequired) {
     throw std::runtime_error("readJsonVector(): missing required field " + fieldName);
   }
-}
-
-void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName)
-{
-  if (!vec.empty()) {
-    throw std::runtime_error("readJsonVectorHistogram(): vector is not empty!");
-  }
-  const auto fileName = readJsonField<std::string>(config, fileNameFieldName);
-  const auto histoName = readJsonField<std::string>(config, histoNameFieldName);
-  if (fileName.empty() || histoName.empty()) {
-    return;
-  }
-  TFile* inputFile = openFileWithNullptrCheck(fileName);
-  TH1* histo = getObjectWithNullPtrCheck<TH1>(inputFile, histoName);
-  for (int iBin = 1; iBin <= histo->GetNbinsX(); iBin++) {
-    vec.push_back(histo->GetBinContent(iBin));
-  }
-  inputFile->Close();
 }
 
 int main(int argc, const char* argv[])
