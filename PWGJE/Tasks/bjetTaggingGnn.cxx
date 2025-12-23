@@ -20,10 +20,10 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetTagging.h"
 
-#include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
+#include "Common/DataModel/EventSelection.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoA.h"
@@ -46,62 +46,70 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace BjetTaggingGnnEvtSel {
-  enum class EvtSelFlag : uint8_t {
-    kNone = 0,
-    kINEL = 1 << 0,
-    kColl = 1 << 1,
-    kTVX = 1 << 2,
-    kNoTFB = 1 << 3,
-    kNoITSROFB = 1 << 4,
-    kZvtx = 1 << 5,
-    kINELgt0 = 1 << 6,
-    kINELgt0rec = 1 << 7,
-    
-    INEL = kINEL,
-    INELZvtx = kINEL | kZvtx,
-    Coll = kINEL | kColl,
-    CollZvtx = kINEL | kColl | kZvtx,
-    TVX = kINEL | kColl | kTVX,
-    TVXZvtx = kINEL | kColl | kTVX | kZvtx,
-    SelMC = kINEL | kColl | kTVX | kNoTFB,
-    SelMCZvtx = kINEL | kColl | kTVX | kNoTFB | kZvtx,
-    Sel8 = kINEL | kColl | kTVX | kNoTFB | kNoITSROFB,
-    Sel8Zvtx = kINEL | kColl | kTVX | kNoTFB | kNoITSROFB | kZvtx,
-    INELgt0 = kINEL | kZvtx | kINELgt0,
-    INELgt0rec = kINEL | kZvtx | kColl | kTVX | kNoTFB | kNoITSROFB | kINELgt0rec
-  };
-  constexpr EvtSelFlag operator|(EvtSelFlag a, EvtSelFlag b)
-  {
-    return static_cast<EvtSelFlag>(
-      static_cast<uint8_t>(a) | static_cast<uint8_t>(b)
-    );
-  }
-  constexpr EvtSelFlag operator|=(EvtSelFlag& a, EvtSelFlag b)
-  {
-    return a = a | b;
-  }
-  constexpr EvtSelFlag operator&(EvtSelFlag a, EvtSelFlag b)
-  {
-    return static_cast<EvtSelFlag>(
-      static_cast<uint8_t>(a) & static_cast<uint8_t>(b)
-    );
-  }
-  constexpr bool hasAll(EvtSelFlag value, EvtSelFlag required)
-  {
-    return (value & required) == required;
-  }
-  constexpr bool hasAny(EvtSelFlag value, EvtSelFlag mask)
-  {
-    return (value & mask) != EvtSelFlag::kNone;
-  }
-  enum class EvtSel {
-    None,
-    INEL, INELZvtx, Coll, CollZvtx, TVX,
-    TVXZvtx, SelMC, SelMCZvtx, Sel8, Sel8Zvtx,
-    INELgt0, INELgt0rec
-  };
+namespace BjetTaggingGnnEvtSel
+{
+enum class EvtSelFlag : uint8_t {
+  kNone = 0,
+  kINEL = 1 << 0,
+  kColl = 1 << 1,
+  kTVX = 1 << 2,
+  kNoTFB = 1 << 3,
+  kNoITSROFB = 1 << 4,
+  kZvtx = 1 << 5,
+  kINELgt0 = 1 << 6,
+  kINELgt0rec = 1 << 7,
+
+  INEL = kINEL,
+  INELZvtx = kINEL | kZvtx,
+  Coll = kINEL | kColl,
+  CollZvtx = kINEL | kColl | kZvtx,
+  TVX = kINEL | kColl | kTVX,
+  TVXZvtx = kINEL | kColl | kTVX | kZvtx,
+  SelMC = kINEL | kColl | kTVX | kNoTFB,
+  SelMCZvtx = kINEL | kColl | kTVX | kNoTFB | kZvtx,
+  Sel8 = kINEL | kColl | kTVX | kNoTFB | kNoITSROFB,
+  Sel8Zvtx = kINEL | kColl | kTVX | kNoTFB | kNoITSROFB | kZvtx,
+  INELgt0 = kINEL | kZvtx | kINELgt0,
+  INELgt0rec = kINEL | kZvtx | kColl | kTVX | kNoTFB | kNoITSROFB | kINELgt0rec
 };
+constexpr EvtSelFlag operator|(EvtSelFlag a, EvtSelFlag b)
+{
+  return static_cast<EvtSelFlag>(
+    static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+}
+constexpr EvtSelFlag operator|=(EvtSelFlag& a, EvtSelFlag b)
+{
+  return a = a | b;
+}
+constexpr EvtSelFlag operator&(EvtSelFlag a, EvtSelFlag b)
+{
+  return static_cast<EvtSelFlag>(
+    static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+}
+constexpr bool hasAll(EvtSelFlag value, EvtSelFlag required)
+{
+  return (value & required) == required;
+}
+constexpr bool hasAny(EvtSelFlag value, EvtSelFlag mask)
+{
+  return (value & mask) != EvtSelFlag::kNone;
+}
+enum class EvtSel {
+  None,
+  INEL,
+  INELZvtx,
+  Coll,
+  CollZvtx,
+  TVX,
+  TVXZvtx,
+  SelMC,
+  SelMCZvtx,
+  Sel8,
+  Sel8Zvtx,
+  INELgt0,
+  INELgt0rec
+};
+}; // namespace BjetTaggingGnnEvtSel
 using namespace BjetTaggingGnnEvtSel;
 
 struct BjetTaggingGnn {
@@ -860,7 +868,7 @@ struct BjetTaggingGnn {
       if (isMatched) {
         registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_selmc"), analysisJet.pt(), mcpjetpT, hasAll(evtselCode, EvtSelFlag::SelMCZvtx) ? weightEvt : 0.0);
         registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_sel8"), analysisJet.pt(), mcpjetpT, hasAll(evtselCode, EvtSelFlag::Sel8Zvtx) ? weightEvt : 0.0);
-        registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_inelgt0"), analysisJet.pt(), mcpjetpT, isTrueINELgt0 &&(hasAll(evtselCode, EvtSelFlag::INELgt0rec)) ? weightEvt : 0.0);
+        registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_inelgt0"), analysisJet.pt(), mcpjetpT, isTrueINELgt0 && (hasAll(evtselCode, EvtSelFlag::INELgt0rec)) ? weightEvt : 0.0);
       }
       if (jetFlavor == JetTaggingSpecies::beauty) {
         registry.fill(HIST("h_jetpT_b_coll"), analysisJet.pt(), hasAll(evtselCode, EvtSelFlag::Coll) ? weightEvt : 0.0);

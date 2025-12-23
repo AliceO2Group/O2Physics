@@ -23,9 +23,9 @@
 #include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <cmath>
 #include <utility>
 #include <vector>
 
