@@ -184,6 +184,8 @@ struct JetDerivedDataProducerTask {
   std::vector<float> amplitudesFDDA;
   std::vector<float> amplitudesFDDC;
 
+  std::vector<bool> trackWeightedMCSelection;
+
   std::vector<uint32_t> bcRctMapping;
 
   ctpRateFetcher rateFetcher;
@@ -213,9 +215,11 @@ struct JetDerivedDataProducerTask {
     upcCuts.SetFITAmpLimits({config.upcMaxFV0AAmplitude, config.upcMaxFT0AAmplitude, config.upcMaxFT0CAmplitude, config.upcMaxFDDAAmplitude, config.upcMaxFDDCAmplitude});
   }
 
-  void processClearMaps(aod::Collisions const& collisions)
+  void processClearMaps(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
     trackCollisionMapping.clear();
+    trackWeightedMCSelection.clear();
+    trackWeightedMCSelection.resize(tracks.size(), true);
     if (!doprocessMcCollisionLabels) {
       for (int i = 0; i < collisions.size(); i++) {
         products.jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none); // fill a dummy weights table if not MC
@@ -371,9 +375,29 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutCentralityAndMultiplicityAndXsection, "produces derived MC collision table without centrality, multiplicity and cross section information", false);
 
+  void processTrackSelectionForWeightedMC(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, soa::Join<aod::Collisions, aod::McCollisionLabels> const&, aod::McCollisions const& mcCollisions, aod::McParticles const&)
+  {
+    if (mcCollisions.iteratorAt(0).getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap || mcCollisions.iteratorAt(1).getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+
+      for (auto const& track : tracks) {
+        if (track.has_collision()) {
+          auto const& trackCollision = track.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+          if (track.has_mcParticle() && trackCollision.has_mcCollision()) {
+            auto const& trackMcCollision = trackCollision.mcCollision_as<aod::McCollisions>();
+            auto const& particleMcCollision = track.mcParticle().mcCollision_as<aod::McCollisions>();
+            if (trackMcCollision.globalIndex() != particleMcCollision.globalIndex() && trackMcCollision.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap && particleMcCollision.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+              trackWeightedMCSelection[track.globalIndex()] = false;
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processTrackSelectionForWeightedMC, "select whether tracks should be dropped in weighted productions", false);
+
   void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track, aod::Collisions const&)
   {
-    products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), config.dcaZMax));
+    products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), config.dcaZMax, trackWeightedMCSelection[track.globalIndex()]));
     auto trackParCov = getTrackParCov(track);
     auto xyzTrack = trackParCov.getXYZGlo();
     float sigmaDCAXYZ2;
@@ -401,7 +425,7 @@ struct JetDerivedDataProducerTask {
         auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::TrackSelectionExtension>>();
         auto trackParCov = getTrackParCov(track);
         if (track.collisionId() == collision.globalIndex()) {
-          products.jTracksTable(collision.globalIndex(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), config.dcaZMax));
+          products.jTracksTable(collision.globalIndex(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), config.dcaZMax, trackWeightedMCSelection[track.globalIndex()]));
           products.jTracksParentIndexTable(track.globalIndex());
           auto xyzTrack = trackParCov.getXYZGlo();
           float sigmaDCAXYZ2;
@@ -416,7 +440,7 @@ struct JetDerivedDataProducerTask {
           collisionInfo.setPos({collision.posX(), collision.posY(), collision.posZ()});
           collisionInfo.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
           o2::base::Propagator::Instance()->propagateToDCABxByBz(collisionInfo, trackParCov, 2.f, noMatCorr, &dcaCovInfo);
-          products.jTracksTable(collision.globalIndex(), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), jetderiveddatautilities::setTrackSelectionBit(track, dcaCovInfo.getZ(), config.dcaZMax)); // only qualitytracksWDCA are a reliable selection
+          products.jTracksTable(collision.globalIndex(), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), jetderiveddatautilities::setTrackSelectionBit(track, dcaCovInfo.getZ(), config.dcaZMax, trackWeightedMCSelection[track.globalIndex()])); // only qualitytracksWDCA are a reliable selection
           products.jTracksParentIndexTable(track.globalIndex());
           auto xyzTrack = trackParCov.getXYZGlo();
           float dcaXY = dcaCovInfo.getY();
@@ -442,7 +466,7 @@ struct JetDerivedDataProducerTask {
   void processTracksRun2(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track)
   {
     // TracksDCACov table is not yet available for Run 2 converted data. Remove this process function and use only processTracks when that becomes available.
-    products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), config.dcaZMax));
+    products.jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track, track.dcaZ(), config.dcaZMax, trackWeightedMCSelection[track.globalIndex()]));
     float sigmaDCAXYZ2 = 0.0;
     float dcaXYZ = getDcaXYZ(track, &sigmaDCAXYZ2);
     float dcaX = -99.0;
