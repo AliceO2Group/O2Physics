@@ -25,6 +25,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cmath>
 #include <utility>
 #include <vector>
 
@@ -364,14 +365,14 @@ class GNNBjetAllocator : public TensorAllocator
   template <typename T>
   T jetFeatureTransform(T feat, int idx) const
   {
-    return (feat - tfJetMean[idx]) / tfJetStdev[idx];
+    return std::tanh((feat - tfJetMean[idx]) / tfJetStdev[idx]);
   }
 
   // Track feature normalization
   template <typename T>
   T trkFeatureTransform(T feat, int idx) const
   {
-    return (feat - tfTrkMean[idx]) / tfTrkStdev[idx];
+    return std::tanh((feat - tfTrkMean[idx]) / tfTrkStdev[idx]);
   }
 
   // Edge input of GNN (fully-connected graph)
