@@ -1151,7 +1151,7 @@ struct OnTheFlyTracker {
             nV0SiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
             nV0TPCHits[i] = fastTracker[icfg]->GetNGasPoints();
 
-            if (nV0Hits[i] < 0) { // QA
+            if (nV0Hits[i] < 0 && v0DecaySettings.doV0QA) { // QA
               fillHist(TH1, Form("V0Building_Configuration_%i/hFastTrackerQA", icfg), o2::math_utils::abs(nV0Hits[i]));
             }
 
@@ -1160,7 +1160,7 @@ struct OnTheFlyTracker {
             } else {
               continue; // extra sure
             }
-            for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits(); ih++) {
+            for (uint32_t ih = 0; ih < fastTracker[icfg]->GetNHits() && v0DecaySettings.doV0QA; ih++) {
               fillHist(TH2, Form("V0Building_Configuration_%i/hFastTrackerHits", icfg), fastTracker[icfg]->GetHitZ(ih), std::hypot(fastTracker[icfg]->GetHitX(ih), fastTracker[icfg]->GetHitY(ih)));
             }
           } else {
