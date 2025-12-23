@@ -58,6 +58,10 @@ o2physics_add_dpl_workflow(photon-charged-trigger-producer
                     SOURCES photonChargedTriggerProducer.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(hadron-photon-correlation
+										SOURCES hadronPhotonCorrelation.cxx
+										PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+										COMPONENT_NAME Analysis)
 
 if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-background-analysis
@@ -354,17 +358,4 @@ if(FastJet_FOUND)
                         SOURCES substructureDebug.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-endif()
-
-if(pythia_FOUND)
-  if(TARGET ROOT::EGPythia8)
-    set_target_properties(ROOT::EGPythia8 PROPERTIES
-        INTERFACE_LINK_LIBRARIES "ROOT::Core;ROOT::EG;ROOT::Graf;ROOT::Physics;${pythia_LIBRARY_SHARED}"
-    )
-
-    o2physics_add_dpl_workflow(hadron-photon-correlation
-                        SOURCES hadronPhotonCorrelation.cxx
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EGPythia8
-                        COMPONENT_NAME Analysis)
-  endif()
 endif()

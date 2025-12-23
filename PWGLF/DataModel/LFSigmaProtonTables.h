@@ -32,6 +32,7 @@ namespace sigmaproton
 {
 DECLARE_SOA_COLUMN(ChargeSigma, chargeSigma, int);   //! Charge of the sigma candidate
 DECLARE_SOA_COLUMN(SigmaDecRad, sigmaDecRad, float); //! Decay radius of the Sigma candidate
+DECLARE_SOA_COLUMN(SigmaCosPA, sigmaCosPA, float);   //! Cosine of pointing angle of the Sigma candidate
 DECLARE_SOA_COLUMN(ChargePr, chargePr, int);         //! Charge of the proton candidate
 DECLARE_SOA_COLUMN(PxPr, pxPr, float);               //! Px of the proton candidate
 DECLARE_SOA_COLUMN(PyPr, pyPr, float);               //! Py of the proton candidate
@@ -49,14 +50,14 @@ DECLARE_SOA_COLUMN(PrPDG, prPDG, int);             //! PDG code of the proton ca
 DECLARE_SOA_TABLE(SigmaProtonCands, "AOD", "SIGMAPROTONCANDS",
                   o2::soa::Index<>,
                   sigmaproton::ChargeSigma, kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth,
-                  kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug, sigmaproton::SigmaDecRad,
+                  kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug, sigmaproton::SigmaDecRad, sigmaproton::SigmaCosPA,
                   sigmaproton::ChargePr, sigmaproton::PxPr, sigmaproton::PyPr, sigmaproton::PzPr,
                   sigmaproton::NSigmaTPCPr, sigmaproton::NSigmaTOFPr);
 
 DECLARE_SOA_TABLE(SigmaProtonMCCands, "AOD", "SIGMAPROTONMCCANDS",
                   o2::soa::Index<>,
                   sigmaproton::ChargeSigma, kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth,
-                  kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug, sigmaproton::SigmaDecRad,
+                  kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug, sigmaproton::SigmaDecRad, sigmaproton::SigmaCosPA,
                   sigmaproton::ChargePr, sigmaproton::PxPr, sigmaproton::PyPr, sigmaproton::PzPr,
                   sigmaproton::NSigmaTPCPr, sigmaproton::NSigmaTOFPr,
                   sigmaproton::SigmaPDG, sigmaproton::DaughterPDG, sigmaproton::PrPDG);

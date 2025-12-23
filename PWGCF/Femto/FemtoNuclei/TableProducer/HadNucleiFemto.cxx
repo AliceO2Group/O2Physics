@@ -199,8 +199,10 @@ struct HadNucleiFemto {
   Configurable<float> settingCutHadDCAxyMin{"settingCutHadDCAxyMin", 0.3f, "DCAxy Min for Had"};
   Configurable<float> settingCutHadDCAzMin{"settingCutHadDCAzMin", 0.3f, "DCAz Min for Had"};
   Configurable<float> settingCutDeDCAzMin{"settingCutDeDCAzMin", 0.2f, "DCAxy Min for De"};
-  Configurable<float> settingCutNsigTPCPrMin{"settingCutNsigTPCPrMin", 3.0f, "Minimum TPC Pr Nsigma cut on Pi"};
-  Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut on Pi"};
+  Configurable<float> settingCutNsigTPCPrMin{"settingCutNsigTPCPrMin", 3.0f, "Minimum TPC Pr Nsigma cut for rejection"};
+  Configurable<float> settingCutNsigTPCPiMin{"settingCutNsigTPCPiMin", 3.0f, "Minimum TPC Pi Nsigma cut for rejection"};
+  Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut for rejection"};
+  Configurable<float> settingCutNsigTOFPiMin{"settingCutNsigTOFPiMin", 3.0f, "Minimum TOF Pi Nsigma cut for rejection"};
 
   Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
@@ -259,6 +261,8 @@ struct HadNucleiFemto {
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
      {"hdcaxyNu", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcaxyHad", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazHad", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
      {"hNClsNuITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
@@ -278,6 +282,7 @@ struct HadNucleiFemto {
      {"hNuPhi", "phi distribution; phi(Nu)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"hHadPhi", "phi distribution; phi(had)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+     {"h2dEdxHadcandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2dEdx", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2NsigmaNuTPC", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaNuComb", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
@@ -306,7 +311,9 @@ struct HadNucleiFemto {
      {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_US_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"h2NsigmaHadPrTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadPiTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadPrTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadPiTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"hisBkgEM", "; isBkgEM;", {HistType::kTH1F, {{3, -1, 2}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -494,13 +501,28 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDKaon(const Ttrack& candidate)
   {
-    if (abs(candidate.dcaXY()) > settingCutHadDCAxyMin || abs(candidate.dcaZ()) > settingCutHadDCAzMin)
+    float DeDCAxyMin = 0.004 + (0.013 / candidate.pt());
+    float DeDCAzMin = 0.004 + (0.013 / candidate.pt());
+    if (abs(candidate.dcaXY()) > DeDCAxyMin || abs(candidate.dcaZ()) > DeDCAzMin)
       return false;
 
     auto tpcNSigmaKa = candidate.tpcNSigmaKa();
     mQaRegistry.fill(HIST("h2NsigmaHadTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaKa);
     if (std::abs(candidate.pt()) < settingCutHadptMin || std::abs(candidate.pt()) > settingCutHadptMax)
       return false;
+
+    // reject protons and pions
+    if (std::abs(candidate.tpcNSigmaPr()) < settingCutNsigTPCPrMin || std::abs(candidate.tpcNSigmaPi()) < settingCutNsigTPCPiMin)
+      return false;
+    mQaRegistry.fill(HIST("h2NsigmaHadPrTPC"), candidate.tpcNSigmaPr());
+    mQaRegistry.fill(HIST("h2NsigmaHadPiTPC"), candidate.tpcNSigmaPi());
+    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < settingCutNsigTOFPrMin)
+      return false;
+    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < settingCutNsigTOFPiMin)
+      return false;
+    mQaRegistry.fill(HIST("h2NsigmaHadPrTOF"), candidate.tofNSigmaPr());
+    mQaRegistry.fill(HIST("h2NsigmaHadPiTOF"), candidate.tofNSigmaPi());
+    // rejection end
 
     if (candidate.hasTOF() && candidate.tpcInnerParam() >= settingCutPinMinTOFHad) {
       auto tofNSigmaKa = candidate.tofNSigmaKa();
@@ -514,12 +536,14 @@ struct HadNucleiFemto {
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaKa);
       mQaRegistry.fill(HIST("h2NsigmaHadTOF"), candidate.sign() * candidate.pt(), tofNSigmaKa);
+      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     } else if (candidate.tpcInnerParam() < settingCutPinMinTOFHad) {
       if (std::abs(tpcNSigmaKa) > settingCutNsigmaTPCHad) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaKa);
+      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     }
     return false;
@@ -562,12 +586,14 @@ struct HadNucleiFemto {
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
       mQaRegistry.fill(HIST("h2NsigmaHadTOF"), candidate.sign() * candidate.pt(), tofNSigmaPi);
       mQaRegistry.fill(HIST("h2NsigmaHadComb"), candidate.sign() * candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     } else if (candidate.tpcInnerParam() < settingCutPinMinTOFHad) {
       if (std::abs(tpcNSigmaPi) > settingCutNsigmaTPCHad) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
     }
     return false;
@@ -1076,6 +1102,8 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hNuHadtInvMass"), hadNucand.invMass);
     mQaRegistry.fill(HIST("hdcaxyNu"), hadNucand.dcaxyNu);
     mQaRegistry.fill(HIST("hdcazNu"), hadNucand.dcazNu);
+    mQaRegistry.fill(HIST("hdcaxyHad"), hadNucand.dcaxyHad);
+    mQaRegistry.fill(HIST("hdcazHad"), hadNucand.dcazHad);
     mQaRegistry.fill(HIST("hdcazNu_min"), (abs(hadNucand.dcazNu) - settingCutDeDCAzMin));
     mQaRegistry.fill(HIST("hNClsNuITS"), hadNucand.nClsItsNu);
     mQaRegistry.fill(HIST("hNClsHadITS"), hadNucand.nClsItsHad);

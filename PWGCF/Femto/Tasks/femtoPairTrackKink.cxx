@@ -101,7 +101,6 @@ struct FemtoPairTrackKink {
     pairhistmanager::PrefixTrackKinkMe,
     closepairrejection::PrefixTrackKinkSe,
     closepairrejection::PrefixTrackKinkMe,
-    modes::Mode::kAnalysis,
     modes::Kink::kSigma>
     pairTrackSigmaBuilder;
 
@@ -113,7 +112,6 @@ struct FemtoPairTrackKink {
     pairhistmanager::PrefixTrackKinkMe,
     closepairrejection::PrefixTrackKinkSe,
     closepairrejection::PrefixTrackKinkMe,
-    modes::Mode::kAnalysis,
     modes::Kink::kSigmaPlus>
     pairTrackSigmaPlusBuilder;
 
@@ -151,14 +149,14 @@ struct FemtoPairTrackKink {
     if (doprocessSigmaSameEvent || doprocessSigmaMixedEvent) {
       auto sigmaHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaBinning);
       auto pairTrackSigmaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackSigmaBuilder.init(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackSigmaHistSpec, cprHistSpec);
+      pairTrackSigmaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackSigmaHistSpec, cprHistSpec);
     }
 
     // setup for sigma plus
     if (doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent) {
       auto sigmaplusHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaPlusBinning);
       auto pairTrackSigmaPlusHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackSigmaPlusBuilder.init(&hRegistry, trackSelection, sigmaPlusSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaplusHistSpec, chaDauSpec, pairTrackSigmaPlusHistSpec, cprHistSpec);
+      pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, sigmaPlusSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaplusHistSpec, chaDauSpec, pairTrackSigmaPlusHistSpec, cprHistSpec);
     }
 
     if (((doprocessSigmaSameEvent || doprocessSigmaMixedEvent) + (doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent)) > 1) {
@@ -168,25 +166,25 @@ struct FemtoPairTrackKink {
 
   void processSigmaSameEvent(FilteredCollision const& col, Tracks const& tracks, Sigmas const& sigmas)
   {
-    pairTrackSigmaBuilder.processSameEvent(col, tracks, trackPartition, sigmas, sigmaPartition, cache);
+    pairTrackSigmaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition, sigmas, sigmaPartition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaSameEvent, "Enable processing same event processing for tracks and sigmas", true);
 
   void processSigmaMixedEvent(FilteredCollisions const& cols, Tracks const& tracks, Sigmas const& /*sigmas*/)
   {
-    pairTrackSigmaBuilder.processMixedEvent(cols, tracks, trackPartition, sigmaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackSigmaBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition, sigmaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaMixedEvent, "Enable processing mixed event processing for tracks and sigmas", true);
   //
   void processSigmaPlusSameEvent(FilteredCollision const& col, Tracks const& tracks, SigmaPlus const& sigmaplus)
   {
-    pairTrackSigmaPlusBuilder.processSameEvent(col, tracks, trackPartition, sigmaplus, sigmaPlusPartition, cache);
+    pairTrackSigmaPlusBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition, sigmaplus, sigmaPlusPartition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusSameEvent, "Enable processing same event processing for tracks and sigma plus", false);
 
   void processSigmaPlusMixedEvent(FilteredCollisions const& cols, Tracks const& tracks, SigmaPlus const& /*sigmaplus*/)
   {
-    pairTrackSigmaPlusBuilder.processMixedEvent(cols, tracks, trackPartition, sigmaPlusPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackSigmaPlusBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition, sigmaPlusPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusMixedEvent, "Enable processing mixed event processing for tracks and sigma plus", false);
 };

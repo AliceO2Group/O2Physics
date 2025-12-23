@@ -164,7 +164,6 @@ template <const char* cascadePrefix,
           const char* bachelorPrefix,
           const char* posDauPrefix,
           const char* negDauPrefix,
-          modes::Mode mode,
           modes::Cascade cascade>
 class CascadeHistManager
 {
@@ -172,6 +171,7 @@ class CascadeHistManager
   CascadeHistManager() = default;
   ~CascadeHistManager() = default;
 
+  template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& BachelorSpecs,
@@ -179,9 +179,9 @@ class CascadeHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
-    mBachelorManager.init(registry, BachelorSpecs);
-    mPosDauManager.init(registry, PosDauSpecs);
-    mNegDauManager.init(registry, NegDauSpecs);
+    mBachelorManager.template init<mode>(registry, BachelorSpecs);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(cascadeSpecs);
     }
@@ -199,7 +199,7 @@ class CascadeHistManager
     mPlot2d = CascadeConfBinningQa.plot2d.value;
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs,
             T1 const& CascadeConfBinningQa,
@@ -211,10 +211,10 @@ class CascadeHistManager
             T4 const& NegDauConfBinningQa)
   {
     enableOptionalHistograms(CascadeConfBinningQa, BachelorConfBinningQa, PosDauConfBinningQa, NegDauConfBinningQa);
-    init(registry, cascadeSpecs, BachelorSpecs, PosDauSpecs, NegDauSpecs);
+    this->template init<mode>(registry, cascadeSpecs, BachelorSpecs, PosDauSpecs, NegDauSpecs);
   }
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& cascadeCandidate, T2 const& tracks)
   {
     // this used to work, still under investigation
@@ -222,11 +222,11 @@ class CascadeHistManager
     // auto posDaughter = cascadeCandidate.template posDau_as<T2>();
     // auto negDaughter = cascadeCandidate.template negDau_as<T2>();
     auto posDaughter = tracks.rawIteratorAt(cascadeCandidate.posDauId() - tracks.offset());
-    mPosDauManager.fill(posDaughter, tracks);
+    mPosDauManager.template fill<mode>(posDaughter, tracks);
     auto negDaughter = tracks.rawIteratorAt(cascadeCandidate.negDauId() - tracks.offset());
-    mNegDauManager.fill(negDaughter, tracks);
+    mNegDauManager.template fill<mode>(negDaughter, tracks);
     auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
-    mBachelorManager.fill(bachelor, tracks);
+    mBachelorManager.template fill<mode>(bachelor, tracks);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       fillAnalysis(cascadeCandidate);
@@ -310,9 +310,9 @@ class CascadeHistManager
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlot2d = true;
-  trackhistmanager::TrackHistManager<bachelorPrefix, mode> mBachelorManager;
-  trackhistmanager::TrackHistManager<posDauPrefix, mode> mPosDauManager;
-  trackhistmanager::TrackHistManager<negDauPrefix, mode> mNegDauManager;
+  trackhistmanager::TrackHistManager<bachelorPrefix> mBachelorManager;
+  trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
+  trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };
 }; // namespace cascadehistmanager
 }; // namespace o2::analysis::femto
