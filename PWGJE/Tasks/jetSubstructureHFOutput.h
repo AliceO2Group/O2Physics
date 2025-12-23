@@ -111,6 +111,9 @@ struct JetSubstructureHFOutputTask {
   std::vector<bool> candidateSelectionFlagsData;
   std::vector<bool> candidateSelectionFlagsMCD;
   std::vector<bool> candidateSelectionFlagsMCP;
+  std::vector<bool> candidateRecoilSelectionFlagsData;
+  std::vector<bool> candidateRecoilSelectionFlagsMCD;
+  std::vector<bool> candidateRecoilSelectionFlagsMCP;
 
   std::vector<std::vector<int32_t>> splittingMatchesGeoVecVecData;
   std::vector<std::vector<int32_t>> splittingMatchesPtVecVecData;
@@ -272,8 +275,8 @@ struct JetSubstructureHFOutputTask {
     }
   }
 
-  template <typename T, typename U, typename V, typename M>
-  void fillJetTables(T const& jet, U const& /*cand*/, int32_t collisionIndex, int32_t candidateIndex, V& jetOutputTable, M& jetSubstructureOutputTable, std::vector<std::vector<int32_t>>& splittingMatchesGeoVecVec, std::vector<std::vector<int32_t>>& splittingMatchesPtVecVec, std::vector<std::vector<int32_t>>& splittingMatchesHFVecVec, std::vector<std::vector<int32_t>>& pairMatchesVecVec, float rho, std::map<int32_t, int32_t>& jetMap)
+  template <typename T, typename U, typename V>
+  void fillJetTables(T const& jet, int32_t collisionIndex, std::vector<int32_t> const& candidatesIndices, U& jetOutputTable, V& jetSubstructureOutputTable, std::vector<std::vector<int32_t>>& splittingMatchesGeoVecVec, std::vector<std::vector<int32_t>>& splittingMatchesPtVecVec, std::vector<std::vector<int32_t>>& splittingMatchesHFVecVec, std::vector<std::vector<int32_t>>& pairMatchesVecVec, float rho, std::map<int32_t, int32_t>& jetMap)
   {
     std::vector<float> energyMotherVec;
     std::vector<float> ptLeadingVec;
@@ -337,7 +340,7 @@ struct JetSubstructureHFOutputTask {
       pairMatchesVec = pairMatchesVecVec[jet.globalIndex()];
     }
 
-    jetOutputTable(collisionIndex, candidateIndex, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.area(), rho, jet.perpConeRho(), jet.tracksIds().size() + jet.candidatesIds().size()); // here we take the decision to keep the collision index consistent with the JE framework in case it is later needed to join to other tables. The candidate Index however can be linked to the HF tables
+    jetOutputTable(collisionIndex, candidatesIndices, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.area(), rho, jet.perpConeRho(), jet.tracksIds().size() + jet.candidatesIds().size()); // here we take the decision to keep the collision index consistent with the JE framework in case it is later needed to join to other tables. The candidate Index however can be linked to the HF tables
     jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2(), pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, jet.angularity(), jet.ptLeadingConstituent(), splittingMatchesGeoVec, splittingMatchesPtVec, splittingMatchesHFVec, pairMatchesVec);
     jetMap.insert(std::make_pair(jet.globalIndex(), jetOutputTable.lastIndex()));
   }
@@ -348,6 +351,7 @@ struct JetSubstructureHFOutputTask {
 
     int nJetInCollision = 0;
     int32_t collisionIndex = -1;
+    float rho = 0.0;
     for (const auto& jet : jets) {
       if (jet.pt() < jetPtMin) {
         continue;
@@ -357,11 +361,13 @@ struct JetSubstructureHFOutputTask {
       }
       for (const auto& jetRadiiValue : jetRadiiValues) {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
-          auto candidate = jet.template candidates_first_as<V>();
-          int32_t candidateIndex = -1;
-          auto candidateTableIndex = candidateMap.find(candidate.globalIndex());
-          if (candidateTableIndex != candidateMap.end()) {
-            candidateIndex = candidateTableIndex->second;
+          std::vector<int32_t> candidatesIndices;
+          for (auto const& candidate : jet.template candidates_as<V>()) {
+            auto candidateTableIndex = candidateMap.find(candidate.globalIndex());
+            if (candidateTableIndex != candidateMap.end()) {
+              candidatesIndices.push_back(candidateTableIndex->second);
+            }
+            rho = candidate.rho();
           }
           if (nJetInCollision == 0) {
             float centrality = -1.0;
@@ -374,7 +380,7 @@ struct JetSubstructureHFOutputTask {
             collisionIndex = collisionOutputTable.lastIndex();
           }
           nJetInCollision++;
-          fillJetTables(jet, candidate, collisionIndex, candidateIndex, jetOutputTable, jetSubstructureOutputTable, splittingMatchesGeoVecVec, splittingMatchesPtVecVec, splittingMatchesHFVecVec, pairMatchesVecVec, candidate.rho(), jetMap);
+          fillJetTables(jet, collisionIndex, candidatesIndices, jetOutputTable, jetSubstructureOutputTable, splittingMatchesGeoVecVec, splittingMatchesPtVecVec, splittingMatchesHFVecVec, pairMatchesVecVec, rho, jetMap);
         }
       }
     }
@@ -406,14 +412,17 @@ struct JetSubstructureHFOutputTask {
   void selectCandidates(T const& jets, U const& /*candidates*/, float jetPtMin, std::vector<bool>& candidateSelectionFlags)
   {
     for (const auto& jet : jets) {
-      auto candidate = jet.template candidates_first_as<U>();
-      auto candidateId = candidate.globalIndex();
+      auto const& candidates = jet.template candidates_as<U>();
       if (jet.pt() < jetPtMin) {
-        candidateSelectionFlags[candidateId] = false;
+        for (const auto& candidate : candidates) {
+          candidateSelectionFlags[candidate.globalIndex()] = false;
+        }
         continue;
       }
       if (!jetfindingutilities::isInEtaAcceptance(jet, configs.jetEtaMin, configs.jetEtaMax, configs.trackEtaMin, configs.trackEtaMax)) {
-        candidateSelectionFlags[candidateId] = false;
+        for (const auto& candidate : candidates) {
+          candidateSelectionFlags[candidate.globalIndex()] = false;
+        }
         continue;
       }
       bool radiusSelected = false;
@@ -423,7 +432,9 @@ struct JetSubstructureHFOutputTask {
         }
       }
       if (!radiusSelected) {
-        candidateSelectionFlags[candidateId] = false;
+        for (const auto& candidate : candidates) {
+          candidateSelectionFlags[candidate.globalIndex()] = false;
+        }
         continue;
       }
     }
@@ -456,9 +467,9 @@ struct JetSubstructureHFOutputTask {
   }
 
   template <bool isMCD, bool isMCP, typename T>
-  void analyseCandidate(T const& candidate, std::map<int32_t, int32_t>& candidateMap, std::vector<bool>& candidateSelectionFlags)
+  void analyseCandidate(T const& candidate, std::map<int32_t, int32_t>& candidateMap, std::vector<bool> const& candidateSelectionFlags, std::vector<bool> const& candidateRecoilSelectionFlags)
   {
-    if (!candidateSelectionFlags[candidate.globalIndex()]) {
+    if (!candidateSelectionFlags[candidate.globalIndex()] && !candidateRecoilSelectionFlags[candidate.globalIndex()]) {
       return;
     }
     int32_t candidateCollisionIndex = -1;
@@ -603,8 +614,8 @@ struct JetSubstructureHFOutputTask {
     }
   }
 
-  template <bool isMC, bool isMCPOnly, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename S>
-  void analyseHFCollisions(T const& collisions, U const& mcCollisions, V const& hfCollisions, M const& hfMcCollisions, N const& jets, O const& jetsMCP, P const& candidates, S const& candidatesMCP, float jetPtMin, float jetPtMinMCP = 0.0)
+  template <bool isMC, bool isMCPOnly, typename T, typename U, typename V, typename M, typename N, typename O>
+  void analyseHFCollisions(T const& collisions, U const& mcCollisions, V const& hfCollisions, M const& hfMcCollisions, N const& candidates, O const& candidatesMCP, std::vector<bool> const& candidateSelectionFlags, std::vector<bool> const& candidateRecoilSelectionFlags, std::vector<bool> const& candidateMCPSelectionFlags, std::vector<bool> const& candidateMCPRecoilSelectionFlags)
   {
     collisionFlag.clear();
     collisionFlag.resize(collisions.size());
@@ -615,43 +626,27 @@ struct JetSubstructureHFOutputTask {
     std::fill(mcCollisionFlag.begin(), mcCollisionFlag.end(), false);
 
     if constexpr (!isMCPOnly) {
-      for (const auto& jet : jets) {
-        if (jet.pt() < jetPtMin) {
-          continue;
-        }
-        if (!jetfindingutilities::isInEtaAcceptance(jet, configs.jetEtaMin, configs.jetEtaMax, configs.trackEtaMin, configs.trackEtaMax)) {
-          continue;
-        }
-        for (const auto& jetRadiiValue : jetRadiiValues) {
-          if (jet.r() == round(jetRadiiValue * 100.0f)) {
-            collisionFlag[jet.collisionId()] = true;
-            if constexpr (isMC) {
-              auto mcCollisionId = jet.template collision_as<T>().mcCollisionId();
-              if (mcCollisionId >= 0) {
-                mcCollisionFlag[mcCollisionId] = true;
-              }
+      for (auto const& candidate : candidates) {
+
+        if (candidateSelectionFlags[candidate.globalIndex()] || candidateRecoilSelectionFlags[candidate.globalIndex()]) {
+          collisionFlag[candidate.collisionId()] = true;
+          if constexpr (isMC) {
+            auto mcCollisionId = candidate.template collision_as<T>().mcCollisionId();
+            if (mcCollisionId >= 0) {
+              mcCollisionFlag[mcCollisionId] = true;
             }
           }
         }
       }
     }
     if constexpr (isMC) {
-      for (const auto& jetMCP : jetsMCP) {
-        if (jetMCP.pt() < jetPtMinMCP) {
-          continue;
-        }
-        if (!jetfindingutilities::isInEtaAcceptance(jetMCP, configs.jetEtaMin, configs.jetEtaMax, configs.trackEtaMin, configs.trackEtaMax)) {
-          continue;
-        }
-        for (const auto& jetRadiiValue : jetRadiiValues) {
-          if (jetMCP.r() == round(jetRadiiValue * 100.0f)) {
-
-            mcCollisionFlag[jetMCP.mcCollisionId()] = true;
-            if constexpr (!isMCPOnly) {
-              const auto collisionsPerMcCollision = collisions.sliceBy(preslices.CollisionsPerMcCollision, jetMCP.mcCollisionId());
-              for (auto collision : collisionsPerMcCollision) {
-                collisionFlag[collision.globalIndex()] = true;
-              }
+      for (auto const& candidateMCP : candidatesMCP) {
+        if (candidateMCPSelectionFlags[candidateMCP.globalIndex()] || candidateMCPRecoilSelectionFlags[candidateMCP.globalIndex()]) {
+          mcCollisionFlag[candidateMCP.mcCollisionId()] = true;
+          if constexpr (!isMCPOnly) {
+            const auto collisionsPerMcCollision = collisions.sliceBy(preslices.CollisionsPerMcCollision, candidateMCP.mcCollisionId());
+            for (auto collision : collisionsPerMcCollision) {
+              collisionFlag[collision.globalIndex()] = true;
             }
           }
         }
@@ -683,7 +678,7 @@ struct JetSubstructureHFOutputTask {
             }
             jetcandidateutilities::fillCandidateMcCollisionTable(hfMcCollisionPerMcCollision, candidatesMCP, products.hfMcCollisionsTable);
             candidateMcCollisionMapping.insert(std::make_pair(hfMcCollisionPerMcCollision.globalIndex(), products.hfMcCollisionsTable.lastIndex()));
-            if constexpr (!isMCPOnly && (jethfutilities::isHFTable<P>() || jethfutilities::isHFMcTable<S>())) { // the matching of mcCollision to Collision is only done for HF tables
+            if constexpr (!isMCPOnly && (jethfutilities::isHFTable<N>() || jethfutilities::isHFMcTable<O>())) { // the matching of mcCollision to Collision is only done for HF tables
               std::vector<int32_t> hfCollisionIDs;
               for (auto const& hfCollisionPerMcCollision : hfMcCollisionPerMcCollision.template hfCollBases_as<V>()) { // if added for others this line needs to be templated per type
                 auto hfCollisionIndex = candidateCollisionMapping.find(hfCollisionPerMcCollision.globalIndex());
@@ -711,10 +706,14 @@ struct JetSubstructureHFOutputTask {
     if (doprocessOutputCandidatesData) {
       candidateSelectionFlagsData.clear();
       candidateSelectionFlagsData.resize(candidates.size(), true);
+      candidateRecoilSelectionFlagsData.clear();
+      candidateRecoilSelectionFlagsData.resize(candidates.size(), true);
     }
     if (doprocessOutputCandidatesMCD) {
       candidateSelectionFlagsMCD.clear();
       candidateSelectionFlagsMCD.resize(candidates.size(), true);
+      candidateRecoilSelectionFlagsMCD.clear();
+      candidateRecoilSelectionFlagsMCD.resize(candidates.size(), true);
     }
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the non-mcp maps in each dataframe", true);
@@ -730,48 +729,10 @@ struct JetSubstructureHFOutputTask {
     }
     candidateSelectionFlagsMCP.clear();
     candidateSelectionFlagsMCP.resize(candidates.size(), true);
+    candidateRecoilSelectionFlagsMCP.clear();
+    candidateRecoilSelectionFlagsMCP.resize(candidates.size(), true);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMapsMCP, "process function that clears all the mcp maps in each dataframe", true);
-
-  void processOutputCollisionsData(o2::aod::JetCollisions const& collisions,
-                                   JetTableData const& jets,
-                                   CandidateCollisionTable const& canidateCollisions,
-                                   CandidateTable const& candidates)
-  {
-    analyseHFCollisions<false, false>(collisions, collisions, canidateCollisions, canidateCollisions, jets, jets, candidates, candidates, configs.jetPtMinData);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsData, "hf collision output data", false);
-
-  void processOutputCollisionsDataSub(o2::aod::JetCollisions const& collisions,
-                                      JetTableDataSub const& jets,
-                                      CandidateCollisionTable const& canidateCollisions,
-                                      CandidateTable const& candidates)
-  {
-    analyseHFCollisions<false, false>(collisions, collisions, canidateCollisions, canidateCollisions, jets, jets, candidates, candidates, configs.jetPtMinDataSub);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsDataSub, "hf collision output data eventwise constituent subtracted", false);
-
-  void processOutputCollisionsMc(o2::soa::Join<o2::aod::JetCollisions, o2::aod::JMcCollisionLbs> const& collisions,
-                                 o2::aod::JetMcCollisions const& mcCollisions,
-                                 JetTableMCD const& jetsMCD,
-                                 JetTableMatchedMCP const& jetsMCP,
-                                 CandidateCollisionTable const& canidateCollisions,
-                                 CandidateMcCollisionTable const& canidateMcCollisions,
-                                 CandidateTableMCD const& candidatesMCD,
-                                 CandidateTableMCP const& candidatesMCP)
-  {
-    analyseHFCollisions<true, false>(collisions, mcCollisions, canidateCollisions, canidateMcCollisions, jetsMCD, jetsMCP, candidatesMCD, candidatesMCP, configs.jetPtMinMCD, configs.jetPtMinMCP);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsMc, "hf collision output MC", false);
-
-  void processOutputCollisionsMCPOnly(o2::aod::JetMcCollisions const& mcCollisions,
-                                      JetTableMCP const& jetsMCP,
-                                      CandidateMcOnlyCollisionTable const& canidateMcCollisions,
-                                      CandidateTableMCP const& candidatesMCP)
-  {
-    analyseHFCollisions<true, true>(mcCollisions, mcCollisions, canidateMcCollisions, canidateMcCollisions, jetsMCP, jetsMCP, candidatesMCP, candidatesMCP, 0.0, configs.jetPtMinMCP);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsMCPOnly, "hf collision output MCP only", false);
 
   void processSelectCandidatesData(JetTableData const& jets, CandidateTable const& candidates)
   {
@@ -781,7 +742,7 @@ struct JetSubstructureHFOutputTask {
 
   void processSelectRecoilCandidatesData(RecoilTableData const& jets)
   {
-    selectRecoilCandidates(jets, configs.recoilJetPtMinData, candidateSelectionFlagsData);
+    selectRecoilCandidates(jets, configs.recoilJetPtMinData, candidateRecoilSelectionFlagsData);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectRecoilCandidatesData, "select HF candidates for recoil data", false);
 
@@ -793,7 +754,7 @@ struct JetSubstructureHFOutputTask {
 
   void processSelectRecoilCandidatesMCD(RecoilTableMCD const& jets)
   {
-    selectRecoilCandidates(jets, configs.recoilJetPtMinMCD, candidateSelectionFlagsMCD);
+    selectRecoilCandidates(jets, configs.recoilJetPtMinMCD, candidateRecoilSelectionFlagsMCD);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectRecoilCandidatesMCD, "select HF candidates for recoil mcd", false);
 
@@ -805,26 +766,61 @@ struct JetSubstructureHFOutputTask {
 
   void processSelectRecoilCandidatesMCP(RecoilTableMCP const& jets)
   {
-    selectRecoilCandidates(jets, configs.recoilJetPtMinMCP, candidateSelectionFlagsMCP);
+    selectRecoilCandidates(jets, configs.recoilJetPtMinMCP, candidateRecoilSelectionFlagsMCP);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processSelectRecoilCandidatesMCP, "select HF candidates for recoil MCP", false);
 
+  void processOutputCollisionsData(o2::aod::JetCollisions const& collisions,
+                                   CandidateCollisionTable const& canidateCollisions,
+                                   CandidateTable const& candidates)
+  {
+    analyseHFCollisions<false, false>(collisions, collisions, canidateCollisions, canidateCollisions, candidates, candidates, candidateSelectionFlagsData, candidateRecoilSelectionFlagsData, candidateSelectionFlagsData, candidateRecoilSelectionFlagsData);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsData, "hf collision output data", false);
+
+  void processOutputCollisionsDataSub(o2::aod::JetCollisions const& collisions,
+                                      CandidateCollisionTable const& canidateCollisions,
+                                      CandidateTable const& candidates)
+  {
+    analyseHFCollisions<false, false>(collisions, collisions, canidateCollisions, canidateCollisions, candidates, candidates, candidateSelectionFlagsData, candidateRecoilSelectionFlagsData, candidateSelectionFlagsData, candidateRecoilSelectionFlagsData);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsDataSub, "hf collision output data eventwise constituent subtracted", false);
+
+  void processOutputCollisionsMc(o2::soa::Join<o2::aod::JetCollisions, o2::aod::JMcCollisionLbs> const& collisions,
+                                 o2::aod::JetMcCollisions const& mcCollisions,
+                                 CandidateCollisionTable const& canidateCollisions,
+                                 CandidateMcCollisionTable const& canidateMcCollisions,
+                                 CandidateTableMCD const& candidatesMCD,
+                                 CandidateTableMCP const& candidatesMCP)
+  {
+    analyseHFCollisions<true, false>(collisions, mcCollisions, canidateCollisions, canidateMcCollisions, candidatesMCD, candidatesMCP, candidateSelectionFlagsMCD, candidateRecoilSelectionFlagsMCD, candidateSelectionFlagsMCP, candidateRecoilSelectionFlagsMCP);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsMc, "hf collision output MC", false);
+
+  void processOutputCollisionsMCPOnly(o2::aod::JetMcCollisions const& mcCollisions,
+                                      CandidateMcOnlyCollisionTable const& canidateMcCollisions,
+                                      CandidateTableMCP const& candidatesMCP)
+  {
+    analyseHFCollisions<true, true>(mcCollisions, mcCollisions, canidateMcCollisions, canidateMcCollisions, candidatesMCP, candidatesMCP, candidateSelectionFlagsMCP, candidateRecoilSelectionFlagsMCP, candidateSelectionFlagsMCP, candidateRecoilSelectionFlagsMCP);
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCollisionsMCPOnly, "hf collision output MCP only", false);
+
   void processOutputCandidatesData(typename CandidateTable::iterator const& candidate)
   {
-    analyseCandidate<false, false>(candidate, candidateMapping, candidateSelectionFlagsData);
+    analyseCandidate<false, false>(candidate, candidateMapping, candidateSelectionFlagsData, candidateRecoilSelectionFlagsData);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesData, "hf candidate output data", false);
 
   void processOutputCandidatesMCD(typename CandidateTableMCD::iterator const& candidate)
   {
 
-    analyseCandidate<true, false>(candidate, candidateMapping, candidateSelectionFlagsMCD);
+    analyseCandidate<true, false>(candidate, candidateMapping, candidateSelectionFlagsMCD, candidateRecoilSelectionFlagsMCD);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesMCD, "hf candidate output MCD", false);
 
   void processOutputCandidatesMCP(typename CandidateTableMCP::iterator const& candidate)
   {
-    analyseCandidate<false, true>(candidate, candidateMappingMCP, candidateSelectionFlagsMCP);
+    analyseCandidate<false, true>(candidate, candidateMappingMCP, candidateSelectionFlagsMCP, candidateRecoilSelectionFlagsMCP);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesMCP, "hf candidate output MCP", false);
 
