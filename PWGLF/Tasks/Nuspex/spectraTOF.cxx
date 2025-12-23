@@ -78,6 +78,8 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCNotHF;  // Decay Length
 
 std::array<std::shared_ptr<TH2>, NpCharge> hPtNumTOFMatchWithPIDSignalPrm; // Pt distribution of particles with a hit in the TOF and a compatible signal
 
+std::array<std::array<std::shared_ptr<TH3>, NpCharge>, 3> hMCpdg_nsigmaTPC; //2D array of nsigmaTPC histograms [Selection: pi,K,p][True PDG: 18 species]
+
 // Spectra task
 struct tofSpectra {
   struct : ConfigurableGroup {
@@ -584,6 +586,14 @@ struct tofSpectra {
       histos.add("MC/Multiplicity", "MC multiplicity", kTH1D, {multAxis});
       histos.add("MC/MultiplicityMCINELgt0", "MC multiplicity", kTH1D, {multAxis});
       histos.add("MC/MultiplicityMCINELgt1", "MC multiplicity", kTH1D, {multAxis});
+    }
+    
+    if (doprocessTrackMCLabels){
+      for (int par = 2; par <= 4; par++){
+        for (int i = 0; i < NpCharge; i++){
+          hMCpdg_nsigmaTPC[par-2][i] = histos.add<TH3>(Form("test_mclabels/nsigmatpc/%s/%s/pdg_%i", (i < Np) ? "pos" : "neg", pN[par], PDGs[i%Np]), Form("True %s (%i) in %s selection", pTCharge[i], PDGs[i], (i < Np) ? pTCharge[par] : pTCharge[par+Np]), kTH3D, {ptAxis, nsigmaTPCAxisOccupancy, multAxis});
+         }
+      }
     }
 
     hMultiplicityvsPercentile = histos.add<TH2>("Mult/vsPercentile", "Multiplicity vs percentile", HistType::kTH2D, {{150, 0, 150}, {100, 0, 100, "Track multiplicity"}});
@@ -2785,6 +2795,47 @@ struct tofSpectra {
     }
   }
   PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", false);
+    
+  void processTrackMCLabels(CollisionCandidates::iterator const& collisions,
+                        soa::Join<TrackCandidates,
+                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
+                        aod::McTrackLabels const& mcTrackLabels, aod::McParticles const& mcParticles)
+  {
+    const float multiplicity = getMultiplicity(collisions);
+    
+    for (const auto& track : tracks) {
+      if (!track.has_collision()) {
+        continue;
+      }
+      const auto& collision = track.collision_as<CollisionCandidates>();
+      if (!isEventSelected<false, false>(collision)) {
+        continue;
+      }
+      if (!isTrackSelected<true>(track, collision)) {
+        continue;
+      }
+      const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
+      const auto& mcParticle = mcParticles.iteratorAt(mcLabel.mcParticleId());
+      int pdgCode = mcParticle.pdgCode();
+      
+      static_for<2,4>([&](auto par){
+        const auto& nsigmaTPCpar = o2::aod::pidutils::tpcNSigma<par>(track);
+        bool isTPCpar = std::abs(nsigmaTPCpar) < trkselOptions.cfgCutNsigma;
+        // Precompute rapidity values to avoid redundant calculations
+        double rapiditypar = std::abs(track.rapidity(PID::getMass(par)));
+        //TPC Selection and histogram filling
+        if (isTPCpar && rapiditypar <= trkselOptions.cfgCutY){
+          static_for<0, 17>([&](auto i){
+            if (pdgCode == PDGs[i]){
+            hMCpdg_nsigmaTPC[par-2][i]->Fill(track.pt(), nsigmaTPCpar, multiplicity);
+            }
+          });
+        }
+      });
+    }
+  }
+  PROCESS_SWITCH(tofSpectra, processTrackMCLabels, "Fill track histograms using MC matched PDG labels", false);
 
 }; // end of spectra task
 
