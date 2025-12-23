@@ -47,6 +47,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -860,4 +861,128 @@ void HFInvMassFitter::setReflFuncFixed()
     default:
       break;
   }
+}
+
+void HFInvMassFitter::setHistogramForFit(TH1* histoToFit)
+{
+  delete mHistoInvMass;
+  mHistoInvMass = histoToFit;
+  mHistoInvMass->SetDirectory(nullptr);
+}
+
+void HFInvMassFitter::setFitRange(double minValue, double maxValue)
+{
+  mMinMass = minValue;
+  mMaxMass = maxValue;
+}
+
+void HFInvMassFitter::setFitFunctions(int fitTypeBkg, int fitTypeSgn)
+{
+  mTypeOfBkgPdf = fitTypeBkg;
+  mTypeOfSgnPdf = fitTypeSgn;
+}
+
+void HFInvMassFitter::setSigmaLimit(double sigmaValue, double sigmaLimit)
+{
+  mSigmaValue = sigmaValue;
+  mParamSgn = sigmaLimit;
+}
+
+void HFInvMassFitter::setInitialGaussianMean(double mean)
+{
+  mMass = mean;
+  mSecMass = mean;
+}
+
+void HFInvMassFitter::setInitialGaussianSigma(double sigma)
+{
+  mSigmaSgn = sigma;
+  mSecSigma = sigma;
+}
+
+void HFInvMassFitter::setFixGaussianMean(double mean)
+{
+  setInitialGaussianMean(mean);
+  mFixedMean = true;
+}
+
+void HFInvMassFitter::setBoundGaussianMean(double mean, double meanLowLimit, double meanUpLimit)
+{
+  if (mean < meanLowLimit ||
+      mean > meanUpLimit) {
+    printf("Invalid Gaussian mean limit!\n");
+  }
+  setInitialGaussianMean(mean);
+  mMassLowLimit = meanLowLimit;
+  mMassUpLimit = meanUpLimit;
+  mBoundMean = true;
+}
+
+void HFInvMassFitter::setBoundReflGausMean(double mean, double meanLowLimit, double meanUpLimit)
+{
+  if (mean < meanLowLimit ||
+      mean > meanUpLimit) {
+    printf("Invalid Gaussian mean limit for reflection!\n");
+  }
+  setInitialGaussianMean(mean);
+  mMassReflLowLimit = meanLowLimit;
+  mMassReflUpLimit = meanUpLimit;
+  mBoundReflMean = true;
+}
+
+void HFInvMassFitter::setFixGaussianSigma(double sigma)
+{
+  setInitialGaussianSigma(sigma);
+  mFixedSigma = true;
+}
+
+void HFInvMassFitter::setBoundGausSigma(double sigma, double sigmaLimit)
+{
+  setInitialGaussianSigma(sigma);
+  setSigmaLimit(sigma, sigmaLimit);
+  mBoundSigma = true;
+}
+
+void HFInvMassFitter::setFixSecondGaussianSigma(double sigma)
+{
+  if (mTypeOfSgnPdf != DoubleGaus) {
+    printf("Fit type should be 2Gaus!\n");
+  }
+  setInitialSecondGaussianSigma(sigma);
+  mFixedSigmaDoubleGaus = true;
+}
+
+void HFInvMassFitter::setFixFrac2Gaus(double frac)
+{
+  if (mTypeOfSgnPdf != DoubleGaus &&
+      mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
+    printf("Fit type should be 2Gaus or 2GausSigmaRatio!\n");
+  }
+  setInitialFracDoubleGaus(frac);
+  mFixedFracDoubleGaus = true;
+}
+
+void HFInvMassFitter::setFixRatioToGausSigma(double sigmaFrac)
+{
+  if (mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
+    printf("Fit type should be set to k2GausSigmaRatioPar!\n");
+  }
+  setInitialRatioDoubleGausSigma(sigmaFrac);
+  mFixedRatioDoubleGausSigma = true;
+}
+
+void HFInvMassFitter::setFixReflOverSgn(double reflOverSgn)
+{
+  setInitialReflOverSgn(reflOverSgn);
+  mFixReflOverSgn = true;
+}
+
+void HFInvMassFitter::setTemplateReflections(TH1* histoRefl)
+{
+  if (histoRefl == nullptr) {
+    mEnableReflections = false;
+    return;
+  }
+  mHistoTemplateRefl = histoRefl;
+  mHistoTemplateRefl->SetName("mHistoTemplateRefl");
 }

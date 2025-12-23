@@ -34,7 +34,6 @@
 #include <RtypesCore.h>
 
 #include <array>
-#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -70,12 +69,7 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter() = delete;
   HFInvMassFitter(TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg = Expo, int fitTypeSgn = SingleGaus);
   ~HFInvMassFitter() override;
-  void setHistogramForFit(TH1* histoToFit)
-  {
-    delete mHistoInvMass;
-    mHistoInvMass = histoToFit;
-    mHistoInvMass->SetDirectory(nullptr);
-  }
+  void setHistogramForFit(TH1* histoToFit);
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
   void setFitOption(const std::string& opt) { mFitOption = opt; }
@@ -83,99 +77,24 @@ class HFInvMassFitter : public TNamed
   RooAbsPdf* createSignalFitFunction(RooWorkspace* w1);
   RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1) const;
 
-  void setFitRange(double minValue, double maxValue)
-  {
-    mMinMass = minValue;
-    mMaxMass = maxValue;
-  }
-  void setFitFunctions(int fitTypeBkg, int fitTypeSgn)
-  {
-    mTypeOfBkgPdf = fitTypeBkg;
-    mTypeOfSgnPdf = fitTypeSgn;
-  }
-  void setSigmaLimit(double sigmaValue, double sigmaLimit)
-  {
-    mSigmaValue = sigmaValue;
-    mParamSgn = sigmaLimit;
-  }
+  void setFitRange(double minValue, double maxValue);
+  void setFitFunctions(int fitTypeBkg, int fitTypeSgn);
+  void setSigmaLimit(double sigmaValue, double sigmaLimit);
   void setParticlePdgMass(double mass) { mMassParticle = mass; }
   [[nodiscard]] double getParticlePdgMass() const { return mMassParticle; }
-  void setInitialGaussianMean(double mean)
-  {
-    mMass = mean;
-    mSecMass = mean;
-  }
-  void setInitialGaussianSigma(double sigma)
-  {
-    mSigmaSgn = sigma;
-    mSecSigma = sigma;
-  }
+  void setInitialGaussianMean(double mean);
+  void setInitialGaussianSigma(double sigma);
   void setInitialSecondGaussianSigma(double sigma) { mSigmaSgnDoubleGaus = sigma; }
   void setInitialFracDoubleGaus(double frac) { mFracDoubleGaus = frac; }
   void setInitialRatioDoubleGausSigma(double fracSigma) { mRatioDoubleGausSigma = fracSigma; }
-  void setFixGaussianMean(double mean)
-  {
-    setInitialGaussianMean(mean);
-    mFixedMean = true;
-  }
-  void setBoundGaussianMean(double mean, double meanLowLimit, double meanUpLimit)
-  {
-    if (mean < meanLowLimit ||
-        mean > meanUpLimit) {
-      printf("Invalid Gaussian mean limit!\n");
-    }
-    setInitialGaussianMean(mean);
-    mMassLowLimit = meanLowLimit;
-    mMassUpLimit = meanUpLimit;
-    mBoundMean = true;
-  }
-  void setBoundReflGausMean(double mean, double meanLowLimit, double meanUpLimit)
-  {
-    if (mean < meanLowLimit ||
-        mean > meanUpLimit) {
-      printf("Invalid Gaussian mean limit for reflection!\n");
-    }
-    setInitialGaussianMean(mean);
-    mMassReflLowLimit = meanLowLimit;
-    mMassReflUpLimit = meanUpLimit;
-    mBoundReflMean = true;
-  }
-  void setFixGaussianSigma(double sigma)
-  {
-    setInitialGaussianSigma(sigma);
-    mFixedSigma = true;
-  }
-  void setBoundGausSigma(double sigma, double sigmaLimit)
-  {
-    setInitialGaussianSigma(sigma);
-    setSigmaLimit(sigma, sigmaLimit);
-    mBoundSigma = true;
-  }
-  void setFixSecondGaussianSigma(double sigma)
-  {
-    if (mTypeOfSgnPdf != DoubleGaus) {
-      printf("Fit type should be 2Gaus!\n");
-    }
-    setInitialSecondGaussianSigma(sigma);
-    mFixedSigmaDoubleGaus = true;
-  }
-  void setFixFrac2Gaus(double frac)
-  {
-    if (mTypeOfSgnPdf != DoubleGaus &&
-        mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      printf("Fit type should be 2Gaus or 2GausSigmaRatio!\n");
-    }
-    setInitialFracDoubleGaus(frac);
-    mFixedFracDoubleGaus = true;
-  }
-  void setFixRatioToGausSigma(double sigmaFrac)
-  {
-    if (mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      printf("Fit type should be set to k2GausSigmaRatioPar!\n");
-    }
-    setInitialRatioDoubleGausSigma(sigmaFrac);
-    mFixedRatioDoubleGausSigma = true;
-  }
+  void setFixGaussianMean(double mean);
+  void setBoundGaussianMean(double mean, double meanLowLimit, double meanUpLimit);
+  void setBoundReflGausMean(double mean, double meanLowLimit, double meanUpLimit);
+  void setFixGaussianSigma(double sigma);
+  void setBoundGausSigma(double sigma, double sigmaLimit);
+  void setFixSecondGaussianSigma(double sigma);
+  void setFixFrac2Gaus(double frac);
+  void setFixRatioToGausSigma(double sigmaFrac);
   void setFixSignalYield(double yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(double numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
   void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
@@ -183,20 +102,8 @@ class HFInvMassFitter : public TNamed
   void setReflFuncFixed();
   void doFit();
   void setInitialReflOverSgn(double reflOverSgn) { mReflOverSgn = reflOverSgn; }
-  void setFixReflOverSgn(double reflOverSgn)
-  {
-    setInitialReflOverSgn(reflOverSgn);
-    mFixReflOverSgn = true;
-  }
-  void setTemplateReflections(TH1* histoRefl)
-  {
-    if (histoRefl == nullptr) {
-      mEnableReflections = false;
-      return;
-    }
-    mHistoTemplateRefl = histoRefl;
-    mHistoTemplateRefl->SetName("mHistoTemplateRefl");
-  }
+  void setFixReflOverSgn(double reflOverSgn);
+  void setTemplateReflections(TH1* histoRefl);
   void setDrawBgPrefit(bool value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(bool value = true) { mHighlightPeakRegion = value; }
   [[nodiscard]] double getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
@@ -217,14 +124,7 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] double getSecSigmaUncertainty() const { return mRooSecSigmaSgn->getError(); }
   [[nodiscard]] double getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
   [[nodiscard]] double getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
-  [[nodiscard]] double getReflOverSig() const
-
-  {
-    if (mReflPdf != nullptr) {
-      return mReflOverSgn;
-    }
-    return 0;
-  }
+  [[nodiscard]] double getReflOverSig() const { return mReflPdf != nullptr ? mReflOverSgn : 0.; }
   void calculateSignal(double& signal, double& signalErr) const;
   void countSignal(double& signal, double& signalErr) const;
   void calculateBackground(double& bkg, double& bkgErr) const;
