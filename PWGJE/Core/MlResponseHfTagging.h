@@ -209,7 +209,7 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
   static int replaceNaN(std::vector<T>& vec, T value)
   {
     int numNaN = 0;
-    for (auto& el : vec) {
+    for (auto& el : vec) { // o2-linter: disable=const-ref-in-for-loop
       if (std::isnan(el) || std::isinf(el)) {
         el = value;
         ++numNaN;
