@@ -200,14 +200,14 @@ void runMassFitter(const std::string& configFileName)
   }
   sliceVarLimits[nSliceVarBins] = sliceVarMax[nSliceVarBins - 1];
 
-  struct decayInfo {
+  struct DecayInfo {
     std::string decayProducts;
     std::string pdgName;
     std::string decayFormulaLhs;
     std::string decayFormulaRhs;
   };
 
-  std::map<std::string, decayInfo> particles{
+  std::map<std::string, DecayInfo> particles{
     {"Dplus", {"K#pi#pi", "D+", "D^{+}", "K^{-}#pi^{+}#pi^{+}"}},
     {"D0", {"K#pi", "D0", "D^{0}", "K^{-}#pi^{+}"}},
     {"Ds", {"KK#pi", "D_s+", "D_{s}^{+}", "K^{-}K^{+}#pi^{+}"}},
@@ -329,14 +329,14 @@ void runMassFitter(const std::string& configFileName)
     canvasSize[1] = 500;
   }
 
-  int constexpr nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
-  const int nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
+  int constexpr NCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
+  const int nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / NCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
   std::vector<TCanvas*> canvasRatio(nCanvases);
   std::vector<TCanvas*> canvasRefl(nCanvases);
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
-    const int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
+    const int nPads = (nCanvases == 1) ? nSliceVarBins : NCanvasesMax;
     canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas), canvasSize[0], canvasSize[1]);
     divideCanvas(canvasMass[iCanvas], nPads);
 
@@ -353,7 +353,7 @@ void runMassFitter(const std::string& configFileName)
   }
 
   for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
-    const int iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
+    const int iCanvas = std::floor(static_cast<float>(iSliceVar) / NCanvasesMax);
 
     hMass[iSliceVar]->Rebin(nRebin[iSliceVar]);
     TString const ptTitle =
@@ -411,7 +411,7 @@ void runMassFitter(const std::string& configFileName)
 
     auto drawOnCanvas = [&](std::vector<TCanvas*>& canvas, std::function<void()> drawer) {
       if (nSliceVarBins > 1) {
-        canvas[iCanvas]->cd(iSliceVar - nCanvasesMax * iCanvas + 1);
+        canvas[iCanvas]->cd(iSliceVar - NCanvasesMax * iCanvas + 1);
       } else {
         canvas[iCanvas]->cd();
       }
