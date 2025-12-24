@@ -409,13 +409,13 @@ struct HfTreeCreatorOmegacSt {
   int decayChannel = -1; // flag for different decay channels
   bool isMatched = false;
   static constexpr std::size_t NDaughters{2u};
-  const CHANNEL_TYPES = {
-  ANY: 0,
-  XIC_TO_XI_PI: 1,
-  XIC_TO_OMEGA_KA: 2,
-  OMEGAC_TO_OMEGA_PI: 3,
-  OMEGAC_TO_OMEGA_KA: 4,
-  OMEGAC_TO_XI_PI: 5
+  enum ChannelType {
+    ANY = 0,
+    XIC_TO_XI_PI = 1,
+    XIC_TO_OMEGA_KA = 2,
+    OMEGAC_TO_OMEGA_PI = 3,
+    OMEGAC_TO_OMEGA_KA = 4,
+    OMEGAC_TO_XI_PI = 5
   };
 
   void processMc(aod::McCollisions const&,
@@ -787,22 +787,22 @@ struct HfTreeCreatorOmegacSt {
                     const bool anyChannelPass = massOmegacToOmegaKPass || massOmegacToOmegaPiPass || massXicToXiPiPass || massXicToOmegaKaPass || massOmegacToXiPiPass;
                     bool passSelectedChannel = true;
                     switch (selectedChannel.value) {
-                      case CHANNEL_TYPES.ANY:
+                      case ANY:
                         passSelectedChannel = anyChannelPass;
                         break;
-                      case CHANNEL_TYPES.XIC_TO_XI_PI:
+                      case XIC_TO_XI_PI:
                         passSelectedChannel = massXicToXiPiPass;
                         break;
-                      case CHANNEL_TYPES.XIC_TO_OMEGA_KA:
+                      case XIC_TO_OMEGA_KA:
                         passSelectedChannel = massXicToOmegaKaPass;
                         break;
-                      case CHANNEL_TYPES.OMEGAC_TO_OMEGA_PI:
+                      case OMEGAC_TO_OMEGA_PI:
                         passSelectedChannel = massOmegacToOmegaPiPass;
                         break;
-                      case CHANNEL_TYPES.OMEGAC_TO_OMEGA_KA:
+                      case OMEGAC_TO_OMEGA_KA:
                         passSelectedChannel = massOmegacToOmegaKPass;
                         break;
-                      case CHANNEL_TYPES.OMEGAC_TO_XI_PI:
+                      case OMEGAC_TO_XI_PI:
                         passSelectedChannel = massOmegacToXiPiPass;
                         break;
                       default:
