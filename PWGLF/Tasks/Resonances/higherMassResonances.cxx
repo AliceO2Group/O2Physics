@@ -440,28 +440,28 @@ struct HigherMassResonances {
 
     // if (config.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
     //   return false;
-    if (fillHist)
-      // rEventSelection.fill(HIST("hEventCut"), 10);
+    // if (fillHist)
+    // rEventSelection.fill(HIST("hEventCut"), 10);
 
-      // if (config.isINELgt0 && !collision.isInelGt0()) {
-      //   return false;
-      // }
-      // if (fillHist)
-      // rEventSelection.fill(HIST("hEventCut"), 11);
+    // if (config.isINELgt0 && !collision.isInelGt0()) {
+    //   return false;
+    // }
+    // if (fillHist)
+    // rEventSelection.fill(HIST("hEventCut"), 11);
 
-      // if (config.isVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      //   return false;
-      // }
-      // if (fillHist)
-      //   rEventSelection.fill(HIST("hEventCut"), 12);
+    // if (config.isVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    //   return false;
+    // }
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 12);
 
-      // if (config.isVertexTOFMatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
-      //   return false;
-      // }
-      // if (fillHist)
-      //   rEventSelection.fill(HIST("hEventCut"), 13);
+    // if (config.isVertexTOFMatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+    //   return false;
+    // }
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 13);
 
-      return true;
+    return true;
   }
 
   template <typename Collision, typename V0>
