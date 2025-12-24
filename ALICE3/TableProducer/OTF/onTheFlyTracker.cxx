@@ -68,8 +68,8 @@ using namespace o2::framework;
 using std::array;
 #define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 #define fillHist(type, name, ...) \
-  std::get<std::shared_ptr<type>>(histPointers[name])->Fill(__VA_ARGS__)
-#define insertHist(name, ...) histPointers[(name).c_str()] = histos.add((name).c_str(), __VA_ARGS__)
+  std::get<std::shared_ptr<type>>(histPointers[name])->Fill(__VA_ARGS__);
+#define insertHist(name, ...) histPointers[(name).c_str()] = histos.add((name).c_str(), __VA_ARGS__);
 
 struct OnTheFlyTracker {
   Produces<aod::Collisions> tableCollisions;
