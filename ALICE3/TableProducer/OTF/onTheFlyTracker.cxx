@@ -289,7 +289,7 @@ struct OnTheFlyTracker {
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  // Track smearer
+  // Track smearer array, one per geometry
   std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
 
   // For processing and vertexing
@@ -307,6 +307,7 @@ struct OnTheFlyTracker {
 
   void init(o2::framework::InitContext&)
   {
+    LOG(info) << "Initializing OnTheFlyTracker task";
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
 
@@ -786,14 +787,10 @@ struct OnTheFlyTracker {
           laDecayRadius2D = std::hypot(laDecayVertex[0], laDecayVertex[1]);
         }
       }
-      const auto pdg = std::abs(mcParticle.pdgCode());
-      bool isV0 = std::find(v0PDGs.begin(), v0PDGs.end(), pdg) != v0PDGs.end();
-      bool isK0 = (std::abs(pdg) == kK0Short);
-      bool isLambda = (std::abs(pdg) == kLambda0);
-      bool isAntiLambda = (std::abs(pdg) == kLambda0Bar);
+      const bool isV0 = std::find(v0PDGs.begin(), v0PDGs.end(), std::abs(mcParticle.pdgCode())) != v0PDGs.end();
 
       if (v0DecaySettings.decayV0 && isV0) {
-        decayV0Particle(mcParticle, v0DecayProducts, v0DecayVertex, pdg);
+        decayV0Particle(mcParticle, v0DecayProducts, v0DecayVertex, std::abs(mcParticle.pdgCode()));
         v0DecayRadius2D = std::hypot(v0DecayVertex[0], v0DecayVertex[1]);
       }
 
@@ -801,8 +798,8 @@ struct OnTheFlyTracker {
         continue;
       }
 
-      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
-      const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), pdg) != nucleiPDGs.end();
+      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
+      const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
       const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled) || (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus) || (v0DecaySettings.decayV0 && isV0);
       if (!pdgsToBeHandled) {
         continue;
@@ -814,14 +811,20 @@ struct OnTheFlyTracker {
       if (enablePrimarySmearing) {
         getHist(TH1, histPath + "hPtGenerated")->Fill(mcParticle.pt());
         getHist(TH1, histPath + "hPhiGenerated")->Fill(mcParticle.phi());
-        if (std::abs(mcParticle.pdgCode()) == kElectron)
-          getHist(TH1, histPath + "hPtGeneratedEl")->Fill(mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
-          getHist(TH1, histPath + "hPtGeneratedPi")->Fill(mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == kKPlus)
-          getHist(TH1, histPath + "hPtGeneratedKa")->Fill(mcParticle.pt());
-        if (std::abs(mcParticle.pdgCode()) == kProton)
-          getHist(TH1, histPath + "hPtGeneratedPr")->Fill(mcParticle.pt());
+        switch (std::abs(mcParticle.pdgCode())) {
+          case kElectron:
+            getHist(TH1, histPath + "hPtGeneratedEl")->Fill(mcParticle.pt());
+            break;
+          case kPiPlus:
+            getHist(TH1, histPath + "hPtGeneratedPi")->Fill(mcParticle.pt());
+            break;
+          case kKPlus:
+            getHist(TH1, histPath + "hPtGeneratedKa")->Fill(mcParticle.pt());
+            break;
+          case kProton:
+            getHist(TH1, histPath + "hPtGeneratedPr")->Fill(mcParticle.pt());
+            break;
+        }
       }
       if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == kXiMinus) {
         histos.fill(HIST("hGenXi"), xiDecayRadius2D, mcParticle.pt());
@@ -831,7 +834,10 @@ struct OnTheFlyTracker {
       }
       if (v0DecaySettings.doV0QA && isV0) {
         for (size_t indexV0 = 0; indexV0 < v0PDGs.size(); indexV0++) {
-          for (int indexDetector = 0; indexDetector < mGeoContainer.getNumberOfConfigurations(); indexDetector++) {
+          if (mcParticle.pdgCode() != v0PDGs[indexV0]) {
+            continue;
+          }
+          for (int indexDetector = 0; indexDetector < NtypesDetectors; indexDetector++) {
             std::string path = Form("V0Building_Configuration_%i/%s/", indexDetector, NameV0s[indexV0].data());
             fillHist(TH2, path + "hGen", v0DecayRadius2D, mcParticle.pt());
             fillHist(TH2, path + "hGenNegDaughterFromV0", v0DecayRadius2D, v0DecayProducts[0].Pt());
@@ -1131,15 +1137,21 @@ struct OnTheFlyTracker {
         if (v0DecaySettings.doV0QA) {
           fillHist(TH1, Form("V0Building_Configuration_%i/hV0Building", icfg), 0.0f);
         }
-        if (isK0) {
-          o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
-          o2::upgrade::convertTLorentzVectorToO2Track(kPiPlus, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
-        } else if (isLambda) {
-          o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
-          o2::upgrade::convertTLorentzVectorToO2Track(kProton, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
-        } else if (isAntiLambda) {
-          o2::upgrade::convertTLorentzVectorToO2Track(kProtonBar, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
-          o2::upgrade::convertTLorentzVectorToO2Track(kPiPlus, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
+        switch (mcParticle.pdgCode()) {
+          case kK0Short:
+            o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
+            o2::upgrade::convertTLorentzVectorToO2Track(kPiPlus, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
+            break;
+          case kLambda0:
+            o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
+            o2::upgrade::convertTLorentzVectorToO2Track(kProton, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
+            break;
+          case kLambda0Bar:
+            o2::upgrade::convertTLorentzVectorToO2Track(kProtonBar, v0DecayProducts[0], v0DecayVertex, v0DaughterTrackParCovsPerfect[0], pdgDB);
+            o2::upgrade::convertTLorentzVectorToO2Track(kPiPlus, v0DecayProducts[1], v0DecayVertex, v0DaughterTrackParCovsPerfect[1], pdgDB);
+            break;
+          default:
+            LOG(fatal) << "Unhandled V0 PDG code " << mcParticle.pdgCode();
         }
         for (int i = 0; i < kv0Prongs; i++) {
           isV0Reco[i] = false;
@@ -1183,21 +1195,21 @@ struct OnTheFlyTracker {
           if (isReco[0] && isReco[1]) {
             fillHist(TH1, Form("V0Building_Configuration_%i/hV0Building", icfg), 1.0f);
             for (size_t indexV0 = 0; indexV0 < v0PDGs.size(); indexV0++) {
-              if (pdg == v0PDGs[indexV0]) {
+              if (mcParticle.pdgCode() == v0PDGs[indexV0]) {
                 fillHist(TH2, Form("V0Building_Configuration_%i/%s/hReco", icfg, NameV0s[indexV0].data()), v0DecayRadius2D, mcParticle.pt());
               }
             }
           }
           if (isReco[0]) {
             for (size_t indexV0 = 0; indexV0 < v0PDGs.size(); indexV0++) {
-              if (pdg == v0PDGs[indexV0]) {
+              if (mcParticle.pdgCode() == v0PDGs[indexV0]) {
                 fillHist(TH2, Form("V0Building_Configuration_%i/%s/hRecoNegDaughterFromV0", icfg, NameV0s[indexV0].data()), v0DecayRadius2D, v0DecayProducts[0].Pt());
               }
             }
           }
           if (isReco[1]) {
             for (size_t indexV0 = 0; indexV0 < v0PDGs.size(); indexV0++) {
-              if (pdg == v0PDGs[indexV0]) {
+              if (mcParticle.pdgCode() == v0PDGs[indexV0]) {
                 fillHist(TH2, Form("V0Building_Configuration_%i/%s/hRecoPosDaughterFromV0", icfg, NameV0s[indexV0].data()), v0DecayRadius2D, v0DecayProducts[1].Pt());
               }
             }
@@ -1257,7 +1269,7 @@ struct OnTheFlyTracker {
             thisV0.v0radius = std::hypot(pos[0], pos[1]);
             thisV0.pt = std::hypot(std::cos(v0DaughterTrackParCovsTracked[0].getPhi()) * v0DaughterTrackParCovsTracked[0].getPt() + std::cos(v0DaughterTrackParCovsTracked[1].getPhi()) * v0DaughterTrackParCovsTracked[1].getPt(),
                                    std::sin(v0DaughterTrackParCovsTracked[0].getPhi()) * v0DaughterTrackParCovsTracked[0].getPt() + std::sin(v0DaughterTrackParCovsTracked[1].getPhi()) * v0DaughterTrackParCovsTracked[1].getPt());
-            if (isK0) {
+            if (std::abs(mcParticle.pdgCode()) == kK0Short) {
               thisV0.mK0 = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                    std::array{negP[0], negP[1], negP[2]}},
                                         std::array{o2::constants::physics::MassPionCharged,
@@ -1266,7 +1278,7 @@ struct OnTheFlyTracker {
               thisV0.mK0 = -1;
             }
 
-            if (isLambda) {
+            if (mcParticle.pdgCode() == kLambda0) {
               thisV0.mLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                        std::array{negP[0], negP[1], negP[2]}},
                                             std::array{o2::constants::physics::MassPionCharged,
@@ -1275,7 +1287,7 @@ struct OnTheFlyTracker {
               thisV0.mLambda = -1;
             }
 
-            if (isAntiLambda) {
+            if (mcParticle.pdgCode() == kLambda0Bar) {
               thisV0.mAntiLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                            std::array{negP[0], negP[1], negP[2]}},
                                                 std::array{o2::constants::physics::MassProton,
