@@ -409,6 +409,14 @@ struct HfTreeCreatorOmegacSt {
   int decayChannel = -1; // flag for different decay channels
   bool isMatched = false;
   static constexpr std::size_t NDaughters{2u};
+  const CHANNEL_TYPES = {
+  ANY: 0,
+  XIC_TO_XI_PI: 1,
+  XIC_TO_OMEGA_KA: 2,
+  OMEGAC_TO_OMEGA_PI: 3,
+  OMEGAC_TO_OMEGA_KA: 4,
+  OMEGAC_TO_XI_PI: 5
+  };
 
   void processMc(aod::McCollisions const&,
                  aod::McParticles const& mcParticles)
@@ -779,22 +787,22 @@ struct HfTreeCreatorOmegacSt {
                     const bool anyChannelPass = massOmegacToOmegaKPass || massOmegacToOmegaPiPass || massXicToXiPiPass || massXicToOmegaKaPass || massOmegacToXiPiPass;
                     bool passSelectedChannel = true;
                     switch (selectedChannel.value) {
-                      case 0:
+                      case CHANNEL_TYPES.ANY:
                         passSelectedChannel = anyChannelPass;
                         break;
-                      case 1:
+                      case CHANNEL_TYPES.XIC_TO_XI_PI:
                         passSelectedChannel = massXicToXiPiPass;
                         break;
-                      case 2:
+                      case CHANNEL_TYPES.XIC_TO_OMEGA_KA:
                         passSelectedChannel = massXicToOmegaKaPass;
                         break;
-                      case 3:
+                      case CHANNEL_TYPES.OMEGAC_TO_OMEGA_PI:
                         passSelectedChannel = massOmegacToOmegaPiPass;
                         break;
-                      case 4:
+                      case CHANNEL_TYPES.OMEGAC_TO_OMEGA_KA:
                         passSelectedChannel = massOmegacToOmegaKPass;
                         break;
-                      case 5:
+                      case CHANNEL_TYPES.OMEGAC_TO_XI_PI:
                         passSelectedChannel = massOmegacToXiPiPass;
                         break;
                       default:
