@@ -1073,8 +1073,8 @@ struct QaEfficiency {
     }
     constexpr int histogramIndex = id + pdgSign * nSpecies;
     LOG(debug) << "fillMCTrackHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
-    const o2::aod::McParticles::iterator& mcParticle = track.mcParticle();
-    const Colls::iterator& collision = track.collision_as<Colls>();
+    auto const& mcParticle = track.mcParticle();
+    auto const& collision = track.collision_as<Colls>();
     float radius = std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
     if (numSameCollision) {
       if (!collision.has_mcCollision()) {
