@@ -575,6 +575,9 @@ T* getObjectWithNullPtrCheck(TFile* fileIn, const std::string& objectName)
   return ptr;
 }
 
+template <typename>
+constexpr bool AlwaysFalse = false;
+
 template <typename T>
 T getJsonValue(const Value& value)
 {
@@ -586,9 +589,10 @@ T getJsonValue(const Value& value)
     return value.GetInt();
   } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
     return value.GetDouble();
+  } else {
+    static_assert(AlwaysFalse<T>, "getJsonValue(): unsupported type!");
+    return T();
   }
-  throw std::runtime_error("getJsonValue(): unsupported type!");
-  return T();
 }
 
 template <typename T>
