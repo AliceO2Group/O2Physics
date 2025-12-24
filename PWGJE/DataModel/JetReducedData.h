@@ -88,6 +88,11 @@ DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float);
 DECLARE_SOA_COLUMN(CentralityVariant1, centralityVariant1, float);
+DECLARE_SOA_COLUMN(AmplitudesFV0, amplitudesFV0, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFT0A, amplitudesFT0A, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFT0C, amplitudesFT0C, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFDDA, amplitudesFDDA, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFDDC, amplitudesFDDC, std::vector<float>);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
@@ -134,6 +139,11 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
                          jcollision::CentFT0C,
                          jcollision::CentFT0M,
                          jcollision::CentFT0CVariant1,
+                         jcollision::AmplitudesFV0,
+                         jcollision::AmplitudesFT0A,
+                         jcollision::AmplitudesFT0C,
+                         jcollision::AmplitudesFDDA,
+                         jcollision::AmplitudesFDDC,
                          jcollision::HadronicRate,
                          jcollision::TrackOccupancyInTimeRange,
                          jcollision::Alias,

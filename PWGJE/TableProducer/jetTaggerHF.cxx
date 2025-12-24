@@ -94,6 +94,7 @@ struct JetTaggerHFTask {
   Configurable<float> minSignImpXYSig{"minSignImpXYSig", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
   Configurable<float> tagPointForIPxyz{"tagPointForIPxyz", 2.5, "tagging working point for IP xyz"};
+  Configurable<int64_t> timestampCCDBForIP{"timestampCCDBForIP", -1, "timestamp of the resolution function file for IP method used to query in CCDB"};
   // configuration about SV method
   Configurable<float> tagPointForSV{"tagPointForSV", 40, "tagging working point for SV"};
   Configurable<float> tagPointForSVxyz{"tagPointForSVxyz", 40, "tagging working point for SV xyz"};
@@ -341,7 +342,7 @@ struct JetTaggerHFTask {
         return;
       }
       for (int i = 0; i < mIPmethodResolutionFunctionSize; i++) {
-        targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, -1));
+        targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, timestampCCDBForIP));
       }
     };
 
@@ -614,7 +615,7 @@ struct JetTaggerHFTask {
   {
     for (const auto& jet : jets) {
       std::vector<std::vector<float>> trkFeat;
-      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, origTracks, trkFeat, trackPtMin, nJetConst);
+      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, origTracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
 
       std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
 
@@ -624,7 +625,13 @@ struct JetTaggerHFTask {
         tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
-        scoreML[jet.globalIndex()] = jettaggingutilities::getDb(modelOutput, fC);
+        float db = jettaggingutilities::getDb(modelOutput, fC);
+        if (!std::isnan(db)) {
+          scoreML[jet.globalIndex()] = db;
+        } else {
+          scoreML[jet.globalIndex()] = 999.;
+          LOGF(debug, "doprocessAlgorithmGNN, Db is NaN (%d)", jet.globalIndex());
+        }
       } else {
         scoreML[jet.globalIndex()] = -999.;
         LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());

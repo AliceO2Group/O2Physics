@@ -16,6 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_PAIRPROCESSHELPERS_H_
 #define PWGCF_FEMTO_CORE_PAIRPROCESSHELPERS_H_
 
+#include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "CommonConstants/MathConstants.h"
@@ -29,7 +30,8 @@ namespace pairprocesshelpers
 {
 
 // process same event for identical particles
-template <typename T1,
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
@@ -48,7 +50,7 @@ void processSameEvent(T1 const& SliceParticle,
                       bool randomize)
 {
   for (auto const& part : SliceParticle) {
-    ParticleHistManager.fill(part, TrackTable);
+    ParticleHistManager.template fill<mode>(part, TrackTable);
   }
   std::uniform_real_distribution<float> dist(0.f, 1.f);
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
@@ -73,13 +75,14 @@ void processSameEvent(T1 const& SliceParticle,
     CprManager.fill(PairHistManager.getKstar());
     // if pair cuts are configured check them before filling
     if (PairHistManager.checkPairCuts()) {
-      PairHistManager.fill();
+      PairHistManager.template fill<mode>();
     }
   }
 }
 
 // process same event for non-identical particles
-template <typename T1,
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
@@ -100,10 +103,10 @@ void processSameEvent(T1 const& SliceParticle1,
 {
   // Fill single particle histograms
   for (auto const& part : SliceParticle1) {
-    ParticleHistManager1.fill(part, TrackTable);
+    ParticleHistManager1.template fill<mode>(part, TrackTable);
   }
   for (auto const& part : SliceParticle2) {
-    ParticleHistManager2.fill(part, TrackTable);
+    ParticleHistManager2.template fill<mode>(part, TrackTable);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
     // pair cleaning
@@ -118,13 +121,14 @@ void processSameEvent(T1 const& SliceParticle1,
     PairHistManager.setPair(p1, p2, Collision);
     CprManager.fill(PairHistManager.getKstar());
     if (PairHistManager.checkPairCuts()) {
-      PairHistManager.fill();
+      PairHistManager.template fill<mode>();
     }
   }
 }
 
 // process mixed event for identical particles
-template <typename T1,
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
@@ -166,14 +170,15 @@ void processMixedEvent(T1& Collisions,
       PairHistManager.setPair(p1, p2, collision1, collision2);
       CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
-        PairHistManager.fill();
+        PairHistManager.template fill<mode>();
       }
     }
   }
 }
 
 // process mixed event different particles
-template <typename T1,
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
@@ -217,7 +222,7 @@ void processMixedEvent(T1& Collisions,
       PairHistManager.setPair(p1, p2, collision1, collision2);
       CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
-        PairHistManager.fill();
+        PairHistManager.template fill<mode>();
       }
     }
   }

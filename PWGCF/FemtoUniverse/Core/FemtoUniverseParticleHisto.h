@@ -144,7 +144,7 @@ class FemtoUniverseParticleHisto
 
     mHistogramRegistry->add((folderName + folderSuffix + "/hTrueRecoMomPart1").c_str(), "; #it{p}_{reco} (GeV/#it{c}); #it{p}_{truth} - #it{p}_{reco} (GeV/#it{c})", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
     mHistogramRegistry->add((folderName + folderSuffix + "/hTrueRecoThetaPart1").c_str(), "; #it{p}_{reco} (GeV/#it{c}); #it{#theta}_{truth} - #it{#theta}_{reco} (GeV/#it{c})", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
-    mHistogramRegistry->add((folderName + folderSuffix + "/hTrueRecoMomPart1").c_str(), "; #it{p}_{reco} (GeV/#it{c}); #it{#phi}_{truth} - #it{#phi}_{reco} (GeV/#it{c})", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hTrueRecoPhiPart1").c_str(), "; #it{p}_{reco} (GeV/#it{c}); #it{#phi}_{truth} - #it{#phi}_{reco} (GeV/#it{c})", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
 
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
       /// Track histograms
@@ -355,9 +355,9 @@ class FemtoUniverseParticleHisto
           float part_theta = 2.0 * std::atan(std::exp(-part.eta()));
           float part_MC_theta = 2.0 * std::atan(std::exp(-part.fdMCParticle().eta()));
 
-          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoMomPion"), part_p, (part_MC_p - part_p));
-          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoThetaPion"), part_p, (part_MC_theta - part_theta));
-          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoMomPion"), part_p, part.fdMCParticle().phi() - part.phi());
+          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoMomPart1"), part_p, (part_MC_p - part_p));
+          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoThetaPart1"), part_p, (part_MC_theta - part_theta));
+          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoPhiPart1"), part_p, part.fdMCParticle().phi() - part.phi());
         }
       }
 

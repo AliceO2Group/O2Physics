@@ -118,21 +118,25 @@ constexpr char PrefixKstar[] = "Kstar0/";
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
 
-template <const char* resoPrefix, const char* posDauPrefix, const char* negDauPrefix, modes::Mode mode, modes::TwoTrackResonance reso>
+template <const char* resoPrefix,
+          const char* posDauPrefix,
+          const char* negDauPrefix,
+          modes::TwoTrackResonance reso>
 class TwoTrackResonanceHistManager
 {
  public:
   TwoTrackResonanceHistManager() = default;
   ~TwoTrackResonanceHistManager() = default;
 
+  template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
-    mPosDauManager.init(registry, PosDauSpecs);
-    mNegDauManager.init(registry, NegDauSpecs);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(ResoSpecs);
     }
@@ -148,7 +152,7 @@ class TwoTrackResonanceHistManager
     mNegDauManager.enableOptionalHistograms(NegDauConfBinningQa);
   }
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> ResoSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> PosDauSpecs,
@@ -157,19 +161,19 @@ class TwoTrackResonanceHistManager
             T2 const& NegDauConfBinningQa)
   {
     enableOptionalHistograms(PosDauConfBinningQa, NegDauConfBinningQa);
-    init(registry, ResoSpecs, PosDauSpecs, NegDauSpecs);
+    this->template init<mode>(registry, ResoSpecs, PosDauSpecs, NegDauSpecs);
   }
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& resonance, T2 const& tracks)
   {
     // this used to work, still under investigation
     // auto posDaughter = resonance.template posDau_as<T2>();
     // auto negDaughter = resonance.template negDau_as<T2>();
     auto posDaughter = tracks.rawIteratorAt(resonance.posDauId() - tracks.offset());
-    mPosDauManager.fill(posDaughter, tracks);
+    mPosDauManager.template fill<mode>(posDaughter, tracks);
     auto negDaughter = tracks.rawIteratorAt(resonance.negDauId() - tracks.offset());
-    mNegDauManager.fill(negDaughter, tracks);
+    mNegDauManager.template fill<mode>(negDaughter, tracks);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       fillAnalysis(resonance);
     }
@@ -222,8 +226,8 @@ class TwoTrackResonanceHistManager
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-  trackhistmanager::TrackHistManager<posDauPrefix, mode> mPosDauManager;
-  trackhistmanager::TrackHistManager<negDauPrefix, mode> mNegDauManager;
+  trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
+  trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };
 }; // namespace twotrackresonancehistmanager
 }; // namespace o2::analysis::femto

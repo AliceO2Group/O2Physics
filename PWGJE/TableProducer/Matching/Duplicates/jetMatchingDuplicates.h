@@ -10,14 +10,17 @@
 // or submit itself to any jurisdiction.
 
 /// \file jetmatching.cxx
-/// \brief matching event-wise constituent subtracted data jets and unsubtracted data jets
+/// \brief matching duplicate jets
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+
+#ifndef PWGJE_TABLEPRODUCER_MATCHING_DUPLICATES_JETMATCHINGDUPLICATES_H_
+#define PWGJE_TABLEPRODUCER_MATCHING_DUPLICATES_JETMATCHINGDUPLICATES_H_
 
 #include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
-#include "Framework/ASoA.h"
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
@@ -25,36 +28,32 @@
 
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
+template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename Tracks, typename Candidates>
+struct JetMatchingDuplicates {
 
-template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename TracksTag, typename Candidates>
-struct JetMatchingSub {
+  o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
+  o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
+  o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
+  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
 
-  Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
-  Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
-  Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
-  Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
-
-  Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
-  Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
+  o2::framework::Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
+  o2::framework::Produces<JetsTagtoBaseMatchingTable> jetsTagtoBaseMatchingTable;
 
   // preslicing jet collections, only for Mc-based collection
-  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<aod::JMcCollisions, JetsBase>();
-  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<aod::JMcCollisions, JetsTag>();
+  static constexpr bool jetsBaseIsMc = o2::soa::relatedByIndex<o2::aod::JMcCollisions, JetsBase>();
+  static constexpr bool jetsTagIsMc = o2::soa::relatedByIndex<o2::aod::JMcCollisions, JetsTag>();
 
-  Preslice<JetsBase> baseJetsPerCollision = jetsBaseIsMc ? aod::jet::mcCollisionId : aod::jet::collisionId;
-  Preslice<JetsTag> tagJetsPerCollision = jetsTagIsMc ? aod::jet::mcCollisionId : aod::jet::collisionId;
+  o2::framework::Preslice<JetsBase> baseJetsPerCollision = jetsBaseIsMc ? o2::aod::jet::mcCollisionId : o2::aod::jet::collisionId;
+  o2::framework::Preslice<JetsTag> tagJetsPerCollision = jetsTagIsMc ? o2::aod::jet::mcCollisionId : o2::aod::jet::collisionId;
 
-  void init(InitContext const&)
+  void init(o2::framework::InitContext const&)
   {
   }
 
-  void processJets(aod::JetCollisions const& collisions,
+  void processJets(o2::aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   aod::JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
+                   Tracks const& tracks, Candidates const& candidates)
   {
 
     // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
@@ -72,8 +71,8 @@ struct JetMatchingSub {
 
       const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.globalIndex());
       const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.globalIndex());
-
-      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, tracks, tracks, candidates, tracksSub, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+      // initialise template parameters as false since even if they are Mc we are not matching between detector and particle level
+      jetmatchingutilities::doAllMatching<false, false>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, tracks, tracks, candidates, tracks, tracks, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
     }
 
     for (auto i = 0; i < jetsBase.size(); ++i) {
@@ -83,5 +82,7 @@ struct JetMatchingSub {
       jetsTagtoBaseMatchingTable(jetsTagtoBaseMatchingGeo[i], jetsTagtoBaseMatchingPt[i], jetsTagtoBaseMatchingHF[i]); // is (and needs to) be filled in order
     }
   }
-  PROCESS_SWITCH(JetMatchingSub, processJets, "Perform jet matching", true);
+  PROCESS_SWITCH(JetMatchingDuplicates, processJets, "Perform jet matching", true);
 };
+
+#endif // PWGJE_TABLEPRODUCER_MATCHING_DUPLICATES_JETMATCHINGDUPLICATES_H_

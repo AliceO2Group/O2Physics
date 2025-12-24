@@ -226,15 +226,14 @@ constexpr std::string_view QaDir = "QA/";
 // template <femtomodes::Mode mode>
 template <const char* prefix,
           modes::Particle particleType1,
-          modes::Particle particleType2,
-          modes::Mode mode>
+          modes::Particle particleType2>
 class PairHistManager
 {
  public:
   PairHistManager() = default;
   ~PairHistManager() = default;
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs,
             T1 const& ConfPairBinning,
@@ -348,6 +347,7 @@ class PairHistManager
            (!(mMtMax > 0.f) || mMt < mMtMax);
   }
 
+  template <modes::Mode mode>
   void fill()
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {

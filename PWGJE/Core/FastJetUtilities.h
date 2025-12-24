@@ -17,6 +17,8 @@
 #ifndef PWGJE_CORE_FASTJETUTILITIES_H_
 #define PWGJE_CORE_FASTJETUTILITIES_H_
 
+#include <CommonConstants/PhysicsConstants.h>
+
 #include <fastjet/PseudoJet.hh>
 
 #include <cmath>
@@ -30,8 +32,6 @@ enum class JetConstituentStatus {
 
 namespace fastjetutilities
 {
-
-static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
 // Class defined to store additional info which is passed to the FastJet object
 class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
@@ -78,7 +78,7 @@ void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index
  */
 
 template <typename T>
-void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), float mass = mPion)
+void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), float mass = o2::constants::physics::MassPiPlus)
 {
   if (status == static_cast<int>(JetConstituentStatus::track) || status == static_cast<int>(JetConstituentStatus::candidate)) {
     // auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));

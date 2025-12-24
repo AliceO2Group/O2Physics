@@ -200,7 +200,6 @@ constexpr std::string_view QaDir = "QA/";
 template <const char* v0Prefix,
           const char* posDauPrefix,
           const char* negDauPrefix,
-          modes::Mode mode,
           modes::V0 v0>
 class V0HistManager
 {
@@ -208,14 +207,15 @@ class V0HistManager
   V0HistManager() = default;
   ~V0HistManager() = default;
 
+  template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<V0Hist, std::vector<o2::framework::AxisSpec>> const& V0Specs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
-    mPosDauManager.init(registry, PosDauSpecs);
-    mNegDauManager.init(registry, NegDauSpecs);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(V0Specs);
@@ -233,7 +233,7 @@ class V0HistManager
     mPlot2d = V0ConfBinningQa.plot2d.value;
   }
 
-  template <typename T1, typename T2, typename T3>
+  template <modes::Mode mode, typename T1, typename T2, typename T3>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<V0Hist, std::vector<o2::framework::AxisSpec>> const& V0Specs,
             T1 const& V0ConfBinningQa,
@@ -243,19 +243,16 @@ class V0HistManager
             T3 const& NegDauConfBinningQa)
   {
     enableOptionalHistograms(V0ConfBinningQa, PosDauConfBinningQa, NegDauConfBinningQa);
-    init(registry, V0Specs, PosDauSpecs, NegDauSpecs);
+    this->template init<mode>(registry, V0Specs, PosDauSpecs, NegDauSpecs);
   }
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& v0candidate, T2 const& tracks)
   {
-    // this used to work, still under investigation
-    // auto posDaughter = v0candidate.template posDau_as<T2>();
-    // auto negDaughter = v0candidate.template negDau_as<T2>();
     auto posDaughter = tracks.rawIteratorAt(v0candidate.posDauId() - tracks.offset());
-    mPosDauManager.fill(posDaughter, tracks);
+    mPosDauManager.template fill<mode>(posDaughter, tracks);
     auto negDaughter = tracks.rawIteratorAt(v0candidate.negDauId() - tracks.offset());
-    mNegDauManager.fill(negDaughter, tracks);
+    mNegDauManager.template fill<mode>(negDaughter, tracks);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       fillAnalysis(v0candidate);
@@ -375,8 +372,8 @@ class V0HistManager
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlot2d = true;
-  trackhistmanager::TrackHistManager<posDauPrefix, mode> mPosDauManager;
-  trackhistmanager::TrackHistManager<negDauPrefix, mode> mNegDauManager;
+  trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
+  trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };
 }; // namespace v0histmanager
 }; // namespace o2::analysis::femto

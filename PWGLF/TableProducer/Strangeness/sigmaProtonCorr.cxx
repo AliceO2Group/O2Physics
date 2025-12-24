@@ -25,6 +25,11 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
 
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -54,6 +59,7 @@ struct sigmaProtonCand {
   float sigmaDauPy = -1;     // Py of the daughter track from Sigma decay
   float sigmaDauPz = -1;     // Pz of the daughter track from Sigma decay
   float sigmaDecRadius = -1; // Decay radius of the Sigma candidate
+  float sigmaCosPA = -1;     // Cosine of pointing angle of the Sigma candidate
 
   int chargePr = 0; // Charge of the proton candidate
   float pxPr = -1;  // Px of the proton candidate
@@ -84,7 +90,7 @@ struct sigmaProtonCorrTask {
   Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
   Configurable<bool> doSigmaMinus{"doSigmaMinus", true, "If true, pair Sigma- candidates, else Sigma+"};
   Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
-  Configurable<float> cutSigmaMass{"cutSigmaMass", 0.3, "Sigma mass window (MeV/c^2)"};
+  Configurable<float> cutSigmaMass{"cutSigmaMass", 0.3, "Sigma mass window (GeV/c^2)"};
   Configurable<float> alphaAPCut{"alphaAPCut", 0., "Alpha AP cut for Sigma candidates"};
   Configurable<float> qtAPCutLow{"qtAPCutLow", 0.15, "Lower qT AP cut for Sigma candidates (GeV/c)"};
   Configurable<float> qtAPCutHigh{"qtAPCutHigh", 0.2, "Upper qT AP cut for Sigma candidates (GeV/c)"};
@@ -93,6 +99,8 @@ struct sigmaProtonCorrTask {
   Configurable<float> cutNTPCClusPr{"cutNTPCClusPr", 90, "Minimum number of TPC clusters for proton candidate"};
   Configurable<float> cutNSigmaTPC{"cutNSigmaTPC", 3, "NSigmaTPCPr"};
   Configurable<float> cutNSigmaTOF{"cutNSigmaTOF", 3, "NSigmaTOFPr"};
+
+  Configurable<float> cutMaxKStar{"cutMaxKStar", 1.5, "Maximum k* for Sigma-Proton pairs (GeV/c)"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Sigma-Proton candidates"};
 
@@ -140,6 +148,36 @@ struct sigmaProtonCorrTask {
     float p2V0 = std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f);
     float p2A = std::inner_product(momKink.begin(), momKink.end(), momKink.begin(), 0.f);
     return std::sqrt(p2A - dp * dp / p2V0);
+  }
+
+  float getCosPA(const std::array<float, 3>& momMother, const std::array<float, 3>& decayVertex, const std::array<float, 3>& primaryVertex)
+  {
+    std::array<float, 3> decayVec = {decayVertex[0] - primaryVertex[0], decayVertex[1] - primaryVertex[1], decayVertex[2] - primaryVertex[2]};
+    float dotProduct = std::inner_product(momMother.begin(), momMother.end(), decayVec.begin(), 0.f);
+    float momMotherMag = std::sqrt(std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f));
+    float decayVecMag = std::sqrt(std::inner_product(decayVec.begin(), decayVec.end(), decayVec.begin(), 0.f));
+    return dotProduct / (momMotherMag * decayVecMag);
+  }
+
+  TLorentzVector trackSum, PartOneCMS, PartTwoCMS, trackRelK;
+  float getKStar(const sigmaProtonCand& candidate)
+  {
+    TLorentzVector part1; // Sigma
+    TLorentzVector part2; // Proton
+    part1.SetXYZM(candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz, o2::constants::physics::MassSigmaMinus);
+    part2.SetXYZM(candidate.pxPr, candidate.pyPr, candidate.pzPr, o2::constants::physics::MassProton);
+    trackSum = part1 + part2;
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+    PartOneCMS.SetXYZM(part1.Px(), part1.Py(), part1.Pz(), part1.M());
+    PartTwoCMS.SetXYZM(part2.Px(), part2.Py(), part2.Pz(), part2.M());
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    PartOneCMS = boostPRF(PartOneCMS);
+    PartTwoCMS = boostPRF(PartTwoCMS);
+    trackRelK = PartOneCMS - PartTwoCMS;
+    return 0.5 * trackRelK.P();
   }
 
   template <typename Ttrack>
@@ -211,8 +249,8 @@ struct sigmaProtonCorrTask {
     return true;
   }
 
-  template <typename Ttrack>
-  void fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracksDauSigma, Ttrack const& tracks)
+  template <typename Ttrack, typename Tcollision>
+  void fillTreeAndHistograms(aod::KinkCands const& kinkCands, Ttrack const& tracksDauSigma, Ttrack const& tracks, Tcollision const& collision)
   {
     for (const auto& sigmaCand : kinkCands) {
       if (selectSigma(sigmaCand, tracksDauSigma)) {
@@ -237,6 +275,11 @@ struct sigmaProtonCorrTask {
           candidate.sigmaDauPz = sigmaCand.pzDaug();
           candidate.sigmaDecRadius = std::hypot(sigmaCand.xDecVtx(), sigmaCand.yDecVtx());
 
+          std::array<float, 3> momMoth = {sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+          std::array<float, 3> decayVtx = {sigmaCand.xDecVtx(), sigmaCand.yDecVtx(), sigmaCand.zDecVtx()};
+          std::array<float, 3> primaryVtx = {collision.posX(), collision.posY(), collision.posZ()};
+          candidate.sigmaCosPA = getCosPA(momMoth, decayVtx, primaryVtx);
+
           candidate.chargePr = prTrack.sign();
           candidate.pxPr = prTrack.px();
           candidate.pyPr = prTrack.py();
@@ -248,6 +291,10 @@ struct sigmaProtonCorrTask {
           candidate.sigmaID = sigmaCand.trackMothId();
           candidate.kinkDauID = sigmaCand.trackDaugId();
           candidate.prID = prTrack.globalIndex();
+
+          if (getKStar(candidate) > cutMaxKStar) {
+            continue;
+          }
 
           rSigmaProton.fill(HIST("h2PtPrNSigma"), candidate.ptPr(), candidate.nSigmaTPCPr);
           if (prTrack.hasTOF()) {
@@ -270,7 +317,7 @@ struct sigmaProtonCorrTask {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms(kinkCands_c, tracks_c, tracks_c);
+      fillTreeAndHistograms(kinkCands_c, tracks_c, tracks_c, collision);
       if (fillOutputTree) {
         // Fill output table
         for (const auto& candidate : sigmaProtonCandidates) {
@@ -282,6 +329,7 @@ struct sigmaProtonCorrTask {
                           candidate.sigmaDauPy,
                           candidate.sigmaDauPz,
                           candidate.sigmaDecRadius,
+                          candidate.sigmaCosPA,
                           candidate.chargePr,
                           candidate.pxPr,
                           candidate.pyPr,
@@ -316,10 +364,7 @@ struct sigmaProtonCorrTask {
       auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c1 = tracks.sliceBy(tracksPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c1, tracks_c1, tracks_c2);
-
-      auto kinkCands_c2 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c2, tracks_c2, tracks_c1);
+      fillTreeAndHistograms(kinkCands_c1, tracks_c1, tracks_c2, collision1);
 
       if (fillOutputTree) {
         // Fill output table
@@ -332,6 +377,7 @@ struct sigmaProtonCorrTask {
                           candidate.sigmaDauPy,
                           candidate.sigmaDauPz,
                           candidate.sigmaDecRadius,
+                          candidate.sigmaCosPA,
                           candidate.chargePr,
                           candidate.pxPr,
                           candidate.pyPr,
@@ -357,7 +403,7 @@ struct sigmaProtonCorrTask {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms(kinkCands_c, tracks_c, tracks_c);
+      fillTreeAndHistograms(kinkCands_c, tracks_c, tracks_c, collision);
       if (fillOutputTree) {
         // Fill output table
         for (const auto& candidate : sigmaProtonCandidates) {
@@ -375,6 +421,7 @@ struct sigmaProtonCorrTask {
                             candidate.sigmaDauPy,
                             candidate.sigmaDauPz,
                             candidate.sigmaDecRadius,
+                            candidate.sigmaCosPA,
                             candidate.chargePr,
                             candidate.pxPr,
                             candidate.pyPr,
@@ -407,10 +454,7 @@ struct sigmaProtonCorrTask {
       auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c1 = tracks.sliceBy(tracksPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c1, tracks_c1, tracks_c2);
-
-      auto kinkCands_c2 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c2, tracks_c2, tracks_c1);
+      fillTreeAndHistograms(kinkCands_c1, tracks_c1, tracks_c2, collision1);
 
       if (fillOutputTree) {
         // Fill output table
@@ -429,6 +473,7 @@ struct sigmaProtonCorrTask {
                             candidate.sigmaDauPy,
                             candidate.sigmaDauPz,
                             candidate.sigmaDecRadius,
+                            candidate.sigmaCosPA,
                             candidate.chargePr,
                             candidate.pxPr,
                             candidate.pyPr,
