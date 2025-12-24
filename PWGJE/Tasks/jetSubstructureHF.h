@@ -191,7 +191,7 @@ struct JetSubstructureHFTask {
   }
 
   template <bool isMCP, bool isSubtracted, typename T, typename U>
-  void jetReclustering(T const& jet, U& splittingTable)
+  void jetReclustering(T const& jet, U& splittingTable, int nHFCandidates)
   {
     energyMotherVec.clear();
     ptLeadingVec.clear();
@@ -207,16 +207,26 @@ struct JetSubstructureHFTask {
     auto nsd = 0.0;
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
 
-      bool isHFInSubjet1 = false;
+      int nHFInSubjet1 = 0;
       for (auto& subjet1Constituent : parentSubJet1.constituents()) {
         if (subjet1Constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidate)) {
-          isHFInSubjet1 = true;
-          break;
+          nHFInSubjet1++;
         }
       }
-      if (!isHFInSubjet1) {
+      if (nHFCandidates == 1 && nHFInSubjet1 == 0) {
         std::swap(parentSubJet1, parentSubJet2);
       }
+      if (nHFCandidates == 2) {
+        if (nHFInSubjet1 == 2) {
+          daughterSubJet = parentSubJet1;
+          continue;
+        }
+        if (nHFInSubjet1 == 0) {
+          daughterSubJet = parentSubJet2;
+          continue;
+        }
+      }
+
       std::vector<int32_t> tracks;
       std::vector<int32_t> candidates;
       std::vector<int32_t> clusters;
@@ -256,6 +266,9 @@ struct JetSubstructureHFTask {
         nsd++;
       }
       daughterSubJet = parentSubJet1;
+      if (nHFCandidates == 2 && nHFInSubjet1 == 1) {
+        break;
+      }
     }
     if constexpr (!isSubtracted && !isMCP) {
       registry.fill(HIST("h2_jet_pt_jet_nsd"), jet.pt(), nsd);
@@ -467,11 +480,13 @@ struct JetSubstructureHFTask {
     for (auto& jetConstituent : jet.template tracks_as<U>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
-    for (auto& jetHFCandidate : jet.template candidates_as<V>()) { // should only be one at the moment
+    int nHFCandidates = 0;
+    for (auto& jetHFCandidate : jet.template candidates_as<V>()) {
       fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
+      nHFCandidates++;
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-    jetReclustering<false, isSubtracted>(jet, splittingTable);
+    jetReclustering<false, isSubtracted>(jet, splittingTable, nHFCandidates);
     jetPairing<false, isSubtracted>(jet, tracks, candidates, trackSlicer, pairTable);
     jetSubstructureSimple(jet, tracks, candidates);
     outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
@@ -522,11 +537,13 @@ struct JetSubstructureHFTask {
     for (auto& jetConstituent : jet.template tracks_as<o2::aod::JetParticles>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
+    int nHFCandidates = 0;
     for (auto& jetHFCandidate : jet.template candidates_as<CandidateTableMCP>()) {
       fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
+      nHFCandidates++;
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, particles, particles, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-    jetReclustering<true, false>(jet, jetSplittingsMCPTable);
+    jetReclustering<true, false>(jet, jetSplittingsMCPTable, nHFCandidates);
     jetPairing<true, false>(jet, particles, candidates, ParticlesPerMcCollision, jetPairsMCPTable);
     jetSubstructureSimple(jet, particles, candidates);
     jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
