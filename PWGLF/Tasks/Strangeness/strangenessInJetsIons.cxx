@@ -76,11 +76,15 @@ using namespace o2::constants::math;
 using std::array;
 
 // Define convenient aliases for joined AOD tables
-using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using SelCollisions = soa::Join<aod::Collisions,
+                                aod::EvSels,
+                                aod::CentFT0Cs,
+                                aod::CentFT0Ms>;
 using SimCollisions = soa::Join<aod::McCollisionLabels,
                                 aod::Collisions,
                                 aod::EvSels,
-                                aod::CentFT0Cs>;
+                                aod::CentFT0Cs,
+                                aod::CentFT0Ms>;
 using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -123,6 +127,7 @@ struct StrangenessInJetsIons {
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from detector edge"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
+  Configurable<std::string> centrEstimator{"centrEstimator", "FT0C", "Select centrality estimator. Options: FT0C, FT0M"};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -204,7 +209,17 @@ struct StrangenessInJetsIons {
 
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-    AxisSpec multAxis = {multBinning, "FT0C percentile"};
+    std::string multAxTitle;
+    std::string centrEstimatorStr = static_cast<std::string>(centrEstimator);
+    if (centrEstimatorStr == "FT0C") {
+      multAxTitle = "FT0C percentile";
+    } else if (centrEstimatorStr == "FT0M") {
+      multAxTitle = "FT0M percentile";
+    } else {
+      LOG(fatal) << "Centrality estimator " << centrEstimatorStr << " not available. Exit." << endl;
+    }
+    AxisSpec multAxis = {multBinning, multAxTitle};
+
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
@@ -1140,7 +1155,12 @@ struct StrangenessInJetsIons {
     registryData.fill(HIST("number_of_events_data"), 7.5);
 
     // Event multiplicity
-    const float multiplicity = collision.centFT0C();
+    float multiplicity;
+    if (static_cast<std::string>(centrEstimator) == "FT0C") {
+      multiplicity = collision.centFT0C();
+    } else {
+      multiplicity = collision.centFT0M();
+    }
 
     // Fill event multiplicity
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
@@ -1351,7 +1371,11 @@ struct StrangenessInJetsIons {
           if (!selectRecoEvent(recoColl))
             continue;
 
-          multiplicity = recoColl.centFT0C();
+          if (static_cast<std::string>(centrEstimator) == "FT0C") {
+            multiplicity = recoColl.centFT0C();
+          } else {
+            multiplicity = recoColl.centFT0M();
+          }
           // LOGF(info, "  MC GEN index:  %d", collision.globalIndex());
           // LOGF(info, "  MC RECO index: %d", recoColl.mcCollisionId());
           // LOGF(info, "  multiplicity:  %f", multiplicity);
@@ -1668,7 +1692,12 @@ struct StrangenessInJetsIons {
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
 
       // Event multiplicity
-      const float multiplicity = collision.centFT0C();
+      float multiplicity;
+      if (static_cast<std::string>(centrEstimator) == "FT0C") {
+        multiplicity = collision.centFT0C();
+      } else {
+        multiplicity = collision.centFT0M();
+      }
 
       // Number of V0 and cascades per collision
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
