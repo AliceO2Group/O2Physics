@@ -11,15 +11,18 @@
 
 #include "FastTracker.h"
 
-#include "ReconstructionDataFormats/TrackParametrization.h"
+#include "Common/Core/TableHelper.h"
 
-#include "TMath.h"
-#include "TMatrixD.h"
-#include "TMatrixDSymEigen.h"
-#include "TRandom.h"
+#include <ReconstructionDataFormats/TrackParametrization.h>
+
 #include <TEnv.h>
 #include <THashList.h>
+#include <TMath.h>
+#include <TMatrixD.h>
+#include <TMatrixDSymEigen.h>
 #include <TObject.h>
+#include <TRandom.h>
+#include <TSystem.h>
 
 #include <fstream>
 #include <map>
@@ -30,6 +33,81 @@ namespace o2
 {
 namespace fastsim
 {
+
+std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string filename, std::vector<std::string>& layers)
+{
+  std::map<std::string, std::map<std::string, std::string>> configMap;
+  filename = gSystem->ExpandPathName(filename.c_str());
+  TEnv env(filename.c_str());
+  THashList* table = env.GetTable();
+  layers.clear();
+  for (int i = 0; i < table->GetEntries(); ++i) {
+    const std::string key = table->At(i)->GetName();
+    // key should contain exactly one dot
+    if (key.find('.') == std::string::npos || key.find('.') != key.rfind('.')) {
+      LOG(fatal) << "Key " << key << " does not contain exactly one dot";
+      continue;
+    }
+    const std::string firstPart = key.substr(0, key.find('.'));
+    if (std::find(layers.begin(), layers.end(), firstPart) == layers.end()) {
+      layers.push_back(firstPart);
+    }
+  }
+  env.Print();
+  // Layers
+  for (const auto& layer : layers) {
+    LOG(info) << " Reading layer " << layer;
+    for (int i = 0; i < table->GetEntries(); ++i) {
+      const std::string key = table->At(i)->GetName();
+      if (key.find(layer + ".") == 0) {
+        const std::string paramName = key.substr(key.find('.') + 1);
+        const std::string value = env.GetValue(key.c_str(), "");
+        configMap[layer][paramName] = value;
+      }
+    }
+  }
+  return configMap;
+}
+
+void GeometryContainer::init(o2::framework::InitContext& initContext)
+{
+  std::vector<std::string> detectorConfiguration;
+  const bool found = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "detectorConfiguration", detectorConfiguration, false);
+  if (!found) {
+    LOG(fatal) << "Could not retrieve detector configuration from OnTheFlyDetectorGeometryProvider task.";
+    return;
+  }
+  LOG(info) << "Size of detector configuration: " << detectorConfiguration.size();
+  for (const auto& configFile : detectorConfiguration) {
+    LOG(info) << "Detector geometry configuration file used: " << configFile;
+    addEntry(configFile);
+  }
+}
+
+std::map<std::string, std::string> GeometryContainer::GeometryEntry::getConfiguration(const std::string& layerName) const
+{
+  auto it = mConfigurations.find(layerName);
+  if (it != mConfigurations.end()) {
+    return it->second;
+  } else {
+    LOG(fatal) << "Layer " << layerName << " not found in geometry configurations.";
+    return {};
+  }
+}
+
+std::string GeometryContainer::GeometryEntry::getValue(const std::string& layerName, const std::string& key, bool require) const
+{
+  auto layer = getConfiguration(layerName);
+  auto entry = layer.find(key);
+  if (entry != layer.end()) {
+    return layer.at(key);
+  } else if (require) {
+    LOG(fatal) << "Key " << key << " not found in layer " << layerName << " configurations.";
+    return "";
+  } else {
+    return "";
+  }
+}
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
