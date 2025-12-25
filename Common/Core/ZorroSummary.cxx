@@ -56,19 +56,26 @@ Long64_t ZorroSummary::Merge(TCollection* list)
   return n;
 }
 
+std::unordered_map<int, std::vector<double>> ZorroSummary::getPerRunNormalisationFactors() const
+{
+  std::unordered_map<int, std::vector<double>> runNormalisations;
+  for (const auto& [runNumber, analysedTOIcounters] : mAnalysedTOIcounters) {
+    const double tvxCount = mTVXcounters.at(runNumber);
+    for (int toiId = 0; toiId < mNtois; ++toiId) {
+      double toiCount = mTOIcounters.at(runNumber).at(toiId);
+      ULong64_t analysedTOI = analysedTOIcounters.at(toiId);
+      runNormalisations[runNumber].push_back(tvxCount * analysedTOI / toiCount);
+    }
+  }
+  return runNormalisations;
+}
+
 double ZorroSummary::getNormalisationFactor(int toiId) const
 {
-  double totalTOI{0.}, totalTVX{0.};
-  ULong64_t totalAnalysedTOI{0};
-  for (const auto& [runNumber, toiCounters] : mTOIcounters) {
-    totalTOI += toiCounters.at(toiId);
+  double normalisationFactor{0.};
+  auto runNormalisations = getPerRunNormalisationFactors();
+  for (const auto& [runNumber, normalisations] : runNormalisations) {
+    normalisationFactor += normalisations.at(toiId);
   }
-  for (const auto& [runNumber, tvxCounters] : mTVXcounters) {
-    totalTVX += tvxCounters;
-  }
-  for (const auto& [runNumber, analysedTOIcounters] : mAnalysedTOIcounters) {
-    totalAnalysedTOI += analysedTOIcounters.at(toiId);
-  }
-
-  return totalTVX * totalAnalysedTOI / totalTOI;
+  return normalisationFactor;
 }
