@@ -128,23 +128,15 @@ class FastTracker
   void AddTPC(float phiResMean, float zResMean);
 
   /**
-   * @brief Parses a TEnv configuration file and returns the key-value pairs split per entry
-   * @param filename Path to the TEnv configuration file
-   * @return A map where each key is a layer name and the value is another map of key-value pairs for that layer
-   */
-  std::map<std::string, std::map<std::string, std::string>> parseTEnvConfiguration(std::string filename);
-
-  /**
    * @brief Adds a generic detector configuration from the specified file.
    *
    * This function loads and integrates a detector configuration into the tracker
    * using the provided filename. The file should contain the necessary parameters
    * and settings for the detector to be added.
    *
-   * @param filename Path to the configuration file describing the detector.
-   * @param ccdbManager Pointer to a BasicCCDBManager instance for database access (if needed).
+   * @param configMap Configuration map describing the detector.
    */
-  void AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
+  void AddGenericDetector(GeometryContainer::GeometryEntry configMap, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
 
   void Print();
 

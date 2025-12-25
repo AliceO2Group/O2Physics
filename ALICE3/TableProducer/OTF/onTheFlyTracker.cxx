@@ -66,9 +66,13 @@
 using namespace o2;
 using namespace o2::framework;
 using std::array;
-#define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
-#define fillHist(type, name, ...) \
-  std::get<std::shared_ptr<type>>(histPointers[name])->Fill(__VA_ARGS__);
+#define getHist(type, name) \
+  std::get<std::shared_ptr<type>>(histPointers[name])
+#define fillHist(type, name, ...)                                           \
+  if (histPointers.find(name) != histPointers.end())                        \
+    std::get<std::shared_ptr<type>>(histPointers[name])->Fill(__VA_ARGS__); \
+  else                                                                      \
+    LOG(fatal) << "Histogram " << name << " not found!";
 #define insertHist(name, ...) histPointers[name] = histos.add((name).c_str(), __VA_ARGS__);
 
 struct OnTheFlyTracker {
@@ -94,7 +98,6 @@ struct OnTheFlyTracker {
   Produces<aod::TrackSelectionExtension> tableTrackSelectionExtension;
 
   Configurable<int> seed{"seed", 0, "TGenPhaseSpace seed"};
-  Configurable<float> magneticField{"magneticField", 20.0f, "magnetic field in kG"};
   Configurable<float> maxEta{"maxEta", 1.5, "maximum eta to consider viable"};
   Configurable<float> multEtaRange{"multEtaRange", 0.8, "eta range to compute the multiplicity"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt to consider viable"};
@@ -112,19 +115,7 @@ struct OnTheFlyTracker {
   Configurable<bool> processUnreconstructedTracks{"processUnreconstructedTracks", false, "process (smear) unreco-ed tracks"};
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
-
-  struct : ConfigurableGroup {
-    std::string prefix = "lookUpTables"; // JSON group name
-    Configurable<std::vector<std::string>> lutEl{"lutEl", std::vector<std::string>{"lutCovm.el.dat                                "}, "LUT for electrons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutMu{"lutMu", std::vector<std::string>{"lutCovm.mu.dat                                "}, "LUT for muons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutPi{"lutPi", std::vector<std::string>{"lutCovm.pi.dat                                "}, "LUT for pions (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutKa{"lutKa", std::vector<std::string>{"lutCovm.ka.dat                                "}, "LUT for kaons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutPr{"lutPr", std::vector<std::string>{"lutCovm.pr.dat                                "}, "LUT for protons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutDe{"lutDe", std::vector<std::string>{"                                              "}, "LUT for deuterons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutTr{"lutTr", std::vector<std::string>{"                                              "}, "LUT for tritons (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutHe3{"lutHe3", std::vector<std::string>{"                                              "}, "LUT for Helium-3 (if emtpy no LUT is taken)"};
-    Configurable<std::vector<std::string>> lutAl{"lutAl", std::vector<std::string>{"                                              "}, "LUT for Alphas (if emtpy no LUT is taken)"};
-  } lookUpTables;
+  Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
@@ -152,7 +143,6 @@ struct OnTheFlyTracker {
     Configurable<int> minSiliconHits{"minSiliconHits", 6, "minimum number of silicon hits to accept track"};
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
-    Configurable<std::vector<std::string>> alice3geo{"alice3geo", std::vector<std::string>{"2"}, "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025, or path to ccdb with a3 geo (ccdb:Users/u/user/)"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
@@ -165,7 +155,6 @@ struct OnTheFlyTracker {
     std::string prefix = "fastPrimaryTrackerSettings";
     Configurable<bool> fastTrackPrimaries{"fastTrackPrimaries", false, "Use fasttracker for primary tracks. Enable with care"};
     Configurable<int> minSiliconHits{"minSiliconHits", 4, "minimum number of silicon hits to accept track"};
-    Configurable<std::string> alice3geo{"alice3geo", "2", "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025, or path to ccdb with a3 geo"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
@@ -193,15 +182,11 @@ struct OnTheFlyTracker {
   o2::vertexing::DCAFitterN<2> fitter;
 
   // FastTracker machinery
-  // o2::fastsim::FastTracker fastTracker;
   std::vector<std::unique_ptr<o2::fastsim::FastTracker>> fastTracker;
-  o2::fastsim::FastTracker fastPrimaryTracker;
 
   // V0 names for filling histograms
   static constexpr int NtypesV0 = 3;
   static constexpr std::string_view NameV0s[NtypesV0] = {"K0", "Lambda", "AntiLambda"};
-  static constexpr int NtypesDetectors = 4;
-  static constexpr std::string_view NameDetectors[NtypesDetectors] = {"0", "1", "2", "3"};
 
   // Class to hold the track information for the O2 vertexing
   class TrackAlice3 : public o2::track::TrackParCov
@@ -305,74 +290,76 @@ struct OnTheFlyTracker {
   TRandom3 rand;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  void init(o2::framework::InitContext&)
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
+  void init(o2::framework::InitContext& initContext)
   {
     LOG(info) << "Initializing OnTheFlyTracker task";
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
+    mGeoContainer.init(initContext);
 
-    auto loadLUT = [&](int icfg, int pdg, const std::vector<std::string>& tables) {
-      LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided tables with size " << tables.size();
-      if (tables.empty()) {
-        LOG(debug) << "No LUT file passed for pdg " << pdg << ", skipping.";
-        return false;
-      }
-      const bool foundNewCfg = static_cast<size_t>(icfg) < tables.size();
-      std::string lutFile = foundNewCfg ? tables[icfg] : tables.front();
-      LOG(info) << "Loading LUT for pdg " << pdg << " from file " << lutFile << " for config " << icfg;
-      // strip from leading/trailing spaces
-      lutFile.erase(0, lutFile.find_first_not_of(" "));
-      lutFile.erase(lutFile.find_last_not_of(" ") + 1);
-      if (lutFile.empty()) {
-        LOG(info) << "Empty LUT file name for pdg " << pdg << ", skipping.";
-        return false;
-      }
-      bool success = mSmearer[icfg]->loadTable(pdg, lutFile.c_str());
-      if (!success) {
-        LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
-      }
-
-      return foundNewCfg;
-    };
-    int nGeometries = static_cast<int>(fastTrackerSettings.alice3geo->size());
-    if (enablePrimarySmearing)
-      nGeometries = static_cast<int>(lookUpTables.lutPi->size());
-    if (enablePrimarySmearing && enableSecondarySmearing) {
-      if (static_cast<int>(lookUpTables.lutPi->size()) != static_cast<int>(fastTrackerSettings.alice3geo->size())) {
-        LOG(fatal) << "When enabling both primary and secondary smearing, the number of LUTs provided must match the number of geometries provided!";
-      }
-    }
-
+    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
-      std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+      const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
       mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
+      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
       mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+      std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
       if (enablePrimarySmearing) {
-        // check if more configs were provided, fall back to first entry
-        bool newLUTLoaded = false;
-        newLUTLoaded |= loadLUT(icfg, kElectron, lookUpTables.lutEl.value);
-        newLUTLoaded |= loadLUT(icfg, kMuonMinus, lookUpTables.lutMu.value);
-        newLUTLoaded |= loadLUT(icfg, kPiPlus, lookUpTables.lutPi.value);
-        newLUTLoaded |= loadLUT(icfg, kKPlus, lookUpTables.lutKa.value);
-        newLUTLoaded |= loadLUT(icfg, kProton, lookUpTables.lutPr.value);
-        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kDeuteron, lookUpTables.lutDe.value);
-        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kTriton, lookUpTables.lutTr.value);
-        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kHelium3, lookUpTables.lutHe3.value);
-        newLUTLoaded |= loadLUT(icfg, o2::constants::physics::kAlpha, lookUpTables.lutAl.value);
-        bool smearerOK = true;
-        if (!newLUTLoaded) {
-          mSmearer.pop_back();
-          // break;
-          smearerOK = false;
+        // load LUTs for primaries
+        for (const auto& entry : globalConfiguration) {
+          int pdg = 0;
+          if (entry.first.find("lut") != 0) {
+            continue;
+          }
+          if (entry.first.find("lutEl") != std::string::npos) {
+            pdg = kElectron;
+          } else if (entry.first.find("lutMu") != std::string::npos) {
+            pdg = kMuonMinus;
+          } else if (entry.first.find("lutPi") != std::string::npos) {
+            pdg = kPiPlus;
+          } else if (entry.first.find("lutKa") != std::string::npos) {
+            pdg = kKPlus;
+          } else if (entry.first.find("lutPr") != std::string::npos) {
+            pdg = kProton;
+          } else if (entry.first.find("lutDe") != std::string::npos) {
+            pdg = o2::constants::physics::kDeuteron;
+          } else if (entry.first.find("lutTr") != std::string::npos) {
+            pdg = o2::constants::physics::kTriton;
+          } else if (entry.first.find("lutHe3") != std::string::npos) {
+            pdg = o2::constants::physics::kHelium3;
+          } else if (entry.first.find("lutAl") != std::string::npos) {
+            pdg = o2::constants::physics::kAlpha;
+          }
+
+          std::string filename = entry.second;
+          if (pdg == 0) {
+            LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
+          }
+          LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          // strip from leading/trailing spaces
+          filename.erase(0, filename.find_first_not_of(" "));
+          filename.erase(filename.find_last_not_of(" ") + 1);
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
+          if (!success) {
+            LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
+          }
         }
 
         // interpolate efficiencies if requested to do so
-        if (smearerOK) {
-          mSmearer[icfg]->interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
+        mSmearer[icfg]->interpolateEfficiency(interpolateLutEfficiencyVsNch.value);
 
-          // smear un-reco'ed tracks if asked to do so
-          mSmearer[icfg]->skipUnreconstructed(static_cast<bool>(!processUnreconstructedTracks));
-        }
+        // smear un-reco'ed tracks if asked to do so
+        mSmearer[icfg]->skipUnreconstructed(!processUnreconstructedTracks.value);
 
         insertHist(histPath + "hPtGenerated", "hPtGenerated", {kTH1D, {{axes.axisMomentum}}});
         insertHist(histPath + "hPhiGenerated", "hPhiGenerated", {kTH1D, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}}});
@@ -395,20 +382,11 @@ struct OnTheFlyTracker {
 
       if (enableSecondarySmearing) {
         fastTracker.emplace_back(std::make_unique<o2::fastsim::FastTracker>());
-        fastTracker[icfg]->SetMagneticField(magneticField);
+        fastTracker[icfg]->SetMagneticField(mMagneticField);
         fastTracker[icfg]->SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
         fastTracker[icfg]->SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
         fastTracker[icfg]->SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
-        if (fastTrackerSettings.alice3geo.value[icfg] == "0") {
-          fastTracker[icfg]->AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
-        } else if (fastTrackerSettings.alice3geo.value[icfg] == "1") {
-          fastTracker[icfg]->AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
-          fastTracker[icfg]->AddTPC(0.1, 0.1);
-        } else if (fastTrackerSettings.alice3geo.value[icfg] == "2") {
-          fastTracker[icfg]->AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
-        } else {
-          fastTracker[icfg]->AddGenericDetector(fastTrackerSettings.alice3geo.value[icfg], ccdb.operator->());
-        }
+        fastTracker[icfg]->AddGenericDetector(mGeoContainer.getEntry(icfg), ccdb.operator->());
         // print fastTracker settings
         fastTracker[icfg]->Print();
         if (cascadeDecaySettings.doXiQA)
@@ -538,10 +516,10 @@ struct OnTheFlyTracker {
       }
     }
 
-    LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
+    LOG(info) << "Initializing magnetic field to value: " << mMagneticField << " kG";
     o2::parameters::GRPMagField grpmag;
     grpmag.setFieldUniformity(true);
-    grpmag.setL3Current(30000.f * (magneticField / 5.0f));
+    grpmag.setL3Current(30000.f * (mMagneticField / 5.0f));
     auto field = grpmag.getNominalL3Field();
     o2::base::Propagator::initFieldFromGRP(&grpmag);
 
@@ -582,28 +560,7 @@ struct OnTheFlyTracker {
 
     // Set seed for TGenPhaseSpace
     rand.SetSeed(seed);
-
-    // Configure FastTracker for primaries
-    if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
-      fastPrimaryTracker.SetMagneticField(magneticField);
-      fastPrimaryTracker.SetApplyZacceptance(fastPrimaryTrackerSettings.applyZacceptance);
-      fastPrimaryTracker.SetApplyMSCorrection(fastPrimaryTrackerSettings.applyMSCorrection);
-      fastPrimaryTracker.SetApplyElossCorrection(fastPrimaryTrackerSettings.applyElossCorrection);
-
-      if (fastPrimaryTrackerSettings.alice3geo.value == "0") {
-        fastPrimaryTracker.AddSiliconALICE3v2({0.00025, 0.00025, 0.001, 0.001});
-      } else if (fastPrimaryTrackerSettings.alice3geo.value == "1") {
-        fastPrimaryTracker.AddSiliconALICE3v4({0.00025, 0.00025, 0.001, 0.001});
-        fastPrimaryTracker.AddTPC(0.1, 0.1);
-      } else if (fastPrimaryTrackerSettings.alice3geo.value == "2") {
-        fastPrimaryTracker.AddSiliconALICE3(1., {0.00025, 0.00025, 0.001, 0.001});
-      } else {
-        fastPrimaryTracker.AddGenericDetector(fastPrimaryTrackerSettings.alice3geo, ccdb.operator->());
-      }
-
-      // print fastTracker settings
-      fastPrimaryTracker.Print();
-    }
+    gRandom->SetSeed(seed);
   }
 
   /// Function to decay the xi
@@ -622,7 +579,7 @@ struct OnTheFlyTracker {
 
     float sna, csa;
     o2::math_utils::CircleXYf_t circleXi;
-    track.getCircleParams(magneticField, circleXi, sna, csa);
+    track.getCircleParams(mMagneticField, circleXi, sna, csa);
     const double rxyXi = rxyzXi / std::sqrt(1. + track.getTgl() * track.getTgl());
     const double theta = rxyXi / circleXi.rC;
     const double newX = ((particle.vx() - circleXi.xC) * std::cos(theta) - (particle.vy() - circleXi.yC) * std::sin(theta)) + circleXi.xC;
@@ -769,15 +726,21 @@ struct OnTheFlyTracker {
     uint32_t multiplicityCounter = 0;
     getHist(TH1, histPath + "hLUTMultiplicity")->Fill(dNdEta);
 
-    gRandom->SetSeed(seed);
-
+    // Now that the multiplicity is known, we can process the particles to smear them
+    double xiDecayRadius2D = 0;
+    double laDecayRadius2D = 0;
+    double v0DecayRadius2D = 0;
+    std::vector<TLorentzVector> decayProducts;
+    std::vector<TLorentzVector> v0DecayProducts;
+    std::vector<double> xiDecayVertex, laDecayVertex, v0DecayVertex;
     for (const auto& mcParticle : mcParticles) {
-      double xiDecayRadius2D = 0;
-      double laDecayRadius2D = 0;
-      double v0DecayRadius2D = 0;
-      std::vector<TLorentzVector> decayProducts;
-      std::vector<TLorentzVector> v0DecayProducts;
-      std::vector<double> xiDecayVertex, laDecayVertex, v0DecayVertex;
+      xiDecayRadius2D = 0;
+      laDecayRadius2D = 0;
+      v0DecayRadius2D = 0;
+      xiDecayVertex.clear();
+      laDecayVertex.clear();
+      v0DecayVertex.clear();
+
       if (cascadeDecaySettings.decayXi) {
         if (mcParticle.pdgCode() == kXiMinus) {
           o2::track::TrackParCov xiTrackParCov;
@@ -837,7 +800,7 @@ struct OnTheFlyTracker {
           if (mcParticle.pdgCode() != v0PDGs[indexV0]) {
             continue;
           }
-          for (int indexDetector = 0; indexDetector < NtypesDetectors; indexDetector++) {
+          for (int indexDetector = 0; indexDetector < mGeoContainer.getNumberOfConfigurations(); indexDetector++) {
             std::string path = Form("V0Building_Configuration_%i/%s/", indexDetector, NameV0s[indexV0].data());
             fillHist(TH2, path + "hGen", v0DecayRadius2D, mcParticle.pt());
             fillHist(TH2, path + "hGenNegDaughterFromV0", v0DecayRadius2D, v0DecayProducts[0].Pt());
@@ -1059,11 +1022,11 @@ struct OnTheFlyTracker {
 
                   // find perfect intercept XYZ
                   float targetX = 1e+3;
-                  trackParCov.getXatLabR(layer.getRadius(), targetX, magneticField);
+                  trackParCov.getXatLabR(layer.getRadius(), targetX, mMagneticField);
                   if (targetX > 999)
                     continue; // failed to find intercept
 
-                  if (!trackParCov.propagateTo(targetX, magneticField)) {
+                  if (!trackParCov.propagateTo(targetX, mMagneticField)) {
                     continue; // failed to propagate
                   }
 
@@ -1090,7 +1053,7 @@ struct OnTheFlyTracker {
                     -TMath::Sin(alpha) * posClusterCandidate[0] + TMath::Cos(alpha) * posClusterCandidate[1],
                     posClusterCandidate[2]};
 
-                  if (!(cascadeTrack.propagateTo(xyz1[0], magneticField)))
+                  if (!(cascadeTrack.propagateTo(xyz1[0], mMagneticField)))
                     continue;
                   const o2::track::TrackParametrization<float>::dim2_t hitpoint = {static_cast<float>(xyz1[1]), static_cast<float>(xyz1[2])};
                   const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {layer.getResolutionRPhi() * layer.getResolutionRPhi(), 0.f, layer.getResolutionZ() * layer.getResolutionZ()};
@@ -1319,7 +1282,7 @@ struct OnTheFlyTracker {
       } else if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
         o2::track::TrackParCov o2Track;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, o2Track, pdgDB);
-        int nHits = fastPrimaryTracker.FastTrack(o2Track, trackParCov, dNdEta);
+        const int nHits = fastTracker[icfg]->FastTrack(o2Track, trackParCov, dNdEta);
         if (nHits < fastPrimaryTrackerSettings.minSiliconHits) {
           reconstructed = false;
         }
@@ -1430,6 +1393,7 @@ struct OnTheFlyTracker {
                     eventCollisionTimeNS, 0.f); // For the moment the event collision time is taken as the "GEANT" time, the computation of the event time is done a posteriori from the tracks in the OTF TOF PID task
     tableMcCollisionLabels(mcCollision.globalIndex(), 0);
     tableCollisionsAlice3(dNdEta);
+    tableOTFLUTConfigId(icfg); // Populate OTF LUT configuration ID
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
 
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
@@ -1441,7 +1405,7 @@ struct OnTheFlyTracker {
       if (populateTracksDCA) {
         float dcaXY = 1e+10, dcaZ = 1e+10;
         o2::track::TrackParCov trackParametrization(trackParCov);
-        if (trackParametrization.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+        if (trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }
@@ -1473,7 +1437,6 @@ struct OnTheFlyTracker {
           tableTracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
         }
       }
-      tableOTFLUTConfigId(icfg);
       tableStoredTracks(tableCollisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
       tableTracksExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
 
@@ -1509,7 +1472,7 @@ struct OnTheFlyTracker {
       if (populateTracksDCA) {
         float dcaXY = 1e+10, dcaZ = 1e+10;
         o2::track::TrackParCov trackParametrization(trackParCov);
-        if (trackParametrization.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+        if (trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
         }

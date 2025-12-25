@@ -68,6 +68,17 @@ struct OnTheFlyDetectorGeometryProvider {
       geometryContainer.addEntry(configFile);
       idx++;
     }
+
+    // First we check that the magnetic field is consistent
+    const int nGeometries = geometryContainer.getNumberOfConfigurations();
+    const float mMagneticField = geometryContainer.getFloatValue(0, "global", "magneticfield");
+    for (int icfg = 0; icfg < nGeometries; ++icfg) {
+      const float cfgBfield = geometryContainer.getFloatValue(icfg, "global", "magneticfield");
+      if (std::abs(cfgBfield - mMagneticField) > 1e-3) {
+        LOG(fatal) << "Inconsistent magnetic field values between configurations 0 and " << icfg << ": " << mMagneticField << " vs " << cfgBfield;
+      }
+    }
+
     pc.services().get<o2::framework::ControlService>().endOfStream();
     pc.services().get<o2::framework::ControlService>().readyToQuit(o2::framework::QuitRequest::Me);
   }
