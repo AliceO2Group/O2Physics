@@ -102,7 +102,7 @@ enum V0Channel { K0S = 0,
                  Lambda
 };
 
-struct HfProducerCharmHadronsV0emtoDream {
+struct HfProducerCharmHadronsV0FemtoDream {
 
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDColMasks> rowMasks;
@@ -1053,7 +1053,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::D0ToPiK, false, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataD0ToPiK, "Provide experimental data for D0ToPiK femto", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataD0ToPiK, "Provide experimental data for D0ToPiK femto", false);
 
   void processDataD0ToPiKWithML(FemtoFullCollision const& col,
                                 aod::BCsWithTimestamps const&,
@@ -1066,7 +1066,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::D0ToPiK, false, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataD0ToPiKWithML, "Provide experimental data for D0ToPiK with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataD0ToPiKWithML, "Provide experimental data for D0ToPiK with ml", false);
 
   void processMcD0ToPiK(FemtoFullCollisionMc const& col,
                         aod::BCsWithTimestamps const&,
@@ -1079,7 +1079,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::D0ToPiK, true, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcD0ToPiK, "Provide Mc for D0ToPiK", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcD0ToPiK, "Provide Mc for D0ToPiK", false);
 
   void processMcD0ToPiKWithML(FemtoFullCollisionMc const& col,
                               aod::BCsWithTimestamps const&,
@@ -1093,13 +1093,13 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::D0ToPiK, true, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcD0ToPiKWithML, "Provide Mc for D0ToPiK with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcD0ToPiKWithML, "Provide Mc for D0ToPiK with ml", false);
 
   void processMcD0ToPiKGen(GeneratedMc const& particles)
   {
     fillCharmHadMcGen<DecayChannel::D0ToPiK>(particles);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcD0ToPiKGen, "Provide Mc Generated D0ToPiK", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcD0ToPiKGen, "Provide Mc Generated D0ToPiK", false);
 
   /// DstarToD0Pi
   void processDataDstarToD0Pi(FemtoFullCollision const& col,
@@ -1112,7 +1112,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DstarToD0Pi, false, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataDstarToD0Pi, "Provide experimental data for DstarToD0Pi femto", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataDstarToD0Pi, "Provide experimental data for DstarToD0Pi femto", false);
 
   void processDataDstarToD0PiWithML(FemtoFullCollision const& col,
                                     aod::BCsWithTimestamps const&,
@@ -1125,7 +1125,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DstarToD0Pi, false, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataDstarToD0PiWithML, "Provide experimental data for DstarToD0Pi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataDstarToD0PiWithML, "Provide experimental data for DstarToD0Pi with ml", false);
 
   void processMcDstarToD0Pi(FemtoFullCollisionMc const& col,
                             aod::BCsWithTimestamps const&,
@@ -1138,7 +1138,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcDstarToD0Pi, "Provide Mc for DstarToD0Pi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDstarToD0Pi, "Provide Mc for DstarToD0Pi", false);
 
   void processMcDstarToD0PiWithML(FemtoFullCollisionMc const& col,
                                   aod::BCsWithTimestamps const&,
@@ -1152,14 +1152,14 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DstarToD0Pi, true, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcDstarToD0PiWithML, "Provide Mc for DstarToD0Pi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDstarToD0PiWithML, "Provide Mc for DstarToD0Pi with ml", false);
 
   void processMcDstarToD0PiGen(GeneratedMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DstarToD0Pi>(particles);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcDstarToD0PiGen, "Provide Mc Generated DstarToD0Pi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDstarToD0PiGen, "Provide Mc Generated DstarToD0Pi", false);
 
   /// DplusToPiKPi
   void processDataDplusToPiKPi(FemtoFullCollision const& col,
@@ -1172,7 +1172,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, false, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataDplusToPiKPi, "Provide experimental data for DplusToPiKPi femto", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataDplusToPiKPi, "Provide experimental data for DplusToPiKPi femto", false);
 
   void processDataDplusToPiKPiWithML(FemtoFullCollision const& col,
                                      aod::BCsWithTimestamps const&,
@@ -1186,7 +1186,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, false, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataDplusToPiKPiWithML, "Provide experimental data for DplusToPiKPi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataDplusToPiKPiWithML, "Provide experimental data for DplusToPiKPi with ml", false);
 
   void processMcDplusToPiKPi(FemtoFullCollisionMc const& col,
                              aod::BCsWithTimestamps const&,
@@ -1199,7 +1199,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcDplusToPiKPi, "Provide Mc for DplusToPiKPi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDplusToPiKPi, "Provide Mc for DplusToPiKPi", false);
 
   void processMcDplusToPiKPiWithML(FemtoFullCollisionMc const& col,
                                    aod::BCsWithTimestamps const&,
@@ -1213,14 +1213,14 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::DplusToPiKPi, true, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
 
   void processMcDplusToPiKPiGen(GeneratedMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DplusToPiKPi>(particles);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcDplusToPiKPiGen, "Provide Mc Generated DplusToPiKPi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDplusToPiKPiGen, "Provide Mc Generated DplusToPiKPi", false);
 
   /// LcToPKPi
   void processDataLcToPKPi(FemtoFullCollision const& col,
@@ -1233,7 +1233,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::LcToPKPi, false, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataLcToPKPi, "Provide experimental data for Lc(PKPi)-proton femto", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataLcToPKPi, "Provide experimental data for Lc(PKPi)-proton femto", false);
 
   void processDataLcToPKPiWithML(FemtoFullCollision const& col,
                                  aod::BCsWithTimestamps const&,
@@ -1247,7 +1247,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::LcToPKPi, false, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processDataLcToPKPiWithML, "Provide experimental data for Lc(PKPi)-proton femto with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processDataLcToPKPiWithML, "Provide experimental data for Lc(PKPi)-proton femto with ml", false);
 
   void processMcLcToPKPi(FemtoFullCollisionMc const& col,
                          aod::BCsWithTimestamps const&,
@@ -1260,7 +1260,7 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::LcToPKPi, true, false>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcLcToPKPi, "Provide Mc for lctopkpi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcLcToPKPi, "Provide Mc for lctopkpi", false);
 
   void processMcLcToPKPiWithML(FemtoFullCollisionMc const& col,
                                aod::BCsWithTimestamps const&,
@@ -1274,17 +1274,17 @@ struct HfProducerCharmHadronsV0emtoDream {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     fillCharmHadronTable<DecayChannel::LcToPKPi, true, true>(col, tracks, fullV0s, candidates);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
 
   void processMcLcToPKPiGen(GeneratedMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::LcToPKPi>(particles);
   }
-  PROCESS_SWITCH(HfProducerCharmHadronsV0emtoDream, processMcLcToPKPiGen, "Provide Mc Generated lctopkpi", false);
+  PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcLcToPKPiGen, "Provide Mc Generated lctopkpi", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfProducerCharmHadronsV0emtoDream>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfProducerCharmHadronsV0FemtoDream>(cfgc)};
 }
