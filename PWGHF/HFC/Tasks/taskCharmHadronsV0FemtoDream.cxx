@@ -512,7 +512,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
         col.multV0M(),
         p2.charge(),
         pairSign,
-        invMassV0,
+        invMassV0, // For the moment, use the delta-mass column to represent the V0 invariant mass
         processType,
         charmHadMc,
         originType);
