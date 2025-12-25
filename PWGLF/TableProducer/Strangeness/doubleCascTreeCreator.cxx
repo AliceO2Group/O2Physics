@@ -239,12 +239,14 @@ struct doubleCascTreeCreator {
       if (!isSelectedCasc(collision, tracks, casc1)) {
         continue;
       }
-      histos.fill(HIST("QA/massXi"), casc1.pt(), casc1.mXi());
-      histos.fill(HIST("QA/massOmega"), casc1.pt(), casc1.mOmega());
+      histos.fill(HIST("QA/massXi1"), casc1.pt(), casc1.mXi());
+      histos.fill(HIST("QA/massOmega1"), casc1.pt(), casc1.mOmega());
       for (auto& casc2 : cascades) {
         if (!isSelectedCasc(collision, tracks, casc2)) {
           continue;
         }
+        histos.fill(HIST("QA/massXi2"), casc2.pt(), casc2.mXi());
+        histos.fill(HIST("QA/massOmega2"), casc2.pt(), casc2.mOmega());
 
         if (casc1.posTrackId() == casc2.posTrackId() || casc1.posTrackId() == casc2.negTrackId() || casc1.bachelorId() == casc2.bachelorId()) {
           continue;

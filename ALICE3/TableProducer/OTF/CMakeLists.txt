@@ -28,3 +28,8 @@ o2physics_add_dpl_workflow(on-the-fly-tracker-pid
                     SOURCES onTheFlyTrackerPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(on-the-fly-detector-geometry-provider
+                    SOURCES onTheFlyDetectorGeometryProvider.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::ALICE3Core O2Physics::FastTracker
+                    COMPONENT_NAME Analysis)

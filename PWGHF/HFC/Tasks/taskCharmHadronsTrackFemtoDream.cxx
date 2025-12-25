@@ -340,7 +340,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   /// Compute the charm hadron candidates mass with the daughter masses
   /// assumes the candidate is either a D+ or Λc+ or D0 or Dstar
   template <DecayChannel Channel, typename Candidate>
-  float getCharmHadronMass(const Candidate& cand)
+  float getCharmHadronMass(const Candidate& cand, bool ReturnDaughMass = false)
   {
     float invMass = 0.0f;
     if constexpr (Channel == DecayChannel::LcToPKPi) {
@@ -350,32 +350,35 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassProton});
       return invMass;
-    }
-    // D+ → π K π (PDG: 411)
-    if constexpr (Channel == DecayChannel::DplusToPiKPi) {
+    } else if constexpr (Channel == DecayChannel::DplusToPiKPi) { // D+ → π K π (PDG: 411)
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
       return invMass;
-    }
-    // D0 → π K  (PDG: 421)
-    if constexpr (Channel == DecayChannel::D0ToPiK) {
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) { // D0 → π K  (PDG: 421)
       if (cand.candidateSelFlag() == 1) {
-
         invMass = cand.m(std::array{MassPiPlus, MassKPlus});
         return invMass;
       } else {
-
         invMass = cand.m(std::array{MassKPlus, MassPiPlus});
         return invMass;
       }
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* → D0π (PDG: 413)
+      float mDstar = 0.f;
+      float mD0 = 0.f;
+      if (cand.charge() > 0.f) {
+        mDstar = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
+        mD0 = cand.mDaughD0(std::array{MassPiPlus, MassKPlus});
+      } else {
+        mDstar = cand.m(std::array{MassKPlus, MassPiPlus, MassPiPlus});
+        mD0 = cand.mDaughD0(std::array{MassKPlus, MassPiPlus});
+      }
+      if (ReturnDaughMass) {
+        return mD0;
+      } else {
+        return mDstar - mD0;
+      }
     }
-    // D* → D0π (PDG: 413)
-    if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-      invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
-      return invMass;
-    }
-
     // Add more channels as needed
-    return invMass;
+    return 0.f;
   }
 
   template <DecayChannel Channel, typename Candidate, typename Track>
@@ -437,7 +440,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         // D* → D0π
-        massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
+        if (cand.candidateSelFlag() == 1) {
+          massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
+        } else {
+          massCharmTrk = {MassKPlus, MassPiPlus, MassPiPlus, trackMassHyp};
+        }
       }
 
       return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
@@ -698,7 +705,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       timeStamp = part.timeStamp();
 
-      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DstarToD0Pi) {
+      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
           col.globalIndex(),
@@ -728,9 +735,25 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.bdtBkg(),
           part.bdtPrompt(),
           part.bdtFD());
+      } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+        float invMassD0 = getCharmHadronMass<Channel>(part, true);
+        rowFemtoResultCharmDstar(
+          col.globalIndex(),
+          timeStamp,
+          invMass,
+          invMassD0,
+          part.pt(),
+          part.eta(),
+          part.phi(),
+          part.prong0Id(),
+          part.prong1Id(),
+          part.prong2Id(),
+          part.charge(),
+          part.bdtBkg(),
+          part.bdtPrompt(),
+          part.bdtFD());
       }
     }
-
     // ---- Fill Track Table ----
     for (auto const& part : sliceTrk1) {
       allTrackHisto.fillQA<IsMc, true>(
