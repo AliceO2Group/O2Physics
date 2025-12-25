@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file chargedparticleRaa.cxx
+/// \file ptmultCorr.cxx
 ///
 /// \brief task for analysis of charged-particle RAA at midrapidity in light-ion collisions
 /// \author Abhi Modak (abhi.modak@cern.ch)
