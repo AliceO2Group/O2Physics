@@ -104,8 +104,8 @@ o2physics_add_dpl_workflow(fwdtrackextension
                     SOURCES fwdtrackextension.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                                           O2::ReconstructionDataFormats
-                                          O2::DetectorsBase
-                                          O2::DetectorsCommonDataFormats
+					  O2::GlobalTracking
+					  O2::MCHTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-to-collision-associator
