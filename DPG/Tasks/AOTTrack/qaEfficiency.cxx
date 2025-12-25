@@ -276,7 +276,7 @@ struct QaEfficiency {
 
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs>;
   using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
-  using CollisionsWithMcLabels = o2::soa::join<o2::aod::Collisions, o2::aod::McCollisionLabels>;
+  using CollisionsWithMcLabels = o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
