@@ -475,7 +475,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         }
       }
 
-      if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
         if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
           continue;
         if (useCPR.value) {
