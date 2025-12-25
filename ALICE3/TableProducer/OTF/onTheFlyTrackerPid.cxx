@@ -433,8 +433,6 @@ struct OnTheFlyTrackerPid {
   void init(o2::framework::InitContext& initContext)
   {
     mGeoContainer.init(initContext);
-
-    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
     mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
