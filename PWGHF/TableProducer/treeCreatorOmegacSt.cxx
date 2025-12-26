@@ -410,12 +410,12 @@ struct HfTreeCreatorOmegacSt {
   bool isMatched = false;
   static constexpr std::size_t NDaughters{2u};
   enum ChannelType {
-    ANY = 0,
-    XIC_TO_XI_PI = 1,
-    XIC_TO_OMEGA_KA = 2,
-    OMEGAC_TO_OMEGA_PI = 3,
-    OMEGAC_TO_OMEGA_KA = 4,
-    OMEGAC_TO_XI_PI = 5
+    anyChannel = 0,
+    xicToXiPi = 1,
+    xicToOmegaKa = 2,
+    omegacToOmegaPi = 3,
+    omegacToOmegaKa = 4,
+    omegacToXiPi = 5
   };
 
   void processMc(aod::McCollisions const&,
@@ -787,22 +787,22 @@ struct HfTreeCreatorOmegacSt {
                     const bool anyChannelPass = massOmegacToOmegaKPass || massOmegacToOmegaPiPass || massXicToXiPiPass || massXicToOmegaKaPass || massOmegacToXiPiPass;
                     bool passSelectedChannel = true;
                     switch (selectedChannel.value) {
-                      case ANY:
+                      case anyChannel:
                         passSelectedChannel = anyChannelPass;
                         break;
-                      case XIC_TO_XI_PI:
+                      case xicToXiPi:
                         passSelectedChannel = massXicToXiPiPass;
                         break;
-                      case XIC_TO_OMEGA_KA:
+                      case xicToOmegaKa:
                         passSelectedChannel = massXicToOmegaKaPass;
                         break;
-                      case OMEGAC_TO_OMEGA_PI:
+                      case omegacToOmegaPi:
                         passSelectedChannel = massOmegacToOmegaPiPass;
                         break;
-                      case OMEGAC_TO_OMEGA_KA:
+                      case omegacToOmegaKa:
                         passSelectedChannel = massOmegacToOmegaKPass;
                         break;
-                      case OMEGAC_TO_XI_PI:
+                      case omegacToXiPi:
                         passSelectedChannel = massOmegacToXiPiPass;
                         break;
                       default:
