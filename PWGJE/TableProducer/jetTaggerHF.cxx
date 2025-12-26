@@ -139,6 +139,7 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> transformFeatureTrkStdev{"transformFeatureTrkStdev",
                                                             std::vector<float>{-999},
                                                             "Stdev values for each GNN input feature (track)"};
+  Configurable<std::string> tfFuncTypeGNN{"tfFuncTypeGNN", "linear", "Transformation function type for GNN"};
 
   // axis spec
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
@@ -525,7 +526,7 @@ struct JetTaggerHFTask {
     }
 
     if (doprocessAlgorithmGNN) {
-      tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst);
+      tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst, tfFuncTypeGNN.value);
 
       registry.add("h2_count_db", "#it{D}_{b} underflow/overflow;Jet flavour;#it{D}_{b} range", {HistType::kTH2F, {{4, 0., 4.}, {3, 0., 3.}}});
       auto h2CountDb = registry.get<TH2>(HIST("h2_count_db"));
