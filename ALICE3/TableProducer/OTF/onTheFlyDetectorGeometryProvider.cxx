@@ -82,6 +82,11 @@ struct OnTheFlyDetectorGeometryProvider {
     pc.services().get<o2::framework::ControlService>().endOfStream();
     pc.services().get<o2::framework::ControlService>().readyToQuit(o2::framework::QuitRequest::Me);
   }
+
+  void processDummy(o2::aod::McCollisions const&)
+  {
+  }
+  PROCESS_SWITCH(OnTheFlyDetectorGeometryProvider, processDummy, "process dummy", false);
 };
 
 // #define VERIFY_ALICE3
