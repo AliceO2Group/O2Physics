@@ -633,7 +633,7 @@ void readJsonVector(std::vector<T>& vec, const Document& config, const std::stri
 int main(int argc, const char* argv[])
 {
   if (argc == 1) {
-    std::cerr << "Not enough arguments. Please use\n./runMassFitter configFileName\n";
+    printf("Not enough arguments. Please use\n./runMassFitter configFileName\n");
     return 1;
   }
 
