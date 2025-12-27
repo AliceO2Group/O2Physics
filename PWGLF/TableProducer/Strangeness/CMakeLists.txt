@@ -168,3 +168,8 @@ if(FastJet_FOUND)
         PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
         COMPONENT_NAME Analysis)
 endif()
+
+o2physics_add_dpl_workflow(hstrangederiveddata
+    SOURCES hStrangeDerivedData.cxx
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
