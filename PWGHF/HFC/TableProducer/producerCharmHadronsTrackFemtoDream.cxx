@@ -586,7 +586,6 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-            LOG(info) << "trackPos1.sign(): " << trackPos1.sign() << " candFlag: " << candFlag;
             int signD0 = 0;
             if (candFlag == 0) {
               signD0 = +1; // D0
