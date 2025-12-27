@@ -158,8 +158,8 @@ class HFInvMassFitter : public TNamed
   double mSecMass;                 /// Second peak mean value
   double mSigmaSgn;                /// signal gaussian sigma
   double mSecSigma;                /// Second peak gaussian sigma
-  int mNSigmaForSidebands;         /// number of sigmas to veto the signal peak
-  int mNSigmaForSgn;               /// number of sigmas to veto the signal peak
+  double mNSigmaForSidebands;      /// number of sigmas to veto the signal peak
+  double mNSigmaForSgn;            /// number of sigmas to veto the signal peak
   double mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
   double mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
   bool mFixedMean;                 /// switch for fix mean of gaussian

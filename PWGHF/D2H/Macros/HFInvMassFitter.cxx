@@ -238,7 +238,7 @@ void HFInvMassFitter::doFit()
     // estimate signal yield
     RooAbsReal* bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkg")); // bkg integral
     mIntegralBkg = bkgIntegral->getValV();                                                  // fraction of BG's integral in "bkg" range out of that in "full" range (which is 1 by construction). Not an absolute value.
-    double estimatedSignal;
+    double estimatedSignal{};
     checkForSignal(estimatedSignal);              // SIG's absolute integral in "bkg" range
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
@@ -514,9 +514,9 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   textFitMetrics->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
   textFitMetrics->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
   if (mTypeOfBkgPdf != NoBkg) {
-    textFitMetrics->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
-    textFitMetrics->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
-    textFitMetrics->AddText(Form("Significance (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
+    textFitMetrics->AddText(Form("B (%.1f#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
+    textFitMetrics->AddText(Form("S/B (%.1f#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
+    textFitMetrics->AddText(Form("Significance (%.1f#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
     textFitMetrics->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
   }
   if (mReflPdf != nullptr) {
@@ -652,7 +652,7 @@ void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
   }
   sum += mHistoInvMass->GetBinContent(binForMaxSgn) * binForMaxSgnFraction;
 
-  double bkg, errBkg;
+  double bkg{}, errBkg{};
   calculateBackground(bkg, errBkg);
 
   signal = sum - bkg;
@@ -676,9 +676,9 @@ void HFInvMassFitter::calculateBackground(double& bkg, double& errBkg) const
 // calculate significance
 void HFInvMassFitter::calculateSignificance(double& significance, double& errSignificance) const
 {
-  double signal, errSignal;
+  double signal{}, errSignal{};
   calculateSignal(signal, errSignal);
-  double bkg, errBkg;
+  double bkg{}, errBkg{};
   calculateBackground(bkg, errBkg);
   double const sgnErrSquare = errSignal * errSignal;
   double const bkgErrSquare = errBkg * errBkg;
@@ -699,7 +699,7 @@ void HFInvMassFitter::checkForSignal(double& estimatedSignal)
   for (int i = binForMinSgn; i <= binForMaxSgn; i++) {
     sum += mHistoInvMass->GetBinContent(i);
   }
-  double bkg, errBkg;
+  double bkg{}, errBkg{};
   calculateBackground(bkg, errBkg);
   estimatedSignal = sum - bkg;
 }
@@ -804,7 +804,7 @@ void HFInvMassFitter::calculateFitToDataRatio() const
   RooHist* ratioHist = new RooHist();
 
   for (int i = 0; i < dataHist->GetN(); ++i) {
-    double x, dataY, dataErr;
+    double x{}, dataY{}, dataErr{};
     dataHist->GetPoint(i, x, dataY);
     dataErr = dataHist->GetErrorY(i);
 
