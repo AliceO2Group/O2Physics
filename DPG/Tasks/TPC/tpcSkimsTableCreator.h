@@ -21,7 +21,6 @@
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>

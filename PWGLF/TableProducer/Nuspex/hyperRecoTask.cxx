@@ -24,6 +24,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include "CCDB/BasicCCDBManager.h"
