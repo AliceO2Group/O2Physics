@@ -786,10 +786,10 @@ class EventSelectionModule
             diffVzParMean = *parMeans;
             diffVzParSigma = *parSigmas;
             LOGP(info, ">>> special treatment for diffVz for light ion run {}", runLightIons);
-            for (int i = 0; i < 5; i++)
-              LOGP(info, " mean par {} = {}", i, diffVzParMean[i]);
-            for (int i = 0; i < 5; i++)
-              LOGP(info, " sigma par {} = {}", i, diffVzParSigma[i]);
+            for (int j = 0; j < 5; j++)
+              LOGP(info, " mean par {} = {}", j, diffVzParMean[j]);
+            for (int j = 0; j < 5; j++)
+              LOGP(info, " sigma par {} = {}", j, diffVzParSigma[j]);
             break;
           }
         }
@@ -1044,8 +1044,9 @@ class EventSelectionModule
               }
             }
           }
-        } // end of if TOF-matched vertex
-        else { // for non-TOF and low-mult vertices, consider nearby nominal bcs
+          // end of if TOF-matched vertex
+        } else {
+          // for non-TOF and low-mult vertices, consider nearby nominal bcs
           int64_t meanBC = globalBC + TMath::Nint(sumHighPtTime / sumHighPtW / bcNS);
           int64_t bestGlobalBC = findBestGlobalBC(meanBC, evselOpts.confSigmaBCforHighPtTracks, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
           if (bestGlobalBC > 0) {
@@ -1064,7 +1065,7 @@ class EventSelectionModule
             foundBCindex = bc.globalIndex(); // keep original BC index
           }
         } // end of non-TOF matched vertices
-        //  sanitity check: if BC was not found
+        //  sanity check: if BC was not found
         if (foundBCindex == -1) {
           foundBCindex = bc.globalIndex();
         }
