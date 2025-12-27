@@ -16,15 +16,15 @@
 #ifndef PWGLF_DATAMODEL_REDUCEDF1PROTONTABLES_H_
 #define PWGLF_DATAMODEL_REDUCEDF1PROTONTABLES_H_
 
-#include <cmath>
-
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisDataModel.h"
+
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
