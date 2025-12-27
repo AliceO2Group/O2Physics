@@ -20,12 +20,12 @@
 #ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/OccupancyTables.h"
-#include "Common/DataModel/PIDResponse.h"
 
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

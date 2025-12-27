@@ -26,6 +26,8 @@
 
 #include <TRandom3.h>
 
+#include <cmath>
+
 namespace o2::dpg_tpcskimstablecreator
 {
 enum {

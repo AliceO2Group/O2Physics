@@ -26,7 +26,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/OccupancyTables.h"
@@ -38,16 +37,21 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/HistogramRegistry.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TRandom3.h>
 
+#include <array>
 #include <cmath>
 #include <concepts>
+#include <cstdint>
+#include <numeric>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -409,13 +413,13 @@ struct TreeWriterTpcV0 {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
-      const auto& v0s = myV0s.sliceBy(perCollisionV0s, collision.globalIndex());
-      const auto& cascs = myCascs.sliceBy(perCollisionCascs, collision.globalIndex());
+      const auto& v0s = myV0s.sliceBy(perCollisionV0s, static_cast<int>(collision.globalIndex()));
+      const auto& cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
       const auto& bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();
-      const float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
+      const auto hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
       const int bcGlobalIndex = bc.globalIndex();
-      int bcTimeFrameId, bcBcInTimeFrame;
+      int bcTimeFrameId{}, bcBcInTimeFrame{};
       if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
@@ -785,9 +789,9 @@ struct TreeWriterTpcTof {
 
       const auto& bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();
-      const float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
+      const auto hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
       const int bcGlobalIndex = bc.globalIndex();
-      int bcTimeFrameId, bcBcInTimeFrame;
+      int bcTimeFrameId{}, bcBcInTimeFrame{};
       if constexpr (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
