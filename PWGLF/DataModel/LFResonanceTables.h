@@ -22,15 +22,18 @@
 #ifndef PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 #define PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 
-#include <cmath>
-#include <algorithm>
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisDataModel.h"
+
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+
+#include <algorithm>
+#include <cmath>
 
 namespace o2::aod
 {

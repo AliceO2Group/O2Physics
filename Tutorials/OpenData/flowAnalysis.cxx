@@ -15,20 +15,23 @@
 /// \author
 /// \since
 
-#include <TF1.h>
-#include <TH3.h>
-#include <Framework/runDataProcessing.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Common/DataModel/EventSelection.h>
 #include <Common/CCDB/TriggerAliases.h>
 #include <Common/DataModel/Centrality.h>
+#include <Common/DataModel/EventSelection.h>
 #include <Common/DataModel/Multiplicity.h>
+#include <Common/DataModel/PIDResponseTOF.h>
+#include <Common/DataModel/PIDResponseTPC.h>
 #include <Common/DataModel/TrackSelectionTables.h>
-#include <Common/DataModel/PIDResponse.h>
+
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPObject.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TF1.h>
+#include <TH3.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,7 +75,7 @@ struct flow_base {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Filter collisionFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
 
   void fillAPt(double trackpt, double cent, double vn, double sinHarm, double cosHarm)
   {

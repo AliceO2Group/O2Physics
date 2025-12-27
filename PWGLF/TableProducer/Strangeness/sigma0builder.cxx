@@ -31,7 +31,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -84,8 +83,8 @@ struct sigma0builder {
   Produces<aod::Sigma0MCCores> sigma0mccores;          // Reco sigma0 MC properties
   Produces<aod::SigmaMCLabels> sigma0mclabel;          // Link of reco sigma0 to mcparticles
 
-  Produces<aod::Sigma0Gens> sigma0Gens;                // Generated sigma0s
-  Produces<aod::SigmaGenCollRef> sigma0GenCollRefs;    // references collisions from sigma0Gens[
+  Produces<aod::Sigma0Gens> sigma0Gens;             // Generated sigma0s
+  Produces<aod::SigmaGenCollRef> sigma0GenCollRefs; // references collisions from sigma0Gens[
 
   //__________________________________________________
   // Pi0 specific
@@ -709,8 +708,8 @@ struct sigma0builder {
     auto const& MCMothersList_v02 = MCParticle_v02.template mothers_as<aod::McParticles>();
 
     if (!MCMothersList_v01.empty() && !MCMothersList_v02.empty()) { // Are there mothers?
-      auto const& MCMother_v01 = MCMothersList_v01.front(); // First mother
-      auto const& MCMother_v02 = MCMothersList_v02.front(); // First mother
+      auto const& MCMother_v01 = MCMothersList_v01.front();         // First mother
+      auto const& MCMother_v02 = MCMothersList_v02.front();         // First mother
 
       if (MCMother_v01.globalIndex() == MCMother_v02.globalIndex()) { // Is it the same mother?
 
@@ -1261,7 +1260,7 @@ struct sigma0builder {
       // Pi0
       if (fillPi0Tables && MCGenInfo.IsPi0) {
         pi0Gens(MCGenInfo.IsProducedByGenerator, MCGenInfo.MCPt, mcParticle.y()); // optional table to store generated pi0 candidates. Be careful, this is a large table!
-        pi0GenCollRefs(MCGenInfo.MCCollId);                       // link to stramccollision table
+        pi0GenCollRefs(MCGenInfo.MCCollId);                                       // link to stramccollision table
       }
 
       // Sigma0/ASigma0
