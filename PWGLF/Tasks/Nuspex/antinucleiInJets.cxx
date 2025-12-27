@@ -563,6 +563,34 @@ struct AntinucleiInJets {
       registryCorr.add("q1p_square_fullEvent", "q1p_square_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis, subsampleAxis});
       registryCorr.add("q1d_q1p_fullEvent", "q1d_q1p_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis, subsampleAxis});
     }
+
+    // Systematic uncertainties on correlation analysis
+    if (doprocessCorrSyst) {
+
+      // Axes definitions for multidimensional histogram binning
+      const AxisSpec multiplicityAxis{100, 0.0, 100.0, "multiplicity percentile"};
+      const AxisSpec ptPerNucleonAxis{5, 0.4, 0.9, "{p}_{T}/A (GeV/#it{c})"};
+      const AxisSpec nAntideuteronsAxis{10, 0.0, 10.0, "N_{#bar{d}}"};
+      const AxisSpec nAntiprotonsAxis{10, 0.0, 10.0, "N_{#bar{p}}"};
+      const AxisSpec nBarD2Axis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{d}}^{j}"};
+      const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
+      const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
+      const AxisSpec systAxis{nSyst, 0, static_cast<double>(nSyst), "Systematic Variation Index"};
+
+      registryCorr.add("eventCounter_syst", "number of events syst", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryCorr.add("eventCounter_centrality_fullEvent_syst", "Number of events per centrality (Full Event) Syst", HistType::kTH2F, {multiplicityAxis, systAxis});
+
+      // Correlation histograms
+      registryCorr.add("rho_fullEvent_syst", "rho_fullEvent_syst", HistType::kTHnSparseD, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis, systAxis});
+      registryCorr.add("rho_netP_netD_fullEvent_syst", "rho_netP_netD_fullEvent_syst", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, systAxis});
+
+      // Efficiency histograms full event
+      registryCorr.add("q1d_fullEvent_syst", "q1d_fullEvent_syst", HistType::kTHnSparseD, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis, systAxis});
+      registryCorr.add("q1p_fullEvent_syst", "q1p_fullEvent_syst", HistType::kTHnSparseD, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis, systAxis});
+      registryCorr.add("q1d_square_fullEvent_syst", "q1d_square_fullEvent_syst", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis, systAxis});
+      registryCorr.add("q1p_square_fullEvent_syst", "q1p_square_fullEvent_syst", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis, systAxis});
+      registryCorr.add("q1d_q1p_fullEvent_syst", "q1d_q1p_fullEvent_syst", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis, systAxis});
+    }
   }
 
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString antip, TString antilambda, TString antisigma, TString antixi, TString antiomega, TString jet, TString ue)
