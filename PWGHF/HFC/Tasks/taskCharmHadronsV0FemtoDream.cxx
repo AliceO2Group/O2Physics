@@ -181,42 +181,42 @@ struct HfTaskCharmHadronsV0FemtoDream {
   using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>>;
   using FilteredFDMcPart = FilteredFDMcParts::iterator;
 
-  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>>;
-  using FilteredFDParticle = FilteredFDParticles::iterator;
+  using FDV0Particles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>;
+  using FDV0Particle = FDV0Particles::iterator;
 
   Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
   Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= eventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= eventSel.multPercentileMax;
   Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= charmSel.charmHadCandSel;
   Filter hfMcSelFilter = (nabs(aod::fdhf::flagMc) == charmSel.charmHadMcSel);
 
-  Preslice<FilteredFDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
+  Preslice<FDV0Particles> perCol = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCand3Prongs> perHf3ProngByCol = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCand2Prongs> perHf2ProngByCol = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCandDstars> perHfDstarByCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Partition for particle Lambda
-  Partition<FilteredFDParticles> partitionLambda = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                                   ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
-                                                   (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
-                                                   (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
-                                                   (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
-                                                   (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
-                                                   (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
-                                                   (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
-                                                   (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
-                                                   (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
+  Partition<FDV0Particles> partitionLambda = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+                                             ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
+                                             (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
+                                             (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
+                                             (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
+                                             (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
+                                             (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
+                                             (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
+                                             (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
+                                             (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
   /// Partition for particle K0Short
-  Partition<FilteredFDParticles> partitionK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
-                                                    ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
-                                                    (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
-                                                    (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
-                                                    (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
-                                                    (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
-                                                    (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
-                                                    (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
-                                                    (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
-                                                    (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
+  Partition<FDV0Particles> partitionK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
+                                              ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
+                                              (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
+                                              (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
+                                              (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
+                                              (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
+                                              (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
+                                              (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
+                                              (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
+                                              (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
   /// Partition for particle 2
   Partition<FilteredCharmCand3Prongs> partitionCharmHadron3Prong = aod::fdhf::bdtBkg < charmSel.charmHadBkgBDTmax && aod::fdhf::bdtFD < charmSel.charmHadFdBDTmax && aod::fdhf::bdtFD > charmSel.charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmSel.charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmSel.charmHadPromptBDTmin;
@@ -241,7 +241,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
     ConfigurableAxis binmT{"binmT", {225, 0., 7.5}, "binning mT"};
     ConfigurableAxis binmultTempFit{"binmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
     ConfigurableAxis binMulPercentile{"binMulPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
-    ConfigurableAxis binpTV0{"binpTV0", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
+    ConfigurableAxis binpTV0{"binpTV0", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
+    ConfigurableAxis binInvMassV0{"binInvMassV0", {100, 0.45, 0.55}, "inv.Mass binning of the pT vs. TempFitVar plot (V0)"};
     ConfigurableAxis binpTV0Child{"binpTV0Child", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0 Child)"};
     ConfigurableAxis binEta{"binEta", {{200, -1.5, 1.5}}, "eta binning"};
     ConfigurableAxis binPhi{"binPhi", {{200, 0, o2::constants::math::TwoPI}}, "phi binning"};
@@ -280,7 +281,10 @@ struct HfTaskCharmHadronsV0FemtoDream {
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 1> v0HistoPartOne;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 5> v0HistoPartOneSelected;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> posChildHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 6> posChildHistosSelected;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 4> negChildHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 7> negChildHistosSelected;
+
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
   /// Histogram output
@@ -295,23 +299,26 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
   void init(InitContext& /*context*/)
   {
-    std::array<bool, 4> processes = {doprocessDataLcK0s, doprocessDataDplusK0s, doprocessDataD0K0s, doprocessDataDstarK0s};
+    std::array<bool, 4> processes = {doprocessDataLcV0, doprocessDataDplusV0, doprocessDataD0V0, doprocessDataDstarV0};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
-    bool process3Prong = doprocessDataLcK0s || doprocessDataDplusK0s;
-    bool process2Prong = doprocessDataD0K0s;
-    bool processDstar = doprocessDataDstarK0s;
+    bool process3Prong = doprocessDataLcV0 || doprocessDataDplusV0;
+    bool process2Prong = doprocessDataD0V0;
+    bool processDstar = doprocessDataDstarV0;
 
     // setup columnpolicy for binning
     colBinningMult = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult}, true};
     colBinningMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMultPercentile}, true};
     colBinningMultMultPercentile = {{AxisBinning.mixingBinVztx, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile}, true};
     eventHisto.init(&registry);
-    v0HistoPartOne.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, isMc, v0Sel.pdgCodeV0);
-    v0HistoPartOneSelected.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, isMc, v0Sel.pdgCodeV0);
-    posChildHistos.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binTempFitVarV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, false, 0);
-    negChildHistos.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binTempFitVarV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, false, 0);
+    v0HistoPartOne.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);
+    v0HistoPartOneSelected.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.binInvMassV0, AxisBinning.binInvMassV0, isMc, v0Sel.pdgCodeV0, true);
+    posChildHistos.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0Child, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, false, 0);
+    posChildHistosSelected.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0Child, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, false, 0);
+    negChildHistos.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0Child, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, false, 0);
+    negChildHistosSelected.init(&registry, AxisBinning.binmultTempFit, AxisBinning.dummy, AxisBinning.binpTV0Child, AxisBinning.binEta, AxisBinning.binPhi, AxisBinning.binTempFitVarV0Child, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, AxisBinning.dummy, false, 0);
+
     sameEventCont.init(&registry,
                        AxisBinning.binkstar, AxisBinning.binpTV0, AxisBinning.binkT, AxisBinning.binmT, AxisBinning.mixingBinMult, AxisBinning.mixingBinMultPercentile,
                        AxisBinning.bin4Dkstar, AxisBinning.bin4DmT, AxisBinning.bin4DMult, AxisBinning.bin4DmultPercentile,
@@ -410,38 +417,12 @@ struct HfTaskCharmHadronsV0FemtoDream {
       if constexpr (Channel == DecayChannel::D0ToPiK) {
         if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id())
           continue;
-
-        if (useCPR.value) {
-          if (pairCloseRejectionSE2Prong.isClosePair(p1, p2, femtoParts, col.magField())) {
-            continue;
-          }
-        }
-        if (!pairCleaner2Prong.isCleanPair(p1, p2, femtoParts)) {
-          continue;
-        }
       } else if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
         if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id())
           continue;
-        if (useCPR.value) {
-          if (pairCloseRejectionSE3Prong.isClosePair(p1, p2, femtoParts, col.magField())) {
-            continue;
-          }
-        }
-        if (!pairCleaner3Prong.isCleanPair(p1, p2, femtoParts)) {
-          continue;
-        }
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id())
           continue;
-        if (useCPR.value) {
-          if (pairCloseRejectionSEDstar.isClosePair(p1, p2, femtoParts, col.magField())) {
-            continue;
-          }
-        }
-
-        if (!pairCleanerDstar.isCleanPair(p1, p2, femtoParts)) {
-          continue;
-        }
       }
       // v0 daughters selection
       const auto& posChild = femtoParts.iteratorAt(p1.index() - 2);
@@ -450,14 +431,12 @@ struct HfTaskCharmHadronsV0FemtoDream {
           ((posChild.pidcut() & v0Sel.childPosTPCBit) == v0Sel.childPosTPCBit) &&
           ((negChild.cut() & v0Sel.childNegCutBit) == v0Sel.childNegCutBit) &&
           ((negChild.pidcut() & v0Sel.childNegTPCBit) == v0Sel.childNegTPCBit)) {
-
         v0HistoPartOneSelected.fillQA<IsMc, true>(p1, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        posChildHistos.fillQA<false, false>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        negChildHistos.fillQA<false, false>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        posChildHistosSelected.fillQA<false, false>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        negChildHistosSelected.fillQA<false, false>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
       } else {
         continue;
       }
-
       float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
       if (kstar > highkstarCut) {
         continue;
@@ -522,7 +501,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
   }
 
   template <bool IsMc, DecayChannel Channel, typename CollisionType, typename PartitionType1, typename PartitionType2, typename FDParticles, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartitionType1& charms, PartitionType2& v0s, FDParticles const& femtoParts, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartitionType1& charms, PartitionType2& v0s, FDParticles const& /*femtoParts*/, BinningType policy)
   {
     processType = 2; // for mixed event
     // Mixed events that contain the pair of interest
@@ -544,45 +523,6 @@ struct HfTaskCharmHadronsV0FemtoDream {
       auto sliceV01 = v0s->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto sliceCharmHad = charms->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceV01, sliceCharmHad))) {
-
-        if constexpr (Channel == DecayChannel::D0ToPiK) {
-
-          if (useCPR.value) {
-            if (pairCloseRejectionME2Prong.isClosePair(p1, p2, femtoParts, collision1.magField())) {
-              continue;
-            }
-          }
-
-          if (!pairCleaner2Prong.isCleanPair(p1, p2, femtoParts)) {
-            continue;
-          }
-        }
-
-        if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
-
-          if (useCPR.value) {
-            if (pairCloseRejectionME3Prong.isClosePair(p1, p2, femtoParts, collision1.magField())) {
-              continue;
-            }
-          }
-
-          if (!pairCleaner3Prong.isCleanPair(p1, p2, femtoParts)) {
-            continue;
-          }
-        }
-
-        if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-
-          if (useCPR.value) {
-            if (pairCloseRejectionME3Prong.isClosePair(p1, p2, femtoParts, collision1.magField())) {
-              continue;
-            }
-          }
-
-          if (!pairCleanerDstar.isCleanPair(p1, p2, femtoParts)) {
-            continue;
-          }
-        }
 
         float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
         if (kstar > highkstarCut) {
@@ -639,7 +579,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
           collision1.multV0M(),
           p2.charge(),
           pairSign,
-          invMassV0,
+          invMassV0, // For the moment, use the delta-mass column to represent the V0 invariant mass
           processType,
           charmHadMc,
           originType);
@@ -714,7 +654,6 @@ struct HfTaskCharmHadronsV0FemtoDream {
 
     // ---- Fill V0 Table ----
     for (auto const& part : sliceV01) {
-
       // v0 daughters selection
       const auto& posChild = femtoParts.iteratorAt(part.index() - 2);
       const auto& negChild = femtoParts.iteratorAt(part.index() - 1);
@@ -723,12 +662,30 @@ struct HfTaskCharmHadronsV0FemtoDream {
           ((negChild.cut() & v0Sel.childNegCutBit) == v0Sel.childNegCutBit) &&
           ((negChild.pidcut() & v0Sel.childNegTPCBit) == v0Sel.childNegTPCBit)) {
         v0HistoPartOne.fillQA<IsMc, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        posChildHistos.fillQA<false, false>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        negChildHistos.fillQA<false, false>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
       } else {
         continue;
       }
-
       std::vector<int> childIds = {part.childrenIds()[0], part.childrenIds()[1]};
       timeStamp = part.timeStamp();
+      float tpcNSigma = 999.f;
+      float tofNSigma = 999.f;
+      switch (v0Sel.pdgCodeV0.value) {
+        case kLambda0:
+          tpcNSigma = posChild.tpcNSigmaPr(); // todo: add neg case
+          tofNSigma = posChild.tofNSigmaPr(); // todo: add neg case
+          break;
+        case kK0Short:
+          tpcNSigma = posChild.tpcNSigmaPi(); // todo: add neg case
+          tofNSigma = posChild.tofNSigmaPi(); // todo: add neg case
+          break;
+        default:
+          LOG(fatal) << "Unhandled PDG code in PID switch: "
+                     << v0Sel.pdgCodeV0.value;
+          break;
+      }
+
       rowFemtoResultV0(
         col.globalIndex(),
         timeStamp,
@@ -739,11 +696,11 @@ struct HfTaskCharmHadronsV0FemtoDream {
         part.sign(),
         part.mLambda(),
         part.mAntiLambda(),
-        part.tpcNClsFound(),
-        part.tpcNClsFindable(),
-        part.tpcNClsCrossedRows(),
-        part.tpcNSigmaPr(),
-        part.tofNSigmaPr());
+        posChild.tpcNClsFound(),
+        posChild.tpcNClsFindable(),
+        posChild.tpcNClsCrossedRows(),
+        tpcNSigma,
+        tofNSigma);
     }
 
     // ---- Fill Collision Table ----
@@ -756,9 +713,40 @@ struct HfTaskCharmHadronsV0FemtoDream {
     }
   }
 
-  void processDataLcK0s(FilteredCollisions const& cols,
-                        FilteredFDParticles const& parts,
-                        FilteredCharmCand3Prongs const&)
+  template <DecayChannel Channel, typename CharmPart>
+  void runMixing(FilteredCollisions const& cols,
+                 FDV0Particles const& parts,
+                 CharmPart& charmPart)
+  {
+    if (!mixSetting.doMixEvent)
+      return;
+    auto run = [&](auto& v0Part) {
+      switch (mixSetting.mixingBinPolicy) {
+        case femtodreamcollision::kMult:
+          doMixedEvent<false, Channel, FilteredCollisions>(cols, charmPart, v0Part, parts, colBinningMult);
+          break;
+        case femtodreamcollision::kMultPercentile:
+          doMixedEvent<false, Channel, FilteredCollisions>(cols, charmPart, v0Part, parts, colBinningMultPercentile);
+          break;
+        case femtodreamcollision::kMultMultPercentile:
+          doMixedEvent<false, Channel, FilteredCollisions>(cols, charmPart, v0Part, parts, colBinningMultMultPercentile);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
+    };
+
+    if (v0Sel.pdgCodeV0 == kLambda0)
+      run(partitionLambda);
+    else if (v0Sel.pdgCodeV0 == kK0Short)
+      run(partitionK0Short);
+    else
+      LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310) for mixed-events";
+  }
+
+  void processDataLcV0(FilteredCollisions const& cols,
+                       FDV0Particles const& parts,
+                       FilteredCharmCand3Prongs const&)
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -781,31 +769,16 @@ struct HfTaskCharmHadronsV0FemtoDream {
           doSameEvent<false, DecayChannel::LcToPKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceV0, parts, col);
         }
       } else {
-        LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310)";
+        LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310) for same events";
       }
     }
-
-    if (mixSetting.doMixEvent) {
-      switch (mixSetting.mixingBinPolicy) {
-        case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionK0Short, parts, colBinningMult);
-          break;
-        case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionK0Short, parts, colBinningMultPercentile);
-          break;
-        case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionK0Short, parts, colBinningMultMultPercentile);
-          break;
-        default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
-      }
-    }
+    runMixing<DecayChannel::LcToPKPi>(cols, parts, partitionCharmHadron3Prong);
   }
-  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataLcK0s, "Enable processing LcToPKPi and V0 correlation", false);
+  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataLcV0, "Enable processing LcToPKPi and V0 correlation", false);
 
-  void processDataDplusK0s(FilteredCollisions const& cols,
-                           FilteredFDParticles const& parts,
-                           FilteredCharmCand3Prongs const&)
+  void processDataDplusV0(FilteredCollisions const& cols,
+                          FDV0Particles const& parts,
+                          FilteredCharmCand3Prongs const&)
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -831,28 +804,13 @@ struct HfTaskCharmHadronsV0FemtoDream {
         LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310)";
       }
     }
-
-    if (mixSetting.doMixEvent) {
-      switch (mixSetting.mixingBinPolicy) {
-        case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionK0Short, parts, colBinningMult);
-          break;
-        case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionK0Short, parts, colBinningMultPercentile);
-          break;
-        case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionK0Short, parts, colBinningMultMultPercentile);
-          break;
-        default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
-      }
-    }
+    runMixing<DecayChannel::DplusToPiKPi>(cols, parts, partitionCharmHadron3Prong);
   }
-  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataDplusK0s, "Enable processing DplusToPiKPi and V0 correlation", false);
+  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataDplusV0, "Enable processing DplusToPiKPi and V0 correlation", false);
 
-  void processDataD0K0s(FilteredCollisions const& cols,
-                        FilteredFDParticles const& parts,
-                        FilteredCharmCand2Prongs const&)
+  void processDataD0V0(FilteredCollisions const& cols,
+                       FDV0Particles const& parts,
+                       FilteredCharmCand2Prongs const&)
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -878,28 +836,13 @@ struct HfTaskCharmHadronsV0FemtoDream {
         LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310)";
       }
     }
-
-    if (mixSetting.doMixEvent) {
-      switch (mixSetting.mixingBinPolicy) {
-        case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, partitionK0Short, parts, colBinningMult);
-          break;
-        case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, partitionK0Short, parts, colBinningMultPercentile);
-          break;
-        case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, partitionK0Short, parts, colBinningMultMultPercentile);
-          break;
-        default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
-      }
-    }
+    runMixing<DecayChannel::D0ToPiK>(cols, parts, partitionCharmHadron2Prong);
   }
-  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataD0K0s, "Enable processing D0ToPiK and V0 correlation", false);
+  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataD0V0, "Enable processing D0ToPiK and V0 correlation", false);
 
-  void processDataDstarK0s(FilteredCollisions const& cols,
-                           FilteredFDParticles const& parts,
-                           FilteredCharmCandDstars const&)
+  void processDataDstarV0(FilteredCollisions const& cols,
+                          FDV0Particles const& parts,
+                          FilteredCharmCandDstars const&)
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
@@ -925,24 +868,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
         LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310)";
       }
     }
-
-    if (mixSetting.doMixEvent) {
-      switch (mixSetting.mixingBinPolicy) {
-        case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, partitionK0Short, parts, colBinningMult);
-          break;
-        case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, partitionK0Short, parts, colBinningMultPercentile);
-          break;
-        case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, partitionK0Short, parts, colBinningMultMultPercentile);
-          break;
-        default:
-          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
-      }
-    }
+    runMixing<DecayChannel::DstarToD0Pi>(cols, parts, partitionCharmHadronDstar);
   }
-  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataDstarK0s, "Enable processing DstarToD0Pi and V0 correlation", false);
+  PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataDstarV0, "Enable processing DstarToD0Pi and V0 correlation", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
