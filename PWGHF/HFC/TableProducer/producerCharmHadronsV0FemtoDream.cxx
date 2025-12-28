@@ -98,8 +98,10 @@ enum DecayChannel { DplusToPiKPi = 0,
                     DstarToD0Pi
 };
 
-enum V0Channel { K0S = 0,
-                 Lambda
+enum V0Channel {
+  None = 0,
+  K0S,
+  Lambda
 };
 
 struct HfProducerCharmHadronsV0FemtoDream {
@@ -135,12 +137,12 @@ struct HfProducerCharmHadronsV0FemtoDream {
 
   Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
   Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
-  Configurable<bool> selectionFlagV0{"selectionFlagV0", 0, "Activate filling of V0: 0 for K0S,  1 for Lambda"};
+  Configurable<int> selectionFlagV0{"selectionFlagV0", 1, "Activate filling of V0: 0 for none, 1 for K0S,  2 for Lambda"};
   /// Charm hadron table
   Configurable<int> selectionFlagCharmHadron{"selectionFlagCharmHadron", 1, "Selection Flag for Charm Hadron: 1 for Lc, 7 for Dplus (Topologic and PID cuts)"};
   Configurable<bool> useCent{"useCent", false, "Enable centrality for Charm Hadron"};
 
-  Configurable<int> v0PDGCode{"v0PDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
+  Configurable<int> v0PDGCode{"v0PDGCode", 310, "PDG code of the selected V0 (310: K0S, 3122: Lambda) for Monte Carlo truth "};
   Configurable<float> trkPIDnSigmaOffsetTPC{"trkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"}; // set to zero for run3 or so
   Configurable<float> trkPIDnSigmaOffsetTOF{"trkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<bool> trkRejectNotPropagated{"trkRejectNotPropagated", false, "True: reject not propagated tracks"};
@@ -193,7 +195,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
     Configurable<std::vector<float>> confK0shortChildTPCnClsMin{"confK0shortChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "V0 Child sel: Min. nCls TPC"};
     Configurable<std::vector<float>> confK0shortChildDCAMin{"confK0shortChildDCAMin", std::vector<float>{0.05f, 0.06f}, "V0 Child sel:  Max. DCA Daugh to PV (cm)"};
     Configurable<std::vector<float>> confK0shortChildPIDnSigmaMax{"confK0shortChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Child sel: Max. PID nSigma TPC"};
-    Configurable<std::vector<int>> confK0shortChildPIDspecies{"confK0shortChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
+    Configurable<std::vector<int>> confK0shortChildPIDspecies{"confK0shortChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Pion}, "V0 Child sel: Particles species for PID"};
   } V0Sel;
 
   // ML inference
@@ -431,7 +433,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
 
   template <bool isTrackOrV0, typename ParticleType>
-  void fillDebugParticle(ParticleType const& particle)
+  void fillDebugParticle(ParticleType const& particle, int const& signV0 = 0)
   {
     if constexpr (isTrackOrV0) {
       outputDebugParts(particle.sign(),
@@ -464,7 +466,8 @@ struct HfProducerCharmHadronsV0FemtoDream {
                        -999., -999., -999., -999.,
                        -999., -999., -999.);
     } else {
-      outputDebugParts(-999.,                                                         // sign
+      auto sign = signV0;
+      outputDebugParts(sign,                                                          // sign
                        -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
                        -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
                        -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
@@ -551,11 +554,11 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
 
   template <bool IsMc = false, typename V0Type, typename CollisionType, typename TrackType>
-  bool fillV0sForCharmHadron(CollisionType const& col, V0Type const& fullV0s, TrackType const&)
+  bool fillV0sForCharmHadron(CollisionType const& col, V0Type const& fullV0s, TrackType const& /*tracks*/)
   {
     const bool isK0S = (selectionFlagV0 == V0Channel::K0S);
-    const bool isLam = (selectionFlagV0 == V0Channel::Lambda);
-    if (!isK0S && !isLam) {
+    const bool isLambda = (selectionFlagV0 == V0Channel::Lambda);
+    if (!isK0S && !isLambda) {
       LOG(fatal) << "Invalid V0 particle !! Please check the configuration";
     }
 
@@ -567,6 +570,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
     int64_t timeStamp = bc.timestamp();
 
     for (const auto& v0 : fullV0s) {
+
       auto postrack = v0.template posTrack_as<TrackType>();
       auto negtrack = v0.template negTrack_as<TrackType>();
 
@@ -586,7 +590,6 @@ struct HfProducerCharmHadronsV0FemtoDream {
         cutContainerV0 = K0SCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(col, v0, postrack, negtrack);
         massV0 = v0.mK0Short();
         antiMassV0 = v0.mK0Short();
-
       } else { // Lambda
         LambdaCuts.fillLambdaQA<aod::femtodreamparticle::ParticleType::kV0>(col, v0, postrack, negtrack);
         if (!LambdaCuts.isSelectedMinimal(col, v0, postrack, negtrack)) {
@@ -599,18 +602,15 @@ struct HfProducerCharmHadronsV0FemtoDream {
         antiMassV0 = v0.mAntiLambda();
       }
 
-      int rowPos = getRowDaughters(v0.posTrackId(), tmpIDtrack);
-      int rowNeg = getRowDaughters(v0.negTrackId(), tmpIDtrack);
-      if (rowPos < 0 || rowNeg < 0)
-        continue;
-
       // --- pos child
+      int rowPos = getRowDaughters(v0.posTrackId(), tmpIDtrack);
       childIDs[0] = rowPos;
       childIDs[1] = 0;
 
       auto daughType = isK0S ? aod::femtodreamparticle::ParticleType::kV0K0ShortChild
                              : aod::femtodreamparticle::ParticleType::kV0Child;
-
+      outputPartsTime(timeStamp);
+      outputPartsIndex(v0.posTrackId());
       outputParts(outputCollision.lastIndex(),
                   v0.positivept(), v0.positiveeta(), v0.positivephi(),
                   daughType,
@@ -623,9 +623,11 @@ struct HfProducerCharmHadronsV0FemtoDream {
       const int rowOfPosTrack = outputParts.lastIndex();
 
       // --- neg child
+      int rowNeg = getRowDaughters(v0.negTrackId(), tmpIDtrack);
       childIDs[0] = 0;
       childIDs[1] = rowNeg;
-
+      outputPartsTime(timeStamp);
+      outputPartsIndex(v0.negTrackId());
       outputParts(outputCollision.lastIndex(),
                   v0.negativept(), v0.negativeeta(), v0.negativephi(),
                   daughType,
@@ -641,7 +643,8 @@ struct HfProducerCharmHadronsV0FemtoDream {
       std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
       auto motherType = isK0S ? aod::femtodreamparticle::ParticleType::kV0K0Short
                               : aod::femtodreamparticle::ParticleType::kV0;
-
+      outputPartsTime(timeStamp);
+      outputPartsIndex(v0.globalIndex());
       outputParts(outputCollision.lastIndex(),
                   v0.pt(), v0.eta(), v0.phi(),
                   motherType,
@@ -651,20 +654,17 @@ struct HfProducerCharmHadronsV0FemtoDream {
                   indexChildID,
                   massV0,
                   antiMassV0);
-
-      outputPartsTime(timeStamp);
-      outputPartsIndex(v0.globalIndex());
+      auto signV0 = determineV0Sign(v0, postrack, negtrack);
 
       if (isDebug.value) {
         fillDebugParticle<true>(postrack);
         fillDebugParticle<true>(negtrack);
-        fillDebugParticle<false>(v0);
+        fillDebugParticle<false>(v0, signV0);
       }
 
       if constexpr (IsMc) {
         fillMcParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
       }
-
       fIsV0Filled = true;
     }
     return fIsV0Filled;
@@ -771,10 +771,18 @@ struct HfProducerCharmHadronsV0FemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+            int signD0 = 0;
+            if (candFlag == 0) {
+              signD0 = +1; // D0
+            } else if (candFlag == 1) {
+              signD0 = -1; // anti-D0
+            } else {
+              LOG(error) << "Unexpected candFlag = " << candFlag;
+            }
             rowCandCharm2Prong(
               outputCollision.lastIndex(),
               timeStamp,
-              trackPos1.sign() + trackNeg.sign(),
+              signD0,
               trackPos1.globalIndex(),
               trackNeg.globalIndex(),
               trackPos1.pt(),
@@ -945,7 +953,6 @@ struct HfProducerCharmHadronsV0FemtoDream {
       }
     }
     isV0Filled = fillV0sForCharmHadron<IsMc>(col, fullV0s, tracks);
-
     aod::femtodreamcollision::BitMaskType bitV0 = 0;
     if (isV0Filled) {
       bitV0 |= 1 << 0;
@@ -965,6 +972,58 @@ struct HfProducerCharmHadronsV0FemtoDream {
     rowMasks(bitV0,
              bitCand,
              0);
+  }
+
+  template <typename V0Type, typename TrackType>
+  int determineV0Sign(V0Type const& v0, TrackType const& posTrack, TrackType const& negTrack)
+  {
+    const bool isK0S = (selectionFlagV0 == V0Channel::K0S);
+    const bool isLambda = (selectionFlagV0 == V0Channel::Lambda);
+    if (!isK0S && !isLambda) {
+      LOG(fatal) << "Invalid V0 particle !! Please check the configuration";
+    }
+    // K0S self-conjugate: keep your convention
+    if (isK0S) {
+      return +1;
+    }
+
+    // Lambda / Anti-Lambda case
+
+    const float mLamPDG = o2::constants::physics::MassLambda;
+    const float mLamHyp = v0.mLambda();
+    const float mAntiLamHyp = v0.mAntiLambda();
+
+    const float diffLam = std::abs(mLamPDG - mLamHyp);
+    const float diffAntiLam = std::abs(mLamPDG - mAntiLamHyp);
+
+    const float offTPC = trkPIDnSigmaOffsetTPC.value;
+    const float nSigmaPIDMax = V0Sel.confLambdaChildPIDnSigmaMax.value[0];
+
+    // TPC n-sigma (apply offset by subtraction)
+    const float prNeg = negTrack.tpcNSigmaPr() - offTPC;
+    const float piPos = posTrack.tpcNSigmaPi() - offTPC;
+    const float piNeg = negTrack.tpcNSigmaPi() - offTPC;
+    const float prPos = posTrack.tpcNSigmaPr() - offTPC;
+
+    const bool pidAntiLam = (std::abs(prNeg) < nSigmaPIDMax) && (std::abs(piPos) < nSigmaPIDMax);
+    const bool pidLam = (std::abs(prPos) < nSigmaPIDMax) && (std::abs(piNeg) < nSigmaPIDMax);
+
+    int sign = 0; // 0 = undecided
+
+    // prefer: PID + mass preference (closer to PDG)
+    if (pidAntiLam && (diffAntiLam < diffLam)) {
+      sign = -1;
+    } else if (pidLam && (diffLam <= diffAntiLam)) {
+      sign = +1;
+    } else {
+      // fallback: PID only
+      if (pidAntiLam) {
+        sign = -1;
+      } else {
+        sign = +1;
+      }
+    }
+    return sign;
   }
 
   // check if there is no selected v0
