@@ -586,10 +586,18 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+            int signD0 = 0;
+            if (candFlag == 0) {
+              signD0 = +1; // D0
+            } else if (candFlag == 1) {
+              signD0 = -1; // anti-D0
+            } else {
+              LOG(error) << "Unexpected candFlag = " << candFlag;
+            }
             rowCandCharm2Prong(
               outputCollision.lastIndex(),
               timeStamp,
-              trackPos1.sign() + trackNeg.sign(),
+              signD0,
               trackPos1.globalIndex(),
               trackNeg.globalIndex(),
               trackPos1.pt(),
