@@ -137,11 +137,11 @@ struct HfTaskCharmHadronsV0FemtoDream {
   struct : ConfigurableGroup {
     std::string prefix = std::string("v0Sel");
     Configurable<int> pdgCodeV0{"pdgCodeV0", 310, "PDG code of V0 (310: K0S, 3122: Lambda)"};
-    Configurable<femtodreamparticle::cutContainerType> cutBit{"cutBit", 7518, "Selection bit for particle 1 (V0)"};
-    Configurable<femtodreamparticle::cutContainerType> childPosCutBit{"childPosCutBit", 210, "Selection bit for positive child of V01"};
-    Configurable<femtodreamparticle::cutContainerType> childPosTPCBit{"childPosTPCBit", 64, "PID TPC bit for positive child of V01"};
-    Configurable<femtodreamparticle::cutContainerType> childNegCutBit{"childNegCutBit", 209, "Selection bit for negative child of V01"};
-    Configurable<femtodreamparticle::cutContainerType> childNegTPCBit{"childNegTPCBit", 256, "PID TPC bit for negative child of V01"};
+    Configurable<femtodreamparticle::cutContainerType> cutBit{"cutBit", 1048574, "Selection bit for particle 1 (V0)"};
+    Configurable<femtodreamparticle::cutContainerType> childPosCutBit{"childPosCutBit", 254, "Selection bit for positive child of V01"};
+    Configurable<femtodreamparticle::cutContainerType> childPosTPCBit{"childPosTPCBit", 510, "PID TPC bit for positive child of V01"};
+    Configurable<femtodreamparticle::cutContainerType> childNegCutBit{"childNegCutBit", 253, "Selection bit for negative child of V01"};
+    Configurable<femtodreamparticle::cutContainerType> childNegTPCBit{"childNegTPCBit", 510, "PID TPC bit for negative child of V01"};
     Configurable<float> invMassV0Min{"invMassV0Min", 0.45, "Minimum invariant mass of Partricle 1 (particle) (V0)"};
     Configurable<float> invMassV0Max{"invMassV0Max", 0.55, "Maximum invariant mass of Partricle 1 (particle) (V0)"};
     Configurable<float> invMassAntiV0Min{"invMassAntiV0Min", 0.45, "Minimum invariant mass of Partricle 1 (antiparticle) (V0)"};
