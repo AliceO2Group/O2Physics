@@ -1952,6 +1952,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         deltaetaBins[i] = -2.0 + 0.2 * i;
       }
 
+      hm->AddHistogram(histClass, "dileptonmass", "", false, 125, 2.5, 3.5, VarManager::kdileptonmass);
       hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
       hm->AddHistogram(histClass, "CosTheta", "", false, 40, -1.0, 1.0, VarManager::kCosTheta, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
       hm->AddHistogram(histClass, "Pt_Hadron", ";P_{T}", false, 120, 0.0, 30.0, VarManager::kPtDau);

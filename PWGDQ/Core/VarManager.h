@@ -893,6 +893,7 @@ class VarManager : public TObject
     kdeltaphi_randomPhi_trans,
     kdeltaphi_randomPhi_toward,
     kdeltaphi_randomPhi_away,
+    kdileptonmass,
 
     // Dilepton-track-track variables
     kQuadMass,
@@ -5329,12 +5330,16 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
 template <typename T1, typename T2>
 void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values, bool applyFitMass, float sidebandMass)
 {
-  float dileptonmass = dilepton.mass();
+  float dileptonmass = o2::constants::physics::MassJPsi;
   if (applyFitMass) {
+    dileptonmass = dilepton.mass();
+  }
+  if (applyFitMass && sidebandMass > 0) {
     dileptonmass = sidebandMass;
   }
 
   if (fgUsedVars[kCosChi] || fgUsedVars[kECWeight] || fgUsedVars[kCosTheta] || fgUsedVars[kEWeight_before] || fgUsedVars[kPtDau] || fgUsedVars[kEtaDau] || fgUsedVars[kPhiDau] || fgUsedVars[kCosChi_randomPhi_trans] || fgUsedVars[kCosChi_randomPhi_toward] || fgUsedVars[kCosChi_randomPhi_away]) {
+    values[kdileptonmass] = dileptonmass;
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dileptonmass);
     ROOT::Math::PtEtaPhiMVector v2(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
     values[kCosChi] = LorentzTransformJpsihadroncosChi("coschi", v1, v2);
