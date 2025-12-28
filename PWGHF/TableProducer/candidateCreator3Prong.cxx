@@ -111,10 +111,10 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
-  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -138,7 +138,7 @@ struct HfCandidateCreator3Prong {
   int runNumber{0};
   double bz{0.};
 
-  const float toMicrometers = 10000.; // from cm to µm
+  constexpr static float CentiToMicro{10000.f}; // from cm to µm
   constexpr static float UndefValueFloat{-999.f};
 
   using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
@@ -307,7 +307,7 @@ struct HfCandidateCreator3Prong {
         // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
         // df.print();
       }
-      df.setBz(bz);
+      df.setBz(static_cast<float>(bz));
 
       // reconstruct the 3-prong secondary vertex
       hCandidates->Fill(SVFitting::BeforeFit);
@@ -371,15 +371,15 @@ struct HfCandidateCreator3Prong {
       trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
       trackParVar2.propagateToDCA(primaryVertex, bz, &impactParameter2);
-      registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0.getY() * toMicrometers);
-      registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1.getY() * toMicrometers);
-      registry.fill(HIST("hDcaXYProngs"), track2.pt(), impactParameter2.getY() * toMicrometers);
-      registry.fill(HIST("hDcaZProngs"), track0.pt(), impactParameter0.getZ() * toMicrometers);
-      registry.fill(HIST("hDcaZProngs"), track1.pt(), impactParameter1.getZ() * toMicrometers);
-      registry.fill(HIST("hDcaZProngs"), track2.pt(), impactParameter2.getZ() * toMicrometers);
+      registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0.getY() * CentiToMicro);
+      registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1.getY() * CentiToMicro);
+      registry.fill(HIST("hDcaXYProngs"), track2.pt(), impactParameter2.getY() * CentiToMicro);
+      registry.fill(HIST("hDcaZProngs"), track0.pt(), impactParameter0.getZ() * CentiToMicro);
+      registry.fill(HIST("hDcaZProngs"), track1.pt(), impactParameter1.getZ() * CentiToMicro);
+      registry.fill(HIST("hDcaZProngs"), track2.pt(), impactParameter2.getZ() * CentiToMicro);
 
       // get uncertainty of the decay length
-      double phi, theta;
+      double phi{}, theta{};
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
@@ -481,7 +481,7 @@ struct HfCandidateCreator3Prong {
       }
       float covMatrixPV[6];
 
-      KFParticle::SetField(bz);
+      KFParticle::SetField(static_cast<float>(bz));
       KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
 
       if constexpr (DoPvRefit) {
@@ -513,22 +513,22 @@ struct HfCandidateCreator3Prong {
 
       float impactParameter0XY = 0., errImpactParameter0XY = 0., impactParameter1XY = 0., errImpactParameter1XY = 0., impactParameter2XY = 0., errImpactParameter2XY = 0.;
       if (!kfFirstProton.GetDistanceFromVertexXY(kfpV, impactParameter0XY, errImpactParameter0XY)) {
-        registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0XY * toMicrometers);
-        registry.fill(HIST("hDcaZProngs"), track0.pt(), std::sqrt(kfFirstProton.GetDistanceFromVertex(kfpV) * kfFirstProton.GetDistanceFromVertex(kfpV) - impactParameter0XY * impactParameter0XY) * toMicrometers);
+        registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0XY * CentiToMicro);
+        registry.fill(HIST("hDcaZProngs"), track0.pt(), std::sqrt(kfFirstProton.GetDistanceFromVertex(kfpV) * kfFirstProton.GetDistanceFromVertex(kfpV) - impactParameter0XY * impactParameter0XY) * CentiToMicro);
       } else {
         registry.fill(HIST("hDcaXYProngs"), track0.pt(), UndefValueFloat);
         registry.fill(HIST("hDcaZProngs"), track0.pt(), UndefValueFloat);
       }
       if (!kfSecondKaon.GetDistanceFromVertexXY(kfpV, impactParameter1XY, errImpactParameter1XY)) {
-        registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1XY * toMicrometers);
-        registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfSecondKaon.GetDistanceFromVertex(kfpV) * kfSecondKaon.GetDistanceFromVertex(kfpV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
+        registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1XY * CentiToMicro);
+        registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfSecondKaon.GetDistanceFromVertex(kfpV) * kfSecondKaon.GetDistanceFromVertex(kfpV) - impactParameter1XY * impactParameter1XY) * CentiToMicro);
       } else {
         registry.fill(HIST("hDcaXYProngs"), track1.pt(), UndefValueFloat);
         registry.fill(HIST("hDcaZProngs"), track1.pt(), UndefValueFloat);
       }
       if (!kfThirdProton.GetDistanceFromVertexXY(kfpV, impactParameter2XY, errImpactParameter2XY)) {
-        registry.fill(HIST("hDcaXYProngs"), track2.pt(), impactParameter2XY * toMicrometers);
-        registry.fill(HIST("hDcaZProngs"), track2.pt(), std::sqrt(kfThirdProton.GetDistanceFromVertex(kfpV) * kfThirdProton.GetDistanceFromVertex(kfpV) - impactParameter2XY * impactParameter2XY) * toMicrometers);
+        registry.fill(HIST("hDcaXYProngs"), track2.pt(), impactParameter2XY * CentiToMicro);
+        registry.fill(HIST("hDcaZProngs"), track2.pt(), std::sqrt(kfThirdProton.GetDistanceFromVertex(kfpV) * kfThirdProton.GetDistanceFromVertex(kfpV) - impactParameter2XY * impactParameter2XY) * CentiToMicro);
       } else {
         registry.fill(HIST("hDcaXYProngs"), track2.pt(), UndefValueFloat);
         registry.fill(HIST("hDcaZProngs"), track2.pt(), UndefValueFloat);
@@ -604,14 +604,14 @@ struct HfCandidateCreator3Prong {
       const float massPiK = kfPairPiK.GetMass();
 
       if (applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
-        kfCandPKPi.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
-        kfCandPiKP.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
+        kfCandPKPi.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
+        kfCandPiKP.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
         kfCandPiKPi.SetNonlinearMassConstraint(MassDPlus);
         kfCandKKPi.SetNonlinearMassConstraint(MassDS);
         kfCandPiKK.SetNonlinearMassConstraint(MassDS);
       }
 
-      const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();
+      const float chi2geo = kfCandPKPi.Chi2() / static_cast<float>(kfCandPKPi.NDF());
       const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, kfpV);
 
       std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
@@ -624,7 +624,7 @@ struct HfCandidateCreator3Prong {
       registry.fill(HIST("hCovSVZZ"), kfCandPKPi.Covariance(2, 2));
 
       auto* covMatrixSV = kfCandPKPi.CovarianceMatrix();
-      double phi, theta;
+      double phi{}, theta{};
       getPointDirection(std::array{kfpV.GetX(), kfpV.GetY(), kfpV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
@@ -647,7 +647,7 @@ struct HfCandidateCreator3Prong {
                        kfpV.GetX(), kfpV.GetY(), kfpV.GetZ(),
                        kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ(),
                        errorDecayLength, errorDecayLengthXY,
-                       kfCandPKPi.GetChi2() / kfCandPKPi.GetNDF(),
+                       kfCandPKPi.GetChi2() / static_cast<float>(kfCandPKPi.GetNDF()),
                        pProng0.at(0), pProng0.at(1), pProng0.at(2),
                        pProng1.at(0), pProng1.at(1), pProng1.at(2),
                        pProng2.at(0), pProng2.at(1), pProng2.at(2),
@@ -904,7 +904,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -923,7 +923,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -942,7 +942,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -966,7 +966,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BcFullInfos>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -1132,7 +1132,7 @@ struct HfCandidateCreator3ProngExpressions {
               return;
             }
             if (indexRec > -1) {
-              flagChannelMain = sign * channelMain;
+              flagChannelMain = sign * static_cast<int8_t>(channelMain);
 
               /// swapping for D+, Ds->Kpipi; Lc, Xic->pKpi
               if (std::abs(flagChannelMain) == DecayChannelMain::DplusToPiKK || std::abs(flagChannelMain) == DecayChannelMain::DsToPiKK || std::abs(flagChannelMain) == DecayChannelMain::LcToPKPi || std::abs(flagChannelMain) == DecayChannelMain::XicToPKPi) {
@@ -1185,7 +1185,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, arrPdgDaughtersDplusToPiKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::DplusToPiKPi;
+            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::DplusToPiKPi);
           }
         }
 
@@ -1215,7 +1215,7 @@ struct HfCandidateCreator3ProngExpressions {
             }
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * (isDplus ? DecayChannelMain::DplusToPiKK : DecayChannelMain::DsToPiKK);
+            flagChannelMain = sign * (isDplus ? static_cast<int8_t>(DecayChannelMain::DplusToPiKK) : static_cast<int8_t>(DecayChannelMain::DsToPiKK));
             if (arrayDaughters[0].has_mcParticle()) {
               swapping = static_cast<int8_t>(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
             }
@@ -1243,7 +1243,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, arrPdgDaughtersDstarToPiKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::DstarToPiKPi;
+            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::DstarToPiKPi);
             flagChannelResonant = 0;
           }
         }
@@ -1261,7 +1261,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, arrPdgDaughtersLcToPKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::LcToPKPi;
+            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::LcToPKPi);
 
             // Flagging the different Λc± → p± K∓ π± decay channels
             if (arrayDaughters[0].has_mcParticle()) {
@@ -1297,7 +1297,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, arrPdgDaughtersXicToPKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::XicToPKPi;
+            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::XicToPKPi);
             flagChannelResonant = 0; // TODO
             if (arrayDaughters[0].has_mcParticle()) {
               swapping = static_cast<int8_t>(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
@@ -1309,7 +1309,7 @@ struct HfCandidateCreator3ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flagChannelMain != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        origin = static_cast<int8_t>(RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers));
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
