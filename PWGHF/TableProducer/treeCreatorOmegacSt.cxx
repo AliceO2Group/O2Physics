@@ -260,11 +260,11 @@ struct HfTreeCreatorOmegacSt {
   Configurable<int> selectedChannel{"selectedChannel", 0, "Selected decay channel for Xic or Omegac: 0=all, 1=Xic->Xi+Pi, 2=Xic->Omega+K, 3=Omegac->Omega+Pi, 4=Omegac->Omega+K, 5=Omegac->Xi+Pi"};
   Configurable<float> maxMatchingChi2TrackedCascade{"maxMatchingChi2TrackedCascade", 2000., "Max matching chi2 for tracked cascades"};
   Configurable<bool> recalculateMasses{"recalculateMasses", true, "Recalculate Xi/Omega masses"};
-  Configurable<float> maxNSigmaBachelor{"maxNSigmaBachelor", 5., "Max Nsigma for bachelor of tracked cascade"};
-  Configurable<float> maxNSigmaV0Pr{"maxNSigmaV0Pr", 5., "Max Nsigma for proton from V0 from tracked cascade"};
-  Configurable<float> maxNSigmaV0Pi{"maxNSigmaV0Pi", 5., "Max Nsigma for pion from V0 from tracked cascade"};
-  Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega"};
-  Configurable<float> maxNSigmaKaon{"maxNSigmaKaon", 5., "Max Nsigma for kaon to be paired with Omega"};
+  Configurable<float> nSigmaBachelorMax{"nSigmaBachelorMax", 5., "Max Nsigma for bachelor of tracked cascade"};
+  Configurable<float> nSigmaV0PrMax{"nSigmaV0PrMax", 5., "Max Nsigma for proton from V0 from tracked cascade"};
+  Configurable<float> nSigmaV0PiMax{"nSigmaV0PiMax", 5., "Max Nsigma for pion from V0 from tracked cascade"};
+  Configurable<float> nSigmaPionMax{"nSigmaPionMax", 5., "Max Nsigma for pion to be paired with Omega"};
+  Configurable<float> nSigmaKaonMax{"nSigmaKaonMax", 5., "Max Nsigma for kaon to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
@@ -279,28 +279,28 @@ struct HfTreeCreatorOmegacSt {
   Configurable<bool> useTofPid{"useTofPid", false, "Require TOF PID together with TPC PID when true; otherwise use TPC only"};
 
   // pT cut for CharmBaryon
-  Configurable<float> minPtCharmedBaryon{"minPtCharmedBaryon", 0.f, "Minimum pT for the charmed baryon"};
-  Configurable<float> maxPtCharmedBaryon{"maxPtCharmedBaryon", 50.f, "Maximum pT for the charmed baryon"};
+  Configurable<float> ptCharmedBaryonMin{"ptCharmedBaryonMin", 0.f, "Minimum pT for the charmed baryon"};
+  Configurable<float> ptCharmedBaryonMax{"ptCharmedBaryonMax", 50.f, "Maximum pT for the charmed baryon"};
 
   // CPA cuts (defaults: >= 0.9)
-  Configurable<float> minCpaCharmedBaryon{"minCpaCharmedBaryon", 0.9f, "Minimum CPA for charmed baryon"};
-  Configurable<float> minCpaXYCharmedBaryon{"minCpaXYCharmedBaryon", 0.9f, "Minimum CPA XY for charmed baryon"}; // remove maybe???
-  Configurable<float> minCpaCasc{"minCpaCasc", 0.9f, "Minimum CPA for cascade"};
-  Configurable<float> minCpaXYCasc{"minCpaXYCasc", 0.9f, "Minimum CPA XY for cascade"};
+  Configurable<float> cpaCharmedBaryonMin{"cpaCharmedBaryonMin", 0.9f, "Minimum CPA for charmed baryon"};
+  Configurable<float> cpaXYCharmedBaryonMin{"cpaXYCharmedBaryonMin", 0.9f, "Minimum CPA XY for charmed baryon"}; // remove maybe???
+  Configurable<float> cpaCascMin{"cpaCascMin", 0.9f, "Minimum CPA for cascade"};
+  Configurable<float> cpaXYCascMin{"cpaXYCascMin", 0.9f, "Minimum CPA XY for cascade"};
 
   // Chi2 cuts (defaults: <= 10)
-  Configurable<float> maxChi2TopCharmedBaryon{"maxChi2TopCharmedBaryon", 10.f, "Maximum chi2 for top charmed baryon fit"};
-  Configurable<float> maxChi2TopCasc{"maxChi2TopCasc", 10.f, "Maximum topologyChi2 of the tracked cascade"};
+  Configurable<float> chi2TopCharmedBaryonMax{"chi2TopCharmedBaryonMax", 10.f, "Maximum chi2 for top charmed baryon fit"};
+  Configurable<float> chi2TopCascMax{"chi2TopCascMax", 10.f, "Maximum topologyChi2 of the tracked cascade"};
 
   // Impact parameter cuts (defaults: absolute value < 10)
-  Configurable<float> maxImpactCascY{"maxImpactCascY", 10.f, "Max abs Max abs impactParameter of cascade(Y)"};
-  Configurable<float> maxImpactCascZ{"maxImpactCascZ", 10.f, "Max abs DCA Z of cascade"};
-  Configurable<float> maxImpactCharmBachelorY{"maxImpactCharmBachelorY", 10.f, "Max abs impactParameter of charm bachelor(Y)"};
-  Configurable<float> maxImpactCharmBachelorZ{"maxImpactCharmBachelorZ", 10.f, "Max abs DCA Z of charm bachelor"};
-  Configurable<float> minPtCascade{"minPtCascade", 0.f, "Minimum pT requirement for the cascade track"};
-  Configurable<float> minPtPionOrKaon{"minPtPionOrKaon", 0.f, "Minimum pT requirement for the charm baryon daughter pion/kaon track"};
-  Configurable<float> minImpProduct{"minImpProduct", -1.f, "Lower bound for DCA impact product"};
-  Configurable<float> maxImpProduct{"maxImpProduct", 0.f, "Upper bound for DCA impact product"};
+  Configurable<float> impactParameterCascYMax{"impactParameterCascYMax", 10.f, "Max abs Max abs impactParameter of cascade(Y)"};
+  Configurable<float> absDcaCascZMax{"absDcaCascZMax", 10.f, "Max abs DCA Z of cascade"};
+  Configurable<float> impactParameterCharmBachelorYMax{"impactParameterCharmBachelorYMax", 10.f, "Max abs impactParameter of charm bachelor(Y)"};
+  Configurable<float> absDcaCharmBachelorZMax{"absDcaCharmBachelorZMax", 10.f, "Max abs DCA Z of charm bachelor"};
+  Configurable<float> ptCascadeMin{"ptCascadeMin", 0.f, "Minimum pT requirement for the cascade track"};
+  Configurable<float> ptPionOrKaonMin{"ptPionOrKaonMin", 0.f, "Minimum pT requirement for the charm baryon daughter pion/kaon track"};
+  Configurable<float> impProductMin{"impProductMin", -1.f, "Lower bound for DCA impact product"};
+  Configurable<float> impProductMax{"impProductMax", 0.f, "Upper bound for DCA impact product"};
 
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -410,12 +410,12 @@ struct HfTreeCreatorOmegacSt {
   bool isMatched = false;
   static constexpr std::size_t NDaughters{2u};
   enum ChannelType {
-    anyChannel = 0,
-    xicToXiPi = 1,
-    xicToOmegaKa = 2,
-    omegacToOmegaPi = 3,
-    omegacToOmegaKa = 4,
-    omegacToXiPi = 5
+    AnyChannel = 0,
+    XicToXiPi = 1,
+    XicToOmegaKa = 2,
+    OmegacToOmegaPi = 3,
+    OmegacToOmegaKa = 4,
+    OmegacToXiPi = 5
   };
 
   void processMc(aod::McCollisions const&,
@@ -659,7 +659,7 @@ struct HfTreeCreatorOmegacSt {
             (std::abs(massXi - o2::constants::physics::MassXiMinus) < massWindowTrackedXi)) {
           // combine configurable TPC and TOF nsigma requirements for bachelor and V0 daughters
           // PID: decide based on `useTofPid` switch
-          const bool tpcBachelor = (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) || (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelor);
+          const bool tpcBachelor = (std::abs(bachelor.tpcNSigmaKa()) < nSigmaBachelorMax) || (std::abs(bachelor.tpcNSigmaPi()) < nSigmaBachelorMax);
           const float tofBachelorPiAbs = std::abs(bachelor.tofNSigmaPi());
           const float tofBachelorKaAbs = std::abs(bachelor.tofNSigmaKa());
           const bool tofBachelorPiPass = (tofBachelorPiAbs > TofWoSignalRange[0] && tofBachelorPiAbs < TofWoSignalRange[1]) || (tofBachelorPiAbs < nSigmaAbsTofBachelorPiMax);
@@ -667,8 +667,8 @@ struct HfTreeCreatorOmegacSt {
           const bool tofBachelorPass = tofBachelorPiPass || tofBachelorKaPass;
           const bool bachelorPass = useTofPid.value ? (tpcBachelor && tofBachelorPass) : tpcBachelor;
 
-          const bool tpcV0Pr = (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr);
-          const bool tpcV0Pi = (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi);
+          const bool tpcV0Pr = (std::abs(v0TrackPr.tpcNSigmaPr()) < nSigmaV0PrMax);
+          const bool tpcV0Pi = (std::abs(v0TrackPi.tpcNSigmaPi()) < nSigmaV0PiMax);
           const float tofV0PrAbs = std::abs(v0TrackPr.tofNSigmaPr());
           const float tofV0PiAbs = std::abs(v0TrackPi.tofNSigmaPi());
           const bool tofV0PrPass = (tofV0PrAbs > TofWoSignalRange[0] && tofV0PrAbs < TofWoSignalRange[1]) || (tofV0PrAbs < nSigmaAbsTofV0PrMax);
@@ -713,7 +713,7 @@ struct HfTreeCreatorOmegacSt {
                   (track.tpcChi2NCl() <= TpcChi2NclMax) &&
                   (track.itsChi2NCl() <= ItsChi2NclMax)) {
                 // TPC and TOF PID for pion/kaon from chambaryon
-                const bool passTPCpid = (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion) || (std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon);
+                const bool passTPCpid = (std::abs(track.tpcNSigmaPi()) < nSigmaPionMax) || (std::abs(track.tpcNSigmaKa()) < nSigmaKaonMax);
                 const float tofPiAbs = std::abs(track.tofNSigmaPi());
                 const float tofKaAbs = std::abs(track.tofNSigmaKa());
                 const bool tofPiPass = (tofPiAbs > TofWoSignalRange[0] && tofPiAbs < TofWoSignalRange[1]) || (tofPiAbs < nSigmaAbsTofTrackPiMax);
@@ -787,22 +787,22 @@ struct HfTreeCreatorOmegacSt {
                     const bool anyChannelPass = massOmegacToOmegaKPass || massOmegacToOmegaPiPass || massXicToXiPiPass || massXicToOmegaKaPass || massOmegacToXiPiPass;
                     bool passSelectedChannel = true;
                     switch (selectedChannel.value) {
-                      case anyChannel:
+                      case AnyChannel:
                         passSelectedChannel = anyChannelPass;
                         break;
-                      case xicToXiPi:
+                      case XicToXiPi:
                         passSelectedChannel = massXicToXiPiPass;
                         break;
-                      case xicToOmegaKa:
+                      case XicToOmegaKa:
                         passSelectedChannel = massXicToOmegaKaPass;
                         break;
-                      case omegacToOmegaPi:
+                      case OmegacToOmegaPi:
                         passSelectedChannel = massOmegacToOmegaPiPass;
                         break;
-                      case omegacToOmegaKa:
+                      case OmegacToOmegaKa:
                         passSelectedChannel = massOmegacToOmegaKPass;
                         break;
-                      case omegacToXiPi:
+                      case OmegacToXiPi:
                         passSelectedChannel = massOmegacToXiPiPass;
                         break;
                       default:
@@ -867,31 +867,31 @@ struct HfTreeCreatorOmegacSt {
                       }
                     }
                     // apply configurable quality cuts (CPA, chi2, impact parameters)
-                    if (cpaCharmedBaryon < minCpaCharmedBaryon)
+                    if (cpaCharmedBaryon < cpaCharmedBaryonMin)
                       continue;
-                    if (cpaXYCharmedBaryon < minCpaXYCharmedBaryon)
+                    if (cpaXYCharmedBaryon < cpaXYCharmedBaryonMin)
                       continue;
-                    if (cpaCasc < minCpaCasc)
+                    if (cpaCasc < cpaCascMin)
                       continue;
-                    if (cpaXYCasc < minCpaXYCasc)
+                    if (cpaXYCasc < cpaXYCascMin)
                       continue;
-                    if (chi2TopCharmedBaryon > maxChi2TopCharmedBaryon)
+                    if (chi2TopCharmedBaryon > chi2TopCharmedBaryonMax)
                       continue;
-                    if (trackedCascade.topologyChi2() > maxChi2TopCasc)
+                    if (trackedCascade.topologyChi2() > chi2TopCascMax)
                       continue;
-                    if (std::abs(impactParameterCasc.getY()) > maxImpactCascY || std::abs(impactParameterCasc.getZ()) > maxImpactCascZ)
+                    if (std::abs(impactParameterCasc.getY()) > impactParameterCascYMax || std::abs(impactParameterCasc.getZ()) > absDcaCascZMax)
                       continue;
-                    if (std::abs(impactParameterPion.getY()) > maxImpactCharmBachelorY || std::abs(impactParameterPion.getZ()) > maxImpactCharmBachelorZ)
+                    if (std::abs(impactParameterPion.getY()) > impactParameterCharmBachelorYMax || std::abs(impactParameterPion.getZ()) > absDcaCharmBachelorZMax)
                       continue;
-                    if (ptCascade < minPtCascade)
+                    if (ptCascade < ptCascadeMin)
                       continue;
-                    if (ptPionOrKaon < minPtPionOrKaon)
+                    if (ptPionOrKaon < ptPionOrKaonMin)
                       continue;
-                    if (ptCharmedBaryon < minPtCharmedBaryon)
+                    if (ptCharmedBaryon < ptCharmedBaryonMin)
                       continue;
-                    if (ptCharmedBaryon > maxPtCharmedBaryon)
+                    if (ptCharmedBaryon > ptCharmedBaryonMax)
                       continue;
-                    if (impactProduct < minImpProduct || impactProduct > maxImpProduct)
+                    if (impactProduct < impProductMin || impactProduct > impProductMax)
                       continue;
                     registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                     registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
