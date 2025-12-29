@@ -390,7 +390,7 @@ struct V0PtInvMassPlots {
 
   // V0 selection function
   template <typename TV0, typename Track>
-  bool acceptV0(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack, bool derived)
+  bool acceptV0(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
     rPtAnalysis.fill(HIST("hNV0s"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(1, "All V0s");
@@ -418,7 +418,7 @@ struct V0PtInvMassPlots {
 
   // K0sh selection function
   template <typename TV0, typename Track>
-  bool acceptK0sh(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack, bool derived)
+  bool acceptK0sh(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
     rPtAnalysis.fill(HIST("hNK0sh"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(1, "All");
@@ -498,7 +498,7 @@ struct V0PtInvMassPlots {
 
   // Lambda selection function
   template <typename TV0, typename Track>
-  bool acceptLambda(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack, bool derived)
+  bool acceptLambda(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
     rPtAnalysis.fill(HIST("hNLambda"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(1, "All");
@@ -580,7 +580,7 @@ struct V0PtInvMassPlots {
 
   // Antilambda selection function
   template <typename TV0, typename Track>
-  bool acceptAntilambda(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack, bool derived)
+  bool acceptAntilambda(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
     rPtAnalysis.fill(HIST("hNAntilambda"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(1, "All");
@@ -662,7 +662,7 @@ struct V0PtInvMassPlots {
 
   // V0 selection function
   template <typename TV0, typename Track>
-  bool acceptV0Derived(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack, bool derived)
+  bool acceptV0Derived(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
     rPtAnalysis.fill(HIST("hNV0s"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(1, "All V0s");
@@ -825,12 +825,12 @@ struct V0PtInvMassPlots {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
       const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>();
-      if (!acceptV0(v0, posDaughterTrack, negDaughterTrack, false)) { // V0 Selections
+      if (!acceptV0(v0, posDaughterTrack, negDaughterTrack)) { // V0 Selections
         continue;
       }
       // kzero analysis
       if (kzeroAnalysis == true) {
-        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, false)) { // K0sh Selection
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
           // K0sh Signal Split Numerator Start
           for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
@@ -864,7 +864,7 @@ struct V0PtInvMassPlots {
       }
       // lambda analysis
       if (lambdaAnalysis == true) {
-        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, false)) { // Lambda Selections
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selections
           // Lambda Signal Split Numerator Start
           for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
@@ -904,7 +904,7 @@ struct V0PtInvMassPlots {
       }
       // antilambda analysis
       if (antiLambdaAnalysis == true) {
-        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, false)) { // Antilambda Selections
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selections
           // Antilambda Signal Split Numerator End
           for (int i = 0; i < nAntilambdaHistograms; i++) {
             if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
@@ -984,12 +984,12 @@ struct V0PtInvMassPlots {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
       const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>();
-      if (!acceptV0(v0, posDaughterTrack, negDaughterTrack, false)) { // V0 Selection
+      if (!acceptV0(v0, posDaughterTrack, negDaughterTrack)) { // V0 Selection
         continue;
       }
       // kzero analysis
       if (kzeroAnalysis == true) {
-        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, false)) { // K0sh Selection
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
           for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
               pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
@@ -999,7 +999,7 @@ struct V0PtInvMassPlots {
       }
       // lambda analysis
       if (lambdaAnalysis == true) {
-        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, false)) { // Lambda Selection
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selection
           for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
               pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
@@ -1009,7 +1009,7 @@ struct V0PtInvMassPlots {
       }
       // anti-lambda analysis
       if (antiLambdaAnalysis == true) {
-        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, false)) { // Antilambda Selection
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selection
           for (int i = 0; i < nAntilambdaHistograms; i++) {
             if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
               pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
@@ -1058,12 +1058,12 @@ struct V0PtInvMassPlots {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracksDerived>(); // Positive Daughter track
       const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracksDerived>(); // Negative Daughter track
-      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack, true)) {                 // V0 Selection
+      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack)) {                       // V0 Selection
         continue;
       }
       // kzero analysis
       if (kzeroAnalysis == true) {
-        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, true)) { // K0sh Selection
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
           for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
               pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
@@ -1073,7 +1073,7 @@ struct V0PtInvMassPlots {
       }
       // lambda analysis
       if (lambdaAnalysis == true) {
-        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, true)) { // Lambda Selection
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selection
           for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
               pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
@@ -1083,7 +1083,7 @@ struct V0PtInvMassPlots {
       }
       // anti-lambda analysis
       if (antiLambdaAnalysis == true) {
-        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, true)) { // Antilambda Selection
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selection
           for (int i = 0; i < nAntilambdaHistograms; i++) {
             if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
               pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
@@ -1132,12 +1132,12 @@ struct V0PtInvMassPlots {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracksDerived>(); // Positive Daughter track
       const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracksDerived>(); // Negative Daughter track
-      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack, true)) {                 // V0 Selections
+      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack)) {                       // V0 Selections
         continue;
       }
       // kzero analysis
       if (kzeroAnalysis == true) {
-        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, true)) { // K0sh Selection
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
           // K0sh Signal Split Numerator Start
           for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
@@ -1168,7 +1168,7 @@ struct V0PtInvMassPlots {
       }
       // lambda analysis
       if (lambdaAnalysis == true) {
-        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, true)) { // Lambda Selections
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selections
           // Lambda Signal Split Numerator Start
           for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
@@ -1205,7 +1205,7 @@ struct V0PtInvMassPlots {
       }
       // antilambda analysis
       if (antiLambdaAnalysis == true) {
-        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, true)) { // Antilambda Selections
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selections
           // Antilambda Signal Split Numerator End
           for (int i = 0; i < nAntilambdaHistograms; i++) {
             if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
