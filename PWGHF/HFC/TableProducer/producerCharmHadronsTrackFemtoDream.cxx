@@ -201,7 +201,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
-  using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using Generated3ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using Generated2ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
+  using GeneratedDstarMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
 
   Filter filterSelectCandidateD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagHadron || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagHadron);
   Filter filterSelectCandidateDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
@@ -584,10 +586,18 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+            int signD0 = 0;
+            if (candFlag == 0) {
+              signD0 = +1; // D0
+            } else if (candFlag == 1) {
+              signD0 = -1; // anti-D0
+            } else {
+              LOG(error) << "Unexpected candFlag = " << candFlag;
+            }
             rowCandCharm2Prong(
               outputCollision.lastIndex(),
               timeStamp,
-              trackPos1.sign() + trackNeg.sign(),
+              signD0,
               trackPos1.globalIndex(),
               trackNeg.globalIndex(),
               trackPos1.pt(),
@@ -889,7 +899,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcD0ToPiKWithML, "Provide Mc for D0ToPiK with ml", false);
 
-  void processMcD0ToPiKGen(GeneratedMc const& particles)
+  void processMcD0ToPiKGen(Generated2ProngMc const& particles)
   {
     fillCharmHadMcGen<DecayChannel::D0ToPiK>(particles);
   }
@@ -944,7 +954,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDstarToD0PiWithML, "Provide Mc for DstarToD0Pi with ml", false);
 
-  void processMcDstarToD0PiGen(GeneratedMc const& particles)
+  void processMcDstarToD0PiGen(GeneratedDstarMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DstarToD0Pi>(particles);
@@ -1001,7 +1011,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
 
-  void processMcDplusToPiKPiGen(GeneratedMc const& particles)
+  void processMcDplusToPiKPiGen(Generated3ProngMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DplusToPiKPi>(particles);
@@ -1058,7 +1068,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
 
-  void processMcLcToPKPiGen(GeneratedMc const& particles)
+  void processMcLcToPKPiGen(Generated3ProngMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::LcToPKPi>(particles);

@@ -86,8 +86,7 @@ struct FemtoPairTrackTrack {
     pairhistmanager::PrefixTrackTrackSe,
     pairhistmanager::PrefixTrackTrackMe,
     closepairrejection::PrefixTrackTrackSe,
-    closepairrejection::PrefixTrackTrackMe,
-    modes::Mode::kAnalysis>
+    closepairrejection::PrefixTrackTrackMe>
     pairTrackTrackBuilder;
 
   // setup mixing
@@ -116,18 +115,18 @@ struct FemtoPairTrackTrack {
     auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
-    pairTrackTrackBuilder.init(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+    pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
   };
 
   void processSameEvent(FilteredCollision const& col, Tracks const& tracks)
   {
-    pairTrackTrackBuilder.processSameEvent(col, tracks, trackPartition1, trackPartition2, cache);
+    pairTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processSameEvent, "Enable processing same event processing", true);
 
   void processMixedEvent(FilteredCollisions const& cols, Tracks const& tracks)
   {
-    pairTrackTrackBuilder.processMixedEvent(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
 };

@@ -49,7 +49,7 @@ struct FemtoKinkQa {
   collisionbuilder::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
 
-  colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
+  colhistmanager::CollisionHistManager colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
@@ -77,7 +77,6 @@ struct FemtoKinkQa {
   kinkhistmanager::KinkHistManager<
     kinkhistmanager::PrefixSigmaQa,
     trackhistmanager::PrefixKinkChaDaughterQa,
-    modes::Mode::kAnalysis_Qa,
     modes::Kink::kSigma>
     sigmaHistManager;
 
@@ -92,7 +91,6 @@ struct FemtoKinkQa {
   kinkhistmanager::KinkHistManager<
     kinkhistmanager::PrefixSigmaPlusQa,
     trackhistmanager::PrefixKinkChaDaughterQa,
-    modes::Mode::kAnalysis_Qa,
     modes::Kink::kSigmaPlus>
     sigmaPlusHistManager;
 
@@ -106,7 +104,7 @@ struct FemtoKinkQa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init(&hRegistry, colHistSpec, confCollisionQaBinning);
+    colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
 
     auto chaDauHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
 
@@ -116,33 +114,33 @@ struct FemtoKinkQa {
 
     if (doprocessSigma) {
       auto sigmaHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
-      sigmaHistManager.init(&hRegistry, sigmaHistSpec, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+      sigmaHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaHistSpec, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
     }
 
     if (doprocessSigmaPlus) {
       auto sigmaPlusHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaPlusBinning, confSigmaPlusQaBinning);
-      sigmaPlusHistManager.init(&hRegistry, sigmaPlusHistSpec, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+      sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
     }
   };
 
   void processSigma(FilteredFemtoCollision const& col, FemtoSigmas const& /*sigmas*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto sigmaSlice = sigmaPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& sigma : sigmaSlice) {
-      sigmaHistManager.fill(sigma, tracks);
+      sigmaHistManager.fill<modes::Mode::kAnalysis_Qa>(sigma, tracks);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigma, "Process sigmas", true);
 
   void processSigmaPlus(FilteredFemtoCollision const& col, FemtoSigmaPlus const& /*sigmaplus*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
 
     auto sigmaplusSlice = sigmaPlusPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& sp : sigmaplusSlice) {
-      sigmaPlusHistManager.fill(sp, tracks);
+      sigmaPlusHistManager.fill<modes::Mode::kAnalysis_Qa>(sp, tracks);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaPlus, "Process sigma plus", false);

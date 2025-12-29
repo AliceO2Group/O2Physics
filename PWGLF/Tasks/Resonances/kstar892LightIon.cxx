@@ -1498,7 +1498,18 @@ struct Kstar892LightIon {
       return;
     }
 
-    centrality = collision.centFT0M();
+    if (selectCentEstimator == kFT0M) {
+      centrality = collision.centFT0M();
+    } else if (selectCentEstimator == kFT0A) {
+      centrality = collision.centFT0A();
+    } else if (selectCentEstimator == kFT0C) {
+      centrality = collision.centFT0C();
+    } else if (selectCentEstimator == kFV0A) {
+      centrality = collision.centFV0A();
+    } else {
+      centrality = collision.centFT0M(); // default
+    }
+
     if (!selectionEvent(collision, false)) {
       return;
     }
@@ -1508,7 +1519,7 @@ struct Kstar892LightIon {
       if (!selectionTrack(track1) || !selectionTrack(track2))
         continue;
 
-      if (track1.index() == track2.index())
+      if (track1.index() >= track2.index())
         continue;
 
       if (track1.sign() * track2.sign() >= 0)
@@ -1531,31 +1542,22 @@ struct Kstar892LightIon {
       if (!ok1 || !ok2)
         continue;
 
-      ROOT::Math::PxPyPzMVector p1(track1.px(), track1.py(), track1.pz(), pdg1 == PDG_t::kPiPlus ? massPi : massKa);
-      ROOT::Math::PxPyPzMVector p2(track2.px(), track2.py(), track2.pz(), pdg2 == PDG_t::kPiPlus ? massPi : massKa);
-
-      if (pdg1 == PDG_t::kPiPlus) {
+      // pi-pi misidentification
+      if (pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kPiPlus) {
         ROOT::Math::PxPyPzMVector p1Fake(track1.px(), track1.py(), track1.pz(), massKa);
-        auto misIDMother = p1Fake + p2;
-        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
+        ROOT::Math::PxPyPzMVector p2True(track2.px(), track2.py(), track2.pz(), massPi);
+
+        auto misIDMother = p1Fake + p2True;
+        hMC.fill(HIST("RecMisID/hMassMisID"), misIDMother.Pt(), centrality, misIDMother.M());
       }
 
-      if (pdg2 == PDG_t::kPiPlus) {
-        ROOT::Math::PxPyPzMVector p2Fake(track2.px(), track2.py(), track2.pz(), massKa);
-        auto misIDMother = p1 + p2Fake;
-        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
-      }
-
-      if (pdg1 == PDG_t::kKPlus) {
+      // KK misidentification
+      if (pdg1 == PDG_t::kKPlus && pdg2 == PDG_t::kKPlus) {
         ROOT::Math::PxPyPzMVector p1Fake(track1.px(), track1.py(), track1.pz(), massPi);
-        auto misIDMother = p1Fake + p2;
-        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
-      }
+        ROOT::Math::PxPyPzMVector p2True(track2.px(), track2.py(), track2.pz(), massKa);
 
-      if (pdg2 == PDG_t::kKPlus) {
-        ROOT::Math::PxPyPzMVector p2Fake(track2.px(), track2.py(), track2.pz(), massPi);
-        auto misIDMother = p1 + p2Fake;
-        hMC.fill(HIST("RecMisID/hMassMisID"), centrality, misIDMother.Pt(), misIDMother.M());
+        auto misIDMother = p1Fake + p2True;
+        hMC.fill(HIST("RecMisID/hMassMisID"), misIDMother.Pt(), centrality, misIDMother.M());
       }
     }
   }

@@ -191,13 +191,14 @@ struct JetSubstructureOutputTask {
     std::vector<int> splittingMatchesPtVec;
     std::vector<int> splittingMatchesHFVec;
     std::vector<int> pairMatchesVec;
+    std::vector<int> dummyVec;
     if (doprocessOutputSubstructureMatchingData || doprocessOutputSubstructureMatchingMC) {
       splittingMatchesGeoVec = splittingMatchesGeoVecVec[jet.globalIndex()];
       splittingMatchesPtVec = splittingMatchesPtVecVec[jet.globalIndex()];
       splittingMatchesHFVec = splittingMatchesHFVecVec[jet.globalIndex()];
       pairMatchesVec = pairMatchesVecVec[jet.globalIndex()];
     }
-    jetOutputTable(collisionIndex, collisionIndex, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.area(), rho, jet.perpConeRho(), jet.tracksIds().size()); // second collision index is a dummy coloumn mirroring the hf candidate
+    jetOutputTable(collisionIndex, dummyVec, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.area(), rho, jet.perpConeRho(), jet.tracksIds().size()); // second collision index is a dummy coloumn mirroring the hf candidate
     jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2(), pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, jet.angularity(), jet.ptLeadingConstituent(), splittingMatchesGeoVec, splittingMatchesPtVec, splittingMatchesHFVec, pairMatchesVec);
     jetMapping.insert(std::make_pair(jet.globalIndex(), jetOutputTable.lastIndex()));
   }

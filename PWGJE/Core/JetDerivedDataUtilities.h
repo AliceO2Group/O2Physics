@@ -614,7 +614,9 @@ enum JTrackSel {
   globalTrack = 1,
   qualityTrack = 2,
   qualityTrackWDCA = 3,
-  hybridTrack = 4
+  hybridTrack = 4,
+  notBadMcTrack = 5,
+  embeddedTrack = 6 // this is for the future when embedding comes. Hopefully it will mean we dont have to remake the derived data. mcd tracks embedded need to have this bit set
 };
 
 template <typename T>
@@ -627,8 +629,14 @@ bool applyTrackKinematics(T const& track, float pTMin = 0.15, float pTMax = 100.
 }
 
 template <typename T>
-bool selectTrack(T const& track, int trackSelection)
+bool selectTrack(T const& track, int trackSelection, bool isEmbedded = false)
 {
+  if (!(track.trackSel() & (1 << JTrackSel::notBadMcTrack))) {
+    return false;
+  }
+  if (isEmbedded && !(track.trackSel() & (1 << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
+    return false;
+  }
   if (trackSelection == -1) {
     return true;
   }
@@ -650,7 +658,7 @@ int initialiseTrackSelection(const std::string& trackSelection)
 }
 
 template <typename T>
-uint8_t setTrackSelectionBit(T const& track, float trackDCAZ, float maxDCAZ)
+uint8_t setTrackSelectionBit(T const& track, float trackDCAZ, float maxDCAZ, bool setNotBadMcTrack = true, bool isEmbedded = false)
 {
 
   uint8_t bit = 0;
@@ -669,6 +677,12 @@ uint8_t setTrackSelectionBit(T const& track, float trackDCAZ, float maxDCAZ)
   }
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
+  }
+  if (setNotBadMcTrack) {
+    SETBIT(bit, JTrackSel::notBadMcTrack);
+  }
+  if (isEmbedded) {
+    SETBIT(bit, JTrackSel::embeddedTrack);
   }
   return bit;
 }

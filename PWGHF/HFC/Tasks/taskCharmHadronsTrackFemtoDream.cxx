@@ -340,7 +340,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   /// Compute the charm hadron candidates mass with the daughter masses
   /// assumes the candidate is either a D+ or Λc+ or D0 or Dstar
   template <DecayChannel Channel, typename Candidate>
-  float getCharmHadronMass(const Candidate& cand)
+  float getCharmHadronMass(const Candidate& cand, bool ReturnDaughMass = false)
   {
     float invMass = 0.0f;
     if constexpr (Channel == DecayChannel::LcToPKPi) {
@@ -350,32 +350,35 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassProton});
       return invMass;
-    }
-    // D+ → π K π (PDG: 411)
-    if constexpr (Channel == DecayChannel::DplusToPiKPi) {
+    } else if constexpr (Channel == DecayChannel::DplusToPiKPi) { // D+ → π K π (PDG: 411)
       invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
       return invMass;
-    }
-    // D0 → π K  (PDG: 421)
-    if constexpr (Channel == DecayChannel::D0ToPiK) {
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) { // D0 → π K  (PDG: 421)
       if (cand.candidateSelFlag() == 1) {
-
         invMass = cand.m(std::array{MassPiPlus, MassKPlus});
         return invMass;
       } else {
-
         invMass = cand.m(std::array{MassKPlus, MassPiPlus});
         return invMass;
       }
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* → D0π (PDG: 413)
+      float mDstar = 0.f;
+      float mD0 = 0.f;
+      if (cand.charge() > 0.f) {
+        mDstar = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
+        mD0 = cand.mDaughD0(std::array{MassPiPlus, MassKPlus});
+      } else {
+        mDstar = cand.m(std::array{MassKPlus, MassPiPlus, MassPiPlus});
+        mD0 = cand.mDaughD0(std::array{MassKPlus, MassPiPlus});
+      }
+      if (ReturnDaughMass) {
+        return mD0;
+      } else {
+        return mDstar - mD0;
+      }
     }
-    // D* → D0π (PDG: 413)
-    if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-      invMass = cand.m(std::array{MassPiPlus, MassKPlus, MassPiPlus});
-      return invMass;
-    }
-
     // Add more channels as needed
-    return invMass;
+    return 0.f;
   }
 
   template <DecayChannel Channel, typename Candidate, typename Track>
@@ -437,7 +440,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         // D* → D0π
-        massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
+        if (cand.candidateSelFlag() == 1) {
+          massCharmTrk = {MassPiPlus, MassKPlus, MassPiPlus, trackMassHyp};
+        } else {
+          massCharmTrk = {MassKPlus, MassPiPlus, MassPiPlus, trackMassHyp};
+        }
       }
 
       return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
@@ -468,7 +475,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         }
       }
 
-      if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
         if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
           continue;
         if (useCPR.value) {
@@ -698,7 +705,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       timeStamp = part.timeStamp();
 
-      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DstarToD0Pi) {
+      if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
           col.globalIndex(),
@@ -728,9 +735,25 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.bdtBkg(),
           part.bdtPrompt(),
           part.bdtFD());
+      } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+        float invMassD0 = getCharmHadronMass<Channel>(part, true);
+        rowFemtoResultCharmDstar(
+          col.globalIndex(),
+          timeStamp,
+          invMass,
+          invMassD0,
+          part.pt(),
+          part.eta(),
+          part.phi(),
+          part.prong0Id(),
+          part.prong1Id(),
+          part.prong2Id(),
+          part.charge(),
+          part.bdtBkg(),
+          part.bdtPrompt(),
+          part.bdtFD());
       }
     }
-
     // ---- Fill Track Table ----
     for (auto const& part : sliceTrk1) {
       allTrackHisto.fillQA<IsMc, true>(
@@ -744,7 +767,30 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                             : NegativeCharge;
 
       timeStamp = part.timeStamp();
-
+      float tpcNSigma = 999.f;
+      float tofNSigma = 999.f;
+      switch (trackSel.pdgCodeTrack1.value) {
+        case kProton:
+          tpcNSigma = part.tpcNSigmaPr();
+          tofNSigma = part.tofNSigmaPr();
+          break;
+        case kPiPlus:
+          tpcNSigma = part.tpcNSigmaPi();
+          tofNSigma = part.tofNSigmaPi();
+          break;
+        case kKPlus:
+          tpcNSigma = part.tpcNSigmaKa();
+          tofNSigma = part.tofNSigmaKa();
+          break;
+        case kDeuteron:
+          tpcNSigma = part.tpcNSigmaDe();
+          tofNSigma = part.tofNSigmaDe();
+          break;
+        default:
+          LOG(fatal) << "Unhandled PDG code in PID switch: "
+                     << trackSel.pdgCodeTrack1.value;
+          break;
+      }
       rowFemtoResultTrk(
         col.globalIndex(),
         timeStamp,
@@ -756,8 +802,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         part.tpcNClsFound(),
         part.tpcNClsFindable(),
         part.tpcNClsCrossedRows(),
-        part.tpcNSigmaPr(),
-        part.tofNSigmaPr());
+        tpcNSigma,
+        tofNSigma);
     }
 
     // ---- Fill Collision Table ----
@@ -851,9 +897,12 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       auto sliceCharmHad = partitionCharmHadron2Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
+      } else {
+        fillTables<false, DecayChannel::D0ToPiK>(col, sliceTrk1, sliceCharmHad);
       }
-      fillTables<false, DecayChannel::D0ToPiK>(col, sliceTrk1, sliceCharmHad);
-      doSameEvent<false, DecayChannel::D0ToPiK, FilteredCharmCand2Prongs>(sliceCharmHad, sliceTrk1, parts, col);
+      if (sliceCharmHad.size() > 0 && sliceTrk1.size() > 0) {
+        doSameEvent<false, DecayChannel::D0ToPiK, FilteredCharmCand2Prongs>(sliceCharmHad, sliceTrk1, parts, col);
+      }
     }
     if (mixSetting.doMixEvent) {
       switch (mixSetting.mixingBinPolicy) {
@@ -883,9 +932,12 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       auto sliceCharmHad = partitionCharmHadronDstar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
+      } else {
+        fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceTrk1, sliceCharmHad);
       }
-      fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceTrk1, sliceCharmHad);
-      doSameEvent<false, DecayChannel::DstarToD0Pi, FilteredCharmCandDstars>(sliceCharmHad, sliceTrk1, parts, col);
+      if (sliceCharmHad.size() > 0 && sliceTrk1.size() > 0) {
+        doSameEvent<false, DecayChannel::DstarToD0Pi, FilteredCharmCandDstars>(sliceCharmHad, sliceTrk1, parts, col);
+      }
     }
     if (mixSetting.doMixEvent) {
       switch (mixSetting.mixingBinPolicy) {

@@ -32,7 +32,6 @@
 #include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -57,7 +56,7 @@ struct FemtoV0Qa {
   // setup for collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
-  colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
+  colhistmanager::CollisionHistManager colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
@@ -73,7 +72,6 @@ struct FemtoV0Qa {
     v0histmanager::PrefixLambdaQa,
     trackhistmanager::PrefixV0PosDaughterQa,
     trackhistmanager::PrefixV0NegDaughterQa,
-    modes::Mode::kAnalysis_Qa,
     modes::V0::kLambda>
     lambdaHistManager;
 
@@ -89,7 +87,6 @@ struct FemtoV0Qa {
     v0histmanager::PrefixK0shortQa,
     trackhistmanager::PrefixV0PosDaughterQa,
     trackhistmanager::PrefixV0NegDaughterQa,
-    modes::Mode::kAnalysis_Qa,
     modes::V0::kK0short>
     k0shortHistManager;
 
@@ -106,7 +103,7 @@ struct FemtoV0Qa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init(&hRegistry, colHistSpec, confCollisionQaBinning);
+    colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
     auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
@@ -117,31 +114,31 @@ struct FemtoV0Qa {
 
     if (doprocessLambda) {
       auto lambdaHistSpec = v0histmanager::makeV0QaHistSpecMap(confLambdaBinning, confLambdaQaBinning);
-      lambdaHistManager.init(&hRegistry, lambdaHistSpec, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+      lambdaHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, lambdaHistSpec, confLambdaQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
     }
 
     if (doprocessK0short) {
       auto k0shortHistSpec = v0histmanager::makeV0QaHistSpecMap(confK0shortBinning, confK0shortQaBinning);
-      k0shortHistManager.init(&hRegistry, k0shortHistSpec, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
+      k0shortHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, k0shortHistSpec, confK0shortQaBinning, posDaughterHistSpec, confV0PosDaughterQaBinning, negDaughterHistSpec, confV0NegDaughterQaBinning);
     }
   };
 
   void processK0short(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/)
   {
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto k0shortSlice = k0shortPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& k0short : k0shortSlice) {
-      k0shortHistManager.fill(k0short, tracks);
+      k0shortHistManager.fill<modes::Mode::kAnalysis_Qa>(k0short, tracks);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processK0short, "Process k0shorts", false);
 
   void processLambda(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto lambdaSlice = lambdaPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& lambda : lambdaSlice) {
-      lambdaHistManager.fill(lambda, tracks);
+      lambdaHistManager.fill<modes::Mode::kAnalysis_Qa>(lambda, tracks);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processLambda, "Process lambdas", true);
