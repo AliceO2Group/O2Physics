@@ -255,7 +255,6 @@ class FemtoUniverseMath
     }
 
     if (isiden && isWeight) {
-
       const double x1_lcms = (vecspace_part1.x() * tPx + vecspace_part1.y() * tPy) / tPt;
       const double y1_lcms = (-vecspace_part1.x() * tPy + vecspace_part1.y() * tPx) / tPt;
       const double x2_lcms = (vecspace_part2.x() * tPx + vecspace_part2.y() * tPy) / tPt;
@@ -271,8 +270,10 @@ class FemtoUniverseMath
       const double mRL = (z1_lcms - z2_lcms) / 0.197327;
       const double mDT = (t1_lcms - t2_lcms) / 0.197327;
 
-      const double quantumweight = 1.0 + TMath::Cos(-fDKOutLCMS * mRO - fDKSideLCMS * mRS - fDKLongLCMS * mRL + mDE * mDT);
+      const double quantumweight = 1.0 + std::cos(-fDKOutLCMS * mRO - fDKSideLCMS * mRS - fDKLongLCMS * mRL + mDE * mDT);
       vect.push_back(quantumweight);
+    } else {
+      vect.push_back(1.0);
     }
     return vect;
   }
