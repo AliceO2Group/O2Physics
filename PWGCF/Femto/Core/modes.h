@@ -60,6 +60,7 @@ enum class System : uint32_t {
   kRun3 = BIT(3),
   kRun2 = BIT(4),
   kPP_Run3 = kPP | kRun3,
+  kPP_Run3_MC = kPP | kRun3 | kMC,
   kPP_Run2 = kPP | kRun2,
   kPbPb_Run3 = kPbPb | kRun3,
   kPbPb_Run2 = kPbPb | kRun2,
@@ -78,14 +79,26 @@ enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
 };
 
 enum class Particle : o2::aod::femtodatatypes::ParticleType {
-  kTrack,
-  kTwoTrackResonance,
-  kV0,
-  kKink,
-  kCascade,
+  kTrack = 0,
+  kTwoTrackResonance = 1,
+  kV0 = 2,
+  kKink = 3,
+  kCascade = 4,
 };
 
-constexpr bool hasMass(Particle p)
+enum class McOrigin : o2::aod::femtodatatypes::McOriginType {
+  kNoMcParticle,
+  kFromWrongCollision,
+  kPhysicalPrimary,
+  kFromSecondaryDecay,
+  kFromMaterial,
+  kMcOriginLast
+  // kFromFakeRecoCollision,
+  // kFromUnkown
+};
+
+constexpr bool
+  hasMass(Particle p)
 {
   switch (p) {
     case Particle::kV0:
@@ -99,7 +112,7 @@ constexpr bool hasMass(Particle p)
 }
 
 enum class Track : o2::aod::femtodatatypes::TrackType {
-  kPrimaryTrack,
+  kTrack,
   kV0Daughter,
   kCascadeBachelor,
   kResonanceDaughter,

@@ -615,7 +615,7 @@ struct JetTaggerHFTask {
   {
     for (const auto& jet : jets) {
       std::vector<std::vector<float>> trkFeat;
-      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, origTracks, trkFeat, trackPtMin, nJetConst);
+      jettaggingutilities::analyzeJetTrackInfo4GNN(jet, tracks, origTracks, trkFeat, trackPtMin, trackDcaXYMax, trackDcaZMax, nJetConst);
 
       std::vector<float> jetFeat{jet.pt(), jet.phi(), jet.eta(), jet.mass()};
 
@@ -625,7 +625,13 @@ struct JetTaggerHFTask {
         tensorAlloc.getGNNInput(jetFeat, trkFeat, feat, gnnInput);
 
         auto modelOutput = bMlResponse.getModelOutput(gnnInput, 0);
-        scoreML[jet.globalIndex()] = jettaggingutilities::getDb(modelOutput, fC);
+        float db = jettaggingutilities::getDb(modelOutput, fC);
+        if (!std::isnan(db)) {
+          scoreML[jet.globalIndex()] = db;
+        } else {
+          scoreML[jet.globalIndex()] = 999.;
+          LOGF(debug, "doprocessAlgorithmGNN, Db is NaN (%d)", jet.globalIndex());
+        }
       } else {
         scoreML[jet.globalIndex()] = -999.;
         LOGF(debug, "doprocessAlgorithmGNN, trkFeat.size() <= 0 (%d)", jet.globalIndex());

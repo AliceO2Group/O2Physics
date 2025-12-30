@@ -210,7 +210,7 @@ struct JetFinderTask {
   void processNeutralJets(o2::soa::Filtered<o2::aod::JetCollisions>::iterator const& collision,
                           o2::soa::Filtered<o2::aod::JetClusters> const& clusters)
   {
-    if ((doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+    if ((doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) || !jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, "CBT_calo") || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
     inputParticles.clear();
@@ -223,7 +223,7 @@ struct JetFinderTask {
                        o2::soa::Filtered<o2::aod::JetTracks> const& tracks,
                        o2::soa::Filtered<o2::aod::JetClusters> const& clusters)
   {
-    if ((doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+    if ((doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) || !jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, "CBT_calo") || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
     inputParticles.clear();
@@ -257,7 +257,7 @@ struct JetFinderTask {
 
   void processParticleLevelNeutralJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
       return;
     }
     inputParticles.clear();
@@ -268,7 +268,7 @@ struct JetFinderTask {
 
   void processParticleLevelFullJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
       return;
     }
     inputParticles.clear();
