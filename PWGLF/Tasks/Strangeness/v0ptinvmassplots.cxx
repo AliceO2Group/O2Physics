@@ -20,6 +20,7 @@ for different pt ranges (constituting bins). The values are inserted as configur
 Also feed-down matrices for the Lambda and Anti-Lambda are produced.
 This analysis includes three processes, one for Real Data and two for MC at the Generated and Reconstructed level*/
 
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
@@ -195,7 +196,7 @@ struct V0PtInvMassPlots {
     // initialize and convert tokenized strings into vector of doubles for AxisSpec
     std::vector<double> kaonptedgevalues(pthistos::kaonPtBins.size());
     std::vector<double> lambdaptedgevalues(pthistos::lambdaPtBins.size());
-    std::vector<double> antilambdaPtedgevalues(pthistos::antilambdaPtBins.size());
+    std::vector<double> antilambdaptedgevalues(pthistos::antilambdaPtBins.size());
     for (size_t i = 0; i < pthistos::kaonPtBins.size(); i++) {
       kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
     }
@@ -203,7 +204,7 @@ struct V0PtInvMassPlots {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
     }
     for (size_t i = 0; i < pthistos::antilambdaPtBins.size(); i++) {
-      antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
+      antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
 
     // Axes
@@ -212,7 +213,7 @@ struct V0PtInvMassPlots {
     AxisSpec antiLambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{-}#pi^{+} [GeV/#it{c}^{2}]"};
     AxisSpec k0ShortPtAxis = {kaonptedgevalues, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec lambdaPtAxis = {lambdaptedgevalues, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec antilambdaPtAxis = {antilambdaPtedgevalues, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec antilambdaPtAxis = {antilambdaptedgevalues, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {100, 0.0f, 100.0f, "#it{Centrality} (%)"};
     AxisSpec armenterosQtAxis = {nBinsArmenteros, 0.0f, 0.3f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec armenterosasymAxis = {nBinsArmenteros, -1.f, 1.f, "#it{p}^{+}_{||}-#it{p}^{-}_{||}/#it{p}^{+}_{||}+#it{p}^{-}_{||}"};
@@ -377,7 +378,7 @@ struct V0PtInvMassPlots {
     }
     rPtAnalysis.fill(HIST("hNEvents"), 5.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "cutZVertex");
-    if (doisInelGt0 && !collision.isInelGt0()) {
+    if (doisInelGt0 && !(collision.multNTracksPVeta1() > 0)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 6.5);
@@ -388,12 +389,9 @@ struct V0PtInvMassPlots {
   }
 
   // V0 selection function
-  template <typename TV0>
-  bool acceptV0(TV0 const& v0)
+  template <typename TV0, typename Track>
+  bool acceptV0(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
-    const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>(); // Positive Daughter track
-    const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>(); // Negative Daughter track
-
     rPtAnalysis.fill(HIST("hNV0s"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(1, "All V0s");
     if (doDaughterPseudorapidityCut && !(std::abs(posDaughterTrack.eta()) < etadau && std::abs(negDaughterTrack.eta()) < etadau)) { // Daughters Pseudorapidity Cut
@@ -412,19 +410,16 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNV0s"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(4, "ITS Min Hits");
     // Cut Plots
-    rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.template posTrack_as<DaughterTracks>().eta());
-    rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.template negTrack_as<DaughterTracks>().eta());
+    rPtAnalysis.fill(HIST("hV0EtaDaughters"), posDaughterTrack.eta());
+    rPtAnalysis.fill(HIST("hV0EtaDaughters"), negDaughterTrack.eta());
     rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), v0.alpha(), v0.qtarm());
     return true;
   }
 
   // K0sh selection function
-  template <typename TV0>
-  bool acceptK0sh(TV0 const& v0)
+  template <typename TV0, typename Track>
+  bool acceptK0sh(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
-    const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>(); // Positive Daughter track
-    const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>(); // Negative Daughter track
-
     rPtAnalysis.fill(HIST("hNK0sh"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(1, "All");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 0.5, v0.mK0Short());
@@ -492,8 +487,6 @@ struct V0PtInvMassPlots {
 
     // Cut Plots
     rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotK0sh"), v0.alpha(), v0.qtarm());
-    rPtAnalysis.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
-    rPtAnalysis.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
     rPtAnalysis.fill(HIST("hK0shcosPA"), v0.v0cosPA());
     rPtAnalysis.fill(HIST("hK0shV0radius"), v0.v0radius());
     rPtAnalysis.fill(HIST("hK0shDCAV0Daughters"), v0.dcaV0daughters());
@@ -504,12 +497,9 @@ struct V0PtInvMassPlots {
   }
 
   // Lambda selection function
-  template <typename TV0>
-  bool acceptLambda(TV0 const& v0)
+  template <typename TV0, typename Track>
+  bool acceptLambda(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
-    const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>(); // Positive Daughter track
-    const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>(); // Negative Daughter track
-
     rPtAnalysis.fill(HIST("hNLambda"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(1, "All");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 0.5, v0.mLambda());
@@ -577,8 +567,8 @@ struct V0PtInvMassPlots {
 
     // Cut Plots
     rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotLambda"), v0.alpha(), v0.qtarm());
-    rPtAnalysis.fill(HIST("hNSigmaPosProtonFromLambdas"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
-    rPtAnalysis.fill(HIST("hNSigmaNegPionFromLambdas"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
+    // rPtAnalysis.fill(HIST("hNSigmaPosProtonFromLambdas"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
+    // rPtAnalysis.fill(HIST("hNSigmaNegPionFromLambdas"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
     rPtAnalysis.fill(HIST("hLambdacosPA"), v0.v0cosPA());
     rPtAnalysis.fill(HIST("hLambdaV0radius"), v0.v0radius());
     rPtAnalysis.fill(HIST("hLambdaDCAV0Daughters"), v0.dcaV0daughters());
@@ -589,12 +579,9 @@ struct V0PtInvMassPlots {
   }
 
   // Antilambda selection function
-  template <typename TV0>
-  bool acceptAntilambda(TV0 const& v0)
+  template <typename TV0, typename Track>
+  bool acceptAntilambda(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
   {
-    const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>(); // Positive Daughter track
-    const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>(); // Negative Daughter track
-
     rPtAnalysis.fill(HIST("hNAntilambda"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(1, "All");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 0.5, v0.mAntiLambda());
@@ -662,8 +649,8 @@ struct V0PtInvMassPlots {
 
     // Cut plots
     rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlotAntilambda"), v0.alpha(), v0.qtarm());
-    rPtAnalysis.fill(HIST("hNSigmaPosPionFromAntilambdas"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
-    rPtAnalysis.fill(HIST("hNSigmaNegProtonFromAntilambdas"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
+    // rPtAnalysis.fill(HIST("hNSigmaPosPionFromAntilambdas"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
+    // rPtAnalysis.fill(HIST("hNSigmaNegProtonFromAntilambdas"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
     rPtAnalysis.fill(HIST("hAntilambdacosPA"), v0.v0cosPA());
     rPtAnalysis.fill(HIST("hAntilambdaV0radius"), v0.v0radius());
     rPtAnalysis.fill(HIST("hAntilambdaDCAV0Daughters"), v0.dcaV0daughters());
@@ -673,13 +660,42 @@ struct V0PtInvMassPlots {
     return true;
   }
 
+  // V0 selection function
+  template <typename TV0, typename Track>
+  bool acceptV0Derived(TV0 const& v0, Track const& posDaughterTrack, Track const& negDaughterTrack)
+  {
+    rPtAnalysis.fill(HIST("hNV0s"), 0.5);
+    rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(1, "All V0s");
+    if (doDaughterPseudorapidityCut && !(std::abs(v0.positiveeta()) < etadau && std::abs(v0.negativeeta()) < etadau)) { // Daughters Pseudorapidity Cut
+      return false;
+    }
+    rPtAnalysis.fill(HIST("hNV0s"), 1.5);
+    rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(2, "Dau Pseudorapidity");
+    if (doisNotITSAfterburner && (posDaughterTrack.isITSAfterburner() || negDaughterTrack.isITSAfterburner())) { // ITS After Burner on daughter tracks
+      return false;
+    }
+    rPtAnalysis.fill(HIST("hNV0s"), 2.5);
+    rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(3, "ITS Afterburner");
+    if (doitsMinHits && !(posDaughterTrack.itsNCls() >= itsMinHits && negDaughterTrack.itsNCls() >= itsMinHits)) { // Minimum hits in the ITS
+      return false;
+    }
+    rPtAnalysis.fill(HIST("hNV0s"), 3.5);
+    rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(4, "ITS Min Hits");
+    // Cut Plots
+    rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.positiveeta());
+    rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.negativeeta());
+    rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), v0.alpha(), v0.qtarm());
+    return true;
+  }
+
   // Defining the type of the daughter tracks
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
+  using DaughterTracksDerived = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
   o2::framework::Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void genMCProcess(
     soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
-    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions,
+    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::CentFT0Ms>> const& collisions,
     aod::McParticles const& mcParticles)
   {
     // Event Efficiency, Event Split and V0 Signal Loss Corrections
@@ -790,7 +806,7 @@ struct V0PtInvMassPlots {
     // initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
     std::vector<double> kaonptedgevalues(nKaonHistograms + 1);
     std::vector<double> lambdaptedgevalues(nLambdaHistograms + 1);
-    std::vector<double> antilambdaPtedgevalues(nAntilambdaHistograms + 1);
+    std::vector<double> antilambdaptedgevalues(nAntilambdaHistograms + 1);
 
     for (int i = 0; i < nKaonHistograms + 1; i++) {
       kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
@@ -799,7 +815,7 @@ struct V0PtInvMassPlots {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
     }
     for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
-      antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
+      antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
     if (!acceptEvent(collision)) { // Event Selection
       return;
@@ -807,12 +823,14 @@ struct V0PtInvMassPlots {
     rMCCorrections.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Event Split Numenator
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
-      if (!acceptV0(v0)) { // V0 Selections
+      const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
+      const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>();
+      if (!acceptV0(v0, posDaughterTrack, negDaughterTrack)) { // V0 Selections
         continue;
       }
       // kzero analysis
       if (kzeroAnalysis == true) {
-        if (acceptK0sh(v0)) { // K0sh Selection
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
           // K0sh Signal Split Numerator Start
           for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
@@ -846,7 +864,7 @@ struct V0PtInvMassPlots {
       }
       // lambda analysis
       if (lambdaAnalysis == true) {
-        if (acceptLambda(v0)) { // Lambda Selections
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selections
           // Lambda Signal Split Numerator Start
           for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
@@ -886,10 +904,10 @@ struct V0PtInvMassPlots {
       }
       // antilambda analysis
       if (antiLambdaAnalysis == true) {
-        if (acceptAntilambda(v0)) { // Antilambda Selections
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selections
           // Antilambda Signal Split Numerator End
           for (int i = 0; i < nAntilambdaHistograms; i++) {
-            if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
+            if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
               pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
             }
           }
@@ -899,7 +917,7 @@ struct V0PtInvMassPlots {
             if (dotruthAntilambda && (v0mcParticle.pdgCode() == kLambda0Bar)) { // antilambda matched
               if (v0mcParticle.isPhysicalPrimary()) {
                 for (int i = 0; i < nAntilambdaHistograms; i++) {
-                  if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
+                  if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
                     pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
                   }
                 }
@@ -945,7 +963,7 @@ struct V0PtInvMassPlots {
     // initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
     std::vector<double> kaonptedgevalues(nKaonHistograms + 1);
     std::vector<double> lambdaptedgevalues(nLambdaHistograms + 1);
-    std::vector<double> antilambdaPtedgevalues(nAntilambdaHistograms + 1);
+    std::vector<double> antilambdaptedgevalues(nAntilambdaHistograms + 1);
 
     for (int i = 0; i < nKaonHistograms + 1; i++) {
       kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
@@ -954,21 +972,24 @@ struct V0PtInvMassPlots {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
     }
     for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
-      antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
+      antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
-
+    // Add 2D histogram with Centrality and Nch
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
+    // Add 2D histogram with Centrality and Nch
     rMCCorrections.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Number of recorded events
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
-      if (!acceptV0(v0)) { // V0 Selection
+      const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
+      const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>();
+      if (!acceptV0(v0, posDaughterTrack, negDaughterTrack)) { // V0 Selection
         continue;
       }
       // kzero analysis
       if (kzeroAnalysis == true) {
-        if (acceptK0sh(v0)) { // K0sh Selection
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
           for (int i = 0; i < nKaonHistograms; i++) {
             if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
               pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
@@ -978,7 +999,7 @@ struct V0PtInvMassPlots {
       }
       // lambda analysis
       if (lambdaAnalysis == true) {
-        if (acceptLambda(v0)) { // Lambda Selection
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selection
           for (int i = 0; i < nLambdaHistograms; i++) {
             if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
               pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
@@ -988,10 +1009,233 @@ struct V0PtInvMassPlots {
       }
       // anti-lambda analysis
       if (antiLambdaAnalysis == true) {
-        if (acceptAntilambda(v0)) { // Antilambda Selection
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selection
           for (int i = 0; i < nAntilambdaHistograms; i++) {
-            if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+            if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
               pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
+            }
+          }
+        }
+      }
+    }
+  }
+  // This is the process for Real Derived Data
+  void dataProcessDerived(soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents>::iterator const& collision,
+                          soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras> const& V0s,
+                          DaughterTracksDerived const&)
+  {
+    // tokenise strings into individual values
+    pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
+    pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingPtBinsString, ',');
+    pthistos::antilambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingPtBinsString, ',');
+    pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
+
+    // Calculate number of histograms for each particle type
+    int nKaonHistograms = pthistos::kaonPtBins.size() - 1;
+    int nLambdaHistograms = pthistos::lambdaPtBins.size() - 1;
+    int nAntilambdaHistograms = pthistos::antilambdaPtBins.size() - 1;
+
+    // initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
+    std::vector<double> kaonptedgevalues(nKaonHistograms + 1);
+    std::vector<double> lambdaptedgevalues(nLambdaHistograms + 1);
+    std::vector<double> antilambdaptedgevalues(nAntilambdaHistograms + 1);
+
+    for (int i = 0; i < nKaonHistograms + 1; i++) {
+      kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
+    }
+    for (int i = 0; i < nLambdaHistograms + 1; i++) {
+      lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
+    }
+    for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
+      antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
+    }
+
+    if (!acceptEvent(collision)) { // Event Selection
+      return;
+    }
+    rMCCorrections.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Number of recorded events
+    for (const auto& v0 : V0s) {
+      // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
+      const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracksDerived>(); // Positive Daughter track
+      const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracksDerived>(); // Negative Daughter track
+      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack)) {                       // V0 Selection
+        continue;
+      }
+      // kzero analysis
+      if (kzeroAnalysis == true) {
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
+          for (int i = 0; i < nKaonHistograms; i++) {
+            if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
+              pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
+            }
+          }
+        }
+      }
+      // lambda analysis
+      if (lambdaAnalysis == true) {
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selection
+          for (int i = 0; i < nLambdaHistograms; i++) {
+            if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+              pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
+            }
+          }
+        }
+      }
+      // anti-lambda analysis
+      if (antiLambdaAnalysis == true) {
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selection
+          for (int i = 0; i < nAntilambdaHistograms; i++) {
+            if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+              pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
+            }
+          }
+        }
+      }
+    }
+  }
+  // This is the Process for the MC reconstructed Data
+  void recMCProcessDerived(soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::StraCents>::iterator const& collision,
+                           // <aod::McCollisions> const& /*mcCollisions*/,
+                           soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels, aod::V0MCMothers> const& V0s,
+                           DaughterTracksDerived const&)
+  {
+    // tokenise strings into individual values
+    pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
+    pthistos::lambdaPtBins = o2::utils::Str::tokenize(lambdaSettingPtBinsString, ',');
+    pthistos::antilambdaPtBins = o2::utils::Str::tokenize(antilambdaSettingPtBinsString, ',');
+    pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
+
+    // Calculate number of histograms for each particle type
+    int nKaonHistograms = pthistos::kaonPtBins.size() - 1;
+    int nLambdaHistograms = pthistos::lambdaPtBins.size() - 1;
+    int nAntilambdaHistograms = pthistos::antilambdaPtBins.size() - 1;
+
+    // initialize and convert tokenized strings into vector of doubles for Pt Bin Edges
+    std::vector<double> kaonptedgevalues(nKaonHistograms + 1);
+    std::vector<double> lambdaptedgevalues(nLambdaHistograms + 1);
+    std::vector<double> antilambdaptedgevalues(nAntilambdaHistograms + 1);
+
+    for (int i = 0; i < nKaonHistograms + 1; i++) {
+      kaonptedgevalues[i] = std::stod(pthistos::kaonPtBins[i]);
+    }
+    for (int i = 0; i < nLambdaHistograms + 1; i++) {
+      lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
+    }
+    for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
+      antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
+    }
+    if (!acceptEvent(collision)) { // Event Selection
+      return;
+    }
+    rMCCorrections.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Event Split Numenator
+    for (const auto& v0 : V0s) {
+      // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
+      const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracksDerived>(); // Positive Daughter track
+      const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracksDerived>(); // Negative Daughter track
+      if (!acceptV0Derived(v0, posDaughterTrack, negDaughterTrack)) {                       // V0 Selections
+        continue;
+      }
+      // kzero analysis
+      if (kzeroAnalysis == true) {
+        if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack)) { // K0sh Selection
+          // K0sh Signal Split Numerator Start
+          for (int i = 0; i < nKaonHistograms; i++) {
+            if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
+              pthistos::kaonSplit[i]->Fill(v0.mK0Short(), collision.centFT0M());       // filling the k0s namespace histograms for K0sh Splitting Numerator
+            }
+          }
+          // K0sh Signla Split Numerator End
+          if (v0.has_v0MCCore()) {
+            auto v0mcParticle = v0.v0MCCore_as<aod::V0MCCores>();
+            if (dotruthk0sh && (v0mcParticle.pdgCode() == kK0Short)) { // kzero matched
+              if (v0mcParticle.isPhysicalPrimary()) {
+                for (int i = 0; i < nKaonHistograms; i++) {
+                  if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
+                    pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
+                  }
+                }
+              }
+              if (!v0mcParticle.isPhysicalPrimary()) {
+                auto v0mother = v0.motherMCPart(); // Get mothers
+                rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                if (v0mother.pdgCode() == kPhi) { // Phi Mother Matched
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                }
+              }
+            }
+          }
+        }
+      }
+      // lambda analysis
+      if (lambdaAnalysis == true) {
+        if (acceptLambda(v0, posDaughterTrack, negDaughterTrack)) { // Lambda Selections
+          // Lambda Signal Split Numerator Start
+          for (int i = 0; i < nLambdaHistograms; i++) {
+            if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+              pthistos::lambdaSplit[i]->Fill(v0.mLambda(), collision.centFT0M());
+            }
+          }
+          // Lambda Signal Split Numerator End
+          if (v0.has_v0MCCore()) {
+            auto v0mcParticle = v0.v0MCCore_as<aod::V0MCCores>();
+            if (dotruthLambda && (v0mcParticle.pdgCode() == kLambda0)) { // lambda matched
+              if (v0mcParticle.isPhysicalPrimary()) {
+                for (int i = 0; i < nLambdaHistograms; i++) {
+                  if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+                    pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
+                  }
+                }
+              }
+              if (!v0mcParticle.isPhysicalPrimary()) {
+                auto v0mother = v0.motherMCPart(); // Get mothers
+                rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                if (v0mother.pdgCode() == kXiMinus) { // Xi Minus Mother Matched
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                }
+                if (v0mother.pdgCode() == kXi0) { // Xi Zero Mother Matched
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                }
+                if (v0mother.pdgCode() == kOmegaMinus) { // Omega Mother Matched
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                }
+              }
+            }
+          }
+        }
+      }
+      // antilambda analysis
+      if (antiLambdaAnalysis == true) {
+        if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack)) { // Antilambda Selections
+          // Antilambda Signal Split Numerator End
+          for (int i = 0; i < nAntilambdaHistograms; i++) {
+            if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+              pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
+            }
+          }
+          // Antilambda Signal Split Numerator End
+          if (v0.has_v0MCCore()) {
+            auto v0mcParticle = v0.v0MCCore_as<aod::V0MCCores>();
+            if (dotruthAntilambda && (v0mcParticle.pdgCode() == kLambda0Bar)) { // antilambda matched
+              if (v0mcParticle.isPhysicalPrimary()) {
+                for (int i = 0; i < nAntilambdaHistograms; i++) {
+                  if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+                    pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
+                  }
+                }
+              }
+              if (!v0mcParticle.isPhysicalPrimary()) {
+                auto v0mother = v0.motherMCPart(); // Get mothers
+                rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                if (v0mother.pdgCode() == kXiPlusBar) { // Xi Plus Mother Matched
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                }
+                if (v0mother.pdgCode() == -kXi0) { // Anti-Xi Zero Mother Matched
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                }
+                if (v0mother.pdgCode() == kOmegaPlusBar) { // Anti-Omega (minus) Mother Matched
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                }
+              }
             }
           }
         }
@@ -1002,8 +1246,8 @@ struct V0PtInvMassPlots {
   PROCESS_SWITCH(V0PtInvMassPlots, recMCProcess, "Process Run 3 MC Reconstructed", false);
   PROCESS_SWITCH(V0PtInvMassPlots, dataProcess, "Process Run 3 Data,", false);
   // PROCESS_SWITCH(V0PtInvMassPlots, genMCProcessDerived, "Process Run 3 MC Generated", false);
-  // PROCESS_SWITCH(V0PtInvMassPlots, recMCProcessDerived, "Process Run 3 MC Reconstructed", false);
-  // PROCESS_SWITCH(V0PtInvMassPlots, dataProcessDerived, "Process Run 3 Data,", true);
+  PROCESS_SWITCH(V0PtInvMassPlots, recMCProcessDerived, "Process Run 3 MC Reconstructed", false);
+  PROCESS_SWITCH(V0PtInvMassPlots, dataProcessDerived, "Process Run 3 Data,", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
