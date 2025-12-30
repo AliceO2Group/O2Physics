@@ -19,7 +19,9 @@
 /// o2-linter: disable=name/workflow-file (Library implementation file, not a workflow)
 
 #include "PWGLF/Utils/collisionCutsGroup.h"
+
 #include "PWGLF/Utils/collisionCuts.h"
+
 #include "Framework/Logger.h"
 
 CollisionCutsGroup::CollisionCutsGroup()
@@ -28,9 +30,9 @@ CollisionCutsGroup::CollisionCutsGroup()
     occupancyInTimeRangeMin{-1},
     checkTrigger{false},
     checkOffline{true},
-    // AUTO-GENERATED member initialization from EventSelectionFlagsMapping.def
+// AUTO-GENERATED member initialization from EventSelectionFlagsMapping.def
 #define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
-    member{defaultVal},
+  member{defaultVal},
 #include "EventSelectionFlagsMapping.def"
 #undef EVSEL_FLAG
     // Manual Run2 flag initialization

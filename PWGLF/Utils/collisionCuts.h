@@ -21,11 +21,12 @@
 #ifndef PWGLF_UTILS_COLLISIONCUTS_H_
 #define PWGLF_UTILS_COLLISIONCUTS_H_
 
+#include "PWGLF/Utils/collisionCutsGroup.h"
+
 #include "Common/DataModel/EventSelection.h"
 
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
-#include "PWGLF/Utils/collisionCutsGroup.h"
 
 #include <map>
 #include <string>
@@ -491,17 +492,17 @@ class CollisonCuts
  private:
   /// Metadata structure for event selections
   struct SelectionMetadata {
-    int evselFlag;              ///< o2::aod::evsel::EventSelectionFlags value
-    const char* label;          ///< Histogram label
-    const char* debugMessage;   ///< Debug message for LOGF
-    int histogramBin;          ///< Position in EvtSel enum (for histogram bin)
+    int evselFlag;            ///< o2::aod::evsel::EventSelectionFlags value
+    const char* label;        ///< Histogram label
+    const char* debugMessage; ///< Debug message for LOGF
+    int histogramBin;         ///< Position in EvtSel enum (for histogram bin)
   };
 
   /// Central registry mapping EvtSel enum to metadata (auto-generated from EventSelectionFlagsMapping.def)
   inline static const std::map<int, SelectionMetadata> sSelectionRegistry = {
-    // AUTO-GENERATED from EventSelectionFlagsMapping.def
+  // AUTO-GENERATED from EventSelectionFlagsMapping.def
 #define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
-    {EvtSel::evtSelEnum, {aod::evsel::enumVal, label, desc " selection failed", EvtSel::evtSelEnum}},
+  {EvtSel::evtSelEnum, {aod::evsel::enumVal, label, desc " selection failed", EvtSel::evtSelEnum}},
 #include "PWGLF/Utils/EventSelectionFlagsMapping.def"
 #undef EVSEL_FLAG
   };

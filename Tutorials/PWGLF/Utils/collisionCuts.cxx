@@ -14,12 +14,15 @@
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 /// \since 30/12/2024
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "PWGLF/Utils/collisionCuts.h"
+
+#include "PWGLF/Utils/collisionCutsGroup.h"
+
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "PWGLF/Utils/collisionCuts.h"
-#include "PWGLF/Utils/collisionCutsGroup.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;

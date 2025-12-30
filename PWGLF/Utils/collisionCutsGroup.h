@@ -29,9 +29,11 @@
 #ifndef PWGLF_UTILS_COLLISIONCUTSGROUP_H_
 #define PWGLF_UTILS_COLLISIONCUTSGROUP_H_
 
-#include <iosfwd>
-#include <Rtypes.h>
 #include "Common/CCDB/EventSelectionParams.h"
+
+#include <Rtypes.h>
+
+#include <iosfwd>
 
 // Forward declaration to avoid circular dependency
 namespace o2::analysis
@@ -84,24 +86,24 @@ class CollisionCutsGroup
 
  private:
   // ===== Basic collision parameters =====
-  float zvtxMax;                           ///< Maximum z-vertex position (cm)
-  int occupancyInTimeRangeMax;             ///< Maximum track occupancy (-1 = no cut)
-  int occupancyInTimeRangeMin;             ///< Minimum track occupancy (-1 = no cut)
+  float zvtxMax;               ///< Maximum z-vertex position (cm)
+  int occupancyInTimeRangeMax; ///< Maximum track occupancy (-1 = no cut)
+  int occupancyInTimeRangeMin; ///< Minimum track occupancy (-1 = no cut)
 
   // ===== General event selection flags =====
-  bool checkTrigger;                       ///< Check for trigger
-  bool checkOffline;                       ///< Check for offline selection
+  bool checkTrigger; ///< Check for trigger
+  bool checkOffline; ///< Check for offline selection
 
   // ===== AUTO-GENERATED event selection flag members =====
   // Generated from EventSelectionFlagsMapping.def
 #define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
-  bool member;  ///< desc
+  bool member; ///< desc
 #include "EventSelectionFlagsMapping.def"
 #undef EVSEL_FLAG
 
   // ===== Run2-specific selections (not in EventSelectionFlags) =====
-  bool applyRun2AliEventCuts;              ///< Run2 AliEventCuts
-  bool applyRun2INELgtZERO;                ///< Run2 INEL>0 selection
+  bool applyRun2AliEventCuts; ///< Run2 AliEventCuts
+  bool applyRun2INELgtZERO;   ///< Run2 INEL>0 selection
 
   ClassDefNV(CollisionCutsGroup, 2);
 };
