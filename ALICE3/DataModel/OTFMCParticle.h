@@ -13,7 +13,7 @@
 /// \file   OTFMCParticle.h
 /// \author Jesper Karlsson Gumprecht
 /// \since  16/12/2025
-/// \brief  
+/// \brief
 ///
 
 #ifndef ALICE3_DATAMODEL_OTFMCPARTICLE_H_
@@ -27,29 +27,29 @@ namespace o2::aod
 
 namespace otfmcparticle
 {
-  DECLARE_SOA_COLUMN(Phi, phi, float);
-  DECLARE_SOA_COLUMN(Eta, eta, float);
-  DECLARE_SOA_COLUMN(Pt, pt, float);
-  DECLARE_SOA_COLUMN(P, p, float);
-  DECLARE_SOA_COLUMN(Y, y, float);
-}
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Y, y, float);
+} // namespace otfmcparticle
 
 DECLARE_SOA_TABLE_FULL(McParticlesWithDau, "McParticlesWithDau", "AOD", "MCPARTICLEWITHDAU",
-                       o2::soa::Index<>, 
+                       o2::soa::Index<>,
                        mcparticle::McCollisionId,
-                       mcparticle::PdgCode, 
-                       mcparticle::StatusCode, 
+                       mcparticle::PdgCode,
+                       mcparticle::StatusCode,
                        mcparticle::Flags,
-                       mcparticle::MothersIds, 
-                       mcparticle::DaughtersIdSlice, 
+                       mcparticle::MothersIds,
+                       mcparticle::DaughtersIdSlice,
                        mcparticle::Weight,
-                       mcparticle::Px, 
-                       mcparticle::Py, 
-                       mcparticle::Pz, 
+                       mcparticle::Px,
+                       mcparticle::Py,
+                       mcparticle::Pz,
                        mcparticle::E,
-                       mcparticle::Vx, 
-                       mcparticle::Vy, 
-                       mcparticle::Vz, 
+                       mcparticle::Vx,
+                       mcparticle::Vy,
+                       mcparticle::Vz,
                        mcparticle::Vt,
                        otfmcparticle::Phi,
                        otfmcparticle::Eta,

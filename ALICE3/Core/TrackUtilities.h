@@ -21,12 +21,45 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "TLorentzVector.h"
+
 #include <vector>
-
-
 
 namespace o2::upgrade
 {
+
+/// Struct to store mc info for the otf decayer
+struct OTFParticle {
+  int mPdgCode;
+  float mE;
+  float mVx, mVy, mVz;
+  float mPx, mPy, mPz;
+
+  // Setters
+  void setPDG(int pdg) { mPdgCode = pdg; }
+  void setVxVyVz(float vx, float vy, float vz)
+  {
+    mVx = vx;
+    mVy = vy;
+    mVz = vz;
+  }
+  void setPxPyPzE(float px, float py, float pz, float e)
+  {
+    mPx = px;
+    mPy = py;
+    mPz = pz;
+    mE = e;
+  }
+
+  // Getters
+  int pdgCode() const { return mPdgCode; }
+  float vx() const { return mVx; }
+  float vy() const { return mVy; }
+  float vz() const { return mVz; }
+  float px() const { return mPx; }
+  float py() const { return mPy; }
+  float pz() const { return mPz; }
+  float e() const { return mE; }
+};
 
 /// Function to convert a TLorentzVector into a perfect Track
 /// \param charge particle charge (integer)
@@ -37,25 +70,6 @@ void convertTLorentzVectorToO2Track(const int charge,
                                     const TLorentzVector particle,
                                     const std::vector<double> productionVertex,
                                     o2::track::TrackParCov& o2track);
-
-struct OTFParticle {
-  int mPdgCode;
-  float mE;
-  float mVx, mVy, mVz;
-  float mPx, mPy, mPz;
-
-  void setPDG(int pdg) { mPdgCode = pdg; }
-  void setVxVyVz(float _vx, float _vy, float _vz) { mVx = _vx; mVy = _vy; mVz = _vz; }
-  void setPxPyPzE(float _px, float _py, float _pz, float _e) { mPx = _px; mPy = _py; mPz = _pz; mE = _e; }
-  int pdgCode() const { return mPdgCode; }
-  float vx() const { return mVx; }
-  float vy() const { return mVy; }
-  float vz() const { return mVz; }
-  float px() const { return mPx; }
-  float py() const { return mPy; }
-  float pz() const { return mPz; }
-  float e() const { return mE; }
-};
 
 /// Function to convert a TLorentzVector into a perfect Track
 /// \param pdgCode particle pdg

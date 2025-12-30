@@ -19,6 +19,7 @@
 #define ALICE3_CORE_DECAYER_H_
 
 #include "ALICE3/Core/TrackUtilities.h"
+
 #include "ReconstructionDataFormats/Track.h"
 
 #include <TDatabasePDG.h>
@@ -28,19 +29,19 @@
 #include <TParticlePDG.h>
 #include <TRandom3.h>
 
+#include <array>
+#include <cmath>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <array>
-#include <cmath>
-
 
 namespace o2
 {
 namespace upgrade
 {
 
-class Decayer {
+class Decayer
+{
  public:
   // Default constructor
   Decayer() = default;
@@ -75,11 +76,11 @@ class Decayer {
       track.getCircleParams(mBz, circle, sna, csa);
       const double rxy = rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
       const double theta = rxy / circle.rC;
-      
+
       vx = ((pos[0] - circle.xC) * std::cos(theta) - (pos[1] - circle.yC) * std::sin(theta)) + circle.xC;
       vy = ((pos[1] - circle.yC) * std::cos(theta) + (pos[0] - circle.xC) * std::sin(theta)) + circle.yC;
       vz = mom[2] + rxyz * (mom[2] / track.getP());
-      
+
       px = mom[0] * std::cos(theta) - mom[1] * std::sin(theta);
       py = mom[1] * std::cos(theta) + mom[0] * std::sin(theta);
     }
@@ -89,7 +90,7 @@ class Decayer {
     for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
       brTotal += particleInfo->DecayChannel(ch)->BranchingRatio();
     }
-    
+
     double brSum = 0.;
     std::vector<double> dauMasses;
     std::vector<int> pdgCodesDaughters;
@@ -125,21 +126,20 @@ class Decayer {
     return decayProducts;
   }
 
-
   void setSeed(const int seed)
   {
-    mRand3.SetSeed(seed); // For decay length sampling
+    mRand3.SetSeed(seed);   // For decay length sampling
     gRandom->SetSeed(seed); // For TGenPhaseSpace
   }
 
- void setBField(const double b) { mBz = b; }
+  void setBField(const double b) { mBz = b; }
 
  private:
   TRandom3 mRand3;
   double mBz;
 };
 
-} // namespace fastsim
+} // namespace upgrade
 } // namespace o2
 
 #endif // ALICE3_CORE_DECAYER_H_
