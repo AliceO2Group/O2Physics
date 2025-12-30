@@ -23,16 +23,6 @@ This tutorial demonstrates how to use the `collisionCutsGroup` pattern for autom
 3. How to use the collision cuts checker to filter events
 4. How to fill QA histograms for selected events
 
-### Running the Tutorial:
-
-```bash
-# Load O2Physics environment
-alienv enter O2Physics/latest
-
-# Run the tutorial
-o2-analysis-collision-cuts-tutorial --aod-file <your-aod-file>
-```
-
 ### Customizing Cuts:
 
 The collision cuts can be customized via JSON configuration file:
