@@ -15,7 +15,6 @@
 /// \since 30/12/2024
 
 #include "PWGLF/Utils/collisionCuts.h"
-
 #include "PWGLF/Utils/collisionCutsGroup.h"
 
 #include "Common/DataModel/Centrality.h"
