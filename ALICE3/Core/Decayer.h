@@ -66,7 +66,7 @@ class Decayer {
     if (!charge) {
       vx = pos[0] + rxyz * (mom[0] / track.getP());
       vy = pos[1] + rxyz * (mom[1] / track.getP());
-      vy = pos[2] + rxyz * (mom[2] / track.getP());
+      vz = pos[2] + rxyz * (mom[2] / track.getP());
       px = mom[0];
       py = mom[2];
     } else {
@@ -126,7 +126,6 @@ class Decayer {
   }
 
 
-  // Setters
   void setSeed(const int seed)
   {
     mRand3.SetSeed(seed); // For decay length sampling
@@ -134,10 +133,6 @@ class Decayer {
   }
 
  void setBField(const double b) { mBz = b; }
-
-  // Getters
-
-
 
  private:
   TRandom3 mRand3;

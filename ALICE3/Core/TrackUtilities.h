@@ -39,14 +39,22 @@ void convertTLorentzVectorToO2Track(const int charge,
                                     o2::track::TrackParCov& o2track);
 
 struct OTFParticle {
-  int pdgCode;
-  float e;
-  float vx, vy, vz;
-  float px, py, pz;
+  int mPdgCode;
+  float mE;
+  float mVx, mVy, mVz;
+  float mPx, mPy, mPz;
 
-  void setPDG(int pdg) { pdgCode = pdg; }
-  void setVxVyVz(float _vx, float _vy, float _vz) { vx = _vx; vy = _vy; vz = _vz; }
-  void setPxPyPzE(float _px, float _py, float _pz, float _e) { px = _px; py = _py; pz = _pz; e = _e; }
+  void setPDG(int pdg) { mPdgCode = pdg; }
+  void setVxVyVz(float _vx, float _vy, float _vz) { mVx = _vx; mVy = _vy; mVz = _vz; }
+  void setPxPyPzE(float _px, float _py, float _pz, float _e) { mPx = _px; mPy = _py; mPz = _pz; mE = _e; }
+  int pdgCode() const { return mPdgCode; }
+  float vx() const { return mVx; }
+  float vy() const { return mVy; }
+  float vz() const { return mVz; }
+  float px() const { return mPx; }
+  float py() const { return mPy; }
+  float pz() const { return mPz; }
+  float e() const { return mE; }
 };
 
 /// Function to convert a TLorentzVector into a perfect Track
@@ -77,15 +85,9 @@ void convertTLorentzVectorToO2Track(int pdgCode,
 template <typename PdgService>
 void convertOTFParticleToO2Track(const OTFParticle& particle, o2::track::TrackParCov& o2track, const PdgService& pdg)
 {
-  const auto pdgInfo = pdg->GetParticle(particle.pdgCode);
-  int charge = 0;
-  if (pdgInfo != nullptr) {
-    charge = pdgInfo->Charge() / 3;
-  }
-
   static TLorentzVector tlv;
-  tlv.SetPxPyPzE(particle.px, particle.py, particle.pz, particle.e);
-  convertTLorentzVectorToO2Track(particle.pdgCode, tlv, {particle.vx, particle.vy, particle.vz}, o2track, pdg);
+  tlv.SetPxPyPzE(particle.px(), particle.py(), particle.pz(), particle.e());
+  convertTLorentzVectorToO2Track(particle.pdgCode(), tlv, {particle.vx(), particle.vy(), particle.vz()}, o2track, pdg);
 }
 
 /// Function to convert a McParticle into a perfect Track
