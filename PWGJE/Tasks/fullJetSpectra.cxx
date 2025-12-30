@@ -147,24 +147,6 @@ struct FullJetSpectra {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   bool doSumw2 = false;
 
-  // Multiplicity Utilities
-  //  struct CentClass {
-  //    const char* name;
-  //    float min;
-  //    float max;
-  //  };
-  //  // Define multiplicity classes here (example: MB(0-100), HM(0-1), 1-10, 10-20, 20-40, 40-60, 60-100)
-  //  static constexpr int nCentClasses = 4;
-  //  CentClass centClasses[nCentClasses] = {
-  //    {"MB", 0.0, 100.0},
-  //    {"HM", 0.0, 1.0},
-  //    {"1_10", 1.0, 10.0},
-  //    {"10_20", 10.0, 20.0},
-  //    {"20_40", 20.0, 40.0},
-  //    {"40_60", 40.0, 60.0},
-  //    {"60_100", 60.0, 100.0}
-  //  };
-
   // Random splitter instance
   /*  TRandom3 randGen;
   // float eventRandomValue = -1.0;  // default invalid
@@ -728,15 +710,23 @@ struct FullJetSpectra {
 
   using FullJetTableDataJoined = soa::Join<aod::FullJets, aod::FullJetConstituents>;
   using JetTableMCDJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>;
-  using JetTableMCDWeightedJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents, aod::FullMCDetectorLevelJetEventWeights>;
+  // using JetTableMCDWeightedJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents, aod::FullMCDetectorLevelJetEventWeights>;
   using JetTableMCPJoined = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>;
-  using JetTableMCPWeightedJoined = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents, aod::FullMCParticleLevelJetEventWeights>;
+  // using JetTableMCPWeightedJoined = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents, aod::FullMCParticleLevelJetEventWeights>;
 
-  using JetTableMCDMatchedJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents, aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets>;
-  using jetMcpPerMcCollision = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents, aod::FullMCParticleLevelJetsMatchedToFullMCDetectorLevelJets>;
+  using JetTableMCDMatchedJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents,
+                                   aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets>;
 
-  using JetTableMCDMatchedWeightedJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents, aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets, aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets, aod::FullMCDetectorLevelJetEventWeights>;
-  using JetTableMCPMatchedWeightedJoined = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents, aod::FullMCParticleLevelJetsMatchedToFullMCDetectorLevelJets, aod::FullMCParticleLevelJetsMatchedToFullMCDetectorLevelJets, aod::FullMCParticleLevelJetEventWeights>;
+  using JetTableMCPMatchedJoined = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents,
+                               aod::FullMCParticleLevelJetsMatchedToFullMCDetectorLevelJets>;
+
+  /*using JetTableMCDMatchedWeightedJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents,
+                                           aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets,
+                                           aod::FullMCDetectorLevelJetEventWeights>;*/
+
+  /*using JetTableMCPMatchedWeightedJoined = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents,
+                                           aod::FullMCParticleLevelJetsMatchedToFullMCDetectorLevelJets,
+                                           aod::FullMCParticleLevelJetEventWeights>;*/
 
   // Applying some cuts(filters) on collisions, tracks, clusters
 
@@ -745,7 +735,7 @@ struct FullJetSpectra {
   Filter trackCuts = (aod::jtrack::pt >= trackpTMin && aod::jtrack::pt < trackpTMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
-  Preslice<jetMcpPerMcCollision> JetMCPPerMcCollision = aod::jet::mcCollisionId;
+  Preslice<JetTableMCPMatchedJoined> JetMCPPerMcCollision = aod::jet::mcCollisionId;
   PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
   PresliceUnsorted<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>> perFoundBC = aod::evsel::foundBCId;
 
@@ -1747,7 +1737,7 @@ struct FullJetSpectra {
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsMCPWeighted, "Full Jets at Particle Level on weighted events", false);
 
-  void processJetsMCPMCDMatched(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, jetMcpPerMcCollision const& mcpjets, aod::JMcCollisions const&,
+  void processJetsMCPMCDMatched(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const& mcpjets, aod::JMcCollisions const&,
                                 aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
   {
     bool eventAccepted = false;
@@ -1847,21 +1837,21 @@ struct FullJetSpectra {
       //   continue;
       // }
 
-      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<jetMcpPerMcCollision>()) {
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
         if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetPartEtaMin, jetPartEtaMax, trackEtaMin, trackEtaMax) ||
             !isInPhiAcceptance(mcpjet)) {
           fakeMcpJet++;
           registry.fill(HIST("h2_full_fakemcpjets"), mcpjet.pt(), fakeMcpJet, 1.0);
           continue;
         } else {
-          fillMatchedHistograms<JetTableMCDMatchedJoined::iterator, jetMcpPerMcCollision>(mcdjet);
+          fillMatchedHistograms<JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet);
         }
       } // mcpjet loop
     } // mcdjet loop
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsMCPMCDMatched, "Full Jet finder MCP matched to MCD", false);
 
-  void processJetsNoFidMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedWeightedJoined const& mcdjets, JetTableMCPMatchedWeightedJoined const& mcpjets, aod::JMcCollisions const&,
+  void processJetsNoFidMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const& mcpjets, aod::JMcCollisions const&,
                                         aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
   {
     bool eventAccepted = false;
@@ -1930,7 +1920,7 @@ struct FullJetSpectra {
         continue;
       }
 
-      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedWeightedJoined>()) {
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
         allMatchedPartJets++;
         registry.fill(HIST("h_allMatchedNoFidPartJetsPt"), mcpjet.pt(), eventWeight);
 
@@ -1943,7 +1933,7 @@ struct FullJetSpectra {
         } else {
           NPartJetFid++;
           // Fill matched histograms (including Response Matrix) for valid MCD-MCP pairs
-          fillMatchedNoFidHistograms<JetTableMCDMatchedWeightedJoined::iterator, JetTableMCPMatchedWeightedJoined>(mcdjet, eventWeight);
+          fillMatchedNoFidHistograms<JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet, eventWeight);
           registry.fill(HIST("h2_full_NoFidmatchedmcpjet_pt"), mcpjet.pt(), NPartJetFid, eventWeight);
           registry.fill(HIST("h_full_NoFidmatchedmcpjet_eta"), mcpjet.eta(), eventWeight);
           registry.fill(HIST("h_full_NoFidmatchedmcpjet_phi"), mcpjet.phi(), eventWeight);
@@ -1956,7 +1946,7 @@ struct FullJetSpectra {
   PROCESS_SWITCH(FullJetSpectra, processJetsNoFidMCPMCDMatchedWeighted, "Full Jet finder No Fid MCP matched to MCD on weighted events", false);
 
 
-  void processJetsMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedWeightedJoined const& mcdjets, JetTableMCPMatchedWeightedJoined const& mcpjets, aod::JMcCollisions const&,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const& mcpjets, aod::JMcCollisions const&,
                                         aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
   {
     bool eventAccepted = false;
@@ -2057,7 +2047,7 @@ struct FullJetSpectra {
         continue;
       }
 
-      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedWeightedJoined>()) {
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
         allMatchedPartJets++;
         registry.fill(HIST("h_allMatchedPartJetsPt"), mcpjet.pt(), eventWeight);
 
@@ -2069,7 +2059,7 @@ struct FullJetSpectra {
         } else {
           NPartJetFid++;
           // Fill matched histograms (including Response Matrix) for valid MCD-MCP pairs
-          fillMatchedHistograms<JetTableMCDMatchedWeightedJoined::iterator, JetTableMCPMatchedWeightedJoined>(mcdjet, eventWeight);
+          fillMatchedHistograms<JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet, eventWeight);
           // If both MCD-MCP matched jet pairs are within the EMCAL fiducial region, fill these kinematic histos
           registry.fill(HIST("h2_full_matchedmcpjet_pt"), mcpjet.pt(), NPartJetFid, eventWeight);
           registry.fill(HIST("h_full_matchedmcpjet_eta"), mcpjet.eta(), eventWeight);
