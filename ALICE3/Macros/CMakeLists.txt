@@ -11,7 +11,7 @@
 
 install(FILES Configuration/a3geo.ini
         Configuration/a3geometry_v2.ini
+        Configuration/a3geometry_v3.ini
         Configuration/a3geometry_v4.ini
         PERMISSIONS GROUP_READ GROUP_EXECUTE OWNER_EXECUTE OWNER_WRITE OWNER_READ WORLD_EXECUTE WORLD_READ
         DESTINATION share/alice3/)
-

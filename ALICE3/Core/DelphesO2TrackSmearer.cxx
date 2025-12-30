@@ -66,6 +66,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
     const std::string outPath = "/tmp/LUTs/";
     filename = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
+    LOG(info) << " --- Local LUT filename will be: " << filename;
     std::ifstream checkFile(filename); // Check if file already exists
     if (!checkFile.is_open()) {        // File does not exist, retrieve from CCDB
       LOG(info) << " --- CCDB source detected for PDG " << pdg << ": " << path;
