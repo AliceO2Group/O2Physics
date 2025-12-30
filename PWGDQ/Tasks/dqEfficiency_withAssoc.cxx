@@ -1703,7 +1703,7 @@ struct AnalysisSameEventPairing {
           // for these pair level signals, also add histograms for each MCgenAcc cut if specified
           if (fUseMCGenAccCut) {
             for (auto& cut : fMCGenAccCuts) {
-              histNames += Form("MCTruthGenPairSel_%s_%s;", cut->GetName(), sig->GetName());
+              histNames += Form("MCTruthGenPairSel_%s_%s;", sig->GetName(), cut->GetName());
             }
           }
         }
@@ -2254,9 +2254,9 @@ struct AnalysisSameEventPairing {
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
                 // Fill also acceptance cut histograms if requested
                 if (fUseMCGenAccCut) {
-                  for (auto& accCut : fMCGenAccCuts) {
-                    if (accCut.IsSelected(VarManager::fgValues)) {
-                      fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s_%s", sig->GetName(), accCut.GetName()), VarManager::fgValues);
+                  for (auto& cut : fMCGenAccCuts) {
+                    if (cut->IsSelected(VarManager::fgValues)) {
+                      fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                     }
                   }
                 }
