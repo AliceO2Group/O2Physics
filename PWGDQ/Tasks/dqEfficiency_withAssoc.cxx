@@ -1335,7 +1335,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
     Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
     Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts, !!! Use only if you know what you are doing, otherwise leave empty"};
-    Configurable<std::string> MCgenAcc{"cfgMCGenAccCut", "", "cut for MC generated particles acceptance"};
+    Configurable<std::string> MCgenAcc{"cfgMCGenAccCuts", "", "Comma separated list of MC generated particles acceptance cuts, !!! Use only if you know what you are doing, otherwise leave empty"};
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
 
@@ -1396,7 +1396,7 @@ struct AnalysisSameEventPairing {
   std::vector<MCSignal*> fGenMCSignals;
 
   std::vector<AnalysisCompositeCut> fPairCuts;
-  AnalysisCompositeCut fMCGenAccCut;
+  std::vector<AnalysisCut*> fMCGenAccCuts;
   bool fUseMCGenAccCut = false;
 
   uint32_t fTrackFilterMask; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
@@ -1483,16 +1483,6 @@ struct AnalysisSameEventPairing {
       for (auto& t : addTrackCuts) {
         tempCutsStr += Form(",%s", t->GetName());
       }
-    }
-
-    // get the mc generated acceptance cut
-    TString mcGenAccCutStr = fConfigCuts.MCgenAcc.value;
-    if (mcGenAccCutStr != "") {
-      AnalysisCut* cut = dqcuts::GetAnalysisCut(mcGenAccCutStr.Data());
-      if (cut != nullptr) {
-        fMCGenAccCut.AddCut(cut);
-      }
-      fUseMCGenAccCut = true;
     }
 
     // check that the barrel track cuts array required in this task is not empty
@@ -1663,6 +1653,19 @@ struct AnalysisSameEventPairing {
       } // end loop over cuts
     } // end if (muonCutsStr)
 
+    // get the mc generated acceptance cuts
+    TString mcgenCutsStr = fConfigCuts.MCgenAcc.value;
+    if (!mcgenCutsStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(mcgenCutsStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        AnalysisCut* cut = dqcuts::GetAnalysisCut(objArray->At(icut)->GetName());
+        if (cut != nullptr) {
+          fMCGenAccCuts.push_back(cut);
+        }
+      }
+      fUseMCGenAccCut = true;
+    }
+
     // Add histogram classes for each specified MCsignal at the generator level
     // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
     TString sigGenNamesStr = fConfigMC.genSignals.value;
@@ -1695,6 +1698,12 @@ struct AnalysisSameEventPairing {
           histNames += Form("MCTruthGenPair_%s;", sig->GetName());
           histNames += Form("MCTruthGenPairSel_%s;", sig->GetName());
           fHasTwoProngGenMCsignals = true;
+          // for these pair level signals, also add histograms for each MCgenAcc cut if specified
+          if (fUseMCGenAccCut) {
+            for (auto& cut : fMCGenAccCuts) {
+              histNames += Form("MCTruthGenPairSel_%s_%s;", cut->GetName(), sig->GetName());
+            }
+          }
         }
       }
     }
@@ -2147,12 +2156,6 @@ struct AnalysisSameEventPairing {
 
     for (auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
-      // if we have a mc generated acceptance cut, apply it here
-      if (fUseMCGenAccCut) {
-        if (!fMCGenAccCut.IsSelected(VarManager::fgValues)) {
-          continue;
-        }
-      }
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
       // TODO:  Use the mcReducedFlags to select signals
@@ -2176,12 +2179,6 @@ struct AnalysisSameEventPairing {
           continue;
         }
         VarManager::FillTrackMC(mcTracks, track);
-        // if we have a mc generated acceptance cut, apply it here
-        if (fUseMCGenAccCut) {
-          if (!fMCGenAccCut.IsSelected(VarManager::fgValues)) {
-            continue;
-          }
-        }
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         mcDecision = 0;
         isig = 0;
@@ -2212,11 +2209,6 @@ struct AnalysisSameEventPairing {
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
               VarManager::FillPairMC<TPairType>(t1, t2);
-              if (fUseMCGenAccCut) {
-                if (!fMCGenAccCut.IsSelected(VarManager::fgValues)) {
-                  continue;
-                }
-              }
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
             }
           }
@@ -2247,12 +2239,15 @@ struct AnalysisSameEventPairing {
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
                 mcDecision |= (static_cast<uint32_t>(1) << isig);
                 VarManager::FillPairMC<TPairType>(t1, t2);
+                fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+                // Fill also acceptance cut histograms if requested
                 if (fUseMCGenAccCut) {
-                  if (!fMCGenAccCut.IsSelected(VarManager::fgValues)) {
-                    continue;
+                  for (auto& accCut : fMCGenAccCuts) {
+                    if (accCut.IsSelected(VarManager::fgValues)) {
+                      fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s_%s", sig->GetName(), accCut.GetName()), VarManager::fgValues);
+                    }
                   }
                 }
-                fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
                 if (useMiniTree.fConfigMiniTree) {
                   // WARNING! To be checked
                   dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
