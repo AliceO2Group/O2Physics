@@ -47,7 +47,7 @@ void CollisionCutsGroup::applyToCollisonCuts(o2::analysis::CollisonCuts& cuts) c
   // AUTO-GENERATED setter method calls from EventSelectionFlagsMapping.def
 #define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
   cuts.setter(member);
-#include "EventSelectionFlagsMapping.def"  // NOLINT(build/include)
+#include "EventSelectionFlagsMapping.def" // NOLINT(build/include)
 #undef EVSEL_FLAG
 
   // Manual setter calls for non-flag members
@@ -75,7 +75,7 @@ void CollisionCutsGroup::printSelections() const
   // AUTO-GENERATED logging from EventSelectionFlagsMapping.def
 #define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
   LOGF(info, "  %-40s: %s", desc, member ? "true" : "false");
-#include "EventSelectionFlagsMapping.def"  // NOLINT(build/include)
+#include "EventSelectionFlagsMapping.def" // NOLINT(build/include)
 #undef EVSEL_FLAG
 
   LOGF(info, "");
