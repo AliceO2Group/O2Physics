@@ -97,8 +97,8 @@ class CollisionCutsGroup
   // ===== AUTO-GENERATED event selection flag members =====
   // Generated from EventSelectionFlagsMapping.def
 #define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
-  bool member; ///< desc
-#include "EventSelectionFlagsMapping.def"  // NOLINT(build/include)
+  bool member;                            ///< desc
+#include "EventSelectionFlagsMapping.def" // NOLINT(build/include)
 #undef EVSEL_FLAG
 
   // ===== Run2-specific selections (not in EventSelectionFlags) =====
