@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file collisionCuts.cxx
+/// \file collisionCutsTutorial.cxx
 /// \brief Tutorial: Using CollisionCutsGroup for automatic configurable registration
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 /// \since 30/12/2024

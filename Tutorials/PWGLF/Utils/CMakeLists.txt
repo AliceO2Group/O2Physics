@@ -11,6 +11,6 @@
 
 # PWGLF Utils tutorial
 o2physics_add_dpl_workflow(collision-cuts-tutorial
-                  SOURCES collisionCuts.cxx
+                  SOURCES collisionCutsTutorial.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::collisionCutsGroup
                   COMPONENT_NAME AnalysisTutorial)
