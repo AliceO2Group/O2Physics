@@ -777,13 +777,13 @@ struct FullJetSpectra {
       }
       filteredClusterPt += pt;
       hasValidCluster = true; // At least one cluster exists
-      }
-      // Reject jets without valid clusters (edge case)
-      if (!hasValidCluster) {
-        return false;
-      }
-      // }
-      return true; // Valid Jet
+    }
+    // Reject jets without valid clusters (edge case)
+    if (!hasValidCluster) {
+      return false;
+    }
+    // }
+    return true; // Valid Jet
   } // isAcceptedRecoJet ends
 
   /*  template <typename T, typename U>
