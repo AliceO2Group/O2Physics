@@ -269,10 +269,12 @@ struct ConfTrackMcBinning : o2::framework::ConfigurableGroup {
 constexpr const char PrefixTrackMcBinning1[] = "TrackMcBinning1";
 constexpr const char PrefixV0PosDauMcBinning[] = "V0PosDauMcBinning";
 constexpr const char PrefixV0NegDauMcBinning[] = "V0NegDauMcBinning";
+constexpr const char PrefixKinkChaDauMcBinning[] = "KinkChaDauMcBinning";
 
 using ConfTrackMcBinning1 = ConfTrackMcBinning<PrefixTrackMcBinning1>;
 using ConfV0PosDauMcBinning = ConfTrackMcBinning<PrefixV0PosDauMcBinning>;
 using ConfV0NegDauMcBinning = ConfTrackMcBinning<PrefixV0NegDauMcBinning>;
+using ConfKinkChaDauMcBinning = ConfTrackMcBinning<PrefixKinkChaDauMcBinning>;
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array

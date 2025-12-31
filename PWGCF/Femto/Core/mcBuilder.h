@@ -52,6 +52,8 @@ struct McBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FTrackLabels> producedTrackLabels;
   o2::framework::Produces<o2::aod::FLambdaLabels> producedLambdaLabels;
   o2::framework::Produces<o2::aod::FK0shortLabels> producedK0shortLabels;
+  o2::framework::Produces<o2::aod::FSigmaLabels> producedSigmaLabels;
+  o2::framework::Produces<o2::aod::FSigmaPlusLabels> producedSigmaPlusLabels;
 };
 
 struct ConfMcTables : o2::framework::ConfigurableGroup {
@@ -65,6 +67,8 @@ struct ConfMcTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> producedTrackLabels{"producedTrackLabels", -1, "Produce track labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedLambdaLabels{"producedLambdaLabels", -1, "Produce lambda labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedK0shortLabels{"producedK0shortLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> producedSigmaLabels{"producedSigmaLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> producedSigmaPlusLabels{"producedSigmaPlusLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
 };
 
 class McBuilder
@@ -85,8 +89,10 @@ class McBuilder
 
     mProduceCollisionLabels = utils::enableTable("FColLabels", table.producedCollisionLabels.value, initContext);
     mProduceTrackLabels = utils::enableTable("FTrackLabels", table.producedTrackLabels.value, initContext);
-    mProduceLambdaLabels = utils::enableTable("FLambdaLabels", table.producedTrackLabels.value, initContext);
-    mProduceK0shortLabels = utils::enableTable("FK0shortLabels", table.producedTrackLabels.value, initContext);
+    mProduceLambdaLabels = utils::enableTable("FLambdaLabels", table.producedLambdaLabels.value, initContext);
+    mProduceK0shortLabels = utils::enableTable("FK0shortLabels", table.producedK0shortLabels.value, initContext);
+    mProduceSigmaLabels = utils::enableTable("FSigmaLabels", table.producedSigmaLabels.value, initContext);
+    mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels", table.producedSigmaPlusLabels.value, initContext);
 
     if (mProduceMcCollisions || mProduceMcParticles || mProduceMcMothers || mProduceMcPartonicMothers || mProduceCollisionLabels || mProduceTrackLabels || mProduceLambdaLabels || mProduceK0shortLabels) {
       mFillAnyTable = true;
@@ -422,7 +428,195 @@ class McBuilder
         mK0shortToMcPartonicMap[k0shortIndex] = partonicRow;
       }
     }
-    mcProducts.producedTrackLabels(mcParticleRow, mothersRow, partonicRow);
+    mcProducts.producedK0shortLabels(mcParticleRow, mothersRow, partonicRow);
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillMcSigmaWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigma, T4 const& sigmaDaughter, T5 const& mcParticles, T6& mcProducts)
+  {
+    if (!mProduceSigmaLabels) {
+      return;
+    }
+
+    if (!sigmaDaughter.has_mcParticle()) {
+      mcProducts.producedSigmaLabels(-1, -1, -1);
+      return;
+    }
+
+    auto mcKinkDaughter = sigmaDaughter.template mcParticle_as<T5>();
+    auto mcKinkDaughterMothers = mcKinkDaughter.template mothers_as<T5>();
+
+    if (!mcKinkDaughter.has_mothers() && !mcKinkDaughterMothers.empty()) {
+      mcProducts.producedSigmaLabels(-1, -1, -1);
+      return;
+    }
+
+    // we get the mc kink partilce via the mother of the kink daughter
+    auto mcParticle = mcKinkDaughterMothers.front();
+    auto mcCol = mcParticle.template mcCollision_as<T2>();
+
+    int64_t particleIndex = mcParticle.globalIndex();
+    int64_t sigmaIndex = sigma.globalIndex();
+
+    int64_t mcParticleRow = -1;
+
+    // MC PARTICLE
+    auto itP = mSigmaToMcParticleMap.find(particleIndex);
+    if (itP != mSigmaToMcParticleMap.end()) {
+      mcParticleRow = itP->second;
+    } else {
+      auto origin = this->getOrigin(col, mcCols, mcParticle);
+      int64_t mcColId = this->getMcColId<system>(mcCol, mcProducts);
+
+      mcProducts.producedMcParticles(
+        mcColId,
+        static_cast<aod::femtodatatypes::McOriginType>(origin),
+        mcParticle.pdgCode(),
+        mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
+        mcParticle.eta(),
+        mcParticle.phi());
+
+      mcParticleRow = mcProducts.producedMcParticles.lastIndex();
+      mSigmaToMcParticleMap[particleIndex] = mcParticleRow;
+    }
+
+    // mothers (fill only if exists)
+    int64_t mothersRow = -1;
+    auto itM = mSigmaToMcMotherMap.find(sigmaIndex);
+
+    if (itM != mSigmaToMcMotherMap.end()) {
+      mothersRow = itM->second;
+    } else {
+
+      auto mothers = mcParticle.template mothers_as<T5>();
+      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
+
+      if (motherExists) {
+        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
+
+        mcProducts.producedMothers(motherPdg);
+        mothersRow = mcProducts.producedMothers.lastIndex();
+        mSigmaToMcMotherMap[sigmaIndex] = mothersRow;
+      }
+    }
+
+    // partonic mother (fill only if exists)
+    int64_t partonicRow = -1;
+    auto itPM = mSigmaToMcPartonicMap.find(sigmaIndex);
+
+    if (itPM != mSigmaToMcPartonicMap.end()) {
+      partonicRow = itPM->second;
+    } else {
+      int partIdx = -1;
+      if (mcParticle.has_mothers()) {
+        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
+      }
+
+      bool partonicExists = (partIdx >= 0);
+
+      if (partonicExists) {
+        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
+
+        mcProducts.producedPartonicMothers(partonicPdg);
+        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
+        mSigmaToMcPartonicMap[sigmaIndex] = partonicRow;
+      }
+    }
+    mcProducts.producedSigmaLabels(mcParticleRow, mothersRow, partonicRow);
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fillMcSigmaPlusWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaPlus, T4 const& sigmaPlusDaughter, T5 const& mcParticles, T6& mcProducts)
+  {
+    if (!mProduceSigmaPlusLabels) {
+      return;
+    }
+
+    if (!sigmaPlusDaughter.has_mcParticle()) {
+      mcProducts.producedSigmaPlusLabels(-1, -1, -1);
+      return;
+    }
+
+    auto mcKinkDaughter = sigmaPlusDaughter.template mcParticle_as<T5>();
+    auto mcKinkDaughterMothers = mcKinkDaughter.template mothers_as<T5>();
+
+    if (!mcKinkDaughter.has_mothers() && !mcKinkDaughterMothers.empty()) {
+      mcProducts.producedSigmaPlusLabels(-1, -1, -1);
+      return;
+    }
+
+    // we get the mc kink partilce via the mother of the kink daughter
+    auto mcParticle = mcKinkDaughterMothers.front();
+    auto mcCol = mcParticle.template mcCollision_as<T2>();
+
+    int64_t particleIndex = mcParticle.globalIndex();
+    int64_t sigmaIndex = sigmaPlus.globalIndex();
+
+    int64_t mcParticleRow = -1;
+
+    // MC PARTICLE
+    auto itP = mSigmaPlusToMcParticleMap.find(particleIndex);
+    if (itP != mSigmaPlusToMcParticleMap.end()) {
+      mcParticleRow = itP->second;
+    } else {
+      auto origin = this->getOrigin(col, mcCols, mcParticle);
+      int64_t mcColId = this->getMcColId<system>(mcCol, mcProducts);
+
+      mcProducts.producedMcParticles(
+        mcColId,
+        static_cast<aod::femtodatatypes::McOriginType>(origin),
+        mcParticle.pdgCode(),
+        mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
+        mcParticle.eta(),
+        mcParticle.phi());
+
+      mcParticleRow = mcProducts.producedMcParticles.lastIndex();
+      mSigmaPlusToMcParticleMap[particleIndex] = mcParticleRow;
+    }
+
+    // mothers (fill only if exists)
+    int64_t mothersRow = -1;
+    auto itM = mSigmaPlusToMcMotherMap.find(sigmaIndex);
+
+    if (itM != mSigmaPlusToMcMotherMap.end()) {
+      mothersRow = itM->second;
+    } else {
+
+      auto mothers = mcParticle.template mothers_as<T5>();
+      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
+
+      if (motherExists) {
+        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
+
+        mcProducts.producedMothers(motherPdg);
+        mothersRow = mcProducts.producedMothers.lastIndex();
+        mSigmaPlusToMcMotherMap[sigmaIndex] = mothersRow;
+      }
+    }
+
+    // partonic mother (fill only if exists)
+    int64_t partonicRow = -1;
+    auto itPM = mSigmaPlusToMcPartonicMap.find(sigmaIndex);
+
+    if (itPM != mSigmaPlusToMcPartonicMap.end()) {
+      partonicRow = itPM->second;
+    } else {
+      int partIdx = -1;
+      if (mcParticle.has_mothers()) {
+        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
+      }
+
+      bool partonicExists = (partIdx >= 0);
+
+      if (partonicExists) {
+        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
+
+        mcProducts.producedPartonicMothers(partonicPdg);
+        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
+        mSigmaPlusToMcPartonicMap[sigmaIndex] = partonicRow;
+      }
+    }
+    mcProducts.producedSigmaPlusLabels(mcParticleRow, mothersRow, partonicRow);
   }
 
   template <typename TParticle, typename TContainer>
@@ -488,7 +682,17 @@ class McBuilder
     mK0shortToMcParticleMap.clear();
     mK0shortToMcMotherMap.clear();
     mK0shortToMcPartonicMap.clear();
+
+    mSigmaToMcParticleMap.clear();
+    mSigmaToMcMotherMap.clear();
+    mSigmaToMcPartonicMap.clear();
+
+    mSigmaPlusToMcParticleMap.clear();
+    mSigmaPlusToMcMotherMap.clear();
+    mSigmaPlusToMcPartonicMap.clear();
   }
+
+  bool fillAnyTable() const { return mFillAnyTable; }
 
  private:
   bool mPassThrough = false;
@@ -502,6 +706,8 @@ class McBuilder
   bool mProduceTrackLabels = false;
   bool mProduceLambdaLabels = false;
   bool mProduceK0shortLabels = false;
+  bool mProduceSigmaLabels = false;
+  bool mProduceSigmaPlusLabels = false;
 
   std::unordered_map<int64_t, int64_t> mCollisionMap;
 
@@ -516,6 +722,14 @@ class McBuilder
   std::unordered_map<int64_t, int64_t> mK0shortToMcParticleMap;
   std::unordered_map<int64_t, int64_t> mK0shortToMcMotherMap;
   std::unordered_map<int64_t, int64_t> mK0shortToMcPartonicMap;
+
+  std::unordered_map<int64_t, int64_t> mSigmaToMcParticleMap;
+  std::unordered_map<int64_t, int64_t> mSigmaToMcMotherMap;
+  std::unordered_map<int64_t, int64_t> mSigmaToMcPartonicMap;
+
+  std::unordered_map<int64_t, int64_t> mSigmaPlusToMcParticleMap;
+  std::unordered_map<int64_t, int64_t> mSigmaPlusToMcMotherMap;
+  std::unordered_map<int64_t, int64_t> mSigmaPlusToMcPartonicMap;
 };
 
 } // namespace mcbuilder
