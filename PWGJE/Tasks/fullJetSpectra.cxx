@@ -759,24 +759,24 @@ struct FullJetSpectra {
       }
       filteredTrackPt += pt; // Accumulate valid track pT
       hasValidTrack = true;  // At least one track exists (if needed)
-      }
-      // Reject jets without valid tracks (edge case)
-      if (!hasValidTrack) {
-        return false;
-      }
-      // }
+    }
+    // Reject jets without valid tracks (edge case)
+    if (!hasValidTrack) {
+      return false;
+    }
+    // }
 
-      // --- Cluster cuts: ALL clusters must satisfy min <= pT <= max == 0.3 <= pT <= 250
-      // if (leadingClusterPtMin > kLeadingClusterPtMinThreshold || leadingClusterPtMax < kLeadingClusterPtMaxThreshold) {
-      bool hasValidCluster = false;
-      for (const auto& cluster : jet.template clusters_as<S>()) {
-        const double pt = cluster.energy() / std::cosh(cluster.eta());
-        if ((minClusterPt > kLeadingClusterPtMinThreshold && pt < minClusterPt) ||
-            (maxClusterPt < kLeadingClusterPtMaxThreshold && pt > maxClusterPt)) {
-          continue; // SKIP this invalid cluster
-        }
-        filteredClusterPt += pt;
-        hasValidCluster = true; // At least one cluster exists
+    // --- Cluster cuts: ALL clusters must satisfy min <= pT <= max == 0.3 <= pT <= 250
+    // if (leadingClusterPtMin > kLeadingClusterPtMinThreshold || leadingClusterPtMax < kLeadingClusterPtMaxThreshold) {
+    bool hasValidCluster = false;
+    for (const auto& cluster : jet.template clusters_as<S>()) {
+      const double pt = cluster.energy() / std::cosh(cluster.eta());
+      if ((minClusterPt > kLeadingClusterPtMinThreshold && pt < minClusterPt) ||
+          (maxClusterPt < kLeadingClusterPtMaxThreshold && pt > maxClusterPt)) {
+        continue; // SKIP this invalid cluster
+      }
+      filteredClusterPt += pt;
+      hasValidCluster = true; // At least one cluster exists
       }
       // Reject jets without valid clusters (edge case)
       if (!hasValidCluster) {
