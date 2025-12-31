@@ -516,16 +516,6 @@ class V0Builder
     }
   }
 
-  template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillMcV0(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const&, T6& v0Products, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
-  {
-    if (!mFillAnyTable) {
-      return;
-    }
-    this->template fillLambda();
-    mcBuilder.template fillMcV0WithLabel();
-  }
-
   bool fillAnyTable() const { return mFillAnyTable; }
 
  private:
