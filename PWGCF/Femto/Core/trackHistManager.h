@@ -123,6 +123,7 @@ enum TrackHist {
   kTrueEta,
   kTruePhi,
   // histograms for fraction estimation of tracks
+  kNoMcParticle,
   kPrimary,
   kFromWrongCollision,
   kFromMaterial,
@@ -132,12 +133,6 @@ enum TrackHist {
   kSecondaryOther,
 
   kTrackHistLast
-};
-
-enum SecondaryPlotLevel {
-  kSecondaryPlotLevel1 = 1,
-  kSecondaryPlotLevel2 = 2,
-  kSecondaryPlotLevel3 = 3
 };
 
 constexpr std::size_t MaxSecondary = 3;
@@ -272,8 +267,12 @@ struct ConfTrackMcBinning : o2::framework::ConfigurableGroup {
 };
 
 constexpr const char PrefixTrackMcBinning1[] = "TrackMcBinning1";
+constexpr const char PrefixV0PosDauMcBinning[] = "V0PosDauMcBinning";
+constexpr const char PrefixV0NegDauMcBinning[] = "V0NegDauMcBinning";
 
 using ConfTrackMcBinning1 = ConfTrackMcBinning<PrefixTrackMcBinning1>;
+using ConfV0PosDauMcBinning = ConfTrackMcBinning<PrefixV0PosDauMcBinning>;
+using ConfV0NegDauMcBinning = ConfTrackMcBinning<PrefixV0NegDauMcBinning>;
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -353,7 +352,7 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kTruePt, o2::framework::kTH1F, "hTruePt", "True transverse momentum; p_{T} (GeV/#it{c}); Entries"},
       {kTrueEta, o2::framework::kTH1F, "hTrueEta", "True pseudorapdity; #eta; Entries"},
       {kTruePhi, o2::framework::kTH1F, "hTruePhi", "True azimuthal angle; #varphi; Entries"},
-
+      {kNoMcParticle, o2::framework::kTHnSparseF, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kPrimary, o2::framework::kTHnSparseF, "hPrimary", "Primary particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kFromWrongCollision, o2::framework::kTHnSparseF, "hFromWrongCollision", "Particles associated to wrong collision; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kFromMaterial, o2::framework::kTHnSparseF, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
@@ -441,6 +440,7 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
     {kPdg, {confMc.pdgCodes}},                                     \
     {kPdgMother, {confMc.pdgCodes}},                               \
     {kPdgPartonicMother, {confMc.pdgCodes}},                       \
+    {kNoMcParticle, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},       \
     {kPrimary, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},            \
     {kFromWrongCollision, {confMc.pt, confMc.dcaXy, confMc.dcaZ}}, \
     {kFromMaterial, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},       \
@@ -516,8 +516,9 @@ class TrackHistManager
   TrackHistManager() = default;
   ~TrackHistManager() = default;
 
+  // init for analysis
   template <modes::Mode mode>
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, int AbsCharge = 1)
+  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, int AbsCharge)
   {
     mHistogramRegistry = registry;
     mAbsCharge = std::abs(AbsCharge);
@@ -532,49 +533,7 @@ class TrackHistManager
     }
   }
 
-  // for qa alone
-  template <typename T>
-  void enableOptionalHistograms(T const& ConfBinningQa)
-  {
-    mPlot2d = ConfBinningQa.plot2d.value;
-    mPlotElectronPid = ConfBinningQa.plotElectronPid.value;
-    mPlotPionPid = ConfBinningQa.plotPionPid.value;
-    mPlotKaonPid = ConfBinningQa.plotKaonPid.value;
-    mPlotProtonPid = ConfBinningQa.plotProtonPid.value;
-    mPlotDeuteronPid = ConfBinningQa.plotDeuteronPid.value;
-    mPlotTritonPid = ConfBinningQa.plotTritonPid.value;
-    mPlotHeliumPid = ConfBinningQa.plotHeliumPid.value;
-    mMomentumType = static_cast<modes::MomentumType>(ConfBinningQa.momentumType.value);
-  }
-
-  // for qa + mc
-  template <typename T1, typename T2>
-  void enableOptionalHistograms(T1 const& ConfBinningQa, T2 const& ConfBinningMc)
-  {
-    mPlot2d = ConfBinningQa.plot2d.value;
-    mPlotElectronPid = ConfBinningQa.plotElectronPid.value;
-    mPlotPionPid = ConfBinningQa.plotPionPid.value;
-    mPlotKaonPid = ConfBinningQa.plotKaonPid.value;
-    mPlotProtonPid = ConfBinningQa.plotProtonPid.value;
-    mPlotDeuteronPid = ConfBinningQa.plotDeuteronPid.value;
-    mPlotTritonPid = ConfBinningQa.plotTritonPid.value;
-    mPlotHeliumPid = ConfBinningQa.plotHeliumPid.value;
-    mMomentumType = static_cast<modes::MomentumType>(ConfBinningQa.momentumType.value);
-
-    mPlotOrigins = ConfBinningMc.plotOrigins.value;
-    mPlotNSecondaries = ConfBinningMc.pdgCodesForMothersOfSecondary.value.size();
-
-    for (std::size_t i = 0; i < MaxSecondary; i++) {
-      if (i < ConfBinningMc.pdgCodesForMothersOfSecondary.value.size()) {
-        mPdgCodesSecondaryMother.at(i) = std::abs(ConfBinningMc.pdgCodesForMothersOfSecondary.value.at(i));
-      } else {
-        mPdgCodesSecondaryMother.at(i) = 0;
-      }
-    }
-  }
-
-  // special init function for Qa
-  // passing config group for qa so we can optionally enable histograms via flags
+  // init for analysis and qa
   template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, T const& ConfBinningQa, int AbsCharge)
   {
@@ -582,8 +541,7 @@ class TrackHistManager
     this->template init<mode>(registry, Specs, AbsCharge);
   }
 
-  // special init function for Qa + Mc
-  // passing config group for qa + mc so we can optionally enable histograms via flags
+  // init for analysis and mc and qa
   template <modes::Mode mode, typename T1, typename T2>
   void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, T1 const& ConfBinningQa, T2 const& ConfBinningMc, int AbsCharge)
   {
@@ -617,6 +575,39 @@ class TrackHistManager
   }
 
  private:
+  // enable additional qa histograms
+  template <typename T>
+  void enableOptionalHistograms(T const& ConfBinningQa)
+  {
+    mPlot2d = ConfBinningQa.plot2d.value;
+    mPlotElectronPid = ConfBinningQa.plotElectronPid.value;
+    mPlotPionPid = ConfBinningQa.plotPionPid.value;
+    mPlotKaonPid = ConfBinningQa.plotKaonPid.value;
+    mPlotProtonPid = ConfBinningQa.plotProtonPid.value;
+    mPlotDeuteronPid = ConfBinningQa.plotDeuteronPid.value;
+    mPlotTritonPid = ConfBinningQa.plotTritonPid.value;
+    mPlotHeliumPid = ConfBinningQa.plotHeliumPid.value;
+    mMomentumType = static_cast<modes::MomentumType>(ConfBinningQa.momentumType.value);
+  }
+
+  // enable additional qa and mc histograms
+  template <typename T1, typename T2>
+  void enableOptionalHistograms(T1 const& ConfBinningQa, T2 const& ConfBinningMc)
+  {
+    this->template enableOptionalHistograms<T1>(ConfBinningQa);
+
+    mPlotOrigins = ConfBinningMc.plotOrigins.value;
+    mPlotNSecondaries = ConfBinningMc.pdgCodesForMothersOfSecondary.value.size();
+
+    for (std::size_t i = 0; i < MaxSecondary; i++) {
+      if (i < ConfBinningMc.pdgCodesForMothersOfSecondary.value.size()) {
+        mPdgCodesSecondaryMother.at(i) = std::abs(ConfBinningMc.pdgCodesForMothersOfSecondary.value.at(i));
+      } else {
+        mPdgCodesSecondaryMother.at(i) = 0;
+      }
+    }
+  }
+
   void initAnalysis(std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
@@ -735,17 +726,18 @@ class TrackHistManager
     mHistogramRegistry->add(mcDir + getHistNameV2(kPdgPartonicMother, HistTable), getHistDesc(kPdgPartonicMother, HistTable), getHistType(kPdgPartonicMother, HistTable), {Specs.at(kPdgPartonicMother)});
 
     if (mPlotOrigins) {
+      mHistogramRegistry->add(mcDir + getHistNameV2(kNoMcParticle, HistTable), getHistDesc(kNoMcParticle, HistTable), getHistType(kNoMcParticle, HistTable), {Specs.at(kNoMcParticle)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kPrimary, HistTable), getHistDesc(kPrimary, HistTable), getHistType(kPrimary, HistTable), {Specs.at(kPrimary)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kFromWrongCollision, HistTable), getHistDesc(kFromWrongCollision, HistTable), getHistType(kFromWrongCollision, HistTable), {Specs.at(kFromWrongCollision)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kFromMaterial, HistTable), getHistDesc(kFromMaterial, HistTable), getHistType(kFromMaterial, HistTable), {Specs.at(kFromMaterial)});
 
-      if (mPlotNSecondaries >= kSecondaryPlotLevel1) {
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1) {
         mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary1, HistTable), getHistDesc(kSecondary1, HistTable), getHistType(kSecondary1, HistTable), {Specs.at(kSecondary1)});
       }
-      if (mPlotNSecondaries >= kSecondaryPlotLevel2) {
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2) {
         mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary2, HistTable), getHistDesc(kSecondary2, HistTable), getHistType(kSecondary2, HistTable), {Specs.at(kSecondary2)});
       }
-      if (mPlotNSecondaries >= kSecondaryPlotLevel3) {
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3) {
         mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary3, HistTable), getHistDesc(kSecondary3, HistTable), getHistType(kSecondary3, HistTable), {Specs.at(kSecondary3)});
       }
       mHistogramRegistry->add(mcDir + getHistNameV2(kSecondaryOther, HistTable), getHistDesc(kSecondaryOther, HistTable), getHistType(kSecondaryOther, HistTable), {Specs.at(kSecondaryOther)});
@@ -869,12 +861,11 @@ class TrackHistManager
   {
     // No MC Particle
     if (!track.has_fMcParticle()) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) +
-                                 HIST(getHistName(kPdg, HistTable)),
-                               0);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) +
-                                 HIST(getHistName(kOrigin, HistTable)),
-                               static_cast<float>(modes::McOrigin::kNoMcParticle));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
+      if (mPlotOrigins) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+      }
       return;
     }
 
@@ -919,11 +910,11 @@ class TrackHistManager
             auto mother = track.template fMcMother_as<T3>();
             int motherPdgCode = std::abs(mother.pdgCode());
             // Switch on PDG of the mother
-            if (mPlotNSecondaries >= kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
+            if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-            } else if (mPlotNSecondaries >= kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
+            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-            } else if (mPlotNSecondaries >= kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
+            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
             } else {
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());

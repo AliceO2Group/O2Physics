@@ -102,15 +102,15 @@ struct FemtoKinkQa {
 
   void init(InitContext&)
   {
+    if ((doprocessSigma + doprocessSigmaPlus > 1)) {
+      LOG(fatal) << "Only one process can be activated";
+    }
+
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
     colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
 
     auto chaDauHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
-
-    if ((doprocessSigma + doprocessSigmaPlus > 1)) {
-      LOG(fatal) << "Only one process can be activated";
-    }
 
     if (doprocessSigma) {
       auto sigmaHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
@@ -121,6 +121,7 @@ struct FemtoKinkQa {
       auto sigmaPlusHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaPlusBinning, confSigmaPlusQaBinning);
       sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
     }
+    hRegistry.print();
   };
 
   void processSigma(FilteredFemtoCollision const& col, FemtoSigmas const& /*sigmas*/, FemtoTracks const& tracks)

@@ -740,5 +740,15 @@ DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL",
                   femtolabels::FMcMotherId,
                   femtolabels::FMcPartMothId);
 
+DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL",
+                  femtolabels::FMcParticleId,
+                  femtolabels::FMcMotherId,
+                  femtolabels::FMcPartMothId);
+
+DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL",
+                  femtolabels::FMcParticleId,
+                  femtolabels::FMcMotherId,
+                  femtolabels::FMcPartMothId);
+
 } // namespace o2::aod
 #endif // PWGCF_FEMTO_DATAMODEL_FEMTOTABLES_H_

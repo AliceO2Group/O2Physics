@@ -87,7 +87,7 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
 struct ConfCcdb : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("ConfCcdb");
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField/Run2 -> GLO/GRP/GRP"};
+  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField, Run2 -> GLO/GRP/GRP"};
   o2::framework::Configurable<std::string> triggerPath{"triggerPath", "EventFiltering/Zorro/", "CCDB path for trigger information"};
 };
 
@@ -525,11 +525,7 @@ class CollisionBuilder
     mcBuilder.template fillMcCollisionWithLabel<system>(mcProducts, col, mcCols);
   }
 
-  void
-    reset()
-  {
-    mCollisionAlreadyFilled = false;
-  }
+  void reset() { mCollisionAlreadyFilled = false; }
 
  private:
   CollisionSelection<HistName> mCollisionSelection;

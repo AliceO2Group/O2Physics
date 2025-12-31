@@ -171,6 +171,8 @@ constexpr char PrefixSigmaPlus2[] = "SigmaPlus2/";
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
 
+constexpr int AbsChargeDaughters = 1;
+
 /// \class KinkHistManager
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
@@ -189,20 +191,13 @@ class KinkHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs)
   {
     mHistogramRegistry = registry;
-    mChaDauManager.template init<mode>(registry, ChaDauSpecs);
+    mChaDauManager.template init<mode>(registry, ChaDauSpecs, AbsChargeDaughters);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       initQa(KinkSpecs);
     }
-  }
-
-  template <typename T1, typename T2>
-  void enableOptionalHistograms(T1 const& KinkConfBinningQa, T2 const& ChaDauConfBinningQa)
-  {
-    mChaDauManager.enableOptionalHistograms(ChaDauConfBinningQa);
-    mPlot2d = KinkConfBinningQa.plot2d.value;
   }
 
   template <modes::Mode mode, typename T1, typename T2>
@@ -212,8 +207,15 @@ class KinkHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs,
             T2 const& ChaDauConfBinningQa)
   {
-    enableOptionalHistograms(KinkConfBinningQa, ChaDauConfBinningQa);
-    this->template init<mode>(registry, KinkSpecs, ChaDauSpecs);
+    mHistogramRegistry = registry;
+    mChaDauManager.template init<mode>(registry, ChaDauSpecs, ChaDauConfBinningQa, AbsChargeDaughters);
+    this->enableOptionalHistograms(KinkConfBinningQa);
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      initAnalysis(KinkSpecs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      initQa(KinkSpecs);
+    }
   }
 
   template <modes::Mode mode, typename T1, typename T2>
@@ -232,6 +234,12 @@ class KinkHistManager
   }
 
  private:
+  template <typename T1>
+  void enableOptionalHistograms(T1 const& KinkConfBinningQa)
+  {
+    mPlot2d = KinkConfBinningQa.plot2d.value;
+  }
+
   void initAnalysis(std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs)
   {
     std::string analysisDir = std::string(kinkPrefix) + std::string(AnalysisDir);
