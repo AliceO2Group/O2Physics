@@ -347,6 +347,10 @@ struct Kstarqa {
     hInvMass.add("hAllKstarGenCollisisons1Rec", "All generated Kstar in events with at least one rec event in rapidity in 0.5", kTH2F, {{multiplicityAxis}, {ptAxis}});
     hInvMass.add("hAllRecCollisions", "All reconstructed events", kTH1F, {multiplicityAxis});
     hInvMass.add("hAllRecCollisionsCalib", "All reconstructed events", kTH1F, {multiplicityAxis});
+    hInvMass.add("sigEvLossFromGenRec/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
+    hInvMass.add("sigEvLossFromGenRec/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
+    hInvMass.add("sigEvLossFromGenRec/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+    hInvMass.add("sigEvLossFromGenRec/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
 
     if (doprocessEvtLossSigLossMC || doprocessEvtLossSigLossMCPhi) {
       hInvMass.add("MCcorrections/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
@@ -1611,15 +1615,23 @@ struct Kstarqa {
       }
     }
 
-    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
-    hInvMass.fill(HIST("hAllGenCollisions"), multiplicity);
-    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+    if (std::abs(mcCollision.posZ()) < selectionConfig.cutzvertex) {
       return;
     }
+
+    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
+    hInvMass.fill(HIST("hAllGenCollisions"), multiplicity);
+    // if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+    //   return;
+    // }
     double genMultiplicity = mcCollision.centFT0M();
-    hInvMass.fill(HIST("h1GenMult2"), genMultiplicity);
-    hInvMass.fill(HIST("hAllGenCollisions1Rec"), multiplicity);
-    rEventSelection.fill(HIST("eventsCheckGen"), 3.5);
+    hInvMass.fill(HIST("sigEvLossFromGenRec/MultiplicityGen"), genMultiplicity);
+    if (evtReconstructedAndSelected) {
+      hInvMass.fill(HIST("sigEvLossFromGenRec/MultiplicityRec"), genMultiplicity);
+      hInvMass.fill(HIST("h1GenMult2"), genMultiplicity);
+      hInvMass.fill(HIST("hAllGenCollisions1Rec"), multiplicity);
+      rEventSelection.fill(HIST("eventsCheckGen"), 3.5);
+    }
 
     for (const auto& mcParticle : mcParticles) {
 
@@ -1637,7 +1649,8 @@ struct Kstarqa {
       if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::kK0Star892) {
         continue;
       }
-      hInvMass.fill(HIST("hAllKstarGenCollisisons1Rec"), multiplicity, mcParticle.pt());
+      if (evtReconstructedAndSelected)
+        hInvMass.fill(HIST("hAllKstarGenCollisisons1Rec"), multiplicity, mcParticle.pt());
 
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
       if (kDaughters.size() != selectionConfig.noOfDaughters) {
@@ -1662,11 +1675,15 @@ struct Kstarqa {
       }
       if (passkaon && passpion) {
         mother = daughter1 + daughter2; // Kstar meson
-        hInvMass.fill(HIST("hk892GenpT"), mcParticle.pt(), multiplicity);
-        hInvMass.fill(HIST("hk892GenpT2"), mother.Pt(), multiplicity);
-        hInvMass.fill(HIST("hk892GenpTCalib1"), mcParticle.pt(), genMultiplicity);
-        hInvMass.fill(HIST("hk892GenpTCalib2"), mother.Pt(), genMultiplicity);
-        hInvMass.fill(HIST("h1genmass"), mother.M());
+        hInvMass.fill(HIST("sigEvLossFromGenRec/hSignalLossDenominator"), mother.Pt(), genMultiplicity);
+        if (evtReconstructedAndSelected) {
+          hInvMass.fill(HIST("hk892GenpT"), mcParticle.pt(), multiplicity);
+          hInvMass.fill(HIST("hk892GenpT2"), mother.Pt(), multiplicity);
+          hInvMass.fill(HIST("hk892GenpTCalib1"), mcParticle.pt(), genMultiplicity);
+          hInvMass.fill(HIST("hk892GenpTCalib2"), mother.Pt(), genMultiplicity);
+          hInvMass.fill(HIST("h1genmass"), mother.M());
+          hInvMass.fill(HIST("sigEvLossFromGenRec/hSignalLossNumerator"), mother.Pt(), genMultiplicity);
+        }
       }
     }
   }
