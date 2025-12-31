@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN andphniticopyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -407,7 +407,6 @@ class V0HistManager
   }
 
  private:
-
   // for qa
   template <typename T1>
   void enableOptionalHistograms(T1 const& V0ConfBinningQa)
