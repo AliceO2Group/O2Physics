@@ -78,6 +78,7 @@ struct Kstarqa {
   struct : ConfigurableGroup {
     // Configurables for event selections
     Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
+    Configurable<bool> isSel8{"isSel8", false, "Event selection sel8"};
     Configurable<bool> isTriggerTVX{"isTriggerTVX", false, "TriggerTVX"};
     Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", false, "IsGoodZvtxFT0vsPV"};
     Configurable<bool> isApplyOccCut{"isApplyOccCut", true, "Apply occupancy cut"};
@@ -446,7 +447,7 @@ struct Kstarqa {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 1);
 
-    if (!collision.sel8())
+    if (selectionConfig.isSel8 && !collision.sel8())
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 2);
