@@ -171,14 +171,15 @@ struct FullJetSpectra {
     if (doprocessBCs) {
       auto hBCCounter = registry.get<TH1>(HIST("hBCCounter"));
       hBCCounter->GetXaxis()->SetBinLabel(1, "AllBC");
-      hBCCounter->GetXaxis()->SetBinLabel(2, "BC+kTVXinEMC");
-      hBCCounter->GetXaxis()->SetBinLabel(3, "BC+kTVXinEMC+NoTFB");
-      hBCCounter->GetXaxis()->SetBinLabel(4, "BC+kTVXinEMC+NoTFB+NoITSROFB");
-      hBCCounter->GetXaxis()->SetBinLabel(5, "kTVXinEMC+CollinBC");
-      hBCCounter->GetXaxis()->SetBinLabel(6, "kTVXinEMC+CollinBC+Sel8");
-      hBCCounter->GetXaxis()->SetBinLabel(7, "kTVXinEMC+CollinBC+Sel8Full");
-      hBCCounter->GetXaxis()->SetBinLabel(8, "kTVXinEMC+CollinBC+Sel8Full+GoodZvtx");
-      hBCCounter->GetXaxis()->SetBinLabel(9, "kTVXinEMC+CollinBC+Sel8Full+VtxZ+GoodZvtx");
+      hBCCounter->GetXaxis()->SetBinLabel(2, "BC+kTVX");
+      hBCCounter->GetXaxis()->SetBinLabel(3, "BC+kTVX+NoTFB");
+      hBCCounter->GetXaxis()->SetBinLabel(4, "BC+kTVX+NoTFB+NoITSROFB");
+      hBCCounter->GetXaxis()->SetBinLabel(5, "CollinBC");
+      hBCCounter->GetXaxis()->SetBinLabel(6, "CollinBC+kTVX");
+      hBCCounter->GetXaxis()->SetBinLabel(7, "CollinBC+kTVX+Sel8");
+      hBCCounter->GetXaxis()->SetBinLabel(8, "CollinBC+kTVX+Sel8Full");
+      hBCCounter->GetXaxis()->SetBinLabel(9, "CollinBC+kTVX+Sel8Full+GoodZvtx");
+      hBCCounter->GetXaxis()->SetBinLabel(10, "CollinBC+kTVX+Sel8Full+VtxZ+GoodZvtx");
     }
 
     if (doprocessDataTracks || doprocessMCTracks) {
@@ -389,7 +390,7 @@ struct FullJetSpectra {
     }
 
     if (doprocessBCs) {
-      registry.add("hBCCounter", "", {HistType::kTH1F, {{10, 0.0, 10.}}}, doSumw2);
+      registry.add("hBCCounter", "", {HistType::kTH1F, {{11, 0.0, 11.}}}, doSumw2);
     }
 
     // Track QA histograms
@@ -720,6 +721,7 @@ struct FullJetSpectra {
   using JetTableMCPMatchedJoined = soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents,
                                aod::FullMCParticleLevelJetsMatchedToFullMCDetectorLevelJets>;
 
+  // Commenting these out for now to avoid dependency of the task on JE EventWeights tables
   /*using JetTableMCDMatchedWeightedJoined = soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents,
                                            aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets,
                                            aod::FullMCDetectorLevelJetEventWeights>;*/
@@ -1145,11 +1147,11 @@ struct FullJetSpectra {
     }
     for (auto bc : bcs) {
       registry.fill(HIST("hBCCounter"), 0.5); // All BC
-      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      if (bc.selection_bit(aod::evsel::EventSelectionFlags::kIsTriggerTVX)) {
         registry.fill(HIST("hBCCounter"), 1.5); // BC+TVX
-        if (bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (bc.selection_bit(aod::evsel::EventSelectionFlags::kNoTimeFrameBorder)) {
           registry.fill(HIST("hBCCounter"), 2.5); // BC+TVX+NoTFB
-          if (bc.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+          if (bc.selection_bit(aod::evsel::EventSelectionFlags::kNoITSROFrameBorder)) {
             registry.fill(HIST("hBCCounter"), 3.5); // BC+TVX+NoTFB+NoITSROFB ----> this goes to Lumi i.e. hLumiAfterBCcuts in eventSelection task
           }
         }
@@ -1157,14 +1159,17 @@ struct FullJetSpectra {
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
       for (auto collision : collisionsInBC) {
         registry.fill(HIST("hBCCounter"), 4.5); // CollinBC
-        if (collision.sel8()) {
-          registry.fill(HIST("hBCCounter"), 5.5); // CollinBC+sel8
-          if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-            registry.fill(HIST("hBCCounter"), 6.5); // CollinBC+sel8Full
-            if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-              registry.fill(HIST("hBCCounter"), 7.5); // CollinBC+sel8Full+GoodZvtx
-              if (std::fabs(collision.posZ()) < vertexZCut) {
-                registry.fill(HIST("hBCCounter"), 8.5); // CollinBC+sel8Full+VtxZ+GoodZvtx ----> this goes to my analysis task for jet events selection
+        if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+          registry.fill(HIST("hBCCounter"), 5.5); // CollinBC+TVX
+          if (collision.sel8()) {
+            registry.fill(HIST("hBCCounter"), 6.5); // CollinBC+TVX+sel8
+            if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+              registry.fill(HIST("hBCCounter"), 7.5); // CollinBC+TVX+sel8Full
+              if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+                registry.fill(HIST("hBCCounter"), 8.5); // CollinBC+TVX+sel8Full+GoodZvtx
+                if (std::fabs(collision.posZ()) < vertexZCut) {
+                  registry.fill(HIST("hBCCounter"), 9.5); // CollinBC+TVX+sel8Full+VtxZ+GoodZvtx ----> this goes to my analysis task for jet events selection
+                }
               }
             }
           }
@@ -1451,7 +1456,7 @@ struct FullJetSpectra {
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsMCD, "Full Jets at Detector Level", false);
 
-  void processJetsMCDWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDWeightedJoined const& jets, aod::JMcCollisions const&,
+  void processJetsMCDWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDJoined const& jets, aod::JMcCollisions const&,
                               aod::JetTracks const&, ClusterWithCorrections const&)
   {
     bool eventAccepted = false;
@@ -1639,7 +1644,7 @@ struct FullJetSpectra {
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsMCP, "Full Jets at Particle Level", false);
 
-  void processJetsMCPWeighted(aod::JetMcCollision const& mccollision, JetTableMCPWeightedJoined const& jets, aod::JetParticles const&, soa::SmallGroups<EMCCollisionsMCD> const& collisions)
+  void processJetsMCPWeighted(aod::JetMcCollision const& mccollision, JetTableMCPJoined const& jets, aod::JetParticles const&, soa::SmallGroups<EMCCollisionsMCD> const& collisions)
   {
     bool eventAccepted = false;
     float pTHat = 10. / (std::pow(mccollision.weight(), 1.0 / pTHatExponent));
@@ -2603,7 +2608,7 @@ struct FullJetSpectra {
   }
   PROCESS_SWITCH(FullJetSpectra, processMBMCDCollisionsWithMultiplicity, "MB MCD Collisions for Full Jets Multiplicity Studies", false);
 
-  void processMCDCollisionsWeightedWithMultiplicity(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDWeightedJoined const& mcdjets, aod::JMcCollisions const&, aod::JetTracks const& tracks, ClusterWithCorrections const& clusters)
+  void processMCDCollisionsWeightedWithMultiplicity(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDJoined const& mcdjets, aod::JMcCollisions const&, aod::JetTracks const& tracks, ClusterWithCorrections const& clusters)
   {
     bool eventAccepted = false;
     float eventWeight = collision.mcCollision().weight();
@@ -2927,7 +2932,7 @@ struct FullJetSpectra {
   PROCESS_SWITCH(FullJetSpectra, processMBMCPCollisionsWithMultiplicity, "MB MCP Collisions for Full Jets Multiplicity Studies", false);
 
   void processMBMCPCollisionsWeightedWithMultiplicity(aod::JetMcCollision const& mccollision,
-                                                      JetTableMCPWeightedJoined const& jets, aod::JetParticles const& /*particles*/,
+                                                      JetTableMCPJoined const& jets, aod::JetParticles const& /*particles*/,
                                                       soa::SmallGroups<EMCCollisionsMCD> const& collisions)
   {
     bool eventAccepted = false;
