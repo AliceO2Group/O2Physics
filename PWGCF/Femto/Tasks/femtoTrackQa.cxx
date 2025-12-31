@@ -42,7 +42,6 @@ struct FemtoTrackQa {
 
   // setup tables
   using FemtoCollisions = o2::soa::Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
-
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
@@ -85,21 +84,22 @@ struct FemtoTrackQa {
       LOG(fatal) << "More than 1 process function is activated. Breaking...";
     }
 
-    if (doprocessData) {
+    bool processData = doprocessData;
+
+    if (processData) {
       // create a map for histogram specs
       auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
       auto trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
       trackHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, trackHistSpec, confTrackQaBinning, trackSelections.chargeAbs.value);
-    }
-
-    if (doprocessMc) {
+    } else {
       // create a map for histogram specs
       auto colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionQaBinning);
       auto trackHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confTrackBinning, confTrackQaBinning, confTrackMcBinning);
       trackHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, trackHistSpec, confTrackQaBinning, confTrackMcBinning, trackSelections.chargeAbs.value);
     }
+    hRegistry.print();
   };
 
   void processData(FilteredFemtoCollision const& col, FemtoTracks const& tracks)

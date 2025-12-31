@@ -118,6 +118,8 @@ constexpr char PrefixKstar[] = "Kstar0/";
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
 
+constexpr int AbsChargeDaughers = 1;
+
 template <const char* resoPrefix,
           const char* posDauPrefix,
           const char* negDauPrefix,
@@ -135,21 +137,14 @@ class TwoTrackResonanceHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
-    mPosDauManager.template init<mode>(registry, PosDauSpecs);
-    mNegDauManager.template init<mode>(registry, NegDauSpecs);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, AbsChargeDaughers);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, AbsChargeDaughers);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(ResoSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       initQa(ResoSpecs);
     }
-  }
-
-  template <typename T1, typename T2>
-  void enableOptionalHistograms(T1 const& PosDauConfBinningQa, T2 const& NegDauConfBinningQa)
-  {
-    mPosDauManager.enableOptionalHistograms(PosDauConfBinningQa);
-    mNegDauManager.enableOptionalHistograms(NegDauConfBinningQa);
   }
 
   template <modes::Mode mode, typename T1, typename T2>
@@ -160,8 +155,15 @@ class TwoTrackResonanceHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> NegDauSpecs,
             T2 const& NegDauConfBinningQa)
   {
-    enableOptionalHistograms(PosDauConfBinningQa, NegDauConfBinningQa);
-    this->template init<mode>(registry, ResoSpecs, PosDauSpecs, NegDauSpecs);
+    mHistogramRegistry = registry;
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, PosDauConfBinningQa, AbsChargeDaughers);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, NegDauConfBinningQa, AbsChargeDaughers);
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+      initAnalysis(ResoSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      initQa(ResoSpecs);
+    }
   }
 
   template <modes::Mode mode, typename T1, typename T2>

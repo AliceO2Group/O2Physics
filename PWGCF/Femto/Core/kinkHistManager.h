@@ -59,8 +59,28 @@ enum KinkHist {
   kPhiVsEta,
   kPtVsKinkAngle,
   kPtVsDecayRadius,
+  // mc
+  kOrigin,
+  kPdg,
+  kPdgMother,
+  kPdgPartonicMother,
+  kTruePt,
+  kTrueEta,
+  kTruePhi,
+  // histograms for fraction estimation of kinks
+  kNoMcParticle,
+  kPrimary,
+  kFromWrongCollision,
+  kFromMaterial,
+  kSecondary1,
+  kSecondary2,
+  kSecondary3,
+  kSecondaryOther,
+
   kKinkHistLast
 };
+
+constexpr std::size_t MaxSecondary = 3;
 
 #define KINK_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                       \
   o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
@@ -104,6 +124,23 @@ using ConfSigmaQaBinning1 = ConfKinkQaBinning<PrefixSigmaQaBinning1>;
 constexpr const char PrefixSigmaPlusQaBinning1[] = "SigmaPlusQaBinning1";
 using ConfSigmaPlusQaBinning1 = ConfKinkQaBinning<PrefixSigmaPlusQaBinning1>;
 
+template <const char* Prefix>
+struct ConfKinkMcBinning : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string(Prefix);
+  o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "PDG codes of selected V0s"};
+  o2::framework::ConfigurableAxis statusCode{"statusCode", {{21, -0.5, 20.5}}, "Status codes (i.e. Origin)"};
+  o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "Plot pt vs cosPa for different particle origins"};
+  o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3312, 3334}, "PDG codes of mothers of secondaries (Max 3 will be considered)"};
+  o2::framework::ConfigurableAxis pt{"pt", {{150, 0, 3}}, "Pt"};
+  o2::framework::ConfigurableAxis kinkAngle{"kinkAngle", {{315, 0, 3.15}}, "Kink angle"};
+};
+
+constexpr const char PrefixSigmaMcBinning1[] = "SigmaMcBinning1";
+using ConfSigmaMcBinning = ConfKinkMcBinning<PrefixSigmaMcBinning1>;
+
+constexpr const char PrefixSigmaPlusMcBinning1[] = "SigmaPlusMcBinning1";
+using ConfSigmaPlusMcBinning = ConfKinkMcBinning<PrefixSigmaPlusMcBinning1>;
+
 // must be in sync with enum KinkHist
 // the enum gives the correct index in the array
 constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable = {
@@ -124,42 +161,89 @@ constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable =
    {kPtVsPhi, o2::framework::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}); #varphi"},
    {kPhiVsEta, o2::framework::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi; #eta"},
    {kPtVsKinkAngle, o2::framework::kTH2F, "hPtVsKinkAngle", "p_{T} vs kink angle; p_{T} (GeV/#it{c}); kink angle (rad)"},
-   {kPtVsDecayRadius, o2::framework::kTH2F, "hPtVsDecayRadius", "p_{T} vs transverse decay radius; p_{T} (GeV/#it{c}); r_{xy} (cm)"}}};
+   {kPtVsDecayRadius, o2::framework::kTH2F, "hPtVsDecayRadius", "p_{T} vs transverse decay radius; p_{T} (GeV/#it{c}); r_{xy} (cm)"},
+   {kOrigin, o2::framework::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
+   {kPdg, o2::framework::kTH1F, "hPdg", "PDG Codes of reconstructed kinks; PDG Code; Entries"},
+   {kPdgMother, o2::framework::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed kink; PDG Code; Entries"},
+   {kPdgPartonicMother, o2::framework::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother reconstructed knik; PDG Code; Entries"},
+   {kTruePt, o2::framework::kTH1F, "hTruePt", "True transverse momentum; p_{T} (GeV/#it{c}); Entries"},
+   {kTrueEta, o2::framework::kTH1F, "hTrueEta", "True pseudorapdity; #eta; Entries"},
+   {kTruePhi, o2::framework::kTH1F, "hTruePhi", "True azimuthal angle; #varphi; Entries"},
+   {kNoMcParticle, o2::framework::kTH2F, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kPrimary, o2::framework::kTH2F, "hPrimary", "Primary particles; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kFromWrongCollision, o2::framework::kTH2F, "hFromWrongCollision", "Particles associated to wrong collision; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kFromMaterial, o2::framework::kTH2F, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kSecondary1, o2::framework::kTH2F, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kSecondary2, o2::framework::kTH2F, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kSecondary3, o2::framework::kTH2F, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); cos(#alpha)"},
+   {kSecondaryOther, o2::framework::kTH2F, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); cos(#alpha)"}}};
+
+#define KINK_HIST_ANALYSIS_MAP(conf) \
+  {kPt, {conf.pt}},                  \
+    {kEta, {conf.eta}},              \
+    {kPhi, {conf.phi}},              \
+    {kMass, {conf.mass}},            \
+    {kSign, {conf.sign}},
+
+#define KINK_HIST_QA_MAP(confAnalysis, confQa)             \
+  {kKinkAngle, {confQa.kinkAngle}},                        \
+    {kDcaMothToPV, {confQa.dcaMothToPV}},                  \
+    {kDcaDaugToPV, {confQa.dcaDaugToPV}},                  \
+    {kDecayVtxX, {confQa.decayVertex}},                    \
+    {kDecayVtxY, {confQa.decayVertex}},                    \
+    {kDecayVtxZ, {confQa.decayVertex}},                    \
+    {kDecayVtx, {confQa.decayVertex}},                     \
+    {kTransRadius, {confQa.transRadius}},                  \
+    {kPtVsEta, {confAnalysis.pt, confAnalysis.eta}},       \
+    {kPtVsPhi, {confAnalysis.pt, confAnalysis.phi}},       \
+    {kPhiVsEta, {confAnalysis.phi, confAnalysis.eta}},     \
+    {kPtVsKinkAngle, {confAnalysis.pt, confQa.kinkAngle}}, \
+    {kPtVsDecayRadius, {confAnalysis.pt, confQa.transRadius}},
+
+#define KINK_HIST_MC_MAP(confAnalysis, confMc)            \
+  {kTruePt, {confAnalysis.pt}},                           \
+    {kTrueEta, {confAnalysis.eta}},                       \
+    {kTruePhi, {confAnalysis.phi}},                       \
+    {kOrigin, {confMc.statusCode}},                       \
+    {kPdg, {confMc.pdgCodes}},                            \
+    {kPdgMother, {confMc.pdgCodes}},                      \
+    {kPdgPartonicMother, {confMc.pdgCodes}},              \
+    {kNoMcParticle, {confMc.pt, confMc.kinkAngle}},       \
+    {kPrimary, {confMc.pt, confMc.kinkAngle}},            \
+    {kFromWrongCollision, {confMc.pt, confMc.kinkAngle}}, \
+    {kFromMaterial, {confMc.pt, confMc.kinkAngle}},       \
+    {kSecondary1, {confMc.pt, confMc.kinkAngle}},         \
+    {kSecondary2, {confMc.pt, confMc.kinkAngle}},         \
+    {kSecondary3, {confMc.pt, confMc.kinkAngle}},         \
+    {kSecondaryOther, {confMc.pt, confMc.kinkAngle}},
 
 template <typename T>
 auto makeKinkHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<KinkHist, std::vector<framework::AxisSpec>>{
-    {kPt, {confBinningAnalysis.pt}},
-    {kEta, {confBinningAnalysis.eta}},
-    {kPhi, {confBinningAnalysis.phi}},
-    {kMass, {confBinningAnalysis.mass}},
-    {kSign, {confBinningAnalysis.sign}}};
+    KINK_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
 template <typename T1, typename T2>
 std::map<KinkHist, std::vector<framework::AxisSpec>> makeKinkQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
   return std::map<KinkHist, std::vector<framework::AxisSpec>>{
-    {kPt, {confBinningAnalysis.pt}},
-    {kEta, {confBinningAnalysis.eta}},
-    {kPhi, {confBinningAnalysis.phi}},
-    {kMass, {confBinningAnalysis.mass}},
-    {kSign, {confBinningAnalysis.sign}},
-    {kKinkAngle, {confBinningQa.kinkAngle}},
-    {kDcaMothToPV, {confBinningQa.dcaMothToPV}},
-    {kDcaDaugToPV, {confBinningQa.dcaDaugToPV}},
-    {kDecayVtxX, {confBinningQa.decayVertex}},
-    {kDecayVtxY, {confBinningQa.decayVertex}},
-    {kDecayVtxZ, {confBinningQa.decayVertex}},
-    {kDecayVtx, {confBinningQa.decayVertex}},
-    {kTransRadius, {confBinningQa.transRadius}},
-    {kPtVsEta, {confBinningAnalysis.pt, confBinningAnalysis.eta}},
-    {kPtVsPhi, {confBinningAnalysis.pt, confBinningAnalysis.phi}},
-    {kPhiVsEta, {confBinningAnalysis.phi, confBinningAnalysis.eta}},
-    {kPtVsKinkAngle, {confBinningAnalysis.pt, confBinningQa.kinkAngle}},
-    {kPtVsDecayRadius, {confBinningAnalysis.pt, confBinningQa.transRadius}}};
+    KINK_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      KINK_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
+
+template <typename T1, typename T2, typename T3>
+std::map<KinkHist, std::vector<framework::AxisSpec>> makeKinkMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa, T3 const& confBinningMc)
+{
+  return std::map<KinkHist, std::vector<framework::AxisSpec>>{
+    KINK_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      KINK_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
+        KINK_HIST_MC_MAP(confBinningAnalysis, confBinningMc)};
+}
+
+#undef KINK_HIST_ANALYSIS_MAP
+#undef KINK_HIST_QA_MAP
+#undef KINK_HIST_MC_MAP
 
 constexpr char PrefixSigmaQa[] = "SigmaQA/";
 constexpr char PrefixSigma1[] = "Sigma1/";
@@ -170,10 +254,10 @@ constexpr char PrefixSigmaPlus2[] = "SigmaPlus2/";
 
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
+constexpr std::string_view McDir = "MC/";
 
-/// \class KinkHistManager
-/// \brief Class for histogramming event properties
-// template <femtomodes::Mode mode>
+constexpr int AbsChargeDaughters = 1;
+
 template <const char* kinkPrefix,
           const char* chaDauPrefix,
           modes::Kink kink>
@@ -183,28 +267,26 @@ class KinkHistManager
   KinkHistManager() = default;
   ~KinkHistManager() = default;
 
+  // init for analysis
   template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs)
   {
     mHistogramRegistry = registry;
-    mChaDauManager.template init<mode>(registry, ChaDauSpecs);
+    mChaDauManager.template init<mode>(registry, ChaDauSpecs, AbsChargeDaughters);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       initQa(KinkSpecs);
     }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      initMc(KinkSpecs);
+    }
   }
 
-  template <typename T1, typename T2>
-  void enableOptionalHistograms(T1 const& KinkConfBinningQa, T2 const& ChaDauConfBinningQa)
-  {
-    mChaDauManager.enableOptionalHistograms(ChaDauConfBinningQa);
-    mPlot2d = KinkConfBinningQa.plot2d.value;
-  }
-
+  // init for qa
   template <modes::Mode mode, typename T1, typename T2>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs,
@@ -212,26 +294,100 @@ class KinkHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs,
             T2 const& ChaDauConfBinningQa)
   {
-    enableOptionalHistograms(KinkConfBinningQa, ChaDauConfBinningQa);
-    this->template init<mode>(registry, KinkSpecs, ChaDauSpecs);
+    mHistogramRegistry = registry;
+    mChaDauManager.template init<mode>(registry, ChaDauSpecs, ChaDauConfBinningQa, AbsChargeDaughters);
+    this->enableOptionalHistograms(KinkConfBinningQa);
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      initAnalysis(KinkSpecs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      initQa(KinkSpecs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      initMc(KinkSpecs);
+    }
+  }
+
+  // init for qa + mc
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs,
+            T1 const& KinkConfBinningQa,
+            T2 const& KinkConfBinningMc,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ChaDauSpecs,
+            T3 const& ChaDauConfBinningQa,
+            T4 const& ChaDauConfBinningMc)
+  {
+    mHistogramRegistry = registry;
+    mChaDauManager.template init<mode>(registry, ChaDauSpecs, ChaDauConfBinningQa, ChaDauConfBinningMc, AbsChargeDaughters);
+    this->enableOptionalHistograms(KinkConfBinningQa, KinkConfBinningMc);
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      initAnalysis(KinkSpecs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      initQa(KinkSpecs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      initMc(KinkSpecs);
+    }
   }
 
   template <modes::Mode mode, typename T1, typename T2>
-  void fill(T1 const& kinkcandidate, T2 const& tracks)
+  void fill(T1 const& kinkCandidate, T2 const& tracks)
   {
     // this used to work, still under investigation
     // auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
-    auto chaDaughter = tracks.rawIteratorAt(kinkcandidate.chaDauId() - tracks.offset());
+    auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
     mChaDauManager.template fill<mode>(chaDaughter, tracks);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(kinkcandidate);
+      fillAnalysis(kinkCandidate);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      fillQa(kinkcandidate);
+      fillQa(kinkCandidate);
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fill(T1 const& kinkCandidate, T2 const& tracks, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  {
+    auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
+    mChaDauManager.template fill<mode>(chaDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+      fillAnalysis(kinkCandidate);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      fillQa(kinkCandidate);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      fillMc(kinkCandidate, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
  private:
+  template <typename T1>
+  void enableOptionalHistograms(T1 const& KinkConfBinningQa)
+  {
+    mPlot2d = KinkConfBinningQa.plot2d.value;
+  }
+
+  // for qa and mc
+  template <typename T1, typename T2>
+  void enableOptionalHistograms(T1 const& V0ConfBinningQa, T2 const& V0ConfBinningMc)
+  {
+    this->enableOptionalHistograms(V0ConfBinningQa);
+
+    mPlotOrigins = V0ConfBinningMc.plotOrigins.value;
+    mPlotNSecondaries = V0ConfBinningMc.pdgCodesForMothersOfSecondary.value.size();
+
+    for (std::size_t i = 0; i < MaxSecondary; i++) {
+      if (i < V0ConfBinningMc.pdgCodesForMothersOfSecondary.value.size()) {
+        mPdgCodesSecondaryMother.at(i) = std::abs(V0ConfBinningMc.pdgCodesForMothersOfSecondary.value.at(i));
+      } else {
+        mPdgCodesSecondaryMother.at(i) = 0;
+      }
+    }
+  }
+
   void initAnalysis(std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs)
   {
     std::string analysisDir = std::string(kinkPrefix) + std::string(AnalysisDir);
@@ -260,6 +416,36 @@ class KinkHistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kPhiVsEta, HistTable), getHistDesc(kPhiVsEta, HistTable), getHistType(kPhiVsEta, HistTable), {KinkSpecs.at(kPhiVsEta)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsKinkAngle, HistTable), getHistDesc(kPtVsKinkAngle, HistTable), getHistType(kPtVsKinkAngle, HistTable), {KinkSpecs.at(kPtVsKinkAngle)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsDecayRadius, HistTable), getHistDesc(kPtVsDecayRadius, HistTable), getHistType(kPtVsDecayRadius, HistTable), {KinkSpecs.at(kPtVsDecayRadius)});
+    }
+  }
+
+  void initMc(std::map<KinkHist, std::vector<o2::framework::AxisSpec>> const& KinkSpecs)
+  {
+    std::string mcDir = std::string(kinkPrefix) + std::string(McDir);
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt, HistTable), getHistDesc(kTruePt, HistTable), getHistType(kTruePt, HistTable), {KinkSpecs.at(kTruePt)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueEta, HistTable), getHistDesc(kTrueEta, HistTable), getHistType(kTrueEta, HistTable), {KinkSpecs.at(kTrueEta)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhi, HistTable), getHistDesc(kTruePhi, HistTable), getHistType(kTruePhi, HistTable), {KinkSpecs.at(kTruePhi)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kOrigin, HistTable), getHistDesc(kOrigin, HistTable), getHistType(kOrigin, HistTable), {KinkSpecs.at(kOrigin)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdg, HistTable), getHistDesc(kPdg, HistTable), getHistType(kPdg, HistTable), {KinkSpecs.at(kPdg)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdgMother, HistTable), getHistDesc(kPdgMother, HistTable), getHistType(kPdgMother, HistTable), {KinkSpecs.at(kPdgMother)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdgPartonicMother, HistTable), getHistDesc(kPdgPartonicMother, HistTable), getHistType(kPdgPartonicMother, HistTable), {KinkSpecs.at(kPdgPartonicMother)});
+
+    if (mPlotOrigins) {
+      mHistogramRegistry->add(mcDir + getHistNameV2(kNoMcParticle, HistTable), getHistDesc(kNoMcParticle, HistTable), getHistType(kNoMcParticle, HistTable), {KinkSpecs.at(kNoMcParticle)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kPrimary, HistTable), getHistDesc(kPrimary, HistTable), getHistType(kPrimary, HistTable), {KinkSpecs.at(kPrimary)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kFromWrongCollision, HistTable), getHistDesc(kFromWrongCollision, HistTable), getHistType(kFromWrongCollision, HistTable), {KinkSpecs.at(kFromWrongCollision)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kFromMaterial, HistTable), getHistDesc(kFromMaterial, HistTable), getHistType(kFromMaterial, HistTable), {KinkSpecs.at(kFromMaterial)});
+
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1) {
+        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary1, HistTable), getHistDesc(kSecondary1, HistTable), getHistType(kSecondary1, HistTable), {KinkSpecs.at(kSecondary1)});
+      }
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2) {
+        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary2, HistTable), getHistDesc(kSecondary2, HistTable), getHistType(kSecondary2, HistTable), {KinkSpecs.at(kSecondary2)});
+      }
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3) {
+        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary3, HistTable), getHistDesc(kSecondary3, HistTable), getHistType(kSecondary3, HistTable), {KinkSpecs.at(kSecondary3)});
+      }
+      mHistogramRegistry->add(mcDir + getHistNameV2(kSecondaryOther, HistTable), getHistDesc(kSecondaryOther, HistTable), getHistType(kSecondaryOther, HistTable), {KinkSpecs.at(kSecondaryOther)});
     }
   }
 
@@ -301,9 +487,84 @@ class KinkHistManager
     }
   }
 
+  template <typename T1, typename T2, typename T3, typename T4>
+  void fillMc(T1 const& kinkCandidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  {
+    // No MC Particle
+    if (!kinkCandidate.has_fMcParticle()) {
+      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
+      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
+      if (mPlotOrigins) {
+        mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+      }
+      return;
+    }
+
+    // Retrieve MC particle
+    auto mcParticle = kinkCandidate.template fMcParticle_as<T2>();
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kTruePt, HistTable)), mcParticle.pt());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kTrueEta, HistTable)), mcParticle.eta());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kTruePhi, HistTable)), mcParticle.phi());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
+    mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
+
+    // Mother PDG
+    if (kinkCandidate.has_fMcMother()) {
+      auto mother = kinkCandidate.template fMcMother_as<T3>();
+      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
+    } else {
+      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
+    }
+
+    // Partonic Mother PDG
+    if (kinkCandidate.has_fMcPartMoth()) {
+      auto partonicMother = kinkCandidate.template fMcPartMoth_as<T4>();
+      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
+    } else {
+      mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
+    }
+
+    // Plot origins
+    if (mPlotOrigins) {
+      switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
+        case modes::McOrigin::kPhysicalPrimary:
+          mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+          break;
+        case modes::McOrigin::kFromWrongCollision:
+          mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+          break;
+        case modes::McOrigin::kFromMaterial:
+          mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+          break;
+        case modes::McOrigin::kFromSecondaryDecay:
+          if (kinkCandidate.has_fMcMother()) {
+            auto mother = kinkCandidate.template fMcMother_as<T3>();
+            int motherPdgCode = std::abs(mother.pdgCode());
+            // Switch on PDG of the mother
+            if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
+              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
+              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
+              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+            } else {
+              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+            }
+          }
+          break;
+        default:
+          // Unknown origin → safely ignore
+          break;
+      }
+    }
+  }
+
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   trackhistmanager::TrackHistManager<chaDauPrefix> mChaDauManager;
   bool mPlot2d = true;
+  bool mPlotOrigins = false;
+  int mPlotNSecondaries = 0;
+  std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
 };
 }; // namespace kinkhistmanager
 }; // namespace o2::analysis::femto

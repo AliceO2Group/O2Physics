@@ -27,7 +27,6 @@
 #include "Common/Core/RecoDecay.h"
 
 #include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/Configurable.h"
 
@@ -435,7 +434,6 @@ class KinkBuilder
     int64_t daughterIndex = 0;
 
     for (const auto& kink : kinks) {
-
       // compute mother kinematics before checking filters
       mKinkSelection.computeKinkMotherKinematics(kink);
       if (!mKinkSelection.checkFilters(kink)) {
@@ -444,7 +442,6 @@ class KinkBuilder
       // compute qa variables before applying selections
       mKinkSelection.computeQaVariables(kink, tracks);
       mKinkSelection.applySelections(kink, tracks);
-
       if (!mKinkSelection.passesAllRequiredSelections()) {
         continue;
       }
@@ -452,7 +449,8 @@ class KinkBuilder
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
       // cleaner, but without ITS pid: auto daughter = kink.template trackDaug_as<T7>();
       int64_t idx = kink.trackDaugId() - tracksWithItsPid.offset();
-      if (idx < 0 || idx > static_cast<int64_t>(tracksWithItsPid.size())) {
+      // check for valid index
+      if (idx < 0 || idx >= static_cast<int64_t>(tracksWithItsPid.size())) {
         return;
       }
       auto daughter = tracksWithItsPid.iteratorAt(idx);
@@ -462,6 +460,49 @@ class KinkBuilder
       }
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
         fillSigmaPlus(collisionProducts, kinkProducts, kink, daughterIndex);
+      }
+    }
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+  void fillMcKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& kinkProducts, T7 const& kinks, T8 const& tracks, T9 const& tracksWithItsPid, T10& trackBuilder, T11 const& mcParticles, T12& mcBuilder, T13& mcProducts)
+  {
+
+    if (!mFillAnyTable) {
+      return;
+    }
+    int64_t daughterIndex = 0;
+    for (const auto& kink : kinks) {
+      // compute mother kinematics before checking filters
+      mKinkSelection.computeKinkMotherKinematics(kink);
+      if (!mKinkSelection.checkFilters(kink)) {
+        continue;
+      }
+      // compute qa variables before applying selections
+      mKinkSelection.computeQaVariables(kink, tracks);
+      mKinkSelection.applySelections(kink, tracks);
+      if (!mKinkSelection.passesAllRequiredSelections()) {
+        continue;
+      }
+
+      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+
+      int64_t idx = kink.trackDaugId() - tracks.offset();
+      // check for valid index
+      if (idx < 0 || idx >= static_cast<int64_t>(tracks.size())) {
+        return;
+      }
+      auto daughter = tracks.iteratorAt(idx);
+      auto daughterWithItsPid = tracksWithItsPid.iteratorAt(idx);
+      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionProducts, mcCols, daughter, daughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
+        fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
+        mcBuilder.template fillMcSigmaWithLabel<system>(col, mcCols, kink, daughter, mcParticles, mcProducts);
+      }
+      if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
+        fillSigmaPlus(collisionProducts, kinkProducts, kink, daughterIndex);
+        mcBuilder.template fillMcSigmaPlusWithLabel<system>(col, mcCols, kink, daughter, mcParticles, mcProducts);
       }
     }
   }

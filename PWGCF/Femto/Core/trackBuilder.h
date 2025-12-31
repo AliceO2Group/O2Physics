@@ -685,6 +685,7 @@ class TrackBuilder
       }
 
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+      // get track from the track table so we can dereference mc particle properly
       auto track = tracks.iteratorAt(trackWithItsPid.index());
       this->template fillMcTrack<system, modes::Track::kTrack>(col, collisionProducts, mcCols, track, trackWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
     }
@@ -693,11 +694,11 @@ class TrackBuilder
   template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
   {
-    if (!mFillAnyTable) {
+    if (!mProduceTracks) {
       return;
     }
     this->template fillTrack<trackType>(trackWithItsPid, trackProducts, collisionProducts);
-    mcBuilder.template fillMcTrackWithLabel<system, trackType>(col, mcCols, track, mcParticles, mcProducts);
+    mcBuilder.template fillMcTrackWithLabel<system>(col, mcCols, track, mcParticles, mcProducts);
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3>
@@ -709,8 +710,21 @@ class TrackBuilder
     } else {
       this->fillTrack<type>(daughter, trackProducts, collisionProducts);
       int64_t idx = trackProducts.producedTracks.lastIndex();
-      indexMap.emplace(daughter.globalIndex(), idx);
       return idx;
+    }
+  }
+
+  template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  int64_t getDaughterIndex(const T1& col, T2& collisionProducts, T3 const& mcCols, const T4& daughter, T5& daughterWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  {
+    auto result = utils::getIndex(daughter.globalIndex(), indexMap);
+    if (result) {
+      // daugher already in track table
+      return result.value();
+    } else {
+      this->fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      // daughter is last track which was added added
+      return trackProducts.producedTracks.lastIndex();
     }
   }
 

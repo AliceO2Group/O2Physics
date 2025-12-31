@@ -157,6 +157,8 @@ constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
 
+constexpr int AbsChargeDaughters = 1;
+
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
@@ -179,24 +181,15 @@ class CascadeHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
-    mBachelorManager.template init<mode>(registry, BachelorSpecs);
-    mPosDauManager.template init<mode>(registry, PosDauSpecs);
-    mNegDauManager.template init<mode>(registry, NegDauSpecs);
+    mBachelorManager.template init<mode>(registry, BachelorSpecs, AbsChargeDaughters);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, AbsChargeDaughters);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, AbsChargeDaughters);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(cascadeSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       initQa(cascadeSpecs);
     }
-  }
-
-  template <typename T1, typename T2, typename T3, typename T4>
-  void enableOptionalHistograms(T1 const& CascadeConfBinningQa, T2 const& BachelorConfBinningQa, T3 const& PosDauConfBinningQa, T4 const& NegDauConfBinningQa)
-  {
-    mBachelorManager.enableOptionalHistograms(BachelorConfBinningQa);
-    mPosDauManager.enableOptionalHistograms(PosDauConfBinningQa);
-    mNegDauManager.enableOptionalHistograms(NegDauConfBinningQa);
-    mPlot2d = CascadeConfBinningQa.plot2d.value;
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
@@ -210,8 +203,17 @@ class CascadeHistManager
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs,
             T4 const& NegDauConfBinningQa)
   {
-    enableOptionalHistograms(CascadeConfBinningQa, BachelorConfBinningQa, PosDauConfBinningQa, NegDauConfBinningQa);
-    this->template init<mode>(registry, cascadeSpecs, BachelorSpecs, PosDauSpecs, NegDauSpecs);
+    mHistogramRegistry = registry;
+    mBachelorManager.template init<mode>(registry, BachelorSpecs, BachelorConfBinningQa, AbsChargeDaughters);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, PosDauConfBinningQa, AbsChargeDaughters);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, NegDauConfBinningQa, AbsChargeDaughters);
+    this->enableOptionalHistograms(CascadeConfBinningQa);
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+      initAnalysis(cascadeSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      initQa(cascadeSpecs);
+    }
   }
 
   template <modes::Mode mode, typename T1, typename T2>
@@ -237,6 +239,12 @@ class CascadeHistManager
   }
 
  private:
+  template <typename T>
+  void enableOptionalHistograms(T const& CascadeConfBinningQa)
+  {
+    mPlot2d = CascadeConfBinningQa.plot2d.value;
+  }
+
   void initAnalysis(std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs)
   {
     std::string analysisDir = std::string(cascadePrefix) + std::string(AnalysisDir);
