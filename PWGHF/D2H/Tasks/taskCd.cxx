@@ -22,6 +22,7 @@
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -52,10 +53,78 @@ using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 
+namespace o2::aod
+{
+namespace full
+{
+// Candidate kinematics
+DECLARE_SOA_COLUMN(M, m, float);                                //! Invariant mass of candidate (GeV/c^2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                              //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                  //! Transverse momentum of prong 0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                  //! Transverse momentum of prong 1 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                  //! Transverse momentum of prong 2 (GeV/c)
+DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);  //! Impact parameter (DCA to PV) of prong 0 (cm)
+DECLARE_SOA_COLUMN(ImpactParameter1, impactParameter1, float);  //! Impact parameter (DCA to PV) of prong 1 (cm)
+DECLARE_SOA_COLUMN(ImpactParameter2, impactParameter2, float);  //! Impact parameter (DCA to PV) of prong 2 (cm)
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);            //! Decay length (3D) of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);        //! Decay length in transverse plane (cm)
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                            //! Cosine of pointing angle (3D)
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                        //! Cosine of pointing angle in XY plane
+DECLARE_SOA_COLUMN(NSigmaTpcDe, nSigmaTpcDe, float);            //! TPC nσ for deuteron hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float);            //! TPC nσ for kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float);            //! TPC nσ for pion hypothesis
+DECLARE_SOA_COLUMN(NSigmaItsDe, nSigmaItsDe, float);            //! ITS nσ for deuteron hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofDe, nSigmaTofDe, float);            //! TOF nσ for deuteron hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float);            //! TOF nσ for kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);            //! TOF nσ for pion hypothesis
+DECLARE_SOA_COLUMN(NItsClusters, nItsClusters, int8_t);         //! Number of ITS clusters used in the track fit
+DECLARE_SOA_COLUMN(NItsNClusterSize, nItsNClusterSize, int8_t); //! Number of ITS clusters size used in the track fit
+DECLARE_SOA_COLUMN(NTpcClusters, nTpcClusters, int8_t);         //! Number of TPC clusters used in the track fit
+DECLARE_SOA_COLUMN(NTpcSignalsDe, nTpcSignalsDe, int8_t);       //! Number of TPC signas
+DECLARE_SOA_COLUMN(NItsSignalsDe, nItsSignalsDe, int8_t);       //! Number of ITS signas
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! Candidates falg
+DECLARE_SOA_COLUMN(Cent, cent, float);                          //! Centrality
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                  //! Global index for the collisionAdd commentMore actions
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);              //! Timestamp for the collision
+} // namespace full
+
+// Full table: include ALL columns declared above
+DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
+                  full::M,
+                  full::Pt,
+                  full::PtProng0,
+                  full::PtProng1,
+                  full::PtProng2,
+                  full::ImpactParameter0,
+                  full::ImpactParameter1,
+                  full::ImpactParameter2,
+                  full::DecayLength,
+                  full::Cpa,
+                  full::NSigmaTpcDe,
+                  full::NSigmaTpcKa,
+                  full::NSigmaTpcPi,
+                  full::NSigmaItsDe,
+                  full::NSigmaTofDe,
+                  full::NSigmaTofKa,
+                  full::NSigmaTofPi,
+                  full::NItsClusters,
+                  full::NItsNClusterSize,
+                  full::NTpcClusters,
+                  full::NTpcSignalsDe,
+                  full::NItsSignalsDe,
+                  full::CandidateSelFlag,
+                  full::Cent,
+                  full::GIndexCol,
+                  full::TimeStamp);
+} // namespace o2::aod
+
 struct HfTaskCd {
+
+  Produces<o2::aod::HfCandCd> rowCandCd;
   Configurable<int> selectionFlagCd{"selectionFlagCd", 1, "Selection Flag for Cd"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_cd_to_de_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
+  Configurable<bool> fillTree{"fillTree", false, "Flag to fill candiates tree"};
 
   SliceCache cache;
 
@@ -63,7 +132,8 @@ struct HfTaskCd {
   using CollisionsWithEvSelFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using CollisionsWithEvSelFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
-  using CdCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelCd>>;
+  using CdCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelCd, aod::HfCand3ProngWPidPiKaDe>>;
+  using HFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullDe>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_cd::isSelCdToDeKPi >= selectionFlagCd;
   Preslice<aod::HfCand3Prong> candCdPerCollision = aod::hf_cand::collisionId;
@@ -139,6 +209,11 @@ struct HfTaskCd {
     registry.add("Data/hImpParErrProng0", "3-prong candidates;prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/hNsigmaTPCDeVsP", "deuteron;n#sigma^{TPC}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaTOFDeVsP", "deuteron;n#sigma^{TOF}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaITSDeVsP", "deuteron;n#sigma^{ITS}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hTPCSignalDeVsP", "deuteron;n#sigma^{ITS}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {2000, 0, 2000}}});
+    registry.add("Data/hITSSignalDeVsP", "deuteron;n#sigma^{ITS}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {20, 0, 20}}});
 
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (de K #pi) (GeV/#it{c}^{2})"};
@@ -156,13 +231,33 @@ struct HfTaskCd {
     }
   }
 
+  // taken from: https://github.com/AliceO2Group/O2Physics/blob/master/EventFiltering/PWGCF/CFFilterAll.cxx
+  template <typename T>
+  float itsSignal(T const& track)
+  {
+    uint32_t clsizeflag = track.itsClusterSizes();
+    auto clSizeLayer0 = (clsizeflag >> (0 * 4)) & 0xf;
+    auto clSizeLayer1 = (clsizeflag >> (1 * 4)) & 0xf;
+    auto clSizeLayer2 = (clsizeflag >> (2 * 4)) & 0xf;
+    auto clSizeLayer3 = (clsizeflag >> (3 * 4)) & 0xf;
+    auto clSizeLayer4 = (clsizeflag >> (4 * 4)) & 0xf;
+    auto clSizeLayer5 = (clsizeflag >> (5 * 4)) & 0xf;
+    auto clSizeLayer6 = (clsizeflag >> (6 * 4)) & 0xf;
+    int numLayers = 7;
+    int sumClusterSizes = clSizeLayer1 + clSizeLayer2 + clSizeLayer3 + clSizeLayer4 + clSizeLayer5 + clSizeLayer6 + clSizeLayer0;
+    float cosLamnda = 1. / std::cosh(track.eta());
+    return (static_cast<float>(sumClusterSizes) / numLayers) * cosLamnda;
+  };
+
   /// Fill histograms for real data
-  template <typename CollType, typename CandType>
-  void fillHistosData(CollType const& collision, CandType const& candidates)
+  template <typename CollType, typename CandType, typename TrackType>
+  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const&)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedCdCandidates = candidates.sliceBy(candCdPerCollision, thisCollId);
     auto numPvContributors = collision.numContrib();
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    int64_t timeStamp = bc.timestamp();
 
     for (const auto& candidate : groupedCdCandidates) {
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
@@ -178,6 +273,13 @@ struct HfTaskCd {
       const auto chi2PCA = candidate.chi2PCA();
       const auto cpa = candidate.cpa();
       const auto cpaXY = candidate.cpaXY();
+      float invMassCd = 0.f;
+      if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
+        invMassCd = HfHelper::invMassCdToDeKPi(candidate);
+      }
+      if (candidate.isSelCdToPiKDe() >= selectionFlagCd) {
+        invMassCd = HfHelper::invMassCdToPiKDe(candidate);
+      }
 
       if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
         registry.fill(HIST("Data/hMass"), HfHelper::invMassCdToDeKPi(candidate));
@@ -219,8 +321,9 @@ struct HfTaskCd {
       registry.fill(HIST("Data/hImpParErrProng1"), candidate.errorImpactParameter1(), pt);
       registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
 
+      float const cent = o2::hf_centrality::getCentralityColl(collision);
+
       if (fillTHn) {
-        float const cent = o2::hf_centrality::getCentralityColl(collision);
         double massCd(-1);
         if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
           massCd = HfHelper::invMassCdToDeKPi(candidate);
@@ -233,40 +336,139 @@ struct HfTaskCd {
           registry.get<THnSparse>(HIST("hnCdVars"))->Fill(valuesToFill.data());
         }
       }
+
+      if (fillTree) {
+        int candFlag = -999;
+
+        float nSigmaTpcDe = 0.f, nSigmaTpcKa = 0.f, nSigmaTpcPi = 0.f;
+        float nSigmaItsDe = 0.f;
+        float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
+
+        int itsNClusterDe = 0;
+        int itsNClusterSizeDe = 0;
+        int tpcNClusterDe = 0;
+
+        float tpcSignalsDe = 0.f;
+        float itsSignalsDe = 0.f;
+
+        nSigmaTpcKa = candidate.nSigTpcKa1();
+        nSigmaTofKa = candidate.nSigTofKa1();
+
+        const bool selDeKPi = (candidate.isSelCdToDeKPi() >= 1);
+        const bool selPiKDe = (candidate.isSelCdToPiKDe() >= 1);
+
+        TrackType trackDe{};
+        bool hasDe = false;
+
+        if (selDeKPi) {
+          auto trk0 = candidate.template prong0_as<TrackType>();
+          trackDe = trk0;
+          hasDe = true;
+
+          candFlag = 1;
+          nSigmaTpcDe = candidate.nSigTpcDe0();
+          nSigmaTofDe = candidate.nSigTofDe0();
+          nSigmaTpcPi = candidate.nSigTpcPi2();
+          nSigmaTofPi = candidate.nSigTofPi2();
+        } else if (selPiKDe) {
+          auto trk2 = candidate.template prong2_as<TrackType>();
+          trackDe = trk2;
+          hasDe = true;
+
+          candFlag = -1;
+          nSigmaTpcDe = candidate.nSigTpcDe2();
+          nSigmaTofDe = candidate.nSigTofDe2();
+          nSigmaTpcPi = candidate.nSigTpcPi0();
+          nSigmaTofPi = candidate.nSigTofPi0();
+        }
+
+        if (hasDe) {
+          const float pSigned = trackDe.p() * trackDe.sign();
+
+          nSigmaItsDe = trackDe.itsNSigmaDe();
+          itsNClusterDe = trackDe.itsNCls();
+          itsNClusterSizeDe = trackDe.itsClusterSizes();
+          tpcNClusterDe = trackDe.tpcNClsCrossedRows();
+          tpcSignalsDe = trackDe.tpcSignal();
+          itsSignalsDe = itsSignal(trackDe);
+
+          // De PID QA
+          registry.fill(HIST("Data/hNsigmaTPCDeVsP"), pSigned, nSigmaTpcDe);
+          registry.fill(HIST("Data/hNsigmaTOFDeVsP"), pSigned, nSigmaTofDe);
+          registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSigned, nSigmaItsDe);
+          registry.fill(HIST("Data/hTPCSignalDeVsP"), pSigned, tpcSignalsDe);
+          registry.fill(HIST("Data/hITSSignalDeVsP"), pSigned, itsSignalsDe);
+        }
+
+        rowCandCd(
+          invMassCd,
+          pt,
+          ptProng0,
+          ptProng1,
+          ptProng2,
+          candidate.impactParameter0(),
+          candidate.impactParameter1(),
+          candidate.impactParameter2(),
+          decayLength,
+          cpa,
+          nSigmaTpcDe,
+          nSigmaTpcKa,
+          nSigmaTpcPi,
+          nSigmaItsDe,
+          nSigmaTofDe,
+          nSigmaTofKa,
+          nSigmaTofPi,
+          itsNClusterDe,
+          itsNClusterSizeDe,
+          tpcNClusterDe,
+          tpcSignalsDe,
+          itsSignalsDe,
+          candFlag,
+          cent,
+          collision.globalIndex(),
+          timeStamp);
+      }
     }
   }
   /// Run the analysis on real data
-  template <typename CollType, typename CandType>
+  template <typename CollType, typename CandType, typename TrackType>
   void runAnalysisPerCollisionData(CollType const& collisions,
-                                   CandType const& candidates)
+                                   CandType const& candidates,
+                                   TrackType const& tracks)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData(collision, candidates);
+      fillHistosData(collision, candidates, tracks);
     }
   }
 
   void processDataStd(CollisionsWEvSel const& collisions,
                       CdCandidates const& selectedCdCandidates,
-                      aod::Tracks const&)
+                      HFTracks const& tracks)
   {
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates);
+    // inlcude ITS PID information
+    auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStd, "Process Data with the standard method", true);
 
   void processDataStdWithFT0C(CollisionsWithEvSelFT0C const& collisions,
                               CdCandidates const& selectedCdCandidates,
-                              aod::Tracks const&)
+                              HFTracks const& tracks)
   {
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates);
+    // inlcude ITS PID information
+    auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
   void processDataStdWithFT0M(CollisionsWithEvSelFT0M const& collisions,
                               CdCandidates const& selectedCdCandidates,
-                              aod::Tracks const&)
+                              HFTracks const& tracks)
   {
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates);
+    // inlcude ITS PID information
+    auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 };
