@@ -131,7 +131,9 @@ struct FemtoPairTrackKink {
 
   void init(InitContext&)
   {
-
+    if (((doprocessSigmaSameEvent || doprocessSigmaMixedEvent) + (doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent)) > 1) {
+      LOG(fatal) << "Can only process sigma-tracks Or sigmaplus-tracks";
+    }
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
     mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
@@ -158,10 +160,7 @@ struct FemtoPairTrackKink {
       auto pairTrackSigmaPlusHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
       pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, sigmaPlusSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaplusHistSpec, chaDauSpec, pairTrackSigmaPlusHistSpec, cprHistSpec);
     }
-
-    if (((doprocessSigmaSameEvent || doprocessSigmaMixedEvent) + (doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent)) > 1) {
-      LOG(fatal) << "Can only process sigma-tracks Or sigmaplus-tracks";
-    }
+    hRegistry.print();
   };
 
   void processSigmaSameEvent(FilteredCollision const& col, Tracks const& tracks, Sigmas const& sigmas)

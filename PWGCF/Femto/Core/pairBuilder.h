@@ -91,24 +91,24 @@ class PairTrackTrackBuilder
     mPairHistManagerMe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
 
     if (mSameSpecies) {
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1.chargeAbs.value);
+      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
 
-      mPairHistManagerSe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection1.pdgCode.value);
+      mPairHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
       mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
 
-      mPairHistManagerMe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection1.pdgCode.value);
+      mPairHistManagerMe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection1.pdgCodeAbs.value);
       mPairHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
       mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection1.chargeAbs.value, confTrackSelection1.chargeAbs.value);
     } else {
-      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1.chargeAbs.value);
-      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2.chargeAbs.value);
+      mTrackHistManager1.template init<mode>(registry, trackHistSpec1, confTrackSelection1);
+      mTrackHistManager2.template init<mode>(registry, trackHistSpec2, confTrackSelection2);
 
-      mPairHistManagerSe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection2.pdgCode.value);
+      mPairHistManagerSe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
       mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
 
-      mPairHistManagerMe.setMass(confTrackSelection1.pdgCode.value, confTrackSelection2.pdgCode.value);
+      mPairHistManagerMe.setMass(confTrackSelection1.pdgCodeAbs.value, confTrackSelection2.pdgCodeAbs.value);
       mPairHistManagerMe.setCharge(confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
       mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection1.chargeAbs.value, confTrackSelection2.chargeAbs.value);
     }
@@ -266,24 +266,24 @@ class PairV0V0Builder
     mPairHistManagerMe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
 
     if (mSameSpecies) {
-      mV0HistManager1.template init<mode>(registry, V0HistSpec1, PosDauHistSpec, NegDauHistSpec);
+      mV0HistManager1.template init<mode>(registry, V0HistSpec1, confV0Selection1, PosDauHistSpec, NegDauHistSpec);
 
-      mPairHistManagerSe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
+      mPairHistManagerSe.setMass(confV0Selection1.pdgCodeAbs.value, confV0Selection1.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(1, 1);
       mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprPos);
 
-      mPairHistManagerMe.setMass(confV0Selection1.pdgCode.value, confV0Selection1.pdgCode.value);
+      mPairHistManagerMe.setMass(confV0Selection1.pdgCodeAbs.value, confV0Selection1.pdgCodeAbs.value);
       mPairHistManagerMe.setCharge(1, 1);
       mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
     } else {
-      mV0HistManager1.template init<mode>(registry, V0HistSpec1, PosDauHistSpec, NegDauHistSpec);
-      mV0HistManager2.template init<mode>(registry, V0HistSpec2, PosDauHistSpec, NegDauHistSpec);
+      mV0HistManager1.template init<mode>(registry, V0HistSpec1, confV0Selection1, PosDauHistSpec, NegDauHistSpec);
+      mV0HistManager2.template init<mode>(registry, V0HistSpec2, confV0Selection2, PosDauHistSpec, NegDauHistSpec);
 
-      mPairHistManagerSe.setMass(confV0Selection1.pdgCode.value, confV0Selection2.pdgCode.value);
+      mPairHistManagerSe.setMass(confV0Selection1.pdgCodeAbs.value, confV0Selection2.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(1, 1);
       mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
 
-      mPairHistManagerMe.setMass(confV0Selection1.pdgCode.value, confV0Selection2.pdgCode.value);
+      mPairHistManagerMe.setMass(confV0Selection1.pdgCodeAbs.value, confV0Selection2.pdgCodeAbs.value);
       mPairHistManagerMe.setCharge(1, 1);
       mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
     }
@@ -425,16 +425,16 @@ class PairTrackV0Builder
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 
-    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection.chargeAbs.value);
-    mV0HistManager.template init<mode>(registry, v0HistSpec, posDauHistSpec, negDauHistSpec);
+    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection);
+    mV0HistManager.template init<mode>(registry, v0HistSpec, confV0Selection, posDauHistSpec, negDauHistSpec);
 
     mPairHistManagerSe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confV0Selection.pdgCode.value);
+    mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
     mPairHistManagerMe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confV0Selection.pdgCode.value);
+    mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
@@ -533,16 +533,16 @@ class PairTrackTwoTrackResonanceBuilder
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 
-    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection.chargeAbs.value);
-    mResonanceHistManager.template init<mode>(registry, resonanceHistSpec, posDauHistSpec, negDauHistSpec);
+    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection);
+    mResonanceHistManager.template init<mode>(registry, resonanceHistSpec, confResonanceSelection, posDauHistSpec, negDauHistSpec);
 
     mPairHistManagerSe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confResonanceSelection.pdgCode.value);
+    mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
     mPairHistManagerMe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confResonanceSelection.pdgCode.value);
+    mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
@@ -638,16 +638,16 @@ class PairTrackKinkBuilder
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 
-    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection.chargeAbs.value);
-    mKinkHistManager.template init<mode>(registry, kinkHistSpec, chaDauHistSpec);
+    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection);
+    mKinkHistManager.template init<mode>(registry, kinkHistSpec, confKinkSelection, chaDauHistSpec);
 
     mPairHistManagerSe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
+    mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confKinkSelection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1); // abs charge of kink daughter is always 1
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
     mPairHistManagerMe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
+    mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confKinkSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1); // abs charge of kink daughter is always 1
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
@@ -755,16 +755,16 @@ class PairTrackCascadeBuilder
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 
-    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection.chargeAbs.value);
-    mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
+    mTrackHistManager.template init<mode>(registry, trackHistSpec, confTrackSelection);
+    mCascadeHistManager.template init<mode>(registry, cascadeHistSpec, confCascadeSelection, bachelorHistSpec, posDauHistSpec, negDauHistSpec);
 
     mPairHistManagerSe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
+    mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpecBachelor, cprHistSpecV0Daughter, confCprBachelor, confCprV0Daughter, confTrackSelection.chargeAbs.value);
 
     mPairHistManagerMe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
+    mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpecBachelor, cprHistSpecV0Daughter, confCprBachelor, confCprV0Daughter, confTrackSelection.chargeAbs.value);
 

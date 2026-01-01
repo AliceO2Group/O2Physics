@@ -514,6 +514,25 @@ class TrackHistManager
   ~TrackHistManager() = default;
 
   // init for analysis and mc
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            T const& ConfTrackSelection)
+  {
+    mHistogramRegistry = registry;
+    mAbsCharge = std::abs(ConfTrackSelection.chargeAbs.value);
+    mPdgCode = std::abs(ConfTrackSelection.pdgCodeAbs.value) * ConfTrackSelection.chargeSign.value;
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      this->initAnalysis(Specs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      this->initQa(Specs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(Specs);
+    }
+  }
+
   template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,
@@ -536,6 +555,16 @@ class TrackHistManager
   }
 
   // init for analysis and qa and mc
+  template <modes::Mode mode, typename T1, typename T2>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            T1 const& ConfTrackSelection,
+            T2 const& ConfBinningQa)
+  {
+    this->template enableOptionalHistograms<T2>(ConfBinningQa);
+    this->template init<mode>(registry, Specs, ConfTrackSelection);
+  }
+
   template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,

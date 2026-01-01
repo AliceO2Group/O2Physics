@@ -238,9 +238,6 @@ constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
 
-/// \class FemtoDreamEventHisto
-/// \brief Class for histogramming event properties
-// template <femtomodes::Mode mode>
 template <const char* prefix,
           modes::Particle particleType1,
           modes::Particle particleType2>
@@ -301,7 +298,6 @@ class PairHistManager
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
     // the pt stored is actually as pt/z for tracks, so in case of particles with z > 1, we have to rescale the pt (this is so far only for He3 the case)
-    // similarly, for neutral particles, no reason to rescale so we just set absolute charge to 1
     mAbsCharge1 = std::abs(chargeAbsParticle1);
     mAbsCharge2 = std::abs(chargeAbsParticle2);
   }

@@ -106,6 +106,13 @@ struct FemtoPairTrackTrack {
 
   void init(InitContext&)
   {
+    bool processData = doprocessSameEvent || doprocessMixedEvent;
+    bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
+
+    if (processData && processMc) {
+      LOG(fatal) << "Both data and mc processing is activated. Breaking...";
+    }
+
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
     mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
@@ -123,18 +130,12 @@ struct FemtoPairTrackTrack {
       LOG(fatal) << "More than 1 same or mixed event process function is activated. Breaking...";
     }
 
-    bool processData = doprocessSameEvent || doprocessMixedEvent;
-    bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
-
-    if (processData && processMc) {
-      LOG(fatal) << "Both data and mc processing is activated. Breaking...";
-    }
-
     if (processData) {
       pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     } else {
       pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     }
+    hRegistry.print();
   };
 
   void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks)

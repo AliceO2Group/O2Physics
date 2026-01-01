@@ -133,6 +133,9 @@ struct FemtoPairTrackV0 {
 
   void init(InitContext&)
   {
+    if (((doprocessLambdaSameEvent || doprocessLambdaMixedEvent) + (doprocessK0shortSameEvent || doprocessK0shortMixedEvent)) > 1) {
+      LOG(fatal) << "Can only process lambda-tracks Or k0short-tracks";
+    }
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
@@ -160,10 +163,7 @@ struct FemtoPairTrackV0 {
       auto pairTrackK0shortHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
       pairTrackK0shortBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairTrackK0shortHistSpec, cprHistSpec);
     }
-
-    if (((doprocessLambdaSameEvent || doprocessLambdaMixedEvent) + (doprocessK0shortSameEvent || doprocessK0shortMixedEvent)) > 1) {
-      LOG(fatal) << "Can only process lambda-tracks Or k0short-tracks";
-    }
+    hRegistry.print();
   };
 
   void processLambdaSameEvent(FilteredCollision const& col, Tracks const& tracks, Lambdas const& lambdas)
