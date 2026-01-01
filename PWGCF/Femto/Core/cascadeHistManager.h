@@ -173,41 +173,122 @@ class CascadeHistManager
   CascadeHistManager() = default;
   ~CascadeHistManager() = default;
 
-  template <modes::Mode mode>
+  template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs,
+            T const& ConfCascadeSelection,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& BachelorSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
-    mBachelorManager.template init<mode>(registry, BachelorSpecs, AbsChargeDaughters);
-    mPosDauManager.template init<mode>(registry, PosDauSpecs, AbsChargeDaughters);
-    mNegDauManager.template init<mode>(registry, NegDauSpecs, AbsChargeDaughters);
+    mPdgCode = std::abs(ConfCascadeSelection.pdgCodeAbs.value);
+
+    int bachelorPdgCodeAbs = 0;
+    int posDauPdgCodeAbs = 0;
+    int negDauPdgCodeAbs = 0;
+    const int absCharge = 1;
+    int signBachelor = 0;
+    const int signPlus = 1;
+    const int signMinus = -1;
+
+    if (mPdgCode == PDG_t::kXiMinus) {
+      if (ConfCascadeSelection.sign.value < 0) {
+        bachelorPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+        signBachelor = -1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kProton);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+      } else {
+        mPdgCode = -1 * mPdgCode; // Xi+ has negative pdg code
+        bachelorPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        signBachelor = 1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
+      }
+    } else if (mPdgCode == PDG_t::kOmegaMinus) {
+      if (ConfCascadeSelection.sign.value < 0) {
+        bachelorPdgCodeAbs = std::abs(PDG_t::kKMinus);
+        signBachelor = -1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kProton);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+      } else {
+        mPdgCode = -1 * mPdgCode; // Omega+ has negative pdg code
+        bachelorPdgCodeAbs = std::abs(PDG_t::kKPlus);
+        signBachelor = 1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
+      }
+    } else {
+      LOG(fatal) << "PDG code for Cascade has to be either Xi or Omega";
+    }
+
+    mBachelorManager.template init<mode>(registry, BachelorSpecs, absCharge, signBachelor, bachelorPdgCodeAbs);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
+
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(cascadeSpecs);
     }
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      initQa(cascadeSpecs);
-    }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> const& cascadeSpecs,
-            T1 const& CascadeConfBinningQa,
+            T1 const& ConfCascadeSelection,
+            T2 const& ConfCascadeBinningQa,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& BachelorSpecs,
-            T2 const& BachelorConfBinningQa,
+            T3 const& ConfBachelorQaBinning,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
-            T3 const& PosDauConfBinningQa,
+            T4& ConfPosDauQaBinning,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs,
-            T4 const& NegDauConfBinningQa)
+            T5& ConfNegDauQaBinning)
   {
     mHistogramRegistry = registry;
-    mBachelorManager.template init<mode>(registry, BachelorSpecs, BachelorConfBinningQa, AbsChargeDaughters);
-    mPosDauManager.template init<mode>(registry, PosDauSpecs, PosDauConfBinningQa, AbsChargeDaughters);
-    mNegDauManager.template init<mode>(registry, NegDauSpecs, NegDauConfBinningQa, AbsChargeDaughters);
-    this->enableOptionalHistograms(CascadeConfBinningQa);
+    mPdgCode = std::abs(ConfCascadeSelection.pdgCodeAbs.value);
+    this->enableOptionalHistograms(ConfCascadeBinningQa);
+
+    int bachelorPdgCodeAbs = 0;
+    int posDauPdgCodeAbs = 0;
+    int negDauPdgCodeAbs = 0;
+    const int absCharge = 1;
+    int signBachelor = 0;
+    const int signPlus = 1;
+    const int signMinus = -1;
+
+    if (mPdgCode == PDG_t::kXiMinus) {
+      if (ConfCascadeSelection.sign.value < 0) {
+        bachelorPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+        signBachelor = -1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kProton);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+      } else {
+        mPdgCode = -1 * mPdgCode; // Xi+ has negative pdg code
+        bachelorPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        signBachelor = 1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
+      }
+    } else if (mPdgCode == PDG_t::kOmegaMinus) {
+      if (ConfCascadeSelection.sign.value < 0) {
+        bachelorPdgCodeAbs = std::abs(PDG_t::kKMinus);
+        signBachelor = -1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kProton);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+      } else {
+        mPdgCode = -1 * mPdgCode; // Omega+ has negative pdg code
+        bachelorPdgCodeAbs = std::abs(PDG_t::kKPlus);
+        signBachelor = 1;
+        posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kProtonBar);
+      }
+    } else {
+      LOG(fatal) << "PDG code for Cascade has to be either Xi or Omega";
+    }
+
+    mBachelorManager.template init<mode>(registry, BachelorSpecs, absCharge, signBachelor, bachelorPdgCodeAbs, ConfBachelorQaBinning);
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs, ConfPosDauQaBinning);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs, ConfNegDauQaBinning);
+
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(cascadeSpecs);
     }
@@ -321,6 +402,7 @@ class CascadeHistManager
   trackhistmanager::TrackHistManager<bachelorPrefix> mBachelorManager;
   trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
+  int mPdgCode = 0;
 };
 }; // namespace cascadehistmanager
 }; // namespace o2::analysis::femto

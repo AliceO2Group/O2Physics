@@ -30,7 +30,6 @@
 #include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
-#include <map>
 #include <vector>
 
 using namespace o2::aod;
@@ -63,41 +62,54 @@ struct FemtoTrackQa {
   colhistmanager::CollisionHistManager colHistManager;
 
   // setup tracks
-  trackbuilder::ConfTrackSelection1 trackSelections;
+  trackbuilder::ConfTrackSelection1 confTrackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   trackhistmanager::ConfTrackQaBinning1 confTrackQaBinning;
-  trackhistmanager::ConfTrackMcBinning1 confTrackMcBinning;
   trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrackQa> trackHistManager;
 
-  Partition<FemtoTracks> trackPartition = MAKE_TRACK_PARTITION(trackSelections);
+  Partition<FemtoTracks> trackPartition = MAKE_TRACK_PARTITION(confTrackSelection);
   Preslice<FemtoTracks> perColReco = femtobase::stored::fColId;
 
-  Partition<FemtoTracksWithLabel> trackWithLabelPartition = MAKE_TRACK_PARTITION(trackSelections);
+  Partition<FemtoTracksWithLabel> trackWithLabelPartition = MAKE_TRACK_PARTITION(confTrackSelection);
   Preslice<FemtoTracksWithLabel> perColRecoWithLabel = femtobase::stored::fColId;
 
   HistogramRegistry hRegistry{"FemtoTrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  template <modes::Mode mode,
+            typename MakeColSpec,
+            typename MakeTrackSpec>
+  void initMode(MakeColSpec&& makeColSpec,
+                MakeTrackSpec&& makeTrackSpec)
+  {
+    auto colHistSpec = makeColSpec(confCollisionBinning, confCollisionQaBinning);
+    colHistManager.init<mode>(&hRegistry, colHistSpec, confCollisionQaBinning);
+    auto trackHistSpec = makeTrackSpec(confTrackBinning, confTrackQaBinning);
+
+    trackHistManager.init<mode>(
+      &hRegistry,
+      trackHistSpec,
+      confTrackSelection.chargeAbs.value,
+      confTrackSelection.chargeSign.value,
+      confTrackSelection.pdgCodeAbs.value,
+      confTrackQaBinning);
+  }
+
   void init(InitContext&)
   {
-
     if ((doprocessData + doprocessMc) > 1) {
       LOG(fatal) << "More than 1 process function is activated. Breaking...";
     }
-
     bool processData = doprocessData;
-
     if (processData) {
-      // create a map for histogram specs
       auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
       auto trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-      trackHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, trackHistSpec, confTrackQaBinning, trackSelections.chargeAbs.value);
+      trackHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, trackHistSpec, confTrackSelection.chargeAbs.value, confTrackSelection.chargeSign.value, confTrackSelection.pdgCodeAbs.value, confTrackQaBinning);
     } else {
-      // create a map for histogram specs
       auto colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionQaBinning);
-      auto trackHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confTrackBinning, confTrackQaBinning, confTrackMcBinning);
-      trackHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, trackHistSpec, confTrackQaBinning, confTrackMcBinning, trackSelections.chargeAbs.value);
+      auto trackHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confTrackBinning, confTrackQaBinning);
+      trackHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, trackHistSpec, confTrackSelection.chargeAbs.value, confTrackSelection.chargeSign.value, confTrackSelection.pdgCodeAbs.value, confTrackQaBinning);
     }
     hRegistry.print();
   };
@@ -112,7 +124,6 @@ struct FemtoTrackQa {
   };
   PROCESS_SWITCH(FemtoTrackQa, processData, "Track QA in Data", true);
 
-  // void processMc(FilteredFemtoCollisionWithLabel const& col, FemtoTracksWithLabel const& tracks, FMcCols const& mcCols,FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
   void processMc(FilteredFemtoCollisionWithLabel const& col, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FMcParticles const& mcParticles, FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
   {
     colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);

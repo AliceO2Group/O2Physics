@@ -70,6 +70,8 @@ enum PairHist {
   kKstarVsMass1VsMult,
   kKstarVsMass2VsMult,
   kKstarVsMass1VsMass2VsMult,
+  // mc
+  kTrueKstarVsKstar,
 
   kPairHistogramLast
 };
@@ -125,6 +127,8 @@ struct ConfPairCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> ktMin{"ktMin", -1, "Minimal kt (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMax{"mtMax", -1, "Maximal mt (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMin{"mtMin", -1, "Minimal mt (set to -1 to deactivate)"};
+  o2::framework::Configurable<bool> commonAnchestor{"commonAnchestor", false, "Pair has common anchestor"};
+  o2::framework::Configurable<bool> nonCommonAnchestor{"nonCommonAnchestor", false, "Pair has non-common anchestor"};
 };
 
 // the enum gives the correct index in the array
@@ -161,44 +165,56 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kKstarVsMass1VsMult, o2::framework::kTHnSparseF, "hKstarVsMass1VsMult", "k* vs m_{1} vs multiplicity; k* (GeV/#it{c}); m_{1} (GeV/#it{c}^{2}); Multiplicity"},
       {kKstarVsMass2VsMult, o2::framework::kTHnSparseF, "hKstarVsMass2VsMult", "k* vs m_{2} vs multiplicity; k* (GeV/#it{c}); m_{2} (GeV/#it{c}^{2}); Multiplicity"},
       {kKstarVsMass1VsMass2VsMult, o2::framework::kTHnSparseF, "hKstarVsMass1VsMass2VsMult", "k* vs m_{1} vs m_{2} vs multiplicity; k* (GeV/#it{c}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); Multiplicity"},
-
+      {kTrueKstarVsKstar, o2::framework::kTH2F, "hTrueKstarVsKstar", "k*_{True} vs k*; k*_{True} (GeV/#it{c});  k* (GeV/#it{c})"},
     }};
+
+#define PAIR_HIST_ANALYSIS_MAP(conf)                                                                                   \
+  {kKstar, {conf.kstar}},                                                                                              \
+    {kKt, {conf.kt}},                                                                                                  \
+    {kMt, {conf.mt}},                                                                                                  \
+    {kPt1VsPt2, {conf.pt1, conf.pt2}},                                                                                 \
+    {kPt1VsKstar, {conf.pt1, conf.kstar}},                                                                             \
+    {kPt2VsKstar, {conf.pt2, conf.kstar}},                                                                             \
+    {kPt1VsKt, {conf.pt1, conf.kt}},                                                                                   \
+    {kPt2VsKt, {conf.pt2, conf.kt}},                                                                                   \
+    {kPt1VsMt, {conf.pt1, conf.mt}},                                                                                   \
+    {kPt2VsMt, {conf.pt2, conf.mt}},                                                                                   \
+    {kKstarVsKt, {conf.kstar, conf.kt}},                                                                               \
+    {kKstarVsMt, {conf.kstar, conf.mt}},                                                                               \
+    {kKstarVsMult, {conf.kstar, conf.multiplicity}},                                                                   \
+    {kKstarVsCent, {conf.kstar, conf.centrality}},                                                                     \
+    {kKstarVsMass1, {conf.kstar, conf.mass1}},                                                                         \
+    {kKstarVsMass2, {conf.kstar, conf.mass2}},                                                                         \
+    {kMass1VsMass2, {conf.mass1, conf.mass2}},                                                                         \
+    {kKstarVsMtVsMult, {conf.kstar, conf.mt, conf.multiplicity}},                                                      \
+    {kKstarVsMtVsMultVsCent, {conf.kstar, conf.mt, conf.multiplicity, conf.centrality}},                               \
+    {kKstarVsMtVsPt1VsPt2VsMult, {conf.kstar, conf.mt, conf.pt1, conf.pt2, conf.multiplicity}},                        \
+    {kKstarVsMtVsPt1VsPt2VsMultVsCent, {conf.kstar, conf.mt, conf.pt1, conf.pt2, conf.multiplicity, conf.centrality}}, \
+    {kKstarVsMass1VsMass2, {conf.kstar, conf.mass1, conf.mass2}},                                                      \
+    {kKstarVsMass1VsMult, {conf.kstar, conf.mass1, conf.multiplicity}},                                                \
+    {kKstarVsMass2VsMult, {conf.kstar, conf.mass2, conf.multiplicity}},                                                \
+    {kKstarVsMass1VsMass2VsMult, {conf.kstar, conf.mass1, conf.mass2, conf.multiplicity}},
+
+#define PAIR_HIST_MC_MAP(conf) \
+  {kTrueKstarVsKstar, {conf.kstar, conf.kstar}},
 
 template <typename T>
 auto makePairHistSpecMap(const T& confPairBinning)
 {
   return std::map<PairHist, std::vector<framework::AxisSpec>>{
-    {kKstar, {confPairBinning.kstar}},
-    {kKt, {confPairBinning.kt}},
-    {kMt, {confPairBinning.mt}},
-    {kPt1VsPt2, {confPairBinning.pt1, confPairBinning.pt2}},
-    {kPt1VsKstar, {confPairBinning.pt1, confPairBinning.kstar}},
-    {kPt2VsKstar, {confPairBinning.pt2, confPairBinning.kstar}},
-    {kPt1VsKt, {confPairBinning.pt1, confPairBinning.kt}},
-    {kPt2VsKt, {confPairBinning.pt2, confPairBinning.kt}},
-    {kPt1VsMt, {confPairBinning.pt1, confPairBinning.mt}},
-    {kPt2VsMt, {confPairBinning.pt2, confPairBinning.mt}},
-    {kKstarVsKt, {confPairBinning.kstar, confPairBinning.kt}},
-    {kKstarVsMt, {confPairBinning.kstar, confPairBinning.mt}},
-    {kKstarVsMult, {confPairBinning.kstar, confPairBinning.multiplicity}},
-    {kKstarVsCent, {confPairBinning.kstar, confPairBinning.centrality}},
-
-    {kKstarVsMass1, {confPairBinning.kstar, confPairBinning.mass1}},
-    {kKstarVsMass2, {confPairBinning.kstar, confPairBinning.mass2}},
-    {kMass1VsMass2, {confPairBinning.mass1, confPairBinning.mass2}},
-
-    {kKstarVsMtVsMult, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.multiplicity}},
-    {kKstarVsMtVsMultVsCent, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.multiplicity, confPairBinning.centrality}},
-    {kKstarVsMtVsPt1VsPt2VsMult, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.pt1, confPairBinning.pt2, confPairBinning.multiplicity}},
-    {kKstarVsMtVsPt1VsPt2VsMultVsCent, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.pt1, confPairBinning.pt2, confPairBinning.multiplicity, confPairBinning.centrality}},
-
-    {kKstarVsMass1VsMass2, {confPairBinning.kstar, confPairBinning.mass1, confPairBinning.mass2}},
-    {kKstarVsMass1VsMult, {confPairBinning.kstar, confPairBinning.mass1, confPairBinning.multiplicity}},
-    {kKstarVsMass2VsMult, {confPairBinning.kstar, confPairBinning.mass2, confPairBinning.multiplicity}},
-    {kKstarVsMass1VsMass2VsMult, {confPairBinning.kstar, confPairBinning.mass1, confPairBinning.mass2, confPairBinning.multiplicity}},
-
-  };
+    PAIR_HIST_ANALYSIS_MAP(confPairBinning)};
 };
+
+template <typename T>
+auto makePairHistMcSpecMap(const T& confPairBinning)
+{
+  return std::map<PairHist, std::vector<framework::AxisSpec>>{
+    PAIR_HIST_ANALYSIS_MAP(confPairBinning)
+      PAIR_HIST_MC_MAP(confPairBinning)};
+};
+
+#undef PAIR_HIST_ANALYSIS_MAP
+#undef PAIR_HIST_MC_MAP
 
 constexpr char PrefixTrackTrackSe[] = "TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
@@ -220,6 +236,7 @@ constexpr char PrefixTrackKinkMe[] = "TrackKink/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
+constexpr std::string_view McDir = "MC/";
 
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
@@ -497,10 +514,10 @@ class PairHistManager
   {
     switch (mMtType) {
       case modes::TransverseMassType::kAveragePdgMass:
-        mMt = std::hypot(PairMomentum.Pt() / 2.f, mAverageMass);
+        mMt = std::hypot(mKt, mAverageMass);
         break;
       case modes::TransverseMassType::kReducedPdgMass:
-        mMt = std::hypot(PairMomentum.Pt() / 2.f, mReducedMass);
+        mMt = std::hypot(mKt, mReducedMass);
         break;
       case modes::TransverseMassType::kMt4Vector:
         mMt = PairMomentum.Mt() / 2.f;

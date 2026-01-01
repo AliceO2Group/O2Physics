@@ -1,7 +1,7 @@
 // Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
-//
+
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
@@ -84,7 +84,6 @@ struct FemtoKinkQa {
 
   kinkhistmanager::ConfSigmaBinning1 confSigmaBinning;
   kinkhistmanager::ConfSigmaQaBinning1 confSigmaQaBinning;
-  kinkhistmanager::ConfSigmaMcBinning confSigmaMcBinning;
   kinkhistmanager::KinkHistManager<
     kinkhistmanager::PrefixSigmaQa,
     trackhistmanager::PrefixKinkChaDaughterQa,
@@ -102,7 +101,6 @@ struct FemtoKinkQa {
 
   kinkhistmanager::ConfSigmaPlusBinning1 confSigmaPlusBinning;
   kinkhistmanager::ConfSigmaPlusQaBinning1 confSigmaPlusQaBinning;
-  kinkhistmanager::ConfSigmaPlusMcBinning confSigmaPlusMcBinning;
   kinkhistmanager::KinkHistManager<
     kinkhistmanager::PrefixSigmaPlusQa,
     trackhistmanager::PrefixKinkChaDaughterQa,
@@ -112,7 +110,6 @@ struct FemtoKinkQa {
   // setup for daughters
   trackhistmanager::ConfKinkChaDauBinning confKinkChaDaughterBinning;
   trackhistmanager::ConfKinkChaDauQaBinning confKinkChaDaughterQaBinning;
-  trackhistmanager::ConfKinkChaDauMcBinning confKinkChaDaughterMcBinning;
 
   HistogramRegistry hRegistry{"FemtoKinkQa", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -130,23 +127,23 @@ struct FemtoKinkQa {
       auto chaDauHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
       if (doprocessSigma) {
         auto sigmaHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
-        sigmaHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaHistSpec, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+        sigmaHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaHistSpec, confSigmaSelection, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
       if (doprocessSigmaPlus) {
         auto sigmaPlusHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaPlusBinning, confSigmaPlusQaBinning);
-        sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
+        sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusSelection, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
     } else {
       auto colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionQaBinning);
-      auto chaDauHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning, confKinkChaDaughterMcBinning);
+      auto chaDauHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
       if (doprocessSigmaMc) {
-        auto sigmaHistSpec = kinkhistmanager::makeKinkMcQaHistSpecMap(confSigmaBinning, confSigmaQaBinning, confSigmaMcBinning);
-        sigmaHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, sigmaHistSpec, confSigmaQaBinning, confSigmaMcBinning, chaDauHistSpec, confKinkChaDaughterQaBinning, confKinkChaDaughterMcBinning);
+        auto sigmaHistSpec = kinkhistmanager::makeKinkMcQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
+        sigmaHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, sigmaHistSpec, confSigmaSelection, confSigmaQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
       if (doprocessSigmaPlusMc) {
-        auto sigmaPlusHistSpec = kinkhistmanager::makeKinkMcQaHistSpecMap(confSigmaPlusBinning, confSigmaPlusQaBinning, confSigmaPlusMcBinning);
-        sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusQaBinning, confSigmaPlusMcBinning, chaDauHistSpec, confKinkChaDaughterQaBinning, confKinkChaDaughterMcBinning);
+        auto sigmaPlusHistSpec = kinkhistmanager::makeKinkMcQaHistSpecMap(confSigmaPlusBinning, confSigmaPlusQaBinning);
+        sigmaPlusHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, sigmaPlusHistSpec, confSigmaPlusSelection, confSigmaPlusQaBinning, chaDauHistSpec, confKinkChaDaughterQaBinning);
       }
     }
     hRegistry.print();

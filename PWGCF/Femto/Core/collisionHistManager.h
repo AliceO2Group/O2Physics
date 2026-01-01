@@ -102,8 +102,8 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kMultVsSphericity, {confAnalysis.mult, confQa.sphericity}}, \
     {kCentVsSphericity, {confBinningAnalysis.cent, confQa.sphericity}},
 
-#define COL_HIST_MC_QA_MAP(conf) \
-  {kMcMult, {conf.mult}},        \
+#define COL_HIST_MC_MAP(conf) \
+  {kMcMult, {conf.mult}},     \
     {kMcCent, {conf.cent}},
 
 template <typename T>
@@ -127,12 +127,12 @@ auto makeColMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinning
   return std::map<ColHist, std::vector<framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
-        COL_HIST_MC_QA_MAP(confBinningAnalysis)};
+        COL_HIST_MC_MAP(confBinningAnalysis)};
 }
 
 #undef COL_HIST_ANALYSIS_MAP
 #undef COL_HIST_QA_MAP
-#undef COL_HIST_MC_QA_MAP
+#undef COL_HIST_MC_MAP
 
 struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBinning");

@@ -717,7 +717,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first dir
 using FMcMothers = FMcMothers_001;
 using FMcMother = FMcMothers::iterator;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! last partonic mother of the monte carlo particle
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! first partonic mother of the monte carlo particle after hadronization
                                    o2::soa::Index<>,
                                    femtomcparticle::PdgCode);
 using FMcPartMoths = FMcPartMoths_001;
