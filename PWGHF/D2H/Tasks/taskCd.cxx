@@ -101,12 +101,8 @@ DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::DecayLength,
                   full::Cpa,
                   full::NSigmaTpcDe,
-                  full::NSigmaTpcKa,
-                  full::NSigmaTpcPi,
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
-                  full::NSigmaTofKa,
-                  full::NSigmaTofPi,
                   full::NItsClusters,
                   full::NItsNClusterSize,
                   full::NTpcClusters,
@@ -209,12 +205,15 @@ struct HfTaskCd {
     registry.add("Data/hImpParErrProng0", "3-prong candidates;prong 0 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/hNsigmaTPCDeVsP", "deuteron;n#sigma^{TPC}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
-    registry.add("Data/hNsigmaTOFDeVsP", "deuteron;n#sigma^{TOF}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
-    registry.add("Data/hNsigmaITSDeVsP", "deuteron;n#sigma^{ITS}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
-    registry.add("Data/hTPCSignalDeVsP", "deuteron;n#sigma^{ITS}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {2000, 0, 2000}}});
-    registry.add("Data/hITSSignalDeVsP", "deuteron;n#sigma^{ITS}_{d};#it{p} (GeV/#it{c})", {HistType::kTH2F, {{200, -10.f, 10.f}, {20, 0, 20}}});
-
+    registry.add("Data/hNsigmaTPCDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{TPC}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaTOFDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{TOF}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaITSDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{ITS}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hTPCSignalDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{ITS}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {2000, 0, 2000}}});
+    registry.add("Data/hITSSignalDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{ITS}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {20, 0, 20}}});
+    registry.add("Data/hNsigmaTPCPiVsP", "Pion;#it{p} (GeV/#it{c});n#sigma^{TPC}_{pi};", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaTOFPiVsP", "Pion;#it{p} (GeV/#it{c});n#sigma^{TOF}_{pi};", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaTPCKaVsP", "Kaon;#it{p} (GeV/#it{c}); n#sigma^{TPC}_{Kaon}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaTOFKaVsP", "Kaon;#it{p} (GeV/#it{c}); n#sigma^{TOF}_{Kaon}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (de K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(C_{d}^{+}) (GeV/#it{c})"};
@@ -351,54 +350,59 @@ struct HfTaskCd {
         float tpcSignalsDe = 0.f;
         float itsSignalsDe = 0.f;
 
+        float pSignedDe = -999.f;
+        float pSignedPi = -999.f;
+
         nSigmaTpcKa = candidate.nSigTpcKa1();
         nSigmaTofKa = candidate.nSigTofKa1();
 
         const bool selDeKPi = (candidate.isSelCdToDeKPi() >= 1);
         const bool selPiKDe = (candidate.isSelCdToPiKDe() >= 1);
 
-        TrackType trackDe{};
-        bool hasDe = false;
+        auto prong0 = candidate.template prong0_as<TrackType>();
+        auto prong1 = candidate.template prong1_as<TrackType>();
+        auto prong2 = candidate.template prong2_as<TrackType>();
 
         if (selDeKPi) {
-          auto trk0 = candidate.template prong0_as<TrackType>();
-          trackDe = trk0;
-          hasDe = true;
-
           candFlag = 1;
+          pSignedDe = prong0.p() * prong0.sign();
+          pSignedPi = prong2.p() * prong2.sign();
           nSigmaTpcDe = candidate.nSigTpcDe0();
           nSigmaTofDe = candidate.nSigTofDe0();
           nSigmaTpcPi = candidate.nSigTpcPi2();
           nSigmaTofPi = candidate.nSigTofPi2();
+          nSigmaItsDe = prong0.itsNSigmaDe();
+          itsNClusterDe = prong0.itsNCls();
+          itsNClusterSizeDe = prong0.itsClusterSizes();
+          tpcNClusterDe = prong0.tpcNClsCrossedRows();
+          tpcSignalsDe = prong0.tpcSignal();
+          itsSignalsDe = itsSignal(prong0);
         } else if (selPiKDe) {
-          auto trk2 = candidate.template prong2_as<TrackType>();
-          trackDe = trk2;
-          hasDe = true;
-
           candFlag = -1;
+          pSignedDe = prong2.p() * prong2.sign();
+          pSignedPi = prong0.p() * prong0.sign();
           nSigmaTpcDe = candidate.nSigTpcDe2();
           nSigmaTofDe = candidate.nSigTofDe2();
           nSigmaTpcPi = candidate.nSigTpcPi0();
           nSigmaTofPi = candidate.nSigTofPi0();
+          nSigmaItsDe = prong2.itsNSigmaDe();
+          itsNClusterDe = prong2.itsNCls();
+          itsNClusterSizeDe = prong2.itsClusterSizes();
+          tpcNClusterDe = prong2.tpcNClsCrossedRows();
+          tpcSignalsDe = prong2.tpcSignal();
+          itsSignalsDe = itsSignal(prong2);
         }
 
-        if (hasDe) {
-          const float pSigned = trackDe.p() * trackDe.sign();
-
-          nSigmaItsDe = trackDe.itsNSigmaDe();
-          itsNClusterDe = trackDe.itsNCls();
-          itsNClusterSizeDe = trackDe.itsClusterSizes();
-          tpcNClusterDe = trackDe.tpcNClsCrossedRows();
-          tpcSignalsDe = trackDe.tpcSignal();
-          itsSignalsDe = itsSignal(trackDe);
-
-          // De PID QA
-          registry.fill(HIST("Data/hNsigmaTPCDeVsP"), pSigned, nSigmaTpcDe);
-          registry.fill(HIST("Data/hNsigmaTOFDeVsP"), pSigned, nSigmaTofDe);
-          registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSigned, nSigmaItsDe);
-          registry.fill(HIST("Data/hTPCSignalDeVsP"), pSigned, tpcSignalsDe);
-          registry.fill(HIST("Data/hITSSignalDeVsP"), pSigned, itsSignalsDe);
-        }
+        //  PID QA
+        registry.fill(HIST("Data/hNsigmaTPCDeVsP"), pSignedDe, nSigmaTpcDe);
+        registry.fill(HIST("Data/hNsigmaTOFDeVsP"), pSignedDe, nSigmaTofDe);
+        registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSignedDe, nSigmaItsDe);
+        registry.fill(HIST("Data/hTPCSignalDeVsP"), pSignedDe, tpcSignalsDe);
+        registry.fill(HIST("Data/hITSSignalDeVsP"), pSignedDe, itsSignalsDe);
+        registry.fill(HIST("Data/hNsigmaTPCPiVsP"), pSignedPi, nSigmaTpcPi);
+        registry.fill(HIST("Data/hNsigmaTOFPiVsP"), pSignedPi, nSigmaTofPi);
+        registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.p() * prong1.sign(), nSigmaTpcKa);
+        registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.p() * prong1.sign(), nSigmaTofKa);
 
         rowCandCd(
           invMassCd,
@@ -412,12 +416,8 @@ struct HfTaskCd {
           decayLength,
           cpa,
           nSigmaTpcDe,
-          nSigmaTpcKa,
-          nSigmaTpcPi,
           nSigmaItsDe,
           nSigmaTofDe,
-          nSigmaTofKa,
-          nSigmaTofPi,
           itsNClusterDe,
           itsNClusterSizeDe,
           tpcNClusterDe,
