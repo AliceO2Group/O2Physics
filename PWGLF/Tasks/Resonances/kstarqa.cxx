@@ -357,7 +357,6 @@ struct Kstarqa {
       hInvMass.add("MCcorrections/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("MCcorrections/hImpactParameterRec", "Impact parameter in reconstructed MC", kTH1F, {impactParAxis});
       hInvMass.add("MCcorrections/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
-      hInvMass.add("MCcorrections/MultiplicityRec2", "Multiplicity in reconstructed MC", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParameterGen", "Impact parameter in generated MC", kTH1F, {impactParAxis});
       hInvMass.add("MCcorrections/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParametervsMultiplicity", "Impact parameter vs multiplicity in reconstructed MC", kTH2F, {{impactParAxis}, {multiplicityAxis}});
@@ -385,10 +384,10 @@ struct Kstarqa {
 
       hInvMass.add("CorrFactors/h2dGenKstar", "Centrality vs p_{T}", kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
       hInvMass.add("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity", "MC centrality vs centrality vs p_{T}", kTH3D, {axisNch, {101, 0.0f, 101.0f}, ptAxis});
-      hInvMass.add("CorrFactors/hSignalLossDenominator3D", "Kstar generated before event selection", kTH3F, {{ptAxis}, {multiplicityAxis}, axisNch});
-      hInvMass.add("CorrFactors/hSignalLossNumerator3D", "Kstar generated after event selection", kTH3F, {{ptAxis}, {multiplicityAxis}, axisNch});
-      hInvMass.add("CorrFactors/MultiplicityRec2D", "Multiplicity in generated MC with at least 1 reconstruction", kTH2F, {{multiplicityAxis}, axisNch});
-      hInvMass.add("CorrFactors/MultiplicityGen2D", "Multiplicity in generated MC", kTH2F, {{multiplicityAxis}, axisNch});
+      hInvMass.add("CorrFactors/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {axisNch}});
+      hInvMass.add("CorrFactors/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {axisNch}});
+      hInvMass.add("CorrFactors/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {axisNch});
+      hInvMass.add("CorrFactors/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {axisNch});
     }
 
     rEventSelection.add("tracksCheckData", "No. of events in the data", kTH1I, {{10, 0, 10}});
@@ -1743,7 +1742,6 @@ struct Kstarqa {
     if (isSelectedEvent) {
       hInvMass.fill(HIST("MCcorrections/hImpactParameterRec"), impactPar);
       hInvMass.fill(HIST("MCcorrections/MultiplicityRec"), multiplicityGen);
-      hInvMass.fill(HIST("MCcorrections/MultiplicityRec2"), multiplicityRec);
       hInvMass.fill(HIST("MCcorrections/hImpactParametervsMultiplicity"), impactPar, multiplicity1);
     }
 
@@ -1762,19 +1760,21 @@ struct Kstarqa {
 
   void processEvSigLossFactors(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, LabeledTracks const&, aod::McParticles const& mcParticles)
   {
-    hInvMass.fill(HIST("CorrFactors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 0.5);
+    auto multiplicityNch = -1;
+    multiplicityNch = mcCollision.multMCNParticlesEta05();
+    hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 0.5);
 
-    if (std::abs(mcCollision.posZ()) > selectionConfig.cutzvertex)
+    if (selectionConfig.checkVzEvSigLoss && std::abs(mcCollision.posZ()) > selectionConfig.cutzvertex)
       return;
 
-    hInvMass.fill(HIST("CorrFactors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 1.5);
+    hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 1.5);
 
     if (selectionConfig.isINELgt0 && !mcCollision.isInelGt0()) {
       return;
     }
-    hInvMass.fill(HIST("CorrFactors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 2.5);
+    hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 2.5);
 
-    float multiplicity = 100.5f;
+    float multiplicity = -1.0;
     bool isSelectedEvent = false;
 
     for (auto const& collision : collisions) {
@@ -1800,11 +1800,11 @@ struct Kstarqa {
     // auto multiplicityGen = -1;
     // multiplicityGen = mcCollision.centFT0M();
 
-    hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, mcCollision.multMCNParticlesEta08());
+    hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, multiplicityNch);
     hInvMass.fill(HIST("CorrFactors/hNrecInGen"), collisions.size());
-    hInvMass.fill(HIST("CorrFactors/MultiplicityGen2D"), multiplicity, mcCollision.multMCNParticlesEta08());
+    hInvMass.fill(HIST("CorrFactors/MultiplicityGen"), multiplicityNch);
     if (isSelectedEvent) {
-      hInvMass.fill(HIST("CorrFactors/MultiplicityRec2D"), multiplicity, mcCollision.multMCNParticlesEta08());
+      hInvMass.fill(HIST("CorrFactors/MultiplicityRec"), multiplicityNch);
     }
 
     for (const auto& mcParticle : mcParticles) {
@@ -1850,10 +1850,10 @@ struct Kstarqa {
           mother = daughter1 + daughter2; // Kstar meson
 
           hInvMass.fill(HIST("CorrFactors/h2dGenKstar"), multiplicity, mother.Pt());
-          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), mcCollision.multMCNParticlesEta08(), multiplicity, mother.Pt());
-          hInvMass.fill(HIST("CorrFactors/hSignalLossDenominator3D"), mother.pt(), multiplicity, mcCollision.multMCNParticlesEta08());
+          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicity, mother.Pt());
+          hInvMass.fill(HIST("CorrFactors/hSignalLossDenominator"), mother.pt(), multiplicityNch);
           if (isSelectedEvent) {
-            hInvMass.fill(HIST("CorrFactors/hSignalLossNumerator3D"), mother.pt(), multiplicity, mcCollision.multMCNParticlesEta08());
+            hInvMass.fill(HIST("CorrFactors/hSignalLossNumerator"), mother.pt(), multiplicityNch);
           }
         }
       }
@@ -1862,7 +1862,7 @@ struct Kstarqa {
     if (collisions.size() == 0)
       return;
 
-    hInvMass.fill(HIST("CorrFactors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 3.5);
+    hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 3.5);
   }
   PROCESS_SWITCH(Kstarqa, processEvSigLossFactors, "Process Event and Signal loss", false);
 
@@ -2171,7 +2171,7 @@ struct Kstarqa {
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
     hInvMass.fill(HIST("hAllRecCollisionsCalib"), multiplicityRec);
 
-    if (!selectionEvent(collision, false)) { // don't fill event cut histogram
+    if (!selectionEvent(collision, true)) { // don't fill event cut histogram
       return;
     }
 
@@ -3079,7 +3079,6 @@ struct Kstarqa {
       } else {
         multiplicity1 = RecCollision.centFT0M(); // default
       }
-
       isSelectedEvent = true;
     }
 
@@ -3087,7 +3086,6 @@ struct Kstarqa {
     if (isSelectedEvent) {
       hInvMass.fill(HIST("MCcorrections/hImpactParameterRec"), impactPar);
       hInvMass.fill(HIST("MCcorrections/MultiplicityRec"), multiplicityGen);
-      hInvMass.fill(HIST("MCcorrections/MultiplicityRec2"), multiplicityRec);
       hInvMass.fill(HIST("MCcorrections/hImpactParametervsMultiplicity"), impactPar, multiplicity1);
     }
 
