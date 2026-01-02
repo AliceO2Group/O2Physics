@@ -53,7 +53,7 @@ class BasePairCleaner
   template <typename T1, typename T2, typename T3>
   bool pairHasCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*partonicMothers*/) const
   {
-    // if one of the two particles has no associated partonic mother, we cannot now if  they have a common anchestor, so we break out with false
+    // if one of the two particles has no associated partonic mother, we cannot now if they have a common anchestor, so we break out with false
     if (!particle1.has_fMcPartMoth() || !particle2.has_fMcPartMoth()) {
       return false;
     }
@@ -67,7 +67,7 @@ class BasePairCleaner
   template <typename T1, typename T2, typename T3>
   bool pairHasNonCommonAncestor(T1 const& particle1, T2 const& particle2, T3 const& /*partonicMothers*/) const
   {
-    // if one of the two particles has no associated partonic mother, we cannot now if  they have a common anchestor, so we break out with false
+    // if one of the two particles has no associated partonic mother, we cannot now if they have a non-common anchestor, so we break out with false
     if (!particle1.has_fMcPartMoth() || !particle2.has_fMcPartMoth()) {
       return false;
     }
@@ -96,8 +96,7 @@ class TrackTrackPairCleaner : public BasePairCleaner
   template <typename T1, typename T2, typename T3, typename T4>
   bool isCleanPair(T1 const& track1, T2 const& track2, T3 const& /*trackTable*/, T4 const& partonicMothers) const
   {
-    bool isCleanPair = this->isCleanTrackPair(track1, track2);
-    if (!isCleanPair) {
+    if (!this->isCleanTrackPair(track1, track2)) {
       return false;
     }
     // pair is clean
@@ -137,6 +136,23 @@ class TrackV0PairCleaner : public BasePairCleaner // also works for particles de
     auto posDaughter = trackTable.rawIteratorAt(v0.posDauId() - trackTable.offset());
     auto negDaughter = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
     return (this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track));
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool isCleanPair(T1 const& track1, T2 const& v0, T3 const& trackTable, T4 const& partonicMothers) const
+  {
+    if (!this->isCleanPair(track1, v0, trackTable)) {
+      return false;
+    }
+    // pair is clean
+    // no check if we require common or non-common ancestry
+    if (mMixPairsWithCommonAncestor) {
+      return this->pairHasCommonAncestor(track1, v0, partonicMothers);
+    }
+    if (mMixPairsWithNonCommonAncestor) {
+      return this->pairHasNonCommonAncestor(track1, v0, partonicMothers);
+    }
+    return true;
   }
 };
 

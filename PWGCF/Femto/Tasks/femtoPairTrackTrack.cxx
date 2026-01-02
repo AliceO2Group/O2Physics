@@ -68,17 +68,17 @@ struct FemtoPairTrackTrack {
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   // setup tracks
-  trackbuilder::ConfTrackSelection1 trackSelections1;
+  trackbuilder::ConfTrackSelection1 confTrackSelections1;
   trackhistmanager::ConfTrackBinning1 confTrackBinning1;
-  trackbuilder::ConfTrackSelection2 trackSelections2;
+  trackbuilder::ConfTrackSelection2 confTrackSelections2;
   trackhistmanager::ConfTrackBinning2 confTrackBinning2;
 
-  Partition<FemtoTracks> trackPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
-  Partition<FemtoTracks> trackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
+  Partition<FemtoTracks> trackPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
+  Partition<FemtoTracks> trackPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
   Preslice<FemtoTracks> perColtracks = aod::femtobase::stored::fColId;
 
-  Partition<FemtoTracksWithLabel> trackWithLabelPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
-  Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
+  Partition<FemtoTracksWithLabel> trackWithLabelPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
+  Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
   Preslice<FemtoTracksWithLabel> perColtracksWithLabel = aod::femtobase::stored::fColId;
 
   // setup pairs
@@ -109,14 +109,11 @@ struct FemtoPairTrackTrack {
 
   void init(InitContext&)
   {
-
     if ((doprocessSameEvent + doprocessSameEventMc) > 1 || (doprocessMixedEvent + doprocessMixedEventMc) > 1) {
       LOG(fatal) << "More than 1 same or mixed event process function is activated. Breaking...";
     }
-
     bool processData = doprocessSameEvent || doprocessMixedEvent;
     bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
-
     if (processData && processMc) {
       LOG(fatal) << "Both data and mc processing is activated. Breaking...";
     }
@@ -135,13 +132,13 @@ struct FemtoPairTrackTrack {
       auto trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       auto trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     } else {
       auto colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       auto trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       auto trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
       auto pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     }
     hRegistry.print();
   };
