@@ -1691,7 +1691,7 @@ struct Kstarqa {
   void processEvtLossSigLossMC(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
   // void processEvtLossSigLossMC(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
   {
-    auto multiplicityRec = -1;
+    // auto multiplicityRec = -1;
     bool isSelectedEvent = false;
     auto multiplicity1 = -999.;
 
@@ -1701,8 +1701,8 @@ struct Kstarqa {
       if (!selectionEvent(RecCollision, false)) // don't fill event cut histogram
         continue;
 
-      const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
-      multiplicityRec = mcCollisionRec.centFT0M();
+      // const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
+      // multiplicityRec = mcCollisionRec.centFT0M();
 
       if (cSelectMultEstimator == kFT0M) {
         multiplicity1 = RecCollision.centFT0M();
@@ -3051,7 +3051,7 @@ struct Kstarqa {
     }
 
     auto impactPar = mcCollision.impactParameter();
-    auto multiplicityRec = -1;
+    // auto multiplicityRec = -1;
     auto multiplicityGen = -1;
     multiplicityGen = mcCollision.centFT0M();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);
@@ -3065,8 +3065,8 @@ struct Kstarqa {
       if (!selectionEvent(RecCollision, false)) // don't fill event cut histogram
         continue;
       // multiplicity1 = RecCollision.centFT0M();
-      const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
-      multiplicityRec = mcCollisionRec.centFT0M();
+      // const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
+      // multiplicityRec = mcCollisionRec.centFT0M();
 
       if (cSelectMultEstimator == kFT0M) {
         multiplicity1 = RecCollision.centFT0M();
