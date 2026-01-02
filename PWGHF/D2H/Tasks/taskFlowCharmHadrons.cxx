@@ -530,11 +530,10 @@ struct HfTaskFlowCharmHadrons {
       float signCand = 0.;
       std::vector<float> outputMl = {-999., -999.};
       if constexpr (std::is_same_v<T1, CandDsData> || std::is_same_v<T1, CandDsDataWMl>) {
-        auto trackprong0 = candidate.template prong0_as<Trk>();
-        signCand = trackprong0.sign();
         switch (Channel) {
           case DecayChannel::DsToKKPi:
             massCand = HfHelper::invMassDsToKKPi(candidate);
+            signCand = 1;
             if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
@@ -543,6 +542,7 @@ struct HfTaskFlowCharmHadrons {
             break;
           case DecayChannel::DsToPiKK:
             massCand = HfHelper::invMassDsToPiKK(candidate);
+            signCand = -1;
             if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
@@ -585,11 +585,10 @@ struct HfTaskFlowCharmHadrons {
             break;
         }
       } else if constexpr (std::is_same_v<T1, CandLcData> || std::is_same_v<T1, CandLcDataWMl>) {
-        auto trackprong0 = candidate.template prong0_as<Trk>();
-        signCand = trackprong0.sign();
         switch (Channel) {
           case DecayChannel::LcToPKPi:
             massCand = HfHelper::invMassLcToPKPi(candidate);
+            signCand = 1;
             if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
@@ -598,6 +597,7 @@ struct HfTaskFlowCharmHadrons {
             break;
           case DecayChannel::LcToPiKP:
             massCand = HfHelper::invMassLcToPiKP(candidate);
+            signCand = -1;
             if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
@@ -608,11 +608,10 @@ struct HfTaskFlowCharmHadrons {
             break;
         }
       } else if constexpr (std::is_same_v<T1, CandXicData> || std::is_same_v<T1, CandXicDataWMl>) {
-        auto trackprong0 = candidate.template prong0_as<Trk>();
-        signCand = trackprong0.sign();
         switch (Channel) {
           case DecayChannel::XicToPKPi:
             massCand = HfHelper::invMassXicToPKPi(candidate);
+            signCand = 1;
             if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbXicToPKPi()[classMl->at(iclass)];
@@ -621,6 +620,7 @@ struct HfTaskFlowCharmHadrons {
             break;
           case DecayChannel::XicToPiKP:
             massCand = HfHelper::invMassXicToPiKP(candidate);
+            signCand = -1;
             if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbXicToPiKP()[classMl->at(iclass)];
