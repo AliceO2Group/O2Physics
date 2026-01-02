@@ -85,10 +85,10 @@ struct LambdaJetpolarization {
   Configurable<float> ptMinV0Pion{"ptMinV0Pion", 0.1f, "pt min of pion from V0"};
   Configurable<float> ptMaxV0Pion{"ptMaxV0Pion", 1.5f, "pt max of pion from V0"};
 
-  Configurable<float> nsigmaTPCmin{"nsigmaTPCmin", -5.0f, "Minimum nsigma TPC"};
-  Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +5.0f, "Maximum nsigma TPC"};
-  Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -5.0f, "Minimum nsigma TOF"};
-  Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +5.0f, "Maximum nsigma TOF"};
+  Configurable<float> nsigmaTPCmin{"nsigmaTPCmin", -4.0f, "Minimum nsigma TPC"};
+  Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +4.0f, "Maximum nsigma TPC"};
+  Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -4.0f, "Minimum nsigma TOF"};
+  Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +4.0f, "Maximum nsigma TOF"};
   Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.10, "set track min pT"};
 
   // v0 parameters
@@ -111,13 +111,13 @@ struct LambdaJetpolarization {
 
   // v0Event selection
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
-  Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "TVX trigger"};
+  Configurable<bool> isTriggerTVX{"isTriggerTVX", 0, "TVX trigger"};
   Configurable<bool> iscutzvertex{"iscutzvertex", 1, "Accepted z-vertex range (cm)"};
-  Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "TF border cut"};
-  Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "ITS ROF border cut"};
-  Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 1, "Is Vertex TOF matched"};
+  Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 0, "TF border cut"};
+  Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 0, "ITS ROF border cut"};
+  Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
   Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "isNoSameBunchPileup"};
-  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 1, "isGoodZvtxFT0vsPV"};
+  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cTau{"cTau", 30, "C tau (cm)"};
   Configurable<bool> requirepassedSingleTrackSelection{"requirepassedSingleTrackSelection", false, "requirepassedSingleTrackSelection"};
@@ -328,6 +328,8 @@ struct LambdaJetpolarization {
     registryData.add("LambdaQA/TProfile1DprotonCos2ThetaInJetV0", "TProfile1DprotonCos2ThetaInJetV0", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("LambdaQA/TProfile2DprotonCosThetaInJetV0", "TProfile2DprotonCosThetaInJetV0", kTProfile2D, {tprofile2DaxisMass, axisDeltaPhi});
     registryData.add("LambdaQA/TProfile2DprotonCos2ThetaInJetV0", "TProfile2DprotonCos2ThetaInJetV0", kTProfile2D, {tprofile2DaxisMass, axisDeltaPhi});
+    registryData.add("LambdaQA/TH1FprotonCosThetaInJetV0", "TH1FprotonCosThetaInJetV0", kTH1F, {{200, -1.0, 1.0}});
+    registryData.add("LambdaQA/TH2FprotonCosThetaPhiInJetV0", "TH2FprotonCosThetaPhiInJetV0", kTH2F, {{200, -1.0, 1.0}, {200, 0.0, TMath::Pi()}});
 
     registryData.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
@@ -1945,6 +1947,8 @@ struct LambdaJetpolarization {
         registryData.fill(HIST("LambdaQA/TProfile1DprotonCos2ThetaInJetV0"), candidate.mLambda(), protonCosThetaInJetV0frame * protonCosThetaInJetV0frame);
         registryData.fill(HIST("LambdaQA/TProfile2DprotonCosThetaInJetV0"), candidate.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame);
         registryData.fill(HIST("LambdaQA/TProfile2DprotonCos2ThetaInJetV0"), candidate.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame * protonCosThetaInJetV0frame);
+        registryData.fill(HIST("LambdaQA/TH1FprotonCosThetaInJetV0"), protonCosThetaInJetV0frame);
+        registryData.fill(HIST("LambdaQA/TH2FprotonCosThetaPhiInJetV0"), protonCosThetaInJetV0frame, TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)));
       }
       if (registryDataAcceptV0AntiLambda(candidate, pos, neg, collision)) {
         registryData.fill(HIST("hMassAntiLambda"), candidate.mAntiLambda());

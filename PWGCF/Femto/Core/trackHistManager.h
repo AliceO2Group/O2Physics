@@ -25,6 +25,8 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 
+#include "TH1.h"
+
 #include <array>
 #include <map>
 #include <string>
@@ -53,9 +55,6 @@ enum TrackHist {
   kTpcClusterOverCrossedRows,
   kTpcClusterShared,
   kTpcClusterFractionShared,
-  // kDcaxy,
-  // kDcaz,
-  // kDca,
   // 2d qa
   kPtVsEta,
   kPtVsPhi,
@@ -115,8 +114,28 @@ enum TrackHist {
   kTpctofDeuteron,
   kTpctofTriton,
   kTpctofHelium,
+  // mc
+  kOrigin,
+  kPdg,
+  kPdgMother,
+  kPdgPartonicMother,
+  kTruePt,
+  kTrueEta,
+  kTruePhi,
+  // histograms for fraction estimation of tracks
+  kNoMcParticle,
+  kPrimary,
+  kFromWrongCollision,
+  kFromMaterial,
+  kSecondary1,
+  kSecondary2,
+  kSecondary3,
+  kSecondaryOther,
+
   kTrackHistLast
 };
+
+constexpr std::size_t MaxSecondary = 3;
 
 template <const char* Prefix>
 struct ConfTrackBinning : o2::framework::ConfigurableGroup {
@@ -214,7 +233,7 @@ struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
 };
 
 constexpr const char PrefixTrackQaBinning1[] = "TrackQaBinning1";
-constexpr const char PrefixTrackQaBinning2[] = "TrackQaBinning1";
+constexpr const char PrefixTrackQaBinning2[] = "TrackQaBinning2";
 constexpr const char PrefixResonancePosDauQaBinning[] = "ResonancePosDauQaBinning";
 constexpr const char PrefixResonanceNegDauQaBinning[] = "ResonanceNegDauQaBinning";
 constexpr const char PrefixV0PosDauQaBinning[] = "V0PosDauQaBinning";
@@ -235,157 +254,230 @@ using ConfCascadeNegDauQaBinning = ConfTrackQaBinning<PrefixCascadeNegDauQaBinni
 using ConfCascadeBachelorQaBinning = ConfTrackQaBinning<PrefixCascadeBachelorQaBinning>;
 using ConfKinkChaDauQaBinning = ConfTrackQaBinning<PrefixKinkChaDauQaBinning>;
 
+template <const char* Prefix>
+struct ConfTrackMcBinning : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string(Prefix);
+  o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "PDG codes of selected tracks"};
+  o2::framework::ConfigurableAxis statusCode{"statusCode", {{21, -0.5, 20.5}}, "Status codes (i.e. Origin)"};
+  o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "Plot pt vs DCAxy vs DCAz for different particle origins"};
+  o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3122}, "PDG codes of mothers of secondaries (Max 3 will be considered)"};
+  o2::framework::ConfigurableAxis pt{"pt", {{150, 0, 3}}, "Pt"};
+  o2::framework::ConfigurableAxis dcaXy{"dcaXy", {{50, -0.1, 0.1}}, "DCA_xy"};
+  o2::framework::ConfigurableAxis dcaZ{"dcaZ", {{50, -0.1, 0.1}}, "DCA_z"};
+};
+
+constexpr const char PrefixTrackMcBinning1[] = "TrackMcBinning1";
+constexpr const char PrefixV0PosDauMcBinning[] = "V0PosDauMcBinning";
+constexpr const char PrefixV0NegDauMcBinning[] = "V0NegDauMcBinning";
+constexpr const char PrefixKinkChaDauMcBinning[] = "KinkChaDauMcBinning";
+
+using ConfTrackMcBinning1 = ConfTrackMcBinning<PrefixTrackMcBinning1>;
+using ConfV0PosDauMcBinning = ConfTrackMcBinning<PrefixV0PosDauMcBinning>;
+using ConfV0NegDauMcBinning = ConfTrackMcBinning<PrefixV0NegDauMcBinning>;
+using ConfKinkChaDauMcBinning = ConfTrackMcBinning<PrefixKinkChaDauMcBinning>;
+
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
-constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast> HistTable = {
-  {{kPt, o2::framework::kTH1F, "hPt", "Transverse Momentum; p_{T} (GeV/#it{c}); Entries"},
-   {kEta, o2::framework::kTH1F, "hEta", "Pseudorapdity; #eta; Entries"},
-   {kPhi, o2::framework::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
-   {kSign, o2::framework::kTH1F, "hSign", "Sign of charge ; Sign; Entries"},
-   {kPAtPv, o2::framework::kTH1F, "hPAtPv", "Momentum at Primary vertex; p_{vertex}; Entries"},
-   {kPTpc, o2::framework::kTH1F, "hPTpc", "Momentum at inner wall of TPC; p_{TPC}; Entries"},
-   {kItsCluster, o2::framework::kTH1F, "hItsCluster", "ITS cluster; ITS cluster; Entries"},
-   {kItsClusterIb, o2::framework::kTH1F, "hItsClusterIb", "ITS cluster in inner barrel; ITS IB cluster; Entries"},
-   {kTpcCrossedRows, o2::framework::kTH1F, "hTpcCrossedRows", "TPC crossed rows; TPC crossed rows; Entries"},
-   {kTpcCluster, o2::framework::kTH1F, "hTpcCluster", "TPC cluster found; TPC cluster found; Entries"},
-   {kTpcClusterOverCrossedRows, o2::framework::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found  over TPC crossed rows; TPC cluster found / Tpc crossed rows; Entries"},
-   {kTpcClusterShared, o2::framework::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared ; Entries"},
-   {kTpcClusterFractionShared, o2::framework::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster found / TPC cluster shared ; Entries"},
-   {kPtVsEta, o2::framework::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
-   {kPtVsPhi, o2::framework::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
-   {kPhiVsEta, o2::framework::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
-   {kPtVsItsCluster, o2::framework::kTH2F, "hPtVsItsCluster", "p_{T} vs ITS cluster; p_{T} (GeV/#it{c}) ; ITS cluster"},
-   {kPtVsTpcCluster, o2::framework::kTH2F, "hPtVsTpcCluster", "p_{T} vs TPC cluster found; p_{T} (GeV/#it{c}) ; TPC cluster found"},
-   {kPtVsTpcCrossedRows, o2::framework::kTH2F, "hPtVsTpcCrossedRows", "p_{T} vs TPC crossed rows; p_{T} (GeV/#it{c}) ; TPC crossed rows"},
-   {kPtVsTpcClusterOverCrossedRows, o2::framework::kTH2F, "hPtVsTpcClusterOverCrossedRows", "p_{T} vs TPC cluster found over crossed rows; p_{T} (GeV/#it{c}) ; TPC cluster found / TPC crossed rows"},
-   {kPtVsTpcClusterShared, o2::framework::kTH2F, "hPtVsTpcClusterShared", "p_{T} vs TPC cluster shared; p_{T} (GeV/#it{c}) ; TPC cluster shared"},
-   {kPtVsTpcClusterFractionShared, o2::framework::kTH2F, "hPtVsTpcClusterSharedFraction", "p_{T} vs TPC cluster shared over TPC cluster found; p_{T} (GeV/#it{c}) ; TPC cluster shared / TPC cluster found"},
-   {kTpcClusterVsTpcCrossedRows, o2::framework::kTH2F, "hTpcClusterVsTpcCrossedRows", "TPC cluster found vs TPC crossed rows; TPC cluster found; TPC crossed rows"},
-   {kTpcClusterVsTpcClusterShared, o2::framework::kTH2F, "hTpcClusterVsTpcClusterShared", "TPC cluster found vs TPC cluster shared; TPC cluster found; TPC cluster shared"},
-   {kPtVsDcaxy, o2::framework::kTH2F, "hPtVsDcaxy", "p_{T} vs DCA_{XY}; p_{T} (GeV/#it{c}); DCA_{XY} (cm)"},
-   {kPtVsDcaz, o2::framework::kTH2F, "hPtVsDcaz", "p_{T} vs DCA_{Z}; p_{T} (GeV/#it{c}); DCA_{Z} (cm)"},
-   {kPtVsDca, o2::framework::kTH2F, "hPtVsDca", "p_{T} vs DCA; p_{T} (GeV/#it{c}); DCA (cm)"},
-   {kItsSignal, o2::framework::kTH2F, "hItsSignal", "ITS Signal; p (GeV/#it{c}) ; <ITS Cluster Size> x <cos #lambda>"},
-   {kItsElectron, o2::framework::kTH2F, "hItsPidElectron", "TPC PID Electron; p (GeV/#it{c}) ; n#sigma_{TPC,el}"},
-   {kItsPion, o2::framework::kTH2F, "hItsPidPion", "ITS PID Pion; p (GeV/#it{c}) ; n#sigma_{ITS,pi}"},
-   {kItsKaon, o2::framework::kTH2F, "hItsPidKaon", "ITS PID Kaon; p (GeV/#it{c}) ; n#sigma_{ITS,ka}"},
-   {kItsProton, o2::framework::kTH2F, "hItsPidProton", "ITS PID Proton; p (GeV/#it{c}) ; n#sigma_{ITS,pr}"},
-   {kItsDeuteron, o2::framework::kTH2F, "hItsPidDeuteron", "ITS PID Deuteron; p (GeV/#it{c}) ; n#sigma_{ITS,de}"},
-   {kItsTriton, o2::framework::kTH2F, "hItsPidTriton", "ITS PID Triton; p (GeV/#it{c}) ; n#sigma_{ITS,tr}"},
-   {kItsHelium, o2::framework::kTH2F, "hItsPidHelium", "ITS PID Helium; p (GeV/#it{c}) ; n#sigma_{ITS,he}"},
-   {kTpcSignal, o2::framework::kTH2F, "hTpcSignal", "TPC Signal; p (GeV/#it{c}) ; TPC Signal"},
-   {kTpcElectron, o2::framework::kTH2F, "hTpcPidElectron", "TPC PID Electron; p (GeV/#it{c}) ; n#sigma_{TPC,el}"},
-   {kTpcPion, o2::framework::kTH2F, "hTpcPidPion", "TPC PID Pion; p (GeV/#it{c}) ; n#sigma_{TPC,pi}"},
-   {kTpcKaon, o2::framework::kTH2F, "hTpcPidKaon", "TPC PID Kaon; p (GeV/#it{c}) ; n#sigma_{TPC,ka}"},
-   {kTpcProton, o2::framework::kTH2F, "hTpcPidProton", "TPC PID Proton; p (GeV/#it{c}) ; n#sigma_{TPC,pr}"},
-   {kTpcDeuteron, o2::framework::kTH2F, "hTpcPidDeuteron", "TPC PID Deuteron; p (GeV/#it{c}) ; n#sigma_{TPC,de}"},
-   {kTpcTriton, o2::framework::kTH2F, "hTpcPidTriton", "TPC PID Triton; p (GeV/#it{c}) ; n#sigma_{TPC,tr}"},
-   {kTpcHelium, o2::framework::kTH2F, "hTpcPidHelium", "TPC PID Helium; p (GeV/#it{c}) ; n#sigma_{TPC,he}"},
-   {kTofBeta, o2::framework::kTH2F, "hTofBeta", "TOF #beta; p (GeV/#it{c}) ; TOF #beta"},
-   {kTofMass, o2::framework::kTH2F, "hTofMass", "TOF mass; p (GeV/#it{c}) ; m_{TOF} (GeV/#it{c}^{2})"},
-   {kTofElectron, o2::framework::kTH2F, "hTofPidElectron", "TOF PID Electron; p (GeV/#it{c}) ; n#sigma_{TOF,el}"},
-   {kTofPion, o2::framework::kTH2F, "hTofPidPion", "TOF PID Pion; p (GeV/#it{c}) ; n#sigma_{TOF,pi}"},
-   {kTofKaon, o2::framework::kTH2F, "hTofPidKaon", "TOF PID Kaon; p (GeV/#it{c}) ; n#sigma_{TOF,ka}"},
-   {kTofProton, o2::framework::kTH2F, "hTofPidProton", "TOF PID Proton; p (GeV/#it{c}) ; n#sigma_{TOF,pr}"},
-   {kTofDeuteron, o2::framework::kTH2F, "hTofPidDeuteron", "TOF PID Deuteron; p (GeV/#it{c}) ; n#sigma_{TOF,de}"},
-   {kTofTriton, o2::framework::kTH2F, "hTofPidTriton", "TOF PID Triton; p (GeV/#it{c}) ; n#sigma_{TOF,tr}"},
-   {kTofHelium, o2::framework::kTH2F, "hTofPidHelium", "TOF PID Helium; p (GeV/#it{c}) ; n#sigma_{TOF,he}"},
-   {kTpcitsElectron, o2::framework::kTH2F, "hTpcitsPidElectron", "its PID Electron; p (GeV/#it{c}) ; n#sigma_{its,el}"},
-   {kTpcitsPion, o2::framework::kTH2F, "hTpcitsPidPion", "TPC+ITS PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{its,pi}^{2}}"},
-   {kTpcitsKaon, o2::framework::kTH2F, "hTpcitsPidKaon", "TPC+ITS PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{its,ka}^{2}}"},
-   {kTpcitsProton, o2::framework::kTH2F, "hTpcitsPidProton", "TPC+ITS PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{its,pr}^{2}}"},
-   {kTpcitsDeuteron, o2::framework::kTH2F, "hTpcitsPidDeuteron", "TPC+ITS PID Deuteron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,de}^{2}+n#sigma_{its,de}^{2}}"},
-   {kTpcitsTriton, o2::framework::kTH2F, "hTpcitsPidTriton", "TPC+ITS PID Triton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,tr}^{2}+n#sigma_{its,tr}^{2}}"},
-   {kTpcitsHelium, o2::framework::kTH2F, "hTpcitsPidHelium", "TPC+ITS PID Helium; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,he}^{2}+n#sigma_{its,he}^{2}}"},
-   {kTpctofElectron, o2::framework::kTH2F, "hTpctofPidElectron", "TOF PID Electron; p (GeV/#it{c}) ; n#sigma_{TOF,el}"},
-   {kTpctofPion, o2::framework::kTH2F, "hTpctofPidPion", "TPC+TOF PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{TOF,pi}^{2}}"},
-   {kTpctofKaon, o2::framework::kTH2F, "hTpctofPidKaon", "TPC+TOF PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{TOF,ka}^{2}}"},
-   {kTpctofProton, o2::framework::kTH2F, "hTpctofPidProton", "TPC+TOF PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{TOF,pr}^{2}}"},
-   {kTpctofDeuteron, o2::framework::kTH2F, "hTpctofPidDeuteron", "TPC+TOF PID Deuteron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,de}^{2}+n#sigma_{TOF,de}^{2}}"},
-   {kTpctofTriton, o2::framework::kTH2F, "hTpctofPidTriton", "TPC+TOF PID Triton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,tr}^{2}+n#sigma_{TOF,tr}^{2}}"},
-   {kTpctofHelium, o2::framework::kTH2F, "hTpctofPidHelium", "TPC+TOF PID Helium; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,he}^{2}+n#sigma_{TOF,he}^{2}}"}}};
+constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
+  HistTable = {
+    {
+      {kPt, o2::framework::kTH1F, "hPt", "Transverse Momentum; p_{T} (GeV/#it{c}); Entries"},
+      {kEta, o2::framework::kTH1F, "hEta", "Pseudorapidity; #eta; Entries"},
+      {kPhi, o2::framework::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
+      {kSign, o2::framework::kTH1F, "hSign", "Sign of charge ; Sign; Entries"},
+      {kPAtPv, o2::framework::kTH1F, "hPAtPv", "Momentum at Primary vertex; p_{vertex}; Entries"},
+      {kPTpc, o2::framework::kTH1F, "hPTpc", "Momentum at inner wall of TPC; p_{TPC}; Entries"},
+      {kItsCluster, o2::framework::kTH1F, "hItsCluster", "ITS cluster; ITS cluster; Entries"},
+      {kItsClusterIb, o2::framework::kTH1F, "hItsClusterIb", "ITS cluster in inner barrel; ITS IB cluster; Entries"},
+      {kTpcCrossedRows, o2::framework::kTH1F, "hTpcCrossedRows", "TPC crossed rows; TPC crossed rows; Entries"},
+      {kTpcCluster, o2::framework::kTH1F, "hTpcCluster", "TPC cluster found; TPC cluster found; Entries"},
+      {kTpcClusterOverCrossedRows, o2::framework::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found  over TPC crossed rows; TPC cluster found / Tpc crossed rows; Entries"},
+      {kTpcClusterShared, o2::framework::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared ; Entries"},
+      {kTpcClusterFractionShared, o2::framework::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster found / TPC cluster shared ; Entries"},
+      {kPtVsEta, o2::framework::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
+      {kPtVsPhi, o2::framework::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
+      {kPhiVsEta, o2::framework::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
+      {kPtVsItsCluster, o2::framework::kTH2F, "hPtVsItsCluster", "p_{T} vs ITS cluster; p_{T} (GeV/#it{c}) ; ITS cluster"},
+      {kPtVsTpcCluster, o2::framework::kTH2F, "hPtVsTpcCluster", "p_{T} vs TPC cluster found; p_{T} (GeV/#it{c}) ; TPC cluster found"},
+      {kPtVsTpcCrossedRows, o2::framework::kTH2F, "hPtVsTpcCrossedRows", "p_{T} vs TPC crossed rows; p_{T} (GeV/#it{c}) ; TPC crossed rows"},
+      {kPtVsTpcClusterOverCrossedRows, o2::framework::kTH2F, "hPtVsTpcClusterOverCrossedRows", "p_{T} vs TPC cluster found over crossed rows; p_{T} (GeV/#it{c}) ; TPC cluster found / TPC crossed rows"},
+      {kPtVsTpcClusterShared, o2::framework::kTH2F, "hPtVsTpcClusterShared", "p_{T} vs TPC cluster shared; p_{T} (GeV/#it{c}) ; TPC cluster shared"},
+      {kPtVsTpcClusterFractionShared, o2::framework::kTH2F, "hPtVsTpcClusterSharedFraction", "p_{T} vs TPC cluster shared over TPC cluster found; p_{T} (GeV/#it{c}) ; TPC cluster shared / TPC cluster found"},
+      {kTpcClusterVsTpcCrossedRows, o2::framework::kTH2F, "hTpcClusterVsTpcCrossedRows", "TPC cluster found vs TPC crossed rows; TPC cluster found; TPC crossed rows"},
+      {kTpcClusterVsTpcClusterShared, o2::framework::kTH2F, "hTpcClusterVsTpcClusterShared", "TPC cluster found vs TPC cluster shared; TPC cluster found; TPC cluster shared"},
+      {kPtVsDcaxy, o2::framework::kTH2F, "hPtVsDcaxy", "p_{T} vs DCA_{XY}; p_{T} (GeV/#it{c}); DCA_{XY} (cm)"},
+      {kPtVsDcaz, o2::framework::kTH2F, "hPtVsDcaz", "p_{T} vs DCA_{Z}; p_{T} (GeV/#it{c}); DCA_{Z} (cm)"},
+      {kPtVsDca, o2::framework::kTH2F, "hPtVsDca", "p_{T} vs DCA; p_{T} (GeV/#it{c}); DCA (cm)"},
+      {kItsSignal, o2::framework::kTH2F, "hItsSignal", "ITS Signal; p (GeV/#it{c}) ; <ITS Cluster Size> x <cos #lambda>"},
+      {kItsElectron, o2::framework::kTH2F, "hItsPidElectron", "ITS PID Electron; p (GeV/#it{c}) ; n#sigma_{TPC,el}"},
+      {kItsPion, o2::framework::kTH2F, "hItsPidPion", "ITS PID Pion; p (GeV/#it{c}) ; n#sigma_{ITS,pi}"},
+      {kItsKaon, o2::framework::kTH2F, "hItsPidKaon", "ITS PID Kaon; p (GeV/#it{c}) ; n#sigma_{ITS,ka}"},
+      {kItsProton, o2::framework::kTH2F, "hItsPidProton", "ITS PID Proton; p (GeV/#it{c}) ; n#sigma_{ITS,pr}"},
+      {kItsDeuteron, o2::framework::kTH2F, "hItsPidDeuteron", "ITS PID Deuteron; p (GeV/#it{c}) ; n#sigma_{ITS,de}"},
+      {kItsTriton, o2::framework::kTH2F, "hItsPidTriton", "ITS PID Triton; p (GeV/#it{c}) ; n#sigma_{ITS,tr}"},
+      {kItsHelium, o2::framework::kTH2F, "hItsPidHelium", "ITS PID Helium; p (GeV/#it{c}) ; n#sigma_{ITS,he}"},
+      {kTpcSignal, o2::framework::kTH2F, "hTpcSignal", "TPC Signal; p (GeV/#it{c}) ; TPC Signal"},
+      {kTpcElectron, o2::framework::kTH2F, "hTpcPidElectron", "TPC PID Electron; p (GeV/#it{c}) ; n#sigma_{TPC,el}"},
+      {kTpcPion, o2::framework::kTH2F, "hTpcPidPion", "TPC PID Pion; p (GeV/#it{c}) ; n#sigma_{TPC,pi}"},
+      {kTpcKaon, o2::framework::kTH2F, "hTpcPidKaon", "TPC PID Kaon; p (GeV/#it{c}) ; n#sigma_{TPC,ka}"},
+      {kTpcProton, o2::framework::kTH2F, "hTpcPidProton", "TPC PID Proton; p (GeV/#it{c}) ; n#sigma_{TPC,pr}"},
+      {kTpcDeuteron, o2::framework::kTH2F, "hTpcPidDeuteron", "TPC PID Deuteron; p (GeV/#it{c}) ; n#sigma_{TPC,de}"},
+      {kTpcTriton, o2::framework::kTH2F, "hTpcPidTriton", "TPC PID Triton; p (GeV/#it{c}) ; n#sigma_{TPC,tr}"},
+      {kTpcHelium, o2::framework::kTH2F, "hTpcPidHelium", "TPC PID Helium; p (GeV/#it{c}) ; n#sigma_{TPC,he}"},
+      {kTofBeta, o2::framework::kTH2F, "hTofBeta", "TOF #beta; p (GeV/#it{c}) ; TOF #beta"},
+      {kTofMass, o2::framework::kTH2F, "hTofMass", "TOF mass; p (GeV/#it{c}) ; m_{TOF} (GeV/#it{c}^{2})"},
+      {kTofElectron, o2::framework::kTH2F, "hTofPidElectron", "TOF PID Electron; p (GeV/#it{c}) ; n#sigma_{TOF,el}"},
+      {kTofPion, o2::framework::kTH2F, "hTofPidPion", "TOF PID Pion; p (GeV/#it{c}) ; n#sigma_{TOF,pi}"},
+      {kTofKaon, o2::framework::kTH2F, "hTofPidKaon", "TOF PID Kaon; p (GeV/#it{c}) ; n#sigma_{TOF,ka}"},
+      {kTofProton, o2::framework::kTH2F, "hTofPidProton", "TOF PID Proton; p (GeV/#it{c}) ; n#sigma_{TOF,pr}"},
+      {kTofDeuteron, o2::framework::kTH2F, "hTofPidDeuteron", "TOF PID Deuteron; p (GeV/#it{c}) ; n#sigma_{TOF,de}"},
+      {kTofTriton, o2::framework::kTH2F, "hTofPidTriton", "TOF PID Triton; p (GeV/#it{c}) ; n#sigma_{TOF,tr}"},
+      {kTofHelium, o2::framework::kTH2F, "hTofPidHelium", "TOF PID Helium; p (GeV/#it{c}) ; n#sigma_{TOF,he}"},
+      {kTpcitsElectron, o2::framework::kTH2F, "hTpcitsPidElectron", "its PID Electron; p (GeV/#it{c}) ; n#sigma_{its,el}"},
+      {kTpcitsPion, o2::framework::kTH2F, "hTpcitsPidPion", "TPC+ITS PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{its,pi}^{2}}"},
+      {kTpcitsKaon, o2::framework::kTH2F, "hTpcitsPidKaon", "TPC+ITS PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{its,ka}^{2}}"},
+      {kTpcitsProton, o2::framework::kTH2F, "hTpcitsPidProton", "TPC+ITS PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{its,pr}^{2}}"},
+      {kTpcitsDeuteron, o2::framework::kTH2F, "hTpcitsPidDeuteron", "TPC+ITS PID Deuteron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,de}^{2}+n#sigma_{its,de}^{2}}"},
+      {kTpcitsTriton, o2::framework::kTH2F, "hTpcitsPidTriton", "TPC+ITS PID Triton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,tr}^{2}+n#sigma_{its,tr}^{2}}"},
+      {kTpcitsHelium, o2::framework::kTH2F, "hTpcitsPidHelium", "TPC+ITS PID Helium; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,he}^{2}+n#sigma_{its,he}^{2}}"},
+      {kTpctofElectron, o2::framework::kTH2F, "hTpctofPidElectron", "TOF PID Electron; p (GeV/#it{c}) ; n#sigma_{TOF,el}"},
+      {kTpctofPion, o2::framework::kTH2F, "hTpctofPidPion", "TPC+TOF PID Pion; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pi}^{2}+n#sigma_{TOF,pi}^{2}}"},
+      {kTpctofKaon, o2::framework::kTH2F, "hTpctofPidKaon", "TPC+TOF PID Kaon; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,ka}^{2}+n#sigma_{TOF,ka}^{2}}"},
+      {kTpctofProton, o2::framework::kTH2F, "hTpctofPidProton", "TPC+TOF PID Proton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,pr}^{2}+n#sigma_{TOF,pr}^{2}}"},
+      {kTpctofDeuteron, o2::framework::kTH2F, "hTpctofPidDeuteron", "TPC+TOF PID Deuteron; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,de}^{2}+n#sigma_{TOF,de}^{2}}"},
+      {kTpctofTriton, o2::framework::kTH2F, "hTpctofPidTriton", "TPC+TOF PID Triton; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,tr}^{2}+n#sigma_{TOF,tr}^{2}}"},
+      {kTpctofHelium, o2::framework::kTH2F, "hTpctofPidHelium", "TPC+TOF PID Helium; p (GeV/#it{c}) ; #sqrt{n#sigma_{TPC,he}^{2}+n#sigma_{TOF,he}^{2}}"},
+      {kOrigin, o2::framework::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
+      {kPdg, o2::framework::kTH1F, "hPdg", "PDG Codes of selected tracks; PDG Code; Entries"},
+      {kPdgMother, o2::framework::kTH1F, "hPdgMother", "PDG Codes of mother of selected tracks; PDG Code; Entries"},
+      {kPdgPartonicMother, o2::framework::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother selected tracks; PDG Code; Entries"},
+      {kTruePt, o2::framework::kTH1F, "hTruePt", "True transverse momentum; p_{T} (GeV/#it{c}); Entries"},
+      {kTrueEta, o2::framework::kTH1F, "hTrueEta", "True pseudorapdity; #eta; Entries"},
+      {kTruePhi, o2::framework::kTH1F, "hTruePhi", "True azimuthal angle; #varphi; Entries"},
+      {kNoMcParticle, o2::framework::kTHnSparseF, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kPrimary, o2::framework::kTHnSparseF, "hPrimary", "Primary particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kFromWrongCollision, o2::framework::kTHnSparseF, "hFromWrongCollision", "Particles associated to wrong collision; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kFromMaterial, o2::framework::kTHnSparseF, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kSecondary1, o2::framework::kTHnSparseF, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kSecondary2, o2::framework::kTHnSparseF, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kSecondary3, o2::framework::kTHnSparseF, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kSecondaryOther, o2::framework::kTHnSparseF, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+    }};
+
+#define TRACK_HIST_ANALYSIS_MAP(conf) \
+  {kPt, {conf.pt}},                   \
+    {kEta, {conf.eta}},               \
+    {kPhi, {conf.phi}},               \
+    {kSign, {conf.sign}},
+
+#define TRACK_HIST_QA_MAP(confAnalysis, confQa)                                            \
+  {kPAtPv, {confQa.p}},                                                                    \
+    {kPTpc, {confQa.p}},                                                                   \
+    {kItsCluster, {confQa.itsCluster}},                                                    \
+    {kItsClusterIb, {confQa.itsClusterIb}},                                                \
+    {kPtVsEta, {confAnalysis.pt, confAnalysis.eta}},                                       \
+    {kPtVsPhi, {confAnalysis.pt, confAnalysis.phi}},                                       \
+    {kPhiVsEta, {confAnalysis.phi, confAnalysis.eta}},                                     \
+    {kPtVsItsCluster, {confAnalysis.pt, confQa.itsCluster}},                               \
+    {kPtVsTpcCluster, {confAnalysis.pt, confQa.tpcCluster}},                               \
+    {kPtVsTpcCrossedRows, {confAnalysis.pt, confQa.tpcCrossedRows}},                       \
+    {kPtVsTpcClusterOverCrossedRows, {confAnalysis.pt, confQa.tpcClusterOverCrossedRows}}, \
+    {kPtVsTpcClusterShared, {confAnalysis.pt, confQa.tpcClusterShared}},                   \
+    {kPtVsTpcClusterFractionShared, {confAnalysis.pt, confQa.tpcClusterFractionShared}},   \
+    {kTpcClusterVsTpcCrossedRows, {confQa.tpcCluster, confQa.tpcCrossedRows}},             \
+    {kTpcClusterVsTpcClusterShared, {confQa.tpcCluster, confQa.tpcClusterShared}},         \
+    {kTpcCrossedRows, {confQa.tpcCrossedRows}},                                            \
+    {kTpcCluster, {confQa.tpcCluster}},                                                    \
+    {kTpcClusterOverCrossedRows, {confQa.tpcClusterOverCrossedRows}},                      \
+    {kTpcClusterShared, {confQa.tpcClusterShared}},                                        \
+    {kTpcClusterFractionShared, {confQa.tpcClusterFractionShared}},                        \
+    {kPtVsDcaxy, {confAnalysis.pt, confQa.dcaXy}},                                         \
+    {kPtVsDcaz, {confAnalysis.pt, confQa.dcaZ}},                                           \
+    {kPtVsDca, {confAnalysis.pt, confQa.dca}},                                             \
+    {kItsSignal, {confQa.p, confQa.itsSignal}},                                            \
+    {kItsElectron, {confQa.p, confQa.itsElectron}},                                        \
+    {kItsPion, {confQa.p, confQa.itsPion}},                                                \
+    {kItsKaon, {confQa.p, confQa.itsKaon}},                                                \
+    {kItsProton, {confQa.p, confQa.itsProton}},                                            \
+    {kItsDeuteron, {confQa.p, confQa.itsDeuteron}},                                        \
+    {kItsTriton, {confQa.p, confQa.itsTriton}},                                            \
+    {kItsHelium, {confQa.p, confQa.itsHelium}},                                            \
+    {kTpcSignal, {confQa.p, confQa.tpcSignal}},                                            \
+    {kTpcElectron, {confQa.p, confQa.tpcElectron}},                                        \
+    {kTpcPion, {confQa.p, confQa.tpcPion}},                                                \
+    {kTpcKaon, {confQa.p, confQa.tpcKaon}},                                                \
+    {kTpcProton, {confQa.p, confQa.tpcProton}},                                            \
+    {kTpcDeuteron, {confQa.p, confQa.tpcDeuteron}},                                        \
+    {kTpcTriton, {confQa.p, confQa.tpcTriton}},                                            \
+    {kTpcHelium, {confQa.p, confQa.tpcHelium}},                                            \
+    {kTofBeta, {confQa.p, confQa.tofBeta}},                                                \
+    {kTofMass, {confQa.p, confQa.tofMass}},                                                \
+    {kTofElectron, {confQa.p, confQa.tofElectron}},                                        \
+    {kTofPion, {confQa.p, confQa.tofPion}},                                                \
+    {kTofKaon, {confQa.p, confQa.tofKaon}},                                                \
+    {kTofProton, {confQa.p, confQa.tofProton}},                                            \
+    {kTofDeuteron, {confQa.p, confQa.tofDeuteron}},                                        \
+    {kTofTriton, {confQa.p, confQa.tofTriton}},                                            \
+    {kTofHelium, {confQa.p, confQa.tofHelium}},                                            \
+    {kTpcitsElectron, {confQa.p, confQa.tpcitsElectron}},                                  \
+    {kTpcitsPion, {confQa.p, confQa.tpcitsPion}},                                          \
+    {kTpcitsKaon, {confQa.p, confQa.tpcitsKaon}},                                          \
+    {kTpcitsProton, {confQa.p, confQa.tpcitsProton}},                                      \
+    {kTpcitsDeuteron, {confQa.p, confQa.tpcitsDeuteron}},                                  \
+    {kTpcitsTriton, {confQa.p, confQa.tpcitsTriton}},                                      \
+    {kTpcitsHelium, {confQa.p, confQa.tpcitsHelium}},                                      \
+    {kTpctofElectron, {confQa.p, confQa.tpctofElectron}},                                  \
+    {kTpctofPion, {confQa.p, confQa.tpctofPion}},                                          \
+    {kTpctofKaon, {confQa.p, confQa.tpctofKaon}},                                          \
+    {kTpctofProton, {confQa.p, confQa.tpctofProton}},                                      \
+    {kTpctofDeuteron, {confQa.p, confQa.tpctofDeuteron}},                                  \
+    {kTpctofTriton, {confQa.p, confQa.tpctofTriton}},                                      \
+    {kTpctofHelium, {confQa.p, confQa.tpctofHelium}},
+
+#define TRACK_HIST_MC_MAP(confAnalysis, confMc)                    \
+  {kTruePt, {confAnalysis.pt}},                                    \
+    {kTrueEta, {confAnalysis.eta}},                                \
+    {kTruePhi, {confAnalysis.phi}},                                \
+    {kOrigin, {confMc.statusCode}},                                \
+    {kPdg, {confMc.pdgCodes}},                                     \
+    {kPdgMother, {confMc.pdgCodes}},                               \
+    {kPdgPartonicMother, {confMc.pdgCodes}},                       \
+    {kNoMcParticle, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},       \
+    {kPrimary, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},            \
+    {kFromWrongCollision, {confMc.pt, confMc.dcaXy, confMc.dcaZ}}, \
+    {kFromMaterial, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},       \
+    {kSecondary1, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},         \
+    {kSecondary2, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},         \
+    {kSecondary3, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},         \
+    {kSecondaryOther, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},
 
 template <typename T>
 auto makeTrackHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<TrackHist, std::vector<framework::AxisSpec>>{
-    {kPt, {confBinningAnalysis.pt}},
-    {kEta, {confBinningAnalysis.eta}},
-    {kPhi, {confBinningAnalysis.phi}},
-    {kSign, {confBinningAnalysis.sign}}};
-};
+    TRACK_HIST_ANALYSIS_MAP(confBinningAnalysis)};
+}
 
 template <typename T1, typename T2>
-auto makeTrackQaHistSpecMap(const T1& confBinningAnalysis, const T2 confiBinningQa)
+auto makeTrackQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
   return std::map<TrackHist, std::vector<framework::AxisSpec>>{
-    {kPt, {confBinningAnalysis.pt}},
-    {kEta, {confBinningAnalysis.eta}},
-    {kPhi, {confBinningAnalysis.phi}},
-    {kSign, {confBinningAnalysis.sign}},
-    {kPAtPv, {confiBinningQa.p}},
-    {kPTpc, {confiBinningQa.p}},
-    {kItsCluster, {confiBinningQa.itsCluster}},
-    {kItsClusterIb, {confiBinningQa.itsClusterIb}},
-    {kPtVsEta, {confBinningAnalysis.pt, confBinningAnalysis.eta}},
-    {kPtVsPhi, {confBinningAnalysis.pt, confBinningAnalysis.phi}},
-    {kPhiVsEta, {confBinningAnalysis.phi, confBinningAnalysis.eta}},
-    {kPtVsItsCluster, {confBinningAnalysis.pt, confiBinningQa.itsCluster}},
-    {kPtVsTpcCluster, {confBinningAnalysis.pt, confiBinningQa.tpcCluster}},
-    {kPtVsTpcCrossedRows, {confBinningAnalysis.pt, confiBinningQa.tpcCrossedRows}},
-    {kPtVsTpcClusterOverCrossedRows, {confBinningAnalysis.pt, confiBinningQa.tpcClusterOverCrossedRows}},
-    {kPtVsTpcClusterShared, {confBinningAnalysis.pt, confiBinningQa.tpcClusterShared}},
-    {kPtVsTpcClusterFractionShared, {confBinningAnalysis.pt, confiBinningQa.tpcClusterFractionShared}},
-    {kTpcClusterVsTpcCrossedRows, {confiBinningQa.tpcCluster, confiBinningQa.tpcCrossedRows}},
-    {kTpcClusterVsTpcClusterShared, {confiBinningQa.tpcCluster, confiBinningQa.tpcClusterShared}},
-    {kTpcCrossedRows, {confiBinningQa.tpcCrossedRows}},
-    {kTpcCluster, {confiBinningQa.tpcCluster}},
-    {kTpcClusterOverCrossedRows, {confiBinningQa.tpcClusterOverCrossedRows}},
-    {kTpcClusterShared, {confiBinningQa.tpcClusterShared}},
-    {kTpcClusterFractionShared, {confiBinningQa.tpcClusterFractionShared}},
-    {kPtVsDcaxy, {confBinningAnalysis.pt, confiBinningQa.dcaXy}},
-    {kPtVsDcaz, {confBinningAnalysis.pt, confiBinningQa.dcaZ}},
-    {kPtVsDca, {confBinningAnalysis.pt, confiBinningQa.dca}},
-    {kItsSignal, {confiBinningQa.p, confiBinningQa.itsSignal}},
-    {kItsElectron, {confiBinningQa.p, confiBinningQa.itsElectron}},
-    {kItsPion, {confiBinningQa.p, confiBinningQa.itsPion}},
-    {kItsKaon, {confiBinningQa.p, confiBinningQa.itsKaon}},
-    {kItsProton, {confiBinningQa.p, confiBinningQa.itsProton}},
-    {kItsDeuteron, {confiBinningQa.p, confiBinningQa.itsDeuteron}},
-    {kItsTriton, {confiBinningQa.p, confiBinningQa.itsTriton}},
-    {kItsHelium, {confiBinningQa.p, confiBinningQa.itsHelium}},
-    {kTpcSignal, {confiBinningQa.p, confiBinningQa.tpcSignal}},
-    {kTpcElectron, {confiBinningQa.p, confiBinningQa.tpcElectron}},
-    {kTpcPion, {confiBinningQa.p, confiBinningQa.tpcPion}},
-    {kTpcKaon, {confiBinningQa.p, confiBinningQa.tpcKaon}},
-    {kTpcProton, {confiBinningQa.p, confiBinningQa.tpcProton}},
-    {kTpcDeuteron, {confiBinningQa.p, confiBinningQa.tpcDeuteron}},
-    {kTpcTriton, {confiBinningQa.p, confiBinningQa.tpcTriton}},
-    {kTpcHelium, {confiBinningQa.p, confiBinningQa.tpcHelium}},
-    {kTofBeta, {confiBinningQa.p, confiBinningQa.tofBeta}},
-    {kTofMass, {confiBinningQa.p, confiBinningQa.tofMass}},
-    {kTofElectron, {confiBinningQa.p, confiBinningQa.tofElectron}},
-    {kTofPion, {confiBinningQa.p, confiBinningQa.tofPion}},
-    {kTofKaon, {confiBinningQa.p, confiBinningQa.tofKaon}},
-    {kTofProton, {confiBinningQa.p, confiBinningQa.tofProton}},
-    {kTofDeuteron, {confiBinningQa.p, confiBinningQa.tofDeuteron}},
-    {kTofTriton, {confiBinningQa.p, confiBinningQa.tofTriton}},
-    {kTofHelium, {confiBinningQa.p, confiBinningQa.tofHelium}},
-    {kTpcitsElectron, {confiBinningQa.p, confiBinningQa.tpcitsElectron}},
-    {kTpcitsPion, {confiBinningQa.p, confiBinningQa.tpcitsPion}},
-    {kTpcitsKaon, {confiBinningQa.p, confiBinningQa.tpcitsKaon}},
-    {kTpcitsProton, {confiBinningQa.p, confiBinningQa.tpcitsProton}},
-    {kTpcitsDeuteron, {confiBinningQa.p, confiBinningQa.tpcitsDeuteron}},
-    {kTpcitsTriton, {confiBinningQa.p, confiBinningQa.tpcitsTriton}},
-    {kTpcitsHelium, {confiBinningQa.p, confiBinningQa.tpcitsHelium}},
-    {kTpctofElectron, {confiBinningQa.p, confiBinningQa.tpctofElectron}},
-    {kTpctofPion, {confiBinningQa.p, confiBinningQa.tpctofPion}},
-    {kTpctofKaon, {confiBinningQa.p, confiBinningQa.tpctofKaon}},
-    {kTpctofProton, {confiBinningQa.p, confiBinningQa.tpctofProton}},
-    {kTpctofDeuteron, {confiBinningQa.p, confiBinningQa.tpctofDeuteron}},
-    {kTpctofTriton, {confiBinningQa.p, confiBinningQa.tpctofTriton}},
-    {kTpctofHelium, {confiBinningQa.p, confiBinningQa.tpctofHelium}}};
+    TRACK_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      TRACK_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
+}
+
+template <typename T1, typename T2, typename T3>
+auto makeTrackMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa, T3 const& confBinningMc)
+{
+  return std::map<TrackHist, std::vector<framework::AxisSpec>>{
+    TRACK_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      TRACK_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
+        TRACK_HIST_MC_MAP(confBinningAnalysis, confBinningMc)};
 };
+
+#undef TRACK_HIST_ANALYSIS_MAP
+#undef TRACK_HIST_QA_MAP
+#undef TRACK_HIST_MC_MAP
 
 constexpr char PrefixTrackQa[] = "TrackQA/";
 constexpr char PrefixTrack1[] = "Track1/";
@@ -397,10 +489,10 @@ constexpr char PrefixResonanceNegDaughter[] = "ResonanceNegDau/";
 constexpr char PrefixResonancePosDaughterQa[] = "ResonancePosDauQa/";
 constexpr char PrefixResonanceNegDaughterQa[] = "ResonanceNegDauQa/";
 
-constexpr char PrefixV0PosDaughter1[] = "V0PosDau1/";
-constexpr char PrefixV0NegDaughter1[] = "V0NegDau1/";
-constexpr char PrefixV0PosDaughter2[] = "V0PosDau2/";
-constexpr char PrefixV0NegDaughter2[] = "V0NegDau2/";
+constexpr char PrefixV01PosDaughter[] = "V01PosDau/";
+constexpr char PrefixV01NegDaughter[] = "V01NegDau/";
+constexpr char PrefixV02PosDaughter[] = "V02PosDau/";
+constexpr char PrefixV02NegDaughter[] = "V02NegDau/";
 constexpr char PrefixV0PosDaughterQa[] = "V0PosDauQa/";
 constexpr char PrefixV0NegDaughterQa[] = "V0NegDauQa/";
 
@@ -417,29 +509,75 @@ constexpr char PrefixKinkChaDaughterQa[] = "KinkChaDauQa/";
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view PidDir = "PID/";
+constexpr std::string_view McDir = "MC/";
 
-/// \class FemtoDreamEventHisto
-/// \brief Class for histogramming event properties
-// template <femtomodes::Mode mode>
-template <const char* prefix, modes::Mode mode>
+template <const char* prefix>
 class TrackHistManager
 {
  public:
   TrackHistManager() = default;
   ~TrackHistManager() = default;
 
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, int AbsCharge = 1)
+  // init for analysis
+  template <modes::Mode mode>
+  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, int AbsCharge)
   {
     mHistogramRegistry = registry;
     mAbsCharge = std::abs(AbsCharge);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      initAnalysis(Specs);
+      this->initAnalysis(Specs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      initQa(Specs);
+      this->initQa(Specs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(Specs);
     }
   }
 
+  // init for analysis and qa
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, T const& ConfBinningQa, int AbsCharge)
+  {
+    this->enableOptionalHistograms(ConfBinningQa);
+    this->template init<mode>(registry, Specs, AbsCharge);
+  }
+
+  // init for analysis and mc and qa
+  template <modes::Mode mode, typename T1, typename T2>
+  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, T1 const& ConfBinningQa, T2 const& ConfBinningMc, int AbsCharge)
+  {
+    this->enableOptionalHistograms(ConfBinningQa, ConfBinningMc);
+    this->template init<mode>(registry, Specs, AbsCharge);
+  }
+
+  template <modes::Mode mode, typename T1, typename T2>
+  void fill(T1 const& track, T2 const& /*trackTable*/)
+  {
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      this->fillAnalysis(track);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      this->fillQa(track);
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fill(T1 const& track, T2 const& /*trackTable*/, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  {
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      this->fillAnalysis(track);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      this->fillQa(track);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      this->fillMc(track, mcParticles, mcMothers, mcPartonicMothers);
+    }
+  }
+
+ private:
+  // enable additional qa histograms
   template <typename T>
   void enableOptionalHistograms(T const& ConfBinningQa)
   {
@@ -454,27 +592,24 @@ class TrackHistManager
     mMomentumType = static_cast<modes::MomentumType>(ConfBinningQa.momentumType.value);
   }
 
-  // special init function for Qa
-  // passing config group for qa so we can optionally enable histograms via falgsc
-  template <typename T>
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, T const& ConfBinningQa, int AbsCharge)
-  {
-    enableOptionalHistograms(ConfBinningQa);
-    init(registry, Specs, AbsCharge);
-  }
-
+  // enable additional qa and mc histograms
   template <typename T1, typename T2>
-  void fill(T1 const& track, T2 const& /*trackTable*/)
+  void enableOptionalHistograms(T1 const& ConfBinningQa, T2 const& ConfBinningMc)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(track);
-    }
-    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      fillQa(track);
+    this->template enableOptionalHistograms<T1>(ConfBinningQa);
+
+    mPlotOrigins = ConfBinningMc.plotOrigins.value;
+    mPlotNSecondaries = ConfBinningMc.pdgCodesForMothersOfSecondary.value.size();
+
+    for (std::size_t i = 0; i < MaxSecondary; i++) {
+      if (i < ConfBinningMc.pdgCodesForMothersOfSecondary.value.size()) {
+        mPdgCodesSecondaryMother.at(i) = std::abs(ConfBinningMc.pdgCodesForMothersOfSecondary.value.at(i));
+      } else {
+        mPdgCodesSecondaryMother.at(i) = 0;
+      }
     }
   }
 
- private:
   void initAnalysis(std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
@@ -581,6 +716,36 @@ class TrackHistManager
     }
   }
 
+  void initMc(std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string mcDir = std::string(prefix) + std::string(McDir);
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt, HistTable), getHistDesc(kTruePt, HistTable), getHistType(kTruePt, HistTable), {Specs.at(kTruePt)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueEta, HistTable), getHistDesc(kTrueEta, HistTable), getHistType(kTrueEta, HistTable), {Specs.at(kTrueEta)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhi, HistTable), getHistDesc(kTruePhi, HistTable), getHistType(kTruePhi, HistTable), {Specs.at(kTruePhi)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kOrigin, HistTable), getHistDesc(kOrigin, HistTable), getHistType(kOrigin, HistTable), {Specs.at(kOrigin)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdg, HistTable), getHistDesc(kPdg, HistTable), getHistType(kPdg, HistTable), {Specs.at(kPdg)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdgMother, HistTable), getHistDesc(kPdgMother, HistTable), getHistType(kPdgMother, HistTable), {Specs.at(kPdgMother)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdgPartonicMother, HistTable), getHistDesc(kPdgPartonicMother, HistTable), getHistType(kPdgPartonicMother, HistTable), {Specs.at(kPdgPartonicMother)});
+
+    if (mPlotOrigins) {
+      mHistogramRegistry->add(mcDir + getHistNameV2(kNoMcParticle, HistTable), getHistDesc(kNoMcParticle, HistTable), getHistType(kNoMcParticle, HistTable), {Specs.at(kNoMcParticle)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kPrimary, HistTable), getHistDesc(kPrimary, HistTable), getHistType(kPrimary, HistTable), {Specs.at(kPrimary)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kFromWrongCollision, HistTable), getHistDesc(kFromWrongCollision, HistTable), getHistType(kFromWrongCollision, HistTable), {Specs.at(kFromWrongCollision)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kFromMaterial, HistTable), getHistDesc(kFromMaterial, HistTable), getHistType(kFromMaterial, HistTable), {Specs.at(kFromMaterial)});
+
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1) {
+        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary1, HistTable), getHistDesc(kSecondary1, HistTable), getHistType(kSecondary1, HistTable), {Specs.at(kSecondary1)});
+      }
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2) {
+        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary2, HistTable), getHistDesc(kSecondary2, HistTable), getHistType(kSecondary2, HistTable), {Specs.at(kSecondary2)});
+      }
+      if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3) {
+        mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary3, HistTable), getHistDesc(kSecondary3, HistTable), getHistType(kSecondary3, HistTable), {Specs.at(kSecondary3)});
+      }
+      mHistogramRegistry->add(mcDir + getHistNameV2(kSecondaryOther, HistTable), getHistDesc(kSecondaryOther, HistTable), getHistType(kSecondaryOther, HistTable), {Specs.at(kSecondaryOther)});
+    }
+  }
+
   template <typename T>
   void fillAnalysis(T const& track)
   {
@@ -622,9 +787,9 @@ class TrackHistManager
 
     float momentum = 0.f;
     if (mMomentumType == modes::MomentumType::kPt) {
-      momentum = mAbsCharge * track.p();
-    } else if (mMomentumType == modes::MomentumType::kPAtPv) {
       momentum = mAbsCharge * track.pt();
+    } else if (mMomentumType == modes::MomentumType::kPAtPv) {
+      momentum = mAbsCharge * track.p();
     } else if (mMomentumType == modes::MomentumType::kPTpc) {
       momentum = track.tpcInnerParam();
     } else {
@@ -693,6 +858,77 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kTpctofHelium, HistTable)), momentum, track.tpctofNSigmaHe());
     }
   }
+  template <typename T1, typename T2, typename T3, typename T4>
+  void fillMc(T1 const& track, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  {
+    // No MC Particle
+    if (!track.has_fMcParticle()) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
+      if (mPlotOrigins) {
+        mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+      }
+      return;
+    }
+
+    // Retrieve MC particle
+    auto mcParticle = track.template fMcParticle_as<T2>();
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePt, HistTable)), mcParticle.pt());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueEta, HistTable)), mcParticle.eta());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePhi, HistTable)), mcParticle.phi());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
+
+    // Mother PDG
+    if (track.has_fMcMother()) {
+      auto mother = track.template fMcMother_as<T3>();
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
+    } else {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
+    }
+
+    // Partonic Mother PDG
+    if (track.has_fMcPartMoth()) {
+      auto partonicMother = track.template fMcPartMoth_as<T4>();
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
+    } else {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
+    }
+
+    // Plot origins
+    if (mPlotOrigins) {
+      switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
+        case modes::McOrigin::kPhysicalPrimary:
+          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+          break;
+        case modes::McOrigin::kFromWrongCollision:
+          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+          break;
+        case modes::McOrigin::kFromMaterial:
+          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+          break;
+        case modes::McOrigin::kFromSecondaryDecay:
+          if (track.has_fMcMother()) {
+            auto mother = track.template fMcMother_as<T3>();
+            int motherPdgCode = std::abs(mother.pdgCode());
+            // Switch on PDG of the mother
+            if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
+              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
+              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
+              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+            } else {
+              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+            }
+          }
+          break;
+        default:
+          // Unknown origin → safely ignore
+          break;
+      }
+    }
+  }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   int mAbsCharge = 1;
@@ -704,6 +940,9 @@ class TrackHistManager
   bool mPlotDeuteronPid = false;
   bool mPlotTritonPid = false;
   bool mPlotHeliumPid = false;
+  bool mPlotOrigins = false;
+  int mPlotNSecondaries = 0;
+  std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
   modes::MomentumType mMomentumType = modes::MomentumType::kPAtPv;
 };
 }; // namespace trackhistmanager
