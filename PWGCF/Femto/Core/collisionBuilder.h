@@ -89,6 +89,7 @@ struct ConfCcdb : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
   o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField, Run2 -> GLO/GRP/GRP"};
   o2::framework::Configurable<std::string> triggerPath{"triggerPath", "EventFiltering/Zorro/", "CCDB path for trigger information"};
+  o2::framework::Configurable<int> magFieldForced{"magFieldForced", 0, "Force value for magnetic field (kG). This will skip calls to the ccdb. Deactivate by setting value to 0"};
 };
 
 struct ConfCollisionRctFlags : o2::framework::ConfigurableGroup {
@@ -390,6 +391,7 @@ class CollisionBuilder
       mUseRctFlags = true;
       mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
     }
+    mMagFieldForced = confCcdb.magFieldForced.value;
     mGrpPath = confCcdb.grpPath.value;
     mSubGeneratorId = confFilter.subGeneratorId.value;
 
@@ -403,12 +405,16 @@ class CollisionBuilder
   {
     if (mRunNumber != bc.runNumber()) {
       mRunNumber = bc.runNumber();
-      static o2::parameters::GRPMagField* grpo = nullptr;
-      grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
-      if (grpo == nullptr) {
-        LOG(fatal) << "GRP object not found for Run " << mRunNumber;
+      if (mMagFieldForced == 0) {
+        static o2::parameters::GRPMagField* grpo = nullptr;
+        grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+        if (grpo == nullptr) {
+          LOG(fatal) << "GRP object not found for Run " << mRunNumber;
+        }
+        mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
+      } else {
+        mMagField = mMagFieldForced;
       }
-      mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
 
       if (mUseTrigger) {
         mZorro.initCCDB(ccdb.service, mRunNumber, bc.timestamp(), mTriggerNames);
@@ -534,6 +540,7 @@ class CollisionBuilder
   bool mUseTrigger = false;
   int mRunNumber = -1;
   std::string mGrpPath = std::string("");
+  int mMagFieldForced = 0;
   int mMagField = 0;
   aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
   bool mUseRctFlags = false;

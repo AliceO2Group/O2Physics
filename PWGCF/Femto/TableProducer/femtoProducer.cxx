@@ -446,7 +446,7 @@ struct FemtoProducer {
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3ppMc, "Provide reconstructed and generated tracks and v0s", false);
 
-  // process monte carlo tracks and v0s
+  // process monte carlo tracks and kinks
   void processTracksKinksRun3ppMc(consumeddata::Run3PpMcRecoCollisions::iterator const& col,
                                   consumeddata::Run3PpMcGenCollisions const& mcCols,
                                   BCsWithTimestamps const& bcs,
@@ -463,6 +463,26 @@ struct FemtoProducer {
     processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, kinks, mcParticles);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksKinksRun3ppMc, "Provide reconstructed and generated tracks and kinks", false);
+
+  // process monte carlo tracks and v0s and kinks (adding cascades later here)
+  void processTracksV0sKinksRun3ppMc(consumeddata::Run3PpMcRecoCollisions::iterator const& col,
+                                     consumeddata::Run3PpMcGenCollisions const& mcCols,
+                                     BCsWithTimestamps const& bcs,
+                                     consumeddata::Run3McRecoTracks const& tracks,
+                                     consumeddata::Run3RecoVzeros const& v0s,
+                                     consumeddata::Run3Kinks const& kinks,
+                                     consumeddata::Run3McGenParticles const& mcParticles)
+  {
+    if (!processMcCollisions<modes::System::kPP_Run3_MC>(col, mcCols, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,
+                                            pidits::ITSNSigmaKa, pidits::ITSNSigmaPr, pidits::ITSNSigmaDe, pidits::ITSNSigmaTr, pidits::ITSNSigmaHe>(tracks);
+    processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
+    processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, v0s, mcParticles);
+    processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, kinks, mcParticles);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sKinksRun3ppMc, "Provide reconstructed and generated tracks and v0s and kinks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

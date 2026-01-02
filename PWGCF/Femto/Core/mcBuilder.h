@@ -105,15 +105,6 @@ class McBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2>
-  void fillMcCollision(T1 const& mcCol, T2& mcProducts)
-  {
-    mcProducts.producedMcCollisions(
-      mcCol.multMCNParticlesEta08(),
-      mcCol.centFT0M());
-    mCollisionMap.emplace(mcCol.globalIndex(), mcProducts.producedMcCollisions.lastIndex());
-  }
-
   template <modes::System system, typename T1, typename T2, typename T3>
   void fillMcCollisionWithLabel(T1& mcProducts, T2 const& col, T3 const& /*mcCols*/)
   {
@@ -137,6 +128,74 @@ class McBuilder
       // Case: No MC collision associated
       mcProducts.producedCollisionLabels(-1);
     }
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcTrackWithLabel(T1 const& col, T2 const& mcCols, T3 const& track, T4 const& mcParticles, T5& mcProducts)
+  {
+    if (!mProduceTrackLabels) {
+      mcProducts.producedTrackLabels(-1, -1, -1);
+      return;
+    }
+    fillMcLabelGeneric<system>(col, mcCols, track, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedTrackLabels(p, m, pm); });
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcLambdaWithLabel(T1 const& col, T2 const& mcCols, T3 const& lambda, T4 const& mcParticles, T5& mcProducts)
+  {
+    if (!mProduceLambdaLabels) {
+      mcProducts.producedLambdaLabels(-1, -1, -1);
+      return;
+    }
+    fillMcLabelGeneric<system>(col, mcCols, lambda, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedLambdaLabels(p, m, pm); });
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcK0shortWithLabel(T1 const& col, T2 const& mcCols, T3 const& k0short, T4 const& mcParticles, T5& mcProducts)
+  {
+    if (!mProduceK0shortLabels) {
+      mcProducts.producedK0shortLabels(-1, -1, -1);
+      return;
+    }
+    fillMcLabelGeneric<system>(col, mcCols, k0short, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedK0shortLabels(p, m, pm); });
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcSigmaWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaDaughter, T4 const& mcParticles, T5& mcProducts)
+  {
+    if (!mProduceSigmaLabels) {
+      return;
+    }
+    fillMcLabelGeneric<system>(col, mcCols, sigmaDaughter, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedSigmaLabels(p, m, pm); }, true);
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcSigmaPlusWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaPlusDaughter, T4 const& mcParticles, T5& mcProducts)
+  {
+    if (!mProduceSigmaPlusLabels) {
+      return;
+    }
+    fillMcLabelGeneric<system>(col, mcCols, sigmaPlusDaughter, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedSigmaPlusLabels(p, m, pm); }, true);
+  }
+
+  bool fillAnyTable() const { return mFillAnyTable; }
+
+  void reset()
+  {
+    mCollisionMap.clear();
+    mMcParticleMap.clear();
+    mMcMotherMap.clear();
+    mMcPartonicMotherMap.clear();
+  }
+
+ private:
+  template <modes::System system, typename T1, typename T2>
+  void fillMcCollision(T1 const& mcCol, T2& mcProducts)
+  {
+    mcProducts.producedMcCollisions(
+      mcCol.multMCNParticlesEta08(),
+      mcCol.centFT0M());
+    mCollisionMap.emplace(mcCol.globalIndex(), mcProducts.producedMcCollisions.lastIndex());
   }
 
   template <typename T1, typename T2, typename T3>
@@ -176,293 +235,40 @@ class McBuilder
     return it->second;
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcTrackWithLabel(T1 const& col, T2 const& mcCols, T3 const& track, T4 const& mcParticles, T5& mcProducts)
-  {
-    if (!mProduceTrackLabels) {
-      return;
-    }
-
-    if (!track.has_mcParticle()) {
-      mcProducts.producedTrackLabels(-1, -1, -1);
-      return;
-    }
-
-    auto mcParticle = track.template mcParticle_as<T4>();
-    auto mcCol = mcParticle.template mcCollision_as<T2>();
-
-    int64_t particleIndex = mcParticle.globalIndex();
-    int64_t trackIndex = track.globalIndex();
-
-    int64_t mcParticleRow = -1;
-
-    // MC PARTICLE
-    auto itP = mTrackToMcParticleMap.find(particleIndex);
-    if (itP != mTrackToMcParticleMap.end()) {
-      mcParticleRow = itP->second;
-    } else {
-      auto origin = this->getOrigin(col, mcCols, mcParticle);
-      int64_t mcColId = this->getMcColId<system>(mcCol, mcProducts);
-
-      mcProducts.producedMcParticles(
-        mcColId,
-        static_cast<aod::femtodatatypes::McOriginType>(origin),
-        mcParticle.pdgCode(),
-        mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
-        mcParticle.eta(),
-        mcParticle.phi());
-
-      mcParticleRow = mcProducts.producedMcParticles.lastIndex();
-      mTrackToMcParticleMap[particleIndex] = mcParticleRow;
-    }
-
-    // mothers (fill only if exists)
-    int64_t mothersRow = -1;
-    auto itM = mTrackToMcMotherMap.find(trackIndex);
-
-    if (itM != mTrackToMcMotherMap.end()) {
-      mothersRow = itM->second;
-    } else {
-
-      auto mothers = mcParticle.template mothers_as<T4>();
-      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
-
-      if (motherExists) {
-        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
-
-        mcProducts.producedMothers(motherPdg);
-        mothersRow = mcProducts.producedMothers.lastIndex();
-        mTrackToMcMotherMap[trackIndex] = mothersRow;
-      }
-    }
-
-    // partonic mother (fill only if exists)
-    int64_t partonicRow = -1;
-    auto itPM = mTrackToMcPartonicMap.find(trackIndex);
-
-    if (itPM != mTrackToMcPartonicMap.end()) {
-      partonicRow = itPM->second;
-    } else {
-      int partIdx = -1;
-      if (mcParticle.has_mothers()) {
-        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
-      }
-
-      bool partonicExists = (partIdx >= 0);
-
-      if (partonicExists) {
-        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
-
-        mcProducts.producedPartonicMothers(partonicPdg);
-        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
-        mTrackToMcPartonicMap[trackIndex] = partonicRow;
-      }
-    }
-    mcProducts.producedTrackLabels(mcParticleRow, mothersRow, partonicRow);
-  }
-
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcLambdaWithLabel(T1 const& col, T2 const& mcCols, T3 const& lambda, T4 const& mcParticles, T5& mcProducts)
-  {
-    if (!mProduceLambdaLabels) {
-      return;
-    }
-
-    if (!lambda.has_mcParticle()) {
-      mcProducts.producedLambdaLabels(-1, -1, -1);
-      return;
-    }
-
-    auto mcParticle = lambda.template mcParticle_as<T4>();
-    auto mcCol = mcParticle.template mcCollision_as<T2>();
-
-    int64_t particleIndex = mcParticle.globalIndex();
-    int64_t lambdaIndex = lambda.globalIndex();
-
-    int64_t mcParticleRow = -1;
-
-    // MC PARTICLE
-    auto itP = mLambdaToMcParticleMap.find(particleIndex);
-    if (itP != mLambdaToMcParticleMap.end()) {
-      mcParticleRow = itP->second;
-    } else {
-      auto origin = this->getOrigin(col, mcCols, mcParticle);
-      int64_t mcColId = this->getMcColId<system>(mcCol, mcProducts);
-
-      mcProducts.producedMcParticles(
-        mcColId,
-        static_cast<aod::femtodatatypes::McOriginType>(origin),
-        mcParticle.pdgCode(),
-        mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
-        mcParticle.eta(),
-        mcParticle.phi());
-
-      mcParticleRow = mcProducts.producedMcParticles.lastIndex();
-      mLambdaToMcParticleMap[particleIndex] = mcParticleRow;
-    }
-
-    // mothers (fill only if exists)
-    int64_t mothersRow = -1;
-    auto itM = mLambdaToMcMotherMap.find(lambdaIndex);
-
-    if (itM != mLambdaToMcMotherMap.end()) {
-      mothersRow = itM->second;
-    } else {
-
-      auto mothers = mcParticle.template mothers_as<T4>();
-      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
-
-      if (motherExists) {
-        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
-
-        mcProducts.producedMothers(motherPdg);
-        mothersRow = mcProducts.producedMothers.lastIndex();
-        mLambdaToMcMotherMap[lambdaIndex] = mothersRow;
-      }
-    }
-
-    // partonic mother (fill only if exists)
-    int64_t partonicRow = -1;
-    auto itPM = mLambdaToMcPartonicMap.find(lambdaIndex);
-
-    if (itPM != mLambdaToMcPartonicMap.end()) {
-      partonicRow = itPM->second;
-    } else {
-      int partIdx = -1;
-      if (mcParticle.has_mothers()) {
-        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
-      }
-
-      bool partonicExists = (partIdx >= 0);
-
-      if (partonicExists) {
-        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
-
-        mcProducts.producedPartonicMothers(partonicPdg);
-        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
-        mLambdaToMcPartonicMap[lambdaIndex] = partonicRow;
-      }
-    }
-    mcProducts.producedLambdaLabels(mcParticleRow, mothersRow, partonicRow);
-  }
-
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcK0shortWithLabel(T1 const& col, T2 const& mcCols, T3 const& k0short, T4 const& mcParticles, T5& mcProducts)
-  {
-    if (!mProduceK0shortLabels) {
-      return;
-    }
-
-    if (!k0short.has_mcParticle()) {
-      mcProducts.producedK0shortLabels(-1, -1, -1);
-      return;
-    }
-
-    auto mcParticle = k0short.template mcParticle_as<T4>();
-    auto mcCol = mcParticle.template mcCollision_as<T2>();
-
-    int64_t particleIndex = mcParticle.globalIndex();
-    int64_t k0shortIndex = k0short.globalIndex();
-
-    int64_t mcParticleRow = -1;
-
-    // MC PARTICLE
-    auto itP = mK0shortToMcParticleMap.find(particleIndex);
-    if (itP != mK0shortToMcParticleMap.end()) {
-      mcParticleRow = itP->second;
-    } else {
-      auto origin = this->getOrigin(col, mcCols, mcParticle);
-      int64_t mcColId = this->getMcColId<system>(mcCol, mcProducts);
-
-      mcProducts.producedMcParticles(
-        mcColId,
-        static_cast<aod::femtodatatypes::McOriginType>(origin),
-        mcParticle.pdgCode(),
-        mcParticle.pt(),
-        mcParticle.eta(),
-        mcParticle.phi());
-
-      mcParticleRow = mcProducts.producedMcParticles.lastIndex();
-      mK0shortToMcParticleMap[particleIndex] = mcParticleRow;
-    }
-
-    // mothers (fill only if exists)
-    int64_t mothersRow = -1;
-    auto itM = mK0shortToMcMotherMap.find(k0shortIndex);
-
-    if (itM != mK0shortToMcMotherMap.end()) {
-      mothersRow = itM->second;
-    } else {
-
-      auto mothers = mcParticle.template mothers_as<T4>();
-      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
-
-      if (motherExists) {
-        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
-
-        mcProducts.producedMothers(motherPdg);
-        mothersRow = mcProducts.producedMothers.lastIndex();
-        mK0shortToMcMotherMap[k0shortIndex] = mothersRow;
-      }
-    }
-
-    // partonic mother (fill only if exists)
-    int64_t partonicRow = -1;
-    auto itPM = mK0shortToMcPartonicMap.find(k0shortIndex);
-
-    if (itPM != mK0shortToMcPartonicMap.end()) {
-      partonicRow = itPM->second;
-    } else {
-      int partIdx = -1;
-      if (mcParticle.has_mothers()) {
-        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
-      }
-
-      bool partonicExists = (partIdx >= 0);
-
-      if (partonicExists) {
-        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
-
-        mcProducts.producedPartonicMothers(partonicPdg);
-        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
-        mK0shortToMcPartonicMap[k0shortIndex] = partonicRow;
-      }
-    }
-    mcProducts.producedK0shortLabels(mcParticleRow, mothersRow, partonicRow);
-  }
-
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void fillMcSigmaWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigma, T4 const& sigmaDaughter, T5 const& mcParticles, T6& mcProducts)
+  void fillMcLabelGeneric(T1 const& col,
+                          T2 const& mcCols,
+                          T3 const& particle,
+                          T4 const& mcParticles,
+                          T5& mcProducts,
+                          T6 writeLabels,
+                          bool startFromMotherParticle = false)
   {
-    if (!mProduceSigmaLabels) {
+    if (!particle.has_mcParticle()) {
+      writeLabels(mcProducts, -1, -1, -1);
       return;
     }
 
-    if (!sigmaDaughter.has_mcParticle()) {
-      mcProducts.producedSigmaLabels(-1, -1, -1);
-      return;
-    }
-
-    auto mcKinkDaughter = sigmaDaughter.template mcParticle_as<T5>();
-    auto mcKinkDaughterMothers = mcKinkDaughter.template mothers_as<T5>();
-
-    if (!mcKinkDaughter.has_mothers() && !mcKinkDaughterMothers.empty()) {
-      mcProducts.producedSigmaLabels(-1, -1, -1);
-      return;
-    }
-
-    // we get the mc kink partilce via the mother of the kink daughter
-    auto mcParticle = mcKinkDaughterMothers.front();
+    auto mcParticle = particle.template mcParticle_as<T4>();
     auto mcCol = mcParticle.template mcCollision_as<T2>();
 
-    int64_t particleIndex = mcParticle.globalIndex();
-    int64_t sigmaIndex = sigma.globalIndex();
+    if (startFromMotherParticle) {
+      // in case of e.g. sigmas we do not reconstruct the mother but the daughter, so here we want to start from the mother particle
+      auto mcDaughterParticle = particle.template mcParticle_as<T4>();
+      if (!mcDaughterParticle.has_mothers()) {
+        writeLabels(mcProducts, -1, -1, -1);
+        return;
+      }
+      auto mothersOfDaughter = mcDaughterParticle.template mothers_as<T4>();
+      mcParticle = mothersOfDaughter.front();
+    }
 
+    int64_t mcParticleIndex = mcParticle.globalIndex();
     int64_t mcParticleRow = -1;
 
-    // MC PARTICLE
-    auto itP = mSigmaToMcParticleMap.find(particleIndex);
-    if (itP != mSigmaToMcParticleMap.end()) {
+    // MC particle
+    auto itP = mMcParticleMap.find(mcParticleIndex);
+    if (itP != mMcParticleMap.end()) {
       mcParticleRow = itP->second;
     } else {
       auto origin = this->getOrigin(col, mcCols, mcParticle);
@@ -477,156 +283,51 @@ class McBuilder
         mcParticle.phi());
 
       mcParticleRow = mcProducts.producedMcParticles.lastIndex();
-      mSigmaToMcParticleMap[particleIndex] = mcParticleRow;
+      mMcParticleMap[mcParticleIndex] = mcParticleRow;
     }
 
-    // mothers (fill only if exists)
-    int64_t mothersRow = -1;
-    auto itM = mSigmaToMcMotherMap.find(sigmaIndex);
+    // MC mother
+    int64_t mcMotherRow = -1;
+    if (mcParticle.has_mothers()) {
+      auto mothers = mcParticle.template mothers_as<T4>();
+      auto mcMotherIndex = mothers.front().globalIndex();
 
-    if (itM != mSigmaToMcMotherMap.end()) {
-      mothersRow = itM->second;
-    } else {
-
-      auto mothers = mcParticle.template mothers_as<T5>();
-      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
-
-      if (motherExists) {
-        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
-
-        mcProducts.producedMothers(motherPdg);
-        mothersRow = mcProducts.producedMothers.lastIndex();
-        mSigmaToMcMotherMap[sigmaIndex] = mothersRow;
+      auto itM = mMcMotherMap.find(mcMotherIndex);
+      if (itM != mMcMotherMap.end()) {
+        mcMotherRow = itM->second;
+      } else {
+        mcProducts.producedMothers(mothers.front().pdgCode());
+        mcMotherRow = mcProducts.producedMothers.lastIndex();
+        mMcMotherMap[mcMotherIndex] = mcMotherRow;
       }
     }
 
-    // partonic mother (fill only if exists)
-    int64_t partonicRow = -1;
-    auto itPM = mSigmaToMcPartonicMap.find(sigmaIndex);
-
-    if (itPM != mSigmaToMcPartonicMap.end()) {
-      partonicRow = itPM->second;
-    } else {
-      int partIdx = -1;
-      if (mcParticle.has_mothers()) {
-        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
-      }
-
-      bool partonicExists = (partIdx >= 0);
-
-      if (partonicExists) {
-        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
-
-        mcProducts.producedPartonicMothers(partonicPdg);
-        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
-        mSigmaToMcPartonicMap[sigmaIndex] = partonicRow;
+    // Partonic mother
+    int64_t mcPartonicMotherRow = -1;
+    auto mcPartonicMotherIndex = this->findFirstPartonicMother(mcParticle, mcParticles);
+    if (mcPartonicMotherIndex >= 0) {
+      auto itPM = mMcPartonicMotherMap.find(mcPartonicMotherIndex);
+      if (itPM != mMcPartonicMotherMap.end()) {
+        mcPartonicMotherRow = itPM->second;
+      } else {
+        mcProducts.producedPartonicMothers(
+          mcParticles.iteratorAt(mcPartonicMotherIndex).pdgCode());
+        mcPartonicMotherRow = mcProducts.producedPartonicMothers.lastIndex();
+        mMcPartonicMotherMap[mcPartonicMotherIndex] = mcPartonicMotherRow;
       }
     }
-    mcProducts.producedSigmaLabels(mcParticleRow, mothersRow, partonicRow);
+
+    writeLabels(mcProducts, mcParticleRow, mcMotherRow, mcPartonicMotherRow);
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void fillMcSigmaPlusWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaPlus, T4 const& sigmaPlusDaughter, T5 const& mcParticles, T6& mcProducts)
+  template <typename T1, typename T2>
+  int findFirstPartonicMother(const T1& mcParticle, const T2& mcParticles)
   {
-    if (!mProduceSigmaPlusLabels) {
-      return;
-    }
-
-    if (!sigmaPlusDaughter.has_mcParticle()) {
-      mcProducts.producedSigmaPlusLabels(-1, -1, -1);
-      return;
-    }
-
-    auto mcKinkDaughter = sigmaPlusDaughter.template mcParticle_as<T5>();
-    auto mcKinkDaughterMothers = mcKinkDaughter.template mothers_as<T5>();
-
-    if (!mcKinkDaughter.has_mothers() && !mcKinkDaughterMothers.empty()) {
-      mcProducts.producedSigmaPlusLabels(-1, -1, -1);
-      return;
-    }
-
-    // we get the mc kink partilce via the mother of the kink daughter
-    auto mcParticle = mcKinkDaughterMothers.front();
-    auto mcCol = mcParticle.template mcCollision_as<T2>();
-
-    int64_t particleIndex = mcParticle.globalIndex();
-    int64_t sigmaIndex = sigmaPlus.globalIndex();
-
-    int64_t mcParticleRow = -1;
-
-    // MC PARTICLE
-    auto itP = mSigmaPlusToMcParticleMap.find(particleIndex);
-    if (itP != mSigmaPlusToMcParticleMap.end()) {
-      mcParticleRow = itP->second;
-    } else {
-      auto origin = this->getOrigin(col, mcCols, mcParticle);
-      int64_t mcColId = this->getMcColId<system>(mcCol, mcProducts);
-
-      mcProducts.producedMcParticles(
-        mcColId,
-        static_cast<aod::femtodatatypes::McOriginType>(origin),
-        mcParticle.pdgCode(),
-        mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
-        mcParticle.eta(),
-        mcParticle.phi());
-
-      mcParticleRow = mcProducts.producedMcParticles.lastIndex();
-      mSigmaPlusToMcParticleMap[particleIndex] = mcParticleRow;
-    }
-
-    // mothers (fill only if exists)
-    int64_t mothersRow = -1;
-    auto itM = mSigmaPlusToMcMotherMap.find(sigmaIndex);
-
-    if (itM != mSigmaPlusToMcMotherMap.end()) {
-      mothersRow = itM->second;
-    } else {
-
-      auto mothers = mcParticle.template mothers_as<T5>();
-      bool motherExists = mcParticle.has_mothers() && !mothers.empty();
-
-      if (motherExists) {
-        int motherPdg = mothers.front().pdgCode(); // PDG code is ALWAYS valid if the mother exists
-
-        mcProducts.producedMothers(motherPdg);
-        mothersRow = mcProducts.producedMothers.lastIndex();
-        mSigmaPlusToMcMotherMap[sigmaIndex] = mothersRow;
-      }
-    }
-
-    // partonic mother (fill only if exists)
-    int64_t partonicRow = -1;
-    auto itPM = mSigmaPlusToMcPartonicMap.find(sigmaIndex);
-
-    if (itPM != mSigmaPlusToMcPartonicMap.end()) {
-      partonicRow = itPM->second;
-    } else {
-      int partIdx = -1;
-      if (mcParticle.has_mothers()) {
-        partIdx = this->findFirstPartonicMother(mcParticle, mcParticles);
-      }
-
-      bool partonicExists = (partIdx >= 0);
-
-      if (partonicExists) {
-        int partonicPdg = mcParticles.iteratorAt(partIdx).pdgCode();
-
-        mcProducts.producedPartonicMothers(partonicPdg);
-        partonicRow = mcProducts.producedPartonicMothers.lastIndex();
-        mSigmaPlusToMcPartonicMap[sigmaIndex] = partonicRow;
-      }
-    }
-    mcProducts.producedSigmaPlusLabels(mcParticleRow, mothersRow, partonicRow);
-  }
-
-  template <typename TParticle, typename TContainer>
-  int findFirstPartonicMother(const TParticle& p, const TContainer& mcParticles)
-  {
-    if (!p.has_mothers()) {
+    if (!mcParticle.has_mothers()) {
       return -1;
     }
 
-    auto motherIds = p.mothersIds();
+    auto motherIds = mcParticle.mothersIds();
 
     // adapted these checks from MCUtils in PWGEM
     const int defaultMotherSize = 2;
@@ -650,10 +351,10 @@ class McBuilder
         continue;
 
       const auto& mother = mcParticles.iteratorAt(i);
-      int apdg = std::abs(mother.pdgCode());
+      int pdgAbs = std::abs(mother.pdgCode());
 
       // Is it a parton? (quark or gluon)
-      if (apdg <= PDG_t::kTop || apdg == PDG_t::kGluon) {
+      if (pdgAbs <= PDG_t::kTop || pdgAbs == PDG_t::kGluon) {
         return i; // Found a parton → return index
       }
 
@@ -667,34 +368,6 @@ class McBuilder
     return -1;
   }
 
-  void reset()
-  {
-    mCollisionMap.clear();
-
-    mTrackToMcParticleMap.clear();
-    mTrackToMcMotherMap.clear();
-    mTrackToMcPartonicMap.clear();
-
-    mLambdaToMcParticleMap.clear();
-    mLambdaToMcMotherMap.clear();
-    mLambdaToMcPartonicMap.clear();
-
-    mK0shortToMcParticleMap.clear();
-    mK0shortToMcMotherMap.clear();
-    mK0shortToMcPartonicMap.clear();
-
-    mSigmaToMcParticleMap.clear();
-    mSigmaToMcMotherMap.clear();
-    mSigmaToMcPartonicMap.clear();
-
-    mSigmaPlusToMcParticleMap.clear();
-    mSigmaPlusToMcMotherMap.clear();
-    mSigmaPlusToMcPartonicMap.clear();
-  }
-
-  bool fillAnyTable() const { return mFillAnyTable; }
-
- private:
   bool mPassThrough = false;
   bool mFillAnyTable = false;
   bool mProduceMcCollisions = false;
@@ -711,25 +384,9 @@ class McBuilder
 
   std::unordered_map<int64_t, int64_t> mCollisionMap;
 
-  std::unordered_map<int64_t, int64_t> mTrackToMcParticleMap;
-  std::unordered_map<int64_t, int64_t> mTrackToMcMotherMap;
-  std::unordered_map<int64_t, int64_t> mTrackToMcPartonicMap;
-
-  std::unordered_map<int64_t, int64_t> mLambdaToMcParticleMap;
-  std::unordered_map<int64_t, int64_t> mLambdaToMcMotherMap;
-  std::unordered_map<int64_t, int64_t> mLambdaToMcPartonicMap;
-
-  std::unordered_map<int64_t, int64_t> mK0shortToMcParticleMap;
-  std::unordered_map<int64_t, int64_t> mK0shortToMcMotherMap;
-  std::unordered_map<int64_t, int64_t> mK0shortToMcPartonicMap;
-
-  std::unordered_map<int64_t, int64_t> mSigmaToMcParticleMap;
-  std::unordered_map<int64_t, int64_t> mSigmaToMcMotherMap;
-  std::unordered_map<int64_t, int64_t> mSigmaToMcPartonicMap;
-
-  std::unordered_map<int64_t, int64_t> mSigmaPlusToMcParticleMap;
-  std::unordered_map<int64_t, int64_t> mSigmaPlusToMcMotherMap;
-  std::unordered_map<int64_t, int64_t> mSigmaPlusToMcPartonicMap;
+  std::unordered_map<int64_t, int64_t> mMcParticleMap;
+  std::unordered_map<int64_t, int64_t> mMcMotherMap;
+  std::unordered_map<int64_t, int64_t> mMcPartonicMotherMap;
 };
 
 } // namespace mcbuilder

@@ -673,15 +673,15 @@ using FOmegaExtras = FOmegaExtras_001;
 
 namespace femtomccollisions
 {
-DECLARE_SOA_COLUMN(MultMc, multMc, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
-DECLARE_SOA_COLUMN(CentMc, centMc, float); //! Multiplicity of the event as given by the generator in |eta|<0.8
-                                           //
+DECLARE_SOA_COLUMN(Mult, mult, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_COLUMN(Cent, cent, float); //! Multiplicity of the event as given by the generator in |eta|<0.8
+                                       //
 } // namespace femtomccollisions
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcCols_001, "FMCCOL", 1, //! femto mc collisions
                                    o2::soa::Index<>,
-                                   femtomccollisions::MultMc,
-                                   femtomccollisions::CentMc);
+                                   femtomccollisions::Mult,
+                                   femtomccollisions::Cent);
 using FMcCols = FMcCols_001;
 using FMcCol = FMcCols_001::iterator;
 
@@ -717,7 +717,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcMothers_001, "FMCMOTHER", 1, //! first dir
 using FMcMothers = FMcMothers_001;
 using FMcMother = FMcMothers::iterator;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! last partonic mother of the monte carlo particle
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcPartMoths_001, "FMCPARTMOTH", 1, //! first partonic mother of the monte carlo particle after hadronization
                                    o2::soa::Index<>,
                                    femtomcparticle::PdgCode);
 using FMcPartMoths = FMcPartMoths_001;

@@ -93,16 +93,16 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
 #undef V0_DEFAULT_BITS
 
 // base selection for analysis task for v0s
-#define V0_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                 \
-  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "V0 PDG code"};                         \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                       \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                     \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                  \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                   \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                    \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};       \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Lambda"}; \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Lambda"}; \
+#define V0_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                             \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "PDG code. Set sign to -1 for antiparticle"}; \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                   \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                 \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                              \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                               \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                   \
+  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Lambda"};             \
+  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Lambda"};             \
   o2::framework::Configurable<o2::aod::femtodatatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
@@ -118,6 +118,7 @@ template <const char* Prefix>
 struct ConfK0shortSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_SELECTIONS(0.47, 0.51, 310)
+  o2::framework::Configurable<int> sign{"sign", 0, "Dummy value. For compatability with Lambda selection"};
 };
 
 #undef V0_DEFAULT_SELECTIONS
@@ -142,8 +143,8 @@ enum V0Sels {
 
   // selection for daughter
   kDauAbsEtaMax, ///< Max. absolute pseudo rapidity
-  kDauDcaMin,    ///< Min. DCA of the positive daughters at primary vertex
-  kDauTpcClsMin, ///< Min. number of TPC clusters of positive daughter
+  kDauDcaMin,    ///< Min. DCA of the daughters at primary vertex
+  kDauTpcClsMin, ///< Min. number of TPC clusters of daughter
 
   // pid selection for daughters
   kPosDaughTpcPion,   ///< TPC Pion PID for positive daughter
@@ -165,9 +166,9 @@ const std::unordered_map<V0Sels, std::string> v0SelectionNames = {
   {kTransRadMin, "Min. transverse radius"},
   {kTransRadMax, "Max. transverse radius"},
 
-  {kDauAbsEtaMax, "Max. absolute pseudo rapidity"},
-  {kDauDcaMin, "Min. DCA of the positive daughters at primary vertex"},
-  {kDauTpcClsMin, "Min. number of TPC clusters of positive daughter"},
+  {kDauAbsEtaMax, "Max. absolute pseudo rapidity of daughters"},
+  {kDauDcaMin, "Min. DCA of the daughters at primary vertex"},
+  {kDauTpcClsMin, "Min. number of TPC clusters of daughters"},
 
   {kPosDaughTpcPion, "TPC Pion PID for positive daughter"},
   {kPosDaughTpcProton, "TPC Proton PID for positive daughter"},

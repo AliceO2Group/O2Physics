@@ -119,14 +119,15 @@ enum TrackHist {
   kPdg,
   kPdgMother,
   kPdgPartonicMother,
-  kTruePt,
-  kTrueEta,
-  kTruePhi,
+  kTruePtVsPt,
+  kTrueEtaVsEta,
+  kTruePhiVsPhi,
   // histograms for fraction estimation of tracks
   kNoMcParticle,
   kPrimary,
   kFromWrongCollision,
   kFromMaterial,
+  kMissidentified,
   kSecondary1,
   kSecondary2,
   kSecondary3,
@@ -144,6 +145,7 @@ struct ConfTrackBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};
   o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};
   o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};
+  o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "MC ONLY: PDG codes of selected tracks"};
 };
 
 constexpr const char PrefixTrackBinning1[] = "TrackBinning1";
@@ -180,6 +182,8 @@ struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotDeuteronPid{"plotDeuteronPid", true, "Generate plots for Deuteron PID"};
   o2::framework::Configurable<bool> plotTritonPid{"plotTritonPid", true, "Generate plots for Triton PID"};
   o2::framework::Configurable<bool> plotHeliumPid{"plotHeliumPid", true, "Generate plots for Helium PID"};
+  o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "MC ONLY: Plot pt vs DCAxy vs DCAz for different particle origins"};
+  o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3122}, "MC ONLY: PDG codes of mothers of secondaries (Max 3 will be considered)"};
   o2::framework::ConfigurableAxis itsCluster{"itsCluster", {{8, -0.5, 7.5}}, "ITS cluster"};
   o2::framework::ConfigurableAxis itsClusterIb{"itsClusterIb", {{4, -0.5, 3.5}}, "ITS cluster in inner barrel"};
   o2::framework::ConfigurableAxis tpcCrossedRows{"tpcCrossedRows", {{161, -0.5, 160.5}}, "TPC cluster"};
@@ -253,28 +257,6 @@ using ConfCascadePosDauQaBinning = ConfTrackQaBinning<PrefixCascadePosDauQaBinni
 using ConfCascadeNegDauQaBinning = ConfTrackQaBinning<PrefixCascadeNegDauQaBinning>;
 using ConfCascadeBachelorQaBinning = ConfTrackQaBinning<PrefixCascadeBachelorQaBinning>;
 using ConfKinkChaDauQaBinning = ConfTrackQaBinning<PrefixKinkChaDauQaBinning>;
-
-template <const char* Prefix>
-struct ConfTrackMcBinning : o2::framework::ConfigurableGroup {
-  std::string prefix = std::string(Prefix);
-  o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "PDG codes of selected tracks"};
-  o2::framework::ConfigurableAxis statusCode{"statusCode", {{21, -0.5, 20.5}}, "Status codes (i.e. Origin)"};
-  o2::framework::Configurable<bool> plotOrigins{"plotOrigins", true, "Plot pt vs DCAxy vs DCAz for different particle origins"};
-  o2::framework::Configurable<std::vector<int>> pdgCodesForMothersOfSecondary{"pdgCodesForMothersOfSecondary", {3122}, "PDG codes of mothers of secondaries (Max 3 will be considered)"};
-  o2::framework::ConfigurableAxis pt{"pt", {{150, 0, 3}}, "Pt"};
-  o2::framework::ConfigurableAxis dcaXy{"dcaXy", {{50, -0.1, 0.1}}, "DCA_xy"};
-  o2::framework::ConfigurableAxis dcaZ{"dcaZ", {{50, -0.1, 0.1}}, "DCA_z"};
-};
-
-constexpr const char PrefixTrackMcBinning1[] = "TrackMcBinning1";
-constexpr const char PrefixV0PosDauMcBinning[] = "V0PosDauMcBinning";
-constexpr const char PrefixV0NegDauMcBinning[] = "V0NegDauMcBinning";
-constexpr const char PrefixKinkChaDauMcBinning[] = "KinkChaDauMcBinning";
-
-using ConfTrackMcBinning1 = ConfTrackMcBinning<PrefixTrackMcBinning1>;
-using ConfV0PosDauMcBinning = ConfTrackMcBinning<PrefixV0PosDauMcBinning>;
-using ConfV0NegDauMcBinning = ConfTrackMcBinning<PrefixV0NegDauMcBinning>;
-using ConfKinkChaDauMcBinning = ConfTrackMcBinning<PrefixKinkChaDauMcBinning>;
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -351,13 +333,14 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kPdg, o2::framework::kTH1F, "hPdg", "PDG Codes of selected tracks; PDG Code; Entries"},
       {kPdgMother, o2::framework::kTH1F, "hPdgMother", "PDG Codes of mother of selected tracks; PDG Code; Entries"},
       {kPdgPartonicMother, o2::framework::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother selected tracks; PDG Code; Entries"},
-      {kTruePt, o2::framework::kTH1F, "hTruePt", "True transverse momentum; p_{T} (GeV/#it{c}); Entries"},
-      {kTrueEta, o2::framework::kTH1F, "hTrueEta", "True pseudorapdity; #eta; Entries"},
-      {kTruePhi, o2::framework::kTH1F, "hTruePhi", "True azimuthal angle; #varphi; Entries"},
+      {kTruePtVsPt, o2::framework::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T,True} (GeV/#it{c})"},
+      {kTrueEtaVsEta, o2::framework::kTH2F, "hTrueEtaVsEta", "True pseudorapdity vs pseudorapdity; #eta_{True}; #eta"},
+      {kTruePhiVsPhi, o2::framework::kTH2F, "hTruePhiVsPhi", "True azimuthal angle vs azimuthal angle; #varphi_{True}; #varphi"},
       {kNoMcParticle, o2::framework::kTHnSparseF, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kPrimary, o2::framework::kTHnSparseF, "hPrimary", "Primary particles; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kFromWrongCollision, o2::framework::kTHnSparseF, "hFromWrongCollision", "Particles associated to wrong collision; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kFromMaterial, o2::framework::kTHnSparseF, "hFromMaterial", "Particles from material; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
+      {kMissidentified, o2::framework::kTHnSparseF, "hMissidentified", "Missidentified particles (fake/wrong PDG code); p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kSecondary1, o2::framework::kTHnSparseF, "hFromSecondary1", "Particles from secondary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kSecondary2, o2::framework::kTHnSparseF, "hFromSecondary2", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
       {kSecondary3, o2::framework::kTHnSparseF, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); DCA_{xy} (cm); DCA_{z} (cm)"},
@@ -434,22 +417,24 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
     {kTpctofTriton, {confQa.p, confQa.tpctofTriton}},                                      \
     {kTpctofHelium, {confQa.p, confQa.tpctofHelium}},
 
-#define TRACK_HIST_MC_MAP(confAnalysis, confMc)                    \
-  {kTruePt, {confAnalysis.pt}},                                    \
-    {kTrueEta, {confAnalysis.eta}},                                \
-    {kTruePhi, {confAnalysis.phi}},                                \
-    {kOrigin, {confMc.statusCode}},                                \
-    {kPdg, {confMc.pdgCodes}},                                     \
-    {kPdgMother, {confMc.pdgCodes}},                               \
-    {kPdgPartonicMother, {confMc.pdgCodes}},                       \
-    {kNoMcParticle, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},       \
-    {kPrimary, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},            \
-    {kFromWrongCollision, {confMc.pt, confMc.dcaXy, confMc.dcaZ}}, \
-    {kFromMaterial, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},       \
-    {kSecondary1, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},         \
-    {kSecondary2, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},         \
-    {kSecondary3, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},         \
-    {kSecondaryOther, {confMc.pt, confMc.dcaXy, confMc.dcaZ}},
+#define TRACK_HIST_MC_MAP(conf)            \
+  {kTruePtVsPt, {conf.pt, conf.pt}},       \
+    {kTrueEtaVsEta, {conf.eta, conf.eta}}, \
+    {kTruePhiVsPhi, {conf.phi, conf.phi}}, \
+    {kPdg, {conf.pdgCodes}},               \
+    {kPdgMother, {conf.pdgCodes}},         \
+    {kPdgPartonicMother, {conf.pdgCodes}},
+
+#define TRACK_HIST_MC_QA_MAP(confAnalysis, confQa)                       \
+  {kNoMcParticle, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},         \
+    {kPrimary, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},            \
+    {kFromWrongCollision, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}}, \
+    {kFromMaterial, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},       \
+    {kMissidentified, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},     \
+    {kSecondary1, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},         \
+    {kSecondary2, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},         \
+    {kSecondary3, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},         \
+    {kSecondaryOther, {confAnalysis.pt, confQa.dcaXy, confQa.dcaZ}},
 
 template <typename T>
 auto makeTrackHistSpecMap(const T& confBinningAnalysis)
@@ -457,6 +442,14 @@ auto makeTrackHistSpecMap(const T& confBinningAnalysis)
   return std::map<TrackHist, std::vector<framework::AxisSpec>>{
     TRACK_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
+
+template <typename T>
+auto makeTrackMcHistSpecMap(T const& confBinningAnalysis)
+{
+  return std::map<TrackHist, std::vector<framework::AxisSpec>>{
+    TRACK_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      TRACK_HIST_MC_MAP(confBinningAnalysis)};
+};
 
 template <typename T1, typename T2>
 auto makeTrackQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
@@ -466,18 +459,20 @@ auto makeTrackQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinning
       TRACK_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
 
-template <typename T1, typename T2, typename T3>
-auto makeTrackMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa, T3 const& confBinningMc)
+template <typename T1, typename T2>
+auto makeTrackMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
   return std::map<TrackHist, std::vector<framework::AxisSpec>>{
     TRACK_HIST_ANALYSIS_MAP(confBinningAnalysis)
       TRACK_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
-        TRACK_HIST_MC_MAP(confBinningAnalysis, confBinningMc)};
+        TRACK_HIST_MC_MAP(confBinningAnalysis)
+          TRACK_HIST_MC_QA_MAP(confBinningAnalysis, confBinningQa)};
 };
 
 #undef TRACK_HIST_ANALYSIS_MAP
 #undef TRACK_HIST_QA_MAP
 #undef TRACK_HIST_MC_MAP
+#undef TRACK_HIST_MC_QA_MAP
 
 constexpr char PrefixTrackQa[] = "TrackQA/";
 constexpr char PrefixTrack1[] = "Track1/";
@@ -518,12 +513,15 @@ class TrackHistManager
   TrackHistManager() = default;
   ~TrackHistManager() = default;
 
-  // init for analysis
-  template <modes::Mode mode>
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, int AbsCharge)
+  // init for analysis and mc
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            T const& ConfTrackSelection)
   {
     mHistogramRegistry = registry;
-    mAbsCharge = std::abs(AbsCharge);
+    mAbsCharge = std::abs(ConfTrackSelection.chargeAbs.value);
+    mPdgCode = std::abs(ConfTrackSelection.pdgCodeAbs.value) * ConfTrackSelection.chargeSign.value;
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       this->initAnalysis(Specs);
     }
@@ -535,20 +533,48 @@ class TrackHistManager
     }
   }
 
-  // init for analysis and qa
-  template <modes::Mode mode, typename T>
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, T const& ConfBinningQa, int AbsCharge)
+  template <modes::Mode mode>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            int ChargeAbs,
+            int ChargeSign,
+            int PdgCodeAbs)
   {
-    this->enableOptionalHistograms(ConfBinningQa);
-    this->template init<mode>(registry, Specs, AbsCharge);
+    mHistogramRegistry = registry;
+    mAbsCharge = std::abs(ChargeAbs);
+    mPdgCode = std::abs(PdgCodeAbs) * ChargeSign;
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      this->initAnalysis(Specs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      this->initQa(Specs);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(Specs);
+    }
   }
 
-  // init for analysis and mc and qa
+  // init for analysis and qa and mc
   template <modes::Mode mode, typename T1, typename T2>
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs, T1 const& ConfBinningQa, T2 const& ConfBinningMc, int AbsCharge)
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            T1 const& ConfTrackSelection,
+            T2 const& ConfBinningQa)
   {
-    this->enableOptionalHistograms(ConfBinningQa, ConfBinningMc);
-    this->template init<mode>(registry, Specs, AbsCharge);
+    this->template enableOptionalHistograms<T2>(ConfBinningQa);
+    this->template init<mode>(registry, Specs, ConfTrackSelection);
+  }
+
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            int ChargeAbs,
+            int ChargeSign,
+            int PdgCodeAbs,
+            T const& ConfBinningQa)
+  {
+    this->template enableOptionalHistograms<T>(ConfBinningQa);
+    this->template init<mode>(registry, Specs, ChargeAbs, ChargeSign, PdgCodeAbs);
   }
 
   template <modes::Mode mode, typename T1, typename T2>
@@ -572,12 +598,11 @@ class TrackHistManager
       this->fillQa(track);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
-      this->fillMc(track, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(track, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
  private:
-  // enable additional qa histograms
   template <typename T>
   void enableOptionalHistograms(T const& ConfBinningQa)
   {
@@ -590,20 +615,13 @@ class TrackHistManager
     mPlotTritonPid = ConfBinningQa.plotTritonPid.value;
     mPlotHeliumPid = ConfBinningQa.plotHeliumPid.value;
     mMomentumType = static_cast<modes::MomentumType>(ConfBinningQa.momentumType.value);
-  }
 
-  // enable additional qa and mc histograms
-  template <typename T1, typename T2>
-  void enableOptionalHistograms(T1 const& ConfBinningQa, T2 const& ConfBinningMc)
-  {
-    this->template enableOptionalHistograms<T1>(ConfBinningQa);
-
-    mPlotOrigins = ConfBinningMc.plotOrigins.value;
-    mPlotNSecondaries = ConfBinningMc.pdgCodesForMothersOfSecondary.value.size();
+    mPlotOrigins = ConfBinningQa.plotOrigins.value;
+    mPlotNSecondaries = ConfBinningQa.pdgCodesForMothersOfSecondary.value.size();
 
     for (std::size_t i = 0; i < MaxSecondary; i++) {
-      if (i < ConfBinningMc.pdgCodesForMothersOfSecondary.value.size()) {
-        mPdgCodesSecondaryMother.at(i) = std::abs(ConfBinningMc.pdgCodesForMothersOfSecondary.value.at(i));
+      if (i < ConfBinningQa.pdgCodesForMothersOfSecondary.value.size()) {
+        mPdgCodesSecondaryMother.at(i) = std::abs(ConfBinningQa.pdgCodesForMothersOfSecondary.value.at(i));
       } else {
         mPdgCodesSecondaryMother.at(i) = 0;
       }
@@ -719,10 +737,20 @@ class TrackHistManager
   void initMc(std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string mcDir = std::string(prefix) + std::string(McDir);
-    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt, HistTable), getHistDesc(kTruePt, HistTable), getHistType(kTruePt, HistTable), {Specs.at(kTruePt)});
-    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueEta, HistTable), getHistDesc(kTrueEta, HistTable), getHistType(kTrueEta, HistTable), {Specs.at(kTrueEta)});
-    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhi, HistTable), getHistDesc(kTruePhi, HistTable), getHistType(kTruePhi, HistTable), {Specs.at(kTruePhi)});
-    mHistogramRegistry->add(mcDir + getHistNameV2(kOrigin, HistTable), getHistDesc(kOrigin, HistTable), getHistType(kOrigin, HistTable), {Specs.at(kOrigin)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePtVsPt, HistTable), getHistDesc(kTruePtVsPt, HistTable), getHistType(kTruePtVsPt, HistTable), {Specs.at(kTruePtVsPt)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueEtaVsEta, HistTable), getHistDesc(kTrueEtaVsEta, HistTable), getHistType(kTrueEtaVsEta, HistTable), {Specs.at(kTrueEtaVsEta)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhiVsPhi, HistTable), getHistDesc(kTruePhiVsPhi, HistTable), getHistType(kTruePhiVsPhi, HistTable), {Specs.at(kTruePhiVsPhi)});
+
+    // mc origin can be configured here
+    const framework::AxisSpec axisOrigin = {static_cast<int>(modes::McOrigin::kMcOriginLast), -0.5, static_cast<double>(modes::McOrigin::kMcOriginLast) - 0.5};
+    mHistogramRegistry->add(mcDir + getHistNameV2(kOrigin, HistTable), getHistDesc(kOrigin, HistTable), getHistType(kOrigin, HistTable), {axisOrigin});
+    mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kNoMcParticle), modes::mcOriginToString(modes::McOrigin::kNoMcParticle));
+    mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kFromWrongCollision), modes::mcOriginToString(modes::McOrigin::kFromWrongCollision));
+    mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kPhysicalPrimary), modes::mcOriginToString(modes::McOrigin::kPhysicalPrimary));
+    mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kFromSecondaryDecay), modes::mcOriginToString(modes::McOrigin::kFromSecondaryDecay));
+    mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kFromMaterial), modes::mcOriginToString(modes::McOrigin::kFromMaterial));
+    mHistogramRegistry->get<TH1>(HIST(prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kMissidentified), modes::mcOriginToString(modes::McOrigin::kMissidentified));
+
     mHistogramRegistry->add(mcDir + getHistNameV2(kPdg, HistTable), getHistDesc(kPdg, HistTable), getHistType(kPdg, HistTable), {Specs.at(kPdg)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kPdgMother, HistTable), getHistDesc(kPdgMother, HistTable), getHistType(kPdgMother, HistTable), {Specs.at(kPdgMother)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kPdgPartonicMother, HistTable), getHistDesc(kPdgPartonicMother, HistTable), getHistType(kPdgPartonicMother, HistTable), {Specs.at(kPdgPartonicMother)});
@@ -732,6 +760,7 @@ class TrackHistManager
       mHistogramRegistry->add(mcDir + getHistNameV2(kPrimary, HistTable), getHistDesc(kPrimary, HistTable), getHistType(kPrimary, HistTable), {Specs.at(kPrimary)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kFromWrongCollision, HistTable), getHistDesc(kFromWrongCollision, HistTable), getHistType(kFromWrongCollision, HistTable), {Specs.at(kFromWrongCollision)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kFromMaterial, HistTable), getHistDesc(kFromMaterial, HistTable), getHistType(kFromMaterial, HistTable), {Specs.at(kFromMaterial)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kMissidentified, HistTable), getHistDesc(kMissidentified, HistTable), getHistType(kMissidentified, HistTable), {Specs.at(kMissidentified)});
 
       if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1) {
         mHistogramRegistry->add(mcDir + getHistNameV2(kSecondary1, HistTable), getHistDesc(kSecondary1, HistTable), getHistType(kSecondary1, HistTable), {Specs.at(kSecondary1)});
@@ -858,28 +887,40 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kTpctofHelium, HistTable)), momentum, track.tpctofNSigmaHe());
     }
   }
-  template <typename T1, typename T2, typename T3, typename T4>
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
   void fillMc(T1 const& track, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!track.has_fMcParticle()) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
-      if (mPlotOrigins) {
-        mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+      if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+        if (mPlotOrigins) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+        }
       }
       return;
     }
 
     // Retrieve MC particle
     auto mcParticle = track.template fMcParticle_as<T2>();
-    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePt, HistTable)), mcParticle.pt());
-    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueEta, HistTable)), mcParticle.eta());
-    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePhi, HistTable)), mcParticle.phi());
-    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
+
+    // missidentifed particles are special case
+    // whether a particle is missidentfied or not cannot be known by the producer so we check it here
+    bool isMissidentified = mcParticle.pdgCode() != mPdgCode;
+
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), track.pt());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), track.eta());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), track.phi());
+    if (isMissidentified) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<int>(modes::McOrigin::kMissidentified));
+    } else {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
+    }
     mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
-    // Mother PDG
+    // get mother
     if (track.has_fMcMother()) {
       auto mother = track.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
@@ -887,7 +928,7 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
 
-    // Partonic Mother PDG
+    // get partonic mother
     if (track.has_fMcPartMoth()) {
       auto partonicMother = track.template fMcPartMoth_as<T4>();
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
@@ -895,43 +936,52 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
     }
 
-    // Plot origins
-    if (mPlotOrigins) {
-      switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
-        case modes::McOrigin::kPhysicalPrimary:
-          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-          break;
-        case modes::McOrigin::kFromWrongCollision:
-          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-          break;
-        case modes::McOrigin::kFromMaterial:
-          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-          break;
-        case modes::McOrigin::kFromSecondaryDecay:
-          if (track.has_fMcMother()) {
-            auto mother = track.template fMcMother_as<T3>();
-            int motherPdgCode = std::abs(mother.pdgCode());
-            // Switch on PDG of the mother
-            if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
-              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
-              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-            } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
-              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-            } else {
-              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-            }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      if (mPlotOrigins) {
+        // check first if particle is missidentified
+        if (isMissidentified) {
+          // if it is, we fill it as such
+          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+        } else {
+          // if not, we fill it acccoridng to its origin
+          switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
+            case modes::McOrigin::kPhysicalPrimary:
+              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+              break;
+            case modes::McOrigin::kFromWrongCollision:
+              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+              break;
+            case modes::McOrigin::kFromMaterial:
+              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+              break;
+            case modes::McOrigin::kFromSecondaryDecay:
+              if (track.has_fMcMother()) {
+                auto mother = track.template fMcMother_as<T3>();
+                int motherPdgCode = std::abs(mother.pdgCode());
+                // Switch on PDG of the mother
+                if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
+                  mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+                } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
+                  mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+                } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
+                  mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+                } else {
+                  mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+                }
+              }
+              break;
+            default:
+              LOG(warn) << "Encounted partilce with unknown origin!";
+              break;
           }
-          break;
-        default:
-          // Unknown origin → safely ignore
-          break;
+        }
       }
     }
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   int mAbsCharge = 1;
+  int mPdgCode = 0;
   bool mPlot2d = false;
   bool mPlotElectronPid = false;
   bool mPlotPionPid = false;

@@ -48,13 +48,17 @@ using namespace o2::analysis::femto;
 struct FemtoPairTrackTrack {
 
   // setup tables
-  using Collisions = Join<FCols, FColMasks>;
-  using Collision = Collisions::iterator;
+  using FemtoCollisions = Join<FCols, FColMasks>;
+  using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
+  using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
-  using FilteredCollisions = o2::soa::Filtered<Collisions>;
-  using FilteredCollision = FilteredCollisions::iterator;
+  using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, FColLabels>;
+  using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
+  using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
 
-  using Tracks = o2::soa::Join<FTracks, FTrackMasks>;
+  using FemtoTracks = o2::soa::Join<FTracks, FTrackMasks>;
+
+  using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, FTrackLabels>;
 
   SliceCache cache;
 
@@ -64,15 +68,18 @@ struct FemtoPairTrackTrack {
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   // setup tracks
-  trackbuilder::ConfTrackSelection1 trackSelections1;
+  trackbuilder::ConfTrackSelection1 confTrackSelections1;
   trackhistmanager::ConfTrackBinning1 confTrackBinning1;
-  trackbuilder::ConfTrackSelection2 trackSelections2;
+  trackbuilder::ConfTrackSelection2 confTrackSelections2;
   trackhistmanager::ConfTrackBinning2 confTrackBinning2;
 
-  Partition<Tracks> trackPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
-  Partition<Tracks> trackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
+  Partition<FemtoTracks> trackPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
+  Partition<FemtoTracks> trackPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
+  Preslice<FemtoTracks> perColtracks = aod::femtobase::stored::fColId;
 
-  Preslice<Tracks> perColReco = aod::femtobase::stored::fColId;
+  Partition<FemtoTracksWithLabel> trackWithLabelPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
+  Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
+  Preslice<FemtoTracksWithLabel> perColtracksWithLabel = aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
@@ -102,6 +109,15 @@ struct FemtoPairTrackTrack {
 
   void init(InitContext&)
   {
+    if ((doprocessSameEvent + doprocessSameEventMc) > 1 || (doprocessMixedEvent + doprocessMixedEventMc) > 1) {
+      LOG(fatal) << "More than 1 same or mixed event process function is activated. Breaking...";
+    }
+    bool processData = doprocessSameEvent || doprocessMixedEvent;
+    bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
+    if (processData && processMc) {
+      LOG(fatal) << "Both data and mc processing is activated. Breaking...";
+    }
+
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
     mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
@@ -109,26 +125,47 @@ struct FemtoPairTrackTrack {
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 
     // setup histogram specs
-    auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
-    auto trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
-    auto trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
-    pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelections1, trackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+    if (processData) {
+      auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+      auto trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
+      auto trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
+      auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+    } else {
+      auto colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
+      auto trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
+      auto trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
+      auto pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+    }
+    hRegistry.print();
   };
 
-  void processSameEvent(FilteredCollision const& col, Tracks const& tracks)
+  void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks)
   {
     pairTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processSameEvent, "Enable processing same event processing", true);
 
-  void processMixedEvent(FilteredCollisions const& cols, Tracks const& tracks)
+  void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FMcParticles const& mcParticles, FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
+  {
+    pairTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
+  }
+  PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventMc, "Enable processing same event processing", false);
+
+  void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks)
   {
     pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
+
+  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FMcParticles const& mcParticles)
+  {
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventMc, "Enable processing mixed event processing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
