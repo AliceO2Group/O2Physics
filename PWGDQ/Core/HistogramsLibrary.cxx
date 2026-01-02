@@ -419,10 +419,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Profile_R2EP_Im_TPCFT0C_CentFT0C", "Profile_R2EP_Im_TPCFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_AC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_AC_Im);
       hm->AddHistogram(histClass, "Profile_R2EP_Im_FT0AFT0C_CentFT0C", "Profile_R2EP_Im_FT0AFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_BC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_BC_Im);
     }
-    if (subGroupStr.Contains("filter")) {
+    if (subGroupStr.Contains("rapidity-gap")) {
       hm->AddHistogram(histClass, "IsDoubleGap", "Is double gap", false, 2, -0.5, 1.5, VarManager::kIsDoubleGap);
       hm->AddHistogram(histClass, "IsSingleGapA", "Is single gap on side A", false, 2, -0.5, 1.5, VarManager::kIsSingleGapA);
       hm->AddHistogram(histClass, "IsSingleGapC", "Is single gap on side C", false, 2, -0.5, 1.5, VarManager::kIsSingleGapC);
+      hm->AddHistogram(histClass, "IsNoGap", "Is no gap event", false, 2, -0.5, 1.5, VarManager::kIsNoGap);
       hm->AddHistogram(histClass, "IsITSUPCMode", "UPC settings used", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode);
       hm->AddHistogram(histClass, "IsITSUPCMode_IsSingleGap", "UPC settings used vs Is single gap", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode, 2, -0.5, 1.5, VarManager::kIsSingleGap);
     }

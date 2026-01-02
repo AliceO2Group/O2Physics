@@ -4090,6 +4090,30 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cutAorC;
   }
 
+  if (!nameStr.compare("eventXn0nTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0, true);
+    return cut;
+  }
+
+  if (!nameStr.compare("event0nXnTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0, true);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("event0n0nTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0, true);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0, true);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventXnXnTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0);
+    return cut;
+  }
+
   // Event cuts based on centrality
   if (!nameStr.compare("eventStandardNoINT7Cent090")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
