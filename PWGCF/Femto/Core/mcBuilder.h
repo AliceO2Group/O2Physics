@@ -260,7 +260,7 @@ class McBuilder
         return;
       }
       auto mothersOfDaughter = mcDaughterParticle.template mothers_as<T4>();
-      auto mcParticle = mothersOfDaughter.front();
+      mcParticle = mothersOfDaughter.front();
     }
 
     int64_t mcParticleIndex = mcParticle.globalIndex();
