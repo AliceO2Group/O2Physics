@@ -567,7 +567,7 @@ struct AntinucleiInJets {
     }
 
     // Systematic uncertainties on correlation analysis
-    if (doprocessCorrSyst) {
+    if (doprocessSystCorr) {
 
       // Axes definitions for multidimensional histogram binning
       const AxisSpec multiplicityAxis{100, 0.0, 100.0, "multiplicity percentile"};
@@ -3181,7 +3181,7 @@ struct AntinucleiInJets {
   PROCESS_SWITCH(AntinucleiInJets, processCorr, "Process Correlation analysis", false);
 
   // Process correlation analysis with systematic variations of analysis parameters
-  void processCorrSyst(SelectedCollisions::iterator const& collision, AntiNucleiTracks const& tracks)
+  void processSystCorr(SelectedCollisions::iterator const& collision, AntiNucleiTracks const& tracks)
   {
     // cut settings (from processSystData)
     static std::vector<double> maxDcaxySyst = { 0.071, 0.060, 0.066, 0.031, 0.052, 0.078, 0.045, 0.064, 0.036, 0.074, 0.079, 0.043, 0.067, 0.059, 0.032, 0.070, 0.048, 0.077, 0.062, 0.034, 0.057, 0.055, 0.073, 0.038, 0.050, 0.075, 0.041, 0.061, 0.033, 0.069, 0.035, 0.044, 0.076, 0.049, 0.037, 0.054, 0.072, 0.046, 0.058, 0.040, 0.068, 0.042, 0.056, 0.039, 0.047, 0.065, 0.051, 0.053, 0.063, 0.030};
@@ -3331,7 +3331,7 @@ struct AntinucleiInJets {
       }
     }
   }
-  PROCESS_SWITCH(AntinucleiInJets, processCorrSyst, "Process Correlation systematics", false);
+  PROCESS_SWITCH(AntinucleiInJets, processSystCorr, "Process Correlation systematics", false);
 
   // Process coalescence
   void processCoalescence(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
