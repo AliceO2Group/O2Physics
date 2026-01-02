@@ -51,15 +51,21 @@ using namespace o2::analysis::femto;
 struct FemtoPairTrackKink {
 
   // setup tables
-  using Collisions = Join<FCols, FColMasks>;
-  using Collision = Collisions::iterator;
+  using FemtoCollisions = Join<FCols, FColMasks>;
+  using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
+  using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
-  using FilteredCollisions = o2::soa::Filtered<Collisions>;
-  using FilteredCollision = FilteredCollisions::iterator;
+  using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, FColLabels>;
+  using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
+  using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
 
-  using Tracks = o2::soa::Join<FTracks, FTrackMasks>;
-  using Sigmas = o2::soa::Join<FSigmas, FSigmaMasks>;
-  using SigmaPlus = o2::soa::Join<FSigmaPlus, FSigmaPlusMasks>;
+  using FemtoTracks = o2::soa::Join<FTracks, FTrackMasks>;
+  using FemtoSigmas = o2::soa::Join<FSigmas, FSigmaMasks>;
+  using FemtoSigmaPlus = o2::soa::Join<FSigmaPlus, FSigmaPlusMasks>;
+
+  using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, FTrackLabels>;
+  using FemtoSigmasWithLabel = o2::soa::Join<FemtoSigmas, FSigmaLabels>;
+  using FemtoSigmaPlusWithLabel = o2::soa::Join<FemtoSigmaPlus, FSigmaPlusLabels>;
 
   SliceCache cache;
 
@@ -69,25 +75,37 @@ struct FemtoPairTrackKink {
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   // setup tracks
-  trackbuilder::ConfTrackSelection1 trackSelection;
+  trackbuilder::ConfTrackSelection1 confTrackSelection;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
-  Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelection);
-  Preslice<Tracks> perColTracks = aod::femtobase::stored::fColId;
+
+  Partition<FemtoTracks> trackPartition = MAKE_TRACK_PARTITION(confTrackSelection);
+  Preslice<FemtoTracks> perColTracks = aod::femtobase::stored::fColId;
+
+  Partition<FemtoTracksWithLabel> trackWithLabelPartition = MAKE_TRACK_PARTITION(confTrackSelection);
+  Preslice<FemtoTracksWithLabel> perColtracksWithLabel = aod::femtobase::stored::fColId;
 
   // setup for daughters
   trackhistmanager::ConfKinkChaDauBinning confChaDauBinning;
 
   // setup sigmas
-  kinkbuilder::ConfSigmaSelection1 sigmaSelection;
+  kinkbuilder::ConfSigmaSelection1 confSigmaSelection;
   kinkhistmanager::ConfSigmaBinning1 confSigmaBinning;
-  Partition<Sigmas> sigmaPartition = MAKE_SIGMA_PARTITION(sigmaSelection);
-  Preslice<Sigmas> perColSigmas = aod::femtobase::stored::fColId;
+
+  Partition<FemtoSigmas> sigmaPartition = MAKE_SIGMA_PARTITION(confSigmaSelection);
+  Preslice<FemtoSigmas> perColSigmas = aod::femtobase::stored::fColId;
+
+  Partition<FemtoSigmasWithLabel> sigmaWithLabelPartition = MAKE_SIGMA_PARTITION(confSigmaSelection);
+  Preslice<FemtoSigmasWithLabel> perColSigmasWithLabel = aod::femtobase::stored::fColId;
 
   // setup for sigma plus
-  kinkbuilder::ConfSigmaPlusSelection1 sigmaPlusSelection;
+  kinkbuilder::ConfSigmaPlusSelection1 confSigmaPlusSelection;
   kinkhistmanager::ConfSigmaPlusBinning1 confSigmaPlusBinning;
-  Partition<SigmaPlus> sigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(sigmaPlusSelection);
-  Preslice<SigmaPlus> perColSigmaPlus = aod::femtobase::stored::fColId;
+
+  Partition<FemtoSigmaPlus> sigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaPlusSelection);
+  Preslice<FemtoSigmaPlus> perColSigmaPlus = aod::femtobase::stored::fColId;
+
+  Partition<FemtoSigmaPlusWithLabel> sigmaPlusWithLabelPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaPlusSelection);
+  Preslice<FemtoSigmaPlusWithLabel> perColSigmaPlusWithLabel = aod::femtobase::stored::fColId;
 
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
@@ -131,61 +149,103 @@ struct FemtoPairTrackKink {
 
   void init(InitContext&)
   {
-    if (((doprocessSigmaSameEvent || doprocessSigmaMixedEvent) + (doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent)) > 1) {
-      LOG(fatal) << "Can only process sigma-tracks Or sigmaplus-tracks";
+    bool processData = doprocessSigmaSameEvent || doprocessSigmaMixedEvent || doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent;
+    bool processMc = doprocessSigmaSameEventMc || doprocessSigmaMixedEventMc || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEventMc;
+
+    if (processData && processMc) {
+      LOG(fatal) << "Both data and mc processing is enabled. Breaking...";
     }
+
+    bool processSigma = doprocessSigmaSameEvent || doprocessSigmaSameEventMc || doprocessSigmaMixedEvent || doprocessSigmaMixedEventMc;
+    bool processSigmaPlus = doprocessSigmaPlusSameEvent || doprocessSigmaPlusSameEventMc || doprocessSigmaPlusMixedEvent || doprocessSigmaPlusMixedEventMc;
+
+    if (processSigma && processSigmaPlus) {
+      LOG(fatal) << "Both Sigma-track and SigmaPlus-track processing is enabled. Breaking...";
+    }
+
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
     mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 
-    // setup histograms
-    auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
-    auto trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
-    auto chaDauSpec = trackhistmanager::makeTrackHistSpecMap(confChaDauBinning);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
-    // setup for sigma
-    if (doprocessSigmaSameEvent || doprocessSigmaMixedEvent) {
-      auto sigmaHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaBinning);
-      auto pairTrackSigmaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackSigmaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, sigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackSigmaHistSpec, cprHistSpec);
-    }
-
-    // setup for sigma plus
-    if (doprocessSigmaPlusSameEvent || doprocessSigmaPlusMixedEvent) {
-      auto sigmaplusHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaPlusBinning);
-      auto pairTrackSigmaPlusHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, sigmaPlusSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaplusHistSpec, chaDauSpec, pairTrackSigmaPlusHistSpec, cprHistSpec);
+    if (processData) {
+      auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
+      auto trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
+      auto chaDauSpec = trackhistmanager::makeTrackHistSpecMap(confChaDauBinning);
+      auto pairTrackKinkHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
+      if (processSigma) {
+        auto sigmaHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaBinning);
+        pairTrackSigmaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelection, confSigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+      } else {
+        auto sigmaplusHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaPlusBinning);
+        pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelection, confSigmaPlusSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaplusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+      }
+    } else {
+      auto colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
+      auto trackHistSpec = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning);
+      auto chaDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confChaDauBinning);
+      auto pairTrackKinkHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
+      if (processSigma) {
+        auto sigmaHistSpec = kinkhistmanager::makeKinkMcHistSpecMap(confSigmaBinning);
+        pairTrackSigmaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelection, confSigmaSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+      } else {
+        auto sigmaplusHistSpec = kinkhistmanager::makeKinkMcHistSpecMap(confSigmaPlusBinning);
+        pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelection, confSigmaPlusSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaplusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+      }
     }
     hRegistry.print();
   };
 
-  void processSigmaSameEvent(FilteredCollision const& col, Tracks const& tracks, Sigmas const& sigmas)
+  void processSigmaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoSigmas const& sigmas)
   {
     pairTrackSigmaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition, sigmas, sigmaPartition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaSameEvent, "Enable processing same event processing for tracks and sigmas", true);
 
-  void processSigmaMixedEvent(FilteredCollisions const& cols, Tracks const& tracks, Sigmas const& /*sigmas*/)
+  void processSigmaSameEventMc(FilteredFemtoCollisionWithLabel const& col, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmasWithLabel const& sigmas, FMcParticles const& mcParticles, FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
+  {
+    pairTrackSigmaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition, sigmas, sigmaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+  }
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaSameEventMc, "Enable processing same event processing for tracks and sigmas with MC information", false);
+
+  void processSigmaMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoSigmas const& /*sigmas*/)
   {
     pairTrackSigmaBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition, sigmaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaMixedEvent, "Enable processing mixed event processing for tracks and sigmas", true);
-  //
-  void processSigmaPlusSameEvent(FilteredCollision const& col, Tracks const& tracks, SigmaPlus const& sigmaplus)
+
+  void processSigmaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmasWithLabel const& /*sigmas*/, FMcParticles const& mcParticles)
+  {
+    pairTrackSigmaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition, sigmaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaMixedEventMc, "Enable processing mixed event processing for tracks and sigmas with MC information", false);
+
+  void processSigmaPlusSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoSigmaPlus const& sigmaplus)
   {
     pairTrackSigmaPlusBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition, sigmaplus, sigmaPlusPartition, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusSameEvent, "Enable processing same event processing for tracks and sigma plus", false);
 
-  void processSigmaPlusMixedEvent(FilteredCollisions const& cols, Tracks const& tracks, SigmaPlus const& /*sigmaplus*/)
+  void processSigmaPlusSameEventMc(FilteredFemtoCollisionWithLabel const& col, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmaPlusWithLabel const& sigmaplus, FMcParticles const& mcParticles, FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
+  {
+    pairTrackSigmaPlusBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition, sigmaplus, sigmaPlusWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+  }
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusSameEventMc, "Enable processing same event processing for tracks and sigma plus with MC information", false);
+
+  void processSigmaPlusMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoSigmaPlus const& /*sigmaplus*/)
   {
     pairTrackSigmaPlusBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition, sigmaPlusPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusMixedEvent, "Enable processing mixed event processing for tracks and sigma plus", false);
+
+  void processSigmaPlusMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmaPlusWithLabel const& /*sigmaplus*/, FMcParticles const& mcParticles)
+  {
+    pairTrackSigmaPlusBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition, sigmaPlusWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+  }
+  PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusMixedEventMc, "Enable processing mixed event processing for tracks and sigma plus with MC information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -214,6 +214,14 @@ auto makeKinkHistSpecMap(const T& confBinningAnalysis)
     KINK_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
+template <typename T>
+auto makeKinkMcHistSpecMap(const T& confBinningAnalysis)
+{
+  return std::map<KinkHist, std::vector<framework::AxisSpec>>{
+    KINK_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      KINK_HIST_MC_MAP(confBinningAnalysis)};
+}
+
 template <typename T1, typename T2>
 std::map<KinkHist, std::vector<framework::AxisSpec>> makeKinkQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
@@ -295,13 +303,13 @@ class KinkHistManager
 
     mChaDauManager.template init<mode>(registry, ChaDauSpecs, absCharge, chaDauCharge, chaDauPdgCodeAbs);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      initAnalysis(KinkSpecs);
+      this->initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      initQa(KinkSpecs);
+      this->initQa(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
-      initMc(KinkSpecs);
+      this->initMc(KinkSpecs);
     }
   }
 
@@ -344,13 +352,13 @@ class KinkHistManager
 
     mChaDauManager.template init<mode>(registry, ChaDauSpecs, absCharge, chaDauCharge, chaDauPdgCodeAbs, ConfChaDauBinningQa);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      initAnalysis(KinkSpecs);
+      this->initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      initQa(KinkSpecs);
+      this->initQa(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
-      initMc(KinkSpecs);
+      this->initMc(KinkSpecs);
     }
   }
 
@@ -362,10 +370,10 @@ class KinkHistManager
     auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
     mChaDauManager.template fill<mode>(chaDaughter, tracks);
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(kinkCandidate);
+      this->fillAnalysis(kinkCandidate);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      fillQa(kinkCandidate);
+      this->fillQa(kinkCandidate);
     }
   }
 
@@ -375,13 +383,13 @@ class KinkHistManager
     auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
     mChaDauManager.template fill<mode>(chaDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(kinkCandidate);
+      this->fillAnalysis(kinkCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      fillQa(kinkCandidate);
+      this->fillQa(kinkCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      fillMc(kinkCandidate, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(kinkCandidate, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
@@ -513,15 +521,17 @@ class KinkHistManager
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
   void fillMc(T1 const& kinkCandidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!kinkCandidate.has_fMcParticle()) {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
-      if (mPlotOrigins) {
-        mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+      if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+        if (mPlotOrigins) {
+          mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+        }
       }
       return;
     }
@@ -559,43 +569,44 @@ class KinkHistManager
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
     }
 
-    // Plot origins
-    if (mPlotOrigins) {
-      // check first if particle is missidentified
-      if (isMissidentified) {
-        // if it is, we fill it as such
-        mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-      } else {
-        // if not, we fill it acccoridng to its origin
-        switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
-          case modes::McOrigin::kPhysicalPrimary:
-            mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-            break;
-          case modes::McOrigin::kFromWrongCollision:
-            mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-            break;
-          case modes::McOrigin::kFromMaterial:
-            mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-            break;
-          case modes::McOrigin::kFromSecondaryDecay:
-            if (kinkCandidate.has_fMcMother()) {
-              auto mother = kinkCandidate.template fMcMother_as<T3>();
-              int motherPdgCode = std::abs(mother.pdgCode());
-              // Switch on PDG of the mother
-              if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
-                mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-              } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
-                mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-              } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
-                mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
-              } else {
-                mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      if (mPlotOrigins) {
+        // check first if particle is missidentified
+        if (isMissidentified) {
+          // if it is, we fill it as such
+          mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+        } else {
+          // if not, we fill it acccoridng to its origin
+          switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
+            case modes::McOrigin::kPhysicalPrimary:
+              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+              break;
+            case modes::McOrigin::kFromWrongCollision:
+              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+              break;
+            case modes::McOrigin::kFromMaterial:
+              mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+              break;
+            case modes::McOrigin::kFromSecondaryDecay:
+              if (kinkCandidate.has_fMcMother()) {
+                auto mother = kinkCandidate.template fMcMother_as<T3>();
+                int motherPdgCode = std::abs(mother.pdgCode());
+                // Switch on PDG of the mother
+                if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
+                  mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+                } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
+                  mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+                } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
+                  mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+                } else {
+                  mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
+                }
               }
-            }
-            break;
-          default:
-            LOG(warn) << "Encounted partilce with unknown origin!";
-            break;
+              break;
+            default:
+              LOG(warn) << "Encounted partilce with unknown origin!";
+              break;
+          }
         }
       }
     }

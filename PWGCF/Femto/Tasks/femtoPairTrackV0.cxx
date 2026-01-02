@@ -158,7 +158,7 @@ struct FemtoPairTrackV0 {
       LOG(fatal) << "Both data and mc processing is enabled. Breaking...";
     }
 
-    bool processLambda = doprocessLambdaSameEvent || doprocessK0shortSameEventMc || doprocessLambdaMixedEvent || doprocessLambdaMixedEventMc;
+    bool processLambda = doprocessLambdaSameEvent || doprocessLambdaSameEventMc || doprocessLambdaMixedEvent || doprocessLambdaMixedEventMc;
     bool processK0short = doprocessK0shortSameEvent || doprocessK0shortSameEventMc || doprocessK0shortMixedEvent || doprocessK0shortMixedEventMc;
 
     if (processLambda && processK0short) {
@@ -171,10 +171,8 @@ struct FemtoPairTrackV0 {
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 
-    // setup histograms
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
-    // setup for lambda
     if (processData) {
       auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       auto trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
@@ -213,7 +211,7 @@ struct FemtoPairTrackV0 {
 
   void processLambdaSameEventMc(FilteredFemtoCollisionWithLabel const& col, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& lambdas, FMcParticles const& mcParticles, FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackLambdaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, mcCols, tracks, trackWithLabelPartition, lambdas, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+    pairTrackLambdaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition, lambdas, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackV0, processLambdaSameEventMc, "Enable processing same event processing for tracks and lambdas with MC information", false);
 
@@ -225,7 +223,7 @@ struct FemtoPairTrackV0 {
 
   void processLambdaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambas*/, FMcParticles const& mcParticles)
   {
-    pairTrackLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, mcCols, tracks, trackWithLabelPartition, lambdaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition, lambdaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackV0, processLambdaMixedEventMc, "Enable processing mixed event processing for tracks and lambdas with MC information", false);
 
@@ -237,7 +235,7 @@ struct FemtoPairTrackV0 {
 
   void processK0shortSameEventMc(FilteredFemtoCollisionWithLabel const& col, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoK0shortsWithLabel const& k0shorts, FMcParticles const& mcParticles, FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackK0shortBuilder.processSameEvent<modes::Mode::kAnalysis>(col, mcCols, tracks, trackWithLabelPartition, k0shorts, k0shortWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
+    pairTrackK0shortBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition, k0shorts, k0shortWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackV0, processK0shortSameEventMc, "Enable processing same event processing for tracks and k0shorts with MC information", false);
 
@@ -249,7 +247,7 @@ struct FemtoPairTrackV0 {
 
   void processK0shortMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoK0shortsWithLabel const& /*k0shorts*/, FMcParticles const& mcParticles)
   {
-    pairTrackK0shortBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, mcCols, tracks, trackWithLabelPartition, k0shortWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackK0shortBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition, k0shortWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackV0, processK0shortMixedEventMc, "Enable processing mixed event processing for tracks and k0shorts with mc information", false);
 };

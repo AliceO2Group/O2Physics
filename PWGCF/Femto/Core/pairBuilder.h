@@ -742,6 +742,7 @@ class PairTrackKinkBuilder
     mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confKinkSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1); // abs charge of kink daughter is always 1
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
+    mPc.template init<mode>(confPairCuts);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPolicy>(confMixing.policy.value);
@@ -761,6 +762,19 @@ class PairTrackKinkBuilder
     pairprocesshelpers::processSameEvent<mode>(trackSlice, kinkSlice, trackTable, col, mTrackHistManager, mKinkHistManager, mPairHistManagerSe, mCprSe, mPc);
   }
 
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void processSameEvent(T1 const& col, T2 const& mcCols, T3& trackTable, T4& trackPartition, T5& /*kinktable*/, T6& kinkPartition, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  {
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice.size() == 0 || kinkSlice.size() == 0) {
+      return;
+    }
+    mColHistManager.fill<mode>(col, mcCols);
+    mCprSe.setMagField(col.magField());
+    pairprocesshelpers::processSameEvent<mode>(trackSlice, kinkSlice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager, mKinkHistManager, mPairHistManagerSe, mCprSe, mPc);
+  }
+
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
   void processMixedEvent(T1 const& cols, T2& trackTable, T3& trackPartition, T4& kinkPartition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
   {
@@ -773,6 +787,24 @@ class PairTrackKinkBuilder
         break;
       case static_cast<int>(pairhistmanager::kVtxMultCent):
         pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, kinkPartition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      default:
+        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void processMixedEvent(T1 const& cols, T2 const& mcCols, T3& trackTable, T4& trackPartition, T5& kinkPartition, T6 const& mcParticles, T7& cache, T8& binsVtxMult, T9& binsVtxCent, T10& binsVtxMultCent)
+  {
+    switch (mMixingPolicy) {
+      case static_cast<int>(pairhistmanager::kVtxMult):
+        pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, trackPartition, kinkPartition, trackTable, mcParticles, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxCent):
+        pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, trackPartition, kinkPartition, trackTable, mcParticles, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxMultCent):
+        pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, trackPartition, kinkPartition, trackTable, mcParticles, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
         break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";

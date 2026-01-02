@@ -65,7 +65,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_z| as a function of pT. Has to be a valid TForumal, where x=pt"};
 
   // Electron PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalElectron{"pidIsOptionalElectron", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidElectron{"requirePidElectron", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofElectron{"minMomTofElectron", 0.3, "Minimum momentum to required TOF PID for Electron"};
   o2::framework::Configurable<std::vector<float>> itsElectron{"itsElectron", {}, "Maximum |nsigma| for Electron PID"};
   o2::framework::Configurable<std::vector<float>> tpcElectron{"tpcElectron", {}, "Maximum |nsigma| for Electron PID"};
@@ -74,7 +74,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofElectron{"tpctofElectron", {}, "Maximum |nsigma| for Electron PID"};
 
   // Pion PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalPion{"pidIsOptionalPion", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidPion{"requirePidPion", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofPion{"minMomTofPion", 0.5, "Minimum momentum to required TOF PID for Pion"};
   o2::framework::Configurable<std::vector<float>> itsPion{"itsPion", {}, "Maximum |nsigma| for Pion PID"};
   o2::framework::Configurable<std::vector<float>> tpcPion{"tpcPion", {}, "Maximum |nsigma| for Pion PID"};
@@ -83,7 +83,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofPion{"tpctofPion", {}, "Maximum |nsigma| for Pion PID"};
 
   // Kaon PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalKaon{"pidIsOptionalKaon", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidKaon{"requirePidKaon", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofKaon{"minMomTofKaon", 0.4, "Minimum momentum to required TOF PID for Kaon"};
   o2::framework::Configurable<std::vector<float>> itsKaon{"itsKaon", {}, "Maximum |nsigma| for Kaon PID"};
   o2::framework::Configurable<std::vector<float>> tpcKaon{"tpcKaon", {}, "Maximum |nsigma| for Kaon PID"};
@@ -92,7 +92,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofKaon{"tpctofKaon", {}, "Maximum |nsigma| for Kaon PID"};
 
   // Proton PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalProton{"pidIsOptionalProton", true, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidProton{"requirePidProton", true, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofProton{"minMomTofProton", 0.75, "Minimum momentum to required TOF PID for Proton"};
   o2::framework::Configurable<std::vector<float>> itsProton{"itsProton", {}, "Maximum |nsigma| for Proton PID"};
   o2::framework::Configurable<std::vector<float>> tpcProton{"tpcProton", {}, "Maximum |nsigma| for Proton PID"};
@@ -101,7 +101,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofProton{"tpctofProton", {3.f}, "Maximum |nsigma| for Proton PID"};
 
   // Deuteron PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalDeuteron{"pidIsOptionalDeuteron", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidDeuteron{"requirePidDeuteron", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofDeuteron{"minMomTofDeuteron", 1.2, "Minimum momentum to required TOF PID for Deuteron"};
   o2::framework::Configurable<std::vector<float>> itsDeuteron{"itsDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
   o2::framework::Configurable<std::vector<float>> tpcDeuteron{"tpcDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
@@ -110,7 +110,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofDeuteron{"tpctofDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
 
   // Triton PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalTriton{"pidIsOptionalTriton", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidTriton{"requirePidTriton", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofTriton{"minMomTofTriton", 1.4, "Minimum momentum to required TOF PID for Triton"};
   o2::framework::Configurable<std::vector<float>> itsTriton{"itsTriton", {}, "Maximum |nsigma| for Triton PID"};
   o2::framework::Configurable<std::vector<float>> tpcTriton{"tpcTriton", {}, "Maximum |nsigma| for Triton PID"};
@@ -119,7 +119,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpctofTriton{"tpctofTriton", {}, "Maximum |nsigma| for Triton PID"};
 
   // Helium PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalHelium{"pidIsOptionalHelium", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidHelium{"requirePidHelium", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofHelium{"minMomTofHelium", 1.6, "Minimum momentum to required TOF PID for Helium"};
   o2::framework::Configurable<std::vector<float>> itsHelium{"itsHelium", {}, "Maximum |nsigma| for Helium PID"};
   o2::framework::Configurable<std::vector<float>> tpcHelium{"tpcHelium", {}, "Maximum |nsigma| for Helium PID"};
@@ -302,59 +302,59 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->addSelection(kDCAzMax, trackSelectionNames.at(kDCAzMax), filter.ptMin.value, filter.ptMax.value, config.dcazMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
 
     // add selections for Electron pid
-    this->addSelection(kItsElectron, trackSelectionNames.at(kItsElectron), config.itsElectron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTpcElectron, trackSelectionNames.at(kTpcElectron), config.tpcElectron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTofElectron, trackSelectionNames.at(kTofElectron), config.tofElectron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTpcitsElectron, trackSelectionNames.at(kTpcitsElectron), config.tpcitsElectron.value, limits::kUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTpctofElectron, trackSelectionNames.at(kTpctofElectron), config.tpctofElectron.value, limits::kUpperLimit, false, false, config.pidIsOptionalElectron);
+    this->addSelection(kItsElectron, trackSelectionNames.at(kItsElectron), config.itsElectron.value, limits::kAbsUpperLimit, false, false, config.requirePidElectron);
+    this->addSelection(kTpcElectron, trackSelectionNames.at(kTpcElectron), config.tpcElectron.value, limits::kAbsUpperLimit, false, false, config.requirePidElectron);
+    this->addSelection(kTofElectron, trackSelectionNames.at(kTofElectron), config.tofElectron.value, limits::kAbsUpperLimit, false, false, config.requirePidElectron);
+    this->addSelection(kTpcitsElectron, trackSelectionNames.at(kTpcitsElectron), config.tpcitsElectron.value, limits::kUpperLimit, false, false, config.requirePidElectron);
+    this->addSelection(kTpctofElectron, trackSelectionNames.at(kTpctofElectron), config.tpctofElectron.value, limits::kUpperLimit, false, false, config.requirePidElectron);
     mElectronTofThres = config.minMomTofElectron.value;
 
     // add selections for Pion pid
-    this->addSelection(kItsPion, trackSelectionNames.at(kItsPion), config.itsPion.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTpcPion, trackSelectionNames.at(kTpcPion), config.tpcPion.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTofPion, trackSelectionNames.at(kTofPion), config.tofPion.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTpcitsPion, trackSelectionNames.at(kTpcitsPion), config.tpcitsPion.value, limits::kUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTpctofPion, trackSelectionNames.at(kTpctofPion), config.tpctofPion.value, limits::kUpperLimit, false, false, config.pidIsOptionalPion);
+    this->addSelection(kItsPion, trackSelectionNames.at(kItsPion), config.itsPion.value, limits::kAbsUpperLimit, false, false, config.requirePidPion);
+    this->addSelection(kTpcPion, trackSelectionNames.at(kTpcPion), config.tpcPion.value, limits::kAbsUpperLimit, false, false, config.requirePidPion);
+    this->addSelection(kTofPion, trackSelectionNames.at(kTofPion), config.tofPion.value, limits::kAbsUpperLimit, false, false, config.requirePidPion);
+    this->addSelection(kTpcitsPion, trackSelectionNames.at(kTpcitsPion), config.tpcitsPion.value, limits::kUpperLimit, false, false, config.requirePidPion);
+    this->addSelection(kTpctofPion, trackSelectionNames.at(kTpctofPion), config.tpctofPion.value, limits::kUpperLimit, false, false, config.requirePidPion);
     mPionTofThres = config.minMomTofPion.value;
 
     // add selections for Kaon pid
-    this->addSelection(kItsKaon, trackSelectionNames.at(kItsKaon), config.itsKaon.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTpcKaon, trackSelectionNames.at(kTpcKaon), config.tpcKaon.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTofKaon, trackSelectionNames.at(kTofKaon), config.tofKaon.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTpcitsKaon, trackSelectionNames.at(kTpcitsKaon), config.tpcitsKaon.value, limits::kUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTpctofKaon, trackSelectionNames.at(kTpctofKaon), config.tpctofKaon.value, limits::kUpperLimit, false, false, config.pidIsOptionalKaon);
+    this->addSelection(kItsKaon, trackSelectionNames.at(kItsKaon), config.itsKaon.value, limits::kAbsUpperLimit, false, false, config.requirePidKaon);
+    this->addSelection(kTpcKaon, trackSelectionNames.at(kTpcKaon), config.tpcKaon.value, limits::kAbsUpperLimit, false, false, config.requirePidKaon);
+    this->addSelection(kTofKaon, trackSelectionNames.at(kTofKaon), config.tofKaon.value, limits::kAbsUpperLimit, false, false, config.requirePidKaon);
+    this->addSelection(kTpcitsKaon, trackSelectionNames.at(kTpcitsKaon), config.tpcitsKaon.value, limits::kUpperLimit, false, false, config.requirePidKaon);
+    this->addSelection(kTpctofKaon, trackSelectionNames.at(kTpctofKaon), config.tpctofKaon.value, limits::kUpperLimit, false, false, config.requirePidKaon);
     mKaonTofThres = config.minMomTofKaon.value;
 
     // add selections for Proton pid
-    this->addSelection(kItsProton, trackSelectionNames.at(kItsProton), config.itsProton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTpcProton, trackSelectionNames.at(kTpcProton), config.tpcProton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTofProton, trackSelectionNames.at(kTofProton), config.tofProton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTpcitsProton, trackSelectionNames.at(kTpcitsProton), config.tpcitsProton.value, limits::kUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTpctofProton, trackSelectionNames.at(kTpctofProton), config.tpctofProton.value, limits::kUpperLimit, false, false, config.pidIsOptionalProton);
+    this->addSelection(kItsProton, trackSelectionNames.at(kItsProton), config.itsProton.value, limits::kAbsUpperLimit, false, false, config.requirePidProton);
+    this->addSelection(kTpcProton, trackSelectionNames.at(kTpcProton), config.tpcProton.value, limits::kAbsUpperLimit, false, false, config.requirePidProton);
+    this->addSelection(kTofProton, trackSelectionNames.at(kTofProton), config.tofProton.value, limits::kAbsUpperLimit, false, false, config.requirePidProton);
+    this->addSelection(kTpcitsProton, trackSelectionNames.at(kTpcitsProton), config.tpcitsProton.value, limits::kUpperLimit, false, false, config.requirePidProton);
+    this->addSelection(kTpctofProton, trackSelectionNames.at(kTpctofProton), config.tpctofProton.value, limits::kUpperLimit, false, false, config.requirePidProton);
     mProtonTofThres = config.minMomTofProton.value;
 
     // add selections for Deuteron pid
-    this->addSelection(kItsDeuteron, trackSelectionNames.at(kItsDeuteron), config.itsDeuteron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTpcDeuteron, trackSelectionNames.at(kTpcDeuteron), config.tpcDeuteron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTofDeuteron, trackSelectionNames.at(kTofDeuteron), config.tofDeuteron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTpcitsDeuteron, trackSelectionNames.at(kTpcitsDeuteron), config.tpcitsDeuteron.value, limits::kUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTpctofDeuteron, trackSelectionNames.at(kTpctofDeuteron), config.tpctofDeuteron.value, limits::kUpperLimit, false, false, config.pidIsOptionalDeuteron);
+    this->addSelection(kItsDeuteron, trackSelectionNames.at(kItsDeuteron), config.itsDeuteron.value, limits::kAbsUpperLimit, false, false, config.requirePidDeuteron);
+    this->addSelection(kTpcDeuteron, trackSelectionNames.at(kTpcDeuteron), config.tpcDeuteron.value, limits::kAbsUpperLimit, false, false, config.requirePidDeuteron);
+    this->addSelection(kTofDeuteron, trackSelectionNames.at(kTofDeuteron), config.tofDeuteron.value, limits::kAbsUpperLimit, false, false, config.requirePidDeuteron);
+    this->addSelection(kTpcitsDeuteron, trackSelectionNames.at(kTpcitsDeuteron), config.tpcitsDeuteron.value, limits::kUpperLimit, false, false, config.requirePidDeuteron);
+    this->addSelection(kTpctofDeuteron, trackSelectionNames.at(kTpctofDeuteron), config.tpctofDeuteron.value, limits::kUpperLimit, false, false, config.requirePidDeuteron);
     mDeuteronTofThres = config.minMomTofDeuteron.value;
 
     // add selections for Triton pid
-    this->addSelection(kItsTriton, trackSelectionNames.at(kItsTriton), config.itsTriton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTpcTriton, trackSelectionNames.at(kTpcTriton), config.tpcTriton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTofTriton, trackSelectionNames.at(kTofTriton), config.tofTriton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTpcitsTriton, trackSelectionNames.at(kTpcitsTriton), config.tpcitsTriton.value, limits::kUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTpctofTriton, trackSelectionNames.at(kTpctofTriton), config.tpctofTriton.value, limits::kUpperLimit, false, false, config.pidIsOptionalTriton);
+    this->addSelection(kItsTriton, trackSelectionNames.at(kItsTriton), config.itsTriton.value, limits::kAbsUpperLimit, false, false, config.requirePidTriton);
+    this->addSelection(kTpcTriton, trackSelectionNames.at(kTpcTriton), config.tpcTriton.value, limits::kAbsUpperLimit, false, false, config.requirePidTriton);
+    this->addSelection(kTofTriton, trackSelectionNames.at(kTofTriton), config.tofTriton.value, limits::kAbsUpperLimit, false, false, config.requirePidTriton);
+    this->addSelection(kTpcitsTriton, trackSelectionNames.at(kTpcitsTriton), config.tpcitsTriton.value, limits::kUpperLimit, false, false, config.requirePidTriton);
+    this->addSelection(kTpctofTriton, trackSelectionNames.at(kTpctofTriton), config.tpctofTriton.value, limits::kUpperLimit, false, false, config.requirePidTriton);
     mTritonTofThres = config.minMomTofTriton.value;
 
     // add selections for Helium pid
-    this->addSelection(kItsHelium, trackSelectionNames.at(kItsHelium), config.itsHelium.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTpcHelium, trackSelectionNames.at(kTpcHelium), config.tpcHelium.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTofHelium, trackSelectionNames.at(kTofHelium), config.tofHelium.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTpcitsHelium, trackSelectionNames.at(kTpcitsHelium), config.tpcitsHelium.value, limits::kUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTpctofHelium, trackSelectionNames.at(kTpctofHelium), config.tpctofHelium.value, limits::kUpperLimit, false, false, config.pidIsOptionalHelium);
+    this->addSelection(kItsHelium, trackSelectionNames.at(kItsHelium), config.itsHelium.value, limits::kAbsUpperLimit, false, false, config.requirePidHelium);
+    this->addSelection(kTpcHelium, trackSelectionNames.at(kTpcHelium), config.tpcHelium.value, limits::kAbsUpperLimit, false, false, config.requirePidHelium);
+    this->addSelection(kTofHelium, trackSelectionNames.at(kTofHelium), config.tofHelium.value, limits::kAbsUpperLimit, false, false, config.requirePidHelium);
+    this->addSelection(kTpcitsHelium, trackSelectionNames.at(kTpcitsHelium), config.tpcitsHelium.value, limits::kUpperLimit, false, false, config.requirePidHelium);
+    this->addSelection(kTpctofHelium, trackSelectionNames.at(kTpctofHelium), config.tpctofHelium.value, limits::kUpperLimit, false, false, config.requirePidHelium);
     mHeliumTofThres = config.minMomTofHelium.value;
 
     this->setupContainers<HistName>(registry);

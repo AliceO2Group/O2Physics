@@ -330,10 +330,10 @@ class V0HistManager
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      initAnalysis(V0Specs);
+      this->initAnalysis(V0Specs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      initMc(V0Specs);
+      this->initMc(V0Specs);
     }
   }
 
@@ -378,13 +378,13 @@ class V0HistManager
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCode, ConfNegDauBinningQa);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      initAnalysis(V0Specs);
+      this->initAnalysis(V0Specs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      initQa(V0Specs);
+      this->initQa(V0Specs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      initMc(V0Specs);
+      this->initMc(V0Specs);
     }
   }
 
@@ -397,10 +397,10 @@ class V0HistManager
     mNegDauManager.template fill<mode>(negDaughter, tracks);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(v0candidate);
+      this->fillAnalysis(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      fillQa(v0candidate);
+      this->fillQa(v0candidate);
     }
   }
 
@@ -412,13 +412,13 @@ class V0HistManager
     auto negDaughter = tracks.rawIteratorAt(v0candidate.negDauId() - tracks.offset());
     mNegDauManager.template fill<mode>(negDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(v0candidate);
+      this->fillAnalysis(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      fillQa(v0candidate);
+      this->fillQa(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      fillMc(v0candidate, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(v0candidate, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
@@ -586,15 +586,17 @@ class V0HistManager
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
   void fillMc(T1 const& v0Candidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!v0Candidate.has_fMcParticle()) {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
-      if (mPlotOrigins) {
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+      if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+        if (mPlotOrigins) {
+          mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kNoMcParticle, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+        }
       }
       return;
     }
@@ -632,43 +634,44 @@ class V0HistManager
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
     }
 
-    // Plot origins
-    if (mPlotOrigins) {
-      // check first if particle is missidentified
-      if (isMissidentified) {
-        // if it is, we fill it as such
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-      } else {
-        // if not, we fill it acccoridng to its origin
-        switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
-          case modes::McOrigin::kPhysicalPrimary:
-            mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-            break;
-          case modes::McOrigin::kFromWrongCollision:
-            mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-            break;
-          case modes::McOrigin::kFromMaterial:
-            mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-            break;
-          case modes::McOrigin::kFromSecondaryDecay:
-            if (v0Candidate.has_fMcMother()) {
-              auto mother = v0Candidate.template fMcMother_as<T3>();
-              int motherPdgCode = std::abs(mother.pdgCode());
-              // Switch on PDG of the mother
-              if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
-                mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-              } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
-                mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-              } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
-                mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
-              } else {
-                mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      if (mPlotOrigins) {
+        // check first if particle is missidentified
+        if (isMissidentified) {
+          // if it is, we fill it as such
+          mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+        } else {
+          // if not, we fill it acccoridng to its origin
+          switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
+            case modes::McOrigin::kPhysicalPrimary:
+              mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+              break;
+            case modes::McOrigin::kFromWrongCollision:
+              mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+              break;
+            case modes::McOrigin::kFromMaterial:
+              mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+              break;
+            case modes::McOrigin::kFromSecondaryDecay:
+              if (v0Candidate.has_fMcMother()) {
+                auto mother = v0Candidate.template fMcMother_as<T3>();
+                int motherPdgCode = std::abs(mother.pdgCode());
+                // Switch on PDG of the mother
+                if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
+                  mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondary1, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+                } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel2 && motherPdgCode == mPdgCodesSecondaryMother[1]) {
+                  mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondary2, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+                } else if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel3 && motherPdgCode == mPdgCodesSecondaryMother[2]) {
+                  mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondary3, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+                } else {
+                  mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kSecondaryOther, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+                }
               }
-            }
-            break;
-          default:
-            LOG(warn) << "Encounted partilce with unknown origin!";
-            break;
+              break;
+            default:
+              LOG(warn) << "Encounted partilce with unknown origin!";
+              break;
+          }
         }
       }
     }
