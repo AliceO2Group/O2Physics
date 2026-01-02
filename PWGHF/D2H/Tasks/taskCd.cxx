@@ -249,13 +249,13 @@ struct HfTaskCd {
   };
 
   /// Fill histograms for real data
-  template <typename CollType, typename CandType, typename TrackType>
-  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const&)
+  template <typename CollType, typename CandType, typename TrackType, typename BcType>
+  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& /*tracks*/, BcType const& /*bcs*/)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedCdCandidates = candidates.sliceBy(candCdPerCollision, thisCollId);
     auto numPvContributors = collision.numContrib();
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<BcType>();
     int64_t timeStamp = bc.timestamp();
 
     for (const auto& candidate : groupedCdCandidates) {
@@ -431,44 +431,48 @@ struct HfTaskCd {
     }
   }
   /// Run the analysis on real data
-  template <typename CollType, typename CandType, typename TrackType>
+  template <typename CollType, typename CandType, typename TrackType, typename BcType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates,
-                                   TrackType const& tracks)
+                                   TrackType const& tracks,
+                                   BcType const& bcs)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData(collision, candidates, tracks);
+      fillHistosData(collision, candidates, tracks, bcs);
     }
   }
 
   void processDataStd(CollisionsWEvSel const& collisions,
                       CdCandidates const& selectedCdCandidates,
-                      HFTracks const& tracks)
+                      HFTracks const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // inlcude ITS PID information
     auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStd, "Process Data with the standard method", true);
 
   void processDataStdWithFT0C(CollisionsWithEvSelFT0C const& collisions,
                               CdCandidates const& selectedCdCandidates,
-                              HFTracks const& tracks)
+                              HFTracks const& tracks,
+                              aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // inlcude ITS PID information
     auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
   void processDataStdWithFT0M(CollisionsWithEvSelFT0M const& collisions,
                               CdCandidates const& selectedCdCandidates,
-                              HFTracks const& tracks)
+                              HFTracks const& tracks,
+                              aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // inlcude ITS PID information
     auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 };
