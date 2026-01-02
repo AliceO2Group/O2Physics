@@ -70,9 +70,9 @@ enum V0Hist {
   kPdg,
   kPdgMother,
   kPdgPartonicMother,
-  kTruePt,
-  kTrueEta,
-  kTruePhi,
+  kTruePtVsPt,
+  kTrueEtaVsEta,
+  kTruePhiVsPhi,
   // histograms for fraction estimation of v0s
   kNoMcParticle,
   kPrimary,
@@ -167,9 +167,9 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kPdg, o2::framework::kTH1F, "hPdg", "PDG Codes of reconstructed v0; PDG Code; Entries"},
    {kPdgMother, o2::framework::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed v0; PDG Code; Entries"},
    {kPdgPartonicMother, o2::framework::kTH1F, "hPdgPartonicMother", "PDG Codes of partonic mother of reconstructed v0; PDG Code; Entries"},
-   {kTruePt, o2::framework::kTH1F, "hTruePt", "True transverse momentum; p_{T} (GeV/#it{c}); Entries"},
-   {kTrueEta, o2::framework::kTH1F, "hTrueEta", "True pseudorapdity; #eta; Entries"},
-   {kTruePhi, o2::framework::kTH1F, "hTruePhi", "True azimuthal angle; #varphi; Entries"},
+   {kTruePtVsPt, o2::framework::kTH2F, "hTruePtVsPt", "True transverse momentum vs transverse momentum; p_{T,True} (GeV/#it{c}); p_{T,True} (GeV/#it{c})"},
+   {kTrueEtaVsEta, o2::framework::kTH2F, "hTrueEtaVsEta", "True pseudorapdity vs pseudorapdity; #eta_{True}; #eta"},
+   {kTruePhiVsPhi, o2::framework::kTH2F, "hTruePhiVsPhi", "True azimuthal angle vs azimuthal angle; #varphi_{True}; #varphi"},
    {kNoMcParticle, o2::framework::kTH2F, "hNoMcParticle", "Wrongly reconstructed particles; p_{T} (GeV/#it{c}); cos(#alpha)"},
    {kPrimary, o2::framework::kTH2F, "hPrimary", "Primary particles; p_{T} (GeV/#it{c}); cos(#alpha)"},
    {kFromWrongCollision, o2::framework::kTH2F, "hFromWrongCollision", "Particles associated to wrong collision; p_{T} (GeV/#it{c}); cos(#alpha)"},
@@ -188,12 +188,12 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
     {kMass, {conf.mass}},          \
     {kSign, {conf.sign}},
 
-#define V0_HIST_MC_MAP(conf)       \
-  {kTruePt, {conf.pt}},            \
-    {kTrueEta, {conf.eta}},        \
-    {kTruePhi, {conf.phi}},        \
-    {kPdg, {conf.pdgCodes}},       \
-    {kPdgMother, {conf.pdgCodes}}, \
+#define V0_HIST_MC_MAP(conf)               \
+  {kTruePtVsPt, {conf.pt, conf.pt}},       \
+    {kTrueEtaVsEta, {conf.eta, conf.eta}}, \
+    {kTruePhiVsPhi, {conf.phi, conf.phi}}, \
+    {kPdg, {conf.pdgCodes}},               \
+    {kPdgMother, {conf.pdgCodes}},         \
     {kPdgPartonicMother, {conf.pdgCodes}},
 
 #define V0_HIST_QA_MAP(confAnalysis, confQa)                                   \
@@ -481,9 +481,9 @@ class V0HistManager
   void initMc(std::map<V0Hist, std::vector<o2::framework::AxisSpec>> const& V0Specs)
   {
     std::string mcDir = std::string(v0Prefix) + std::string(McDir);
-    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePt, HistTable), getHistDesc(kTruePt, HistTable), getHistType(kTruePt, HistTable), {V0Specs.at(kTruePt)});
-    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueEta, HistTable), getHistDesc(kTrueEta, HistTable), getHistType(kTrueEta, HistTable), {V0Specs.at(kTrueEta)});
-    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhi, HistTable), getHistDesc(kTruePhi, HistTable), getHistType(kTruePhi, HistTable), {V0Specs.at(kTruePhi)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePtVsPt, HistTable), getHistDesc(kTruePtVsPt, HistTable), getHistType(kTruePtVsPt, HistTable), {V0Specs.at(kTruePtVsPt)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueEtaVsEta, HistTable), getHistDesc(kTrueEtaVsEta, HistTable), getHistType(kTrueEtaVsEta, HistTable), {V0Specs.at(kTrueEtaVsEta)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhiVsPhi, HistTable), getHistDesc(kTruePhiVsPhi, HistTable), getHistType(kTruePhiVsPhi, HistTable), {V0Specs.at(kTruePhiVsPhi)});
 
     // mc origin can be configured here
     const framework::AxisSpec axisOrigin = {static_cast<int>(modes::McOrigin::kMcOriginLast), -0.5, static_cast<double>(modes::McOrigin::kMcOriginLast) - 0.5};
@@ -606,9 +606,9 @@ class V0HistManager
     // whether a particle is missidentfied or not cannot be known by the producer so we check it here
     bool isMissidentified = mcParticle.pdgCode() != mPdgCode;
 
-    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePt, HistTable)), mcParticle.pt());
-    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTrueEta, HistTable)), mcParticle.eta());
-    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePhi, HistTable)), mcParticle.phi());
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), v0Candidate.pt());
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), v0Candidate.eta());
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), v0Candidate.phi());
     if (isMissidentified) {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<int>(modes::McOrigin::kMissidentified));
     } else {

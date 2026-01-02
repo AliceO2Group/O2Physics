@@ -673,15 +673,15 @@ using FOmegaExtras = FOmegaExtras_001;
 
 namespace femtomccollisions
 {
-DECLARE_SOA_COLUMN(MultMc, multMc, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
-DECLARE_SOA_COLUMN(CentMc, centMc, float); //! Multiplicity of the event as given by the generator in |eta|<0.8
-                                           //
+DECLARE_SOA_COLUMN(Mult, mult, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_COLUMN(Cent, cent, float); //! Multiplicity of the event as given by the generator in |eta|<0.8
+                                       //
 } // namespace femtomccollisions
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FMcCols_001, "FMCCOL", 1, //! femto mc collisions
                                    o2::soa::Index<>,
-                                   femtomccollisions::MultMc,
-                                   femtomccollisions::CentMc);
+                                   femtomccollisions::Mult,
+                                   femtomccollisions::Cent);
 using FMcCols = FMcCols_001;
 using FMcCol = FMcCols_001::iterator;
 

@@ -113,6 +113,14 @@ auto makeColHistSpecMap(const T& confBinningAnalysis)
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
+template <typename T>
+auto makeColMcHistSpecMap(const T& confBinningAnalysis)
+{
+  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+    COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      COL_HIST_MC_MAP(confBinningAnalysis)};
+}
+
 template <typename T1, typename T2>
 auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
@@ -273,9 +281,12 @@ class CollisionHistManager
   template <typename T1, typename T2>
   void fillMc(T1 const& col, T2 const& /*mcCols*/)
   {
+    if (!col.has_fMcCol()) {
+      return;
+    }
     auto genCol = col.template fMcCol_as<T2>();
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kMcMult, HistTable)), genCol.multMc());
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kMcCent, HistTable)), genCol.centMc());
+    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kMcMult, HistTable)), genCol.mult());
+    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kMcCent, HistTable)), genCol.cent());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
