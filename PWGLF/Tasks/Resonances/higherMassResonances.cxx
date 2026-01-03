@@ -338,8 +338,8 @@ struct HigherMassResonances {
     if (config.qAv0) {
       // Invariant Mass
       rKzeroShort.add("hMassK0Shortbefore", "hMassK0Shortbefore", kTHnSparseF, {k0ShortMassAxis, ptAxis});
-      rKzeroShort.add("hK0ShortMassCorr", "hK0ShortMassCorr", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
-      rKzeroShort.add("hK0ShortMassCorrAfterCut", "hK0ShortMassCorrAfterCut", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
+      rKzeroShort.add("hK0ShortMassCorr", "hK0ShortMassCorr", kTHnSparseF, {k0ShortMassAxis, k0ShortMassAxis, deltaMAxis});
+      // rKzeroShort.add("hK0ShortMassCorrAfterCut", "hK0ShortMassCorrAfterCut", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
       rKzeroShort.add("hK0sPtCorrelation", "hK0sPtCorrelation", kTH1F, {{1000, 0.0f, 100.0f}});
       rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", kTHnSparseF, {k0ShortMassAxis, ptAxis});
       // Topological histograms (after the selection)
@@ -1034,20 +1034,20 @@ struct HigherMassResonances {
       mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
 
+      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short());
+        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short(), deltaMass);
       }
 
-      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (!config.qAOptimisation) {
         if (deltaMass > config.cMaxDeltaM) {
           continue;
         }
       }
 
-      if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
-      }
+      // if (config.qAv0) {
+      //   rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
+      // }
 
       const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
       if (config.qAv0) {
@@ -1555,18 +1555,18 @@ struct HigherMassResonances {
       mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
 
+      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short());
+        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short(), deltaMass);
       }
 
-      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (deltaMass > config.cMaxDeltaM) {
         continue;
       }
 
-      if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
-      }
+      // if (config.qAv0) {
+      //   rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
+      // }
 
       const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
       if (config.qAv0) {
