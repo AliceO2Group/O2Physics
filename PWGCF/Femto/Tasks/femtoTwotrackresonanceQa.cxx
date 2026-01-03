@@ -126,16 +126,16 @@ struct FemtoTwotrackresonanceQa {
 
     if (doprocessPhis) {
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confPhiBinning);
-      phiHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, phiHistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+      phiHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, phiHistSpec, confPhiSelection, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
     if (doprocessRho0s) {
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confRho0Binning);
-      rho0HistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, rho0HistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+      rho0HistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, rho0HistSpec, confRho0Selection, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
 
     if (doprocessKstar0s) {
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confKstar0Binning);
-      kstar0HistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, kstar0HistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+      kstar0HistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, kstar0HistSpec, confKstar0Selection, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
   };
 

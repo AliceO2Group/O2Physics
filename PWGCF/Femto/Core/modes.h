@@ -87,15 +87,36 @@ enum class Particle : o2::aod::femtodatatypes::ParticleType {
 };
 
 enum class McOrigin : o2::aod::femtodatatypes::McOriginType {
-  kNoMcParticle,
-  kFromWrongCollision,
-  kPhysicalPrimary,
-  kFromSecondaryDecay,
-  kFromMaterial,
-  kMcOriginLast
+  kNoMcParticle = 0,       // no associated mc particle normally indicated a wrongly reconstruced partilce
+  kFromWrongCollision = 1, // partilce originates from the wrong collision or a collision which was wrongly reconstructed (like a split vertex)
+  kPhysicalPrimary = 2,    // primary particle
+  kFromSecondaryDecay = 3, // particle from secondary decay
+  kFromMaterial = 4,       // partilce orginates from material
+  kMissidentified = 5,     // partilce was kMissidentified (also know as fake)
+  kMcOriginLast = 6
   // kFromFakeRecoCollision,
   // kFromUnkown
 };
+
+constexpr const char* mcOriginToString(McOrigin origin)
+{
+  switch (origin) {
+    case McOrigin::kNoMcParticle:
+      return "NoMcParticle";
+    case McOrigin::kFromWrongCollision:
+      return "FromWrongCollision";
+    case McOrigin::kPhysicalPrimary:
+      return "PhysicalPrimary";
+    case McOrigin::kFromSecondaryDecay:
+      return "FromSecondaryDecay";
+    case McOrigin::kFromMaterial:
+      return "FromMaterial";
+    case McOrigin::kMissidentified:
+      return "Missidentified";
+    default:
+      return "UnknownMcOrigin";
+  }
+}
 
 constexpr bool
   hasMass(Particle p)
