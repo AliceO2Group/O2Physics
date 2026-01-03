@@ -27,6 +27,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -69,7 +70,7 @@ struct NeutronSkinTask {
     170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0,
     270.0, 280.0, 290.0, 300.0};
 
-  static constexpr double kChargeThreshold = 3.0; // PDG charge units: 3 = |e|
+  static constexpr double ChargeThreshold = 3.0; // PDG charge units: 3 = |e|
 
   // ==========================================================================
   // THNSPARSE AXIS ENUMERATION
@@ -107,7 +108,7 @@ struct NeutronSkinTask {
   // ==========================================================================
   ConfigurableAxis axisPt{"axisPt", std::vector<double>(PttJacek.begin(), PttJacek.end()), "pT axis"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "multiplicity / centrality axis"};
-  ConfigurableAxis axisPhi{"axisPhi", {40, 0, 2 * M_PI}, "phi axis (rad)"};
+  ConfigurableAxis axisPhi{"axisPhi", {40, 0, o2::constants::math::TwoPI}, "phi axis (rad)"};
 
   // Event cuts
   Configurable<int> cfgAcceptSplitCollisions{"cfgAcceptSplitCollisions", 0, "0: only look at mcCollisions that are not split; 1: accept split mcCollisions, 2: accept split mcCollisions but only look at the first reco collision associated with it"};
@@ -330,7 +331,7 @@ struct NeutronSkinTask {
     if (p != nullptr) {
       charge = p->Charge();
     }
-    return std::abs(charge) >= kChargeThreshold;
+    return std::abs(charge) >= ChargeThreshold;
   }
 
   // ==========================================================================
