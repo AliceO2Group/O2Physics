@@ -87,16 +87,19 @@ struct NeutronSkinTask {
   // ==========================================================================
   // HELPER FUNCTIONS: INDEX CONVERSION
   // ==========================================================================
-  inline int getChargeIndex(int sign) const {
-    return (sign > 0) ? 1 : 0;  // 0=negative, 1=positive
+  inline int getChargeIndex(int sign) const
+  {
+    return (sign > 0) ? 1 : 0; // 0=negative, 1=positive
   }
 
-  inline int getEtaSignIndex(double eta) const {
-    return (eta > 0) ? 1 : 0;  // 0=negative eta, 1=positive eta
+  inline int getEtaSignIndex(double eta) const
+  {
+    return (eta > 0) ? 1 : 0; // 0=negative eta, 1=positive eta
   }
 
-  inline int getMcTypeIndex(bool isGenerated) const {
-    return isGenerated ? 1 : 0;  // 0=Reconstructed, 1=Generated
+  inline int getMcTypeIndex(bool isGenerated) const
+  {
+    return isGenerated ? 1 : 0; // 0=Reconstructed, 1=Generated
   }
 
   // ==========================================================================
@@ -205,7 +208,7 @@ struct NeutronSkinTask {
      {"hZVertexCorrelation", "Z vertex correlation;MC Z vertex (cm);Reco Z vertex (cm)", {HistType::kTH2F, {{200, -20, 20}, {200, -20, 20}}}}}};
 
   // THnSparse for pT analysis
-  std::shared_ptr<THnSparse> hPtSparse;  // 5D: pT × centrality × charge × eta_sign × mc_type
+  std::shared_ptr<THnSparse> hPtSparse; // 5D: pT × centrality × charge × eta_sign × mc_type
 
   // ==========================================================================
   // INITIALIZATION
@@ -255,8 +258,7 @@ struct NeutronSkinTask {
         "hPtSparse",
         "6D p_{T} analysis;p_{T} (GeV/c);Centrality (%);Charge;#eta sign;MC Type;#phi (rad)",
         HistType::kTHnSparseD,
-        {axisPtSparse, axisCentSparse, axisChargeSparse, axisEtaSignSparse, axisMcTypeSparse, axisPhiSparse}
-      );
+        {axisPtSparse, axisCentSparse, axisChargeSparse, axisEtaSignSparse, axisMcTypeSparse, axisPhiSparse});
 
       if (debugMode) {
         LOGF(info, "Created 6D THnSparse:");
@@ -273,8 +275,7 @@ struct NeutronSkinTask {
         "hPtSparse",
         "5D p_{T} analysis;p_{T} (GeV/c);Centrality (%);Charge;#eta sign;#phi (rad)",
         HistType::kTHnSparseD,
-        {axisPtSparse, axisCentSparse, axisChargeSparse, axisEtaSignSparse, axisPhiSparse}
-      );
+        {axisPtSparse, axisCentSparse, axisChargeSparse, axisEtaSignSparse, axisPhiSparse});
     }
 
     // Add basic eta histograms separately
@@ -507,8 +508,7 @@ struct NeutronSkinTask {
         static_cast<double>(chargeIdx),
         static_cast<double>(etaSignIdx),
         static_cast<double>(mcTypeIdx),
-        phi
-      };
+        phi};
       hPtSparse->Fill(fillArray);
     } else {
       // 5D filling for data processing (no mc_type, but has phi)
@@ -517,8 +517,7 @@ struct NeutronSkinTask {
         centrality,
         static_cast<double>(chargeIdx),
         static_cast<double>(etaSignIdx),
-        phi
-      };
+        phi};
       hPtSparse->Fill(fillArray);
     }
   }
