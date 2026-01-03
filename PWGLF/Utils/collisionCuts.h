@@ -21,11 +21,15 @@
 #ifndef PWGLF_UTILS_COLLISIONCUTS_H_
 #define PWGLF_UTILS_COLLISIONCUTS_H_
 
+#include "PWGLF/Utils/collisionCutsGroup.h"
+
 #include "Common/DataModel/EventSelection.h"
 
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
+#include <map>
+#include <string>
 #include <vector>
 
 namespace o2::analysis
@@ -49,6 +53,16 @@ class CollisonCuts
     kFlagOccupancy,
     kNoCollInTimeRangeStandard,
     kNoCollInTimeRangeNarrow,
+    kNoCollInTimeRangeStrict,
+    kNoCollInRofStandard,
+    kNoCollInRofStrict,
+    kNoHighMultCollInPrevRof,
+    kIsGoodITSLayersAll,
+    kIsGoodITSLayer3,
+    kIsGoodITSLayer0123,
+    kFlagVertexTRDmatched,
+    kFlagBBT0A,
+    kFlagBBT0C,
     kAllpassed
   };
 
@@ -76,6 +90,7 @@ class CollisonCuts
     mApplyNoITSROBorderCut = false;
     mApplyCollInTimeRangeNarrow = false;
     mApplyCollInTimeRangeStandard = false;
+    mApplyGoodITSLayersAll = false;
     mtrackOccupancyInTimeRangeMax = trackOccupancyInTimeRangeMax;
     mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin;
     mApplyRun2AliEventCuts = true;
@@ -108,16 +123,14 @@ class CollisonCuts
     mHistogramRegistry->add("CollCutCounts", "; ; Entries", o2::framework::kTH1F, {{kAllpassed + 1, 0, kAllpassed + 1}});
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllEvent), "all");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvertex), "Zvtx");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagTrigerTVX), "IsTriggerTVX");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagTimeFrameBorder), "NoTimeFrameBorder");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagITSROFrameBorder), "NoITSROFrameBorder");
+
+    // Automatically set labels from metadata registry
+    for (const auto& [evtSelFlag, metadata] : sSelectionRegistry) {
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(metadata.histogramBin), metadata.label);
+    }
+
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagSel8), "sel8");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagVertexITSTPC), "IsVertexITSTPC");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagBunchPileup), "NoSameBunchPileup");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvtxFT0vsPV), "IsGoodZvtxFT0vsPV");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagOccupancy), "LowOccupancy");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kNoCollInTimeRangeStandard), "NoCollInTimeRangeStandard");
-    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kNoCollInTimeRangeNarrow), "NoCollInTimeRangeNarrow");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllpassed), "Allpassed");
   }
 
@@ -147,25 +160,53 @@ class CollisonCuts
   }
 
   /// Set MB selection
-  void setTriggerTVX(bool triggerTVXsel) { mTriggerTVXselection = triggerTVXsel; }
+  void setTriggerTVX(bool triggerTVXsel)
+  {
+    mTriggerTVXselection = triggerTVXsel;
+    setSelection(EvtSel::kFlagTrigerTVX, triggerTVXsel);
+  }
 
   /// Set the time frame border cut
-  void setApplyTFBorderCut(bool applyTFBorderCut) { mApplyTFBorderCut = applyTFBorderCut; }
+  void setApplyTFBorderCut(bool applyTFBorderCut)
+  {
+    mApplyTFBorderCut = applyTFBorderCut;
+    setSelection(EvtSel::kFlagTimeFrameBorder, applyTFBorderCut);
+  }
 
   /// Set the ITS-TPC matching cut
-  void setApplyITSTPCvertex(bool applyITSTPCvertex) { mApplyITSTPCvertex = applyITSTPCvertex; }
+  void setApplyITSTPCvertex(bool applyITSTPCvertex)
+  {
+    mApplyITSTPCvertex = applyITSTPCvertex;
+    setSelection(EvtSel::kFlagVertexITSTPC, applyITSTPCvertex);
+  }
 
   /// Set the NoCollInTimeRangeNarrow cut
-  void setApplyCollInTimeRangeNarrow(bool applyCollInTimeRangeNarrow) { mApplyCollInTimeRangeNarrow = applyCollInTimeRangeNarrow; }
+  void setApplyCollInTimeRangeNarrow(bool applyCollInTimeRangeNarrow)
+  {
+    mApplyCollInTimeRangeNarrow = applyCollInTimeRangeNarrow;
+    setSelection(EvtSel::kNoCollInTimeRangeNarrow, applyCollInTimeRangeNarrow);
+  }
 
   /// Set the Z-vertex time difference cut
-  void setApplyZvertexTimedifference(bool applyZvertexTimedifference) { mApplyZvertexTimedifference = applyZvertexTimedifference; }
+  void setApplyZvertexTimedifference(bool applyZvertexTimedifference)
+  {
+    mApplyZvertexTimedifference = applyZvertexTimedifference;
+    setSelection(EvtSel::kFlagZvtxFT0vsPV, applyZvertexTimedifference);
+  }
 
   /// Set the Pileup rejection
-  void setApplyPileupRejection(bool applyPileupRejection) { mApplyPileupRejection = applyPileupRejection; }
+  void setApplyPileupRejection(bool applyPileupRejection)
+  {
+    mApplyPileupRejection = applyPileupRejection;
+    setSelection(EvtSel::kFlagBunchPileup, applyPileupRejection);
+  }
 
   /// Set the NoITSRO frame border cut
-  void setApplyNoITSROBorderCut(bool applyNoITSROBorderCut) { mApplyNoITSROBorderCut = applyNoITSROBorderCut; }
+  void setApplyNoITSROBorderCut(bool applyNoITSROBorderCut)
+  {
+    mApplyNoITSROBorderCut = applyNoITSROBorderCut;
+    setSelection(EvtSel::kFlagITSROFrameBorder, applyNoITSROBorderCut);
+  }
 
   /// Set the track occupancy in time range cut
   void setTrackOccupancyInTimeRange(int trackOccupancyInTimeRangeMax, int trackOccupancyInTimeRangeMin)
@@ -174,13 +215,146 @@ class CollisonCuts
     mtrackOccupancyInTimeRangeMin = trackOccupancyInTimeRangeMin;
   }
   /// Set the NoCollInTimeRangeStandard cut
-  void setApplyCollInTimeRangeStandard(bool applyCollInTimeRangeStandard) { mApplyCollInTimeRangeStandard = applyCollInTimeRangeStandard; }
+  void setApplyCollInTimeRangeStandard(bool applyCollInTimeRangeStandard)
+  {
+    mApplyCollInTimeRangeStandard = applyCollInTimeRangeStandard;
+    setSelection(EvtSel::kNoCollInTimeRangeStandard, applyCollInTimeRangeStandard);
+  }
+
+  /// Set the GoodITSLayersAll cut
+  void setApplyGoodITSLayersAll(bool applyGoodITSLayersAll)
+  {
+    mApplyGoodITSLayersAll = applyGoodITSLayersAll;
+    setSelection(EvtSel::kIsGoodITSLayersAll, applyGoodITSLayersAll);
+  }
+
+  /// Set the GoodITSLayer3 cut
+  void setApplyGoodITSLayer3(bool applyGoodITSLayer3)
+  {
+    setSelection(EvtSel::kIsGoodITSLayer3, applyGoodITSLayer3);
+  }
+
+  /// Set the GoodITSLayer0123 cut
+  void setApplyGoodITSLayer0123(bool applyGoodITSLayer0123)
+  {
+    setSelection(EvtSel::kIsGoodITSLayer0123, applyGoodITSLayer0123);
+  }
+
+  /// Set the NoCollInTimeRangeStrict cut
+  void setApplyCollInTimeRangeStrict(bool apply)
+  {
+    mApplyCollInTimeRangeStrict = apply;
+    setSelection(EvtSel::kNoCollInTimeRangeStrict, apply);
+  }
+
+  /// Set the NoCollInRofStandard cut
+  void setApplyCollInRofStandard(bool apply)
+  {
+    mApplyCollInRofStandard = apply;
+    setSelection(EvtSel::kNoCollInRofStandard, apply);
+  }
+
+  /// Set the NoCollInRofStrict cut
+  void setApplyCollInRofStrict(bool apply)
+  {
+    mApplyCollInRofStrict = apply;
+    setSelection(EvtSel::kNoCollInRofStrict, apply);
+  }
+
+  /// Set the NoHighMultCollInPrevRof cut
+  void setApplyHighMultCollInPrevRof(bool apply)
+  {
+    mApplyHighMultCollInPrevRof = apply;
+    setSelection(EvtSel::kNoHighMultCollInPrevRof, apply);
+  }
+
+  /// Set the VertexTRDmatched cut
+  void setApplyVertexTRDmatched(bool apply)
+  {
+    mApplyVertexTRDmatched = apply;
+    setSelection(EvtSel::kFlagVertexTRDmatched, apply);
+  }
+
+  /// Set the BBT0A cut
+  void setApplyBBT0A(bool apply)
+  {
+    mApplyBBT0A = apply;
+    setSelection(EvtSel::kFlagBBT0A, apply);
+  }
+
+  /// Set the BBT0C cut
+  void setApplyBBT0C(bool apply)
+  {
+    mApplyBBT0C = apply;
+    setSelection(EvtSel::kFlagBBT0C, apply);
+  }
 
   /// Set the Run2 AliEventCuts cut
   void setApplyRun2AliEventCuts(bool applyRun2AliEventCuts) { mApplyRun2AliEventCuts = applyRun2AliEventCuts; }
 
   /// Set the Run2 INELgtZERO cut
   void setApplyRun2INELgtZERO(bool applyRun2INELgtZERO) { mApplyRun2INELgtZERO = applyRun2INELgtZERO; }
+
+  /// Overload that accepts a CollisionCutsGroup and isRun3 flag
+  /// \param settings The CollisionCutsGroup containing all selection parameters
+  /// \param checkRun3 Whether this is Run3 data (true) or Run2 (false)
+  void setCuts(const CollisionCutsGroup& settings, bool checkRun3)
+  {
+    mCutsSet = true;
+    mZvtxMax = settings.getZvtxMax();
+    mCheckTrigger = settings.getCheckTrigger();
+    mCheckOffline = settings.getCheckOffline();
+    mCheckIsRun3 = checkRun3;
+    mApplyTFBorderCut = false;
+    mApplyITSTPCvertex = false;
+    mApplyZvertexTimedifference = false;
+    mApplyPileupRejection = false;
+    mApplyNoITSROBorderCut = false;
+    mApplyCollInTimeRangeNarrow = false;
+    mApplyCollInTimeRangeStandard = false;
+    mApplyGoodITSLayersAll = false;
+    mtrackOccupancyInTimeRangeMax = settings.getOccupancyInTimeRangeMax();
+    mtrackOccupancyInTimeRangeMin = settings.getOccupancyInTimeRangeMin();
+    mApplyRun2AliEventCuts = settings.getApplyRun2AliEventCuts();
+    mApplyRun2INELgtZERO = settings.getApplyRun2INELgtZERO();
+    mTriggerTVXselection = false;
+
+    // Apply all other settings via delegation
+    settings.applyToCollisonCuts(*this);
+  }
+
+  /// Apply settings from a CollisionCutsGroup object (alternative to setCuts)
+  /// \param settings The CollisionCutsGroup containing all selection parameters
+  void applySettings(const CollisionCutsGroup& settings)
+  {
+    settings.applyToCollisonCuts(*this);
+  }
+
+  /// Generic selection control (NEW API)
+  /// \param evtSelFlag Event selection flag from EvtSel enum
+  /// \param enable Whether to enable (true) or disable (false) this selection
+  void setSelection(int evtSelFlag, bool enable)
+  {
+    mEnabledSelections[evtSelFlag] = enable;
+  }
+
+  /// Get current state of a selection
+  /// \param evtSelFlag Event selection flag from EvtSel enum
+  /// \return Whether the selection is enabled
+  bool getSelection(int evtSelFlag) const
+  {
+    auto it = mEnabledSelections.find(evtSelFlag);
+    return it != mEnabledSelections.end() ? it->second : false;
+  }
+
+  /// Enable multiple selections at once
+  /// \param selections Vector of pairs (evtSelFlag, enabled)
+  void setSelections(const std::vector<std::pair<int, bool>>& selections)
+  {
+    for (const auto& [flag, enabled] : selections) {
+      setSelection(flag, enabled);
+    }
+  }
 
   /// Check whether the collisions fulfills the specified selections
   /// \tparam T type of the collision
@@ -212,27 +386,33 @@ class CollisonCuts
       mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagZvertex);
     }
     if (mCheckIsRun3) { // Run3 case
-      if (!col.selection_bit(aod::evsel::kIsTriggerTVX) && mTriggerTVXselection) {
-        LOGF(debug, "Offline selection TVX failed (Run3)");
-        return false;
+      // Metadata-driven selection loop for registry-based cuts
+      for (const auto& [evtSelFlag, enabled] : mEnabledSelections) {
+        if (!enabled) {
+          continue; // Skip disabled selections
+        }
+
+        auto it = sSelectionRegistry.find(evtSelFlag);
+        if (it == sSelectionRegistry.end()) {
+          LOGF(warning, "Unknown selection flag %d in mEnabledSelections", evtSelFlag);
+          continue;
+        }
+
+        const auto& metadata = it->second;
+
+        // Check the selection_bit
+        if (!col.selection_bit(metadata.evselFlag)) {
+          LOGF(debug, "%s", metadata.debugMessage);
+          return false;
+        }
+
+        // Fill QA histogram
+        if (QA) {
+          mHistogramRegistry->fill(HIST("CollCutCounts"), metadata.histogramBin);
+        }
       }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTrigerTVX);
-      }
-      if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
-        LOGF(debug, "Time frame border cut failed");
-        return false;
-      }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTimeFrameBorder);
-      }
-      if (!col.selection_bit(aod::evsel::kNoITSROFrameBorder) && mApplyNoITSROBorderCut) {
-        LOGF(debug, "NoITSRO frame border cut failed");
-        return false;
-      }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagITSROFrameBorder);
-      }
+
+      // Special case: sel8 (not using selection_bit)
       if (!col.sel8() && mCheckOffline) {
         LOGF(debug, "Offline selection failed (Run3)");
         return false;
@@ -240,34 +420,8 @@ class CollisonCuts
       if (QA) {
         mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagSel8);
       }
-      if (!col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) && mApplyITSTPCvertex) {
-        LOGF(debug, "ITS-TPC matching cut failed");
-        return false;
-      }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagVertexITSTPC);
-      }
-      if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && mApplyPileupRejection) {
-        LOGF(debug, "Pileup rejection failed");
-        return false;
-      }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagBunchPileup);
-      }
-      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow) && mApplyCollInTimeRangeNarrow) {
-        LOGF(debug, "NoCollInTimeRangeNarrow selection failed");
-        return false;
-      }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kNoCollInTimeRangeNarrow);
-      }
-      if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && mApplyZvertexTimedifference) {
-        LOGF(debug, "Z-vertex time difference cut failed");
-        return false;
-      }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagZvtxFT0vsPV);
-      }
+
+      // Special case: Occupancy cuts (custom logic)
       if (mtrackOccupancyInTimeRangeMax > 0 && col.trackOccupancyInTimeRange() > mtrackOccupancyInTimeRangeMax) {
         LOGF(debug, "trackOccupancyInTimeRange selection failed");
         return false;
@@ -278,13 +432,6 @@ class CollisonCuts
       }
       if (QA) {
         mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagOccupancy);
-      }
-      if ((!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && mApplyCollInTimeRangeStandard) {
-        LOGF(debug, "NoCollInTimeRangeStandard selection failed");
-        return false;
-      }
-      if (QA) {
-        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kNoCollInTimeRangeStandard);
       }
     } else { // Run2 case
       if (mCheckOffline && !col.sel7()) {
@@ -343,6 +490,26 @@ class CollisonCuts
   }
 
  private:
+  /// Metadata structure for event selections
+  struct SelectionMetadata {
+    int evselFlag;            ///< o2::aod::evsel::EventSelectionFlags value
+    const char* label;        ///< Histogram label
+    const char* debugMessage; ///< Debug message for LOGF
+    int histogramBin;         ///< Position in EvtSel enum (for histogram bin)
+  };
+
+  /// Central registry mapping EvtSel enum to metadata (auto-generated from EventSelectionFlagsMapping.def)
+  inline static const std::map<int, SelectionMetadata> sSelectionRegistry = {
+  // AUTO-GENERATED from EventSelectionFlagsMapping.def
+#define EVSEL_FLAG(enumVal, member, defaultVal, evtSelEnum, setter, getter, label, desc) \
+  {EvtSel::evtSelEnum, {aod::evsel::enumVal, label, desc " selection failed", EvtSel::evtSelEnum}},
+#include "PWGLF/Utils/EventSelectionFlagsMapping.def"
+#undef EVSEL_FLAG
+  };
+
+  /// Dynamic selection state: which selections are enabled
+  std::map<int, bool> mEnabledSelections;
+
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
   std::vector<int> bitList;
@@ -359,6 +526,14 @@ class CollisonCuts
   bool mApplyPileupRejection = false;         ///< Pileup rejection
   bool mApplyNoITSROBorderCut = false;        ///< Apply NoITSRO frame border cut
   bool mApplyCollInTimeRangeStandard = false; ///< Apply NoCollInTimeRangeStandard selection
+  bool mApplyGoodITSLayersAll = false;        ///< Apply GoodITSLayersAll selection (cuts time intervals with dead ITS staves)
+  bool mApplyCollInTimeRangeStrict = false;   ///< Apply NoCollInTimeRangeStrict selection
+  bool mApplyCollInRofStandard = false;       ///< Apply NoCollInRofStandard selection
+  bool mApplyCollInRofStrict = false;         ///< Apply NoCollInRofStrict selection
+  bool mApplyHighMultCollInPrevRof = false;   ///< Apply NoHighMultCollInPrevRof selection
+  bool mApplyVertexTRDmatched = false;        ///< Apply vertex TRD matched selection
+  bool mApplyBBT0A = false;                   ///< Apply T0A beam-beam timing selection
+  bool mApplyBBT0C = false;                   ///< Apply T0C beam-beam timing selection
   bool mApplyRun2AliEventCuts = true;         ///< Apply Run2 AliEventCuts
   bool mApplyRun2INELgtZERO = false;          ///< Apply Run2 INELgtZERO selection
   float mZvtxMax = 999.f;                     ///< Maximal deviation from nominal z-vertex (cm)

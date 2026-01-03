@@ -9,7 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Resonance)
-add_subdirectory(Strangeness)
-add_subdirectory(Utils)
-
+# PWGLF Utils tutorial
+o2physics_add_dpl_workflow(collision-cuts-tutorial
+                  SOURCES collisionCutsTutorial.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::collisionCutsGroup
+                  COMPONENT_NAME AnalysisTutorial)

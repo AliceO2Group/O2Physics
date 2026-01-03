@@ -52,8 +52,8 @@ enum ColHist {
   kCentVsSphericity,
   kMultVsSphericity,
   // mc
-  kMcCent,
-  kMcMult,
+  kTrueCentVsCent,
+  kTrueMultVsMult,
   kColHistLast
 };
 
@@ -80,8 +80,8 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kMultVsSphericity, o2::framework::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
     {kCentVsSphericity, o2::framework::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
     // mc
-    {kMcCent, o2::framework::kTH1F, "hMcCent", "Monte Carlo Centrality; Centrality (%); Entries"},
-    {kMcMult, o2::framework::kTH1F, "hMcMult", "Monte Carlo Multiplicity; Multiplicity; Entries"},
+    {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
+    {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
 
 #define COL_HIST_ANALYSIS_MAP(conf) \
@@ -102,15 +102,23 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kMultVsSphericity, {confAnalysis.mult, confQa.sphericity}}, \
     {kCentVsSphericity, {confBinningAnalysis.cent, confQa.sphericity}},
 
-#define COL_HIST_MC_QA_MAP(conf) \
-  {kMcMult, {conf.mult}},        \
-    {kMcCent, {conf.cent}},
+#define COL_HIST_MC_MAP(conf)                \
+  {kTrueMultVsMult, {conf.mult, conf.mult}}, \
+    {kTrueCentVsCent, {conf.cent, conf.cent}},
 
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<ColHist, std::vector<framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)};
+}
+
+template <typename T>
+auto makeColMcHistSpecMap(const T& confBinningAnalysis)
+{
+  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+    COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      COL_HIST_MC_MAP(confBinningAnalysis)};
 }
 
 template <typename T1, typename T2>
@@ -127,12 +135,12 @@ auto makeColMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinning
   return std::map<ColHist, std::vector<framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
-        COL_HIST_MC_QA_MAP(confBinningAnalysis)};
+        COL_HIST_MC_MAP(confBinningAnalysis)};
 }
 
 #undef COL_HIST_ANALYSIS_MAP
 #undef COL_HIST_QA_MAP
-#undef COL_HIST_MC_QA_MAP
+#undef COL_HIST_MC_MAP
 
 struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBinning");
@@ -240,8 +248,8 @@ class CollisionHistManager
   void initMc(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string mcDir = std::string(ColMcDir);
-    mHistogramRegistry->add(mcDir + getHistNameV2(kMcMult, HistTable), getHistDesc(kMcMult, HistTable), getHistType(kMcMult, HistTable), {Specs.at(kMcMult)});
-    mHistogramRegistry->add(mcDir + getHistNameV2(kMcCent, HistTable), getHistDesc(kMcCent, HistTable), getHistType(kMcCent, HistTable), {Specs.at(kMcCent)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
   }
 
   template <typename T>
@@ -273,9 +281,12 @@ class CollisionHistManager
   template <typename T1, typename T2>
   void fillMc(T1 const& col, T2 const& /*mcCols*/)
   {
-    auto genCol = col.template fMcCol_as<T2>();
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kMcMult, HistTable)), genCol.multMc());
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kMcCent, HistTable)), genCol.centMc());
+    if (!col.has_fMcCol()) {
+      return;
+    }
+    auto mcCol = col.template fMcCol_as<T2>();
+    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
+    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;

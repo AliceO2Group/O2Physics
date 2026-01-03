@@ -70,6 +70,12 @@ enum PairHist {
   kKstarVsMass1VsMult,
   kKstarVsMass2VsMult,
   kKstarVsMass1VsMass2VsMult,
+  // mc
+  kTrueKstarVsKstar,
+  kTrueKtVsKt,
+  kTrueMtVsMt,
+  kTrueMultVsMult,
+  kTrueCentVsCent,
 
   kPairHistogramLast
 };
@@ -125,6 +131,8 @@ struct ConfPairCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> ktMin{"ktMin", -1, "Minimal kt (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMax{"mtMax", -1, "Maximal mt (set to -1 to deactivate)"};
   o2::framework::Configurable<float> mtMin{"mtMin", -1, "Minimal mt (set to -1 to deactivate)"};
+  o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common anchestor (in the same event)"};
+  o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common anchestor (in the same event)"};
 };
 
 // the enum gives the correct index in the array
@@ -161,44 +169,64 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kKstarVsMass1VsMult, o2::framework::kTHnSparseF, "hKstarVsMass1VsMult", "k* vs m_{1} vs multiplicity; k* (GeV/#it{c}); m_{1} (GeV/#it{c}^{2}); Multiplicity"},
       {kKstarVsMass2VsMult, o2::framework::kTHnSparseF, "hKstarVsMass2VsMult", "k* vs m_{2} vs multiplicity; k* (GeV/#it{c}); m_{2} (GeV/#it{c}^{2}); Multiplicity"},
       {kKstarVsMass1VsMass2VsMult, o2::framework::kTHnSparseF, "hKstarVsMass1VsMass2VsMult", "k* vs m_{1} vs m_{2} vs multiplicity; k* (GeV/#it{c}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); Multiplicity"},
-
+      {kTrueKstarVsKstar, o2::framework::kTH2F, "hTrueKstarVsKstar", "k*_{True} vs k*; k*_{True} (GeV/#it{c});  k* (GeV/#it{c})"},
+      {kTrueKtVsKt, o2::framework::kTH2F, "hTrueKtVsKt", "k_{T,True} vs k_{T}; k_{T,True} (GeV/#it{c});  k_{T} (GeV/#it{c})"},
+      {kTrueMtVsMt, o2::framework::kTH2F, "hTrueMtVsMt", "m_{T,True} vs m_{T}; m_{T,True} (GeV/#it{c}^{2}); m_{T,True} (GeV/#it{c}^{2})"},
+      {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
+      {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
     }};
+
+#define PAIR_HIST_ANALYSIS_MAP(conf)                                                                                   \
+  {kKstar, {conf.kstar}},                                                                                              \
+    {kKt, {conf.kt}},                                                                                                  \
+    {kMt, {conf.mt}},                                                                                                  \
+    {kPt1VsPt2, {conf.pt1, conf.pt2}},                                                                                 \
+    {kPt1VsKstar, {conf.pt1, conf.kstar}},                                                                             \
+    {kPt2VsKstar, {conf.pt2, conf.kstar}},                                                                             \
+    {kPt1VsKt, {conf.pt1, conf.kt}},                                                                                   \
+    {kPt2VsKt, {conf.pt2, conf.kt}},                                                                                   \
+    {kPt1VsMt, {conf.pt1, conf.mt}},                                                                                   \
+    {kPt2VsMt, {conf.pt2, conf.mt}},                                                                                   \
+    {kKstarVsKt, {conf.kstar, conf.kt}},                                                                               \
+    {kKstarVsMt, {conf.kstar, conf.mt}},                                                                               \
+    {kKstarVsMult, {conf.kstar, conf.multiplicity}},                                                                   \
+    {kKstarVsCent, {conf.kstar, conf.centrality}},                                                                     \
+    {kKstarVsMass1, {conf.kstar, conf.mass1}},                                                                         \
+    {kKstarVsMass2, {conf.kstar, conf.mass2}},                                                                         \
+    {kMass1VsMass2, {conf.mass1, conf.mass2}},                                                                         \
+    {kKstarVsMtVsMult, {conf.kstar, conf.mt, conf.multiplicity}},                                                      \
+    {kKstarVsMtVsMultVsCent, {conf.kstar, conf.mt, conf.multiplicity, conf.centrality}},                               \
+    {kKstarVsMtVsPt1VsPt2VsMult, {conf.kstar, conf.mt, conf.pt1, conf.pt2, conf.multiplicity}},                        \
+    {kKstarVsMtVsPt1VsPt2VsMultVsCent, {conf.kstar, conf.mt, conf.pt1, conf.pt2, conf.multiplicity, conf.centrality}}, \
+    {kKstarVsMass1VsMass2, {conf.kstar, conf.mass1, conf.mass2}},                                                      \
+    {kKstarVsMass1VsMult, {conf.kstar, conf.mass1, conf.multiplicity}},                                                \
+    {kKstarVsMass2VsMult, {conf.kstar, conf.mass2, conf.multiplicity}},                                                \
+    {kKstarVsMass1VsMass2VsMult, {conf.kstar, conf.mass1, conf.mass2, conf.multiplicity}},
+
+#define PAIR_HIST_MC_MAP(conf)                                 \
+  {kTrueKstarVsKstar, {conf.kstar, conf.kstar}},               \
+    {kTrueKtVsKt, {conf.kt, conf.kt}},                         \
+    {kTrueMtVsMt, {conf.mt, conf.mt}},                         \
+    {kTrueMultVsMult, {conf.multiplicity, conf.multiplicity}}, \
+    {kTrueCentVsCent, {conf.centrality, conf.centrality}},
 
 template <typename T>
 auto makePairHistSpecMap(const T& confPairBinning)
 {
   return std::map<PairHist, std::vector<framework::AxisSpec>>{
-    {kKstar, {confPairBinning.kstar}},
-    {kKt, {confPairBinning.kt}},
-    {kMt, {confPairBinning.mt}},
-    {kPt1VsPt2, {confPairBinning.pt1, confPairBinning.pt2}},
-    {kPt1VsKstar, {confPairBinning.pt1, confPairBinning.kstar}},
-    {kPt2VsKstar, {confPairBinning.pt2, confPairBinning.kstar}},
-    {kPt1VsKt, {confPairBinning.pt1, confPairBinning.kt}},
-    {kPt2VsKt, {confPairBinning.pt2, confPairBinning.kt}},
-    {kPt1VsMt, {confPairBinning.pt1, confPairBinning.mt}},
-    {kPt2VsMt, {confPairBinning.pt2, confPairBinning.mt}},
-    {kKstarVsKt, {confPairBinning.kstar, confPairBinning.kt}},
-    {kKstarVsMt, {confPairBinning.kstar, confPairBinning.mt}},
-    {kKstarVsMult, {confPairBinning.kstar, confPairBinning.multiplicity}},
-    {kKstarVsCent, {confPairBinning.kstar, confPairBinning.centrality}},
-
-    {kKstarVsMass1, {confPairBinning.kstar, confPairBinning.mass1}},
-    {kKstarVsMass2, {confPairBinning.kstar, confPairBinning.mass2}},
-    {kMass1VsMass2, {confPairBinning.mass1, confPairBinning.mass2}},
-
-    {kKstarVsMtVsMult, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.multiplicity}},
-    {kKstarVsMtVsMultVsCent, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.multiplicity, confPairBinning.centrality}},
-    {kKstarVsMtVsPt1VsPt2VsMult, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.pt1, confPairBinning.pt2, confPairBinning.multiplicity}},
-    {kKstarVsMtVsPt1VsPt2VsMultVsCent, {confPairBinning.kstar, confPairBinning.mt, confPairBinning.pt1, confPairBinning.pt2, confPairBinning.multiplicity, confPairBinning.centrality}},
-
-    {kKstarVsMass1VsMass2, {confPairBinning.kstar, confPairBinning.mass1, confPairBinning.mass2}},
-    {kKstarVsMass1VsMult, {confPairBinning.kstar, confPairBinning.mass1, confPairBinning.multiplicity}},
-    {kKstarVsMass2VsMult, {confPairBinning.kstar, confPairBinning.mass2, confPairBinning.multiplicity}},
-    {kKstarVsMass1VsMass2VsMult, {confPairBinning.kstar, confPairBinning.mass1, confPairBinning.mass2, confPairBinning.multiplicity}},
-
-  };
+    PAIR_HIST_ANALYSIS_MAP(confPairBinning)};
 };
+
+template <typename T>
+auto makePairMcHistSpecMap(const T& confPairBinning)
+{
+  return std::map<PairHist, std::vector<framework::AxisSpec>>{
+    PAIR_HIST_ANALYSIS_MAP(confPairBinning)
+      PAIR_HIST_MC_MAP(confPairBinning)};
+};
+
+#undef PAIR_HIST_ANALYSIS_MAP
+#undef PAIR_HIST_MC_MAP
 
 constexpr char PrefixTrackTrackSe[] = "TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
@@ -220,10 +248,8 @@ constexpr char PrefixTrackKinkMe[] = "TrackKink/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
+constexpr std::string_view McDir = "MC/";
 
-/// \class FemtoDreamEventHisto
-/// \brief Class for histogramming event properties
-// template <femtomodes::Mode mode>
 template <const char* prefix,
           modes::Particle particleType1,
           modes::Particle particleType2>
@@ -269,9 +295,9 @@ class PairHistManager
       initAnalysis(Specs);
     }
 
-    // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
-    // std::string qaDir = std::string(prefix) + std::string(QaDir);
-    // }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      initMc(Specs);
+    }
   }
 
   void setMass(int PdgParticle1, int PdgParticle2)
@@ -284,7 +310,6 @@ class PairHistManager
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
     // the pt stored is actually as pt/z for tracks, so in case of particles with z > 1, we have to rescale the pt (this is so far only for He3 the case)
-    // similarly, for neutral particles, no reason to rescale so we just set absolute charge to 1
     mAbsCharge1 = std::abs(chargeAbsParticle1);
     mAbsCharge2 = std::abs(chargeAbsParticle2);
   }
@@ -299,10 +324,10 @@ class PairHistManager
     auto partSum = mParticle1 + mParticle2;
 
     // set kT
-    mKt = partSum.Pt() / 2.f;
+    mKt = 0.5f * partSum.Pt();
 
     // set mT
-    computeMt(partSum);
+    mMt = computeMt(partSum);
 
     // Boost particle to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
     // make a copy of particle 1
@@ -324,17 +349,79 @@ class PairHistManager
   template <typename T1, typename T2, typename T3>
   void setPair(const T1& particle1, const T2& particle2, const T3& col)
   {
+    setPair(particle1, particle2);
     mMult = col.mult();
     mCent = col.cent();
-    setPair(particle1, particle2);
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
   void setPair(const T1& particle1, const T2& particle2, const T3& col1, const T4& col2)
   {
+    setPair(particle1, particle2);
     mMult = 0.5f * (col1.mult() + col2.mult()); // if mixing with multiplicity, should be in the same mixing bin
     mCent = 0.5f * (col1.cent() + col2.cent()); // if mixing with centrality, should be in the same mixing bin
-    setPair(particle1, particle2);
+  }
+
+  template <typename T1, typename T2, typename T3>
+  void setPairMc(const T1& particle1, const T2& particle2, const T3& /*mcParticles*/)
+  {
+    if (!particle1.has_fMcParticle() || !particle2.has_fMcParticle()) {
+      mHasMcPair = false;
+      return;
+    }
+    mHasMcPair = true;
+
+    auto mcParticle1 = particle1.template fMcParticle_as<T3>();
+    auto mcParticle2 = particle2.template fMcParticle_as<T3>();
+
+    mParticle1 = ROOT::Math::PtEtaPhiMVector{mAbsCharge1 * mcParticle1.pt(), mcParticle1.eta(), mcParticle1.phi(), mPdgMass1};
+    mParticle2 = ROOT::Math::PtEtaPhiMVector{mAbsCharge2 * mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2};
+    auto partSum = mParticle1 + mParticle2;
+
+    // set kT
+    mTrueKt = partSum.Pt() / 2.f;
+
+    // set mT
+    mTrueMt = computeMt(partSum);
+
+    // Boost particle to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
+    // make a copy of particle 1
+    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(mParticle1);
+    // get lorentz boost into pair rest frame
+    ROOT::Math::Boost boostPrf(partSum.BoostToCM());
+    // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
+    mTrueKstar = boostPrf(particle1Prf).P();
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void setPairMc(const T1& particle1, const T2& particle2, const T3& mcParticles, const T4& col, const T5& /*mcCols*/)
+  {
+    setPair(particle1, particle2, col);
+    setPairMc(particle1, particle2, mcParticles);
+    if (!col.has_fMcCol()) {
+      mHasMcCol = false;
+      return;
+    }
+    mHasMcCol = true;
+    auto mcCol = col.template fMcCol_as<T5>();
+    mTrueMult = mcCol.mult();
+    mTrueCent = mcCol.cent();
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void setPairMc(const T1& particle1, const T2& particle2, const T3& mcParticles, const T4& col1, const T5& col2, const T6& /*mcCols*/)
+  {
+    setPair(particle1, particle2, col1, col2);
+    setPairMc(particle1, particle2, mcParticles);
+    if (!col1.has_fMcCol() || !col2.has_fMcCol()) {
+      mHasMcCol = false;
+      return;
+    }
+    mHasMcCol = true;
+    auto mcCol1 = col1.template fMcCol_as<T6>();
+    auto mcCol2 = col2.template fMcCol_as<T6>();
+    mTrueMult = 0.5f * (mcCol1.mult() + mcCol2.mult());
+    mTrueCent = 0.5f * (mcCol1.cent() + mcCol2.cent());
   }
 
   bool checkPairCuts() const
@@ -352,6 +439,9 @@ class PairHistManager
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       fillAnalysis();
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      fillMc();
     }
   }
 
@@ -426,6 +516,16 @@ class PairHistManager
     }
   }
 
+  void initMc(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string mcDir = std::string(prefix) + std::string(McDir);
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKstarVsKstar, HistTable), getHistDesc(kTrueKstarVsKstar, HistTable), getHistType(kTrueKstarVsKstar, HistTable), {Specs.at(kTrueKstarVsKstar)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueKtVsKt, HistTable), getHistDesc(kTrueKtVsKt, HistTable), getHistType(kTrueKtVsKt, HistTable), {Specs.at(kTrueKtVsKt)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMtVsMt, HistTable), getHistDesc(kTrueMtVsMt, HistTable), getHistType(kTrueMtVsMt, HistTable), {Specs.at(kTrueMtVsMt)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
+  }
+
   void fillAnalysis()
   {
     if (mPlot1d) {
@@ -493,21 +593,37 @@ class PairHistManager
     }
   }
 
-  void computeMt(ROOT::Math::PtEtaPhiMVector const& PairMomentum)
+  void fillMc()
   {
+    if (mHasMcPair) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKstarVsKstar, HistTable)), mTrueKstar, mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueKtVsKt, HistTable)), mTrueKt, mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMtVsMt, HistTable)), mTrueMt, mMt);
+    }
+    if (mHasMcCol) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mTrueMult, mMult);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mTrueCent, mCent);
+    }
+  }
+
+  float computeMt(ROOT::Math::PtEtaPhiMVector const& PairMomentum)
+  {
+    float mt = 0;
     switch (mMtType) {
       case modes::TransverseMassType::kAveragePdgMass:
-        mMt = std::hypot(PairMomentum.Pt() / 2.f, mAverageMass);
+        mt = std::hypot(0.5 * PairMomentum.Pt(), mAverageMass);
         break;
       case modes::TransverseMassType::kReducedPdgMass:
-        mMt = std::hypot(PairMomentum.Pt() / 2.f, mReducedMass);
+        mt = std::hypot(0.5 * PairMomentum.Pt(), mReducedMass);
         break;
       case modes::TransverseMassType::kMt4Vector:
-        mMt = PairMomentum.Mt() / 2.f;
+        mt = PairMomentum.Mt() / 2.f;
         break;
       default:
-        mMt = std::hypot(mKt, mAverageMass);
+        LOG(warn) << "Invalid transverse mass type, falling back to default...";
+        mt = std::hypot(0.5 * PairMomentum.Pt(), mAverageMass);
     }
+    return mt;
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
@@ -530,7 +646,16 @@ class PairHistManager
   float mMult = 0.f;
   float mCent = 0.f;
 
+  // mc
+  float mTrueKstar = 0.f;
+  float mTrueKt = 0.f;
+  float mTrueMt = 0.f;
+  float mTrueMult = 0.f;
+  float mTrueCent = 0.f;
+
   // cuts
+  bool mHasMcPair = false;
+  bool mHasMcCol = false;
   float mKstarMin = -1.f;
   float mKstarMax = -1.f;
   float mKtMin = -1.f;

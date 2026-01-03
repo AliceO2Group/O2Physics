@@ -139,6 +139,10 @@ struct FemtoPairV0V0 {
   void init(InitContext&)
   {
 
+    if (((doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent) + (doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent)) > 1) {
+      LOG(fatal) << "Can only process lambda-tracks Or k0short-tracks";
+    }
+
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
     mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
@@ -164,10 +168,6 @@ struct FemtoPairV0V0 {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto pairK0shortK0shortHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
       pairK0shortK0shortBuilder.init<modes::Mode::kAnalysis>(&hRegistry, k0shortSelection, k0shortSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairK0shortK0shortHistSpec, cprHistSpecPos, cprHistSpecNeg);
-    }
-
-    if (((doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent) + (doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent)) > 1) {
-      LOG(fatal) << "Can only process lambda-tracks Or k0short-tracks";
     }
   };
 
