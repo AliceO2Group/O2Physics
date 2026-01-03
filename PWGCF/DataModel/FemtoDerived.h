@@ -671,6 +671,9 @@ enum ParticleOriginMCTruth {
   kSecondaryDaughterSigma0,    //! Daughter from a Sigma^0 decay
   kSecondaryDaughterXiMinus,   //! Daughter from a Xi^- decay
   kSecondaryDaughterXi0,       //! Daughter from a Xi^0 decay
+  kSecondaryDaughterOmegaMinus,//! Daughter from a Omega^- decay
+  kSecondaryDaughterXistar0,    //! Daughter from a Xi*^0 decay
+  kSecondaryDaughterXistarMinus, //! Daughter from a Xi*^- decay
   kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };
