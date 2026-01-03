@@ -114,67 +114,6 @@ struct PrimParticles {
   }
 }; // struct PrimParticles
 
-struct EventSelectionConfig {
-  Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove ITS RO frame border"};
-  Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove no same bunch pileup"};
-  Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Require is good Zvtx FT0 vs PV"};
-  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Require is vertex ITS TPC"};
-  Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove no time frame border"};
-  Configurable<bool> cfgsel8Require{"cfgsel8Require", true, "sel8 cut require"};
-  Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
-};
-
-struct TrackSelectionConfig {
-  Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
-  Configurable<bool> cfgITSrequire{"cfgITSrequire", true, "Additional cut on ITS require"};
-  Configurable<bool> cfgTPCrequire{"cfgTPCrequire", true, "Additional cut on TPC require"};
-  Configurable<bool> cfgPassedITSRefit{"cfgPassedITSRefit", true, "Require ITS refit"};
-  Configurable<bool> cfgPassedTPCRefit{"cfgPassedTPCRefit", true, "Require TPC refit"};
-  Configurable<bool> cfgetaRequire{"cfgetaRequire", true, "eta cut require"};
-  Configurable<bool> cfgetaRequireMC{"cfgetaRequireMC", true, "eta cut require for generated particles"};
-  Configurable<bool> cfgRapidityRequire{"cfgRapidityRequire", true, "Require Rapidity cut"};
-  Configurable<bool> cfgRapidityRequireMC{"cfgRapidityRequireMC", true, "rapidity cut require for generated particles"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
-  Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
-  Configurable<float> cfgtpcNClsFindable{"cfgtpcNClsFindable", 0.8f, "tpcNClsFindable over crossedRows"};
-  Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
-  Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut in MC"};
-  Configurable<bool> cfgdcaxynopt{"cfgdcaxynopt", true, "DCA xy cut without pT dependent"};
-};
-
-struct TrackCutConfig {
-  Configurable<bool> cfgTPCNClsfoundRequire{"cfgTPCNClsfoundRequire", true, "Require TPCNClsfound Cut"};
-  Configurable<bool> cfgTPCNClsCrossedRowsRequire{"cfgTPCNClsCrossedRowsRequire", true, "Require TPCNClsCrossedRows Cut"};
-  Configurable<bool> cfgmaxTPCchi2Require{"cfgmaxTPCchi2Require", true, "Require maxTPCchi2 Cut"};
-  Configurable<bool> cfgminTPCchi2Require{"cfgminTPCchi2Require", true, "Require minTPCchi2 Cut"};
-  Configurable<bool> cfgminITSnClsRequire{"cfgminITSnClsRequire", false, "Require minITSnCls Cut"};
-  Configurable<bool> cfgminITSnClscosRequire{"cfgminITSnClscosRequire", true, "Require minITSnCls / cosh(eta) Cut"};
-  Configurable<bool> cfgminReqClusterITSibRequire{"cfgminReqClusterITSibRequire", true, " Require min number of clusters required in ITS inner barrel"};
-  Configurable<bool> cfgmaxITSchi2Require{"cfgmaxITSchi2Require", true, "Require maxITSchi2 Cut"};
-  Configurable<bool> cfgmaxTPCnSigmaRequire{"cfgmaxTPCnSigmaRequire", true, "Require maxTPCnSigma Cut"};
-  Configurable<bool> cfgminGetMeanItsClsSizeRequire{"cfgminGetMeanItsClsSizeRequire", true, "Require minGetMeanItsClsSize Cut"};
-  Configurable<bool> cfgmaxGetMeanItsClsSizeRequire{"cfgmaxGetMeanItsClsSizeRequire", true, "Require maxGetMeanItsClsSize Cut"};
-};
-
-struct He4Config {
-  Configurable<bool> cfghe3massrejreq{"cfghe3massrejreq", true, "Require mass cut on He4 particles"};
-  Configurable<float> cfgminmassrejection{"cfgminmassrejection", 6.5, "Min side of He3 particle rejection"};
-  Configurable<float> cfgmaxmassrejection{"cfgmaxmassrejection", 9.138, "Max side of He3 particle rejection"};
-  Configurable<float> deuteronsigmarejection{"deuteronsigmarejection", 2.0f, "Deuteron TPC nsigma rejection for He4"};
-};
-
-struct MCConfig {
-  Configurable<bool> cfgmccorrectionhe4Require{"cfgmccorrectionhe4Require", true, "MC correction for pp he4 particle"};
-  Configurable<float> correctionsigma{"correctionsigma", 2, "Max sigma value outside which correction is require"};
-  Configurable<float> pTcorrectHe4{"pTcorrectHe4", 2, "Max pT below which correction is require in He4"};
-  Configurable<float> pTcorrectHe3{"pTcorrectHe3", 2, "Max pT value below which correction is require in He3"};
-};
-
-struct DCAConfig {
-  Configurable<bool> cfgUseNewDCAxyCut{"cfgUseNewDCAxyCut", false, "Use new pT-dependent DCAxy sigma cut for He3"};
-  Configurable<bool> cfgUseNewDCAzCut{"cfgUseNewDCAzCut", false, "Use new pT-dependent DCAz sigma cut for He3"};
-};
-
 //----------------------------------------------------------------------------------------------------------------
 std::vector<std::shared_ptr<TH3>> hmass;
 std::vector<std::shared_ptr<TH3>> hmassnsigma;
@@ -187,12 +126,57 @@ struct NucleitpcPbPb {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histomc{"histomc", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  EventSelectionConfig evSel;
-  TrackSelectionConfig trackSel;
-  TrackCutConfig trackCuts;
-  He4Config he4Cfg;
-  MCConfig mcCfg;
-  DCAConfig dcaCfg;
+  // Event Selection Configurables
+  Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove ITS RO frame border"};
+  Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove no same bunch pileup"};
+  Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Require is good Zvtx FT0 vs PV"};
+  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Require is vertex ITS TPC"};
+  Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove no time frame border"};
+  Configurable<bool> cfgsel8Require{"cfgsel8Require", true, "sel8 cut require"};
+  Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
+
+  // Track Selection Configurables
+  Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
+  Configurable<bool> cfgPassedITSRefit{"cfgPassedITSRefit", true, "Require ITS refit"};
+  Configurable<bool> cfgPassedTPCRefit{"cfgPassedTPCRefit", true, "Require TPC refit"};
+  Configurable<bool> cfgetaRequire{"cfgetaRequire", true, "eta cut require"};
+  Configurable<bool> cfgetaRequireMC{"cfgetaRequireMC", true, "eta cut require for generated particles"};
+  Configurable<bool> cfgRapidityRequire{"cfgRapidityRequire", true, "Require Rapidity cut"};
+  Configurable<bool> cfgRapidityRequireMC{"cfgRapidityRequireMC", true, "rapidity cut require for generated particles"};
+  Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
+  Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
+  Configurable<float> cfgtpcNClsFindable{"cfgtpcNClsFindable", 0.8f, "tpcNClsFindable over crossedRows"};
+  Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
+  Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut in MC"};
+  Configurable<bool> cfgdcaxynopt{"cfgdcaxynopt", true, "DCA xy cut without pT dependent"};
+
+  // Track Cut Configurables
+  Configurable<bool> cfgTPCNClsCrossedRowsRequire{"cfgTPCNClsCrossedRowsRequire", true, "Require TPCNClsCrossedRows Cut"};
+  Configurable<bool> cfgmaxTPCchi2Require{"cfgmaxTPCchi2Require", true, "Require maxTPCchi2 Cut"};
+  Configurable<bool> cfgminTPCchi2Require{"cfgminTPCchi2Require", true, "Require minTPCchi2 Cut"};
+  Configurable<bool> cfgminITSnClsRequire{"cfgminITSnClsRequire", false, "Require minITSnCls Cut"};
+  Configurable<bool> cfgminITSnClscosRequire{"cfgminITSnClscosRequire", true, "Require minITSnCls / cosh(eta) Cut"};
+  Configurable<bool> cfgminReqClusterITSibRequire{"cfgminReqClusterITSibRequire", true, " Require min number of clusters required in ITS inner barrel"};
+  Configurable<bool> cfgmaxITSchi2Require{"cfgmaxITSchi2Require", true, "Require maxITSchi2 Cut"};
+  Configurable<bool> cfgmaxTPCnSigmaRequire{"cfgmaxTPCnSigmaRequire", true, "Require maxTPCnSigma Cut"};
+  Configurable<bool> cfgminGetMeanItsClsSizeRequire{"cfgminGetMeanItsClsSizeRequire", true, "Require minGetMeanItsClsSize Cut"};
+  Configurable<bool> cfgmaxGetMeanItsClsSizeRequire{"cfgmaxGetMeanItsClsSizeRequire", true, "Require maxGetMeanItsClsSize Cut"};
+
+  // He4 Configurables
+  Configurable<bool> cfghe3massrejreq{"cfghe3massrejreq", true, "Require mass cut on He4 particles"};
+  Configurable<float> cfgminmassrejection{"cfgminmassrejection", 6.5, "Min side of He3 particle rejection"};
+  Configurable<float> cfgmaxmassrejection{"cfgmaxmassrejection", 9.138, "Max side of He3 particle rejection"};
+  Configurable<float> deuteronsigmarejection{"deuteronsigmarejection", 2.0f, "Deuteron TPC nsigma rejection for He4"};
+
+  // MC Configurables
+  Configurable<bool> cfgmccorrectionhe4Require{"cfgmccorrectionhe4Require", true, "MC correction for pp he4 particle"};
+  Configurable<float> correctionsigma{"correctionsigma", 2, "Max sigma value outside which correction is require"};
+  Configurable<float> pTcorrectHe4{"pTcorrectHe4", 2, "Max pT below which correction is require in He4"};
+  Configurable<float> pTcorrectHe3{"pTcorrectHe3", 2, "Max pT value below which correction is require in He3"};
+
+  // DCA Configurables
+  Configurable<bool> cfgUseNewDCAxyCut{"cfgUseNewDCAxyCut", false, "Use new pT-dependent DCAxy sigma cut for He3"};
+  Configurable<bool> cfgUseNewDCAzCut{"cfgUseNewDCAzCut", false, "Use new pT-dependent DCAz sigma cut for He3"};
 
   Configurable<int> cfgDebug{"cfgDebug", 1, "debug level"};
   Configurable<bool> cfgRigidityCorrection{"cfgRigidityCorrection", false, "apply rigidity correction"};
@@ -377,28 +361,28 @@ struct NucleitpcPbPb {
 
       if (!collPassedEvSel)
         continue;
-      if (evSel.removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
         continue;
       histos.fill(HIST("histNev"), 2.5);
-      if (evSel.removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
         continue;
       histos.fill(HIST("histNev"), 3.5);
 
-      if (evSel.requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
       histos.fill(HIST("histNev"), 4.5);
-      if (evSel.requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
         continue;
 
       histos.fill(HIST("histNev"), 5.5);
-      if (evSel.removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
       histos.fill(HIST("histNev"), 6.5);
       histos.fill(HIST("histEvents"), collision.centFT0C(), occupancy);
       histos.fill(HIST("histVtxZ"), collision.posZ());
       histos.fill(HIST("histCentFT0C"), collision.centFT0C());
       histos.fill(HIST("histCentFT0M"), collision.centFT0M());
-      if (collision.centFT0C() > trackSel.centcut)
+      if (collision.centFT0C() > centcut)
         continue;
       histos.fill(HIST("histNev"), 7.5);
       histos.fill(HIST("histCentFTOC_cut"), collision.centFT0C());
@@ -407,17 +391,16 @@ struct NucleitpcPbPb {
 
       // loop over sliced tracks
       for (const auto& track : tracksInColl) {
-        if (!track.isPVContributor() && trackSel.cfgUsePVcontributors)
+        if (!track.isPVContributor() && cfgUsePVcontributors)
           continue;
-        if (!track.hasITS() && trackSel.cfgITSrequire)
+
+        if (!track.hasTPC())
           continue;
-        if (!track.hasTPC() && trackSel.cfgTPCrequire)
+        if (!track.passedITSRefit() && cfgPassedITSRefit)
           continue;
-        if (!track.passedITSRefit() && trackSel.cfgPassedITSRefit)
+        if (!track.passedTPCRefit() && cfgPassedTPCRefit)
           continue;
-        if (!track.passedTPCRefit() && trackSel.cfgPassedTPCRefit)
-          continue;
-        if (std::abs(track.eta()) > trackSel.cfgCutEta && trackSel.cfgetaRequire)
+        if (std::abs(track.eta()) > cfgCutEta && cfgetaRequire)
           continue;
 
         for (size_t i = 0; i < primaryParticles.size(); i++) {
@@ -427,9 +410,9 @@ struct NucleitpcPbPb {
           ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
 
           float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
-          if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && trackCuts.cfgmaxTPCnSigmaRequire)
+          if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
             continue;
-          if (tpcNsigma < mcCfg.correctionsigma && mcCfg.cfgmccorrectionhe4Require) {
+          if (tpcNsigma < correctionsigma && cfgmccorrectionhe4Require) {
             double a = 0, b = 0, c = 0;
 
             int param = -1;
@@ -445,44 +428,44 @@ struct NucleitpcPbPb {
               c = cfgktrackcorrection->get(param, "c");
             }
 
-            if (i == he4 && ptMomn < mcCfg.pTcorrectHe4) {
+            if (i == he4 && ptMomn < pTcorrectHe4) {
               ptMomn = ptMomn + a + b * std::exp(c * ptMomn);
             }
 
-            if (i == he3 && ptMomn < mcCfg.pTcorrectHe3) {
+            if (i == he3 && ptMomn < pTcorrectHe3) {
               ptMomn = ptMomn - a + b * ptMomn - c * ptMomn * ptMomn;
             }
           }
           int sign = (track.sign() > 0) ? 1 : ((track.sign() < 0) ? -1 : 0);
 
-          if (std::abs(getRapidity(track, i)) > trackSel.cfgCutRapidity && trackSel.cfgRapidityRequire)
+          if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
             continue;
-          if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && trackCuts.cfgTPCNClsfoundRequire)
+          if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
             continue;
           if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) ||
-               track.tpcNClsCrossedRows() < trackSel.cfgtpcNClsFindable * track.tpcNClsFindable()) &&
-              trackCuts.cfgTPCNClsCrossedRowsRequire)
+               track.tpcNClsCrossedRows() < cfgtpcNClsFindable * track.tpcNClsFindable()) &&
+              cfgTPCNClsCrossedRowsRequire)
             continue;
-          if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && trackCuts.cfgmaxTPCchi2Require)
+          if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
             continue;
-          if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && trackCuts.cfgminTPCchi2Require)
+          if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && cfgminTPCchi2Require)
             continue;
-          if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && trackCuts.cfgminITSnClsRequire)
+          if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
             continue;
 
           double cosheta = std::cosh(track.eta());
-          if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && trackCuts.cfgminITSnClscosRequire)
+          if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
             continue;
-          if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && trackCuts.cfgminReqClusterITSibRequire)
+          if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && cfgminReqClusterITSibRequire)
             continue;
-          if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && trackCuts.cfgmaxITSchi2Require)
+          if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && cfgmaxITSchi2Require)
             continue;
-          if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && trackCuts.cfgminGetMeanItsClsSizeRequire)
+          if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
             continue;
 
           bool insideDCAxy = false;
 
-          if (dcaCfg.cfgUseNewDCAxyCut) {
+          if (cfgUseNewDCAxyCut) {
             double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
             double sigma_base = (0.0118 * std::exp(-0.6889 * ptMomn) + 0.0017);
             double sigma_new = sigmaFactor * sigma_base;
@@ -490,7 +473,7 @@ struct NucleitpcPbPb {
             insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
           } else {
             insideDCAxy =
-              trackSel.cfgdcaxynopt
+              cfgdcaxynopt
                 ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
                 : (std::abs(track.dcaXY()) <=
                    (cfgTrackPIDsettings->get(i, "maxDcaXY") *
@@ -499,7 +482,7 @@ struct NucleitpcPbPb {
 
           bool insideDCAz = false;
 
-          if (dcaCfg.cfgUseNewDCAzCut) {
+          if (cfgUseNewDCAzCut) {
             double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
             double p0 = 0.1014;
             double p1 = 1.7512;
@@ -554,7 +537,7 @@ struct NucleitpcPbPb {
               histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY(), collision.trackOccupancyInTimeRange());
             } else {
               if (!track.hasTOF()) {
-                if (std::abs(tpcNsigmaDe) > he4Cfg.deuteronsigmarejection) {
+                if (std::abs(tpcNsigmaDe) > deuteronsigmarejection) {
                   histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY(), collision.trackOccupancyInTimeRange());
                 }
               } else {
@@ -569,10 +552,10 @@ struct NucleitpcPbPb {
                 float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
 
                 // Apply mass cut for he4 (mass^2 around 3.73^2 = 13.9)
-                if (he4Cfg.cfghe3massrejreq && (massTOF * massTOF > he4Cfg.cfgminmassrejection && massTOF * massTOF < he4Cfg.cfgmaxmassrejection)) {
+                if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection)) {
                   continue; // Skip if mass cut fails
                 }
-                if (std::abs(tpcNsigmaDe) > he4Cfg.deuteronsigmarejection) {
+                if (std::abs(tpcNsigmaDe) > deuteronsigmarejection) {
                   histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), track.dcaZ(), track.dcaXY(), collision.trackOccupancyInTimeRange());
                 }
               }
@@ -581,7 +564,7 @@ struct NucleitpcPbPb {
 
           if ((std::abs(tpcNsigma) > cfgTrackPIDsettings2->get(i, "maxTPCnsigmaTOF"))) {
             if (i == he4) {
-              if (std::abs(tpcNsigmaDe) > he4Cfg.deuteronsigmarejection) {
+              if (std::abs(tpcNsigmaDe) > deuteronsigmarejection) {
                 fillhmassnsigma(track, i, collision.centFT0C());
               }
             } else {
@@ -593,7 +576,7 @@ struct NucleitpcPbPb {
             continue;
 
           if (i == he4) {
-            if (std::abs(tpcNsigmaDe) > he4Cfg.deuteronsigmarejection) {
+            if (std::abs(tpcNsigmaDe) > deuteronsigmarejection) {
               fillhmass(track, i, collision.centFT0C());
             }
           } else {
@@ -642,28 +625,28 @@ struct NucleitpcPbPb {
       // STORE CENTRALITY WITHOUt CUTS
       mcCollInfos[mcCollIdx].centrality = collision.centFT0C();
 
-      if (!collision.sel8() && evSel.cfgsel8Require)
+      if (!collision.sel8() && cfgsel8Require)
         continue;
-      if (collision.centFT0C() > trackSel.centcut)
+      if (collision.centFT0C() > centcut)
         continue;
 
       // Additional cuts
-      if (evSel.removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
         continue;
-      if (evSel.removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
         continue;
-      if (evSel.requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
-      if (evSel.requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
         continue;
-      if (evSel.removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
 
       // Mark this MC collision as passing event selection
       mcCollInfos[mcCollIdx].passedEvSel = true;
 
       // Apply event selection cuts
-      if (std::abs(collision.posZ()) > evSel.cfgZvertex && trackSel.cfgZvertexRequireMC)
+      if (std::abs(collision.posZ()) > cfgZvertex && cfgZvertexRequireMC)
         continue;
 
       mcCollInfos[mcCollIdx].passedEvSelVtZ = true;
@@ -742,9 +725,9 @@ struct NucleitpcPbPb {
         if (!isHe3 && !isHe4)
           continue;
 
-        if (std::abs(mcParticle.eta()) > trackSel.cfgCutEta && trackSel.cfgetaRequireMC)
+        if (std::abs(mcParticle.eta()) > cfgCutEta && cfgetaRequireMC)
           continue;
-        if (std::abs(mcParticle.y()) > trackSel.cfgCutRapidity && trackSel.cfgRapidityRequireMC)
+        if (std::abs(mcParticle.y()) > cfgCutRapidity && cfgRapidityRequireMC)
           continue;
 
         int decayType = 0;
@@ -841,17 +824,16 @@ struct NucleitpcPbPb {
               decayType = 2;
             }
 
-            if (!track.isPVContributor() && trackSel.cfgUsePVcontributors)
+            if (!track.isPVContributor() && cfgUsePVcontributors)
               continue;
-            if (!track.hasITS() && trackSel.cfgITSrequire)
+
+            if (!track.hasTPC())
               continue;
-            if (!track.hasTPC() && trackSel.cfgTPCrequire)
+            if (!track.passedITSRefit() && cfgPassedITSRefit)
               continue;
-            if (!track.passedITSRefit() && trackSel.cfgPassedITSRefit)
+            if (!track.passedTPCRefit() && cfgPassedTPCRefit)
               continue;
-            if (!track.passedTPCRefit() && trackSel.cfgPassedTPCRefit)
-              continue;
-            if (std::abs(track.eta()) > trackSel.cfgCutEta && trackSel.cfgetaRequire)
+            if (std::abs(track.eta()) > cfgCutEta && cfgetaRequire)
               continue;
             if (!matchedMCParticle.isPhysicalPrimary())
               continue;
@@ -883,11 +865,11 @@ struct NucleitpcPbPb {
                 c = cfgktrackcorrection->get(param, "c");
               }
 
-              if (std::abs(pdg) == particlePdgCodes.at(5) && mcCfg.cfgmccorrectionhe4Require) {
+              if (std::abs(pdg) == particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
                 ptReco = ptReco + a + b * std::exp(c * ptReco);
               }
 
-              if (std::abs(pdg) == particlePdgCodes.at(4) && mcCfg.cfgmccorrectionhe4Require) {
+              if (std::abs(pdg) == particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
                 int pidGuess = track.pidForTracking();
                 int antitriton = 6;
                 if (pidGuess == antitriton) {
@@ -895,32 +877,32 @@ struct NucleitpcPbPb {
                 }
               }
 
-              if (std::abs(getRapidity(track, i)) > trackSel.cfgCutRapidity && trackSel.cfgRapidityRequire)
+              if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
                 continue;
 
-              if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && trackCuts.cfgTPCNClsfoundRequire)
+              if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
                 continue;
-              if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < trackSel.cfgtpcNClsFindable * track.tpcNClsFindable()) && trackCuts.cfgTPCNClsCrossedRowsRequire)
+              if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < cfgtpcNClsFindable * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
                 continue;
-              if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && trackCuts.cfgmaxTPCchi2Require)
+              if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
                 continue;
-              if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && trackCuts.cfgminTPCchi2Require)
+              if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && cfgminTPCchi2Require)
                 continue;
-              if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && trackCuts.cfgminITSnClsRequire)
+              if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
                 continue;
               double cosheta = std::cosh(track.eta());
-              if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && trackCuts.cfgminITSnClscosRequire)
+              if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
                 continue;
-              if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && trackCuts.cfgminReqClusterITSibRequire)
+              if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && cfgminReqClusterITSibRequire)
                 continue;
-              if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && trackCuts.cfgmaxITSchi2Require)
+              if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && cfgmaxITSchi2Require)
                 continue;
-              if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && trackCuts.cfgminGetMeanItsClsSizeRequire)
+              if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
                 continue;
 
               bool insideDCAxy = false;
 
-              if (dcaCfg.cfgUseNewDCAxyCut) {
+              if (cfgUseNewDCAxyCut) {
                 double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
                 double sigma_base = (0.0118 * std::exp(-0.6889 * ptReco) + 0.0017);
                 double sigma_new = sigmaFactor * sigma_base;
@@ -928,7 +910,7 @@ struct NucleitpcPbPb {
                 insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
               } else {
                 insideDCAxy =
-                  trackSel.cfgdcaxynopt
+                  cfgdcaxynopt
                     ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
                     : (std::abs(track.dcaXY()) <=
                        (cfgTrackPIDsettings->get(i, "maxDcaXY") *
@@ -937,7 +919,7 @@ struct NucleitpcPbPb {
 
               bool insideDCAz = false;
 
-              if (dcaCfg.cfgUseNewDCAzCut) {
+              if (cfgUseNewDCAzCut) {
 
                 double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
 
@@ -959,7 +941,7 @@ struct NucleitpcPbPb {
               }
 
               float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
-              if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && trackCuts.cfgmaxTPCnSigmaRequire)
+              if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
                 continue;
 
               if (i == he3 || i == he4) {
@@ -1046,28 +1028,28 @@ struct NucleitpcPbPb {
       // STORE CENTRALITY WITHOUT CUTS
       mcCollInfos[mcCollIdx].centrality = collision.centFT0C();
 
-      if (!collision.sel8() && evSel.cfgsel8Require)
+      if (!collision.sel8() && cfgsel8Require)
         continue;
-      if (collision.centFT0C() > trackSel.centcut)
+      if (collision.centFT0C() > centcut)
         continue;
 
       // Additional cuts
-      if (evSel.removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
         continue;
-      if (evSel.removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
         continue;
-      if (evSel.requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
-      if (evSel.requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
         continue;
-      if (evSel.removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
 
       // Mark this MC collision as passing event selection
       mcCollInfos[mcCollIdx].passedEvSel = true;
 
       // Apply event selection cuts
-      if (std::abs(collision.posZ()) > evSel.cfgZvertex && trackSel.cfgZvertexRequireMC)
+      if (std::abs(collision.posZ()) > cfgZvertex && cfgZvertexRequireMC)
         continue;
 
       mcCollInfos[mcCollIdx].passedEvSelVtZ = true;
@@ -1109,17 +1091,16 @@ struct NucleitpcPbPb {
             if (!isHe3 && !isHe4)
               continue;
 
-            if (!track.isPVContributor() && trackSel.cfgUsePVcontributors)
+            if (!track.isPVContributor() && cfgUsePVcontributors)
               continue;
-            if (!track.hasITS() && trackSel.cfgITSrequire)
+
+            if (!track.hasTPC())
               continue;
-            if (!track.hasTPC() && trackSel.cfgTPCrequire)
+            if (!track.passedITSRefit() && cfgPassedITSRefit)
               continue;
-            if (!track.passedITSRefit() && trackSel.cfgPassedITSRefit)
+            if (!track.passedTPCRefit() && cfgPassedTPCRefit)
               continue;
-            if (!track.passedTPCRefit() && trackSel.cfgPassedTPCRefit)
-              continue;
-            if (std::abs(track.eta()) > trackSel.cfgCutEta && trackSel.cfgetaRequire)
+            if (std::abs(track.eta()) > cfgCutEta && cfgetaRequire)
               continue;
 
             for (size_t i = 0; i < primaryParticles.size(); i++) {
@@ -1149,11 +1130,11 @@ struct NucleitpcPbPb {
                 c = cfgktrackcorrection->get(param, "c");
               }
 
-              if (std::abs(pdg) == particlePdgCodes.at(5) && mcCfg.cfgmccorrectionhe4Require) {
+              if (std::abs(pdg) == particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
                 ptReco = ptReco + a + b * std::exp(c * ptReco);
               }
 
-              if (std::abs(pdg) == particlePdgCodes.at(4) && mcCfg.cfgmccorrectionhe4Require) {
+              if (std::abs(pdg) == particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
                 int pidGuess = track.pidForTracking();
                 int antitriton = 6;
                 if (pidGuess == antitriton) {
@@ -1161,30 +1142,30 @@ struct NucleitpcPbPb {
                 }
               }
 
-              if (std::abs(getRapidity(track, i)) > trackSel.cfgCutRapidity && trackSel.cfgRapidityRequire)
+              if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
                 continue;
 
-              if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && trackCuts.cfgTPCNClsfoundRequire)
+              if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
                 continue;
-              if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < trackSel.cfgtpcNClsFindable * track.tpcNClsFindable()) && trackCuts.cfgTPCNClsCrossedRowsRequire)
+              if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < cfgtpcNClsFindable * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
                 continue;
-              if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && trackCuts.cfgmaxTPCchi2Require)
+              if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
                 continue;
-              if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && trackCuts.cfgminTPCchi2Require)
+              if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && cfgminTPCchi2Require)
                 continue;
-              if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && trackCuts.cfgminITSnClsRequire)
+              if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
                 continue;
               double cosheta = std::cosh(track.eta());
-              if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && trackCuts.cfgminITSnClscosRequire)
+              if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
                 continue;
-              if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && trackCuts.cfgminReqClusterITSibRequire)
+              if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && cfgminReqClusterITSibRequire)
                 continue;
-              if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && trackCuts.cfgmaxITSchi2Require)
+              if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && cfgmaxITSchi2Require)
                 continue;
-              if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && trackCuts.cfgminGetMeanItsClsSizeRequire)
+              if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
                 continue;
               float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
-              if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && trackCuts.cfgmaxTPCnSigmaRequire)
+              if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
                 continue;
 
               int decayType = -999; // 0 = primary, 1 = weak decay, 2 = material
@@ -1232,7 +1213,7 @@ struct NucleitpcPbPb {
 
               bool insideDCAxy = false;
 
-              if (dcaCfg.cfgUseNewDCAxyCut) {
+              if (cfgUseNewDCAxyCut) {
                 double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
                 double sigma_base = (0.0118 * std::exp(-0.6889 * ptReco) + 0.0017);
                 double sigma_new = sigmaFactor * sigma_base;
@@ -1240,7 +1221,7 @@ struct NucleitpcPbPb {
                 insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
               } else {
                 insideDCAxy =
-                  trackSel.cfgdcaxynopt
+                  cfgdcaxynopt
                     ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
                     : (std::abs(track.dcaXY()) <=
                        (cfgTrackPIDsettings->get(i, "maxDcaXY") *
@@ -1249,7 +1230,7 @@ struct NucleitpcPbPb {
 
               bool insideDCAz = false;
 
-              if (dcaCfg.cfgUseNewDCAzCut) {
+              if (cfgUseNewDCAzCut) {
 
                 double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
 
@@ -1331,7 +1312,7 @@ struct NucleitpcPbPb {
     collHasCandidate = false;
     histos.fill(HIST("histMagField"), dBz);
     histos.fill(HIST("histNev"), 0.5);
-    collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < evSel.cfgZvertex;
+    collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < cfgZvertex;
     occupancy = collision.trackOccupancyInTimeRange();
     if (collPassedEvSel) {
       histos.fill(HIST("histNev"), 1.5);
@@ -1364,7 +1345,7 @@ struct NucleitpcPbPb {
       }
     }
     if (species == he4) {
-      if (he4Cfg.cfghe3massrejreq && (massTOF * massTOF > he4Cfg.cfgminmassrejection && massTOF * massTOF < he4Cfg.cfgmaxmassrejection))
+      if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection))
         return;
       if (cfgmass2) {
         // Compare squared masses
@@ -1406,7 +1387,7 @@ struct NucleitpcPbPb {
 
     // Apply helium-4 rejection if needed
     if (species == he4) {
-      if (he4Cfg.cfghe3massrejreq && (massTOF * massTOF > he4Cfg.cfgminmassrejection && massTOF * massTOF < he4Cfg.cfgmaxmassrejection))
+      if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection))
         return;
     }
 
