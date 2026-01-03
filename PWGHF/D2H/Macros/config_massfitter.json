@@ -1,9 +1,9 @@
 {
     "IsMC": false,
     "WriteSignalPar": true,
-    "_WriteSignalPar": "write signal parameter values on mass canvas",
+    "#WriteSignalPar": "write signal parameter values on mass canvas",
     "InFileName": "hMasses.root",
-    "_InFileName": "download example file here https://cernbox.cern.ch/s/uoWicuRAVGArDsV",
+    "#InFileName": "download example file here https://cernbox.cern.ch/s/uoWicuRAVGArDsV",
     "ReflFileName": "",
     "OutFileName": "mInvFits.root",
     "InputHistoName": [
@@ -13,23 +13,23 @@
         "hMass_T_0.70_0.90",
         "hMass_T_0.90_1.60"
     ],
-    "PromptHistoName": [
+    "#PromptHistoName": [
         "MC prompt histogram name array"
     ],
-    "FDHistoName": [
+    "#FDHistoName": [
         "MC FD histogram name array"
     ],
-    "ReflHistoName": [
+    "#ReflHistoName": [
         "MC reflection histogram name array"
     ],
-    "PromptSecPeakHistoName": [
+    "#PromptSecPeakHistoName": [
         "MC prompt second peak histogram name array"
     ],
-    "FDSecPeakHistoName": [
+    "#FDSecPeakHistoName": [
         "MC FD second peak histogram name array"
     ],
     "Particle": "LcToPKPi",
-    "_Particles": [
+    "#Particles": [
         "Dplus",
         "Ds",
         "LcToPKPi",
@@ -42,7 +42,7 @@
     "EnableRefl": false,
     "FixSigma": false,
     "SigmaFile": "",
-    "_SigmaFile": "fix sigma from file",
+    "#SigmaFile": "fix sigma from file",
     "FixSigmaManual": [
         0,
         0,
@@ -50,10 +50,10 @@
         0,
         0
     ],
-    "_FixSigmaManual": "fix sigma manually",
+    "#FixSigmaManual": "fix sigma manually",
     "FixMean": false,
     "MeanFile": "",
-    "_MeanFile": "fix mean from file",
+    "#MeanFile": "fix mean from file",
     "FixMeanManual": [
         0,
         0,
@@ -61,10 +61,10 @@
         0,
         0
     ],
-    "_FixMeanManual": "fix mean manually",
+    "#FixMeanManual": "fix mean manually",
     "FixSecondSigma": false,
     "SecondSigmaFile": "",
-    "_SecondSigmaFile": "fix second sigma for double gauss from file",
+    "#SecondSigmaFile": "fix second sigma for double gauss from file",
     "FixSecondSigmaManual": [
         0,
         0,
@@ -72,10 +72,10 @@
         0,
         0
     ],
-    "_FixSecondSigmaManual": "fix second sigma for double gauss manually",
+    "#FixSecondSigmaManual": "fix second sigma for double gauss manually",
     "FixFracDoubleGaus": false,
     "FracDoubleGausFile": "",
-    "_FracDoubleGausFile": "fix fraction of sigmas for double gauss from file",
+    "#FracDoubleGausFile": "fix fraction of sigmas for double gauss from file",
     "FixFracDoubleGausManual": [
         0,
         0,
@@ -83,10 +83,10 @@
         0,
         0
     ],
-    "_FixFracDoubleGausManual": "fix fraction of sigmas for double gauss manually",
+    "#FixFracDoubleGausManual": "fix fraction of sigmas for double gauss manually",
     "SliceVarName": "T",
     "SliceVarUnit": "ps",
-    "_SliceVarName, _SliceVarUnit": "e.g. pT, GeV/c or something else depending on user's needs",
+    "#SliceVarName, #SliceVarUnit": "e.g. pT, GeV/c or something else depending on user's needs",
     "SliceVarMin": [
         0.2,
         0.35,
@@ -124,7 +124,7 @@
     ],
     "InclSecPeak": false,
     "UseLikelihood": false,
-    "_UseLikelihood": [
+    "#UseLikelihood": [
         "true: likelihood fit",
         "false: chi2 fit"
     ],
@@ -135,7 +135,7 @@
         2,
         2
     ],
-    "_BkgFuncs": [
+    "#BkgFuncs": [
         "0 for Expo",
         "1 for Poly1",
         "2 for Poly2",
@@ -151,12 +151,12 @@
         0,
         0
     ],
-    "_SgnFuncs": [
+    "#SgnFuncs": [
         "0 for SingleGaus",
         "1 for DoubleGaus",
         "2 for DoubleGausSigmaRatioPar",
         "3 for GausSec"
     ],
-    "drawBgPrefit": true,
-    "highlightPeakRegion": true
+    "DrawBgPrefit": true,
+    "HighlightPeakRegion": true
 }
