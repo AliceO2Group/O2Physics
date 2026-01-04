@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoDreamProducer.cxx
+/// \file producerCharmHadronsTrackFemtoDream.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
@@ -96,6 +96,12 @@ enum DecayChannel { DplusToPiKPi = 0,
                     LcToPKPi,
                     D0ToPiK,
                     DstarToD0Pi
+};
+
+enum class D0CandFlag : uint8_t {
+  D0 = 0,
+  D0Bar = 1,
+  Reflected = 2
 };
 
 struct HfProducerCharmHadronsTrackFemtoDream {
@@ -586,15 +592,14 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-            int signD0 = -999;
-            if (candFlag == 0) {
-              signD0 = +1; // D0
-            } else if (candFlag == 1) {
-              signD0 = -1; // anti-D0
-            } else if (candFlag == 2) {
-              signD0 = 0; // reflected D0
+            if (candFlag == D0CandFlag::D0) {
+              signD0 = +1;
+            } else if (candFlag == D0CandFlag::D0Bar) {
+              signD0 = -1;
+            } else if (candFlag == D0CandFlag::Reflected) {
+              signD0 = 0;
             } else {
-              LOG(error) << "Unexpected candFlag = " << candFlag;
+              LOG(error) << "Unexpected candFlag = " << static_cast<int>(candFlag);
             }
             rowCandCharm2Prong(
               outputCollision.lastIndex(),
