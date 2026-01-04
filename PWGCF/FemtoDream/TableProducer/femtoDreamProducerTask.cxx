@@ -636,7 +636,7 @@ struct femtoDreamProducerTask {
       // check pdg code
       TrackRegistry.fill(HIST("AnalysisQA/getGenStatusCode"), particleMC.getGenStatusCode());
       TrackRegistry.fill(HIST("AnalysisQA/getProcess"), particleMC.getProcess());
-      
+
       // if this fails, the particle is a fake
       if (abs(pdgCode) == abs(confPDGCode)) {
         // check first if particle is from pile up

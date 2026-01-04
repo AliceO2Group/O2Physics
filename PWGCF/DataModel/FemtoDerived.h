@@ -660,21 +660,21 @@ namespace femtodreamMCparticle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,                    //! Primary track or V0
-  kSecondary,                  //! Particle from a decay
-  kMaterial,                   //! Particle from a material
-  kNotPrimary,                 //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,                       //! particle, that has NOT the PDG code of the current analysed particle
-  kWrongCollision,             //! particle, that was associated wrongly to the collision
-  kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
-  kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
-  kSecondaryDaughterSigma0,    //! Daughter from a Sigma^0 decay
-  kSecondaryDaughterXiMinus,   //! Daughter from a Xi^- decay
-  kSecondaryDaughterXi0,       //! Daughter from a Xi^0 decay
-  kSecondaryDaughterOmegaMinus,//! Daughter from a Omega^- decay
-  kSecondaryDaughterXistar0,    //! Daughter from a Xi*^0 decay
+  kPrimary,                      //! Primary track or V0
+  kSecondary,                    //! Particle from a decay
+  kMaterial,                     //! Particle from a material
+  kNotPrimary,                   //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,                         //! particle, that has NOT the PDG code of the current analysed particle
+  kWrongCollision,               //! particle, that was associated wrongly to the collision
+  kSecondaryDaughterLambda,      //! Daughter from a Lambda decay
+  kSecondaryDaughterSigmaplus,   //! Daughter from a Sigma^plus decay
+  kSecondaryDaughterSigma0,      //! Daughter from a Sigma^0 decay
+  kSecondaryDaughterXiMinus,     //! Daughter from a Xi^- decay
+  kSecondaryDaughterXi0,         //! Daughter from a Xi^0 decay
+  kSecondaryDaughterOmegaMinus,  //! Daughter from a Omega^- decay
+  kSecondaryDaughterXistar0,     //! Daughter from a Xi*^0 decay
   kSecondaryDaughterXistarMinus, //! Daughter from a Xi*^- decay
-  kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
+  kElse,                         //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };
 
