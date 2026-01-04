@@ -75,7 +75,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   enum PairSign {
     PairNotDefined = 0,
     LikeSignPair = 1,
-    UnLikeSignPair = 2
+    UnLikeSignPair = 2,
+    ReflectedPair = 3
   };
   // decay channels
   enum DecayChannel { DplusToPiKPi = 0,
@@ -529,9 +530,12 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       int pairSign = 0;
       if (chargeTrack == p2.charge()) {
         pairSign = LikeSignPair;
-      } else {
+      } else if (chargeTrack == -p2.charge()) {
         pairSign = UnLikeSignPair;
+      } else {
+        pairSign = ReflectedPair;
       }
+
       /// Filling QA histograms of the selected tracks
       selectedTrackHisto.fillQA<IsMc, true>(p1, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
 
@@ -655,8 +659,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         int pairSign = 0;
         if (chargeTrack == p2.charge()) {
           pairSign = LikeSignPair;
-        } else {
+        } else if (chargeTrack == -p2.charge()) {
           pairSign = UnLikeSignPair;
+        } else {
+          pairSign = ReflectedPair;
         }
 
         int charmHadMc = 0;
