@@ -104,6 +104,12 @@ enum V0Channel {
   Lambda
 };
 
+enum class D0CandFlag : uint8_t {
+  D0 = 0,
+  D0Bar = 1,
+  Reflected = 2
+};
+
 struct HfProducerCharmHadronsV0FemtoDream {
 
   Produces<aod::FDCollisions> outputCollision;
@@ -771,11 +777,13 @@ struct HfProducerCharmHadronsV0FemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-            int signD0 = 0;
-            if (candFlag == 0) {
-              signD0 = +1; // D0
-            } else if (candFlag == 1) {
-              signD0 = -1; // anti-D0
+            int signD0 = -999;
+            if (candFlag == static_cast<int>(D0CandFlag::D0)) {
+              signD0 = +1;
+            } else if (candFlag == static_cast<int>(D0CandFlag::D0Bar)) {
+              signD0 = -1;
+            } else if (candFlag == static_cast<int>(D0CandFlag::Reflected)) {
+              signD0 = 0;
             } else {
               LOG(error) << "Unexpected candFlag = " << candFlag;
             }
@@ -923,10 +931,12 @@ struct HfProducerCharmHadronsV0FemtoDream {
             LOGF(fatal, "Please check your Ml configuration!!");
           }
         }
-        fillTable(0, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
-        fillTable(1, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
-        if (candidate.isSelD0() && candidate.isSelD0bar())
+        if (candidate.isSelD0() && candidate.isSelD0bar()) {
           fillTable(2, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2)); // tag reflection
+        } else {
+          fillTable(0, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
+          fillTable(1, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
+        }
 
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         if constexpr (UseCharmMl) {
