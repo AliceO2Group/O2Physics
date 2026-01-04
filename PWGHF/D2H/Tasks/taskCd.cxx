@@ -249,8 +249,8 @@ struct HfTaskCd {
   };
 
   /// Fill histograms for real data
-  template <typename CollType, typename CandType, typename TrackType, typename BcType>
-  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& /*tracks*/, BcType const& /*bcs*/)
+  template <typename CollType, typename CandType, typename TrackType, typename TrackWithItsType, typename BcType>
+  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& /*tracks*/, TrackWithItsType const& tracksWithItsPid,BcType const& /*bcs*/)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedCdCandidates = candidates.sliceBy(candCdPerCollision, thisCollId);
@@ -362,7 +362,10 @@ struct HfTaskCd {
         auto prong0 = candidate.template prong0_as<TrackType>();
         auto prong1 = candidate.template prong1_as<TrackType>();
         auto prong2 = candidate.template prong2_as<TrackType>();
-
+          
+        auto prong0Its = tracksWithItsPid.iteratorAt(candidate.prong0Id() - tracksWithItsPid.offset());
+        auto prong2Its = tracksWithItsPid.iteratorAt(candidate.prong2Id() - tracksWithItsPid.offset());
+          
         if (selDeKPi) {
           candFlag = 1;
           pSignedDe = prong0.p() * prong0.sign();
@@ -371,7 +374,7 @@ struct HfTaskCd {
           nSigmaTofDe = candidate.nSigTofDe0();
           nSigmaTpcPi = candidate.nSigTpcPi2();
           nSigmaTofPi = candidate.nSigTofPi2();
-          nSigmaItsDe = prong0.itsNSigmaDe();
+          nSigmaItsDe = prong0Its.itsNSigmaDe();
           itsNClusterDe = prong0.itsNCls();
           itsNClusterSizeDe = prong0.itsClusterSizes();
           tpcNClusterDe = prong0.tpcNClsCrossedRows();
@@ -385,7 +388,7 @@ struct HfTaskCd {
           nSigmaTofDe = candidate.nSigTofDe2();
           nSigmaTpcPi = candidate.nSigTpcPi0();
           nSigmaTofPi = candidate.nSigTofPi0();
-          nSigmaItsDe = prong2.itsNSigmaDe();
+          nSigmaItsDe = prong2Its.itsNSigmaDe();
           itsNClusterDe = prong2.itsNCls();
           itsNClusterSizeDe = prong2.itsClusterSizes();
           tpcNClusterDe = prong2.tpcNClsCrossedRows();
@@ -431,15 +434,16 @@ struct HfTaskCd {
     }
   }
   /// Run the analysis on real data
-  template <typename CollType, typename CandType, typename TrackType, typename BcType>
+  template <typename CollType, typename CandType, typename TrackType, typename TrackWithItsType, typename BcType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates,
                                    TrackType const& tracks,
+                                   TrackWithItsType const& tracksWithItsPid,
                                    BcType const& bcs)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData(collision, candidates, tracks, bcs);
+      fillHistosData(collision, candidates, tracks, tracksWithItsPid, bcs);
     }
   }
 
@@ -450,7 +454,7 @@ struct HfTaskCd {
   {
     // inlcude ITS PID information
     auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid, bcWithTimeStamps);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracks, tracksWithItsPid, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStd, "Process Data with the standard method", true);
 
@@ -461,7 +465,7 @@ struct HfTaskCd {
   {
     // inlcude ITS PID information
     auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid, bcWithTimeStamps);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracks, tracksWithItsPid, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
@@ -472,7 +476,7 @@ struct HfTaskCd {
   {
     // inlcude ITS PID information
     auto tracksWithItsPid = soa::Attach<HFTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
-    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracksWithItsPid, bcWithTimeStamps);
+    runAnalysisPerCollisionData(collisions, selectedCdCandidates, tracks, tracksWithItsPid, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfTaskCd, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 };
