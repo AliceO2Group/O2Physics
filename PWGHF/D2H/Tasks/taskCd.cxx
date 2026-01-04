@@ -250,7 +250,7 @@ struct HfTaskCd {
 
   /// Fill histograms for real data
   template <typename CollType, typename CandType, typename TrackType, typename TrackWithItsType, typename BcType>
-  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& /*tracks*/, TrackWithItsType const& tracksWithItsPid,BcType const& /*bcs*/)
+  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& /*tracks*/, TrackWithItsType const& tracksWithItsPid, BcType const& /*bcs*/)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedCdCandidates = candidates.sliceBy(candCdPerCollision, thisCollId);
@@ -362,10 +362,10 @@ struct HfTaskCd {
         auto prong0 = candidate.template prong0_as<TrackType>();
         auto prong1 = candidate.template prong1_as<TrackType>();
         auto prong2 = candidate.template prong2_as<TrackType>();
-          
+
         auto prong0Its = tracksWithItsPid.iteratorAt(candidate.prong0Id() - tracksWithItsPid.offset());
         auto prong2Its = tracksWithItsPid.iteratorAt(candidate.prong2Id() - tracksWithItsPid.offset());
-          
+
         if (selDeKPi) {
           candFlag = 1;
           pSignedDe = prong0.p() * prong0.sign();
