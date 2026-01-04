@@ -592,14 +592,15 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-            if (candFlag == D0CandFlag::D0) {
+            int signD0 = -999;
+            if (candFlag == static_cast<int>(D0CandFlag::D0)) {
               signD0 = +1;
-            } else if (candFlag == D0CandFlag::D0Bar) {
+            } else if (candFlag == static_cast<int>(D0CandFlag::D0Bar)) {
               signD0 = -1;
-            } else if (candFlag == D0CandFlag::Reflected) {
+            } else if (candFlag == static_cast<int>(D0CandFlag::Reflected)) {
               signD0 = 0;
             } else {
-              LOG(error) << "Unexpected candFlag = " << static_cast<int>(candFlag);
+              LOG(error) << "Unexpected candFlag = " << candFlag;
             }
             rowCandCharm2Prong(
               outputCollision.lastIndex(),
