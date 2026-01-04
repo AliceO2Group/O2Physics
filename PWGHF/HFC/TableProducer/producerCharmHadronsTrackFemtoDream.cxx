@@ -586,11 +586,13 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-            int signD0 = 0;
+            int signD0 = -999;
             if (candFlag == 0) {
               signD0 = +1; // D0
             } else if (candFlag == 1) {
               signD0 = -1; // anti-D0
+            } else if (candFlag == 2) {
+              signD0 = 0; // reflected D0
             } else {
               LOG(error) << "Unexpected candFlag = " << candFlag;
             }
