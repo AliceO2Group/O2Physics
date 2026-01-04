@@ -43,6 +43,12 @@
 #include <stdexcept>
 #include <utility>
 
+constexpr float ArbitrarySmallNumber{1e-8f};
+constexpr float ArbitraryHugeNumber{1e8f};
+constexpr float UndefLdLValue{9999.f};
+constexpr int NumberOfMomentumComponents{3};
+constexpr int NumberOfCovMatrixComponents{21};
+
 /// @brief Function to create a KFPVertex from the collision table in the AO2Ds.
 /// The Multiplicity table is required to set the number of real PV Contributors
 /// This function works only for Run 3 data.
@@ -72,7 +78,7 @@ KFPTrack createKFPTrack(const o2::track::TrackParametrizationWithError<float>& t
 {
   std::array<float, 3> trkpos_par{};
   std::array<float, 3> trkmom_par{};
-  std::array<float, 21> trk_cov{};
+  std::array<float, NumberOfCovMatrixComponents> trk_cov{};
   trackparCov.getXYZGlo(trkpos_par);
   trackparCov.getPxPyPzGlo(trkmom_par);
   trackparCov.getCovXYZPxPyPzGlo(trk_cov);
@@ -126,12 +132,12 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
   float xyzpxpypz[6];
   trackparCov.getPxPyPzGlo(pxpypz);
   trackparCov.getXYZGlo(xyz);
-  for (int i{0}; i < 3; ++i) {
+  for (int i{0}; i < NumberOfMomentumComponents; ++i) {
     xyzpxpypz[i] = xyz[i];
     xyzpxpypz[i + 3] = pxpypz[i];
   }
 
-  std::array<float, 21> cv{};
+  std::array<float, NumberOfCovMatrixComponents> cv{};
   try {
     trackparCov.getCovXYZPxPyPzGlo(cv);
   } catch (std::runtime_error& e) {
@@ -162,7 +168,7 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
 o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const o2::track::PID pid, const int sign)
 {
   std::array<float, 3> xyz{}, pxpypz{};
-  std::array<float, 21> cv{};
+  std::array<float, NumberOfCovMatrixComponents> cv{};
 
   // get parameters from kfParticle
   xyz[0] = kfParticle.GetX();
@@ -173,7 +179,7 @@ o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const
   pxpypz[2] = kfParticle.GetPz();
 
   // set covariance matrix elements (lower triangle)
-  for (int i = 0; i < 21; i++) {
+  for (int i = 0; i < NumberOfCovMatrixComponents; i++) {
     cv[i] = kfParticle.GetCovariance(i);
   }
 
@@ -293,11 +299,11 @@ float ldlFromKF(KFParticle kfpParticle, KFParticle PV)
   const float dz_particle = PV.GetZ() - kfpParticle.GetZ();
   float l_particle = std::sqrt(dx_particle * dx_particle + dy_particle * dy_particle + dz_particle * dz_particle);
   float dl_particle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dx_particle * dx_particle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dy_particle * dy_particle + (PV.GetCovariance(5) + kfpParticle.GetCovariance(5)) * dz_particle * dz_particle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dx_particle * dy_particle + (PV.GetCovariance(3) + kfpParticle.GetCovariance(3)) * dx_particle * dz_particle + (PV.GetCovariance(4) + kfpParticle.GetCovariance(4)) * dy_particle * dz_particle);
-  if (std::fabs(l_particle) < 1.e-8f)
-    l_particle = 1.e-8f;
-  dl_particle = dl_particle < 0.f ? 1.e8f : std::sqrt(dl_particle) / l_particle;
+  if (std::fabs(l_particle) < ArbitrarySmallNumber)
+    l_particle = ArbitrarySmallNumber;
+  dl_particle = dl_particle < 0.f ? ArbitraryHugeNumber : std::sqrt(dl_particle) / l_particle;
   if (dl_particle == 0.)
-    return 9999.;
+    return UndefLdLValue;
   return l_particle / dl_particle;
 }
 
@@ -311,11 +317,11 @@ float ldlXYFromKF(KFParticle kfpParticle, KFParticle PV)
   const float dy_particle = PV.GetY() - kfpParticle.GetY();
   float l_particle = std::sqrt(dx_particle * dx_particle + dy_particle * dy_particle);
   float dl_particle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dx_particle * dx_particle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dy_particle * dy_particle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dx_particle * dy_particle);
-  if (std::fabs(l_particle) < 1.e-8f)
-    l_particle = 1.e-8f;
-  dl_particle = dl_particle < 0.f ? 1.e8f : std::sqrt(dl_particle) / l_particle;
+  if (std::fabs(l_particle) < ArbitrarySmallNumber)
+    l_particle = ArbitrarySmallNumber;
+  dl_particle = dl_particle < 0.f ? ArbitraryHugeNumber : std::sqrt(dl_particle) / l_particle;
   if (dl_particle == 0.)
-    return 9999.;
+    return UndefLdLValue;
   return l_particle / dl_particle;
 }
 
