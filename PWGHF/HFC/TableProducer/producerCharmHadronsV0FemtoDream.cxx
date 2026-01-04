@@ -104,6 +104,12 @@ enum V0Channel {
   Lambda
 };
 
+enum class D0CandFlag : uint8_t {
+  D0 = 0,
+  D0Bar = 1,
+  Reflected = 2
+};
+
 struct HfProducerCharmHadronsV0FemtoDream {
 
   Produces<aod::FDCollisions> outputCollision;
@@ -771,15 +777,14 @@ struct HfProducerCharmHadronsV0FemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-            int signD0 = -999;
-            if (candFlag == 0) {
-              signD0 = +1; // D0
-            } else if (candFlag == 1) {
-              signD0 = -1; // anti-D0
-            } else if (candFlag == 2) {
-              signD0 = 0; // reflected D0
+            if (candFlag == D0CandFlag::D0) {
+              signD0 = +1;
+            } else if (candFlag == D0CandFlag::D0Bar) {
+              signD0 = -1;
+            } else if (candFlag == D0CandFlag::Reflected) {
+              signD0 = 0;
             } else {
-              LOG(error) << "Unexpected candFlag = " << candFlag;
+              LOG(error) << "Unexpected candFlag = " << static_cast<int>(candFlag);
             }
             rowCandCharm2Prong(
               outputCollision.lastIndex(),
