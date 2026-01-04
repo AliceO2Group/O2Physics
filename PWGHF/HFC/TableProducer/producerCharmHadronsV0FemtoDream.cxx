@@ -925,7 +925,8 @@ struct HfProducerCharmHadronsV0FemtoDream {
         }
         fillTable(0, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
         fillTable(1, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
-        if (candidate.isSelD0() && candidate.isSelD0bar()) fillTable(2, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2)); // tag reflection
+        if (candidate.isSelD0() && candidate.isSelD0bar())
+          fillTable(2, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2)); // tag reflection
 
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         if constexpr (UseCharmMl) {
