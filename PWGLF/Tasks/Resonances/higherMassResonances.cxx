@@ -100,8 +100,7 @@ struct HigherMassResonances {
     Configurable<bool> isApplyDCAv0topv{"isApplyDCAv0topv", false, "DCA V0 to PV"};
     Configurable<bool> hasTPC{"hasTPC", false, "TPC"};
     Configurable<bool> isselectTWOKsOnly{"isselectTWOKsOnly", true, "Select only events with two K0s"};
-    Configurable<bool> isapplyPairRapidityRec{"isapplyPairRapidityRec", false, "Apply pair rapidity cut on reconstructed mother (after already applying rapidity cut on generated mother)"};
-    Configurable<bool> isapplyPairRapidityGen{"isapplyPairRapidityGen", false, "Apply pair rapidity cut on generated mother (before applying rapidity cut on reconstructed mother)"};
+    Configurable<bool> isapplyPairRapidityMC{"isapplyPairRapidityMC", false, "Apply pair rapidity cut on reconstructed mother (after already applying rapidity cut on generated mother)"};
     Configurable<int> cSelectMultEstimator{"cSelectMultEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
     // Configurable<int> configOccCut{"configOccCut", 1000, "Occupancy cut"};
     // Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
@@ -121,12 +120,15 @@ struct HigherMassResonances {
     Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", true, "kNoITSROFrameBorder"};
 
     // Configurable parameters for V0 selection
+    Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
+    Configurable<float> confV0PtMax{"confV0PtMax", 100.f, "Maximum transverse momentum of V0"};
+    Configurable<float> confPiPtMin{"confPiPtMin", 0.1f, "Minimum transverse momentum of pion daughter"};
+    Configurable<float> confPiPtMax{"confPiPtMax", 100.f, "Maximum transverse momentum of pion daughter"};
     Configurable<float> cMaxDeltaM{"cMaxDeltaM", 0.01f, "Sqrt((m1-mPDG)^2 + (m2-mPDG)^2) < cMaxDeltaM)"};
     Configurable<float> confV0DCADaughMax{"confV0DCADaughMax", 1.0f, "DCA b/w V0 daughters"};
     Configurable<float> v0DCApostoPV{"v0DCApostoPV", 0.06, "DCA Pos To PV"};
     Configurable<float> v0DCAnegtoPV{"v0DCAnegtoPV", 0.06, "DCA Neg To PV"};
     Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.5, "DCA V0 to PV"};
-    Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
     Configurable<float> confV0CPAMin{"confV0CPAMin", 0.97f, "Minimum CPA of V0"};
     Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 0.5f, "Minimum transverse radius"};
     // Configurable<float> confV0TranRadV0Max{"confV0TranRadV0Max", 200.f, "Maximum transverse radius"};
@@ -138,11 +140,11 @@ struct HigherMassResonances {
     Configurable<float> confDaughPIDCutTPC{"confDaughPIDCutTPC", 5, "PID selections for KS0 daughters"};
     Configurable<float> confDaughPIDCutTOF{"confDaughPIDCutTOF", 5, "PID selections for KS0 daughters in TOF"};
     Configurable<float> confKsrapidity{"confKsrapidity", 0.5f, "Rapidity cut on K0s"};
-    Configurable<float> angSepCut{"angSepCut", 0.01f, "Angular separation cut"};
-    Configurable<bool> isapplyAngSepCut{"isapplyAngSepCut", false, "Apply angular separation cut"};
     // Configurable<bool> isStandardV0{"isStandardV0", false, "Standard V0 selection"};
     Configurable<bool> isApplyEtaCutK0s{"isApplyEtaCutK0s", false, "Apply eta cut on K0s daughters"};
     Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
+    Configurable<float> deltaRDaugherCut{"deltaRDaugherCut", 0.001f, "DeltaR cut on V0 daughters"};
+    Configurable<bool> deltaRK0sCut{"deltaRK0sCut", false, "Apply deltaR cut between two K0s"};
 
     // Configurable for track selection and multiplicity
     Configurable<float> cfgPTcut{"cfgPTcut", 0.2f, "Track PT cut"};
@@ -277,7 +279,7 @@ struct HigherMassResonances {
       hv0label->GetXaxis()->SetBinLabel(1, "All Tracks");
       hv0label->GetXaxis()->SetBinLabel(2, "DCA V0 to PV");
       hv0label->GetXaxis()->SetBinLabel(3, "y K0s");
-      hv0label->GetXaxis()->SetBinLabel(4, "Min V0 pT");
+      hv0label->GetXaxis()->SetBinLabel(4, "V0 pT cut");
       hv0label->GetXaxis()->SetBinLabel(5, "Daughter DCA");
       hv0label->GetXaxis()->SetBinLabel(6, "CosPA");
       hv0label->GetXaxis()->SetBinLabel(7, "Decay Radius");
@@ -293,8 +295,11 @@ struct HigherMassResonances {
       hv0DauLabel->GetXaxis()->SetBinLabel(4, "TPC CRFC");
       hv0DauLabel->GetXaxis()->SetBinLabel(5, "TPC Chi2NCL");
       hv0DauLabel->GetXaxis()->SetBinLabel(6, "Charge");
-      hv0DauLabel->GetXaxis()->SetBinLabel(7, "Eta");
-      hv0DauLabel->GetXaxis()->SetBinLabel(8, "PID TPC");
+      hv0DauLabel->GetXaxis()->SetBinLabel(7, "Charge");
+      hv0DauLabel->GetXaxis()->SetBinLabel(8, "Eta");
+      hv0DauLabel->GetXaxis()->SetBinLabel(9, "PID TPC");
+      hv0DauLabel->GetXaxis()->SetBinLabel(10, "PID TOF");
+      hv0DauLabel->GetXaxis()->SetBinLabel(11, "Pt cut");
 
       std::shared_ptr<TH1> hv0labelmcrec = hMChists.get<TH1>(HIST("events_checkrec"));
       hv0labelmcrec->GetXaxis()->SetBinLabel(1, "All Tracks");
@@ -338,8 +343,8 @@ struct HigherMassResonances {
     if (config.qAv0) {
       // Invariant Mass
       rKzeroShort.add("hMassK0Shortbefore", "hMassK0Shortbefore", kTHnSparseF, {k0ShortMassAxis, ptAxis});
-      rKzeroShort.add("hK0ShortMassCorr", "hK0ShortMassCorr", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
-      rKzeroShort.add("hK0ShortMassCorrAfterCut", "hK0ShortMassCorrAfterCut", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
+      rKzeroShort.add("hK0ShortMassCorr", "hK0ShortMassCorr", kTHnSparseF, {k0ShortMassAxis, k0ShortMassAxis, deltaMAxis});
+      // rKzeroShort.add("hK0ShortMassCorrAfterCut", "hK0ShortMassCorrAfterCut", kTH2F, {k0ShortMassAxis, k0ShortMassAxis});
       rKzeroShort.add("hK0sPtCorrelation", "hK0sPtCorrelation", kTH1F, {{1000, 0.0f, 100.0f}});
       rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", kTHnSparseF, {k0ShortMassAxis, ptAxis});
       // Topological histograms (after the selection)
@@ -347,6 +352,7 @@ struct HigherMassResonances {
       rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.96f, 1.1f}}});
       rKzeroShort.add("hLT", "hLT", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
       rKzeroShort.add("angularSeparation", "Angular distribution between two K0s vs pT", {HistType::kTH1F, {{200, 0.0f, 4.0f}}});
+      rKzeroShort.add("hDauDeltaR", "Delta R of positive and negative daughers", {HistType::kTHnSparseF, {angleSepAxis, angleSepAxis}});
     }
     rKzeroShort.add("NksProduced", "Number of K0s produced", kTH1I, {{15, -0.5, 14.5}});
 
@@ -500,7 +506,7 @@ struct HigherMassResonances {
     }
     rEventSelection.fill(HIST("htrackscheck_v0"), 2.5);
 
-    if (pT < config.confV0PtMin) {
+    if (pT < config.confV0PtMin || pT > config.confV0PtMax) {
       return false;
     }
     rEventSelection.fill(HIST("htrackscheck_v0"), 3.5);
@@ -612,6 +618,12 @@ struct HigherMassResonances {
     if (std::abs(v0candidate.tofNSigmaK0PiMinus()) > config.confDaughPIDCutTOF && v0candidate.negativeHasTOF()) {
       return false;
     }
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 9.5);
+
+    if (track.pt() < config.confPiPtMin || track.pt() > config.confPiPtMax) {
+      return false;
+    }
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 10.5);
 
     if (config.qAPID) {
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
@@ -675,34 +687,13 @@ struct HigherMassResonances {
       return false;
     }
 
-    // rKzeroShort.fill(HIST("negative_pt"), negTrackExtra.pt());
-    // rKzeroShort.fill(HIST("positive_pt"), posTrackExtra.pt());
-    // rKzeroShort.fill(HIST("negative_eta"), negTrackExtra.eta());
-    // rKzeroShort.fill(HIST("positive_eta"), posTrackExtra.eta());
-    // rKzeroShort.fill(HIST("negative_phi"), negTrackExtra.phi());
-    // rKzeroShort.fill(HIST("positive_phi"), posTrackExtra.phi());
-    return true;
-  }
+    // double deltaRDaugherPos = std::sqrt(TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) * TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) + (posTrackExtra.eta() - negTrackExtra.eta()) * (posTrackExtra.eta() - negTrackExtra.eta()));
+    // double deltaRDaugherNeg = std::sqrt(TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) * TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) + (posTrackExtra.eta() - negTrackExtra.eta()) * (posTrackExtra.eta() - negTrackExtra.eta()));
 
-  // Angular separation cut on KsKs pairs
-  template <typename T1, typename T2>
-  bool applyAngSep(const T1& candidate1, const T2& candidate2)
-  {
-    double eta1, eta2, phi1, phi2;
-    eta1 = candidate1.eta();
-    eta2 = candidate2.eta();
-    phi1 = candidate1.phi();
-    phi2 = candidate2.phi();
+    // if (config.qAv0) {
+    //   rKzeroShort.fill(HIST("hDauDeltaR"), deltaRDaugherPos, deltaRDaugherNeg);
+    // }
 
-    const double dphi = TVector2::Phi_mpi_pi(phi1 - phi2);
-    const double deta = eta1 - eta2;
-    double angle = std::sqrt(dphi * dphi + deta * deta);
-    if (config.qAv0) {
-      rKzeroShort.fill(HIST("angularSeparation"), angle);
-    }
-    if (config.isapplyAngSepCut && angle > config.angSepCut) {
-      return false;
-    }
     return true;
   }
 
@@ -976,34 +967,6 @@ struct HigherMassResonances {
         continue;
       }
 
-      // if (postrack1.hasTOF()) {
-      //   double nTOFSigmaPos1{postrack1.tofNSigmaPi()};
-      //   if ((std::abs(nTOFSigmaPos1) > config.confDaughPIDCutTOF)) {
-      //     continue;
-      //   }
-      // }
-
-      // if (negtrack1.hasTOF()) {
-      //   double nTOFSigmaNeg1{negtrack1.tofNSigmaPi()};
-      //   if (std::abs(nTOFSigmaNeg1) > config.confDaughPIDCutTOF) {
-      //     continue;
-      //   }
-      // }
-
-      // if (postrack2.hasTOF()) {
-      //   double nTOFSigmaPos2{postrack2.tofNSigmaPi()};
-      //   if ((std::abs(nTOFSigmaPos2) > config.confDaughPIDCutTOF)) {
-      //     continue;
-      //   }
-      // }
-
-      // if (negtrack2.hasTOF()) {
-      //   double nTOFSigmaNeg2{negtrack2.tofNSigmaPi()};
-      //   if (std::abs(nTOFSigmaNeg2) > config.confDaughPIDCutTOF) {
-      //     continue;
-      //   }
-      // }
-
       if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
         v0indexes.push_back(v1.globalIndex());
       }
@@ -1019,7 +982,14 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (!applyAngSep(v1, v2)) {
+      double deltaRDaugherPos = std::sqrt(TVector2::Phi_mpi_pi(postrack1.phi() - negtrack1.phi()) * TVector2::Phi_mpi_pi(postrack1.phi() - negtrack1.phi()) + (postrack1.eta() - negtrack1.eta()) * (postrack1.eta() - negtrack1.eta()));
+      double deltaRDaugherNeg = std::sqrt(TVector2::Phi_mpi_pi(postrack2.phi() - negtrack2.phi()) * TVector2::Phi_mpi_pi(postrack2.phi() - negtrack2.phi()) + (postrack2.eta() - negtrack2.eta()) * (postrack2.eta() - negtrack2.eta()));
+
+      if (config.qAv0) {
+        rKzeroShort.fill(HIST("hDauDeltaR"), deltaRDaugherPos, deltaRDaugherNeg);
+      }
+
+      if (deltaRDaugherPos < config.deltaRDaugherCut || deltaRDaugherNeg < config.deltaRDaugherCut) {
         continue;
       }
 
@@ -1034,34 +1004,42 @@ struct HigherMassResonances {
       mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
 
+      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short());
+        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short(), deltaMass);
       }
 
-      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (!config.qAOptimisation) {
         if (deltaMass > config.cMaxDeltaM) {
           continue;
         }
       }
 
-      if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
-      }
+      // if (config.qAv0) {
+      //   rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
+      // }
 
-      const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
+      const double ptCorr = (mother.Pt() - daughter1.Pt() != 0.) ? daughter1.Pt() / (mother.Pt() - daughter1.Pt()) : 0.;
       if (config.qAv0) {
         rKzeroShort.fill(HIST("hK0sPtCorrelation"), ptCorr);
       }
 
-      if (!config.isselectTWOKsOnly && !config.qAOptimisation)
+      double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) * TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) + (v1.eta() - v2.eta()) * (v1.eta() - v2.eta()));
+
+      if (!config.qAOptimisation) {
+        if (deltaRvalue < config.deltaRK0sCut) {
+          continue;
+        }
+      }
+
+      if (!config.isselectTWOKsOnly && !config.qAOptimisation) {
         fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
+      }
 
       if (!config.isselectTWOKsOnly && config.qAOptimisation) {
-        double angSepValue = std::sqrt(TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) * TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) + (v1.eta() - v2.eta()) * (v1.eta() - v2.eta()));
 
         if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), deltaMass, angSepValue, ptCorr);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), deltaMass, deltaRvalue, ptCorr);
         }
 
         for (int i = 0; i < config.cRotations; i++) {
@@ -1074,7 +1052,7 @@ struct HigherMassResonances {
           double pTcorrRot = std::abs(daughterRot.Pt() + daughter2.Pt()) / motherRot.Pt();
 
           if (motherRot.Rapidity() < config.rapidityMotherData)
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), deltaMass, angSepValue, pTcorrRot);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), deltaMass, deltaRvalue, pTcorrRot);
         }
       }
     }
@@ -1162,20 +1140,39 @@ struct HigherMassResonances {
             continue;
           }
 
+          double deltaRDaugherPos = std::sqrt(TVector2::Phi_mpi_pi(postrack1.phi() - negtrack1.phi()) * TVector2::Phi_mpi_pi(postrack1.phi() - negtrack1.phi()) + (postrack1.eta() - negtrack1.eta()) * (postrack1.eta() - negtrack1.eta()));
+          double deltaRDaugherNeg = std::sqrt(TVector2::Phi_mpi_pi(postrack2.phi() - negtrack2.phi()) * TVector2::Phi_mpi_pi(postrack2.phi() - negtrack2.phi()) + (postrack2.eta() - negtrack2.eta()) * (postrack2.eta() - negtrack2.eta()));
+
+          if (deltaRDaugherPos < config.deltaRDaugherCut || deltaRDaugherNeg < config.deltaRDaugherCut) {
+            continue;
+          }
+
+          if (config.isApplyEtaCutK0s && (t1.eta() < config.confDaughEta || t2.eta() < config.confDaughEta)) {
+            continue;
+          }
+
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassK0Short); // Kshort
           daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
           mother = daughter1 + daughter2; // invariant mass of Kshort pair
+          const double deltaMass = deltaM(t1.mK0Short(), t2.mK0Short());
+
+          if (!config.qAOptimisation) {
+            if (deltaMass > config.cMaxDeltaM) {
+              continue;
+            }
+          }
+
           isMix = true;
           if (!config.qAOptimisation)
             fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
 
           if (config.qAOptimisation) {
-            double angSepValue = std::sqrt(TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) * TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) + (daughter1.eta() - daughter2.eta()) * (daughter1.eta() - daughter2.eta()));
+            double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) * TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) + (daughter1.eta() - daughter2.eta()) * (daughter1.eta() - daughter2.eta()));
             const double deltaMass = deltaM(t1.mK0Short(), t2.mK0Short());
             const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
             if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), deltaMass, angSepValue, ptCorr);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), deltaMass, deltaRvalue, ptCorr);
             }
           }
         }
@@ -1294,7 +1291,7 @@ struct HigherMassResonances {
         hMChists.fill(HIST("GenEta"), mcParticle.eta());
         hMChists.fill(HIST("GenPhi"), mcParticle.phi());
 
-        if (config.isapplyPairRapidityGen && std::abs(lResonanceGen1.Rapidity()) >= config.rapidityMotherData) {
+        if (config.isapplyPairRapidityMC && std::abs(lResonanceGen1.Rapidity()) >= config.rapidityMotherData) {
           continue;
         }
 
@@ -1475,7 +1472,7 @@ struct HigherMassResonances {
             hMChists.fill(HIST("RecPhi"), mothertrack1.phi());
             hMChists.fill(HIST("RecEta"), mothertrack1.eta());
 
-            if (config.isapplyPairRapidityRec && std::abs(mother.Rapidity()) >= config.rapidityMotherData) {
+            if (config.isapplyPairRapidityMC && std::abs(mother.Rapidity()) >= config.rapidityMotherData) {
               continue;
             }
 
@@ -1544,10 +1541,6 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (!applyAngSep(v1, v2)) {
-        continue;
-      }
-
       allConditionsMet = 1;
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
       daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short); // Kshort
@@ -1555,32 +1548,39 @@ struct HigherMassResonances {
       mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
 
+      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short());
+        rKzeroShort.fill(HIST("hK0ShortMassCorr"), v1.mK0Short(), v2.mK0Short(), deltaMass);
       }
 
-      const double deltaMass = deltaM(v1.mK0Short(), v2.mK0Short());
       if (deltaMass > config.cMaxDeltaM) {
         continue;
       }
 
-      if (config.qAv0) {
-        rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
-      }
+      // if (config.qAv0) {
+      //   rKzeroShort.fill(HIST("hK0ShortMassCorrAfterCut"), v1.mK0Short(), v2.mK0Short());
+      // }
 
-      const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
+      const double ptCorr = (mother.Pt() - daughter1.Pt() != 0.) ? daughter1.Pt() / (mother.Pt() - daughter1.Pt()) : 0.;
       if (config.qAv0) {
         rKzeroShort.fill(HIST("hK0sPtCorrelation"), ptCorr);
+      }
+
+      double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) * TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) + (v1.eta() - v2.eta()) * (v1.eta() - v2.eta()));
+
+      if (!config.qAOptimisation) {
+        if (deltaRvalue < config.deltaRK0sCut) {
+          continue;
+        }
       }
 
       if (!config.isselectTWOKsOnly && !config.qAOptimisation)
         fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
 
       if (!config.isselectTWOKsOnly && config.qAOptimisation) {
-        double angSepValue = std::sqrt(TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) * TVector2::Phi_mpi_pi(v1.phi() - v2.phi()) + (v1.eta() - v2.eta()) * (v1.eta() - v2.eta()));
 
         if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), deltaMass, angSepValue, ptCorr);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), deltaMass, deltaRvalue, ptCorr);
         }
 
         for (int i = 0; i < config.cRotations; i++) {
@@ -1591,7 +1591,7 @@ struct HigherMassResonances {
           motherRot = daughterRot + daughter2;
           double pTcorrRot = std::abs(daughterRot.Pt() + daughter2.Pt()) / motherRot.Pt();
           if (motherRot.Rapidity() < config.rapidityMotherData)
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), deltaMass, angSepValue, pTcorrRot);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), deltaMass, deltaRvalue, pTcorrRot);
         }
       }
     }
@@ -1634,20 +1634,32 @@ struct HigherMassResonances {
           continue;
         }
 
+        if (config.isApplyEtaCutK0s && (t1.eta() < config.confDaughEta || t2.eta() < config.confDaughEta)) {
+          continue;
+        }
+
         daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassK0Short); // Kshort
         daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
         mother = daughter1 + daughter2; // invariant mass of Kshort pair
+        const double deltaMass = deltaM(t1.mK0Short(), t2.mK0Short());
+
+        if (!config.qAOptimisation) {
+          if (deltaMass > config.cMaxDeltaM) {
+            continue;
+          }
+        }
+
         isMix = true;
         if (!config.qAOptimisation)
           fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
 
         if (config.qAOptimisation) {
-          double angSepValue = std::sqrt(TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) * TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) + (daughter1.eta() - daughter2.eta()) * (daughter1.eta() - daughter2.eta()));
+          double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) * TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) + (daughter1.eta() - daughter2.eta()) * (daughter1.eta() - daughter2.eta()));
           const double deltaMass = deltaM(t1.mK0Short(), t2.mK0Short());
           const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
           if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
-            hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), deltaMass, angSepValue, ptCorr);
+            hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), deltaMass, deltaRvalue, ptCorr);
           }
         }
       }
