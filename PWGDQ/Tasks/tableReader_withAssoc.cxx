@@ -3136,7 +3136,7 @@ struct AnalysisDileptonTrack {
   Configurable<bool> fConfigUseRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing"};
   Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
   Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
-  Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{61199.9144, -19417.7588, 1709.4958, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
+  Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{-0.541438, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts;      // number of dilepton leg cuts
@@ -3398,9 +3398,9 @@ struct AnalysisDileptonTrack {
 
     // the background mass distribution in signal region
     std::vector<float> fMassBkgpar = fConfigFitmassEC;
-    fMassBkg = new TF1("fMassBkg", "[0]+[1]*x+[2]*x*x", fMassBkgpar[3], fMassBkgpar[4]);
-    fMassBkg->SetParameters(fMassBkgpar[0], fMassBkgpar[1], fMassBkgpar[2]);
-    fMassBkg->SetNpx(10000);
+    fMassBkg = new TF1("fMassBkg", " exp([0]*x)", fMassBkgpar[1], fMassBkgpar[2]);
+    fMassBkg->SetParameters(fMassBkgpar[0]);
+    fMassBkg->SetNpx(1000);
   }
 
   // init parameters from CCDB
