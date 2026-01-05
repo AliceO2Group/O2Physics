@@ -79,7 +79,7 @@ static const std::vector<std::string> labelsCutsPid = {"minPtTpc", "maxPtTpc", "
 static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs", "DeuteronInCdToDeKPi", "TritonInCtToTrKPi", "HeliumInChToHeKPi"};
 } // namespace hf_presel_pid
 
-namespace hf_presel_charmnuclei
+namespace hf_presel_lightnuclei
 {
 
 // default values for the track cuts for lightnuclei in the track-index-skim-creator
@@ -89,7 +89,7 @@ constexpr float CutsTrackQuality[3][9] = {{-4, 3, 5., 0., 100, 100, 0.83, 160., 
 static const std::vector<std::string> labelsCutsTrack = {"nSigmaMinIts", "minItsClusterSizes", "minItsCluster", "minItsIbCluster", "minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared"};
 static const std::vector<std::string> labelsRowsNucleiType = {"Deutron", "Triton", "Helium3"};
 
-} // namespace hf_presel_charmnuclei
+} // namespace hf_presel_lightnuclei
 
 namespace hf_cuts_bdt_multiclass
 {
