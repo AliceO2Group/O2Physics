@@ -1730,12 +1730,17 @@ struct Kstarqa {
         continue;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       // const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
       // multiplicityRec = mcCollisionRec.centFT0M();
 =======
       const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
       multiplicityRec = mcCollisionRec.centFT0M();
 >>>>>>> 087e3b03d (different event/signal loss method)
+=======
+      // const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
+      // multiplicityRec = mcCollisionRec.centFT0M();
+>>>>>>> 61d6a6024 (removed unused variable)
 
       if (cSelectMultEstimator == kFT0M) {
         multiplicity1 = RecCollision.centFT0M();
