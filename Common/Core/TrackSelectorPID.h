@@ -133,6 +133,10 @@ class TrackSelectorPidBase
       nSigma = track.tpcNSigmaPr();
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       nSigma = track.tpcNSigmaDe();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kTriton) {
+      nSigma = track.tpcNSigmaTr();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kHelium3) {
+      nSigma = track.tpcNSigmaHe();
     } else {
       errorPdg();
     }
@@ -229,6 +233,10 @@ class TrackSelectorPidBase
       nSigma = track.tofNSigmaPr();
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       nSigma = track.tofNSigmaDe();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kTriton) {
+      nSigma = track.tofNSigmaTr();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kHelium3) {
+      nSigma = track.tofNSigmaHe();
     } else {
       errorPdg();
     }
@@ -567,6 +575,10 @@ class TrackSelectorPidBase
       return track.bayesID() == o2::track::PID::Proton;
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       return track.bayesID() == o2::track::PID::Deuteron;
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kTriton) {
+      return track.bayesID() == o2::track::PID::Triton;
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kHelium3) {
+      return track.bayesID() == o2::track::PID::Helium3;
     } else {
       errorPdg();
       return false;
@@ -597,6 +609,10 @@ class TrackSelectorPidBase
       prob = track.bayesPr();
     } else if constexpr (pdg == o2::constants::physics::Pdg::kDeuteron) {
       prob = track.bayesDe();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kTriton) {
+      prob = track.bayesTr();
+    } else if constexpr (pdg == o2::constants::physics::Pdg::kHelium3) {
+      prob = track.bayesHe();
     } else {
       errorPdg();
     }
@@ -637,6 +653,14 @@ class TrackSelectorPidBase
   }
 
  private:
+  // ITS
+  float mPtItsMin = 0.;            ///< minimum pT for TPC PID [GeV/c]
+  float mPtItsMax = 100.;          ///< maximum pT for TPC PID [GeV/c]
+  float mNSigmaItsMin = -3.;       ///< minimum number of TPC σ
+  float mNSigmaItsMax = 3.;        ///< maximum number of TPC σ
+  float mNSigmaItsMinCondTpc = 0.; ///< minimum number of TPC σ if combined with TOF
+  float mNSigmaItsMaxCondTpc = 0.; ///< maximum number of TPC σ if combined with TOF
+
   // TPC
   float mPtTpcMin = 0.;            ///< minimum pT for TPC PID [GeV/c]
   float mPtTpcMax = 100.;          ///< maximum pT for TPC PID [GeV/c]
@@ -680,5 +704,7 @@ using TrackSelectorPi = TrackSelectorPidBase<PDG_t::kPiPlus>;                   
 using TrackSelectorKa = TrackSelectorPidBase<PDG_t::kKPlus>;                          // Ka
 using TrackSelectorPr = TrackSelectorPidBase<PDG_t::kProton>;                         // Pr
 using TrackSelectorDe = TrackSelectorPidBase<o2::constants::physics::Pdg::kDeuteron>; // De
+using TrackSelectorTr = TrackSelectorPidBase<o2::constants::physics::Pdg::kTriton>;   // Tr
+using TrackSelectorHe = TrackSelectorPidBase<o2::constants::physics::Pdg::kHelium3>;  // He
 
 #endif // COMMON_CORE_TRACKSELECTORPID_H_

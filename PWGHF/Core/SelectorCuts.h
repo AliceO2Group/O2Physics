@@ -68,14 +68,28 @@ static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary",
 namespace hf_presel_pid
 {
 // default values for the PID cuts for protons in the track-index-skim-creator
-constexpr float CutsPid[5][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+constexpr float CutsPid[7][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
                                  {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
                                  {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
                                  {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
                                  {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
 static const std::vector<std::string> labelsCutsPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
-static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs", "DeuteronInCdToDeKPi"};
+static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs", "DeuteronInCdToDeKPi", "TritonInCtToTrKPi", "HeliumInChToHeKPi"};
 } // namespace hf_presel_pid
+
+namespace hf_presel_charmnuclei
+{
+
+// default values for the track cuts for lightnuclei in the track-index-skim-creator
+constexpr float CutsTrackQuality[3][9] = {{-4, 3, 5., 0., 100, 100, 0.83, 160., 1.},
+                                          {-4, 3, 5., 0., 100, 100, 0.83, 160., 1.},
+                                          {-4, 3, 5., 0., 100, 100, 0.83, 160., 1.}};
+static const std::vector<std::string> labelsCutsTrack = {"nSigmaMinIts", "minItsClusterSizes", "minItsCluster", "minItsIbCluster", "minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared"};
+static const std::vector<std::string> labelsRowsNucleiType = {"Deutron", "Triton", "Helium3"};
+
+} // namespace hf_presel_charmnuclei
 
 namespace hf_cuts_bdt_multiclass
 {
