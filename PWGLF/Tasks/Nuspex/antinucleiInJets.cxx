@@ -476,8 +476,10 @@ struct AntinucleiInJets {
     // Coalescence
     if (doprocessCoalescence) {
       registryMC.add("genEventsCoalescence", "genEventsCoalescence", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryMC.add("antideuteron_coal_fullEvent", "antideuteron_coal_fullEvent", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antideuteron_coal_jet", "antideuteron_coal_jet", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antideuteron_coal_ue", "antideuteron_coal_ue", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_coal_fullEvent", "antiproton_coal_fullEvent", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_jet", "antiproton_coal_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_ue", "antiproton_coal_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
     }
@@ -562,6 +564,34 @@ struct AntinucleiInJets {
       registryCorr.add("q1d_square_fullEvent", "q1d_square_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis, subsampleAxis});
       registryCorr.add("q1p_square_fullEvent", "q1p_square_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis, subsampleAxis});
       registryCorr.add("q1d_q1p_fullEvent", "q1d_q1p_fullEvent", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis, subsampleAxis});
+    }
+
+    // Systematic uncertainties on correlation analysis
+    if (doprocessSystCorr) {
+
+      // Axes definitions for multidimensional histogram binning
+      const AxisSpec multiplicityAxis{100, 0.0, 100.0, "multiplicity percentile"};
+      const AxisSpec ptPerNucleonAxis{5, 0.4, 0.9, "{p}_{T}/A (GeV/#it{c})"};
+      const AxisSpec nAntideuteronsAxis{10, 0.0, 10.0, "N_{#bar{d}}"};
+      const AxisSpec nAntiprotonsAxis{10, 0.0, 10.0, "N_{#bar{p}}"};
+      const AxisSpec nBarD2Axis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{d}}^{j}"};
+      const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
+      const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
+      const AxisSpec systAxis{nSyst, 0, static_cast<double>(nSyst), "Systematic Variation Index"};
+
+      registryCorr.add("eventCounter_syst", "number of events syst", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryCorr.add("eventCounter_centrality_fullEvent_syst", "Number of events per centrality (Full Event) Syst", HistType::kTH2F, {multiplicityAxis, systAxis});
+
+      // Correlation histograms
+      registryCorr.add("rho_fullEvent_syst", "rho_fullEvent_syst", HistType::kTHnSparseD, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis, systAxis});
+      registryCorr.add("rho_netP_netD_fullEvent_syst", "rho_netP_netD_fullEvent_syst", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, systAxis});
+
+      // Efficiency histograms full event
+      registryCorr.add("q1d_fullEvent_syst", "q1d_fullEvent_syst", HistType::kTHnSparseD, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis, systAxis});
+      registryCorr.add("q1p_fullEvent_syst", "q1p_fullEvent_syst", HistType::kTHnSparseD, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis, systAxis});
+      registryCorr.add("q1d_square_fullEvent_syst", "q1d_square_fullEvent_syst", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis, systAxis});
+      registryCorr.add("q1p_square_fullEvent_syst", "q1p_square_fullEvent_syst", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis, systAxis});
+      registryCorr.add("q1d_q1p_fullEvent_syst", "q1d_q1p_fullEvent_syst", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis, systAxis});
     }
   }
 
@@ -981,6 +1011,54 @@ struct AntinucleiInJets {
 
     // High-pt: require valid TOF match and pass TOF PID
     return (track.hasTOF() && std::abs(nsigmaTOF) < NsigmaMax);
+  }
+
+  // Selection of (anti)protons with systematic variations
+  template <typename ProtonTrack>
+  bool isProtonSyst(const ProtonTrack& track, double minSigTPC, double maxSigTPC, double minSigTOF, double maxSigTOF)
+  {
+    // Constant
+    static constexpr double PtThreshold = 0.6;
+
+    // PID variables and transverse momentum of the track
+    const double nsigmaTPC = track.tpcNSigmaPr();
+    const double nsigmaTOF = track.tofNSigmaPr();
+    const double pt = track.pt();
+
+    // Apply TPC PID cut (with systematic variations)
+    if (nsigmaTPC < minSigTPC || nsigmaTPC > maxSigTPC)
+      return false;
+
+    // Low-pt: TPC PID is sufficient
+    if (pt < PtThreshold)
+      return true;
+
+    // High-pt: require valid TOF match and pass TOF PID (with systematic variations)
+    return (track.hasTOF() && nsigmaTOF > minSigTOF && nsigmaTOF < maxSigTOF);
+  }
+
+  // Selection of (anti)deuterons with systematic variations
+  template <typename DeuteronTrack>
+  bool isDeuteronSyst(const DeuteronTrack& track, double minSigTPC, double maxSigTPC, double minSigTOF, double maxSigTOF)
+  {
+    // Constant
+    static constexpr double PtThreshold = 1.0;
+
+    // PID variables and transverse momentum of the track
+    const double nsigmaTPC = track.tpcNSigmaDe();
+    const double nsigmaTOF = track.tofNSigmaDe();
+    const double pt = track.pt();
+
+    // Apply TPC PID cut (with systematic variations)
+    if (nsigmaTPC < minSigTPC || nsigmaTPC > maxSigTPC)
+      return false;
+
+    // Low-pt: TPC PID is sufficient
+    if (pt < PtThreshold)
+      return true;
+
+    // High-pt: require valid TOF match and pass TOF PID (with systematic variations)
+    return (track.hasTOF() && nsigmaTOF > minSigTOF && nsigmaTOF < maxSigTOF);
   }
 
   // Process Data
@@ -3102,6 +3180,196 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processCorr, "Process Correlation analysis", false);
 
+  // Process correlation analysis with systematic variations of analysis parameters
+  void processSystCorr(SelectedCollisions::iterator const& collision, AntiNucleiTracks const& tracks)
+  {
+    // cut settings (from processSystData)
+    static std::vector<double> maxDcaxySyst = {
+      0.071, 0.060, 0.066, 0.031, 0.052, 0.078, 0.045, 0.064, 0.036, 0.074,
+      0.079, 0.043, 0.067, 0.059, 0.032, 0.070, 0.048, 0.077, 0.062, 0.034,
+      0.057, 0.055, 0.073, 0.038, 0.050, 0.075, 0.041, 0.061, 0.033, 0.069,
+      0.035, 0.044, 0.076, 0.049, 0.037, 0.054, 0.072, 0.046, 0.058, 0.040,
+      0.068, 0.042, 0.056, 0.039, 0.047, 0.065, 0.051, 0.053, 0.063, 0.030};
+
+    static std::vector<double> maxDcazSyst = {
+      0.064, 0.047, 0.032, 0.076, 0.039, 0.058, 0.043, 0.069, 0.050, 0.035,
+      0.074, 0.061, 0.045, 0.033, 0.068, 0.055, 0.037, 0.071, 0.042, 0.053,
+      0.077, 0.038, 0.065, 0.049, 0.036, 0.059, 0.044, 0.067, 0.041, 0.034,
+      0.073, 0.052, 0.040, 0.063, 0.046, 0.031, 0.070, 0.054, 0.037, 0.062,
+      0.048, 0.035, 0.075, 0.051, 0.039, 0.066, 0.043, 0.060, 0.032, 0.056};
+
+    static std::vector<double> nSigmaItsMinSyst = {
+      -2.9, -2.8, -3.0, -3.4, -2.7, -3.3, -3.0, -3.1, -3.4, -3.1,
+      -3.0, -2.8, -3.2, -2.6, -2.7, -3.4, -2.9, -3.0, -3.0, -2.7,
+      -2.9, -3.3, -3.0, -3.1, -3.2, -3.0, -2.9, -2.7, -3.3, -3.0,
+      -2.8, -3.3, -2.7, -3.3, -2.8, -3.4, -2.8, -3.4, -2.9, -3.1,
+      -3.2, -2.6, -3.1, -2.9, -3.1, -2.8, -2.9, -3.3, -3.0, -2.8};
+
+    static std::vector<double> nSigmaItsMaxSyst = {
+      2.9, 2.8, 3.0, 3.4, 2.7, 3.3, 3.0, 3.1, 3.4, 3.1, 3.0, 2.8, 3.2,
+      2.6, 2.7, 3.4, 2.9, 3.0, 3.0, 2.7, 2.9, 3.3, 3.0, 3.1, 3.2, 3.0,
+      2.9, 2.7, 3.3, 3.0, 2.8, 3.3, 2.7, 3.3, 2.8, 3.4, 2.8, 3.4, 2.9,
+      3.1, 3.2, 2.6, 3.1, 2.9, 3.1, 2.8, 2.9, 3.3, 3.0, 2.8};
+
+    static std::vector<double> minNsigmaTpcSyst = {
+      -3.2, -2.9, -3.1, -2.9, -3.5, -2.6, -3.3, -3.0, -3.5, -2.7,
+      -3.0, -2.6, -3.3, -3.4, -2.8, -3.1, -2.6, -3.2, -3.1, -2.8,
+      -3.4, -2.7, -3.4, -2.9, -3.0, -2.5, -3.3, -2.8, -3.1, -2.7,
+      -3.4, -2.8, -3.3, -2.6, -3.1, -2.5, -3.4, -3.0, -3.2, -2.6,
+      -3.4, -2.8, -3.1, -2.6, -3.3, -2.7, -3.2, -2.7, -3.4, -2.9};
+
+    static std::vector<double> maxNsigmaTpcSyst = {
+      3.2, 2.9, 3.1, 2.9, 3.5, 2.6, 3.3, 3.0, 3.5, 2.7, 3.0, 2.6, 3.3,
+      3.4, 2.8, 3.1, 2.6, 3.2, 3.1, 2.8, 3.4, 2.7, 3.4, 2.9, 3.0, 2.5,
+      3.3, 2.8, 3.1, 2.7, 3.4, 2.8, 3.3, 2.6, 3.1, 2.5, 3.4, 3.0, 3.2,
+      2.6, 3.4, 2.8, 3.1, 2.6, 3.3, 2.7, 3.2, 2.7, 3.4, 2.9};
+
+    static std::vector<double> minNsigmaTofSyst = {
+      -3.2, -2.9, -3.1, -2.9, -3.5, -2.6, -3.3, -3.0, -3.5, -2.7,
+      -3.0, -2.6, -3.3, -3.4, -2.8, -3.1, -2.6, -3.2, -3.1, -2.8,
+      -3.4, -2.7, -3.4, -2.9, -3.0, -2.5, -3.3, -2.8, -3.1, -2.7,
+      -3.4, -2.8, -3.3, -2.6, -3.1, -2.5, -3.4, -3.0, -3.2, -2.6,
+      -3.4, -2.8, -3.1, -2.6, -3.3, -2.7, -3.2, -2.7, -3.4, -2.9};
+
+    static std::vector<double> maxNsigmaTofSyst = {
+      3.9, 3.6, 3.8, 3.2, 3.2, 3.5, 3.1, 3.8, 3.5, 3.4, 3.9, 3.8, 3.7,
+      3.0, 3.6, 3.1, 3.7, 3.4, 4.0, 3.0, 3.7, 3.3, 3.9, 3.1, 3.3, 3.5,
+      3.6, 3.2, 3.5, 3.3, 3.9, 3.0, 3.4, 3.2, 3.1, 3.9, 3.6, 3.1, 3.2,
+      4.0, 3.1, 3.7, 3.6, 3.1, 3.3, 3.5, 3.3, 3.4, 3.1, 3.8};
+
+    // Event counter: before event selection
+    registryCorr.fill(HIST("eventCounter_syst"), 0.5);
+
+    // Apply standard event selection (Same as processCorr)
+    if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+      return;
+
+    registryCorr.fill(HIST("eventCounter_syst"), 1.5);
+
+    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+      return;
+    registryCorr.fill(HIST("eventCounter_syst"), 2.5);
+
+    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+      return;
+    registryCorr.fill(HIST("eventCounter_syst"), 3.5);
+
+    if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+      return;
+    registryCorr.fill(HIST("eventCounter_syst"), 4.5);
+
+    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return;
+    registryCorr.fill(HIST("eventCounter_syst"), 5.5);
+
+    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
+    registryCorr.fill(HIST("eventCounter_syst"), 6.5);
+
+    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
+      return;
+    registryCorr.fill(HIST("eventCounter_syst"), 7.5);
+
+    const float multiplicity = collision.centFT0M();
+
+    // Bins setup
+    static const std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    const int nBins = ptOverAbins.size() - 1;
+
+    // Loop over systematic variations
+    for (int isyst = 0; isyst < nSyst; isyst++) {
+
+      // Fill event counter for this systematic
+      registryCorr.fill(HIST("eventCounter_centrality_fullEvent_syst"), multiplicity, static_cast<double>(isyst));
+
+      // Particle counters for this specific cut setting
+      std::vector<int> nAntiprotonFullEvent(nBins, 0);
+      std::vector<int> nAntideuteronFullEvent(nBins, 0);
+      int nTotProtonFullEvent(0);
+      int nTotDeuteronFullEvent(0);
+      int nTotAntiprotonFullEvent(0);
+      int nTotAntideuteronFullEvent(0);
+
+      // Loop over tracks
+      for (auto const& track : tracks) {
+
+        // Apply track selection (from processSystData)
+        if (!passedTrackSelectionSyst(track, isyst))
+          continue;
+
+        // Apply DCA selections (from processSystData)
+        if (std::fabs(track.dcaXY()) > maxDcaxySyst[isyst] || std::fabs(track.dcaZ()) > maxDcazSyst[isyst])
+          continue;
+
+        // Particle identification using the ITS cluster size (vary also PID ITS) (from processSystData)
+        bool passedItsPidProt(true), passedItsPidDeut(true);
+        double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
+        double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
+
+        if (applyItsPid && track.pt() < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMinSyst[isyst] || nSigmaITSprot > nSigmaItsMaxSyst[isyst])) {
+          passedItsPidProt = false;
+        }
+        if (applyItsPid && track.pt() < ptMaxItsPidDeut && (nSigmaITSdeut < nSigmaItsMinSyst[isyst] || nSigmaITSdeut > nSigmaItsMaxSyst[isyst])) {
+          passedItsPidDeut = false;
+        }
+
+        // Check Identity (Proton/Deuteron) using TPC/TOF
+        bool isProt = isProtonSyst(track, minNsigmaTpcSyst[isyst], maxNsigmaTpcSyst[isyst], minNsigmaTofSyst[isyst], maxNsigmaTofSyst[isyst]);
+        bool isDeut = isDeuteronSyst(track, minNsigmaTpcSyst[isyst], maxNsigmaTpcSyst[isyst], minNsigmaTofSyst[isyst], maxNsigmaTofSyst[isyst]);
+
+        // Kinematic range selection & counting
+        // (Anti)protons
+        if (isProt && passedItsPidProt) {
+          if (track.pt() >= ptOverAbins[0] && track.pt() < ptOverAbins[nBins]) {
+            if (track.sign() > 0) {
+              nTotProtonFullEvent++;
+            } else if (track.sign() < 0) {
+              nTotAntiprotonFullEvent++;
+              int ibin = findBin(ptOverAbins, track.pt());
+              nAntiprotonFullEvent[ibin]++;
+            }
+          }
+        }
+
+        // (Anti)deuterons
+        if (isDeut && passedItsPidDeut) {
+          double ptPerNucleon = 0.5 * track.pt();
+          if (ptPerNucleon >= ptOverAbins[0] && ptPerNucleon < ptOverAbins[nBins]) {
+            if (track.sign() > 0) {
+              nTotDeuteronFullEvent++;
+            } else if (track.sign() < 0) {
+              nTotAntideuteronFullEvent++;
+              int ibin = findBin(ptOverAbins, ptPerNucleon);
+              nAntideuteronFullEvent[ibin]++;
+            }
+          }
+        }
+      }
+
+      // Fill Correlation Histograms for systematic variations
+      int netProtonFullEvent = nTotProtonFullEvent - nTotAntiprotonFullEvent;
+      int netDeuteronFullEvent = nTotDeuteronFullEvent - nTotAntideuteronFullEvent;
+
+      registryCorr.fill(HIST("rho_fullEvent_syst"), nTotAntideuteronFullEvent, nTotAntiprotonFullEvent, multiplicity, static_cast<double>(isyst));
+      registryCorr.fill(HIST("rho_netP_netD_fullEvent_syst"), netDeuteronFullEvent, netProtonFullEvent, static_cast<double>(isyst));
+
+      // Fill efficiency histograms for systematic variations
+      for (int i = 0; i < nBins; i++) {
+        double ptAcenteri = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
+
+        registryCorr.fill(HIST("q1d_fullEvent_syst"), nAntideuteronFullEvent[i], ptAcenteri, multiplicity, static_cast<double>(isyst));
+        registryCorr.fill(HIST("q1p_fullEvent_syst"), nAntiprotonFullEvent[i], ptAcenteri, multiplicity, static_cast<double>(isyst));
+        for (int j = 0; j < nBins; j++) {
+          double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
+          registryCorr.fill(HIST("q1d_square_fullEvent_syst"), ptAcenteri, ptAcenterj, (nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]), multiplicity, static_cast<double>(isyst));
+          registryCorr.fill(HIST("q1p_square_fullEvent_syst"), ptAcenteri, ptAcenterj, (nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity, static_cast<double>(isyst));
+          registryCorr.fill(HIST("q1d_q1p_fullEvent_syst"), ptAcenteri, ptAcenterj, (nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity, static_cast<double>(isyst));
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(AntinucleiInJets, processSystCorr, "Process Correlation systematics", false);
+
   // Process coalescence
   void processCoalescence(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
   {
@@ -3203,6 +3471,19 @@ struct AntinucleiInJets {
             proton.used = true;
             break;
           }
+        }
+      }
+
+      for (const auto& part : chargedParticles) {
+        if (part.used)
+          continue;
+
+        // Fill histograms for Full Event
+        if (part.pdgCode == PDG_t::kProtonBar) {
+          registryMC.fill(HIST("antiproton_coal_fullEvent"), part.pt());
+        }
+        if (part.pdgCode == -o2::constants::physics::Pdg::kDeuteron) {
+          registryMC.fill(HIST("antideuteron_coal_fullEvent"), part.pt());
         }
       }
 

@@ -90,17 +90,17 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
 
 #undef CASCADE_DEFAULT_BITS
 
-#define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                              \
-  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Track PDG code"};                       \
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the charge of the Cascade "};                      \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                        \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                      \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                   \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                    \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                     \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};        \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"}; \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"}; \
+#define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                                                       \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "Cascade PDG code. Set sign to +1 to select antiparticle"}; \
+  o2::framework::Configurable<int> sign{"sign", -1, "Sign of the charge of the Cascade"};                                               \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                 \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                               \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                            \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                             \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                              \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                 \
+  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"};                          \
+  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"};                          \
   o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 0x0, "Bitmask for cascade selection"};
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {

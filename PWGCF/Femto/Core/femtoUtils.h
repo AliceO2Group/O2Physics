@@ -210,7 +210,7 @@ using HasSign = decltype(std::declval<T&>().sign());
 template <typename T>
 inline int signum(T x)
 {
-  return (T(0) < x) - (x < T(0)); // works for floats too
+  return (T(0) < x) - (x < T(0));
 }
 
 }; // namespace utils

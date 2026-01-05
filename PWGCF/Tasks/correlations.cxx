@@ -89,7 +89,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
-  O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity")
+  O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality")
 
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
@@ -147,7 +147,7 @@ struct CorrelationTask {
   std::vector<int> p2indexCache;
 
   std::unique_ptr<TFormula> multCutFormula;
-  std::array<uint, 4> multCutFormulaParamIndex;
+  std::array<uint, aod::cfmultset::NMultiplicityEstimators> multCutFormulaParamIndex;
 
   struct Config {
     bool mPairCuts = false;
@@ -229,7 +229,7 @@ struct CorrelationTask {
     if (!cfgMultCutFormula.value.empty()) {
       multCutFormula = std::make_unique<TFormula>("multCutFormula", cfgMultCutFormula.value.c_str());
       std::fill_n(multCutFormulaParamIndex.begin(), std::size(multCutFormulaParamIndex), ~0u);
-      std::array<std::string, 4> pars = {"cFT0C", "mFV0A", "mPV", "mGlob"}; // must correspond the order of MultiplicityEstimators
+      std::array<std::string, aod::cfmultset::NMultiplicityEstimators> pars = {"cFT0C", "mFV0A", "mPV", "mGlob", "cFT0M"}; // must correspond the order of MultiplicityEstimators
       for (uint i = 0, n = multCutFormula->GetNpar(); i < n; ++i) {
         auto m = std::find(pars.begin(), pars.end(), multCutFormula->GetParName(i));
         if (m == pars.end()) {
@@ -462,7 +462,7 @@ struct CorrelationTask {
   {
     if (cfgMultCutFormula.value.empty())
       return true;
-    for (uint i = 0; i < 4; ++i) {
+    for (uint i = 0; i < aod::cfmultset::NMultiplicityEstimators; ++i) {
       if ((cfgMultCorrelationsMask.value & (1u << i)) == 0 || multCutFormulaParamIndex[i] == ~0u)
         continue;
       auto estIndex = std::popcount(cfgMultCorrelationsMask.value & ((1u << i) - 1));

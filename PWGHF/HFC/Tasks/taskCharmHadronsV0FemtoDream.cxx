@@ -69,7 +69,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
   enum PairSign {
     PairNotDefined = 0,
     LikeSignPair = 1,
-    UnLikeSignPair = 2
+    UnLikeSignPair = 2,
+    ReflectedPair = 3
   };
   // decay channels
   enum DecayChannel { DplusToPiKPi = 0,
@@ -466,8 +467,10 @@ struct HfTaskCharmHadronsV0FemtoDream {
       int pairSign = 0;
       if (chargeV0 == p2.charge()) {
         pairSign = LikeSignPair;
-      } else {
+      } else if (chargeV0 == -p2.charge()) {
         pairSign = UnLikeSignPair;
+      } else {
+        pairSign = ReflectedPair;
       }
 
       int charmHadMc = 0;
@@ -554,8 +557,10 @@ struct HfTaskCharmHadronsV0FemtoDream {
         int pairSign = 0;
         if (chargeV0 == p2.charge()) {
           pairSign = LikeSignPair;
-        } else {
+        } else if (chargeV0 == -p2.charge()) {
           pairSign = UnLikeSignPair;
+        } else {
+          pairSign = ReflectedPair;
         }
 
         int charmHadMc = 0;
