@@ -37,6 +37,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <tuple>
+#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1166,144 +1168,6 @@ struct qaMatching {
     return PropagateToZMFT(fwdtrack, z);
   }
 
-  template <class EVT, class BC, class TMUON, class TMFT>
-  void FillCollisions(EVT const& collisions,
-                      BC const& bcs,
-                      TMUON const& muonTracks,
-                      TMFT const& mftTracks,
-                      CollisionInfos& collisionInfos)
-  {
-    collisionInfos.clear();
-
-    std::vector<int64_t> collisionIds;
-    for (const auto& collision : collisions) {
-      collisionIds.push_back(collision.globalIndex());
-    }
-
-    for (size_t cid = 1; cid < collisionIds.size() - 1; cid++) {
-      const auto& collision = collisions.rawIteratorAt(collisionIds[cid]);
-      int64_t collisionIndex = collision.globalIndex();
-      auto bc = bcs.rawIteratorAt(collision.bcId());
-
-      /*// require a minimum BC gap between the current conllision and the previous/next ones
-      const auto& collisionPrev = collisions.rawIteratorAt(collisionIds[cid-1]);
-      const auto& collisionNext = collisions.rawIteratorAt(collisionIds[cid+1]);
-      auto bcPrev = bcs.rawIteratorAt(collisionPrev.bcId());
-      auto bcNext = bcs.rawIteratorAt(collisionNext.bcId());
-      int64_t deltaPrev = bc.globalBC() - bcPrev.globalBC();
-      int64_t deltaNext = bcNext.globalBC() - bc.globalBC();
-      if (deltaPrev < 50 || deltaNext < 50) {
-        continue;
-      }*/
-
-      // fill collision information for global muon tracks (MFT-MCH-MID matches)
-      for (auto muonTrack : muonTracks) {
-        if (!muonTrack.has_collision())
-          continue;
-
-        if (collisionIndex != muonTrack.collisionId()) {
-          continue;
-        }
-
-        auto& collisionInfo = collisionInfos[collisionIndex];
-        collisionInfo.index = collisionIndex;
-        collisionInfo.bc = bc.globalBC();
-        collisionInfo.zVertex = collision.posZ();
-
-        if (collisionInfo.matchablePairs.empty()) {
-          FillMatchablePairs(collisionInfo, muonTracks, mftTracks);
-        }
-
-        if (static_cast<int>(muonTrack.trackType()) > 2) {
-          // standalone MCH or MCH-MID tracks
-          int64_t mchTrackIndex = muonTrack.globalIndex();
-          collisionInfo.mchTracks.push_back(mchTrackIndex);
-        } else {
-          // global muon tracks (MFT-MCH or MFT-MCH-MID)
-          int64_t muonTrackIndex = muonTrack.globalIndex();
-          double matchChi2 = muonTrack.chi2MatchMCHMFT() / 5.f;
-          double matchScore = chi2ToScore(muonTrack.chi2MatchMCHMFT(), 5, 50.f);
-          auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUON>();
-          int64_t mchTrackIndex = mchTrack.globalIndex();
-          auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
-          int64_t mftTrackIndex = mftTrack.globalIndex();
-
-          // check if a vector of global muon candidates is already available for the current MCH index
-          // if not, initialize a new one and add the current global muon track
-          // bool globalMuonTrackFound = false;
-          auto matchingCandidateIterator = collisionInfo.matchingCandidates.find(mchTrackIndex);
-          if (matchingCandidateIterator != collisionInfo.matchingCandidates.end()) {
-            matchingCandidateIterator->second.emplace_back(MatchingCandidate{
-              collisionIndex,
-              muonTrackIndex,
-              mchTrackIndex,
-              mftTrackIndex,
-              matchScore,
-              matchChi2,
-              -1,
-              matchScore,
-              matchChi2,
-              -1,
-              kMatchTypeUndefined});
-          } else {
-            collisionInfo.matchingCandidates[mchTrackIndex].emplace_back(MatchingCandidate{
-              collisionIndex,
-              muonTrackIndex,
-              mchTrackIndex,
-              mftTrackIndex,
-              matchScore,
-              matchChi2,
-              -1,
-              matchScore,
-              matchChi2,
-              -1,
-              kMatchTypeUndefined});
-          }
-        }
-      }
-
-      // fill collision information for MFT standalone tracks
-      for (auto mftTrack : mftTracks) {
-        if (!mftTrack.has_collision())
-          continue;
-
-        if (collisionIndex != mftTrack.collisionId()) {
-          continue;
-        }
-
-        int64_t mftTrackIndex = mftTrack.globalIndex();
-
-        auto& collisionInfo = collisionInfos[collisionIndex];
-        collisionInfo.index = collisionIndex;
-        collisionInfo.bc = bc.globalBC();
-        collisionInfo.zVertex = collision.posZ();
-
-        collisionInfo.mftTracks.push_back(mftTrackIndex);
-      }
-    }
-
-    // sort the vectors of matching candidates in ascending order based on the matching score value
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
-    };
-
-    for (auto& [collisionIndex, collisionInfo] : collisionInfos) {
-      for (auto& [mchIndex, globalTracksVector] : collisionInfo.matchingCandidates) {
-        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
-
-        int ranking = 1;
-        for (auto& candidate : globalTracksVector) {
-          const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
-
-          candidate.matchRanking = ranking;
-          candidate.matchRankingProd = ranking;
-          candidate.matchType = GetMatchType(muonTrack, muonTracks, mftTracks, collisionInfo.matchablePairs, ranking);
-          ranking += 1;
-        }
-      }
-    }
-  }
-
   // method 0: standard extrapolation
   // method 1: MFT extrapolation using MCH momentum
   // method 2: MCH track extrapolation constrained to the first MFT track point, MFT extrapolation using MCH momentum
@@ -1822,6 +1686,144 @@ struct qaMatching {
     auto dimuon = muon1 + muon2;
 
     return dimuon.M();
+  }
+
+  template <class EVT, class BC, class TMUON, class TMFT>
+  void FillCollisions(EVT const& collisions,
+                      BC const& bcs,
+                      TMUON const& muonTracks,
+                      TMFT const& mftTracks,
+                      CollisionInfos& collisionInfos)
+  {
+    collisionInfos.clear();
+
+    std::vector<int64_t> collisionIds;
+    for (const auto& collision : collisions) {
+      collisionIds.push_back(collision.globalIndex());
+    }
+
+    for (size_t cid = 1; cid < collisionIds.size() - 1; cid++) {
+      const auto& collision = collisions.rawIteratorAt(collisionIds[cid]);
+      int64_t collisionIndex = collision.globalIndex();
+      auto bc = bcs.rawIteratorAt(collision.bcId());
+
+      /*// require a minimum BC gap between the current conllision and the previous/next ones
+      const auto& collisionPrev = collisions.rawIteratorAt(collisionIds[cid-1]);
+      const auto& collisionNext = collisions.rawIteratorAt(collisionIds[cid+1]);
+      auto bcPrev = bcs.rawIteratorAt(collisionPrev.bcId());
+      auto bcNext = bcs.rawIteratorAt(collisionNext.bcId());
+      int64_t deltaPrev = bc.globalBC() - bcPrev.globalBC();
+      int64_t deltaNext = bcNext.globalBC() - bc.globalBC();
+      if (deltaPrev < 50 || deltaNext < 50) {
+        continue;
+      }*/
+
+      // fill collision information for global muon tracks (MFT-MCH-MID matches)
+      for (auto muonTrack : muonTracks) {
+        if (!muonTrack.has_collision())
+          continue;
+
+        if (collisionIndex != muonTrack.collisionId()) {
+          continue;
+        }
+
+        auto& collisionInfo = collisionInfos[collisionIndex];
+        collisionInfo.index = collisionIndex;
+        collisionInfo.bc = bc.globalBC();
+        collisionInfo.zVertex = collision.posZ();
+
+        if (collisionInfo.matchablePairs.empty()) {
+          FillMatchablePairs(collisionInfo, muonTracks, mftTracks);
+        }
+
+        if (static_cast<int>(muonTrack.trackType()) > 2) {
+          // standalone MCH or MCH-MID tracks
+          int64_t mchTrackIndex = muonTrack.globalIndex();
+          collisionInfo.mchTracks.push_back(mchTrackIndex);
+        } else {
+          // global muon tracks (MFT-MCH or MFT-MCH-MID)
+          int64_t muonTrackIndex = muonTrack.globalIndex();
+          double matchChi2 = muonTrack.chi2MatchMCHMFT() / 5.f;
+          double matchScore = chi2ToScore(muonTrack.chi2MatchMCHMFT(), 5, 50.f);
+          auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUON>();
+          int64_t mchTrackIndex = mchTrack.globalIndex();
+          auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFT>();
+          int64_t mftTrackIndex = mftTrack.globalIndex();
+
+          // check if a vector of global muon candidates is already available for the current MCH index
+          // if not, initialize a new one and add the current global muon track
+          // bool globalMuonTrackFound = false;
+          auto matchingCandidateIterator = collisionInfo.matchingCandidates.find(mchTrackIndex);
+          if (matchingCandidateIterator != collisionInfo.matchingCandidates.end()) {
+            matchingCandidateIterator->second.emplace_back(MatchingCandidate{
+              collisionIndex,
+              muonTrackIndex,
+              mchTrackIndex,
+              mftTrackIndex,
+              matchScore,
+              matchChi2,
+              -1,
+              matchScore,
+              matchChi2,
+              -1,
+              kMatchTypeUndefined});
+          } else {
+            collisionInfo.matchingCandidates[mchTrackIndex].emplace_back(MatchingCandidate{
+              collisionIndex,
+              muonTrackIndex,
+              mchTrackIndex,
+              mftTrackIndex,
+              matchScore,
+              matchChi2,
+              -1,
+              matchScore,
+              matchChi2,
+              -1,
+              kMatchTypeUndefined});
+          }
+        }
+      }
+
+      // fill collision information for MFT standalone tracks
+      for (auto mftTrack : mftTracks) {
+        if (!mftTrack.has_collision())
+          continue;
+
+        if (collisionIndex != mftTrack.collisionId()) {
+          continue;
+        }
+
+        int64_t mftTrackIndex = mftTrack.globalIndex();
+
+        auto& collisionInfo = collisionInfos[collisionIndex];
+        collisionInfo.index = collisionIndex;
+        collisionInfo.bc = bc.globalBC();
+        collisionInfo.zVertex = collision.posZ();
+
+        collisionInfo.mftTracks.push_back(mftTrackIndex);
+      }
+    }
+
+    // sort the vectors of matching candidates in ascending order based on the matching score value
+    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+      return (track1.matchScore > track2.matchScore);
+    };
+
+    for (auto& [collisionIndex, collisionInfo] : collisionInfos) {
+      for (auto& [mchIndex, globalTracksVector] : collisionInfo.matchingCandidates) {
+        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+
+        int ranking = 1;
+        for (auto& candidate : globalTracksVector) {
+          const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
+
+          candidate.matchRanking = ranking;
+          candidate.matchRankingProd = ranking;
+          candidate.matchType = GetMatchType(muonTrack, muonTracks, mftTracks, collisionInfo.matchablePairs, ranking);
+          ranking += 1;
+        }
+      }
+    }
   }
 
   template <class C, class TMUON, class TMFT>
