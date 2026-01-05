@@ -1621,7 +1621,11 @@ struct Kstarqa {
       }
     }
 
+<<<<<<< HEAD
     if (std::abs(mcCollision.posZ()) > selectionConfig.cutzvertex) {
+=======
+    if (std::abs(mcCollision.posZ()) < selectionConfig.cutzvertex) {
+>>>>>>> 38263c335 (added another method for event/signal loss corrections)
       return;
     }
 
