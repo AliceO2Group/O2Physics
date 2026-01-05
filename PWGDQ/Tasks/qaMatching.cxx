@@ -30,15 +30,15 @@
 #include <Math/ProbFunc.h>
 
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <tuple>
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1865,7 +1865,6 @@ struct qaMatching {
         mftTrackType = pairedMftTrack.isCA() ? 1 : 0;
         decayRanking = GetDecayRanking(mchTrack, mftTracks);
       }
-      int matchType = static_cast<int>(globalTracksVector[0].matchType);
 
       // find the index of the matching candidate that corresponds to the true match
       // index=1 corresponds to the leading candidate
@@ -2225,9 +2224,7 @@ struct qaMatching {
     for (auto& [mchIndex, globalTracksVector] : matchingCandidates) {
       auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
 
-      int candidateId = 0;
       for (const auto& candidate : globalTracksVector) {
-        candidateId += 1;
         auto const& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
         if (!muonTrack.has_collision())
           continue;
