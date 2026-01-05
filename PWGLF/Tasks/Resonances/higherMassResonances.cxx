@@ -687,12 +687,16 @@ struct HigherMassResonances {
       return false;
     }
 
-    // double deltaRDaugherPos = std::sqrt(TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) * TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) + (posTrackExtra.eta() - negTrackExtra.eta()) * (posTrackExtra.eta() - negTrackExtra.eta()));
-    // double deltaRDaugherNeg = std::sqrt(TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) * TVector2::Phi_mpi_pi(posTrackExtra.phi() - negTrackExtra.phi()) + (posTrackExtra.eta() - negTrackExtra.eta()) * (posTrackExtra.eta() - negTrackExtra.eta()));
+    double deltaRDaugherPos = std::sqrt(TVector2::Phi_mpi_pi(v0.positivephi() - v0.negativephi()) * TVector2::Phi_mpi_pi(v0.positivephi() - v0.negativephi()) + (v0.positiveeta() - v0.negativeeta()) * (v0.positiveeta() - v0.negativeeta()));
+    double deltaRDaugherNeg = std::sqrt(TVector2::Phi_mpi_pi(v0.positivephi() - v0.negativephi()) * TVector2::Phi_mpi_pi(v0.positivephi() - v0.negativephi()) + (v0.positiveeta() - v0.negativeeta()) * (v0.positiveeta() - v0.negativeeta()));
 
-    // if (config.qAv0) {
-    //   rKzeroShort.fill(HIST("hDauDeltaR"), deltaRDaugherPos, deltaRDaugherNeg);
-    // }
+    if (config.qAv0) {
+      rKzeroShort.fill(HIST("hDauDeltaR"), deltaRDaugherPos, deltaRDaugherNeg);
+    }
+
+    if (deltaRDaugherPos < config.deltaRDaugherCut || deltaRDaugherNeg < config.deltaRDaugherCut) {
+      return false;
+    }
 
     return true;
   }
