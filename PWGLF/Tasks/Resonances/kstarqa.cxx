@@ -155,6 +155,7 @@ struct Kstarqa {
     float cfgCutPT = 0.2f;
     float cfgDeepAngle = 0.04;
     float rapidityMotherData = 0.5;
+    float pidCutTemp = 2.0f;
 
   } selectionConfig;
 
@@ -1040,11 +1041,11 @@ struct Kstarqa {
       }
 
       if (cPIDAdditionalChecks) {
-        if (std::abs(track1.tpcNSigmaPi()) > 2.0)
+        if (std::abs(track1.tpcNSigmaPi()) > pidCutTemp)
           hPID.fill(HIST("AdditionalChecks/hTPCnsigKa_pt"), track1.tpcNSigmaKa(), track1.pt());
-        if (std::abs(track2.tpcNSigmaKa()) > 2.0)
+        if (std::abs(track2.tpcNSigmaKa()) > pidCutTemp)
           hPID.fill(HIST("AdditionalChecks/hTPCnsigPi_pt"), track1.tpcNSigmaPi(), track1.pt());
-        if (std::abs(track1.tpcNSigmaPr() > 2.0)) {
+        if (std::abs(track1.tpcNSigmaPr()) > pidCutTemp) {
           hPID.fill(HIST("AdditionalChecks/hTOFnsigKa_ptPrCut"), track1.tpcNSigmaKa(), track1.pt());
           hPID.fill(HIST("AdditionalChecks/hTOFnsigPi_ptPrCut"), track1.tpcNSigmaPi(), track1.pt());
         }
