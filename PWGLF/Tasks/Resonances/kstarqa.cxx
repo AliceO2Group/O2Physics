@@ -184,6 +184,7 @@ struct Kstarqa {
   Configurable<bool> calcLikeSign{"calcLikeSign", true, "Calculate Like Sign"};
   Configurable<bool> calcRotational{"calcRotational", false, "Calculate Rotational"};
   Configurable<bool> cQAplots{"cQAplots", true, "cQAplots"};
+  Configurable<bool> cPIDAdditionalChecks{"cPIDAdditionalChecks", true, "cPIDAdditionalChecks"};
   Configurable<bool> cQAevents{"cQAevents", true, "Multiplicity dist, DCAxy, DCAz"};
   Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
   // Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
@@ -275,33 +276,16 @@ struct Kstarqa {
       hOthers.add("hKstar_rap_pt", "Pair rapidity distribution; y; p_{T}; Counts", kTH2F, {{400, -2.0f, 2.0f}, ptAxis});
       hOthers.add("hKstar_eta_pt", "Pair eta distribution; #eta; p_{T}; Counts", kTH2F, {{400, -2.0f, 2.0f}, ptAxis});
 
-      hPID.add("Before/hNsigmaTPC_Ka_before", "N #sigma Kaon TPC before", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("Before/hNsigmaTOF_Ka_before", "N #sigma Kaon TOF before", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("Before/hNsigmaTPC_Pi_before", "N #sigma Pion TPC before", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("Before/hNsigmaTOF_Pi_before", "N #sigma Pion TOF before", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("Before/hNsigma_TPC_TOF_Ka_before", "N #sigma Kaon TOF before", kTH2F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}});
-      hPID.add("Before/hNsigma_TPC_TOF_Pi_before", "N #sigma Pion TOF before", kTH2F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}});
-
-      // hPID.add("Before/h1PID_TPC_pos_kaon", "Kaon PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
-      // hPID.add("Before/h1PID_TPC_pos_pion", "Pion PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
-      // hPID.add("Before/h1PID_TOF_pos_kaon", "Kaon PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
-      // hPID.add("Before/h1PID_TOF_pos_pion", "Pion PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
-      // hPID.add("Before/h1PID_TPC_neg_kaon", "Kaon PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
-      // hPID.add("Before/h1PID_TPC_neg_pion", "Pion PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
-      // hPID.add("Before/h1PID_TOF_neg_kaon", "Kaon PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
-      // hPID.add("Before/h1PID_TOF_neg_pion", "Pion PID distribution in data", kTH1F, {{100, -10.0f, 10.0f}});
+      hPID.add("Before/hNsigma_TPC_TOF_Ka_before", "N #sigma Kaon TOF before", kTH3F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}, ptAxis});
+      hPID.add("Before/hNsigma_TPC_TOF_Pi_before", "N #sigma Pion TOF before", kTH3F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}, ptAxis});
 
       hPID.add("Before/hTPCnsigKa_mult_pt", "TPC nsigma of Kaon brfore PID with pt and multiplicity", kTH3F, {{100, -10.0f, 10.0f}, multiplicityAxis, ptAxis});
       hPID.add("Before/hTPCnsigPi_mult_pt", "TPC nsigma of Pion brfore PID with pt and multiplicity", kTH3F, {{100, -10.0f, 10.0f}, multiplicityAxis, ptAxis});
       hPID.add("Before/hTOFnsigKa_mult_pt", "TOF nsigma of Kaon brfore PID with pt and multiplicity", kTH3F, {{100, -10.0f, 10.0f}, multiplicityAxis, ptAxis});
       hPID.add("Before/hTOFnsigPi_mult_pt", "TOF nsigma of Pion brfore PID with pt and multiplicity", kTH3F, {{100, -10.0f, 10.0f}, multiplicityAxis, ptAxis});
 
-      hPID.add("After/hNsigmaPionTPC_after", "N #Pi TPC after", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("After/hNsigmaPionTOF_after", "N #Pi TOF after", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("After/hNsigmaKaonTPC_after", "N #sigma Kaon TPC after", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("After/hNsigmaKaonTOF_after", "N #sigma Kaon TOF after", kTH2F, {{50, 0.0f, 10.0f}, {100, -10.0f, 10.0f}});
-      hPID.add("After/hNsigma_TPC_TOF_Ka_after", "N #sigma Kaon TOF after", kTH2F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}});
-      hPID.add("After/hNsigma_TPC_TOF_Pi_after", "N #sigma Pion TOF after", kTH2F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}});
+      hPID.add("After/hNsigma_TPC_TOF_Ka_after", "N #sigma Kaon TOF after", kTH3F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}, ptAxis});
+      hPID.add("After/hNsigma_TPC_TOF_Pi_after", "N #sigma Pion TOF after", kTH3F, {{50, -5.0f, 5.0f}, {50, -5.0f, 5.0f}, ptAxis});
 
       hPID.add("After/hDcaxyPi", "Dcaxy distribution of selected Pions", kTH1F, {{200, -1.0f, 1.0f}});
       hPID.add("After/hDcaxyKa", "Dcaxy distribution of selected Kaons", kTH1F, {{200, -1.0f, 1.0f}});
@@ -312,6 +296,14 @@ struct Kstarqa {
       hPID.add("After/hTPCnsigPi_mult_pt", "TPC nsigma of Pion after PID with pt and multiplicity", kTH3F, {{100, -10.0f, 10.0f}, multiplicityAxis, ptAxis});
       hPID.add("After/hTOFnsigKa_mult_pt", "TOF nsigma of Kaon after PID with pt and multiplicity", kTH3F, {{100, -10.0f, 10.0f}, multiplicityAxis, ptAxis});
       hPID.add("After/hTOFnsigPi_mult_pt", "TOF nsigma of Pion after PID with pt and multiplicity", kTH3F, {{100, -10.0f, 10.0f}, multiplicityAxis, ptAxis});
+    }
+
+    if (cPIDAdditionalChecks) {
+      hPID.add("AdditionalChecks/hTPCnsigKa_pt", "TPC nsigma of Kaon with pt", kTH2F, {{100, -10.0f, 10.0f}, ptAxis});
+      hPID.add("AdditionalChecks/hTPCnsigPi_pt", "TPC nsigma of Pion with pt", kTH2F, {{100, -10.0f, 10.0f}, ptAxis});
+
+      hPID.add("AdditionalChecks/hTOFnsigKa_ptPrCut", "TOF nsigma of Kaon with pt", kTH2F, {{100, -10.0f, 10.0f}, ptAxis});
+      hPID.add("AdditionalChecks/hTOFnsigPi_ptPrCut", "TOF nsigma of Pion with pt", kTH2F, {{100, -10.0f, 10.0f}, ptAxis});
     }
 
     // KStar histograms
@@ -1018,10 +1010,6 @@ struct Kstarqa {
     if (cQAevents) {
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       rEventSelection.fill(HIST("hMultiplicity"), multiplicity);
-      // rEventSelection.fill(HIST("multdist_FT0M"), collision.multFT0M());
-      // rEventSelection.fill(HIST("multdist_FT0A"), collision.multFT0A());
-      // rEventSelection.fill(HIST("multdist_FT0C"), collision.multFT0C());
-      // rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
     }
 
     for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
@@ -1038,33 +1026,28 @@ struct Kstarqa {
         continue;
 
       if (cQAplots) {
-        // hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track1.pt(), track1.tpcNSigmaKa());
-        // hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track1.pt(), track1.tofNSigmaKa());
-        // hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-        // hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
 
         hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track1.tpcNSigmaPi(), multiplicity, track1.pt());
         hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi(), multiplicity, track1.pt());
 
         hOthers.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
         // hOthers.fill(HIST("dE_by_dx_TPC"), track1.p(), track1.tpcSignal());
         hOthers.fill(HIST("hphi"), track1.phi());
+      }
 
-        // if (track1.sign() < 0) {
-        //   hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track1.tpcNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track1.tofNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
-        // } else {
-        //   hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track1.tpcNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track1.tofNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
-        // }
+      if (cPIDAdditionalChecks) {
+        if (std::abs(track1.tpcNSigmaPi()) > 2.0)
+          hPID.fill(HIST("AdditionalChecks/hTPCnsigKa_pt"), track1.tpcNSigmaKa(), track1.pt());
+        if (std::abs(track2.tpcNSigmaKa()) > 2.0)
+          hPID.fill(HIST("AdditionalChecks/hTPCnsigPi_pt"), track1.tpcNSigmaPi(), track1.pt());
+        if (std::abs(track1.tpcNSigmaPr() > 2.0)) {
+          hPID.fill(HIST("AdditionalChecks/hTOFnsigKa_ptPrCut"), track1.tpcNSigmaKa(), track1.pt());
+          hPID.fill(HIST("AdditionalChecks/hTOFnsigPi_ptPrCut"), track1.tpcNSigmaPi(), track1.pt());
+        }
       }
 
       if (cQAevents) {
@@ -1123,12 +1106,8 @@ struct Kstarqa {
         hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
         hOthers.fill(HIST("hEta_after"), track1.eta());
         hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
-        // hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
-        // hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
-        // hPID.fill(HIST("After/hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
-        // hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
       }
 
       // if (!selectionPair(track1, track2)) {
@@ -1403,33 +1382,16 @@ struct Kstarqa {
       rEventSelection.fill(HIST("tracksCheckData"), 1.5);
 
       if (cQAplots) {
-        hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track1.pt(), track1.tpcNSigmaKa());
-        hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track1.pt(), track1.tofNSigmaKa());
-        hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-        hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
 
         hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track1.tpcNSigmaPi(), multiplicity, track1.pt());
         hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi(), multiplicity, track1.pt());
 
         hOthers.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
-        // hOthers.fill(HIST("dE_by_dx_TPC"), track1.p(), track1.tpcSignal());
         hOthers.fill(HIST("hphi"), track1.phi());
-
-        // if (track1.sign() < 0) {
-        //   hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track1.tpcNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track1.tofNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
-        // } else {
-        //   hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track1.tpcNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track1.tofNSigmaKa());
-        //   hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
-        // }
       }
 
       if (cQAevents) {
@@ -1491,12 +1453,12 @@ struct Kstarqa {
         hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
         hOthers.fill(HIST("hEta_after"), track1.eta());
         hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
-        hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
-        hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
-        hPID.fill(HIST("After/hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
-        hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+        // hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
+        // hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
+        // hPID.fill(HIST("After/hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
+        // hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
       }
 
       if (selectionConfig.isApplyMCchecksClosure) {
@@ -1953,37 +1915,13 @@ struct Kstarqa {
         int track1PDG = std::abs(mctrack1.pdgCode());
         int track2PDG = std::abs(mctrack2.pdgCode());
 
-        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiPlus)) { // pion
-          // hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
-          // hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
-          hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-          hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        }
-        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKPlus)) { // kaon
-          // hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track2.tpcNSigmaKa());
-          // hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track2.tofNSigmaKa());
-          hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
-          hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
-        }
-        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiMinus)) { // negative track pion
-          // hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
-          // hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
-          hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-          hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        }
-        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKMinus)) { // negative track kaon
-          // hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track2.tpcNSigmaKa());
-          // hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track2.tofNSigmaKa());
-          hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
-          hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
-        }
         if (cQAplots && (std::abs(mctrack1.pdgCode()) == PDG_t::kKPlus && std::abs(mctrack2.pdgCode()) == PDG_t::kPiPlus)) {
-          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
           hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-          hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
+          hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track1.tpcNSigmaPi(), multiplicity, track1.pt());
           hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-          hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
+          hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi(), multiplicity, track1.pt());
         }
 
         if (!mctrack1.isPhysicalPrimary()) {
@@ -2226,33 +2164,9 @@ struct Kstarqa {
         int track1PDG = std::abs(mctrack1.pdgCode());
         int track2PDG = std::abs(mctrack2.pdgCode());
 
-        if (cQAplots && (track2PDG == PDG_t::kPiPlus)) { // pion
-          // hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
-          // hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
-          hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-          hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        }
-        if (cQAplots && (track2PDG == PDG_t::kKPlus)) { // kaon
-          // hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track2.tpcNSigmaKa());
-          // hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track2.tofNSigmaKa());
-          hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
-          hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
-        }
-        // if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiMinus)) { // negative track pion
-        //   // hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
-        //   // hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
-        //   hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        // }
-        // if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKMinus)) { // negative track kaon
-        //   // hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track2.tpcNSigmaKa());
-        //   // hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track2.tofNSigmaKa());
-        //   hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
-        //   hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
-        // }
         if (cQAplots && track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus) {
-          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
           hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
           hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
           hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
@@ -2420,12 +2334,12 @@ struct Kstarqa {
         continue;
 
       if (cQAplots) {
-        hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track1.pt(), track1.tpcNSigmaKa());
-        hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track1.pt(), track1.tofNSigmaKa());
+        // hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track1.pt(), track1.tpcNSigmaKa());
+        // hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track1.pt(), track1.tofNSigmaKa());
         // hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
         // hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-        // hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
 
         hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
         // hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
@@ -2505,12 +2419,12 @@ struct Kstarqa {
         hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
         hOthers.fill(HIST("hEta_after"), track1.eta());
         hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
-        hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
-        hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
+        // hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
+        // hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
         // hPID.fill(HIST("After/hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
         // hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-        // hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
       }
 
       if (!selectionPair(track1, track2)) {
@@ -2835,33 +2749,8 @@ struct Kstarqa {
           hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
           hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
         }
-        // if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiPlus)) { // pion
-        //   hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
-        //   hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        // }
-        // if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKPlus)) { // kaon
-        //   // hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track2.tpcNSigmaKa());
-        //   // hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track2.tofNSigmaKa());
-        //   hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
-        //   hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
-        // }
-        // if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiMinus)) { // negative track pion
-        //   hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
-        //   hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
-        //   hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
-        // }
-        // if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKMinus)) { // negative track kaon
-        //   // hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track2.tpcNSigmaKa());
-        //   // hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track2.tofNSigmaKa());
-        //   hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
-        //   hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
-        // }
         if (cQAplots && (track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kKMinus)) {
-          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
-          // hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
         }
 
         if (!mctrack1.isPhysicalPrimary()) {
