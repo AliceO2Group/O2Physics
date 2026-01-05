@@ -384,10 +384,17 @@ struct Kstarqa {
 
       hInvMass.add("CorrFactors/h2dGenKstar", "Centrality vs p_{T}", kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
       hInvMass.add("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity", "MC centrality vs centrality vs p_{T}", kTH3D, {axisNch, {101, 0.0f, 101.0f}, ptAxis});
+<<<<<<< HEAD
       hInvMass.add("CorrFactors/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {axisNch}});
       hInvMass.add("CorrFactors/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {axisNch}});
       hInvMass.add("CorrFactors/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {axisNch});
       hInvMass.add("CorrFactors/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {axisNch});
+=======
+      hInvMass.add("CorrFactors/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hInvMass.add("CorrFactors/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hInvMass.add("CorrFactors/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
+      hInvMass.add("CorrFactors/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
+>>>>>>> 087e3b03d (different event/signal loss method)
     }
 
     rEventSelection.add("tracksCheckData", "No. of events in the data", kTH1I, {{10, 0, 10}});
@@ -1701,8 +1708,13 @@ struct Kstarqa {
       if (!selectionEvent(RecCollision, false)) // don't fill event cut histogram
         continue;
 
+<<<<<<< HEAD
       // const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
       // multiplicityRec = mcCollisionRec.centFT0M();
+=======
+      const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
+      multiplicityRec = mcCollisionRec.centFT0M();
+>>>>>>> 087e3b03d (different event/signal loss method)
 
       if (cSelectMultEstimator == kFT0M) {
         multiplicity1 = RecCollision.centFT0M();
@@ -1777,6 +1789,12 @@ struct Kstarqa {
     float multiplicity = -1.0;
     bool isSelectedEvent = false;
 
+<<<<<<< HEAD
+=======
+    float multiplicity = 100.5f;
+    bool isSelectedEvent = false;
+
+>>>>>>> 087e3b03d (different event/signal loss method)
     for (auto const& collision : collisions) {
       if (!collision.has_mcCollision())
         continue;
@@ -1802,9 +1820,15 @@ struct Kstarqa {
 
     hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, multiplicityNch);
     hInvMass.fill(HIST("CorrFactors/hNrecInGen"), collisions.size());
+<<<<<<< HEAD
     hInvMass.fill(HIST("CorrFactors/MultiplicityGen"), multiplicityNch);
     if (isSelectedEvent) {
       hInvMass.fill(HIST("CorrFactors/MultiplicityRec"), multiplicityNch);
+=======
+    hInvMass.fill(HIST("CorrFactors/MultiplicityGen"), multiplicity);
+    if (isSelectedEvent) {
+      hInvMass.fill(HIST("CorrFactors/MultiplicityRec"), multiplicity);
+>>>>>>> 087e3b03d (different event/signal loss method)
     }
 
     for (const auto& mcParticle : mcParticles) {
@@ -1850,10 +1874,17 @@ struct Kstarqa {
           mother = daughter1 + daughter2; // Kstar meson
 
           hInvMass.fill(HIST("CorrFactors/h2dGenKstar"), multiplicity, mother.Pt());
+<<<<<<< HEAD
           hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicity, mother.Pt());
           hInvMass.fill(HIST("CorrFactors/hSignalLossDenominator"), mother.pt(), multiplicityNch);
           if (isSelectedEvent) {
             hInvMass.fill(HIST("CorrFactors/hSignalLossNumerator"), mother.pt(), multiplicityNch);
+=======
+          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), mcCollision.multMCNParticlesEta08(), multiplicity, mother.Pt());
+          hInvMass.fill(HIST("CorrFactors/hSignalLossDenominator"), mother.pt(), multiplicity);
+          if (isSelectedEvent) {
+            hInvMass.fill(HIST("CorrFactors/hSignalLossNumerator"), mother.pt(), multiplicity);
+>>>>>>> 087e3b03d (different event/signal loss method)
           }
         }
       }
