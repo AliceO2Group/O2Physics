@@ -386,10 +386,14 @@ struct Kstarqa {
       hInvMass.add("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity", "MC centrality vs centrality vs p_{T}", kTH3D, {axisNch, {101, 0.0f, 101.0f}, ptAxis});
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c669bd852 (corrected event loss histograms)
       hInvMass.add("CorrFactors/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {axisNch}});
       hInvMass.add("CorrFactors/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {axisNch}});
       hInvMass.add("CorrFactors/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {axisNch});
       hInvMass.add("CorrFactors/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {axisNch});
+<<<<<<< HEAD
 =======
       hInvMass.add("CorrFactors/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hInvMass.add("CorrFactors/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
@@ -402,6 +406,8 @@ struct Kstarqa {
       hInvMass.add("CorrFactors/MultiplicityRec2D", "Multiplicity in generated MC with at least 1 reconstruction", kTH2F, {{multiplicityAxis}, axisNch});
       hInvMass.add("CorrFactors/MultiplicityGen2D", "Multiplicity in generated MC", kTH2F, {{multiplicityAxis}, axisNch});
 >>>>>>> 2ddf06887 (minor fix to code)
+=======
+>>>>>>> c669bd852 (corrected event loss histograms)
     }
 
     rEventSelection.add("tracksCheckData", "No. of events in the data", kTH1I, {{10, 0, 10}});
@@ -1802,11 +1808,14 @@ struct Kstarqa {
     hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 2.5);
 
     float multiplicity = -1.0;
+<<<<<<< HEAD
     bool isSelectedEvent = false;
 
 <<<<<<< HEAD
 =======
     float multiplicity = 100.5f;
+=======
+>>>>>>> c669bd852 (corrected event loss histograms)
     bool isSelectedEvent = false;
 
 >>>>>>> 087e3b03d (different event/signal loss method)
@@ -1834,6 +1843,7 @@ struct Kstarqa {
     // multiplicityGen = mcCollision.centFT0M();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, multiplicityNch);
     hInvMass.fill(HIST("CorrFactors/hNrecInGen"), collisions.size());
 <<<<<<< HEAD
@@ -1847,11 +1857,18 @@ struct Kstarqa {
 >>>>>>> 087e3b03d (different event/signal loss method)
 =======
     hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, mcCollision.multMCNParticlesEta08());
+=======
+    hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, multiplicityNch);
+>>>>>>> c669bd852 (corrected event loss histograms)
     hInvMass.fill(HIST("CorrFactors/hNrecInGen"), collisions.size());
-    hInvMass.fill(HIST("CorrFactors/MultiplicityGen2D"), multiplicity, mcCollision.multMCNParticlesEta08());
+    hInvMass.fill(HIST("CorrFactors/MultiplicityGen"), multiplicityNch);
     if (isSelectedEvent) {
+<<<<<<< HEAD
       hInvMass.fill(HIST("CorrFactors/MultiplicityRec2D"), multiplicity, mcCollision.multMCNParticlesEta08());
 >>>>>>> 2ddf06887 (minor fix to code)
+=======
+      hInvMass.fill(HIST("CorrFactors/MultiplicityRec"), multiplicityNch);
+>>>>>>> c669bd852 (corrected event loss histograms)
     }
 
     for (const auto& mcParticle : mcParticles) {
@@ -1898,6 +1915,7 @@ struct Kstarqa {
 
           hInvMass.fill(HIST("CorrFactors/h2dGenKstar"), multiplicity, mother.Pt());
 <<<<<<< HEAD
+<<<<<<< HEAD
           hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicity, mother.Pt());
           hInvMass.fill(HIST("CorrFactors/hSignalLossDenominator"), mother.pt(), multiplicityNch);
           if (isSelectedEvent) {
@@ -1912,6 +1930,12 @@ struct Kstarqa {
 =======
             hInvMass.fill(HIST("CorrFactors/hSignalLossNumerator3D"), mother.pt(), multiplicity, mcCollision.multMCNParticlesEta08());
 >>>>>>> 2ddf06887 (minor fix to code)
+=======
+          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicity, mother.Pt());
+          hInvMass.fill(HIST("CorrFactors/hSignalLossDenominator"), mother.pt(), multiplicityNch);
+          if (isSelectedEvent) {
+            hInvMass.fill(HIST("CorrFactors/hSignalLossNumerator"), mother.pt(), multiplicityNch);
+>>>>>>> c669bd852 (corrected event loss histograms)
           }
         }
       }
