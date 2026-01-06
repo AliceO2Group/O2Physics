@@ -203,6 +203,10 @@ struct AntinucleiInJets {
   // Number of events
   Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};
 
+  // Range of systematic variations to be processed
+  Configurable<int> systIndexStart{"systIndexStart", 0, "First systematic index (inclusive)"};
+  Configurable<int> systIndexEnd{"systIndexEnd", 50, "Last systematic index (exclusive)"};
+
   // Coalescence momentum
   Configurable<double> coalescenceMomentum{"coalescenceMomentum", 0.15, "p0 (GeV/c)"};
 
@@ -3276,8 +3280,12 @@ struct AntinucleiInJets {
     static const std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
     const int nBins = ptOverAbins.size() - 1;
 
+    // Clamp systematic index range
+    const int systStart = std::max(0, systIndexStart.value);
+    const int systEnd   = std::min(nSyst, systIndexEnd.value);
+
     // Loop over systematic variations
-    for (int isyst = 0; isyst < nSyst; isyst++) {
+    for (int isyst = systStart; isyst < systEnd; isyst++) {
 
       // Fill event counter for this systematic
       registryCorr.fill(HIST("eventCounter_centrality_fullEvent_syst"), multiplicity, static_cast<double>(isyst));
