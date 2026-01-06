@@ -192,6 +192,7 @@ struct HfFragmentationFunction {
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<std::string> chosenHadron{"chosenHadron", "D0", "choose hadron for analysis: D0 or Lc"};
 
   std::vector<int> eventSelectionBits;
 
@@ -231,10 +232,11 @@ struct HfFragmentationFunction {
   void processDummy(aod::TracksIU const&) {}
   PROCESS_SWITCH(HfFragmentationFunction, processDummy, "Dummy process function turned on by default", true);
 
-  void processDataChargedSubstructure(aod::JetCollision const& collision,
-                                      soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
-                                      aod::CandidatesD0Data const&,
-                                      aod::JetTracks const&)
+  template <typename TJets, typename TCandidates>
+  void analyzeData(aod::JetCollision const& collision, 
+                   TJets const& jets, 
+                   TCandidates const&,
+                   aod::JetTracks const&)
   {
     // apply event selection and fill histograms for sanity check
     registry.fill(HIST("h_collision_counter"), 2.0);
@@ -249,16 +251,16 @@ struct HfFragmentationFunction {
       // obtaining jet 3-vector
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
-      for (const auto& d0Candidate : jet.candidates_as<aod::CandidatesD0Data>()) {
+      for (const auto& candidate : jet.template candidates_as<TCandidates>()) {
 
         // obtaining jet 3-vector
-        TVector3 d0Vector(d0Candidate.px(), d0Candidate.py(), d0Candidate.pz());
+        TVector3 hadronMomentum(candidate.px(), candidate.py(), candidate.pz());
 
-        // calculating fraction of the jet momentum carried by the D0 along the direction of the jet axis
-        double zParallel = (jetVector * d0Vector) / (jetVector * jetVector);
+        // calculating fraction of the jet momentum carried by the HF hadron along the direction of the jet axis
+        double zParallel = (jetVector * hadronMomentum) / (jetVector * jetVector);
 
         // calculating angular distance in eta-phi plane
-        double axisDistance = jetutilities::deltaR(jet, d0Candidate);
+        double axisDistance = jetutilities::deltaR(jet, candidate);
 
         // filling histograms
         registry.fill(HIST("h_d0_jet_projection"), zParallel);
@@ -267,22 +269,36 @@ struct HfFragmentationFunction {
         registry.fill(HIST("h_d0_jet_pt"), jet.pt());
         registry.fill(HIST("h_d0_jet_eta"), jet.eta());
         registry.fill(HIST("h_d0_jet_phi"), jet.phi());
-        registry.fill(HIST("h_d0_mass"), d0Candidate.m());
-        registry.fill(HIST("h_d0_eta"), d0Candidate.eta());
-        registry.fill(HIST("h_d0_phi"), d0Candidate.phi());
+        registry.fill(HIST("h_d0_mass"), candidate.m());
+        registry.fill(HIST("h_d0_eta"), candidate.eta());
+        registry.fill(HIST("h_d0_phi"), candidate.phi());
 
         // filling table
         distJetTable(axisDistance,
-                     jet.pt(), jet.eta(), jet.phi(), jet.tracks_as<aod::JetTracks>().size(),
-                     d0Candidate.pt(), d0Candidate.eta(), d0Candidate.phi(), d0Candidate.m(), d0Candidate.y(), d0Candidate.mlScores()[0], d0Candidate.mlScores()[1], d0Candidate.mlScores()[2]);
+                     jet.pt(), jet.eta(), jet.phi(), jet.template tracks_as<aod::JetTracks>().size(),
+                     candidate.pt(), candidate.eta(), candidate.phi(), candidate.m(), candidate.y(), candidate.mlScores()[0], candidate.mlScores()[1], candidate.mlScores()[2]);
 
         break; // get out of candidates' loop after first HF particle is found in jet
-      } // end of D0 candidates loop
+      } // end of HF hadron candidates loop
 
     } // end of jets loop
 
   } // end of process function
-  PROCESS_SWITCH(HfFragmentationFunction, processDataChargedSubstructure, "charged HF jet substructure", false);
+  void processD0DataChargedSubstructure(aod::JetCollision const& collision,
+                                        soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
+                                        aod::CandidatesD0Data const& candidates,
+                                        aod::JetTracks const& jettracks) {
+    analyzeData<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>, aod::CandidatesD0Data>(collision, jets, candidates, jettracks);
+  }
+  PROCESS_SWITCH(HfFragmentationFunction, processD0DataChargedSubstructure, "charged D0 jet subtructure", false);
+
+  void processLcDataChargedSubstructure(aod::JetCollision const& collision,
+                                        soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents> const& jets,
+                                        aod::CandidatesLcData const& candidates,
+                                        aod::JetTracks const& jettracks) {
+    analyzeData<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>, aod::CandidatesLcData>(collision, jets, candidates, jettracks);
+  }
+  PROCESS_SWITCH(HfFragmentationFunction, processLcDataChargedSubstructure, "charged Lc jet subtructure", false);
 
   void processMcEfficiency(aod::JetMcCollisions const& mccollisions,
                            aod::JetCollisionsMCD const& collisions,
