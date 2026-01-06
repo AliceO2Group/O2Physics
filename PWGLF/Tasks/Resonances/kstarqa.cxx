@@ -1041,11 +1041,11 @@ struct Kstarqa {
       }
 
       if (cPIDAdditionalChecks) {
-        if (std::abs(track1.tpcNSigmaPi()) > config.pidCutTemp)
+        if (std::abs(track1.tpcNSigmaPi()) > selectionConfig.pidCutTemp)
           hPID.fill(HIST("AdditionalChecks/hTPCnsigKa_pt"), track1.tpcNSigmaKa(), track1.pt());
-        if (std::abs(track2.tpcNSigmaKa()) > config.pidCutTemp)
+        if (std::abs(track2.tpcNSigmaKa()) > selectionConfig.pidCutTemp)
           hPID.fill(HIST("AdditionalChecks/hTPCnsigPi_pt"), track1.tpcNSigmaPi(), track1.pt());
-        if (std::abs(track1.tpcNSigmaPr()) > config.pidCutTemp) {
+        if (std::abs(track1.tpcNSigmaPr()) > selectionConfig.pidCutTemp) {
           hPID.fill(HIST("AdditionalChecks/hTOFnsigKa_ptPrCut"), track1.tpcNSigmaKa(), track1.pt());
           hPID.fill(HIST("AdditionalChecks/hTOFnsigPi_ptPrCut"), track1.tpcNSigmaPi(), track1.pt());
         }
