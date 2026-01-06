@@ -1118,19 +1118,19 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Lxyz", "", false, 1000, -1.0, 1.0, VarManager::kVertexingLxyz);
         hm->AddHistogram(histClass, "Tauz", "", false, 1000, -0.02, 0.02, VarManager::kVertexingTauz);
         hm->AddHistogram(histClass, "Tauxy", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauxy);
-        hm->AddHistogram(histClass, "Tauxy_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauxy);
-        hm->AddHistogram(histClass, "Tauz_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauz);
+        // hm->AddHistogram(histClass, "Tauxy_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauxy);
+        // hm->AddHistogram(histClass, "Tauz_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauz);
         hm->AddHistogram(histClass, "LzProj", "", false, 1000, -1.0, 1.0, VarManager::kVertexingLzProjected);
         hm->AddHistogram(histClass, "LxyProj", "", false, 1000, -1.0, 1.0, VarManager::kVertexingLxyProjected);
         hm->AddHistogram(histClass, "LxyzProj", "", false, 1000, -1.0, 1.0, VarManager::kVertexingLxyzProjected);
         hm->AddHistogram(histClass, "TauzProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauzProjected);
         hm->AddHistogram(histClass, "TauxyProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauxyProjected);
         hm->AddHistogram(histClass, "TauxyProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauxyProjected);
-        hm->AddHistogram(histClass, "TauzProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauzProjected);
+        // hm->AddHistogram(histClass, "TauzProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -0.03, 0.03, VarManager::kVertexingTauzProjected);
         hm->AddHistogram(histClass, "TauxyzProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauxyzProjected);
         hm->AddHistogram(histClass, "LxyProj_Pt", "", false, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLxyProjected);
         hm->AddHistogram(histClass, "LxyProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLxyProjected);
-        hm->AddHistogram(histClass, "LzProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLzProjected);
+        // hm->AddHistogram(histClass, "LzProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLzProjected);
         hm->AddHistogram(histClass, "CosPointingAngle", "", false, 200, -1.0, 1.0, VarManager::kCosPointingAngle);
         hm->AddHistogram(histClass, "VtxingChi2PCA", "", false, 100, 0.0, 10.0, VarManager::kVertexingChi2PCA);
       }
@@ -1954,15 +1954,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
       hm->AddHistogram(histClass, "dileptonmass", "", false, 125, 2.5, 3.5, VarManager::kdileptonmass);
       hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
-      hm->AddHistogram(histClass, "CosTheta", "", false, 40, -1.0, 1.0, VarManager::kCosTheta, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
       hm->AddHistogram(histClass, "Pt_Hadron", ";P_{T}", false, 120, 0.0, 30.0, VarManager::kPtDau);
       hm->AddHistogram(histClass, "Coschi_wo", "", false, 25, coschiBins, VarManager::kCosChi);
       hm->AddHistogram(histClass, "Eta_Hadron", ";#eta", false, 120, -2.0, 2.0, VarManager::kEtaDau);
       hm->AddHistogram(histClass, "Phi_Hadron", ";#phi", false, 120, -8, 8, VarManager::kPhiDau);
       hm->AddHistogram(histClass, "DeltaEta_DeltaPhi_weight", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
-      hm->AddHistogram(histClass, "DeltaEta", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta);
-      hm->AddHistogram(histClass, "DeltaPhi", "", false, 50, -2.0, 6.0, VarManager::kDeltaPhi);
-      hm->AddHistogram(histClass, "DeltaPhi_weight", "", false, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
+      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi);
       hm->AddHistogram(histClass, "Coschi_DeltaEta", "", false, 25, coschiBins, VarManager::kCosChi, 20, deltaetaBins, VarManager::kDeltaEta, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
       hm->AddHistogram(histClass, "Coschi_wo_DeltaEta", "", false, 25, coschiBins, VarManager::kCosChi, 20, deltaetaBins, VarManager::kDeltaEta);
       // for bkg
