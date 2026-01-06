@@ -711,7 +711,6 @@ struct FlowMc {
     if (tracks.size() < 1)
       return;
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    int runNumber = bc.runNumber();
     histos.fill(HIST("RecoProcessEventCounter"), 2.5);
     for (const auto& track : tracks) {
       if (!trackSelected(track))
