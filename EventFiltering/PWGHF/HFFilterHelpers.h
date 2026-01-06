@@ -1651,7 +1651,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
   }
 
   // V0 mass
-  if (std::fabs(casc.v0.mLambda - massLambda) > mDeltaMassLambdaFromXi) {
+  if ((casc.sign < 0 && std::fabs(casc.v0.mLambda - massLambda) > mDeltaMassLambdaFromXi) || (casc.sign > 0 && std::fabs(casc.v0.mAntiLambda - massLambda) > mDeltaMassLambdaFromXi)) {
     return false;
   }
 
