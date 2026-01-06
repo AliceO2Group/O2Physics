@@ -39,7 +39,7 @@ MCProng* ParseJSONMCProng(T prongJSON, const char* prongName);
 
 template <typename T>
 bool ValidateJSONMCProng(T prongJSON, const char* prongName);
-}
+} // namespace dqmcsignals
 } // namespace o2::aod
 
 #endif // PWGDQ_CORE_MCSIGNALLIBRARY_H_

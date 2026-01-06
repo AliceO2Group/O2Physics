@@ -156,7 +156,7 @@ struct taskFwdTrackPid {
       for (const auto& mftTrack : mftTracks) {
         if (TMath::Abs(mftTrack.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(mftTrack.fwdDcaY()) < fConfigMaxDCA) {
           if (downSampleFactor < 1.) {
-            float pseudoRndm = mftTrack.pt() * 1000. - (int64_t)(mftTrack.pt() * 1000);
+            float pseudoRndm = mftTrack.pt() * 1000. - static_cast<int64_t>(mftTrack.pt() * 1000);
             if (pseudoRndm >= downSampleFactor) {
               continue;
             }
