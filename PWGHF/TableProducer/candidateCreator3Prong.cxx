@@ -1132,7 +1132,7 @@ struct HfCandidateCreator3ProngExpressions {
               return;
             }
             if (indexRec > -1) {
-              flagChannelMain = sign * static_cast<int8_t>(channelMain);
+              flagChannelMain = static_cast<int8_t>(sign * channelMain);
 
               /// swapping for D+, Ds->Kpipi; Lc, Xic->pKpi
               if (std::abs(flagChannelMain) == DecayChannelMain::DplusToPiKK || std::abs(flagChannelMain) == DecayChannelMain::DsToPiKK || std::abs(flagChannelMain) == DecayChannelMain::LcToPKPi || std::abs(flagChannelMain) == DecayChannelMain::XicToPKPi) {
@@ -1185,7 +1185,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, arrPdgDaughtersDplusToPiKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::DplusToPiKPi);
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::DplusToPiKPi);
           }
         }
 
@@ -1243,7 +1243,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, arrPdgDaughtersDstarToPiKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::DstarToPiKPi);
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::DstarToPiKPi);
             flagChannelResonant = 0;
           }
         }
@@ -1261,7 +1261,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, arrPdgDaughtersLcToPKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::LcToPKPi);
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::LcToPKPi);
 
             // Flagging the different Λc± → p± K∓ π± decay channels
             if (arrayDaughters[0].has_mcParticle()) {
@@ -1297,7 +1297,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, arrPdgDaughtersXicToPKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * static_cast<int8_t>(DecayChannelMain::XicToPKPi);
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::XicToPKPi);
             flagChannelResonant = 0; // TODO
             if (arrayDaughters[0].has_mcParticle()) {
               swapping = static_cast<int8_t>(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
