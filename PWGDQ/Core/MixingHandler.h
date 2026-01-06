@@ -24,6 +24,8 @@
 #include <TList.h>
 #include <TString.h>
 
+#include <vector>
+
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/VarManager.h"
 

@@ -50,6 +50,8 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <memory>
+#include <string>
 
 using std::cout;
 using std::endl;

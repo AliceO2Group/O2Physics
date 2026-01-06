@@ -15,6 +15,8 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 #include <string>
+#include <memory>
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"

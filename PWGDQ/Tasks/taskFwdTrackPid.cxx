@@ -15,6 +15,8 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
+#include <memory>
 #include <algorithm>
 #include <TH1F.h>
 #include <TH3F.h>

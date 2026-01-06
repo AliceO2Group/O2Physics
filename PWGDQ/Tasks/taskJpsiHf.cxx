@@ -29,6 +29,9 @@
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
+#include <memory>
+#include <vector>
+
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
