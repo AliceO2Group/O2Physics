@@ -68,6 +68,7 @@
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <memory>
