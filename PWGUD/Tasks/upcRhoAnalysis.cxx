@@ -153,7 +153,7 @@ struct UpcRhoAnalysis {
   Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut"};
 
   Configurable<float> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
-  Configurable<bool> rejectLowerProbPairs{"rejectLowerProbPairs", false, "reject track pairs with lower El or Ka PID radii"};
+  Configurable<bool> rejectLowerProbPairs{"rejectLowerProbPairs", true, "reject track pairs with lower El or Ka PID radii"};
   Configurable<float> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
   Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 4, "min ITS clusters cut"};
   Configurable<float> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
@@ -219,6 +219,7 @@ struct UpcRhoAnalysis {
     rQC.add("QC/tracks/all/hTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
     rQC.add("QC/tracks/all/hTpcNSigmaEl", ";TPC #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
     rQC.add("QC/tracks/all/hTpcNSigmaKa", ";TPC #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
+    rQC.add("QC/tracks/all/hTpcNSigmaPr", ";TPC #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
     rQC.add("QC/tracks/all/hDcaXYZ", ";track #it{DCA}_{z} (cm);track #it{DCA}_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {400, -2.0, 2.0}});
     rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{11, -0.5, 10.5}});
     rQC.add("QC/tracks/all/hItsChi2NCl", ";ITS #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{200, 0.0, 20.0}});
@@ -587,17 +588,19 @@ struct UpcRhoAnalysis {
   template <typename T>
   bool tracksPassPID(const T& cutTracks) // n-dimensional pion PID cut
   {
-    float radiusPi = 0.0, radiusEl = 0.0, radiusKa = 0.0;
+    float radiusPi = 0.0, radiusEl = 0.0, radiusKa = 0.0, radiusPr = 0.0;
     for (const auto& track : cutTracks) {
       radiusEl += std::pow(track.tpcNSigmaEl(), 2);
       radiusKa += std::pow(track.tpcNSigmaKa(), 2);
       radiusPi += std::pow(track.tpcNSigmaPi(), 2);
+      radiusPr += std::pow(track.tpcNSigmaPr(), 2);
     }
     rQC.fill(HIST("QC/tracks/hPiPIDRadius"), std::sqrt(radiusPi));
     rQC.fill(HIST("QC/tracks/hElPIDRadius"), std::sqrt(radiusEl));
     rQC.fill(HIST("QC/tracks/hKaPIDRadius"), std::sqrt(radiusKa));
+    rQC.fill(HIST("QC/tracks/hPrPIDRadius"), std::sqrt(radiusPr));
     if (rejectLowerProbPairs)
-      return ((radiusPi < std::pow(tracksTpcNSigmaPiCut, 2)) && (radiusPi < radiusEl) && (radiusPi < radiusKa));
+      return ((radiusPi < std::pow(tracksTpcNSigmaPiCut, 2)) && (radiusPi < radiusEl) && (radiusPi < radiusKa) && (radiusPi < radiusPr));
     else
       return radiusPi < std::pow(tracksTpcNSigmaPiCut, 2);
   }
