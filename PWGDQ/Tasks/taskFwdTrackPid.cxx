@@ -13,40 +13,44 @@
 /// \brief Task for the analysis of forward PID with MFT
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include <iostream>
-#include <vector>
-#include <string>
-#include <memory>
-#include <algorithm>
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/MCSignal.h"
+#include "PWGDQ/Core/MCSignalLibrary.h"
+#include "PWGDQ/Core/MixingHandler.h"
+#include "PWGDQ/Core/MixingLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+
+#include "TGeoGlobalMagField.h"
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TString.h>
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/MCSignal.h"
-#include "PWGDQ/Core/MCSignalLibrary.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MixingLibrary.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "Common/CCDB/EventSelectionParams.h"
+
+#include <algorithm>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

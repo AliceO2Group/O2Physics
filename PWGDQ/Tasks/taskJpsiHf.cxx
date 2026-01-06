@@ -14,22 +14,21 @@
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include <string>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/RecoDecay.h"
-
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace o2;

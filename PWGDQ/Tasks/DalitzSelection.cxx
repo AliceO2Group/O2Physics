@@ -37,10 +37,10 @@
 #include "Framework/DataTypes.h"
 #include "Framework/runDataProcessing.h"
 
-#include <string>
 #include <map>
-#include <vector>
 #include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

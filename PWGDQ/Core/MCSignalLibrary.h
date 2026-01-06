@@ -15,12 +15,13 @@
 #ifndef PWGDQ_CORE_MCSIGNALLIBRARY_H_
 #define PWGDQ_CORE_MCSIGNALLIBRARY_H_
 
-#include <string>
-#include <vector>
-
-#include "rapidjson/document.h"
 #include "PWGDQ/Core/MCProng.h"
 #include "PWGDQ/Core/MCSignal.h"
+
+#include "rapidjson/document.h"
+
+#include <string>
+#include <vector>
 
 namespace o2::aod
 {

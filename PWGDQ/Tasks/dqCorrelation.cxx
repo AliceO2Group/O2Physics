@@ -49,9 +49,9 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <vector>
 #include <memory>
 #include <string>
+#include <vector>
 
 using std::cout;
 using std::endl;
