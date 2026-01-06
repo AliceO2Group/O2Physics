@@ -78,7 +78,8 @@ struct FlowZdcTask {
   Configurable<float> maxTdcZp{"maxTdcZp", -4.0, "maximum TDC for ZP"};
   Configurable<float> cfgCollisionEnergy{"cfgCollisionEnergy", 2.68, "cfgCollisionEnergy"};
   Configurable<bool> applyZdcCorrection{"applyZdcCorrection", false, "Apply ZP correction?"};
-  Configurable<float> zdcCoeff{"zdcCoeff", 0.021f, "Coefficient b in zdc correction"};
+  Configurable<float> zpaCoeff{"zpaCoeff", 0.021f, "Coefficient a in zpa correction"};
+  Configurable<float> zpcCoeff{"zpcCoeff", 0.021f, "Coefficient b in zpc correction"};
   // event selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
   Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
@@ -467,8 +468,9 @@ struct FlowZdcTask {
     float zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
     float zpC = zdc.amplitudeZPC() / cfgCollisionEnergy;
     if (applyZdcCorrection) {
-      const float b = zdcCoeff;
-      zpA = zpA - b * znA;
+      const float a = zpaCoeff;
+      const float b = zpcCoeff;
+      zpA = zpA - a * znA;
       zpC = zpC - b * znC;
     }
     float commonSumZnc = zdc.energyCommonZNC() / cfgCollisionEnergy;
