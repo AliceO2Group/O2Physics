@@ -427,8 +427,7 @@ struct ZdcQVectors {
         collision.centFV0A(),
         collision.centNGlobal()};
 
-      for (auto& cent : cents) {
-        LOGF(info, "Filling centrality: %f for event selection: %d", cent, evSel + centCounter);
+      for (const auto& cent : cents) {
         registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t0_cent"))->Fill(cent, evSel + centCounter, zdcBC.energyCommonZNA(), 1);
         registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t1_cent"))->Fill(cent, evSel + centCounter, zdcBC.energySectorZNA()[0], 1);
         registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t2_cent"))->Fill(cent, evSel + centCounter, zdcBC.energySectorZNA()[1], 1);
