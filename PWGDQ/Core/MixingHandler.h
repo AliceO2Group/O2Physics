@@ -63,4 +63,4 @@ class MixingHandler : public TNamed
   ClassDef(MixingHandler, 1);
 };
 
-#endif  // PWGDQ_CORE_MIXINGHANDLER_H_
+#endif // PWGDQ_CORE_MIXINGHANDLER_H_
