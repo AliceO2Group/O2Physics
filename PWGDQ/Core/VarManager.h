@@ -404,6 +404,7 @@ class VarManager : public TObject
     kIsSingleGapA, // Rapidity gap on side A
     kIsSingleGapC, // Rapidity gap on side C
     kIsSingleGap,  // Rapidity gap on either side
+    kIsNoGap,      // No rapidity gap
     kIsITSUPCMode, // UPC mode used for event
     kTwoEvPosZ1,   // vtx-z for collision 1 in two events correlations
     kTwoEvPosZ2,   // vtx-z for collision 2 in two events correlations
@@ -1848,13 +1849,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
-    if (fgUsedVars[kIsDoubleGap]) {
+    if (fgUsedVars[kIsDoubleGap] || fgUsedVars[kIsSingleGap] || fgUsedVars[kIsSingleGapA] || fgUsedVars[kIsSingleGapC] || fgUsedVars[kIsNoGap]) {
       values[kIsDoubleGap] = (event.tag_bit(56 + kDoubleGap) > 0);
-    }
-    if (fgUsedVars[kIsSingleGap] || fgUsedVars[kIsSingleGapA] || fgUsedVars[kIsSingleGapC]) {
       values[kIsSingleGapA] = (event.tag_bit(56 + kSingleGapA) > 0);
       values[kIsSingleGapC] = (event.tag_bit(56 + kSingleGapC) > 0);
       values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
+      values[kIsNoGap] = !values[kIsDoubleGap] && !values[kIsSingleGap];
     }
     if (fgUsedVars[kIsITSUPCMode]) {
       values[kIsITSUPCMode] = (event.tag_bit(56 + kITSUPCMode) > 0);
@@ -2136,6 +2136,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kIsSingleGapA] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0;
     values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
+    values[kIsNoGap] = !values[kIsDoubleGap] && !values[kIsSingleGap];
     values[kIsITSUPCMode] = (event.eventFilter() & (static_cast<uint64_t>(1) << kITSUPCMode)) > 0;
   }
 

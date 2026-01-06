@@ -1308,6 +1308,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsSingleGapC] = "";
   fgVariableNames[kIsSingleGap] = "is single gap event";
   fgVariableUnits[kIsSingleGap] = "";
+  fgVariableNames[kIsNoGap] = "is no gap event";
+  fgVariableUnits[kIsNoGap] = "";
   fgVariableNames[kIsITSUPCMode] = "UPC settings used";
   fgVariableUnits[kIsITSUPCMode] = "";
   fgVariableNames[kQuadMass] = "mass quadruplet";
@@ -1619,6 +1621,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsSingleGapA"] = kIsSingleGapA;
   fgVarNamesMap["kIsSingleGapC"] = kIsSingleGapC;
   fgVarNamesMap["kIsSingleGap"] = kIsSingleGap;
+  fgVarNamesMap["kIsNoGap"] = kIsNoGap;
   fgVarNamesMap["kIsITSUPCMode"] = kIsITSUPCMode;
   fgVarNamesMap["kTwoEvPosZ1"] = kTwoEvPosZ1;
   fgVarNamesMap["kTwoEvPosZ2"] = kTwoEvPosZ2;
