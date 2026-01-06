@@ -1056,7 +1056,7 @@ struct FlowGfwOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
           continue;
       }
-      if((track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value) || (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value) || (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value))
+      if ((track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value) || (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value) || (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value))
         continue;
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hPhicorr"), track.phi(), wacc);
