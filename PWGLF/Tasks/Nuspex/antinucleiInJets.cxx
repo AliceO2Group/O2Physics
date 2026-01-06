@@ -3282,8 +3282,8 @@ struct AntinucleiInJets {
     const int nBins = ptOverAbins.size() - 1;
 
     // Clamp systematic index range
-    const int systStart = std::max(0, systIndexStart.value);
-    const int systEnd = std::min(nSyst, systIndexEnd.value);
+    const int systStart = std::max(0, static_cast<int>(systIndexStart.value));
+    const int systEnd = std::min(nSyst, static_cast<int>(systIndexEnd.value));
 
     // Loop over systematic variations
     for (int isyst = systStart; isyst < systEnd; isyst++) {
