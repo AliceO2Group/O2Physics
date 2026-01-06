@@ -74,7 +74,7 @@ int counter = 0;
 // Energy calibration:
 std::vector<TString> namesEcal(10, "");
 std::vector<std::vector<TString>> names(5, std::vector<TString>()); //(1x 4d 4x 1d)
-std::vector<TString> namesTS; // for timestamo recentering
+std::vector<TString> namesTS;                                       // for timestamo recentering
 std::vector<TString> vnames = {"hvertex_vx", "hvertex_vy"};
 
 // https://alice-notes.web.cern.ch/system/files/notes/analysis/620/017-May-31-analysis_note-ALICE_analysis_note_v2.pdf
@@ -127,7 +127,7 @@ struct ZdcQVectors {
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgRecenterForTimestamp, bool, false, "Add 1D recentering for timestamp");
     O2_DEFINE_CONFIGURABLE(cfgCCDBdir_Timestamp, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Timestamp", "CCDB directory for Timestamp recentering");
-  } extraTS; 
+  } extraTS;
 
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality axis in 1% bins"};
   ConfigurableAxis axisCent10{"axisCent10", {9, 0, 90}, "Centrality axis in 10% bins"};
@@ -261,7 +261,7 @@ struct ZdcQVectors {
         names[2].push_back(TString::Format("hQ%s%s_mean_vx_run", coord, side));
         names[3].push_back(TString::Format("hQ%s%s_mean_vy_run", coord, side));
         names[4].push_back(TString::Format("hQ%s%s_mean_vz_run", coord, side));
-         namesTS.push_back(TString::Format("hQ%s%s_mean_timestamp_run", coord, side));
+        namesTS.push_back(TString::Format("hQ%s%s_mean_timestamp_run", coord, side));
       } // end of capCOORDS
     }
 
@@ -383,10 +383,11 @@ struct ZdcQVectors {
     }
   }
 
-  double rescaleTimestamp(uint64_t timestamp, int runnumber) { 
+  double rescaleTimestamp(uint64_t timestamp, int runnumber)
+  {
     auto& ccdb = o2::ccdb::BasicCCDBManager::instance();
     auto duration = ccdb.getRunDuration(runnumber);
-    double ts = (static_cast<double>(timestamp - duration.first) / static_cast<double> (duration.second - duration.first)) * 100.0;
+    double ts = (static_cast<double>(timestamp - duration.first) / static_cast<double>(duration.second - duration.first)) * 100.0;
 
     return ts;
   }
@@ -399,7 +400,7 @@ struct ZdcQVectors {
 
     if (!cfgFillCutAnalysis || cfgFillNothing)
       return;
-    // Add default with different centrality estimators as well 
+    // Add default with different centrality estimators as well
     // Here we fill the Energy and mean vx, vy vz histograms with an extra dimension for all the event selections used.
     registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vx"))->Fill(Form("%d", runnumber), evSel, collision.posX());
     registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vy"))->Fill(Form("%d", runnumber), evSel, collision.posY());
@@ -416,19 +417,17 @@ struct ZdcQVectors {
     registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t3_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[2], 1);
     registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t4_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[3], 1);
 
-
-    if(evSel == nEventSelections) {
-      int centCounter = 0; 
+    if (evSel == nEventSelections) {
+      int centCounter = 0;
 
       std::vector<float> cents = {
         collision.centFT0C(),
         collision.centFT0CVariant1(),
         collision.centFT0M(),
         collision.centFV0A(),
-        collision.centNGlobal()
-      };
+        collision.centNGlobal()};
 
-      for(auto& cent : cents) {
+      for (auto& cent : cents) {
         LOGF(info, "Filling centrality: %f for event selection: %d", cent, evSel + centCounter);
         registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t0_cent"))->Fill(cent, evSel + centCounter, zdcBC.energyCommonZNA(), 1);
         registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t1_cent"))->Fill(cent, evSel + centCounter, zdcBC.energySectorZNA()[0], 1);
@@ -525,7 +524,6 @@ struct ZdcQVectors {
 
     // Fill for centrality estimators!
     fillCutAnalysis(collision, bunchCrossing, nEventSelections);
-
 
     return selectionBits;
   }
@@ -654,7 +652,6 @@ struct ZdcQVectors {
     if (!hist) {
       LOGF(fatal, "%s not available.. Abort..", objName);
     }
-  
 
     if (hist->InheritsFrom("TProfile2D")) {
       // needed for energy calibration!
@@ -1006,7 +1003,7 @@ struct ZdcQVectors {
 
     loadCalibrations<kRec>(cfgRec.value);
 
-    if(extraTS.cfgRecenterForTimestamp) {
+    if (extraTS.cfgRecenterForTimestamp) {
       loadCalibrations<kTimestamp>(extraTS.cfgCCDBdir_Timestamp.value);
     }
 
@@ -1062,7 +1059,7 @@ struct ZdcQVectors {
           pb++;
         }
 
-        if(extraTS.cfgRecenterForTimestamp) {
+        if (extraTS.cfgRecenterForTimestamp) {
           corrQxA.push_back(getCorrection<TProfile, kTimestamp>(namesTS[0].Data(), it, 6));
           corrQyA.push_back(getCorrection<TProfile, kTimestamp>(namesTS[1].Data(), it, 6));
           corrQxC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[2].Data(), it, 6));
