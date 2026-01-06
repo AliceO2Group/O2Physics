@@ -1013,7 +1013,6 @@ struct FlowGfwOmegaXi {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
-    runNumber = 544122;
 
     registry.fill(HIST("hEventCount"), 0.5);
     if (nTot < 1)
