@@ -351,7 +351,6 @@ struct k892hadronphoton {
         histos.add(histodir + "/KStar/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisKStarMass});
         histos.add(histodir + "/KStar/h2dOPAngleVsPt", "h2dOPAngleVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
 
-
         if (doprocessMonteCarlo) {
 
           histos.add(histodir + "/MC/Photon/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1D, {{2, 0.0f, 2.0f}});
@@ -384,7 +383,6 @@ struct k892hadronphoton {
           histos.add(histodir + "/MC/KStar/h2dOPAngleVsPt", "h2dOPAngleVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
           histos.add(histodir + "/MC/KStar/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
           histos.add(histodir + "/MC/KStar/hDCAPairDauVsPt", "hDCAPairDauVsPt", kTH2D, {axisDCAdau, axisPt});
-
 
           // 1/pT Resolution:
           if (fillResoQAhistos && histodir == "BeforeSel") {
@@ -447,7 +445,6 @@ struct k892hadronphoton {
       histos.add("Gen/h2dGenKStar", "h2dGenKStar", kTH2D, {axisCentrality, axisPt});
       histos.add("Gen/h2dGenKStarVsMultMC_RecoedEvt", "h2dGenKStarVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
       histos.add("Gen/h2dGenKStarVsMultMC", "h2dGenKStarVsMultMC", kTH2D, {axisNch, axisPt});
-      
     }
   }
 
@@ -766,7 +763,6 @@ struct k892hadronphoton {
     return TrkCode;
   }
 
-
   template <typename TKStarObject>
   void getResolution(TKStarObject const& kstar)
   {
@@ -839,7 +835,6 @@ struct k892hadronphoton {
     if ((PhotonPDGCode != 22) && (KShortPDGCode != 310))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_FakeDaughters"), kstarpT, kstarMass);
   }
-
 
   template <int mode, typename TKStarObject, typename TCollision>
   void fillHistos(TKStarObject const& kstar, TCollision const& collision)
@@ -917,12 +912,11 @@ struct k892hadronphoton {
       histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hRadius"), kstar.radius());
       histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
       histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDau"), kstar.dcadaughters());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
       histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
       histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
       histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
-      
-    } 
+    }
     //_______________________________________
     // MC specific
     if (doprocessMonteCarlo) {
@@ -970,7 +964,6 @@ struct k892hadronphoton {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/hMass"), kstar.kstarMass());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/h3dMass"), centrality, kstar.mcpt(), kstar.kstarMass());
 
-
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/hMCProcess"), kstar.mcprocess());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/hGenRadius"), kstar.mcradius());
 
@@ -979,8 +972,7 @@ struct k892hadronphoton {
 
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());      
-
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
         }
 
         // For background studies:
@@ -1096,7 +1088,6 @@ struct k892hadronphoton {
     return true;
   }
 
-
   // Apply specific selections for kshortrs
   template <typename TV0Object>
   bool selectKShort(TV0Object const& cand)
@@ -1129,7 +1120,7 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<6>(cand, 310);
-    
+
     // check minimum number of ITS clusters + reject ITS afterburner tracks if requested
     bool posIsFromAfterburner = cand.kshortPosChi2PerNcl() < 0;
     bool negIsFromAfterburner = cand.kshortNegChi2PerNcl() < 0;
@@ -1168,7 +1159,6 @@ struct k892hadronphoton {
         return false;
 
       fillSelHistos<11>(cand, 310);
-
     }
     return true;
   }
@@ -1194,7 +1184,7 @@ struct k892hadronphoton {
       if (TMath::Abs(cand.kstarY()) > kstarSelections.KStarMaxRap)
         return false;
     }
-    
+
     // V0Pair Radius
     if (cand.radius() > kstarSelections.KStarMaxRadius)
       return false;
@@ -1209,7 +1199,6 @@ struct k892hadronphoton {
 
     return true;
   }
-
 
   // Main analysis function
   template <typename TCollisions, typename TKStars>
@@ -1276,7 +1265,6 @@ struct k892hadronphoton {
   PROCESS_SWITCH(k892hadronphoton, processMonteCarlo, "Do Monte-Carlo-based analysis", false);
   PROCESS_SWITCH(k892hadronphoton, processGeneratedRun3, "process MC generated Run 3", false);
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

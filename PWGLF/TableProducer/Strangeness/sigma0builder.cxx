@@ -77,14 +77,13 @@ struct sigma0builder {
   //___________________________________________________
   // KStar Specific
 
-  Produces<aod::KStarCores> kstarcores;                // kstar candidates info for analysis
-  Produces<aod::KShortExtras> kshortExtras; // lambdas from sigma0 candidates info
+  Produces<aod::KStarCores> kstarcores;               // kstar candidates info for analysis
+  Produces<aod::KShortExtras> kshortExtras;           // lambdas from sigma0 candidates info
   Produces<aod::KStarPhotonExtras> kstarPhotonExtras; // photons from kstar candidates info
-  Produces<aod::KStarCollRef> kstarCollRefs;      // references collisions from kstarcores
-  Produces<aod::KStarMCCores> kstarmccores;          // Reco sigma0 MC properties
-  Produces<aod::KStarGens> kstarGens;                // Generated sigma0s
+  Produces<aod::KStarCollRef> kstarCollRefs;          // references collisions from kstarcores
+  Produces<aod::KStarMCCores> kstarmccores;           // Reco sigma0 MC properties
+  Produces<aod::KStarGens> kstarGens;                 // Generated sigma0s
   Produces<aod::KStarGenCollRef> kstarGenCollRefs;    // references collisions from sigma0Gens
-
 
   //__________________________________________________
   // Sigma0 specific
@@ -243,7 +242,7 @@ struct sigma0builder {
   Configurable<float> K0ShortMaxv0radius{"K0SMaxv0radius", 60, "Max V0 radius (cm)"};
   Configurable<float> K0ShortWindow{"K0SWindow", 0.1, "Mass window around expected (in GeV/c2)"};
 
-  // KStar criteria: 
+  // KStar criteria:
   Configurable<float> KStarWindow{"KStarWindow", 0.1, "Mass window around expected (in GeV/c2)"};
   Configurable<float> KStarMaxRap{"KStarMaxRap", 0.8, "Max kstar rapidity"};
 
@@ -378,7 +377,7 @@ struct sigma0builder {
     histos.get<TH1>(HIST("KStarSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
     histos.get<TH1>(HIST("KStarSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "KStar Mass Window");
     histos.get<TH1>(HIST("KStarSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "KStar Y Window");
-    
+
     histos.add("KStarSel/hKStarMassSelected", "hKStarMassSelected", kTH1F, {axisKStarMass});
 
     for (const auto& histodir : DirList) {
@@ -574,8 +573,6 @@ struct sigma0builder {
       h2DGenKStarTypeVsProducedByGen->GetXaxis()->SetBinLabel(2, "Non-Sterile");
       h2DGenKStarTypeVsProducedByGen->GetYaxis()->SetBinLabel(1, "Generator");
       h2DGenKStarTypeVsProducedByGen->GetYaxis()->SetBinLabel(2, "Transport");
-
-
     }
 
     if (doprocessPhotonLambdaQA || doprocessPhotonLambdaMCQA) {
@@ -1242,7 +1239,6 @@ struct sigma0builder {
           histos.fill(HIST("GenQA/h2dKStarNDaughtersVsPDG"), daughters.size(), daughter.pdgCode());
       }
 
-
       if (GenInfo.IsPi0 && genSelections.doQA) {
         histos.fill(HIST("GenQA/h2dPi0MCSourceVsPDGMother"), GenInfo.IsProducedByGenerator, GenInfo.PDGCodeMother);
         for (auto& daughter : daughters) // checking decay modes
@@ -1281,7 +1277,6 @@ struct sigma0builder {
       histos.fill(HIST("GenQA/hGenSpecies"), 1);
     if (GenInfo.IsV0KShort && GenInfo.IsPrimary)
       histos.fill(HIST("GenQA/hGenSpeciesKStar"), 0);
-      
 
     // Checking decay mode
     if (GenInfo.IsSigma0 || GenInfo.IsAntiSigma0) {
@@ -1320,7 +1315,6 @@ struct sigma0builder {
       }
     }
 
-  
     // Checking decay mode
     if (GenInfo.IsKStar) {
       histos.fill(HIST("GenQA/hKStarNDau"), GenInfo.NDaughters);
@@ -1350,7 +1344,6 @@ struct sigma0builder {
           histos.fill(HIST("GenQA/hPrimaryKStars"), 1);
       }
     }
-  
   }
 
   // ______________________________________________________
@@ -1401,7 +1394,7 @@ struct sigma0builder {
       // KStar
       if (fillKStarTables && MCGenInfo.IsKStar) {
         kstarGens(MCGenInfo.IsKStar, MCGenInfo.IsProducedByGenerator, MCGenInfo.MCPt);
-        kstarGenCollRefs(MCGenInfo.MCCollId);                       // link to stramccollision table
+        kstarGenCollRefs(MCGenInfo.MCCollId); // link to stramccollision table
       }
     }
   }
@@ -1656,14 +1649,13 @@ struct sigma0builder {
     return true;
   }
 
-
   template <typename TV0Object, typename TCollision>
   bool processKShortCandidate(TV0Object const& kshort, TCollision const& collision)
   {
 
     if (kshort.v0Type() != 1)
       return false;
-    
+
     float centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
 
     histos.fill(HIST("K0ShortSel/h3dK0ShortMass"), centrality, kshort.pt(), kshort.mK0Short());
@@ -1677,7 +1669,7 @@ struct sigma0builder {
     histos.fill(HIST("K0ShortSel/hK0ShortPosEta"), kshort.positiveeta());
     histos.fill(HIST("K0ShortSel/hK0ShortY"), kshort.yK0Short());
     histos.fill(HIST("K0ShortSel/hSelectionStatistics"), 2.);
-    
+
     if ((TMath::Abs(kshort.yK0Short()) > V0Rapidity) || (TMath::Abs(kshort.negativeeta()) > K0ShortDauPseudoRap) || (TMath::Abs(kshort.positiveeta()) > K0ShortDauPseudoRap))
       return false;
     histos.fill(HIST("K0ShortSel/hK0ShortDCANegToPV"), kshort.dcanegtopv());
@@ -1697,19 +1689,17 @@ struct sigma0builder {
     if (TMath::Abs(kshort.dcaV0daughters()) > K0ShortMaxDCAV0Dau)
       return false;
     histos.fill(HIST("K0ShortSel/hSelectionStatistics"), 6.);
-        // MC Processing (if available)
+    // MC Processing (if available)
     if constexpr (requires { kshort.motherMCPartId(); }) {
       if (kshort.has_v0MCCore()) {
         auto kshortMC = kshort.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-      //   if (kshortMC.pdgCode() == 310) // Is K0Short
-      //     histos.fill(HIST("MC/h2dPtVsCentrality_MCAssocKShort"), centrality, kshort.pt());
+        //   if (kshortMC.pdgCode() == 310) // Is K0Short
+        //     histos.fill(HIST("MC/h2dPtVsCentrality_MCAssocKShort"), centrality, kshort.pt());
       }
     }
 
     return true;
-
   }
-
 
   //_______________________________________________
   // Build pi0 candidate for QA
@@ -1901,11 +1891,10 @@ struct sigma0builder {
     return true;
   }
 
-
   //_______________________________________________
   // Build kstar candidate
-  template <typename TV0Object, typename TCollision, typename TMCParticles> 
-  bool buildKStar(TV0Object const& kshort, TV0Object const& gamma, TCollision const & collision, TMCParticles const& mcparticles)
+  template <typename TV0Object, typename TCollision, typename TMCParticles>
+  bool buildKStar(TV0Object const& kshort, TV0Object const& gamma, TCollision const& collision, TMCParticles const& mcparticles)
   {
 
     //_______________________________________________
@@ -1932,7 +1921,7 @@ struct sigma0builder {
     histos.fill(HIST("KStarSel/hSelectionStatistics"), 1.);
     if (TMath::Abs(kstarMass - o2::constants::physics::MassK0Star892) > KStarWindow)
       return false;
-    
+
     histos.fill(HIST("KStarSel/hSelectionStatistics"), 2.);
     if (TMath::Abs(kstarY) > KStarMaxRap)
       return false;
@@ -1943,18 +1932,17 @@ struct sigma0builder {
     auto kstarTopoInfo = propagateV0PairToDCA(gamma, kshort);
 
     kstarcores(kstarTopoInfo.X, kstarTopoInfo.Y, kstarTopoInfo.Z, kstarTopoInfo.DCADau,
-                gamma.px(), gamma.py(), gamma.pz(), gamma.mGamma(), kshort.px(), kshort.py(), kshort.pz(), kshort.mK0Short());
+               gamma.px(), gamma.py(), gamma.pz(), gamma.mGamma(), kshort.px(), kshort.py(), kshort.pz(), kshort.mK0Short());
 
-    
     // MC properties
     if constexpr (requires { gamma.motherMCPartId(); kshort.motherMCPartId(); }) {
       auto kstarMCInfo = getV0PairMCInfo(gamma, kshort, collision, mcparticles);
 
       kstarmccores(kstarMCInfo.V0PairMCRadius, kstarMCInfo.V0PairPDGCode, kstarMCInfo.V0PairPDGCodeMother, kstarMCInfo.V0PairMCProcess, kstarMCInfo.fV0PairProducedByGenerator,
-                    kstarMCInfo.V01MCpx, kstarMCInfo.V01MCpy, kstarMCInfo.V01MCpz,
-                    kstarMCInfo.fIsV01Primary, kstarMCInfo.V01PDGCode, kstarMCInfo.V01PDGCodeMother, kstarMCInfo.fIsV01CorrectlyAssign,
-                    kstarMCInfo.V02MCpx, kstarMCInfo.V02MCpy, kstarMCInfo.V02MCpz,
-                    kstarMCInfo.fIsV02Primary, kstarMCInfo.V02PDGCode, kstarMCInfo.V02PDGCodeMother, kstarMCInfo.fIsV02CorrectlyAssign);
+                   kstarMCInfo.V01MCpx, kstarMCInfo.V01MCpy, kstarMCInfo.V01MCpz,
+                   kstarMCInfo.fIsV01Primary, kstarMCInfo.V01PDGCode, kstarMCInfo.V01PDGCodeMother, kstarMCInfo.fIsV01CorrectlyAssign,
+                   kstarMCInfo.V02MCpx, kstarMCInfo.V02MCpy, kstarMCInfo.V02MCpz,
+                   kstarMCInfo.fIsV02Primary, kstarMCInfo.V02PDGCode, kstarMCInfo.V02PDGCodeMother, kstarMCInfo.fIsV02CorrectlyAssign);
     }
 
     // KStar -> stracollisions link
@@ -1973,16 +1961,15 @@ struct sigma0builder {
                                    (uint8_t(posTrackGamma.hasTOF()) << hasTOF));
 
     uint8_t fPhotonNegTrackCode = ((uint8_t(negTrackGamma.hasTPC()) << hasTPC) |
-                                    (uint8_t(negTrackGamma.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(negTrackGamma.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(negTrackGamma.hasTRD()) << hasTRD) |
-                                    (uint8_t(negTrackGamma.hasTOF()) << hasTOF));
+                                   (uint8_t(negTrackGamma.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(negTrackGamma.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(negTrackGamma.hasTRD()) << hasTRD) |
+                                   (uint8_t(negTrackGamma.hasTOF()) << hasTOF));
 
     kstarPhotonExtras(gamma.qtarm(), gamma.alpha(), gamma.v0cosPA(), gamma.dcaV0daughters(), gamma.dcanegtopv(), gamma.dcapostopv(), gamma.v0radius(), gamma.z(),
                       posTrackGamma.tpcNSigmaEl(), negTrackGamma.tpcNSigmaEl(), posTrackGamma.tpcCrossedRows(), negTrackGamma.tpcCrossedRows(),
                       gamma.positiveeta(), gamma.negativeeta(), gamma.psipair(), posTrackGamma.itsNCls(), negTrackGamma.itsNCls(), posTrackGamma.itsChi2PerNcl(), negTrackGamma.itsChi2PerNcl(),
                       fPhotonPosTrackCode, fPhotonNegTrackCode, gamma.v0Type());
-
 
     //_______________________________________________
     // KShort extra properties
@@ -1997,10 +1984,10 @@ struct sigma0builder {
                                    (uint8_t(posTrackKShort.hasTOF()) << hasTOF));
 
     uint8_t fKShortNegTrackCode = ((uint8_t(negTrackKShort.hasTPC()) << hasTPC) |
-                                    (uint8_t(negTrackKShort.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(negTrackKShort.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(negTrackKShort.hasTRD()) << hasTRD) |
-                                    (uint8_t(negTrackKShort.hasTOF()) << hasTOF));
+                                   (uint8_t(negTrackKShort.hasITSTracker()) << hasITSTracker) |
+                                   (uint8_t(negTrackKShort.hasITSAfterburner()) << hasITSAfterburner) |
+                                   (uint8_t(negTrackKShort.hasTRD()) << hasTRD) |
+                                   (uint8_t(negTrackKShort.hasTOF()) << hasTOF));
 
     float fKShortLifeTime = kshort.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
     float fKShortPiTOFNSigma = -999.f;
@@ -2013,21 +2000,17 @@ struct sigma0builder {
       // postrackTofNSigmaPi = posTrackKShort.tofNSigmaPi();
       // negtrackTofNSigmaPi = negTrackKShort.tofNSigmaPi();
       fKShortPiTOFNSigma = kshort.tofNSigmaLaPi();
-
     }
- 
+
     kshortExtras(kshort.qtarm(), kshort.alpha(), fKShortLifeTime, kshort.v0radius(), kshort.v0cosPA(), kshort.dcaV0daughters(), kshort.dcanegtopv(), kshort.dcapostopv(),
-                      posTrackKShort.tpcNSigmaPi(), negTrackKShort.tpcNSigmaPi(), fKShortPiTOFNSigma,
-                      posTrackKShort.tpcCrossedRows(), negTrackKShort.tpcCrossedRows(),
-                      kshort.positiveeta(), kshort.negativeeta(),
-                      posTrackKShort.itsNCls(), negTrackKShort.itsNCls(), posTrackKShort.itsChi2PerNcl(), negTrackKShort.itsChi2PerNcl(),
-                      fKShortPosTrackCode, fKShortNegTrackCode, kshort.v0Type());
+                 posTrackKShort.tpcNSigmaPi(), negTrackKShort.tpcNSigmaPi(), fKShortPiTOFNSigma,
+                 posTrackKShort.tpcCrossedRows(), negTrackKShort.tpcCrossedRows(),
+                 kshort.positiveeta(), kshort.negativeeta(),
+                 posTrackKShort.itsNCls(), negTrackKShort.itsNCls(), posTrackKShort.itsChi2PerNcl(), negTrackKShort.itsChi2PerNcl(),
+                 fKShortPosTrackCode, fKShortNegTrackCode, kshort.v0Type());
 
     return true;
   }
-
-
-
 
   // Process photon and lambda candidates to build sigma0 candidates
   template <typename TCollision, typename TV0s, typename TMCParticles>
@@ -2090,7 +2073,6 @@ struct sigma0builder {
 
         if (processKShortCandidate(v0, coll))           // selecting kshorts
           bestKShortsArray.push_back(v0.globalIndex()); // Save indices of best kshort candidates
-
       }
 
       //_______________________________________________
@@ -2120,7 +2102,7 @@ struct sigma0builder {
         }
 
         //_______________________________________________
-        // KStar loop 
+        // KStar loop
         if (fillKStarTables) {
           for (size_t j = 0; j < bestKShortsArray.size(); ++j) {
             auto kshort = fullV0s.rawIteratorAt(bestKShortsArray[j]);
@@ -2130,7 +2112,6 @@ struct sigma0builder {
               continue;
           }
         }
-
 
         //_______________________________________________
         // pi0 loop

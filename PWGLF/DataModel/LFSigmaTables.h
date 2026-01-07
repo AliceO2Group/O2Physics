@@ -213,7 +213,7 @@ DECLARE_SOA_COLUMN(KShortMass, kshortMass, float);
 
 // Dynamic Columns
 
-//KStar
+// KStar
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! KStar px
                            [](float photonPx, float kshortPx) -> float { return photonPx + kshortPx; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! KStar py
@@ -286,8 +286,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PhotonY, photonY, //! Rapidity
 DECLARE_SOA_DYNAMIC_COLUMN(PhotonPhi, photonPhi, //! Phi in the range [0, 2pi)
                            [](float photonPx, float photonPy) -> float { return RecoDecay::phi(photonPx, photonPy); });
 
-
-// KShort 
+// KShort
 DECLARE_SOA_DYNAMIC_COLUMN(KShortPt, kshortPt, //! Transverse momentum in GeV/c
                            [](float kshortPx, float kshortPy) -> float {
                              return RecoDecay::sqrtSumOfSquares(kshortPx, kshortPy);
@@ -311,14 +310,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(KShortY, kshortY, //! Rapidity
 DECLARE_SOA_DYNAMIC_COLUMN(KShortPhi, kshortPhi, //! Phi in the range [0, 2pi)
                            [](float kshortPx, float kshortPy) -> float { return RecoDecay::phi(kshortPx, kshortPy); });
 
-}
+} // namespace kstarCore
 
 DECLARE_SOA_TABLE(KStarCores, "AOD", "KSTARCORES",
                   kstarCore::X, kstarCore::Y, kstarCore::Z, kstarCore::DCADaughters,
                   kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::PhotonMass,
                   kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz, kstarCore::KShortMass,
 
-                  //Dynamic columns
+                  // Dynamic columns
                   kstarCore::Px<kstarCore::PhotonPx, kstarCore::KShortPx>,
                   kstarCore::Py<kstarCore::PhotonPy, kstarCore::KShortPy>,
                   kstarCore::Pz<kstarCore::PhotonPz, kstarCore::KShortPz>,
@@ -342,7 +341,6 @@ DECLARE_SOA_TABLE(KStarCores, "AOD", "KSTARCORES",
                   kstarCore::KShortEta<kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
                   kstarCore::KShortY<kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
                   kstarCore::KShortPhi<kstarCore::KShortPx, kstarCore::KShortPy>);
-
 
 // For KStar extra info
 namespace kshortExtra
@@ -371,7 +369,7 @@ DECLARE_SOA_COLUMN(KShortNegITSChi2PerNcl, kshortNegChi2PerNcl, float);
 DECLARE_SOA_COLUMN(KShortPosTrackCode, kshortPosTrackCode, uint8_t);
 DECLARE_SOA_COLUMN(KShortNegTrackCode, kshortNegTrackCode, uint8_t);
 DECLARE_SOA_COLUMN(KShortV0Type, kshortV0Type, uint8_t);
-}
+} // namespace kshortExtra
 
 DECLARE_SOA_TABLE(KShortExtras, "AOD", "KSHORT",
                   kshortExtra::KShortQt,
@@ -397,8 +395,7 @@ DECLARE_SOA_TABLE(KShortExtras, "AOD", "KSHORT",
                   kshortExtra::KShortNegITSChi2PerNcl,
                   kshortExtra::KShortPosTrackCode,
                   kshortExtra::KShortNegTrackCode,
-                  kshortExtra::KShortV0Type
-);
+                  kshortExtra::KShortV0Type);
 
 // For KStar extra info
 namespace kstarPhotonExtra
@@ -425,7 +422,7 @@ DECLARE_SOA_COLUMN(PhotonNegITSChi2PerNcl, photonNegITSChi2PerNcl, float);
 DECLARE_SOA_COLUMN(PhotonPosTrackCode, photonPosTrackCode, uint8_t);
 DECLARE_SOA_COLUMN(PhotonNegTrackCode, photonNegTrackCode, uint8_t);
 DECLARE_SOA_COLUMN(PhotonV0Type, photonV0Type, uint8_t);
-}
+} // namespace kstarPhotonExtra
 
 DECLARE_SOA_TABLE(KStarPhotonExtras, "AOD", "KSTARPHOTON",
                   kstarPhotonExtra::PhotonQt,
@@ -450,7 +447,6 @@ DECLARE_SOA_TABLE(KStarPhotonExtras, "AOD", "KSTARPHOTON",
                   kstarPhotonExtra::PhotonPosTrackCode,
                   kstarPhotonExtra::PhotonNegTrackCode,
                   kstarPhotonExtra::PhotonV0Type);
-
 
 // For Photon extra info
 namespace sigma0PhotonExtra
@@ -858,7 +854,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(KShortMCY, kshortMCY, //! Rapidity
 DECLARE_SOA_DYNAMIC_COLUMN(KShortMCPhi, kshortMCPhi, //! Phi in the range [0, 2pi)
                            [](float kshortMCPx, float kshortMCPy) -> float { return RecoDecay::phi(kshortMCPx, kshortMCPy); });
 
-} // namespace sigma0MCCore
+} // namespace kstarMCCore
 
 DECLARE_SOA_TABLE(KStarMCCores, "AOD", "KSTARMCCORES",
                   // Basic properties
@@ -891,12 +887,10 @@ DECLARE_SOA_TABLE(KStarMCCores, "AOD", "KSTARMCCORES",
                   kstarMCCore::PhotonMCPhi<kstarMCCore::PhotonMCPx, kstarMCCore::PhotonMCPy>,
 
                   kstarMCCore::KShortMCPt<kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy>,
-                  kstarMCCore::KShortMCP<kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy, kstarMCCore::KShortMCPz>, 
+                  kstarMCCore::KShortMCP<kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy, kstarMCCore::KShortMCPz>,
                   kstarMCCore::KShortMCEta<kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy, kstarMCCore::KShortMCPz>,
                   kstarMCCore::KShortMCY<kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy, kstarMCCore::KShortMCPz>,
                   kstarMCCore::KShortMCPhi<kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy>);
-
-
 
 namespace sigma0Gen
 {
@@ -919,7 +913,7 @@ DECLARE_SOA_COLUMN(IsKStar, isKStar, bool); // true: sigma0, false: antisigma0
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
 DECLARE_SOA_COLUMN(KStarMCPt, kstarMCPt, float); // MC pT
 
-} // namespace sigma0Gen
+} // namespace kstarGen
 
 DECLARE_SOA_TABLE(KStarGens, "AOD", "KSTARGENS",
                   kstarGen::IsKStar,
@@ -928,7 +922,6 @@ DECLARE_SOA_TABLE(KStarGens, "AOD", "KSTARGENS",
 
 DECLARE_SOA_TABLE(SigmaCollRef, "AOD", "SIGMACOLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraCollisionId);
-
 
 DECLARE_SOA_TABLE(SigmaIndices, "AOD", "SIGMAINDEX", //! index table when using AO2Ds
                   o2::soa::Index<>, sigma0Core::PhotonV0Id, sigma0Core::LambdaV0Id, o2::soa::Marker<1>);
@@ -939,12 +932,11 @@ DECLARE_SOA_TABLE(SigmaMCLabels, "AOD", "SIGMAMCLABEL", //! optional table to re
 DECLARE_SOA_TABLE(SigmaGenCollRef, "AOD", "SIGMAGENCOLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraMCCollisionId);
 
+DECLARE_SOA_TABLE(KStarCollRef, "AOD", "KSTARCOLLREF",
+                  o2::soa::Index<>, v0data::StraCollisionId);
 
-DECLARE_SOA_TABLE(KStarCollRef, "AOD", "KSTARCOLLREF", 
-                  o2::soa::Index<>, v0data::StraCollisionId);     
-
-DECLARE_SOA_TABLE(KStarGenCollRef, "AOD", "KSTARGENCOLLREF", 
-                  o2::soa::Index<>, v0data::StraMCCollisionId);                                  
+DECLARE_SOA_TABLE(KStarGenCollRef, "AOD", "KSTARGENCOLLREF",
+                  o2::soa::Index<>, v0data::StraMCCollisionId);
 
 // ___________________________________________________________________________
 // pi0 QA
