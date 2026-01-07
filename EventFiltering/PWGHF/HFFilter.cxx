@@ -390,8 +390,8 @@ struct HfFilter { // Main struct for HF triggers
       for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
         hArmPod[iV0] = registry.add<TH2>(Form("fArmPod%s", v0Names[iV0].data()), Form("Armenteros Podolanski plot for selected %s;#it{#alpha};#it{q}_{T} (GeV/#it{c})", v0Labels[iV0].data()), HistType::kTH2D, {alphaAxis, qtAxis});
       }
-      hMassXi[0] = registry.add<TH2>("fMassXi", "#it{M} distribution of #Xi candidates;sign;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {{3, -1.5, 1.5, 100, 1.28f, 1.36f}});
-      hMassXi[1] = registry.add<TH2>("fMassTrackedXi", "#it{M} distribution of #Xi candidates;sign;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {{3, -1.5, 1.5, 100, 1.28f, 1.36f}});
+      hMassXi[0] = registry.add<TH2>("fMassXi", "#it{M} distribution of #Xi candidates;sign;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {{3, -1.5, 1.5, 100}, {1.28f, 1.36f}});
+      hMassXi[1] = registry.add<TH2>("fMassTrackedXi", "#it{M} distribution of #Xi candidates;sign;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {{3, -1.5, 1.5}, {100, 1.28f, 1.36f}});
 
       if (activateQA > 1) {
         hPrDePID[0] = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2D, {pAxis, nSigmaAxis});
