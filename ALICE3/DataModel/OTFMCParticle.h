@@ -13,7 +13,7 @@
 /// \file   OTFMCParticle.h
 /// \author Jesper Karlsson Gumprecht
 /// \since  16/12/2025
-/// \brief
+/// \brief  Redefinition of the mcparticles table specifically for the fast sim
 ///
 
 #ifndef ALICE3_DATAMODEL_OTFMCPARTICLE_H_

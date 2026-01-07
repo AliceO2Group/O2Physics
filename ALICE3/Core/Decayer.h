@@ -13,6 +13,7 @@
 /// \file   Decayer.h
 /// \author Jesper Karlsson Gumprecht
 /// \since  15/12/2025
+/// \brief  Basic class to handle short-lived particle decays in the fast simulation
 ///
 
 #ifndef ALICE3_CORE_DECAYER_H_

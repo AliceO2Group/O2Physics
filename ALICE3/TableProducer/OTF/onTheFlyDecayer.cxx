@@ -47,9 +47,10 @@
 using namespace o2;
 using namespace o2::framework;
 
-static constexpr int kNumDecays = 7;
-static constexpr int kNumParameters = 1;
-static constexpr int defaultParameters[kNumDecays][kNumParameters]{{1}, {1}, {1}, {1}, {1}, {1}, {1}};
+static constexpr int NumDecays = 7;
+static constexpr int NumParameters = 1;
+static constexpr int DefaultParameters[NumDecays][NumParameters]{{1}, {1}, {1}, {1}, {1}, {1}, {1}};
+static constexpr float VerySmall = 1e-7f;
 static const std::vector<std::string> parameterNames{"enable"};
 static const std::vector<std::string> particleNames{"K0s",
                                                     "Lambda",
@@ -76,7 +77,7 @@ struct OnTheFlyDecayer {
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
   Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
-                                                {defaultParameters[0], kNumDecays, kNumParameters, particleNames, parameterNames},
+                                                {DefaultParameters[0], NumDecays, NumParameters, particleNames, parameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -87,7 +88,7 @@ struct OnTheFlyDecayer {
   {
     decayer.setSeed(seed);
     decayer.setBField(magneticField);
-    for (int i = 0; i < kNumDecays; ++i) {
+    for (int i = 0; i < NumDecays; ++i) {
       if (enabledDecays->get(particleNames[i].c_str(), "enable")) {
         mEnabledDecays.push_back(pdgCodes[i]);
       }
@@ -114,7 +115,7 @@ struct OnTheFlyDecayer {
     for (int64_t index{0}; index < mcParticles.size(); ++index) {
       const auto& particle = mcParticles.iteratorAt(index);
       std::vector<o2::upgrade::OTFParticle> decayDaughters;
-      static constexpr int kMaxNestedDecays = 10;
+      static constexpr int MaxNestedDecays = 10;
       int nDecays = 0;
       if (canDecay(particle.pdgCode())) {
         o2::track::TrackParCov o2track;
@@ -128,7 +129,7 @@ struct OnTheFlyDecayer {
             std::vector<o2::upgrade::OTFParticle> cascadingDaughers = decayer.decayParticle(pdgDB, dauTrack, dau.pdgCode());
             for (const auto& daudau : cascadingDaughers) {
               decayDaughters.push_back(daudau);
-              if (kMaxNestedDecays < ++nDecays) {
+              if (MaxNestedDecays < ++nDecays) {
                 LOG(error) << "Seemingly stuck trying to perpetually decay products from pdg: " << particle.pdgCode();
               }
             }
@@ -171,18 +172,18 @@ struct OnTheFlyDecayer {
       nStoredDaughters += decayDaughters.size();
 
       float phi = o2::constants::math::PI + std::atan2(-1.0f * particle.py(), -1.0f * particle.px());
-      float eta; // Conditional as https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1922
+      float eta; // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1922
       float pt = std::sqrt(particle.px() * particle.px() + particle.py() * particle.py());
       float p = std::sqrt(particle.px() * particle.px() + particle.py() * particle.py() + particle.pz() * particle.pz());
-      float y; // Conditional as https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
+      float y; // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
 
-      if ((p - particle.pz()) < 1e-7f) {
+      if ((p - particle.pz()) < VerySmall) {
         eta = (particle.pz() < 0.0f) ? -100.0f : 100.0f;
       } else {
         eta = 0.5f * std::log((p + particle.pz()) / (p - particle.pz()));
       }
 
-      if ((particle.e() - particle.pz()) < 1e-7f) {
+      if ((particle.e() - particle.pz()) < VerySmall) {
         y = (particle.pz() < 0.0f) ? -100.0f : 100.0f;
       } else {
         y = 0.5f * std::log((particle.e() + particle.pz()) / (particle.e() - particle.pz()));
@@ -215,13 +216,13 @@ struct OnTheFlyDecayer {
         float p = std::sqrt(dau.px() * dau.px() + dau.py() * dau.py() + dau.pz() * dau.pz());
         float y; // Conditional as https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
 
-        if ((p - dau.pz()) < 1e-7f) {
+        if ((p - dau.pz()) < VerySmall) {
           eta = (dau.pz() < 0.0f) ? -100.0f : 100.0f;
         } else {
           eta = 0.5f * std::log((p + dau.pz()) / (p - dau.pz()));
         }
 
-        if ((dau.e() - dau.pz()) < 1e-7f) {
+        if ((dau.e() - dau.pz()) < VerySmall) {
           y = (dau.pz() < 0.0f) ? -100.0f : 100.0f;
         } else {
           y = 0.5f * std::log((dau.e() + dau.pz()) / (dau.e() - dau.pz()));
