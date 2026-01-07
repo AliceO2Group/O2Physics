@@ -23,7 +23,7 @@
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsTPC/BetheBlochAleph.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoAHelpers.h>
@@ -260,7 +260,7 @@ struct he3LambdaAnalysis {
       }
       hTPCsignalAll->Fill(track.tpcInnerParam() * track.sign(), track.tpcSignal());
       const float pt = track.pt() * 2.0f;
-      float expTPCSignal = o2::tpc::BetheBlochAleph(track.tpcInnerParam() * 2.0f / constants::physics::MassHelium3, mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
+      float expTPCSignal = o2::common::BetheBlochAleph(track.tpcInnerParam() * 2.0f / constants::physics::MassHelium3, mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
       double nSigmaTPC = (track.tpcSignal() - expTPCSignal) / (expTPCSignal * mBBparamsHe[5]);
       hTPCnSigmaAll->Fill(track.tpcInnerParam() * track.sign(), nSigmaTPC);
       if (pt < cfgHe3.ptMin || pt > cfgHe3.ptMax || std::abs(track.eta()) > cfgHe3.etaMax || track.tpcInnerParam() < cfgHe3.minTPCrigidity || std::abs(nSigmaTPC) > cfgHe3.nSigmaTPCMax) {
