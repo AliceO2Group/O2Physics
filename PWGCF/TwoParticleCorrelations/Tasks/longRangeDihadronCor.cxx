@@ -258,6 +258,13 @@ struct LongRangeDihadronCor {
     kFT0COuterMirror = 32,
     kFT0CInnerMirror = 24
   };
+  enum DeadChannels {
+    kFT0ARemapChannelStart = 92,
+    kFT0ARemapChannelEnd = 95,
+    kFT0CRemapChannelStart = 144,
+    kFT0CRemapChannelEnd = 147,
+    kFT0CRemapChannelInnerRing = 115
+  };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
   std::array<float, 6> tpcNsigmaCut;
@@ -662,12 +669,12 @@ struct LongRangeDihadronCor {
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
       if (cfgRemapFT0CDeadChannels) {
-        if (id == 115) {
+        if (id == kFT0CRemapChannelInnerRing) {
           int dead_id = id + kFT0CInnerMirror;
           registry.fill(HIST("FT0Amp"), dead_id, ampl);
           ampl = ampl / cstFT0RelGain[iCh];
           registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
-        } else if (id >= 144 && id <= 147) {
+        } else if (id >= kFT0CRemapChannelStart && id <= kFT0CRemapChannelEnd) {
           int dead_id = id + kFT0COuterMirror;
           registry.fill(HIST("FT0Amp"), dead_id, ampl);
           ampl = ampl / cstFT0RelGain[iCh];
@@ -683,7 +690,7 @@ struct LongRangeDihadronCor {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
       if (cfgRemapFT0ADeadChannels) {
-        if (id >= 92 && id <= 95) {
+        if (id >= kFT0ARemapChannelStart && id <= kFT0ARemapChannelEnd) {
           int dead_id = id - kFT0AOuterMirror;
           registry.fill(HIST("FT0Amp"), dead_id, ampl);
           ampl = ampl / cstFT0RelGain[iCh];
