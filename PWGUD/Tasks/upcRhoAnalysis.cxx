@@ -674,7 +674,7 @@ struct UpcRhoAnalysis {
   double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2)
   {
     double dPhi = p1.Phi() - p2.Phi();
-    while (dPhi > o2::constants::math::PI)
+    while (dPhi >= o2::constants::math::PI)
       dPhi -= o2::constants::math::TwoPI;
     while (dPhi < -o2::constants::math::PI)
       dPhi += o2::constants::math::TwoPI;
