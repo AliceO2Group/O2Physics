@@ -13,7 +13,6 @@
 /// \brief Reconstruction of track-track decay resonance candidates
 ///
 ///
-/// \author Protay
 /// \author Navneet
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -233,7 +232,7 @@ struct chargedkstaranalysis {
   // PDG code
   int kPDGK0s = kK0Short;
   int kKstarPlus = static_cast<int>(o2::constants::physics::Pdg::kKPlusStar892);
-  int kPiPlus = kPiPlus;
+  //  int kPiPlus = kPiPlus;
   int kPDGK0 = kK0;
   // Variable declaration
   ROOT::Math::PxPyPzEVector beam1{0., 0., -config.beamMomentum, 13600. / 2.};
@@ -241,6 +240,7 @@ struct chargedkstaranalysis {
 
   void init(o2::framework::InitContext&)
   {
+
     centrality = -999;
 
     colCuts.setCuts(confEvtZvtx, confEvtTriggerCheck, confEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, confEvtOccupancyInTimeRangeMax, confEvtOccupancyInTimeRangeMin);
