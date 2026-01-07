@@ -755,7 +755,7 @@ struct sigma0builder {
 
     // Sanity check: Is V0Pair <-> Mother assignment correct?
     bool fIsSigma0 = false;
-    if ((v01MC.pdgCode() == 22) && (v01MC.pdgCodeMother() == 3212) && (v02MC.pdgCode() == 3122) && (v02MC.pdgCodeMother() == 3212) && (v01.motherMCPartId() == v02.motherMCPartId()))
+    if ((v01MC.pdgCode() == PDG_t::kGamma) && (v01MC.pdgCodeMother() == PDG_t::kSigma0) && (v02MC.pdgCode() == PDG_t::kLambda0) && (v02MC.pdgCodeMother() == PDG_t::kSigma0) && (v01.motherMCPartId() == v02.motherMCPartId()))
       fIsSigma0 = true;
 
     // Check collision assignment
@@ -809,7 +809,7 @@ struct sigma0builder {
 
         // MC QA histograms
         // Parenthood check for sigma0-like candidate
-        if (MCParticle_v01.pdgCode() == 22 && TMath::Abs(MCParticle_v02.pdgCode()) == 3122) {
+        if (MCParticle_v01.pdgCode() == PDG_t::kGamma&& TMath::Abs(MCParticle_v02.pdgCode()) == PDG_t::kLambda0) {
           for (const auto& mother1 : MCMothersList_v01) { // Photon mothers
             histos.fill(HIST("MCQA/h2dPhotonNMothersVsPDG"), MCMothersList_v01.size(), mother1.pdgCode());
             histos.fill(HIST("MCQA/h2dPhotonNMothersVsMCProcess"), MCMothersList_v01.size(), mother1.getProcess());
@@ -834,11 +834,11 @@ struct sigma0builder {
         }
 
         // Check association correctness
-        if (fIsSigma0 && (MCinfo.V0PairPDGCode == 3212))
+        if (fIsSigma0 && (MCinfo.V0PairPDGCode == PDG_t::kSigma0))
           histos.fill(HIST("MCQA/hSigma0MCCheck"), 1); // match
-        if (fIsSigma0 && !(MCinfo.V0PairPDGCode == 3212))
+        if (fIsSigma0 && !(MCinfo.V0PairPDGCode == PDG_t::kSigma0))
           histos.fill(HIST("MCQA/hSigma0MCCheck"), 2); // mismatch
-        if (!fIsSigma0 && (MCinfo.V0PairPDGCode == 3212))
+        if (!fIsSigma0 && (MCinfo.V0PairPDGCode == PDG_t::kSigma0))
           histos.fill(HIST("MCQA/hSigma0MCCheck"), 3); // mismatch
       }
     }
@@ -1161,7 +1161,7 @@ struct sigma0builder {
       bool fIsV0CorrectlyAssigned = (v0MC.straMCCollisionId() == v0MCCollision.globalIndex());
       bool isPrimary = v0MC.isPhysicalPrimary();
 
-      if ((v0MC.pdgCode() == 22) && isPhotonAnalysis && isPrimary) { // True Gamma
+      if ((v0MC.pdgCode() == PDG_t::kGamma) && isPhotonAnalysis && isPrimary) { // True Gamma
         histos.fill(HIST("V0AssoQA/h2dIRVsPt_TrueGamma"), IR, V0MCpT);
         histos.fill(HIST("V0AssoQA/h3dPAVsIRVsPt_TrueGamma"), V0PA, IR, V0MCpT);
 
@@ -1170,7 +1170,7 @@ struct sigma0builder {
           histos.fill(HIST("V0AssoQA/h3dPAVsIRVsPt_TrueGamma_BadCollAssig"), V0PA, IR, V0MCpT);
         }
       }
-      if ((v0MC.pdgCode() == 3122) && !isPhotonAnalysis && isPrimary) { // True Lambda
+      if ((v0MC.pdgCode() == PDG_t::kLambda0) && !isPhotonAnalysis && isPrimary) { // True Lambda
         histos.fill(HIST("V0AssoQA/h2dIRVsPt_TrueLambda"), IR, V0MCpT);
         histos.fill(HIST("V0AssoQA/h3dPAVsIRVsPt_TrueLambda"), V0PA, IR, V0MCpT);
 
@@ -1189,13 +1189,13 @@ struct sigma0builder {
 
     // Fill with properties
     GenInfo.IsPrimary = mcParticle.isPhysicalPrimary();
-    GenInfo.IsV0Lambda = mcParticle.pdgCode() == 3122;
-    GenInfo.IsV0AntiLambda = mcParticle.pdgCode() == -3122;
-    GenInfo.IsV0KShort = mcParticle.pdgCode() == 310;
-    GenInfo.IsPi0 = mcParticle.pdgCode() == 111;
-    GenInfo.IsSigma0 = mcParticle.pdgCode() == 3212;
-    GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == -3212;
-    GenInfo.IsKStar = mcParticle.pdgCode() == 313;
+    GenInfo.IsV0Lambda = mcParticle.pdgCode() == PDG_t::kLambda0; //3122
+    GenInfo.IsV0AntiLambda = mcParticle.pdgCode() == PDG_t::kLambda0Bar; //-3122
+    GenInfo.IsV0KShort = mcParticle.pdgCode() == PDG_t::kK0Short; //310
+    GenInfo.IsPi0 = mcParticle.pdgCode() == PDG_t::kPi0; //111;
+    GenInfo.IsSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0; // PDG_t::kSigma0
+    GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0Bar; //-3212
+    GenInfo.IsKStar = mcParticle.pdgCode() == o2::constants::physics::Pdg::kK0Star892; //313; 
     GenInfo.IsProducedByGenerator = mcParticle.producedByGenerator();
     GenInfo.MCProcess = mcParticle.getProcess();
     GenInfo.MCPt = mcParticle.pt();
@@ -1224,10 +1224,10 @@ struct sigma0builder {
           histos.fill(HIST("GenQA/h2dSigma0NDaughtersVsPDG"), daughters.size(), daughter.pdgCode());
 
           if (GenInfo.NDaughters == 2) {
-            if (daughter.pdgCode() == 22)
+            if (daughter.pdgCode() == PDG_t::kGamma)
               GenInfo.MCDau1Pt = daughter.pt();
 
-            if (TMath::Abs(daughter.pdgCode()) == 3122)
+            if (TMath::Abs(daughter.pdgCode()) == PDG_t::kLambda0)
               GenInfo.MCDau2Pt = daughter.pt();
           }
         }
@@ -1466,7 +1466,7 @@ struct sigma0builder {
       if constexpr (requires { gamma.motherMCPartId(); }) {
         if (gamma.has_v0MCCore()) {
           auto gammaMC = gamma.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-          if (gammaMC.pdgCode() != 22)
+          if (gammaMC.pdgCode() != PDG_t::kGamma)
             return false;
         }
       }
@@ -1563,7 +1563,7 @@ struct sigma0builder {
       if constexpr (requires { lambda.motherMCPartId(); }) {
         if (lambda.has_v0MCCore()) {
           auto lambdaMC = lambda.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-          if (TMath::Abs(lambdaMC.pdgCode()) != 3122)
+          if (TMath::Abs(lambdaMC.pdgCode()) != PDG_t::kLambda0)
             return false;
         }
       }
@@ -2199,25 +2199,25 @@ struct sigma0builder {
             auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
             // True Photon
-            if (v0MC.pdgCode() == 22 && fPassPhotonSel) {
+            if (v0MC.pdgCode() == PDG_t::kGamma&& fPassPhotonSel) {
               histos.fill(HIST("PhotonLambdaQA/h3dTruePhotonMass"), centrality, v0MC.ptMC(), v0.mGamma());
-              if (TMath::Abs(v0MC.pdgCodeMother()) == 3212) { // If from sigma0 or ASigma0
+              if (TMath::Abs(v0MC.pdgCodeMother()) == PDG_t::kSigma0) { // If from sigma0 or ASigma0
                 histos.fill(HIST("PhotonLambdaQA/h2dTrueSigma0PhotonMass"), v0MC.ptMC(), v0.mGamma());
               }
             }
 
             // True Lambda
-            if (v0MC.pdgCode() == 3122 && fPassLambdaSel) {
+            if (v0MC.pdgCode() == PDG_t::kLambda0 && fPassLambdaSel) {
               histos.fill(HIST("PhotonLambdaQA/h3dTrueLambdaMass"), centrality, v0MC.ptMC(), v0.mLambda());
-              if (v0MC.pdgCodeMother() == 3212) { // If from sigma0
+              if (v0MC.pdgCodeMother() == PDG_t::kSigma0) { // If from sigma0
                 histos.fill(HIST("PhotonLambdaQA/h2dTrueSigma0LambdaMass"), v0MC.ptMC(), v0.mLambda());
               }
             }
 
             // True ALambda
-            if (v0MC.pdgCode() == -3122 && fPassLambdaSel) {
+            if (v0MC.pdgCode() == PDG_t::kLambda0Bar && fPassLambdaSel) {
               histos.fill(HIST("PhotonLambdaQA/h3dTrueALambdaMass"), centrality, v0MC.ptMC(), v0.mAntiLambda());
-              if (v0MC.pdgCodeMother() == -3212) { // If from asigma0
+              if (v0MC.pdgCodeMother() == PDG_t::kSigma0Bar) { // If from asigma0
                 histos.fill(HIST("PhotonLambdaQA/h2dTrueASigma0ALambdaMass"), v0MC.ptMC(), v0.mAntiLambda());
               }
             }

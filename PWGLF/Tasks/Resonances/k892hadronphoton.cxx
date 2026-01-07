@@ -769,7 +769,7 @@ struct k892hadronphoton {
 
     //_______________________________________
     // Gamma MC association
-    if (kstar.photonPDGCode() == 22) {
+    if (kstar.photonPDGCode() == PDG_t::kGamma) {
       if (kstar.photonmcpt() > 0) {
         histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), -1 * kstar.photonNegTPCCrossedRows()); // 1/pT resolution
         histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), kstar.photonPosTPCCrossedRows());      // 1/pT resolution
@@ -779,7 +779,7 @@ struct k892hadronphoton {
 
     //_______________________________________
     // KShort MC association
-    if (kstar.kshortPDGCode() == 310) {
+    if (kstar.kshortPDGCode() == PDG_t::kK0Short) {
       if (kstar.kshortmcpt() > 0) {
         histos.fill(HIST("BeforeSel/MC/Reso/h2dKShortPtResolution"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt());                                        // 1/pT resolution
         histos.fill(HIST("BeforeSel/MC/Reso/h3dKShortPtResoVsTPCCR"), 1.f / kstar.kshortmcpt(), 1.f / kstar.kshortPt() - 1.f / kstar.kshortmcpt(), -1 * kstar.kshortNegTPCCrossedRows()); // 1/pT resolution
@@ -815,24 +815,24 @@ struct k892hadronphoton {
 
     //_______________________________________
     // Real Gamma x Real KShort - but not from the same kstar!
-    if ((PhotonPDGCode == 22) && (KShortPDGCode == 310) && (!fIsKStar)) {
+    if ((PhotonPDGCode == PDG_t::kGamma) && (KShortPDGCode == PDG_t::kK0Short) && (!fIsKStar)) {
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueDaughters"), kstarpT, kstarMass);
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrix"), KShortPDGCodeMother, PhotonPDGCodeMother);
     }
 
     //_______________________________________
     // Real Gamma x fake KShort
-    if ((PhotonPDGCode == 22) && (KShortPDGCode != 310))
+    if ((PhotonPDGCode == PDG_t::kGamma) && (KShortPDGCode != PDG_t::kK0Short))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_TrueGammaFakeKShort"), kstarpT, kstarMass);
 
     //_______________________________________
     // Fake Gamma x Real KShort
-    if ((PhotonPDGCode != 22) && ((KShortPDGCode == 310)))
+    if ((PhotonPDGCode != PDG_t::kGamma) && ((KShortPDGCode == PDG_t::kK0Short)))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_FakeGammaTrueKShort"), kstarpT, kstarMass);
 
     //_______________________________________
     // Fake Gamma x Fake KShort
-    if ((PhotonPDGCode != 22) && (KShortPDGCode != 310))
+    if ((PhotonPDGCode != PDG_t::kGamma) && (KShortPDGCode != PDG_t::kK0Short))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_FakeDaughters"), kstarpT, kstarMass);
   }
 
@@ -924,7 +924,7 @@ struct k892hadronphoton {
 
         //_______________________________________
         // Gamma MC association
-        if (kstar.photonPDGCode() == 22) {
+        if (kstar.photonPDGCode() == PDG_t::kGamma) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hV0ToCollAssoc"), kstar.photonIsCorrectlyAssoc());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPt"), kstar.photonPt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hMCPt"), kstar.photonmcpt());
@@ -941,7 +941,7 @@ struct k892hadronphoton {
 
         //_______________________________________
         // KShort MC association
-        if (kstar.kshortPDGCode() == 310) {
+        if (kstar.kshortPDGCode() == PDG_t::kK0Short) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KShort/hV0ToCollAssoc"), kstar.kshortIsCorrectlyAssoc());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KShort/hPt"), kstar.kshortPt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KShort/hMCPt"), kstar.kshortmcpt());
@@ -1000,7 +1000,7 @@ struct k892hadronphoton {
                                                            "CosPA", "Y", "TPCCR", "DauITSCls", "Lifetime",
                                                            "TPCTOFPID", "DCADauToPV", "Mass"};
 
-    if (PDGRequired == 22) {
+    if (PDGRequired == PDG_t::kGamma) {
       if constexpr (selection_index >= 0 && selection_index < (int)std::size(PhotonSelsLocal)) {
         histos.fill(HIST("Selection/Photon/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/Photon/h2d") + HIST(PhotonSelsLocal[selection_index]), kstar.photonPt(), kstar.photonMass());
@@ -1008,7 +1008,7 @@ struct k892hadronphoton {
       }
     }
 
-    if (PDGRequired == 310) {
+    if (PDGRequired == PDG_t::kK0Short) {
       if constexpr (selection_index >= 0 && selection_index < (int)std::size(KShortSelsLocal)) {
         histos.fill(HIST("Selection/KShort/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/KShort/h2d") + HIST(KShortSelsLocal[selection_index]), kstar.kshortPt(), kstar.kshortMass());
@@ -1021,70 +1021,70 @@ struct k892hadronphoton {
   template <typename TV0Object>
   bool selectPhoton(TV0Object const& cand)
   {
-    fillSelHistos<0>(cand, 22);
+    fillSelHistos<0>(cand, PDG_t::kGamma);
     if (cand.photonV0Type() != photonSelections.Photonv0TypeSel && photonSelections.Photonv0TypeSel > -1)
       return false;
 
-    fillSelHistos<1>(cand, 22);
+    fillSelHistos<1>(cand, PDG_t::kGamma);
     if ((TMath::Abs(cand.photonDCAPosPV()) < photonSelections.PhotonMinDCADauToPv) || (TMath::Abs(cand.photonDCANegPV()) < photonSelections.PhotonMinDCADauToPv))
       return false;
 
-    fillSelHistos<2>(cand, 22);
+    fillSelHistos<2>(cand, PDG_t::kGamma);
     if (TMath::Abs(cand.photonDCADau()) > photonSelections.PhotonMaxDCAV0Dau)
       return false;
 
-    fillSelHistos<3>(cand, 22);
+    fillSelHistos<3>(cand, PDG_t::kGamma);
     if ((cand.photonPosTPCCrossedRows() < photonSelections.PhotonMinTPCCrossedRows) || (cand.photonNegTPCCrossedRows() < photonSelections.PhotonMinTPCCrossedRows))
       return false;
 
-    fillSelHistos<4>(cand, 22);
+    fillSelHistos<4>(cand, PDG_t::kGamma);
     if (((cand.photonPosTPCNSigmaEl() < photonSelections.PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigmaEl() > photonSelections.PhotonMaxTPCNSigmas)))
       return false;
 
     if (((cand.photonNegTPCNSigmaEl() < photonSelections.PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigmaEl() > photonSelections.PhotonMaxTPCNSigmas)))
       return false;
 
-    fillSelHistos<5>(cand, 22);
+    fillSelHistos<5>(cand, PDG_t::kGamma);
     if ((cand.photonPt() < photonSelections.PhotonMinPt) || (cand.photonPt() > photonSelections.PhotonMaxPt))
       return false;
 
-    fillSelHistos<6>(cand, 22);
+    fillSelHistos<6>(cand, PDG_t::kGamma);
     if ((TMath::Abs(cand.photonY()) > photonSelections.PhotonMaxRap) || (TMath::Abs(cand.photonPosEta()) > photonSelections.PhotonMaxDauEta) || (TMath::Abs(cand.photonNegEta()) > photonSelections.PhotonMaxDauEta))
       return false;
 
-    fillSelHistos<7>(cand, 22);
+    fillSelHistos<7>(cand, PDG_t::kGamma);
     if ((cand.photonRadius() < photonSelections.PhotonMinRadius) || (cand.photonRadius() > photonSelections.PhotonMaxRadius))
       return false;
 
-    fillSelHistos<8>(cand, 22);
+    fillSelHistos<8>(cand, PDG_t::kGamma);
     float photonRZLineCut = TMath::Abs(cand.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-photonSelections.PhotonMaxDauEta))) - photonSelections.PhotonLineCutZ0;
     if ((TMath::Abs(cand.photonRadius()) < photonRZLineCut) || (TMath::Abs(cand.photonZconv()) > photonSelections.PhotonMaxZ))
       return false;
 
-    fillSelHistos<9>(cand, 22);
+    fillSelHistos<9>(cand, PDG_t::kGamma);
     if (cand.photonQt() > photonSelections.PhotonMaxQt)
       return false;
 
     if (TMath::Abs(cand.photonAlpha()) > photonSelections.PhotonMaxAlpha)
       return false;
 
-    fillSelHistos<10>(cand, 22);
+    fillSelHistos<10>(cand, PDG_t::kGamma);
     if (cand.photonCosPA() < photonSelections.PhotonMinV0cospa)
       return false;
 
-    fillSelHistos<11>(cand, 22);
+    fillSelHistos<11>(cand, PDG_t::kGamma);
     if (TMath::Abs(cand.photonPsiPair()) > photonSelections.PhotonPsiPairMax)
       return false;
 
-    fillSelHistos<12>(cand, 22);
+    fillSelHistos<12>(cand, PDG_t::kGamma);
     if ((((cand.photonPhi() > photonSelections.PhotonPhiMin1) && (cand.photonPhi() < photonSelections.PhotonPhiMax1)) || ((cand.photonPhi() > photonSelections.PhotonPhiMin2) && (cand.photonPhi() < photonSelections.PhotonPhiMax2))) && ((photonSelections.PhotonPhiMin1 != -1) && (photonSelections.PhotonPhiMax1 != -1) && (photonSelections.PhotonPhiMin2 != -1) && (photonSelections.PhotonPhiMax2 != -1)))
       return false;
 
-    fillSelHistos<13>(cand, 22);
+    fillSelHistos<13>(cand, PDG_t::kGamma);
     if (TMath::Abs(cand.photonMass()) > photonSelections.PhotonMaxMass)
       return false;
 
-    fillSelHistos<14>(cand, 22);
+    fillSelHistos<14>(cand, PDG_t::kGamma);
     return true;
   }
 
@@ -1092,34 +1092,34 @@ struct k892hadronphoton {
   template <typename TV0Object>
   bool selectKShort(TV0Object const& cand)
   {
-    fillSelHistos<0>(cand, 310);
+    fillSelHistos<0>(cand, PDG_t::kK0Short);
     if ((cand.kshortRadius() < kshortSelections.KShortMinv0radius) || (cand.kshortRadius() > kshortSelections.KShortMaxv0radius))
       return false;
 
-    fillSelHistos<1>(cand, 310);
+    fillSelHistos<1>(cand, PDG_t::kK0Short);
     if (TMath::Abs(cand.kshortDCADau()) > kshortSelections.KShortMaxDCAV0Dau)
       return false;
 
-    fillSelHistos<2>(cand, 310);
+    fillSelHistos<2>(cand, PDG_t::kK0Short);
     if ((cand.kshortQt() < kshortSelections.KShortMinQt) || (cand.kshortQt() > kshortSelections.KShortMaxQt))
       return false;
 
     if ((TMath::Abs(cand.kshortAlpha()) < kshortSelections.KShortMinAlpha) || (TMath::Abs(cand.kshortAlpha()) > kshortSelections.KShortMaxAlpha))
       return false;
 
-    fillSelHistos<3>(cand, 310);
+    fillSelHistos<3>(cand, PDG_t::kK0Short);
     if (cand.kshortCosPA() < kshortSelections.KShortMinv0cospa)
       return false;
 
-    fillSelHistos<4>(cand, 310);
+    fillSelHistos<4>(cand, PDG_t::kK0Short);
     if ((TMath::Abs(cand.kshortY()) > kshortSelections.KShortMaxRap) || (TMath::Abs(cand.kshortPosEta()) > kshortSelections.KShortMaxDauEta) || (TMath::Abs(cand.kshortNegEta()) > kshortSelections.KShortMaxDauEta))
       return false;
 
-    fillSelHistos<5>(cand, 310);
+    fillSelHistos<5>(cand, PDG_t::kK0Short);
     if ((cand.kshortPosTPCCrossedRows() < kshortSelections.KShortMinTPCCrossedRows) || (cand.kshortNegTPCCrossedRows() < kshortSelections.KShortMinTPCCrossedRows))
       return false;
 
-    fillSelHistos<6>(cand, 310);
+    fillSelHistos<6>(cand, PDG_t::kK0Short);
 
     // check minimum number of ITS clusters + reject ITS afterburner tracks if requested
     bool posIsFromAfterburner = cand.kshortPosChi2PerNcl() < 0;
@@ -1129,12 +1129,12 @@ struct k892hadronphoton {
     if (cand.kshortNegITSCls() < kshortSelections.KShortMinITSclusters && (!kshortSelections.KShortRejectNegITSafterburner || negIsFromAfterburner))
       return false;
 
-    fillSelHistos<7>(cand, 310);
+    fillSelHistos<7>(cand, PDG_t::kK0Short);
     if (cand.kshortLifeTime() > kshortSelections.KShortMaxLifeTime)
       return false;
 
     // Separating kshort selections:
-    fillSelHistos<8>(cand, 310);
+    fillSelHistos<8>(cand, PDG_t::kK0Short);
     if (cand.kshortAlpha() < 1) { // KShort selection
       // TPC Selection
       if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
@@ -1149,16 +1149,16 @@ struct k892hadronphoton {
       //   return false;
 
       // DCA Selection
-      fillSelHistos<9>(cand, 310);
+      fillSelHistos<9>(cand, PDG_t::kK0Short);
       if ((TMath::Abs(cand.kshortDCAPosPV()) < kshortSelections.KShortMinDCAPosToPv) || (TMath::Abs(cand.kshortDCANegPV()) < kshortSelections.KShortMinDCANegToPv))
         return false;
 
       // Mass Selection
-      fillSelHistos<10>(cand, 310);
+      fillSelHistos<10>(cand, PDG_t::kK0Short);
       if (TMath::Abs(cand.kshortMass() - o2::constants::physics::MassK0Short) > kshortSelections.KShortWindow)
         return false;
 
-      fillSelHistos<11>(cand, 310);
+      fillSelHistos<11>(cand, PDG_t::kK0Short);
     }
     return true;
   }

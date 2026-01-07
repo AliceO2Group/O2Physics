@@ -590,10 +590,10 @@ DECLARE_SOA_COLUMN(LambdaPDGCodeMother, lambdaPDGCodeMother, int);
 DECLARE_SOA_COLUMN(LambdaIsCorrectlyAssoc, lambdaIsCorrectlyAssoc, bool);
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsSigma0, isSigma0, //! IsSigma0
-                           [](int pdgCode) -> bool { return pdgCode == 3212; });
+                           [](int pdgCode) -> bool { return pdgCode == PDG_t::kSigma0; }); //3212
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsAntiSigma0, isAntiSigma0, //! IsASigma0
-                           [](int pdgCode) -> bool { return pdgCode == -3212; });
+                           [](int pdgCode) -> bool { return pdgCode == PDG_t::kSigma0Bar; }); //-3212
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Sigma0 px
                            [](float photonMCPx, float lambdaMCPx) -> float { return photonMCPx + lambdaMCPx; });
@@ -759,7 +759,7 @@ DECLARE_SOA_COLUMN(KShortPDGCodeMother, kshortPDGCodeMother, int);
 DECLARE_SOA_COLUMN(KShortIsCorrectlyAssoc, kshortIsCorrectlyAssoc, bool);
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar, //! IsSigma0
-                           [](int pdgCode) -> bool { return pdgCode == 313; });
+                           [](int pdgCode) -> bool { return pdgCode == o2::constants::physics::Pdg::kK0Star892; }); //313
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Sigma0 px
                            [](float photonMCPx, float kshortMCPx) -> float { return photonMCPx + kshortMCPx; });
@@ -1154,10 +1154,10 @@ DECLARE_SOA_COLUMN(Photon2PDGCodeMother, photon2PDGCodeMother, int);
 DECLARE_SOA_COLUMN(Photon2IsCorrectlyAssoc, photon2IsCorrectlyAssoc, bool);
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsPi0, isPi0, //! IsPi0
-                           [](int pdgCode) -> bool { return pdgCode == 111; });
+                           [](int pdgCode) -> bool { return pdgCode == PDG_t::kPi0; }); //111
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsFromXi0, isFromXi0, //! Pi0 from Xi0
-                           [](int pdgCodeMother) -> bool { return pdgCodeMother == 3322; });
+                           [](int pdgCodeMother) -> bool { return pdgCodeMother == o2::constants::physics::Pdg::kXi0; }); // 3322
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Pi0 MC px
                            [](float photon1MCPx, float photon2MCPx) -> float { return photon1MCPx + photon2MCPx; });
