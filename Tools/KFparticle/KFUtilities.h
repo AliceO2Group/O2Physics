@@ -19,7 +19,7 @@
 #define TOOLS_KFPARTICLE_KFUTILITIES_H_
 
 #ifndef HomogeneousField
-#define HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
 #include "Common/Core/RecoDecay.h"
