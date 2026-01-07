@@ -111,12 +111,11 @@ struct QAHistograms {
     TOFcuts = std::make_pair(_particlePDG, _tofNSigma);
 
     int N = _dcaBinning.value[0]; // number of bins -- must be odd otherwise will be increased by 1
-    if (N % 2 != 1) {
-      N += 1;
-    }
 
     std::unique_ptr<double[]> dca_bins;
+    
     if (static_cast<int>(_dcaBinning.value[2]) != 1.0) {
+      if (N % 2 != 1) { N += 1;}
       dca_bins = calc_var_bins(N + 1, _dcaBinning.value[1], static_cast<int>(_dcaBinning.value[2]));
     } else {
       dca_bins = calc_const_bins(N, -_dcaBinning.value[1], _dcaBinning.value[1]);
