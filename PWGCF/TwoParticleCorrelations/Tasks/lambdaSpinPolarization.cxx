@@ -1550,6 +1550,10 @@ struct LambdaSpinPolarization {
   ConfigurableAxis axisCentME{"axisCentME", {VARIABLE_WIDTH, 0, 10, 30, 50, 100}, "Mixing bins - centrality (%)"};
   ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -7, -3, 0, 3, 7}, "Mixing bins - z-vertex"};
 
+  Configurable<float> cMaxDeltaPt{"cMaxDeltaPt", 0.1f, "Max delta pT for kinematic matching (GeV/c)"};
+  Configurable<float> cMaxDeltaPhi{"cMaxDeltaPhi", 0.1f, "Max delta phi for kinematic matching (rad)"};
+  Configurable<float> cMaxDeltaRap{"cMaxDeltaRap", 0.1f, "Max delta rapidity for kinematic matching"};
+
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -1672,12 +1676,12 @@ struct LambdaSpinPolarization {
           continue;
         }
 
-        // CRITICAL: Kinematic matching
+        // Kinematic matching with named constants
         float deltaPt = std::abs(trk_1.pt() - trk_2.pt());
         float deltaPhi = std::abs(RecoDecay::constrainAngle(trk_1.phi() - trk_2.phi(), -PI));
         float deltaRap = std::abs(trk_1.rap() - trk_2.rap());
 
-        if (deltaPt < 0.1 && deltaPhi < 0.1 && deltaRap < 0.1) {
+        if (deltaPt < cMaxDeltaPt && deltaPhi < cMaxDeltaPhi && deltaRap < cMaxDeltaRap) {
           fillPairHistos<part_pair>(trk_1, trk_2);
         }
       }
