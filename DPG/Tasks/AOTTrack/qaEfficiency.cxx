@@ -276,6 +276,7 @@ struct QaEfficiency {
 
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs>;
   using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
+  using CollisionsWithMcLabels = o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -1054,7 +1055,7 @@ struct QaEfficiency {
     }
     return false; // Otherwise, not considered a tertiary particle
   }
-  template <int pdgSign, o2::track::PID::ID id>
+  template <int pdgSign, o2::track::PID::ID id, typename Colls>
   void fillMCTrackHistograms(const TrackCandidatesMC::iterator& track, const bool doMakeHistograms)
   {
     static_assert(pdgSign == 0 || pdgSign == 1);
@@ -1073,8 +1074,8 @@ struct QaEfficiency {
     }
     constexpr int histogramIndex = id + pdgSign * nSpecies;
     LOG(debug) << "fillMCTrackHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
-    const o2::aod::McParticles::iterator& mcParticle = track.mcParticle();
-    const CollisionCandidatesMC::iterator& collision = track.collision_as<CollisionCandidatesMC>();
+    auto const& mcParticle = track.mcParticle();
+    auto const& collision = track.collision_as<Colls>();
     float radius = std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
     if (numSameCollision) {
       if (!collision.has_mcCollision()) {
@@ -1872,15 +1873,15 @@ struct QaEfficiency {
           // Filling variable histograms
           histos.fill(HIST("MC/trackLength"), track.length());
           static_for<0, 1>([&](auto pdgSign) {
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
-            fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Electron, CollisionCandidatesMC>(track, doEl);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Muon, CollisionCandidatesMC>(track, doMu);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Pion, CollisionCandidatesMC>(track, doPi);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon, CollisionCandidatesMC>(track, doKa);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Proton, CollisionCandidatesMC>(track, doPr);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron, CollisionCandidatesMC>(track, doDe);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Triton, CollisionCandidatesMC>(track, doTr);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3, CollisionCandidatesMC>(track, doHe);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha, CollisionCandidatesMC>(track, doAl);
           });
         }
 
@@ -2011,7 +2012,7 @@ struct QaEfficiency {
   //  - considering also tracks not associated to any collision
   //  - ignoring the track-to-collision association
   void processMCWithoutCollisions(TrackCandidatesMC const& tracks,
-                                  o2::aod::Collisions const&,
+                                  CollisionsWithMcLabels const&,
                                   o2::aod::McParticles const& mcParticles,
                                   o2::aod::McCollisions const&,
                                   BCsInfo const&)
@@ -2041,15 +2042,15 @@ struct QaEfficiency {
       // Filling variable histograms
       histos.fill(HIST("MC/trackLength"), track.length());
       static_for<0, 1>([&](auto pdgSign) {
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Electron, CollisionsWithMcLabels>(track, doEl);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Muon, CollisionsWithMcLabels>(track, doMu);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Pion, CollisionsWithMcLabels>(track, doPi);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon, CollisionsWithMcLabels>(track, doKa);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Proton, CollisionsWithMcLabels>(track, doPr);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron, CollisionsWithMcLabels>(track, doDe);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Triton, CollisionsWithMcLabels>(track, doTr);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3, CollisionsWithMcLabels>(track, doHe);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha, CollisionsWithMcLabels>(track, doAl);
       });
     }
 
