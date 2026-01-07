@@ -128,7 +128,7 @@ struct CorrelationTask {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
 
   // MC filters
@@ -430,6 +430,17 @@ struct CorrelationTask {
   bool checkObject(TTrack& track)
   {
     if constexpr (step <= CorrelationContainer::kCFStepAnaTopology) {
+      // If using MC trigger PDGs, allow ONLY those PDGs to bypass isPhysicalPrimary
+      if (!cfgMcTriggerPDGs->empty()) {
+        // track has pdgCode in this compilation branch (you only call checkObject where that is true)
+        const bool isWantedTrigger =
+          std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track.pdgCode()) != cfgMcTriggerPDGs->end();
+        if (isWantedTrigger) {
+          return true; // allow phi, K*, etc. even if not physical primary
+        }
+        // For everything else keep original definition
+        return track.isPhysicalPrimary();
+      }
       return track.isPhysicalPrimary();
     } else if constexpr (step == CorrelationContainer::kCFStepTrackedOnlyPrim) {
       return track.isPhysicalPrimary() && (track.flags() & aod::cfmcparticle::kReconstructed);
