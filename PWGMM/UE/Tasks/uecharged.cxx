@@ -39,6 +39,7 @@
 #include <TRandom.h>
 
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 using namespace o2;
@@ -645,7 +646,7 @@ struct ueCharged {
     // pick best reconstructed collision associated to this mcCollision (max ntracks = recRow.size())
     bool foundRec = false;
     auto chosenRec = *RecCols.begin();
-    long long chosenRecGlobalIndex = -1;
+    int64_t chosenRecGlobalIndex = -1;
     int maxTracks = -1;
 
     if (RecCols.size() != 0) {
