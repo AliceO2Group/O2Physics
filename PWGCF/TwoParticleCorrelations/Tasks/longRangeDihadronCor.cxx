@@ -252,7 +252,7 @@ struct LongRangeDihadronCor {
     kFT0COuterRingMin = 144,
     kFT0COuterRingMax = 207
   };
-  enum MirroringConstant {
+  enum MirroringConstants {
     kFT0AOuterMirror = 32,
     kFT0AInnerMirror = 16,
     kFT0COuterMirror = 32,
