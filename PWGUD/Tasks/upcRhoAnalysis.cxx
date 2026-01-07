@@ -674,7 +674,10 @@ struct UpcRhoAnalysis {
   double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2)
   {
     double dPhi = p1.Phi() - p2.Phi();
-    dPhi = std::fmod(dPhi + o2::constants::math::PI, o2::constants::math::TwoPI) - o2::constants::math::PI; // normalize to (-pi, pi)
+    while (dPhi > o2::constants::math::PI)
+      dPhi -= o2::constants::math::TwoPI;
+    while (dPhi < -o2::constants::math::PI)
+      dPhi += o2::constants::math::TwoPI;
     return dPhi;
   }
 
