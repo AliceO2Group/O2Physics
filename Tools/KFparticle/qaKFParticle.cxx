@@ -332,22 +332,22 @@ struct qaKFParticle {
   bool isSelectedTracks(const T& track1, const T& track2)
   {
     /// DCA XY of the daughter tracks to the primaty vertex
-    if (fabs(track1.dcaXY()) > d_dcaXYTrackPV) {
+    if (std::fabs(track1.dcaXY()) > d_dcaXYTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 6.f);
       return false;
     }
     /// DCA XY of the daughter tracks to the primaty vertex
-    if (fabs(track2.dcaXY()) > d_dcaXYTrackPV) {
+    if (std::fabs(track2.dcaXY()) > d_dcaXYTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 6.f);
       return false;
     }
     /// DCA Z of the daughter tracks to the primaty vertex
-    if (fabs(track1.dcaZ()) > d_dcaZTrackPV) {
+    if (std::fabs(track1.dcaZ()) > d_dcaZTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 7.f);
       return false;
     }
     /// DCA Z of the daughter tracks to the primaty vertex
-    if (fabs(track2.dcaZ()) > d_dcaZTrackPV) {
+    if (std::fabs(track2.dcaZ()) > d_dcaZTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 7.f);
       return false;
     }
@@ -459,15 +459,15 @@ struct qaKFParticle {
   {
     switch (particle) {
       case kPiPlus: {
-        if ((track.pt() <= ptPidTofMinPi) && track.hasTPC() && (abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
+        if ((track.pt() <= ptPidTofMinPi) && track.hasTPC() && (std::abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && !track.hasTOF() && (abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
+        } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && !track.hasTOF() && (std::abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinPi) && !track.hasTPC() && track.hasTOF() && (abs(track.tofNSigmaPi()) < nSigmaTofMaxPi)) {
+        } else if ((track.pt() > ptPidTofMinPi) && !track.hasTPC() && track.hasTOF() && (std::abs(track.tofNSigmaPi()) < nSigmaTofMaxPi)) {
           return true;
         } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && track.hasTOF()) {
-          float CombinednSigma = 1. / sqrt(2) * sqrt((track.tpcNSigmaPi() * track.tpcNSigmaPi()) + (track.tofNSigmaPi() * track.tofNSigmaPi()));
-          if (abs(CombinednSigma) < nSigmaCombMaxPi) {
+          float CombinednSigma = 1. / std::sqrt(2) * std::sqrt((track.tpcNSigmaPi() * track.tpcNSigmaPi()) + (track.tofNSigmaPi() * track.tofNSigmaPi()));
+          if (std::abs(CombinednSigma) < nSigmaCombMaxPi) {
             return true;
           } else {
             return false;
@@ -478,15 +478,15 @@ struct qaKFParticle {
         break;
       }
       case kKPlus: {
-        if ((track.pt() <= ptPidTofMinKa) && track.hasTPC() && (abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
+        if ((track.pt() <= ptPidTofMinKa) && track.hasTPC() && (std::abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && !track.hasTOF() && (abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
+        } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && !track.hasTOF() && (std::abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinKa) && !track.hasTPC() && track.hasTOF() && (abs(track.tofNSigmaKa()) < nSigmaTofMaxKa)) {
+        } else if ((track.pt() > ptPidTofMinKa) && !track.hasTPC() && track.hasTOF() && (std::abs(track.tofNSigmaKa()) < nSigmaTofMaxKa)) {
           return true;
         } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && track.hasTOF()) {
-          float CombinednSigma = 1. / sqrt(2) * sqrt((track.tpcNSigmaKa() * track.tpcNSigmaKa()) + (track.tofNSigmaKa() * track.tofNSigmaKa()));
-          if (abs(CombinednSigma) < nSigmaCombMaxKa) {
+          float CombinednSigma = 1. / std::sqrt(2) * std::sqrt((track.tpcNSigmaKa() * track.tpcNSigmaKa()) + (track.tofNSigmaKa() * track.tofNSigmaKa()));
+          if (std::abs(CombinednSigma) < nSigmaCombMaxKa) {
             return true;
           } else {
             return false;
@@ -937,7 +937,7 @@ struct qaKFParticle {
       //             KFPV = KFPVNew;
       //           }
       //           if (i > 1) {
-      //             if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
+      //             if (std::abs(matchedCollision.posZ() - collMC.posZ()) == min) {
       //               kfpVertex = createKFPVertexFromCollision(matchedCollision);
       //               KFParticle KFPVNew(kfpVertex);
       //               KFPV = KFPVNew;
