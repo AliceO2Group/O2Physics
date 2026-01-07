@@ -15,6 +15,10 @@
 /// \brief  Task to test the performance of the KFParticle package
 ///
 
+#ifndef HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
+#endif
+
 #include "Tools/KFparticle/qaKFParticle.h"
 
 #include "TableHelper.h"
@@ -53,12 +57,6 @@
 #include <KFVertex.h>
 
 #include <string>
-
-#ifndef HomogeneousField
-
-#define HomogeneousField
-
-#endif
 
 using namespace o2;
 using namespace o2::framework;
