@@ -31,6 +31,7 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
 #include "Tools/ML/MlResponse.h"
 
@@ -48,7 +49,6 @@
 #include "MathUtils/Utils.h"
 
 #include "Math/Vector4D.h"
-#include "TH1D.h"
 #include "TString.h"
 
 #include <algorithm>
@@ -72,9 +72,6 @@ using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
-
-using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerBits>;
-using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
 
 using MyElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronsPrefilterBitDerived>;
 using MyElectron = MyElectrons::iterator;
@@ -116,7 +113,6 @@ struct Dilepton {
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
-  Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
   // Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
   // Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
@@ -294,9 +290,17 @@ struct Dilepton {
     Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
   } dimuoncuts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "zorroGroup";
+    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name"}; // 1 trigger per 1 task
+    o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+    Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  } zorroGroup;
+
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   // o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Zorro zorro;
   int mRunNumber;
   float d_bz;
 
@@ -423,15 +427,6 @@ struct Dilepton {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
       fRegistry.add("Event/norm/hZvtx", "hZvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
     }
-    if (doprocessTriggerAnalysis) {
-      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value.data());
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", cfg_swt_name.value.data()), kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
-      hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
-      hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
-    }
     if (doprocessBC) {
       auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{6, -0.5f, 5.5f}});
       hTVXCounter->GetXaxis()->SetBinLabel(1, "TVX");
@@ -443,7 +438,7 @@ struct Dilepton {
     }
   }
 
-  template <typename TCollision>
+  template <bool isTriggerAnalysis, typename TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
@@ -482,6 +477,15 @@ struct Dilepton {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kG";
     }
+
+    // zorro
+    if constexpr (isTriggerAnalysis) {
+      zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
+      zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value);
+      zorro.populateHistRegistry(fRegistry, collision.runNumber());
+    }
+
     mRunNumber = collision.runNumber();
     fDielectronCut.SetTrackPhiPositionRange(dielectroncuts.cfg_min_phiposition_track, dielectroncuts.cfg_max_phiposition_track, dielectroncuts.cfgRefR, d_bz, dielectroncuts.cfg_mirror_phi_track);
 
@@ -1152,17 +1156,12 @@ struct Dilepton {
   void runPairing(TCollisions const& collisions, TLeptons const& posTracks, TLeptons const& negTracks, TPresilce const& perCollision, TCut const& cut, TAllTracks const& tracks)
   {
     for (const auto& collision : collisions) {
-      initCCDB(collision);
+      initCCDB<isTriggerAnalysis>(collision);
+
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       float centrality = centralities[cfgCentEstimator];
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
-      }
-
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
       }
 
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
@@ -1208,6 +1207,12 @@ struct Dilepton {
 
       if (nmod > 0 && !isGoodQvector(qvectors)) {
         continue;
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+          continue;
+        }
       }
 
       if (nmod == 2) {
@@ -1403,17 +1408,17 @@ struct Dilepton {
     passed_pairIds.reserve(posTracks.size() * negTracks.size());
 
     for (const auto& collision : collisions) {
-      initCCDB(collision);
+      initCCDB<isTriggerAnalysis>(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
-      }
+      // if constexpr (isTriggerAnalysis) { // don't call this here. this causes double counting.
+      //   if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+      //     continue;
+      //   }
+      // }
 
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
@@ -1522,8 +1527,7 @@ struct Dilepton {
   }
   PROCESS_SWITCH(Dilepton, processAnalysis, "run dilepton analysis", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, aod::EMSWTriggerInfos const& cefpinfos, aod::EMSWTriggerATCounters const& countersAT, aod::EMSWTriggerTOICounters const& countersTOI, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisions const& collisions, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
@@ -1540,25 +1544,6 @@ struct Dilepton {
     }
     map_weight.clear();
     ndf++;
-
-    // for nomalization
-    int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value);
-    for (const auto& counter : countersAT) {
-      if (counter.isAnalyzed_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 0);
-      }
-    }
-    for (const auto& counter : countersTOI) {
-      if (counter.isAnalyzedToI_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 1);
-      }
-    }
-
-    for (const auto& info : cefpinfos) {
-      fRegistry.fill(HIST("NormTrigger/hInspectedTVX"), info.runNumber(), info.nInspectedTVX());
-      fRegistry.fill(HIST("NormTrigger/hScalers"), info.runNumber(), info.nScalers()[emswtId]);
-      fRegistry.fill(HIST("NormTrigger/hSelections"), info.runNumber(), info.nSelections()[emswtId]);
-    }
   }
   PROCESS_SWITCH(Dilepton, processTriggerAnalysis, "run dilepton analysis on triggered data", false);
 

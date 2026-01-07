@@ -73,7 +73,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta range for pt-pt correlations")
+  O2_DEFINE_CONFIGURABLE(cfgEtaVnPt, float, 0.4, "eta range for pt in vn-pt correlations")
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
@@ -710,7 +710,7 @@ struct FlowTask {
   template <DataType dt, typename TTrack>
   inline void fillPtSums(TTrack track, float weff)
   {
-    if (std::abs(track.eta()) < cfgEtaPtPt) {
+    if (std::abs(track.eta()) < cfgEtaVnPt) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
     }
     std::size_t index = 0;
@@ -1126,7 +1126,7 @@ struct FlowTask {
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
-      bool withinEtaGap08 = (std::abs(track.eta()) < cfgEtaPtPt);
+      bool withinEtaGap08 = (std::abs(track.eta()) < cfgCutEta);
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
@@ -1276,7 +1276,7 @@ struct FlowTask {
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
-      bool withinEtaGap08 = (std::abs(mcParticle.eta()) < cfgEtaPtPt);
+      bool withinEtaGap08 = (std::abs(mcParticle.eta()) < cfgCutEta);
 
       if (withinPtRef) {
         registry.fill(HIST("MCGen/MChPhi"), mcParticle.phi());

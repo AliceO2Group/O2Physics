@@ -21,7 +21,7 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -138,7 +138,7 @@ struct AntiNucleiTask {
     // Track Selection
     for (const auto& track : tracks) {
 
-      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam()), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
+      double expBethe{common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam()), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
       double expSigma{expBethe * cfgBetheBlochParams->get("resolution")};
       float tpcNSigma = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 

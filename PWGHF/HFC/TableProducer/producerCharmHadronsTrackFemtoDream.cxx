@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoDreamProducer.cxx
+/// \file producerCharmHadronsTrackFemtoDream.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
@@ -96,6 +96,12 @@ enum DecayChannel { DplusToPiKPi = 0,
                     LcToPKPi,
                     D0ToPiK,
                     DstarToD0Pi
+};
+
+enum class D0CandFlag : uint8_t {
+  D0 = 0,
+  D0Bar = 1,
+  Reflected = 2
 };
 
 struct HfProducerCharmHadronsTrackFemtoDream {
@@ -201,7 +207,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
-  using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using Generated3ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using Generated2ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
+  using GeneratedDstarMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
 
   Filter filterSelectCandidateD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagHadron || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagHadron);
   Filter filterSelectCandidateDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
@@ -269,6 +277,8 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
     bool useLcMl = doprocessDataLcToPKPiWithML || doprocessMcLcToPKPiWithML;
     bool useDplusMl = doprocessDataDplusToPiKPiWithML || doprocessMcDplusToPiKPiWithML;
+    bool useD0Ml = doprocessDataD0ToPiKWithML || doprocessMcD0ToPiKWithML;
+    bool useDstarMl = doprocessDataDstarToD0PiWithML || doprocessMcDstarToD0PiWithML;
 
     if (applyMlMode == FillMlFromNewBDT) {
       if (useLcMl) {
@@ -281,6 +291,16 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         hfMlResponseDplus.cacheInputFeaturesIndices(namesInputFeatures);
         hfMlResponseDplus.init();
       }
+      if (useD0Ml) {
+        hfMlResponseD0.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseD0.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseD0.init();
+      }
+      if (useDstarMl) {
+        hfMlResponseDstar.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfMlResponseDstar.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDstar.init();
+      }
 
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
@@ -290,12 +310,25 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         if (useDplusMl) {
           hfMlResponseDplus.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
         }
+        if (useD0Ml) {
+          hfMlResponseD0.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+        if (useDstarMl) {
+          hfMlResponseDstar.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        }
+
       } else {
         if (useLcMl) {
           hfMlResponseLc.setModelPathsLocal(onnxFileNames);
         }
         if (useDplusMl) {
           hfMlResponseDplus.setModelPathsLocal(onnxFileNames);
+        }
+        if (useD0Ml) {
+          hfMlResponseD0.setModelPathsLocal(onnxFileNames);
+        }
+        if (useDstarMl) {
+          hfMlResponseDstar.setModelPathsLocal(onnxFileNames);
         }
       }
     }
@@ -559,10 +592,20 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               bdtScoreFd);
 
           } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+            int signD0 = -999;
+            if (candFlag == static_cast<int>(D0CandFlag::D0)) {
+              signD0 = +1;
+            } else if (candFlag == static_cast<int>(D0CandFlag::D0Bar)) {
+              signD0 = -1;
+            } else if (candFlag == static_cast<int>(D0CandFlag::Reflected)) {
+              signD0 = 0;
+            } else {
+              LOG(error) << "Unexpected candFlag = " << candFlag;
+            }
             rowCandCharm2Prong(
               outputCollision.lastIndex(),
               timeStamp,
-              trackPos1.sign() + trackNeg.sign(),
+              signD0,
               trackPos1.globalIndex(),
               trackNeg.globalIndex(),
               trackPos1.pt(),
@@ -679,9 +722,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
               outputMlD0.at(2) = candidate.mlProbD0()[2]; /// non-prompt score
             }
             if (candidate.mlProbD0bar().size() > 0) {
-              outputMlD0bar.at(0) = candidate.mlProbD0()[0]; /// bkg score
-              outputMlD0bar.at(1) = candidate.mlProbD0()[1]; /// prompt score
-              outputMlD0bar.at(2) = candidate.mlProbD0()[2]; /// non-prompt score
+              outputMlD0bar.at(0) = candidate.mlProbD0bar()[0]; /// bkg score
+              outputMlD0bar.at(1) = candidate.mlProbD0bar()[1]; /// prompt score
+              outputMlD0bar.at(2) = candidate.mlProbD0bar()[2]; /// non-prompt score
             }
 
           } else if (applyMlMode == FillMlFromNewBDT) {
@@ -703,8 +746,12 @@ struct HfProducerCharmHadronsTrackFemtoDream {
             LOGF(fatal, "Please check your Ml configuration!!");
           }
         }
-        fillTable(1, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
-        fillTable(2, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
+        if (candidate.isSelD0() && candidate.isSelD0bar()) {
+          fillTable(2, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2)); // tag reflection
+        } else {
+          fillTable(0, candidate.isSelD0(), outputMlD0.at(0), outputMlD0.at(1), outputMlD0.at(2));
+          fillTable(1, candidate.isSelD0bar(), outputMlD0bar.at(0), outputMlD0bar.at(1), outputMlD0bar.at(2));
+        }
 
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         if constexpr (UseCharmMl) {
@@ -864,7 +911,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcD0ToPiKWithML, "Provide Mc for D0ToPiK with ml", false);
 
-  void processMcD0ToPiKGen(GeneratedMc const& particles)
+  void processMcD0ToPiKGen(Generated2ProngMc const& particles)
   {
     fillCharmHadMcGen<DecayChannel::D0ToPiK>(particles);
   }
@@ -919,7 +966,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDstarToD0PiWithML, "Provide Mc for DstarToD0Pi with ml", false);
 
-  void processMcDstarToD0PiGen(GeneratedMc const& particles)
+  void processMcDstarToD0PiGen(GeneratedDstarMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DstarToD0Pi>(particles);
@@ -976,7 +1023,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
 
-  void processMcDplusToPiKPiGen(GeneratedMc const& particles)
+  void processMcDplusToPiKPiGen(Generated3ProngMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DplusToPiKPi>(particles);
@@ -1033,7 +1080,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsTrackFemtoDream, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
 
-  void processMcLcToPKPiGen(GeneratedMc const& particles)
+  void processMcLcToPKPiGen(Generated3ProngMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::LcToPKPi>(particles);

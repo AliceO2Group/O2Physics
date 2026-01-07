@@ -159,7 +159,7 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgDoTVXinTRD, bool, true, "check kTVXinTRD")
     O2_DEFINE_CONFIGURABLE(cfgDoNoTimeFrameBorder, bool, true, "check kNoTimeFrameBorder")
     O2_DEFINE_CONFIGURABLE(cfgDoNoITSROFrameBorder, bool, true, "check kNoITSROFrameBorder")
-    O2_DEFINE_CONFIGURABLE(cfgDoNoSameBunchPileup, bool, true, "check kNoITSROFrameBorder")
+    O2_DEFINE_CONFIGURABLE(cfgDoNoSameBunchPileup, bool, true, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
     O2_DEFINE_CONFIGURABLE(cfgDoIsGoodZvtxFT0vsPV, bool, true, "check kIsGoodZvtxFT0vsPV")
     O2_DEFINE_CONFIGURABLE(cfgDoNoCollInTimeRangeStandard, bool, true, "check kNoCollInTimeRangeStandard")
     O2_DEFINE_CONFIGURABLE(cfgDoIsGoodITSLayersAll, bool, true, "check kIsGoodITSLayersAll")
@@ -190,6 +190,7 @@ struct FlowGfwOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "Fill and output NUA weights run by run")
   O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "do QA")
+  O2_DEFINE_CONFIGURABLE(cfgUseT0MCent, bool, false, "Use T0M cent")
 
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -205,6 +206,7 @@ struct FlowGfwOmegaXi {
   ConfigurableAxis cfgaxisLambdaMassforflow{"cfgaxisLambdaMassforflow", {32, 1.08f, 1.16f}, "Inv. Mass (GeV)"};
   ConfigurableAxis cfgaxisNch{"cfgaxisNch", {3000, 0.5, 3000.5}, "Nch"};
   ConfigurableAxis cfgaxisLocalDensity{"cfgaxisLocalDensity", {200, 0, 600}, "local density"};
+  ConfigurableAxis cfgaxisRun{"cfgaxisRun", {7, 0, 7}, "axis of runs in the data"};
 
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
@@ -213,7 +215,7 @@ struct FlowGfwOmegaXi {
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU>>; // tracks filter
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::MultsRun3>>;                                               // collisions filter
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::MultsRun3>>;                               // collisions filter
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, TracksPID, aod::TrackSelection, o2::aod::TrackSelectionExtension>;
 
   // Connect to ccdb
@@ -385,14 +387,19 @@ struct FlowGfwOmegaXi {
           histosPhi[hPhiOmegacorr] = registry.add<TH1>(Form("%d/hPhiOmegacorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
           th1sList.insert(std::make_pair(runNumber, histosPhi));
         }
-
-        std::vector<std::shared_ptr<TH3>> nuaTH3(kCount_TH3Names);
-        nuaTH3[hPhiEtaVtxz] = registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
-        nuaTH3[hPhiEtaVtxzK0s] = registry.add<TH3>(Form("%d/hPhiEtaVtxzK0s", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
-        nuaTH3[hPhiEtaVtxzLambda] = registry.add<TH3>(Form("%d/hPhiEtaVtxzLambda", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
-        nuaTH3[hPhiEtaVtxzXi] = registry.add<TH3>(Form("%d/hPhiEtaVtxzXi", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
-        nuaTH3[hPhiEtaVtxzOmega] = registry.add<TH3>(Form("%d/hPhiEtaVtxzOmega", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
-        th3sList.insert(std::make_pair(runNumber, nuaTH3));
+      }
+      // hist for NUA
+      registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexK0s", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexLambda", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexXi", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertexOmega", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertex"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexK0s"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexLambda"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexXi"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+        registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertexOmega"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
     }
 
@@ -1011,13 +1018,26 @@ struct FlowGfwOmegaXi {
     if (nTot < 1)
       return;
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
+    auto cent = collision.centFT0C();
+    if (cfgUseT0MCent)
+      cent = collision.centFT0M();
     if (!collision.sel8())
       return;
     registry.fill(HIST("hEventCount"), 1.5);
 
     if (!eventSelected(collision, cent, interactionRate))
       return;
+    int matchedPosition = -1;
+    for (uint64_t idxPosition = 0; idxPosition < this->runNumbers.size(); idxPosition++) {
+      if (this->runNumbers[idxPosition] == runNumber) {
+        matchedPosition = idxPosition;
+        break;
+      }
+    }
+    if (matchedPosition == -1) {
+      return;
+    }
+
     TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
@@ -1036,6 +1056,8 @@ struct FlowGfwOmegaXi {
         if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
           continue;
       }
+      if ((track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value) || (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value) || (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value))
+        continue;
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hPhicorr"), track.phi(), wacc);
       registry.fill(HIST("hEta"), track.eta());
@@ -1060,7 +1082,7 @@ struct FlowGfwOmegaXi {
           th1sList[runNumber][hPhi]->Fill(track.phi());
           th1sList[runNumber][hPhicorr]->Fill(track.phi(), wacc);
         }
-        th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), vtxz);
+        registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), vtxz);
       }
     }
     if (cfgDoLocDenCorr) {
@@ -1190,6 +1212,8 @@ struct FlowGfwOmegaXi {
           registry.fill(HIST("hPhiK0s"), v0.phi());
           registry.fill(HIST("hPhiK0scorr"), v0.phi(), wacc);
           fGFW->Fill(v0.eta(), fK0sPtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nK0sPtBins), v0.phi(), wacc * weff * wloc, 8);
+          if (fK0sPtAxis->FindBin(v0.pt()) - 1 == 6)
+            fGFW->Fill(v0.eta(), (fK0sMass->FindBin(v0.mK0Short()) - 1), v0.phi(), wacc * weff * wloc, 2048);
           if (cfgOutputNUAWeights)
             fWeightsK0s->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
           if (cfgOutputrunbyrun) {
@@ -1197,7 +1221,7 @@ struct FlowGfwOmegaXi {
               th1sList[runNumber][hPhiK0s]->Fill(v0.phi());
               th1sList[runNumber][hPhiK0scorr]->Fill(v0.phi(), wacc);
             }
-            th3sList[runNumber][hPhiEtaVtxzK0s]->Fill(v0.phi(), v0.eta(), vtxz);
+            registry.fill(HIST("correction/hRunNumberPhiEtaVertexK0s"), matchedPosition, v0.phi(), v0.eta(), vtxz);
           }
         }
         if (isLambda) {
@@ -1224,7 +1248,7 @@ struct FlowGfwOmegaXi {
               th1sList[runNumber][hPhiLambda]->Fill(v0.phi());
               th1sList[runNumber][hPhiLambdacorr]->Fill(v0.phi(), wacc);
             }
-            th3sList[runNumber][hPhiEtaVtxzLambda]->Fill(v0.phi(), v0.eta(), vtxz);
+            registry.fill(HIST("correction/hRunNumberPhiEtaVertexLambda"), matchedPosition, v0.phi(), v0.eta(), vtxz);
           }
         }
       }
@@ -1401,7 +1425,7 @@ struct FlowGfwOmegaXi {
               th1sList[runNumber][hPhiOmega]->Fill(casc.phi());
               th1sList[runNumber][hPhiOmegacorr]->Fill(casc.phi(), wacc);
             }
-            th3sList[runNumber][hPhiEtaVtxzOmega]->Fill(casc.phi(), casc.eta(), vtxz);
+            registry.fill(HIST("correction/hRunNumberPhiEtaVertexOmega"), matchedPosition, casc.phi(), casc.eta(), vtxz);
           }
         }
         if (isXi) {
@@ -1430,7 +1454,7 @@ struct FlowGfwOmegaXi {
               th1sList[runNumber][hPhiXi]->Fill(casc.phi());
               th1sList[runNumber][hPhiXicorr]->Fill(casc.phi(), wacc);
             }
-            th3sList[runNumber][hPhiEtaVtxzXi]->Fill(casc.phi(), casc.eta(), vtxz);
+            registry.fill(HIST("correction/hRunNumberPhiEtaVertexXi"), matchedPosition, casc.phi(), casc.eta(), vtxz);
           }
         }
       }

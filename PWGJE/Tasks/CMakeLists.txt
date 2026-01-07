@@ -336,7 +336,8 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(bjet-tagging-gnn
                         SOURCES bjetTaggingGnn.cxx
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                        O2Physics::AnalysisCCDB
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-shape
                         SOURCES jetShape.cxx
