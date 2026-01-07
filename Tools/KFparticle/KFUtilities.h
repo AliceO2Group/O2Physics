@@ -25,12 +25,12 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
-
-#include <TDatabasePDG.h> // FIXME
 
 #include <KFPTrack.h>
 #include <KFPVertex.h>
@@ -241,8 +241,9 @@ float cpaXYFromKF(KFParticle kfp, KFParticle PV)
 /// @param kfpvtx KFPartice mother
 /// @param kfpprong0 KFParticle Prong 0
 /// @param kfpprong1 KFParticele Prong 1
+/// @param pdgdb Service PDG data base
 /// @return cos theta star
-float cosThetaStarFromKF(int iProng, int pdgvtx, int pdgprong0, int pdgprong1, KFParticle kfpprong0, KFParticle kfpprong1)
+float cosThetaStarFromKF(int iProng, int pdgvtx, int pdgprong0, int pdgprong1, KFParticle kfpprong0, KFParticle kfpprong1, const o2::framework::Service<o2::framework::O2DatabasePDG>& pdgdb)
 {
   float px0{}, py0{}, pz0{}, px1{}, py1{}, pz1{};
 
@@ -254,9 +255,9 @@ float cosThetaStarFromKF(int iProng, int pdgvtx, int pdgprong0, int pdgprong1, K
   py1 = kfpprong1.GetPy();
   pz1 = kfpprong1.GetPz();
   std::array<double, 2> m = {0., 0.};
-  m[0] = TDatabasePDG::Instance()->GetParticle(pdgprong0)->Mass();           // FIXME: Get from the PDG service of the common header
-  m[1] = TDatabasePDG::Instance()->GetParticle(pdgprong1)->Mass();           // FIXME: Get from the PDG service of the common header
-  const double mTot = TDatabasePDG::Instance()->GetParticle(pdgvtx)->Mass(); // FIXME: Get from the PDG service of the common header
+  m[0] = pdgdb->Mass(pdgprong0);
+  m[1] = pdgdb->Mass(pdgprong1);
+  const double mTot = pdgdb->Mass(pdgvtx);
 
   const float cosThetastar = static_cast<float>(RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m, mTot, iProng));
   return cosThetastar;

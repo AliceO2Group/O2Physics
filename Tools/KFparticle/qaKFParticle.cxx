@@ -19,26 +19,6 @@
 
 #include "TableHelper.h"
 
-#include <CCDB/BasicCCDBManager.h>
-
-#include <TDatabasePDG.h>
-#include <TPDGCode.h>
-
-#include <string>
-
-/// includes O2
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-
-/// includes O2Physics
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -49,12 +29,30 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-/// includes KFParticle
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TDatabasePDG.h>
+#include <TPDGCode.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
+
+#include <string>
 
 #ifndef HomogeneousField
 
@@ -76,6 +74,7 @@ struct qaKFParticle {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdgdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
@@ -598,7 +597,7 @@ struct qaKFParticle {
     float chi2geo = KFDZero.GetChi2() / KFDZero.GetNDF();
     float normdecayLength = KFDZero_PV.GetDecayLength() / KFDZero_PV.GetErrDecayLength();
     float chi2topo = KFDZero_PV.GetChi2() / KFDZero_PV.GetNDF();
-    const double pseudoRndm = track1.pt() * 1000. - (int64_t)(track1.pt() * 1000);
+    const double pseudoRndm = track1.pt() * 1000. - static_cast<int64_t>((track1.pt() * 1000));
     if (pseudoRndm < d_DwnSmplFact) {
       if (writeTree) {
         /// Filling the D0 tree
@@ -800,7 +799,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon);
+        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon, pdgdb);
         if (!isSelectedDoGeo(KFDZero, KFPV, cosThetaStar)) {
           continue;
         }
@@ -835,7 +834,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion);
+        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion, pdgdb);
         if (!isSelectedDoGeo(KFDZeroBar, KFPV, cosThetaStar)) {
           continue;
         }
@@ -1107,7 +1106,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon);
+        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon, pdgdb);
         if (!isSelectedDoGeo(KFDZero, KFPV, cosThetaStar)) {
           continue;
         }
@@ -1147,7 +1146,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion);
+        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion, pdgdb);
         if (!isSelectedDoGeo(KFDZeroBar, KFPV, cosThetaStar)) {
           continue;
         }
