@@ -49,31 +49,14 @@ namespace reco_tree
 // event info
 DECLARE_SOA_COLUMN(RecoSetting, recoSetting, uint16_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-DECLARE_SOA_COLUMN(LocalBC, localBC, int);
-DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
-DECLARE_SOA_COLUMN(PosX, posX, float);
-DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
-// FIT info
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
-DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, float);
-DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
-DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
-DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
-DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
-DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
 // ZDC info
 DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
-// pion tracks
-DECLARE_SOA_COLUMN(PhiRandom, phiRandom, float);
-DECLARE_SOA_COLUMN(PhiCharge, phiCharge, float);
+// tracks
 DECLARE_SOA_COLUMN(LeadingTrackSign, leadingTrackSign, int);
 DECLARE_SOA_COLUMN(SubleadingTrackSign, subleadingTrackSign, int);
 DECLARE_SOA_COLUMN(LeadingTrackPt, leadingTrackPt, float);
@@ -82,6 +65,7 @@ DECLARE_SOA_COLUMN(LeadingTrackEta, leadingTrackEta, float);
 DECLARE_SOA_COLUMN(SubleadingTrackEta, subleadingTrackEta, float);
 DECLARE_SOA_COLUMN(LeadingTrackPhi, leadingTrackPhi, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPhi, subleadingTrackPhi, float);
+DECLARE_SOA_COLUMN(LeadingTrackPiPID, leadingTrackPiPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPiPID, subleadingTrackPiPID, float);
 DECLARE_SOA_COLUMN(LeadingTrackElPID, leadingTrackElPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackElPID, subleadingTrackElPID, float);
@@ -89,19 +73,10 @@ DECLARE_SOA_COLUMN(LeadingTrackKaPID, leadingTrackKaPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackKaPID, subleadingTrackKaPID, float);
 DECLARE_SOA_COLUMN(LeadingTrackPrPID, leadingTrackPrPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPrPID, subleadingTrackPrPID, float);
-DECLARE_SOA_COLUMN(LeadingTrackDcaXY, leadingTrackDcaXY, float);
-DECLARE_SOA_COLUMN(SubleadingTrackDcaXY, subleadingTrackDcaXY, float);
-DECLARE_SOA_COLUMN(LeadingTrackDcaZ, leadingTrackDcaZ, float);
-DECLARE_SOA_COLUMN(SubleadingTrackDcaZ, subleadingTrackDcaZ, float);
-DECLARE_SOA_COLUMN(LeadingTrackTpcSignal, leadingTrackTpcSignal, float);
-DECLARE_SOA_COLUMN(SubleadingTrackTpcSignal, subleadingTrackTpcSignal, float);
 } // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
-                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::LocalBC, reco_tree::NumContrib, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ,
-                  reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
-                  reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
+                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosZ,
                   reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
-                  reco_tree::PhiRandom, reco_tree::PhiCharge,
                   reco_tree::LeadingTrackSign, reco_tree::SubleadingTrackSign,
                   reco_tree::LeadingTrackPt, reco_tree::SubleadingTrackPt,
                   reco_tree::LeadingTrackEta, reco_tree::SubleadingTrackEta,
@@ -109,23 +84,14 @@ DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
                   reco_tree::LeadingTrackPiPID, reco_tree::SubleadingTrackPiPID,
                   reco_tree::LeadingTrackElPID, reco_tree::SubleadingTrackElPID,
                   reco_tree::LeadingTrackKaPID, reco_tree::SubleadingTrackKaPID,
-                  reco_tree::LeadingTrackPrPID, reco_tree::SubleadingTrackPrPID,
-                  reco_tree::LeadingTrackDcaXY, reco_tree::SubleadingTrackDcaXY,
-                  reco_tree::LeadingTrackDcaZ, reco_tree::SubleadingTrackDcaZ,
-                  reco_tree::LeadingTrackTpcSignal, reco_tree::SubleadingTrackTpcSignal);
+                  reco_tree::LeadingTrackPrPID, reco_tree::SubleadingTrackPrPID);
 
 namespace mc_tree
 {
 // misc event info
-DECLARE_SOA_COLUMN(LocalBc, localBc, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-// event vertex
-DECLARE_SOA_COLUMN(PosX, posX, float);
-DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
-// pion tracks
-DECLARE_SOA_COLUMN(PhiRandom, phiRandom, float);
-DECLARE_SOA_COLUMN(PhiCharge, phiCharge, float);
+// tracks
 DECLARE_SOA_COLUMN(LeadingTrackSign, leadingTrackSign, int);
 DECLARE_SOA_COLUMN(SubleadingTrackSign, subleadingTrackSign, int);
 DECLARE_SOA_COLUMN(LeadingTrackPt, leadingTrackPt, float);
@@ -136,9 +102,7 @@ DECLARE_SOA_COLUMN(LeadingTrackPhi, leadingTrackPhi, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPhi, subleadingTrackPhi, float);
 } // namespace mc_tree
 DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
-                  mc_tree::LocalBc, mc_tree::RunNumber,
-                  mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ,
-                  mc_tree::PhiRandom, mc_tree::PhiCharge,
+                  mc_tree::RunNumber, mc_tree::PosZ,
                   mc_tree::LeadingTrackSign, mc_tree::SubleadingTrackSign,
                   mc_tree::LeadingTrackPt, mc_tree::SubleadingTrackPt,
                   mc_tree::LeadingTrackEta, mc_tree::SubleadingTrackEta,
@@ -810,11 +774,8 @@ struct UpcRhoAnalysis {
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
 
     // fill recoTree
-    recoTree(collision.flags(), collision.runNumber(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
-         collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-         collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
+    recoTree(collision.flags(), collision.runNumber(), collision.posZ(),
          energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
-         phiRandom, phiCharge,
          leadingTrack.sign(), subleadingTrack.sign(),
          leadingPt, subleadingPt,
          leadingEta, subleadingEta,
@@ -822,10 +783,7 @@ struct UpcRhoAnalysis {
          leadingTrack.tpcNSigmaPi(), subleadingTrack.tpcNSigmaPi(),
          leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl(),
          leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa(),
-         leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr(),
-         leadingTrack.dcaXY(), subleadingTrack.dcaXY(),
-         leadingTrack.dcaZ(), subleadingTrack.dcaZ(),
-         leadingTrack.tpcSignal(), subleadingTrack.tpcSignal());
+         leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr());
 
     if (!tracksPassPID(cutTracks)) // apply PID cut
       return;
@@ -1014,9 +972,7 @@ struct UpcRhoAnalysis {
     }
 
     // fill mcTree
-    mcTree(mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches, runNumber,
-           mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-           phiRandom, phiCharge,
+    mcTree(runNumber, mcCollision.posZ(),
            leadingPion.pdgCode() / std::abs(leadingPion.pdgCode()), subleadingPion.pdgCode() / std::abs(subleadingPion.pdgCode()),
            pt(leadingPion.px(), leadingPion.py()), pt(subleadingPion.px(), subleadingPion.py()),
            eta(leadingPion.px(), leadingPion.py(), leadingPion.pz()), eta(subleadingPion.px(), subleadingPion.py(), subleadingPion.pz()),
