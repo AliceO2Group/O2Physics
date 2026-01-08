@@ -47,10 +47,10 @@ using MuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 struct FwdTrackExtension {
   Produces<aod::FwdTracksDCA> fwdDCA;
-  Configurable<std::string> fGeoPath{"fGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> fGrpmagPath{"fGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> fConfigCcdbUrl{"fConfigCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<bool> fRefitGlobalMuon{"fRefitGlobalMuon", true, "Recompute parameters of global muons"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> configCcdbUrl{"configCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "Recompute parameters of global muons"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::parameters::GRPMagField* grpmag = nullptr; // for run 3, we access GRPMagField from GLO/Config/GRPMagField
@@ -59,13 +59,13 @@ struct FwdTrackExtension {
   void init(o2::framework::InitContext&)
   {
     // Load geometry
-    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setURL(configCcdbUrl);
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
 
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       LOGF(info, "Load geometry from CCDB");
-      fCCDB->get<TGeoManager>(fGeoPath);
+      fCCDB->get<TGeoManager>(geoPath);
     }
   }
 
@@ -73,7 +73,7 @@ struct FwdTrackExtension {
   {
     auto bc = collision.template bc_as<o2::aod::BCsWithTimestamps>();
     if (fCurrentRun != bc.runNumber()) {
-      grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fGrpmagPath, bc.timestamp());
+      grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
       if (grpmag != nullptr) {
         LOGF(info, "Init field from GRP");
         o2::base::Propagator::initFieldFromGRP(grpmag);
@@ -86,7 +86,7 @@ struct FwdTrackExtension {
     for (const auto& track : tracks) {
       const auto trackType = track.trackType();
       o2::dataformats::GlobalFwdTrack fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd(track, track);
-      if (fRefitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
+      if (refitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
         auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
         auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
         o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
