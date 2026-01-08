@@ -809,7 +809,7 @@ struct sigma0builder {
 
         // MC QA histograms
         // Parenthood check for sigma0-like candidate
-        if (MCParticle_v01.pdgCode() == PDG_t::kGamma&& TMath::Abs(MCParticle_v02.pdgCode()) == PDG_t::kLambda0) {
+        if (MCParticle_v01.pdgCode() == PDG_t::kGamma && TMath::Abs(MCParticle_v02.pdgCode()) == PDG_t::kLambda0) {
           for (const auto& mother1 : MCMothersList_v01) { // Photon mothers
             histos.fill(HIST("MCQA/h2dPhotonNMothersVsPDG"), MCMothersList_v01.size(), mother1.pdgCode());
             histos.fill(HIST("MCQA/h2dPhotonNMothersVsMCProcess"), MCMothersList_v01.size(), mother1.getProcess());
@@ -1189,13 +1189,13 @@ struct sigma0builder {
 
     // Fill with properties
     GenInfo.IsPrimary = mcParticle.isPhysicalPrimary();
-    GenInfo.IsV0Lambda = mcParticle.pdgCode() == PDG_t::kLambda0; //3122
-    GenInfo.IsV0AntiLambda = mcParticle.pdgCode() == PDG_t::kLambda0Bar; //-3122
-    GenInfo.IsV0KShort = mcParticle.pdgCode() == PDG_t::kK0Short; //310
-    GenInfo.IsPi0 = mcParticle.pdgCode() == PDG_t::kPi0; //111;
-    GenInfo.IsSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0; // PDG_t::kSigma0
-    GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0Bar; //-3212
-    GenInfo.IsKStar = mcParticle.pdgCode() == o2::constants::physics::Pdg::kK0Star892; //313; 
+    GenInfo.IsV0Lambda = mcParticle.pdgCode() == PDG_t::kLambda0;                      // 3122
+    GenInfo.IsV0AntiLambda = mcParticle.pdgCode() == PDG_t::kLambda0Bar;               //-3122
+    GenInfo.IsV0KShort = mcParticle.pdgCode() == PDG_t::kK0Short;                      // 310
+    GenInfo.IsPi0 = mcParticle.pdgCode() == PDG_t::kPi0;                               // 111;
+    GenInfo.IsSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0;                         // PDG_t::kSigma0
+    GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0Bar;                  //-3212
+    GenInfo.IsKStar = mcParticle.pdgCode() == o2::constants::physics::Pdg::kK0Star892; // 313;
     GenInfo.IsProducedByGenerator = mcParticle.producedByGenerator();
     GenInfo.MCProcess = mcParticle.getProcess();
     GenInfo.MCPt = mcParticle.pt();
@@ -2199,7 +2199,7 @@ struct sigma0builder {
             auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
             // True Photon
-            if (v0MC.pdgCode() == PDG_t::kGamma&& fPassPhotonSel) {
+            if (v0MC.pdgCode() == PDG_t::kGamma && fPassPhotonSel) {
               histos.fill(HIST("PhotonLambdaQA/h3dTruePhotonMass"), centrality, v0MC.ptMC(), v0.mGamma());
               if (TMath::Abs(v0MC.pdgCodeMother()) == PDG_t::kSigma0) { // If from sigma0 or ASigma0
                 histos.fill(HIST("PhotonLambdaQA/h2dTrueSigma0PhotonMass"), v0MC.ptMC(), v0.mGamma());
