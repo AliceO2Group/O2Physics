@@ -201,6 +201,8 @@ struct CorrelationTask {
         multAxes.emplace_back(axisMultCorrMult, "Nch PV");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
         multAxes.emplace_back(axisMultCorrMult, "Nch Global");
+      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0M)
+        multAxes.emplace_back(axisMultCorrCent, "FT0M centrality");
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
