@@ -654,7 +654,7 @@ struct JetHadronRecoil {
           registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
           registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
         }
-      }s
+      }
     }
   }
 
