@@ -258,7 +258,7 @@ struct Chargedkstaranalysis {
   // PDG code
   int kPDGK0s = kK0Short;
   int kKstarPlus = static_cast<int>(o2::constants::physics::Pdg::kKPlusStar892);
-  int kPiPlus = kPiPlus;
+  //int kPiPlus = kPiPlus;
   int kPDGK0 = kK0;
   // Variable declaration
   ROOT::Math::PxPyPzEVector beam1{0., 0., -helicityCfgs.beamMomentum, 13600. / 2.};
