@@ -13,10 +13,11 @@
 ///        it is meant to be a blank page for further developments.
 /// \author everyone
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include <TPDGCode.h> // for PDG codes
 
@@ -34,7 +35,7 @@ struct myExampleTask {
 
   Filter trackDCA = nabs(aod::track::dcaXY) < maxDCAxy;
 
-  //This is an example of a convenient declaration of "using"
+  // This is an example of a convenient declaration of "using"
   using myCompleteTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
   using myFilteredTracksMC = soa::Filtered<myCompleteTracksMC>;
@@ -62,29 +63,34 @@ struct myExampleTask {
     histos.add("ptGeneratedKaon", "ptGeneratedKaon", kTH1F, {axisPt});
     histos.add("ptGeneratedProton", "ptGeneratedProton", kTH1F, {axisPt});
 
-    histos.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10,-0.5f, 9.5f}});
-    histos.add("multiplicityCorrelation", "multiplicityCorrelations", kTH2F, {{100, -0.5f, 99.5f}, {100,-0.5f, 99.5f}});
+    histos.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10, -0.5f, 9.5f}});
+    histos.add("multiplicityCorrelation", "multiplicityCorrelations", kTH2F, {{100, -0.5f, 99.5f}, {100, -0.5f, 99.5f}});
   }
 
   template <bool fillResolution = true, typename TCollision, typename TTracks>
-  void processStuff(TCollision const& collision, TTracks const& tracks) {
+  void processStuff(TCollision const& collision, TTracks const& tracks)
+  {
     histos.fill(HIST("eventCounter"), 0.5f);
     for (const auto& track : tracks) {
-      if( track.tpcNClsCrossedRows() < minTPCCrossedRows ) continue; //badly tracked
+      if (track.tpcNClsCrossedRows() < minTPCCrossedRows)
+        continue; // badly tracked
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("ptHistogram"), track.pt());
 
       // this part only done if dealing with MC
-      if constexpr (requires { track.has_mcParticle(); }) { // does the getter exist? 
-        if(track.has_mcParticle()){ // is the return 'true'? -> N.B. different question! 
-          auto mcParticle = track.mcParticle(); 
-          if constexpr (fillResolution){ // compile-time check
+      if constexpr (requires { track.has_mcParticle(); }) { // does the getter exist?
+        if (track.has_mcParticle()) {                       // is the return 'true'? -> N.B. different question!
+          auto mcParticle = track.mcParticle();
+          if constexpr (fillResolution) { // compile-time check
             histos.fill(HIST("ptResolution"), track.pt(), track.pt() - mcParticle.pt());
           }
-          if(mcParticle.isPhysicalPrimary() && fabs(mcParticle.y())<0.5){ // do this in the context of the track ! (context matters!!!)
-            if(abs(mcParticle.pdgCode())==kPiPlus) histos.fill(HIST("ptHistogramPion"), mcParticle.pt());
-            if(abs(mcParticle.pdgCode())==kKPlus) histos.fill(HIST("ptHistogramKaon"), mcParticle.pt());
-            if(abs(mcParticle.pdgCode())==kProton) histos.fill(HIST("ptHistogramProton"), mcParticle.pt());
+          if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.y()) < 0.5) { // do this in the context of the track ! (context matters!!!)
+            if (abs(mcParticle.pdgCode()) == kPiPlus)
+              histos.fill(HIST("ptHistogramPion"), mcParticle.pt());
+            if (abs(mcParticle.pdgCode()) == kKPlus)
+              histos.fill(HIST("ptHistogramKaon"), mcParticle.pt());
+            if (abs(mcParticle.pdgCode()) == kProton)
+              histos.fill(HIST("ptHistogramProton"), mcParticle.pt());
           }
         }
       }
@@ -93,13 +99,13 @@ struct myExampleTask {
 
   void processRecoInData(aod::Collision const& collision, myFilteredTracks const& tracks)
   {
-    processStuff(collision, tracks); 
+    processStuff(collision, tracks);
   }
   PROCESS_SWITCH(myExampleTask, processRecoInData, "process reconstructed information", true);
 
   void processRecoInSim(aod::Collision const& collision, myFilteredTracksMC const& tracks, aod::McParticles const&)
   {
-    processStuff(collision, tracks); 
+    processStuff(collision, tracks);
   }
   PROCESS_SWITCH(myExampleTask, processRecoInSim, "process reconstructed information", false);
 
@@ -107,21 +113,25 @@ struct myExampleTask {
   {
     histos.fill(HIST("numberOfRecoCollisions"), collisions.size()); // number of times coll was reco-ed
 
-    //Now loop over each time this collision has been reconstructed and aggregate tracks
+    // Now loop over each time this collision has been reconstructed and aggregate tracks
     std::vector<int> numberOfTracks;
     for (auto& collision : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       // size of grouped tracks may help in understanding why event was split!
       numberOfTracks.emplace_back(groupedTracks.size());
     }
-    if( collisions.size() == 2 ) histos.fill(HIST("multiplicityCorrelation"), numberOfTracks[0], numberOfTracks[1]);
+    if (collisions.size() == 2)
+      histos.fill(HIST("multiplicityCorrelation"), numberOfTracks[0], numberOfTracks[1]);
 
-    //Loop over particles in this mcCollision (first argument of process: iterator)
+    // Loop over particles in this mcCollision (first argument of process: iterator)
     for (const auto& mcParticle : mcParticles) {
-      if(mcParticle.isPhysicalPrimary() && fabs(mcParticle.y())<0.5){ // do this in the context of the MC loop ! (context matters!!!)
-        if(abs(mcParticle.pdgCode())==kPiPlus) histos.fill(HIST("ptGeneratedPion"), mcParticle.pt());
-        if(abs(mcParticle.pdgCode())==kKPlus) histos.fill(HIST("ptGeneratedKaon"), mcParticle.pt());
-        if(abs(mcParticle.pdgCode())==kProton) histos.fill(HIST("ptGeneratedProton"), mcParticle.pt());
+      if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.y()) < 0.5) { // do this in the context of the MC loop ! (context matters!!!)
+        if (abs(mcParticle.pdgCode()) == kPiPlus)
+          histos.fill(HIST("ptGeneratedPion"), mcParticle.pt());
+        if (abs(mcParticle.pdgCode()) == kKPlus)
+          histos.fill(HIST("ptGeneratedKaon"), mcParticle.pt());
+        if (abs(mcParticle.pdgCode()) == kProton)
+          histos.fill(HIST("ptGeneratedProton"), mcParticle.pt());
       }
     }
   }

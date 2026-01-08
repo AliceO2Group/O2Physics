@@ -43,7 +43,7 @@ struct DerivedBasicConsumer {
   Configurable<float> associatedMinPt{"associatedMinPt", 4.0f, "NSassociatedMinPt"};
   Configurable<float> associatedMaxPt{"associatedMaxPt", 6.0f, "associatedMaxPt"};
   Configurable<float> triggerMinPt{"triggerMinPt", 6.0f, "triggerMinPt"};
-  ConfigurableAxis axisPt{"axisPt", {200,0.0f,20.0f}, "pt axis"};
+  ConfigurableAxis axisPt{"axisPt", {200, 0.0f, 20.0f}, "pt axis"};
 
   SliceCache cache;
 
@@ -61,7 +61,7 @@ struct DerivedBasicConsumer {
     // define axes you want to use
     const AxisSpec axisCounter{1, 0, +1, ""};
     const AxisSpec axisPVz{300, -15.0f, +15.0f, ""};
-    const AxisSpec axisDeltaPhi{100, -0.5*o2::constants::math::PI, +1.5*o2::constants::math::PI, "#Delta#phi"};
+    const AxisSpec axisDeltaPhi{100, -0.5 * o2::constants::math::PI, +1.5 * o2::constants::math::PI, "#Delta#phi"};
     const AxisSpec axisDeltaEta{100, -1.0, +1.0, "#Delta#eta"};
 
     histos.add("eventCounter", "eventCounter", kTH1D, {axisCounter});
@@ -89,15 +89,15 @@ struct DerivedBasicConsumer {
     for (auto& track : trigTracksThisCollision)
       histos.fill(HIST("ptTrigHistogram"), track.pt());
 
-    for (auto& trigger : trigTracksThisCollision){
-      for (auto& associated : assoTracksThisCollision){
-        histos.fill(HIST("correlationFunction"), ComputeDeltaPhi(trigger.phi(),associated.phi()));
+    for (auto& trigger : trigTracksThisCollision) {
+      for (auto& associated : assoTracksThisCollision) {
+        histos.fill(HIST("correlationFunction"), ComputeDeltaPhi(trigger.phi(), associated.phi()));
       }
     }
 
     for (auto& [trigger, associated] : combinations(o2::soa::CombinationsFullIndexPolicy(trigTracksThisCollision, assoTracksThisCollision))) {
-      histos.fill(HIST("correlationFunctionO2"), ComputeDeltaPhi(trigger.phi(),associated.phi()));
-      histos.fill(HIST("correlationFunction2d"), ComputeDeltaPhi(trigger.phi(),associated.phi()), trigger.eta() - associated.eta());
+      histos.fill(HIST("correlationFunctionO2"), ComputeDeltaPhi(trigger.phi(), associated.phi()));
+      histos.fill(HIST("correlationFunction2d"), ComputeDeltaPhi(trigger.phi(), associated.phi()), trigger.eta() - associated.eta());
     }
   }
 };
