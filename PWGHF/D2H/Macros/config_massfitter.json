@@ -86,7 +86,7 @@
     "_FixFracDoubleGausManual": "fix fraction of sigmas for double gauss manually",
     "SliceVarName": "T",
     "SliceVarUnit": "ps",
-    "_SliceVarName, #SliceVarUnit": "e.g. pT, GeV/c or something else depending on user's needs",
+    "_SliceVarName, _SliceVarUnit": "e.g. pT, GeV/c or something else depending on user's needs",
     "SliceVarMin": [
         0.2,
         0.35,
