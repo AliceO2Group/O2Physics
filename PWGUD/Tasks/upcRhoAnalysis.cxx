@@ -809,42 +809,21 @@ struct UpcRhoAnalysis {
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
 
     // fill recoTree
-    int localBc = collision.globalBC() % o2::constants::lhc::LHCMaxBunches;
-    int trackSignPos = positiveTrack.sign();
-    int trackSignNeg = negativeTrack.sign();
-    float trackPtPos = positiveTrack.pt();
-    float trackPtNeg = negativeTrack.pt();
-    float trackEtaPos = eta(positiveTrack.px(), positiveTrack.py(), positiveTrack.pz());
-    float trackEtaNeg = eta(negativeTrack.px(), negativeTrack.py(), negativeTrack.pz());
-    float trackPhiPos = phi(positiveTrack.px(), positiveTrack.py());
-    float trackPhiNeg = phi(negativeTrack.px(), negativeTrack.py());
-    float trackPiPIDPos = positiveTrack.tpcNSigmaPi();
-    float trackPiPIDNeg = negativeTrack.tpcNSigmaPi();
-    float trackElPIDPos = positiveTrack.tpcNSigmaEl();
-    float trackElPIDNeg = negativeTrack.tpcNSigmaEl();
-    float trackKaPIDPos = positiveTrack.tpcNSigmaKa();
-    float trackKaPIDNeg = negativeTrack.tpcNSigmaKa();
-    float trackDcaXYPos = positiveTrack.dcaXY();
-    float trackDcaXYNeg = negativeTrack.dcaXY();
-    float trackDcaZPos = positiveTrack.dcaZ();
-    float trackDcaZNeg = negativeTrack.dcaZ();
-    float trackTpcSignalPos = positiveTrack.tpcSignal();
-    float trackTpcSignalNeg = negativeTrack.tpcSignal();
-    recoTree(collision.flags(), collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
+    recoTree(collision.flags(), collision.runNumber(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
          collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
          collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
          energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
          phiRandom, phiCharge,
-         trackSignPos, trackSignNeg,
-         trackPtPos, trackPtNeg,
-         trackEtaPos, trackEtaNeg,
-         trackPhiPos, trackPhiNeg,
-         trackPiPIDPos, trackPiPIDNeg,
-         trackElPIDPos, trackElPIDNeg,
-         trackKaPIDPos, trackKaPIDNeg,
-         trackDcaXYPos, trackDcaXYNeg,
-         trackDcaZPos, trackDcaZNeg,
-         trackTpcSignalPos, trackTpcSignalNeg);
+         positiveTrack.sign(), negativeTrack.sign(),
+         positiveTrack.pt(), negativeTrack.pt(),
+         eta(positiveTrack.px(), positiveTrack.py(), positiveTrack.pz()), eta(negativeTrack.px(), negativeTrack.py(), negativeTrack.pz()),
+         phi(positiveTrack.px(), positiveTrack.py()), phi(negativeTrack.px(), negativeTrack.py()),
+         positiveTrack.tpcNSigmaPi(), negativeTrack.tpcNSigmaPi(),
+         positiveTrack.tpcNSigmaEl(), negativeTrack.tpcNSigmaEl(),
+         positiveTrack.tpcNSigmaKa(), negativeTrack.tpcNSigmaKa(),
+         positiveTrack.dcaXY(), negativeTrack.dcaXY(),
+         positiveTrack.dcaZ(), negativeTrack.dcaZ(),
+         positiveTrack.tpcSignal(), negativeTrack.tpcSignal());
 
     if (!tracksPassPID(cutTracks)) // apply PID cut
       return;
@@ -1035,22 +1014,13 @@ struct UpcRhoAnalysis {
     // fill mcTree
     auto positivePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[0] : cutMcParticles[1];
     auto negativePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[1] : cutMcParticles[0];
-    int localBc = mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches;
-        int trackSignPos = positivePion.pdgCode() / std::abs(positivePion.pdgCode());
-        int trackSignNeg = negativePion.pdgCode() / std::abs(negativePion.pdgCode());
-        float trackPtPos = pt(positivePion.px(), positivePion.py());
-        float trackPtNeg = pt(negativePion.px(), negativePion.py());
-        float trackEtaPos = eta(positivePion.px(), positivePion.py(), positivePion.pz());
-        float trackEtaNeg = eta(negativePion.px(), negativePion.py(), negativePion.pz());
-        float trackPhiPos = phi(positivePion.px(), positivePion.py());
-        float trackPhiNeg = phi(negativePion.px(), negativePion.py());
-        mcTree(localBc, runNumber,
-          mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
-          phiRandom, phiCharge,
-          trackSignPos, trackSignNeg,
-          trackPtPos, trackPtNeg,
-          trackEtaPos, trackEtaNeg,
-          trackPhiPos, trackPhiNeg);
+    mcTree(mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches, runNumber,
+           mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+           phiRandom, phiCharge,
+           positivePion.pdgCode() / std::abs(positivePion.pdgCode()), negativePion.pdgCode() / std::abs(negativePion.pdgCode()),
+           pt(positivePion.px(), positivePion.py()), pt(negativePion.px(), negativePion.py()),
+           eta(positivePion.px(), positivePion.py(), positivePion.pz()), eta(negativePion.px(), negativePion.py(), negativePion.pz()),
+           phi(positivePion.px(), positivePion.py()), phi(negativePion.px(), negativePion.py()));
   }
 
   template <typename C>
