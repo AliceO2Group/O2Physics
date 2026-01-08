@@ -40,6 +40,19 @@ struct DerivedBasicConsumer {
     return deltaPhi;
   }
 
+  Configurable<float> associatedMinPt{"associatedMinPt", 4.0f, "NSassociatedMinPt"};
+  Configurable<float> associatedMaxPt{"associatedMaxPt", 6.0f, "associatedMaxPt"};
+  Configurable<float> triggerMinPt{"triggerMinPt", 6.0f, "triggerMinPt"};
+  ConfigurableAxis axisPt{"axisPt", {200,0.0f,20.0f}, "pt axis"};
+
+  SliceCache cache;
+
+  // define partitions
+  Partition<aod::DrTracks> associatedTracks = aod::exampleTrackSpace::pt < associatedMaxPt && aod::exampleTrackSpace::pt > associatedMinPt;
+  Partition<aod::DrTracks> triggerTracks = aod::exampleTrackSpace::pt > triggerMinPt;
+
+  Filter collZfilter = nabs(aod::collision::posZ) < 10.0f;
+
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -47,12 +60,45 @@ struct DerivedBasicConsumer {
   {
     // define axes you want to use
     const AxisSpec axisCounter{1, 0, +1, ""};
-    histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
+    const AxisSpec axisPVz{300, -15.0f, +15.0f, ""};
+    const AxisSpec axisDeltaPhi{100, -0.5*o2::constants::math::PI, +1.5*o2::constants::math::PI, "#Delta#phi"};
+    const AxisSpec axisDeltaEta{100, -1.0, +1.0, "#Delta#eta"};
+
+    histos.add("eventCounter", "eventCounter", kTH1D, {axisCounter});
+    histos.add("hEventPVz", "hEventPVz", kTH1D, {axisPVz});
+
+    histos.add("ptAssoHistogram", "ptAssoHistogram", kTH1D, {axisPt});
+    histos.add("ptTrigHistogram", "ptTrigHistogram", kTH1D, {axisPt});
+
+    histos.add("correlationFunction", "correlationFunction", kTH1D, {axisDeltaPhi});
+    histos.add("correlationFunctionO2", "correlationFunctionO2", kTH1D, {axisDeltaPhi});
+
+    histos.add("correlationFunction2d", "correlationFunction2d", kTH2F, {axisDeltaPhi, axisDeltaEta});
   }
 
-  void process(aod::DrCollision const& /*collision*/)
+  void process(soa::Filtered<aod::DrCollisions>::iterator const& collision, aod::DrTracks const&)
   {
     histos.fill(HIST("eventCounter"), 0.5);
+    histos.fill(HIST("hEventPVz"), collision.posZ());
+
+    auto assoTracksThisCollision = associatedTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
+    auto trigTracksThisCollision = triggerTracks->sliceByCached(aod::exampleTrackSpace::drCollisionId, collision.globalIndex(), cache);
+
+    for (auto& track : assoTracksThisCollision)
+      histos.fill(HIST("ptAssoHistogram"), track.pt());
+    for (auto& track : trigTracksThisCollision)
+      histos.fill(HIST("ptTrigHistogram"), track.pt());
+
+    for (auto& trigger : trigTracksThisCollision){
+      for (auto& associated : assoTracksThisCollision){
+        histos.fill(HIST("correlationFunction"), ComputeDeltaPhi(trigger.phi(),associated.phi()));
+      }
+    }
+
+    for (auto& [trigger, associated] : combinations(o2::soa::CombinationsFullIndexPolicy(trigTracksThisCollision, assoTracksThisCollision))) {
+      histos.fill(HIST("correlationFunctionO2"), ComputeDeltaPhi(trigger.phi(),associated.phi()));
+      histos.fill(HIST("correlationFunction2d"), ComputeDeltaPhi(trigger.phi(),associated.phi()), trigger.eta() - associated.eta());
+    }
   }
 };
 
