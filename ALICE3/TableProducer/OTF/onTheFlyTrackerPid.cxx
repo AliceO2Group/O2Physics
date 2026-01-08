@@ -142,8 +142,8 @@ class ToTLUT
     }
     if (strncmp(filename.c_str(), "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
       const std::string basePath = std::string(filename).substr(5);
-      const std::string outPath = "/tmp/ToTLUTs/" + basePath;
-      const std::string localFilename = outPath + "/snapshot.root";
+      const std::string outPath = "/tmp/ToTLUTs/";
+      const std::string localFilename = outPath + basePath + "/snapshot.root";
       std::ifstream checkFile(localFilename);
       if (!checkFile.is_open()) { // File is not found, need to download it from CCDB
         if (!mCcdbManager) {
@@ -153,7 +153,7 @@ class ToTLUT
         mCcdbManager->getCCDBAccessor().retrieveBlob(basePath, outPath, metadata, 1);
         std::ifstream testFile(localFilename);
         if (!testFile.is_open()) {
-          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg;
+          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg << " in file "<< localFilename;
           return false;
         }
         testFile.close();
