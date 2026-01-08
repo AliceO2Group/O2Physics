@@ -298,7 +298,7 @@ float ldlFromKF(KFParticle kfpParticle, KFParticle PV)
   const float dxParticle = PV.GetX() - kfpParticle.GetX();
   const float dyParticle = PV.GetY() - kfpParticle.GetY();
   const float dzParticle = PV.GetZ() - kfpParticle.GetZ();
-  float lParticle = std::sqrt(dxParticle * dxParticle + dyParticle * dyParticle + dzParticle * dzParticle);
+  float lParticle = std::hypot(dxParticle, dyParticle, dzParticle);
   float dlParticle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dxParticle * dxParticle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dyParticle * dyParticle + (PV.GetCovariance(5) + kfpParticle.GetCovariance(5)) * dzParticle * dzParticle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dxParticle * dyParticle + (PV.GetCovariance(3) + kfpParticle.GetCovariance(3)) * dxParticle * dzParticle + (PV.GetCovariance(4) + kfpParticle.GetCovariance(4)) * dyParticle * dzParticle);
   if (std::fabs(lParticle) < ArbitrarySmallNumber)
     lParticle = ArbitrarySmallNumber;
@@ -316,7 +316,7 @@ float ldlXYFromKF(KFParticle kfpParticle, KFParticle PV)
 {
   const float dxParticle = PV.GetX() - kfpParticle.GetX();
   const float dyParticle = PV.GetY() - kfpParticle.GetY();
-  float lParticle = std::sqrt(dxParticle * dxParticle + dyParticle * dyParticle);
+  float lParticle = std::hypot(dxParticle, dyParticle);
   float dlParticle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dxParticle * dxParticle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dyParticle * dyParticle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dxParticle * dyParticle);
   if (std::fabs(lParticle) < ArbitrarySmallNumber)
     lParticle = ArbitrarySmallNumber;
@@ -366,7 +366,7 @@ float kfCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2)
   const float dx = params1[0] - params2[0];
   const float dy = params1[1] - params2[1];
   const float dz = params1[2] - params2[2];
-  return std::sqrt(dx * dx + dy * dy + dz * dz);
+  return std::hypot(dx, dy, dz);
 }
 
 /// @brief squared distance between two tracks normalised by its uncertainty evaluated in matrix form

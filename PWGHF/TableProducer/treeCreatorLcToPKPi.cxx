@@ -875,11 +875,11 @@ struct HfTreeCreatorLcToPKPi {
     const float chi2Topo = candidate.kfChi2Topo();
     const float decayLength = candidate.kfDecayLength();
     const float dl = candidate.kfDecayLengthError();
-    const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
+    const float pt = std::hypot(candidate.kfPx(), candidate.kfPy());
     const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
                                     candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
                           pt;
-    const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
+    const float p = std::hypot(pt, candidate.kfPz());
     const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
                                    candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
                          p;
