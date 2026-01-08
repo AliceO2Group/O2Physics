@@ -34,7 +34,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsTPC/BetheBlochAleph.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -1651,7 +1651,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
   }
 
   // V0 mass
-  if (std::fabs(casc.v0.mLambda - massLambda) > mDeltaMassLambdaFromXi) {
+  if ((casc.sign < 0 && std::fabs(casc.v0.mLambda - massLambda) > mDeltaMassLambdaFromXi) || (casc.sign > 0 && std::fabs(casc.v0.mAntiLambda - massLambda) > mDeltaMassLambdaFromXi)) {
     return false;
   }
 
@@ -2513,7 +2513,7 @@ inline float HfFilterHelper::getTPCSplineCalib(const float tpcPin, const float d
   }
 
   auto bgScaling = 1 / mMassPar;
-  double expBethe = tpc::BetheBlochAleph(static_cast<double>(tpcPin * bgScaling), mBetheBlochPiKaPrDe[pidSpecies][0], mBetheBlochPiKaPrDe[pidSpecies][1], mBetheBlochPiKaPrDe[pidSpecies][2], mBetheBlochPiKaPrDe[pidSpecies][3], mBetheBlochPiKaPrDe[pidSpecies][4]);
+  double expBethe = common::BetheBlochAleph(static_cast<double>(tpcPin * bgScaling), mBetheBlochPiKaPrDe[pidSpecies][0], mBetheBlochPiKaPrDe[pidSpecies][1], mBetheBlochPiKaPrDe[pidSpecies][2], mBetheBlochPiKaPrDe[pidSpecies][3], mBetheBlochPiKaPrDe[pidSpecies][4]);
   double expSigma = expBethe * mBetheBlochPiKaPrDe[pidSpecies][5];
   return static_cast<float>((dEdx - expBethe) / expSigma);
 }

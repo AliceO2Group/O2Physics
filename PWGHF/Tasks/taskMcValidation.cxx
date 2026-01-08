@@ -831,7 +831,7 @@ struct HfTaskMcValidationRec {
     histContributors = registry.add<TH1>("TrackToCollChecks/histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
     histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
-    hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.init(registry, nullptr); // collision monitoring
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -911,9 +911,9 @@ struct HfTaskMcValidationRec {
       }
       float const frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
       registry.fill(HIST("TrackToCollChecks/histFracGoodContributors"), frac);
-      uint64_t const mostProbableBC = collision.bc().globalBC();
+      uint64_t const mostProbableBC = collision.template bc_as<aod::BCsWithTimestamps>().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
-        uint64_t const mostProbableBC2 = collision2.bc().globalBC();
+        uint64_t const mostProbableBC2 = collision2.template bc_as<aod::BCsWithTimestamps>().globalBC();
         if (mostProbableBC2 == mostProbableBC) {
           float const radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
           float const radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());

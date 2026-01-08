@@ -1097,11 +1097,11 @@ void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const&
 
 // Looping over the track info and putting them in the input vector (for GNN b-jet tagging)
 template <typename AnalysisJet, typename AnyTracks, typename AnyOriginalTracks>
-void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, AnyOriginalTracks const& /*origTracks*/, std::vector<std::vector<float>>& tracksParams, float trackPtMin = 0.5, int64_t nMaxConstit = 40)
+void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, AnyOriginalTracks const& /*origTracks*/, std::vector<std::vector<float>>& tracksParams, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0, int64_t nMaxConstit = 40)
 {
   for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
-    if (constituent.pt() < trackPtMin) {
+    if (constituent.pt() < trackPtMin || !trackAcceptanceWithDca(constituent, trackDcaXYMax, trackDcaZMax)) {
       continue;
     }
 

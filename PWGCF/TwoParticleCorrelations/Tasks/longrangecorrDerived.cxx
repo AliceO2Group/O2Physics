@@ -91,6 +91,9 @@ struct LongrangecorrDerived {
   Configurable<float> cfgZdcCut{"cfgZdcCut", 0.1f, "ZDC threshold"};
   Configurable<int> cfgGapSideCut{"cfgGapSideCut", 0, "Gap-side A=0, C=1, AC = 2, No Gap = -1, All events = 3"};
 
+  Configurable<bool> isApplyAmpCut{"isApplyAmpCut", false, "Enable FT0 amplitude cut"};
+  Configurable<float> cfgLowAmpCut{"cfgLowAmpCut", 2.0f, "Low FT0 amplitude cut"};
+
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 15, 25, 50, 60, 1000}, "multiplicity axis"};
   ConfigurableAxis axisPhi{"axisPhi", {96, 0, TwoPI}, "#phi axis"};
   ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
@@ -101,6 +104,8 @@ struct LongrangecorrDerived {
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -6, -2}, "delta eta axis for histograms"};
   ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0}, "invariant mass axis"};
+  ConfigurableAxis axisInvMassQA{"axisInvMassQA", {20, 0.45, 0.55}, "invariant mass axis for QA"};
+  ConfigurableAxis axisAmplitude{"axisAmplitude", {5000, 0, 10000}, "FT0 amplitude"};
   ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 1000}, "Mixing bins - multiplicity"};
   ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
 
@@ -168,12 +173,14 @@ struct LongrangecorrDerived {
     histos.add("Trig_phi", "Trig_phi", kTH1D, {axisPhi});
     histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {axisPhi, axisEtaTrig});
     histos.add("Trig_pt", "Trig_pt", kTH1D, {axisPtTrigger});
+    histos.add("Trig_invMass", "Trig_invMass", kTH1D, {axisInvMassQA});
     histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {axisVtxZ, axisMultiplicity, axisPtTrigger, axisInvMass});
 
     histos.add("Assoc_eta", "Assoc_eta", kTH1D, {axisEtaAssoc});
     histos.add("Assoc_phi", "Assoc_phi", kTH1D, {axisPhi});
     histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {axisPhi, axisEtaAssoc});
     histos.add("Assoc_pt", "Assoc_pt", kTH1D, {axisPtAssoc});
+    histos.add("Assoc_amp", "Assoc_amp", kTH1D, {axisAmplitude});
 
     histos.add("deltaEta_deltaPhi_same", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
     histos.add("deltaEta_deltaPhi_mixed", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
@@ -193,6 +200,9 @@ struct LongrangecorrDerived {
     histos.fill(HIST("Trig_eta"), track.eta());
     histos.fill(HIST("Trig_phi"), track.phi());
     histos.fill(HIST("Trig_pt"), track.pt());
+    if constexpr (std::experimental::is_detected<HasInvMass, TTrack>::value) {
+      histos.fill(HIST("Trig_invMass"), track.invMass());
+    }
   }
 
   template <typename TTrack>
@@ -201,6 +211,11 @@ struct LongrangecorrDerived {
     histos.fill(HIST("Assoc_etavsphi"), track.phi(), track.eta());
     histos.fill(HIST("Assoc_eta"), track.eta());
     histos.fill(HIST("Assoc_phi"), track.phi());
+    if constexpr (std::experimental::is_detected<HasFt0, TTrack>::value) {
+      histos.fill(HIST("Assoc_amp"), track.amplitude());
+    } else {
+      histos.fill(HIST("Assoc_pt"), track.pt());
+    }
   }
 
   template <bool fillHist = true, typename CheckCol>
@@ -229,6 +244,8 @@ struct LongrangecorrDerived {
   using HasInvMass = decltype(std::declval<T&>().invMass());
   template <class T>
   using HasUpc = decltype(std::declval<T&>().gapSide());
+  template <class T>
+  using HasFt0 = decltype(std::declval<T&>().channelID());
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
@@ -250,6 +267,10 @@ struct LongrangecorrDerived {
         }
       }
       for (auto const& assoTrack : assocs) {
+        if constexpr (std::experimental::is_detected<HasFt0, typename TAssocs::iterator>::value) {
+          if (isApplyAmpCut && (assoTrack.amplitude() < cfgLowAmpCut))
+            continue;
+        }
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - assoTrack.phi(), -PIHalf);
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (!mixing) {

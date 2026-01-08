@@ -15,7 +15,9 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
@@ -68,6 +70,11 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
+  Configurable<bool> ConfIsLambda{"ConfIsLambda", false, "Set to true if V0 is Lambda, false if K0s"};
+  Configurable<bool> ConfRejectCompetingMass{"ConfRejectCompetingMass", false, "Reject the competing Cascade Mass (use only for debugging. More efficient to exclude it already at the producer level)"};
+  Configurable<float> ConfCompetingV0MassLowLimit{"ConfCompetingV0MassLowLimit", 0., "Lower Limit of the invariant mass window within which to reject the V0"};
+  Configurable<float> ConfCompetingV0MassUpLimit{"ConfCompetingV0MassUpLimit", 0., "Upper Limit of the invariant mass window within which to reject the V0"};
+
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Partition<FemtoFullParticles> partsV0 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) && (ncheckbit(aod::femtodreamparticle::cut, ConfV01_CutBit));
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
@@ -84,6 +91,9 @@ struct femtoDreamDebugV0 {
   HistogramRegistry EventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"FullV0QA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  float massProton;
+  float massPion;
+
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry, false);
@@ -91,6 +101,11 @@ struct femtoDreamDebugV0 {
     negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_ChildNeg_PDGCode, true);
     motherHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_PDGCode.value, true);
     V0Registry.add("hArmenterosPodolanski/hArmenterosPodolanskiPlot", "; #alpha; p_{T} (MeV/#it{c})", kTH2F, {{100, -1, 1}, {500, -0.3, 2}});
+
+    massProton = o2::analysis::femtoDream::getMass(2212);
+    massPion = o2::analysis::femtoDream::getMass(211);
+    // massProton = getMass(2212);
+    // massPion = getMass(211);
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
@@ -131,6 +146,24 @@ struct femtoDreamDebugV0 {
 
         TVector3 p_perp = p_plus - (p_parent * (pL_plus / p_parent.Mag()));
         double qtarm = p_perp.Mag();
+
+        // Competing mass rejection
+        if (ConfRejectCompetingMass) {
+          float invMassCompetingV0;
+          if (ConfIsLambda) {
+            if (part.sign() < 0) {
+              invMassCompetingV0 = FemtoDreamMath::calcInvMassV0(posChild, massPion, negChild, massProton);
+            } else {
+              invMassCompetingV0 = FemtoDreamMath::calcInvMassV0(posChild, massProton, negChild, massPion);
+            }
+          } else {
+            invMassCompetingV0 = FemtoDreamMath::calcInvMassV0(posChild, massPion, negChild, massPion);
+          }
+          if (invMassCompetingV0 > ConfCompetingV0MassLowLimit.value &&
+              invMassCompetingV0 < ConfCompetingV0MassUpLimit.value) {
+            continue;
+          }
+        }
 
         V0Registry.fill(HIST("hArmenterosPodolanski/hArmenterosPodolanskiPlot"), alpha, qtarm);
 

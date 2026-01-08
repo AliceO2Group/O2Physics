@@ -912,7 +912,7 @@ struct HfDataCreatorCharmHadPiReduced {
           indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
           if (indexRec > -1) {
             // D- → (π- K+ π-
-            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
               flag = sign * BIT(hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi);
             }
@@ -940,7 +940,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
               if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-                flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
+                flag = BIT(hf_cand_lb::DecayTypeMc::PartlyRecoDecay);
                 pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
                 pdgCodeCharmMother = 0;
                 pdgCodeProng0 = particleProng0.pdgCode();
