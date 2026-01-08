@@ -134,14 +134,12 @@ enum ChannelsLightNucleiPid {
   NChannelsLightNucleiPid
 };
 
-
 // kaon PID (opposite-sign track in 3-prong decays)
 constexpr int ChannelKaonPid = ChannelsProtonPid::NChannelsProtonPid;
 constexpr int ChannelsDeuteronPid = ChannelsProtonPid::NChannelsProtonPid + 1;
 constexpr int ChannelsTritonPid = ChannelsProtonPid::NChannelsProtonPid + 2;
 constexpr int ChannelsHeliumPid = ChannelsProtonPid::NChannelsProtonPid + 3;
-constexpr int NChannelsPidFor3Prong = ChannelsProtonPid::NChannelsProtonPid + ChannelsKaonPid::NChannelsKaonPid + ChannelsLightNucleiPid::NChannelsLightNucleiPid;
-
+constexpr int NChannelsPidFor3Prong = static_cast<int>(ChannelsProtonPid::NChannelsProtonPid) + static_cast<int>(ChannelsKaonPid::NChannelsKaonPid) + static_cast<int>(ChannelsLightNucleiPid::NChannelsLightNucleiPid);
 enum class ChannelsNucleiQA : int {
   Deuteron = 0,
   Triton = 1,
@@ -1344,6 +1342,7 @@ struct HfTrackIndexSkimCreator {
   static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars};                                                                                                                                                     // how many different selections are made on 2-prongs
   static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_ds::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_3prong::NCutVars + 2, hf_cuts_presel_3prong::NCutVars + 2, hf_cuts_presel_3prong::NCutVars + 2}; // how many different selections are made on 3-prongs (Lc， Xic and CharmNuclei have also PID potentially, charmnuclei has also daughter track quality cut potentially)
   static constexpr int kNCutsDstar = 3;                                                                                                                                                                                                                                                                        // how many different selections are made on Dstars
+  static constexpr int kN3ProngDecaysUsedMlForHfFilters = kN3ProngDecays - NChannelsLightNucleiPid;                                                                                                                                                                                                            // number of 3-prong HF decays using ML filters
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong{};
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong{};
   // arrays of 2-prong and 3-prong cuts
@@ -1530,12 +1529,12 @@ struct HfTrackIndexSkimCreator {
     if (config.applyMlForHfFilters) {
       const std::vector<std::string> onnxFileNames2Prongs{config.onnxFileNames->get(0u, 0u)};
       // Exclude Cd, Ct, Ch from the 3-prong list, as it is not included in the pp trigger program
-      const std::array<std::vector<std::string>, kN3ProngDecays - 3> onnxFileNames3Prongs{std::vector<std::string>{config.onnxFileNames->get(1u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(2u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(3u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(4u, 0u)}};
+      const std::array<std::vector<std::string>, kN3ProngDecaysUsedMlForHfFilters> onnxFileNames3Prongs{std::vector<std::string>{config.onnxFileNames->get(1u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(2u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(3u, 0u)}, std::vector<std::string>{config.onnxFileNames->get(4u, 0u)}};
       const std::vector<std::string> mlModelPathCcdb2Prongs{config.mlModelPathCCDB.value + "D0"};
-      const std::array<std::vector<std::string>, kN3ProngDecays - 3> mlModelPathCcdb3Prongs{std::vector<std::string>{config.mlModelPathCCDB.value + "Dplus"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Lc"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Ds"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Xic"}};
+      const std::array<std::vector<std::string>, kN3ProngDecaysUsedMlForHfFilters> mlModelPathCcdb3Prongs{std::vector<std::string>{config.mlModelPathCCDB.value + "Dplus"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Lc"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Ds"}, std::vector<std::string>{config.mlModelPathCCDB.value + "Xic"}};
       const std::vector<double> ptBinsMl{0., 1.e10};
       const std::vector<int> cutDirMl{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
-      const std::array<LabeledArray<double>, kN3ProngDecays - 3> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
+      const std::array<LabeledArray<double>, kN3ProngDecaysUsedMlForHfFilters> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
 
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, config.thresholdMlScoreD0ToKPi, cutDirMl, 3);
@@ -1548,7 +1547,7 @@ struct HfTrackIndexSkimCreator {
       hfMlResponse2Prongs.init();
 
       // initialise 3-prong ML responses
-      for (int iDecay3P{0}; iDecay3P < kN3ProngDecays - 3; ++iDecay3P) {
+      for (int iDecay3P{0}; iDecay3P < kN3ProngDecaysUsedMlForHfFilters; ++iDecay3P) {
         if (onnxFileNames3Prongs[iDecay3P][0].empty()) { // 3-prong species to be skipped
           continue;
         }
@@ -1983,14 +1982,14 @@ struct HfTrackIndexSkimCreator {
   /// \param outputScores is the array of vectors with the output scores to be filled
   /// \param isSelected ia s bitmap with selection outcome
   template <bool UsePidForHfFiltersBdt>
-  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecays - 3>& outputScores, auto& isSelected)
+  void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters>& outputScores, auto& isSelected)
   {
     if (isSelected == 0) {
       return;
     }
 
     const float ptDummy = 1.f; // dummy pT value (only one pT bin)
-    for (int iDecay3P{0}; iDecay3P < kN3ProngDecays - 3; ++iDecay3P) {
+    for (int iDecay3P{0}; iDecay3P < kN3ProngDecaysUsedMlForHfFilters; ++iDecay3P) {
       if (TESTBIT(isSelected, iDecay3P) && hasMlModel3Prong[iDecay3P]) {
         bool isMlSel = false;
         if constexpr (UsePidForHfFiltersBdt) {
@@ -2724,7 +2723,7 @@ struct HfTrackIndexSkimCreator {
               // 3-prong selections after secondary vertex
               applySelection3Prong(pVecCandProng3Pos, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
 
-              std::array<std::vector<float>, kN3ProngDecays - 3> mlScores3Prongs;
+              std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs;
               if (config.applyMlForHfFilters) {
                 const std::vector<float> inputFeatures{trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos2.getPt(), dcaInfoPos2[0], dcaInfoPos2[1]};
                 std::vector<float> inputFeaturesLcPid{};
@@ -2994,7 +2993,7 @@ struct HfTrackIndexSkimCreator {
               // 3-prong selections after secondary vertex
               applySelection3Prong(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
 
-              std::array<std::vector<float>, kN3ProngDecays - 3> mlScores3Prongs{};
+              std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs{};
               if (config.applyMlForHfFilters) {
                 const std::vector<float> inputFeatures{trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg2.getPt(), dcaInfoNeg2[0], dcaInfoNeg2[1]};
                 std::vector<float> inputFeaturesLcPid{};
