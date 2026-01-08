@@ -74,26 +74,27 @@ DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
 // pion tracks
 DECLARE_SOA_COLUMN(PhiRandom, phiRandom, float);
 DECLARE_SOA_COLUMN(PhiCharge, phiCharge, float);
-DECLARE_SOA_COLUMN(PosTrackSign, posTrackSign, int);
-DECLARE_SOA_COLUMN(NegTrackSign, negTrackSign, int);
-DECLARE_SOA_COLUMN(PosTrackPt, posTrackPt, float);
-DECLARE_SOA_COLUMN(NegTrackPt, negTrackPt, float);
-DECLARE_SOA_COLUMN(PosTrackEta, posTrackEta, float);
-DECLARE_SOA_COLUMN(NegTrackEta, negTrackEta, float);
-DECLARE_SOA_COLUMN(PosTrackPhi, posTrackPhi, float);
-DECLARE_SOA_COLUMN(NegTrackPhi, negTrackPhi, float);
-DECLARE_SOA_COLUMN(PosTrackPiPID, posTrackPiPID, float);
-DECLARE_SOA_COLUMN(NegTrackPiPID, negTrackPiPID, float);
-DECLARE_SOA_COLUMN(PosTrackElPID, posTrackElPID, float);
-DECLARE_SOA_COLUMN(NegTrackElPID, negTrackElPID, float);
-DECLARE_SOA_COLUMN(PosTrackKaPID, posTrackKaPID, float);
-DECLARE_SOA_COLUMN(NegTrackKaPID, negTrackKaPID, float);
-DECLARE_SOA_COLUMN(PosTrackDcaXY, posTrackDcaXY, float);
-DECLARE_SOA_COLUMN(NegTrackDcaXY, negTrackDcaXY, float);
-DECLARE_SOA_COLUMN(PosTrackDcaZ, posTrackDcaZ, float);
-DECLARE_SOA_COLUMN(NegTrackDcaZ, negTrackDcaZ, float);
-DECLARE_SOA_COLUMN(PosTrackTpcSignal, posTrackTpcSignal, float);
-DECLARE_SOA_COLUMN(NegTrackTpcSignal, negTrackTpcSignal, float);
+DECLARE_SOA_COLUMN(LeadingTrackSign, leadingTrackSign, int);
+DECLARE_SOA_COLUMN(SubleadingTrackSign, subleadingTrackSign, int);
+DECLARE_SOA_COLUMN(LeadingTrackPt, leadingTrackPt, float);
+DECLARE_SOA_COLUMN(SubleadingTrackPt, subleadingTrackPt, float);
+DECLARE_SOA_COLUMN(LeadingTrackEta, leadingTrackEta, float);
+DECLARE_SOA_COLUMN(SubleadingTrackEta, subleadingTrackEta, float);
+DECLARE_SOA_COLUMN(LeadingTrackPhi, leadingTrackPhi, float);
+DECLARE_SOA_COLUMN(SubleadingTrackPhi, subleadingTrackPhi, float);
+DECLARE_SOA_COLUMN(SubleadingTrackPiPID, subleadingTrackPiPID, float);
+DECLARE_SOA_COLUMN(LeadingTrackElPID, leadingTrackElPID, float);
+DECLARE_SOA_COLUMN(SubleadingTrackElPID, subleadingTrackElPID, float);
+DECLARE_SOA_COLUMN(LeadingTrackKaPID, leadingTrackKaPID, float);
+DECLARE_SOA_COLUMN(SubleadingTrackKaPID, subleadingTrackKaPID, float);
+DECLARE_SOA_COLUMN(LeadingTrackPrPID, leadingTrackPrPID, float);
+DECLARE_SOA_COLUMN(SubleadingTrackPrPID, subleadingTrackPrPID, float);
+DECLARE_SOA_COLUMN(LeadingTrackDcaXY, leadingTrackDcaXY, float);
+DECLARE_SOA_COLUMN(SubleadingTrackDcaXY, subleadingTrackDcaXY, float);
+DECLARE_SOA_COLUMN(LeadingTrackDcaZ, leadingTrackDcaZ, float);
+DECLARE_SOA_COLUMN(SubleadingTrackDcaZ, subleadingTrackDcaZ, float);
+DECLARE_SOA_COLUMN(LeadingTrackTpcSignal, leadingTrackTpcSignal, float);
+DECLARE_SOA_COLUMN(SubleadingTrackTpcSignal, subleadingTrackTpcSignal, float);
 } // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
                   reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::LocalBC, reco_tree::NumContrib, reco_tree::PosX, reco_tree::PosY, reco_tree::PosZ,
@@ -101,16 +102,17 @@ DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
                   reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
                   reco_tree::PhiRandom, reco_tree::PhiCharge,
-                  reco_tree::PosTrackSign, reco_tree::NegTrackSign,
-                  reco_tree::PosTrackPt, reco_tree::NegTrackPt,
-                  reco_tree::PosTrackEta, reco_tree::NegTrackEta,
-                  reco_tree::PosTrackPhi, reco_tree::NegTrackPhi,
-                  reco_tree::PosTrackPiPID, reco_tree::NegTrackPiPID,
-                  reco_tree::PosTrackElPID, reco_tree::NegTrackElPID,
-                  reco_tree::PosTrackKaPID, reco_tree::NegTrackKaPID,
-                  reco_tree::PosTrackDcaXY, reco_tree::NegTrackDcaXY,
-                  reco_tree::PosTrackDcaZ, reco_tree::NegTrackDcaZ,
-                  reco_tree::PosTrackTpcSignal, reco_tree::NegTrackTpcSignal);
+                  reco_tree::LeadingTrackSign, reco_tree::SubleadingTrackSign,
+                  reco_tree::LeadingTrackPt, reco_tree::SubleadingTrackPt,
+                  reco_tree::LeadingTrackEta, reco_tree::SubleadingTrackEta,
+                  reco_tree::LeadingTrackPhi, reco_tree::SubleadingTrackPhi,
+                  reco_tree::LeadingTrackPiPID, reco_tree::SubleadingTrackPiPID,
+                  reco_tree::LeadingTrackElPID, reco_tree::SubleadingTrackElPID,
+                  reco_tree::LeadingTrackKaPID, reco_tree::SubleadingTrackKaPID,
+                  reco_tree::LeadingTrackPrPID, reco_tree::SubleadingTrackPrPID,
+                  reco_tree::LeadingTrackDcaXY, reco_tree::SubleadingTrackDcaXY,
+                  reco_tree::LeadingTrackDcaZ, reco_tree::SubleadingTrackDcaZ,
+                  reco_tree::LeadingTrackTpcSignal, reco_tree::SubleadingTrackTpcSignal);
 
 namespace mc_tree
 {
@@ -124,23 +126,23 @@ DECLARE_SOA_COLUMN(PosZ, posZ, float);
 // pion tracks
 DECLARE_SOA_COLUMN(PhiRandom, phiRandom, float);
 DECLARE_SOA_COLUMN(PhiCharge, phiCharge, float);
-DECLARE_SOA_COLUMN(PosTrackSign, posTrackSign, int);
-DECLARE_SOA_COLUMN(NegTrackSign, negTrackSign, int);
-DECLARE_SOA_COLUMN(PosTrackPt, posTrackPt, float);
-DECLARE_SOA_COLUMN(NegTrackPt, negTrackPt, float);
-DECLARE_SOA_COLUMN(PosTrackEta, posTrackEta, float);
-DECLARE_SOA_COLUMN(NegTrackEta, negTrackEta, float);
-DECLARE_SOA_COLUMN(PosTrackPhi, posTrackPhi, float);
-DECLARE_SOA_COLUMN(NegTrackPhi, negTrackPhi, float);
+DECLARE_SOA_COLUMN(LeadingTrackSign, leadingTrackSign, int);
+DECLARE_SOA_COLUMN(SubleadingTrackSign, subleadingTrackSign, int);
+DECLARE_SOA_COLUMN(LeadingTrackPt, leadingTrackPt, float);
+DECLARE_SOA_COLUMN(SubleadingTrackPt, subleadingTrackPt, float);
+DECLARE_SOA_COLUMN(LeadingTrackEta, leadingTrackEta, float);
+DECLARE_SOA_COLUMN(SubleadingTrackEta, subleadingTrackEta, float);
+DECLARE_SOA_COLUMN(LeadingTrackPhi, leadingTrackPhi, float);
+DECLARE_SOA_COLUMN(SubleadingTrackPhi, subleadingTrackPhi, float);
 } // namespace mc_tree
 DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
                   mc_tree::LocalBc, mc_tree::RunNumber,
                   mc_tree::PosX, mc_tree::PosY, mc_tree::PosZ,
                   mc_tree::PhiRandom, mc_tree::PhiCharge,
-                  mc_tree::PosTrackSign, mc_tree::NegTrackSign,
-                  mc_tree::PosTrackPt, mc_tree::NegTrackPt,
-                  mc_tree::PosTrackEta, mc_tree::NegTrackEta,
-                  mc_tree::PosTrackPhi, mc_tree::NegTrackPhi);
+                  mc_tree::LeadingTrackSign, mc_tree::SubleadingTrackSign,
+                  mc_tree::LeadingTrackPt, mc_tree::SubleadingTrackPt,
+                  mc_tree::LeadingTrackEta, mc_tree::SubleadingTrackEta,
+                  mc_tree::LeadingTrackPhi, mc_tree::SubleadingTrackPhi);
 } // namespace o2::aod
 
 struct UpcRhoAnalysis {
@@ -795,37 +797,35 @@ struct UpcRhoAnalysis {
     }
 
     // differentiate leading- and subleading-momentum tracks
-    auto leadingMomentumTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
-    auto subleadingMomentumTrack = (leadingMomentumTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
+    auto leadingTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
+    auto subleadingTrack = (leadingTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
 
-    auto positiveTrack = cutTracks[0].sign() == 1 ? cutTracks[0] : cutTracks[1];
-    auto negativeTrack = cutTracks[0].sign() == -1 ? cutTracks[0] : cutTracks[1];
-
-    float leadingPt = leadingMomentumTrack.pt();
-    float subleadingPt = subleadingMomentumTrack.pt();
-    float leadingEta = eta(leadingMomentumTrack.px(), leadingMomentumTrack.py(), leadingMomentumTrack.pz());
-    float subleadingEta = eta(subleadingMomentumTrack.px(), subleadingMomentumTrack.py(), subleadingMomentumTrack.pz());
-    float leadingPhi = phi(leadingMomentumTrack.px(), leadingMomentumTrack.py());
-    float subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
+    float leadingPt = leadingTrack.pt();
+    float subleadingPt = subleadingTrack.pt();
+    float leadingEta = eta(leadingTrack.px(), leadingTrack.py(), leadingTrack.pz());
+    float subleadingEta = eta(subleadingTrack.px(), subleadingTrack.py(), subleadingTrack.pz());
+    float leadingPhi = phi(leadingTrack.px(), leadingTrack.py());
+    float subleadingPhi = phi(subleadingTrack.px(), subleadingTrack.py());
     float phiRandom = getPhiRandom(cutTracksLVs);
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
 
     // fill recoTree
     recoTree(collision.flags(), collision.runNumber(), collision.globalBC() % o2::constants::lhc::LHCMaxBunches, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
-             collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-             collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-             energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
-             phiRandom, phiCharge,
-             positiveTrack.sign(), negativeTrack.sign(),
-             positiveTrack.pt(), negativeTrack.pt(),
-             eta(positiveTrack.px(), positiveTrack.py(), positiveTrack.pz()), eta(negativeTrack.px(), negativeTrack.py(), negativeTrack.pz()),
-             phi(positiveTrack.px(), positiveTrack.py()), phi(negativeTrack.px(), negativeTrack.py()),
-             positiveTrack.tpcNSigmaPi(), negativeTrack.tpcNSigmaPi(),
-             positiveTrack.tpcNSigmaEl(), negativeTrack.tpcNSigmaEl(),
-             positiveTrack.tpcNSigmaKa(), negativeTrack.tpcNSigmaKa(),
-             positiveTrack.dcaXY(), negativeTrack.dcaXY(),
-             positiveTrack.dcaZ(), negativeTrack.dcaZ(),
-             positiveTrack.tpcSignal(), negativeTrack.tpcSignal());
+         collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+         collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
+         energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
+         phiRandom, phiCharge,
+         leadingTrack.sign(), subleadingTrack.sign(),
+         leadingPt, subleadingPt,
+         leadingEta, subleadingEta,
+         leadingPhi, subleadingPhi,
+         leadingTrack.tpcNSigmaPi(), subleadingTrack.tpcNSigmaPi(),
+         leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl(),
+         leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa(),
+         leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr(),
+         leadingTrack.dcaXY(), subleadingTrack.dcaXY(),
+         leadingTrack.dcaZ(), subleadingTrack.dcaZ(),
+         leadingTrack.tpcSignal(), subleadingTrack.tpcSignal());
 
     if (!tracksPassPID(cutTracks)) // apply PID cut
       return;
@@ -835,7 +835,7 @@ struct UpcRhoAnalysis {
       rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 16, runIndex);
       fillTrackQcHistos<1>(cutTrack); // fill QC histograms after cuts
     }
-    rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
+    rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingTrack.hasTOF(), subleadingTrack.hasTOF());
     fillCollisionQcHistos<1>(collision); // fill QC histograms after track selections
 
     ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracksLVs);
@@ -983,11 +983,11 @@ struct UpcRhoAnalysis {
     float phiRandom = getPhiRandom(mcParticlesLVs);
     float phiCharge = getPhiChargeMC(cutMcParticles, mcParticlesLVs);
 
-    auto leadingMomentumPion = momentum(cutMcParticles[0].px(), cutMcParticles[0].py(), cutMcParticles[0].pz()) > momentum(cutMcParticles[1].px(), cutMcParticles[1].py(), cutMcParticles[1].pz()) ? cutMcParticles[0] : cutMcParticles[1];
-    auto subleadingMomentumPion = (leadingMomentumPion == cutMcParticles[0]) ? cutMcParticles[1] : cutMcParticles[0];
-    rMC.fill(HIST("MC/tracks/hPt"), pt(leadingMomentumPion.px(), leadingMomentumPion.py()), pt(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
-    rMC.fill(HIST("MC/tracks/hEta"), eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz()));
-    rMC.fill(HIST("MC/tracks/hPhi"), phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
+    auto leadingPion = momentum(cutMcParticles[0].px(), cutMcParticles[0].py(), cutMcParticles[0].pz()) > momentum(cutMcParticles[1].px(), cutMcParticles[1].py(), cutMcParticles[1].pz()) ? cutMcParticles[0] : cutMcParticles[1];
+    auto subleadingPion = (leadingPion == cutMcParticles[0]) ? cutMcParticles[1] : cutMcParticles[0];
+    rMC.fill(HIST("MC/tracks/hPt"), pt(leadingPion.px(), leadingPion.py()), pt(subleadingPion.px(), subleadingPion.py()));
+    rMC.fill(HIST("MC/tracks/hEta"), eta(leadingPion.px(), leadingPion.py(), leadingPion.pz()), eta(subleadingPion.px(), subleadingPion.py(), subleadingPion.pz()));
+    rMC.fill(HIST("MC/tracks/hPhi"), phi(leadingPion.px(), leadingPion.py()), phi(subleadingPion.px(), subleadingPion.py()));
 
     rMC.fill(HIST("MC/system/hM"), mass);
     rMC.fill(HIST("MC/system/hPt"), pT);
@@ -1014,15 +1014,13 @@ struct UpcRhoAnalysis {
     }
 
     // fill mcTree
-    auto positivePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[0] : cutMcParticles[1];
-    auto negativePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[1] : cutMcParticles[0];
     mcTree(mcCollision.globalBC() % o2::constants::lhc::LHCMaxBunches, runNumber,
            mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
            phiRandom, phiCharge,
-           positivePion.pdgCode() / std::abs(positivePion.pdgCode()), negativePion.pdgCode() / std::abs(negativePion.pdgCode()),
-           pt(positivePion.px(), positivePion.py()), pt(negativePion.px(), negativePion.py()),
-           eta(positivePion.px(), positivePion.py(), positivePion.pz()), eta(negativePion.px(), negativePion.py(), negativePion.pz()),
-           phi(positivePion.px(), positivePion.py()), phi(negativePion.px(), negativePion.py()));
+           leadingPion.pdgCode() / std::abs(leadingPion.pdgCode()), subleadingPion.pdgCode() / std::abs(subleadingPion.pdgCode()),
+           pt(leadingPion.px(), leadingPion.py()), pt(subleadingPion.px(), subleadingPion.py()),
+           eta(leadingPion.px(), leadingPion.py(), leadingPion.pz()), eta(subleadingPion.px(), subleadingPion.py(), subleadingPion.pz()),
+           phi(leadingPion.px(), leadingPion.py()), phi(subleadingPion.px(), subleadingPion.py()));
   }
 
   template <typename C>
