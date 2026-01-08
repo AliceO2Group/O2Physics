@@ -59,6 +59,8 @@ struct flowJSPCAnalysis {
   FlowJSPCAnalysis::JQVectorsT jqvecs;
   template <class T>
   using HasWeightNUA = decltype(std::declval<T&>().weightNUA());
+  template <class T>
+  using HasWeightEff = decltype(std::declval<T&>().weightEff());
 
   HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJHistManager histManager;
@@ -117,11 +119,17 @@ struct flowJSPCAnalysis {
     int cBin = histManager.getCentBin(cent);
     spcHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
+    double wNUA = 1.0;
+    double wEff = 1.0;
     for (const auto& track : tracks) {
       if (cfgFillQA) {
         // histManager.FillTrackQA<0>(track, cBin, collision.posZ());
 
         using JInputClassIter = typename TrackT::iterator;
+        if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value) wNUA=track.weightNUA();
+        if constexpr (std::experimental::is_detected<HasWeightEff, const JInputClassIter>::value) wEff=track.weightEff();
+        histManager.fillTrackQA<1>(track, cBin, wEff, wNUA, collision.posZ());
+
         if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value) {
           spcAnalysis.fillQAHistograms(cBin, track.phi(), 1. / track.weightNUA());
         }

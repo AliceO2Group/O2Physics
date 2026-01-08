@@ -257,6 +257,7 @@ class FlowJHistManager
 
     if (mSaveAllQA) {
       // TPC information.
+      /*
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCNClsFound"),
                             track.tpcNClsFound());
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCNClsCrossedRows"),
@@ -283,6 +284,7 @@ class FlowJHistManager
                             track.pt(), track.dcaXY());
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histDCAz"),
                             track.dcaZ());
+                            */
     }
 
     if (mDebugLog) {
