@@ -192,10 +192,10 @@ struct FactorialMomentsTask {
     for (int iPt = 0; iPt < numPt; ++iPt) {
       mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mEta", iPt + 1), Form("#eta for bin %.2f-%.2f;#eta", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, -2, 2}})));
       mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPt", iPt + 1), Form("pT for bin %.2f-%.2f;pT", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {axisPt[iPt]})));
-      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPhi", iPt + 1), Form("#phi for bin %.2f-%.2f;#phi", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0,   o2::constants::math::TwoPI}})));
+      mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mPhi", iPt + 1), Form("#phi for bin %.2f-%.2f;#phi", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0, o2::constants::math::TwoPI}})));
       mHistArrQA.push_back(std::get<std::shared_ptr<TH1>>(histos.add(Form("bin%i/mMultiplicity", iPt + 1), Form("Multiplicity for bin %.2f-%.2f;Multiplicity", ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH1F, {{1000, 0, 15000}})));
       for (int iM = 0; iM < nBins; ++iM) {
-        auto mHistsR = std::get<std::shared_ptr<TH2>>(histos.add(Form("bin%i/Reset/mEtaPhi%i", iPt + 1, iM), Form("#eta#phi_%i for bin %.2f-%.2f;#eta;#phi", iM, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH2F, {{binningM[iM], -0.8, 0.8}, {binningM[iM], 0,  o2::constants::math::TwoPI}}));
+        auto mHistsR = std::get<std::shared_ptr<TH2>>(histos.add(Form("bin%i/Reset/mEtaPhi%i", iPt + 1, iM), Form("#eta#phi_%i for bin %.2f-%.2f;#eta;#phi", iM, ptCuts.value[2 * iPt], ptCuts.value[2 * iPt + 1]), HistType::kTH2F, {{binningM[iM], -0.8, 0.8}, {binningM[iM], 0, o2::constants::math::TwoPI}}));
         mHistArrReset.push_back(mHistsR);
         for (int iq = 0; iq < nfqOrder; ++iq) {
           tmpFqErr[iq][iPt][iM] = new TH1D(Form("tmpFqErr%i%i%i", iq, iPt, iM), Form("tmpFqErr%i%i%i", iq, iPt, iM), 100, 0, 10);
@@ -403,29 +403,29 @@ struct FactorialMomentsTask {
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : colltracks) {
       // if (track.hasITS())
-       //if (track.hasTPC())
-      //if (track.isGlobalTrack()) {
-        histos.fill(HIST("mCollID"), track.collisionId());
-        histos.fill(HIST("mEta"), track.eta());
-        histos.fill(HIST("mPt"), track.pt());
-        histos.fill(HIST("mPhi"), track.phi());
-        histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
-        histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
-        histos.fill(HIST("mNClsITS"), track.itsNCls());
-        histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
-        histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
-        histos.fill(HIST("mChi2TRD"), track.trdChi2());
-        histos.fill(HIST("mDCAxy"), track.dcaXY());
-        histos.fill(HIST("mDCAx"), track.dcaZ());
-        histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
-        histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
-        histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
-        histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
-        histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
-        histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
-        histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
-        histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-        checkpT(track);
+      // if (track.hasTPC())
+      // if (track.isGlobalTrack()) {
+      histos.fill(HIST("mCollID"), track.collisionId());
+      histos.fill(HIST("mEta"), track.eta());
+      histos.fill(HIST("mPt"), track.pt());
+      histos.fill(HIST("mPhi"), track.phi());
+      histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
+      histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
+      histos.fill(HIST("mNClsITS"), track.itsNCls());
+      histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
+      histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
+      histos.fill(HIST("mChi2TRD"), track.trdChi2());
+      histos.fill(HIST("mDCAxy"), track.dcaXY());
+      histos.fill(HIST("mDCAx"), track.dcaZ());
+      histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
+      histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
+      histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
+      histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
+      histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
+      histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
+      histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
+      checkpT(track);
       //}
     }
     auto mcParts = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
@@ -463,13 +463,13 @@ struct FactorialMomentsTask {
   using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
   using CollisionRecSimRun2 = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelectionrun2>>::iterator;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
- void processMcRun2(CollisionRecSimRun2 const& coll,
-                   aod::BCs const& ,
-                   TracksRecSim const& tracks,
-                   aod::McParticles const& mcParticles,
-                   aod::McCollisions const&,
-                   BCsWithRun2Info const&  )
- {
+  void processMcRun2(CollisionRecSimRun2 const& coll,
+                     aod::BCs const&,
+                     TracksRecSim const& tracks,
+                     aod::McParticles const& mcParticles,
+                     aod::McCollisions const&,
+                     BCsWithRun2Info const&)
+  {
     auto bc = coll.bc_as<BCsWithRun2Info>();
     if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
       return;
