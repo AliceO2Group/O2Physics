@@ -34,7 +34,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -68,6 +68,7 @@
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <memory>
@@ -202,6 +203,10 @@ struct AntinucleiInJets {
 
   // Number of events
   Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};
+
+  // Range of systematic variations to be processed
+  Configurable<int> systIndexStart{"systIndexStart", 0, "First systematic index (inclusive)"};
+  Configurable<int> systIndexEnd{"systIndexEnd", 50, "Last systematic index (exclusive)"};
 
   // Coalescence momentum
   Configurable<double> coalescenceMomentum{"coalescenceMomentum", 0.15, "p0 (GeV/c)"};
@@ -1250,7 +1255,7 @@ struct AntinucleiInJets {
             registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
-            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double expectedSignalHe3 = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
             double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("antihelium3_jet_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
@@ -1345,7 +1350,7 @@ struct AntinucleiInJets {
             registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
             // custom nsigma He3 based on bethe bloch fit of TPC signal
             double tpcSignal = track.tpcSignal();
-            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double expectedSignalHe3 = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
             double nSigmaTPCHe3Custom = ((tpcSignal / expectedSignalHe3) - 1.) / 0.045;
             registryData.fill(HIST("antihelium3_ue_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
@@ -3276,8 +3281,12 @@ struct AntinucleiInJets {
     static const std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
     const int nBins = ptOverAbins.size() - 1;
 
+    // Clamp systematic index range
+    const int systStart = std::max(0, static_cast<int>(systIndexStart.value));
+    const int systEnd = std::min(static_cast<int>(nSyst), static_cast<int>(systIndexEnd.value));
+
     // Loop over systematic variations
-    for (int isyst = 0; isyst < nSyst; isyst++) {
+    for (int isyst = systStart; isyst < systEnd; isyst++) {
 
       // Fill event counter for this systematic
       registryCorr.fill(HIST("eventCounter_centrality_fullEvent_syst"), multiplicity, static_cast<double>(isyst));

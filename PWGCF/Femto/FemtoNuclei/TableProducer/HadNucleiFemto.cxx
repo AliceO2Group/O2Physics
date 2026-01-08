@@ -40,7 +40,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -618,7 +618,7 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   float computeNSigmaDe(const Ttrack& candidate)
   {
-    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(candidate.tpcInnerParam() / constants::physics::MassDeuteron), mBBparamsDe[0], mBBparamsDe[1], mBBparamsDe[2], mBBparamsDe[3], mBBparamsDe[4]);
+    float expTPCSignal = o2::common::BetheBlochAleph(static_cast<float>(candidate.tpcInnerParam() / constants::physics::MassDeuteron), mBBparamsDe[0], mBBparamsDe[1], mBBparamsDe[2], mBBparamsDe[3], mBBparamsDe[4]);
     double resoTPC{expTPCSignal * mBBparamsDe[5]};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
   }

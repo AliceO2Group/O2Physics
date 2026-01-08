@@ -122,6 +122,10 @@ struct CorrelationTask {
 
   ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 5.0}, "invariant mass axis for histograms"};
 
+  ConfigurableAxis axisMultCorrCent{"axisMultCorrCent", {100, 0, 100}, "multiplicity correlation axis for centralities"};
+  ConfigurableAxis axisMultCorrV0{"axisMultCorrV0", {1000, 0, 100000}, "multiplicity correlation axis for V0 multiplicities"};
+  ConfigurableAxis axisMultCorrMult{"axisMultCorrMult", {1000, 0, 1000}, "multiplicity correlation axis for track multiplicities"};
+
   // This filter is applied to AOD and derived data (column names are identical)
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // This filter is only applied to AOD
@@ -190,13 +194,13 @@ struct CorrelationTask {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
       std::vector<AxisSpec> multAxes;
       if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
-        multAxes.emplace_back(100, 0, 100, "FT0C centrality");
+        multAxes.emplace_back(axisMultCorrCent, "FT0C centrality");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
-        multAxes.emplace_back(1000, 0, 100000, "V0A multiplicity");
+        multAxes.emplace_back(axisMultCorrV0, "V0A multiplicity");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
-        multAxes.emplace_back(100, 0, 1000, "Nch PV");
+        multAxes.emplace_back(axisMultCorrMult, "Nch PV");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
-        multAxes.emplace_back(100, 0, 1000, "Nch Global");
+        multAxes.emplace_back(axisMultCorrMult, "Nch Global");
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
