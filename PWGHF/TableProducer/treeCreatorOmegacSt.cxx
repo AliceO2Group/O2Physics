@@ -293,10 +293,10 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> chi2TopCascMax{"chi2TopCascMax", 10.f, "Maximum topologyChi2 of the tracked cascade"};
 
   // Impact parameter cuts (defaults: absolute value < 10)
-  Configurable<float> impactParameterCascYMax{"impactParameterCascYMax", 10.f, "Max abs Max abs impactParameter of cascade(Y)"};
-  Configurable<float> absDcaCascZMax{"absDcaCascZMax", 10.f, "Max abs DCA Z of cascade"};
-  Configurable<float> impactParameterCharmBachelorYMax{"impactParameterCharmBachelorYMax", 10.f, "Max abs impactParameter of charm bachelor(Y)"};
-  Configurable<float> absDcaCharmBachelorZMax{"absDcaCharmBachelorZMax", 10.f, "Max abs DCA Z of charm bachelor"};
+  Configurable<float> absImpactParameterCascYMax{"absImpactParameterCascYMax", 10.f, "Max absolute value of impact parameter of cascade (Y)"};
+  Configurable<float> absDcaCascZMax{"absDcaCascZMax", 10.f, "Max absolute value of DCA Z of cascade"};
+  Configurable<float> absImpactParameterCharmBachelorYMax{"absImpactParameterCharmBachelorYMax", 10.f, "Max absolute value of impact parameter of charm bachelor (Y)"};
+  Configurable<float> absDcaCharmBachelorZMax{"absDcaCharmBachelorZMax", 10.f, "Max absolute value of DCA Z of charm bachelor"};
   Configurable<float> ptCascadeMin{"ptCascadeMin", 0.f, "Minimum pT requirement for the cascade track"};
   Configurable<float> ptPionOrKaonMin{"ptPionOrKaonMin", 0.f, "Minimum pT requirement for the charm baryon daughter pion/kaon track"};
   Configurable<float> impProductMin{"impProductMin", -1.f, "Lower bound for DCA impact product"};
@@ -352,7 +352,6 @@ struct HfTreeCreatorOmegacSt {
       {"hMassOmegaPiVsPt", "inv. mass #Omega + #pi;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.5, 3.}, {10, 0., 10.}}}},
       {"hMassOmegaK", "inv. mass #Omega + K;inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassOmegaKVsPt", "inv. mass #Omega + K;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.5, 3.}, {10, 0., 10.}}}},
-      {"hMassXiPi", "inv. mass #Xi + #pi;inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassXiPiVsPt", "inv. mass #Xi + #pi;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.5, 3.}, {10, 0., 10.}}}},
       {"hMassOmegacId", "inv. mass #Omega + #pi (MC ID);inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassOmegacGen", "inv. mass #Omega + #pi (from MC);inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
@@ -391,7 +390,7 @@ struct HfTreeCreatorOmegacSt {
     setLabelHistoCands(hCandidatesCascPiOrK);
 
     // init HF event selection helper (centrality, event cuts, monitoring)
-    hfEvSel.init(registry, nullptr);
+    hfEvSel.init(registry);
   }
 
   // processMC: loop over MC objects
@@ -777,7 +776,6 @@ struct HfTreeCreatorOmegacSt {
                     registry.fill(HIST("hMassOmegaPiVsPt"), massOmegaPion, ptCharmedBaryon);
                     registry.fill(HIST("hMassOmegaK"), massOmegaKaon);
                     registry.fill(HIST("hMassOmegaKVsPt"), massOmegaKaon, ptCharmedBaryon);
-                    registry.fill(HIST("hMassXiPi"), massXiPion);
                     registry.fill(HIST("hMassXiPiVsPt"), massXiPion, ptCharmedBaryon);
                     const bool massOmegacToOmegaPiPass = std::abs(massOmegaPion - o2::constants::physics::MassOmegaC0) < massWindowOmegaC;
                     const bool massOmegacToOmegaKPass = std::abs(massOmegaKaon - o2::constants::physics::MassOmegaC0) < massWindowOmegaC;
@@ -806,7 +804,8 @@ struct HfTreeCreatorOmegacSt {
                         passSelectedChannel = massOmegacToXiPiPass;
                         break;
                       default:
-                        passSelectedChannel = true; // unexpected code -> do not reject
+                        LOG(warning) << "Unexpected selectedChannel value: " << selectedChannel.value << ". Rejecting candidate.";
+                        passSelectedChannel = false;
                         break;
                     }
                     if (!passSelectedChannel) {
@@ -879,9 +878,9 @@ struct HfTreeCreatorOmegacSt {
                       continue;
                     if (trackedCascade.topologyChi2() > chi2TopCascMax)
                       continue;
-                    if (std::abs(impactParameterCasc.getY()) > impactParameterCascYMax || std::abs(impactParameterCasc.getZ()) > absDcaCascZMax)
+                    if (std::abs(impactParameterCasc.getY()) > absImpactParameterCascYMax || std::abs(impactParameterCasc.getZ()) > absDcaCascZMax)
                       continue;
-                    if (std::abs(impactParameterPion.getY()) > impactParameterCharmBachelorYMax || std::abs(impactParameterPion.getZ()) > absDcaCharmBachelorZMax)
+                    if (std::abs(impactParameterPion.getY()) > absImpactParameterCharmBachelorYMax || std::abs(impactParameterPion.getZ()) > absDcaCharmBachelorZMax)
                       continue;
                     if (ptCascade < ptCascadeMin)
                       continue;
