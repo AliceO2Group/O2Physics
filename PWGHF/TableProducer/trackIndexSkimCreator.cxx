@@ -121,11 +121,26 @@ enum ChannelsProtonPid {
   LcToPK0S,
   NChannelsProtonPid
 };
+
+enum ChannelsKaonPid {
+  Charm3ProngToKaon = 0,
+  NChannelsKaonPid
+};
+
+enum ChannelsLightNucleiPid {
+  CdToDeKPi = 0,
+  CtToTrKPi,
+  ChToHeKPi,
+  NChannelsLightNucleiPid
+};
+
+
 // kaon PID (opposite-sign track in 3-prong decays)
 constexpr int ChannelKaonPid = ChannelsProtonPid::NChannelsProtonPid;
 constexpr int ChannelsDeuteronPid = ChannelsProtonPid::NChannelsProtonPid + 1;
 constexpr int ChannelsTritonPid = ChannelsProtonPid::NChannelsProtonPid + 2;
 constexpr int ChannelsHeliumPid = ChannelsProtonPid::NChannelsProtonPid + 3;
+constexpr int NChannelsPidFor3Prong = ChannelsProtonPid::NChannelsProtonPid + ChannelsKaonPid::NChannelsKaonPid + ChannelsLightNucleiPid::NChannelsLightNucleiPid;
 
 enum class ChannelsNucleiQA : int {
   Deuteron = 0,
@@ -539,8 +554,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       statusPid[ChannelsHeliumPid] = selectorHelium.statusTpcAndTof(hfTrack);
     }
 
-    int8_t flag = BIT(ChannelsProtonPid::NChannelsProtonPid + 4) - 1; // all bits on (including the kaon one)
-    for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid + 4; ++iChannel) {
+    int8_t flag = BIT(NChannelsPidFor3Prong) - 1; // all bits on (including the kaon one)
+    for (auto iChannel{0u}; iChannel < NChannelsPidFor3Prong; ++iChannel) {
       if (statusPid[iChannel] == TrackSelectorPID::Rejected) {
         CLRBIT(flag, iChannel);
       }
