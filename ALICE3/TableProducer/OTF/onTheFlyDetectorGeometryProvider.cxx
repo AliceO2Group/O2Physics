@@ -36,9 +36,6 @@ struct OnTheFlyDetectorGeometryProvider {
   {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
-  }
-  void run(o2::framework::ProcessingContext& pc)
-  {
     o2::fastsim::GeometryContainer geometryContainer; // Checking that the geometry files can be accessed and loaded
     LOG(info) << "On-the-fly detector geometry provider running.";
     if (detectorConfiguration.value.empty()) {
@@ -78,15 +75,11 @@ struct OnTheFlyDetectorGeometryProvider {
         LOG(fatal) << "Inconsistent magnetic field values between configurations 0 and " << icfg << ": " << mMagneticField << " vs " << cfgBfield;
       }
     }
-
-    pc.services().get<o2::framework::ControlService>().endOfStream();
-    pc.services().get<o2::framework::ControlService>().readyToQuit(o2::framework::QuitRequest::Me);
   }
 
-  void processDummy(o2::aod::McCollisions const&)
+  void process(o2::aod::McCollisions const&)
   {
   }
-  PROCESS_SWITCH(OnTheFlyDetectorGeometryProvider, processDummy, "process dummy", false);
 };
 
 // #define VERIFY_ALICE3
