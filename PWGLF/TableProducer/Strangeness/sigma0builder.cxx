@@ -1690,13 +1690,13 @@ struct sigma0builder {
       return false;
     histos.fill(HIST("K0ShortSel/hSelectionStatistics"), 6.);
     // MC Processing (if available)
-    if constexpr (requires { kshort.motherMCPartId(); }) {
-      if (kshort.has_v0MCCore()) {
-        auto kshortMC = kshort.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-        //   if (kshortMC.pdgCode() == 310) // Is K0Short
-        //     histos.fill(HIST("MC/h2dPtVsCentrality_MCAssocKShort"), centrality, kshort.pt());
-      }
-    }
+    // if constexpr (requires { kshort.motherMCPartId(); }) {
+    //   if (kshort.has_v0MCCore()) {
+    //     auto kshortMC = kshort.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+    //     //   if (kshortMC.pdgCode() == 310) // Is K0Short
+    //     //     histos.fill(HIST("MC/h2dPtVsCentrality_MCAssocKShort"), centrality, kshort.pt());
+    //   }
+    // }
 
     return true;
   }
