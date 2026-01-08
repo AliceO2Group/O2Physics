@@ -208,8 +208,8 @@ struct JetHadronRecoil {
       registry.add("hPhiMatchedPt", "#phi matching 2d;#phi;p_{T}", {HistType::kTH2F, {{400, 0, 400}, phiAxisPart}}, doSumw);
       registry.add("hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {dRAxisDet, dRAxisPart}}, doSumw);
       registry.add("hPtMatched1d", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{400, 0, 400}}}, doSumw);
-      registry.add("hPtTruth2D", "p_{T} matching 1d;p_{T,part};dphip", {HistType::kTH2F, {{400, 0, 400},phiAxisPart}}, doSumw);
-      registry.add("hPtTruth1D", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{400, 0, 400}}}, doSumw);
+      registry.add("hPtTruth2D", "p_{T} truth 2d;p_{T,part};dphip", {HistType::kTH2F, {{400, 0, 400},phiAxisPart}}, doSumw);
+      registry.add("hPtTruth1D", "p_{T} truth 1d;p_{T,part}", {HistType::kTH1F, {{400, 0, 400}}}, doSumw);
       registry.add("hDeltaRMatched1d", "#DeltaR matching 1d;#DeltaR_{part}", {HistType::kTH1F, {dRAxisPart}}, doSumw);
       registry.add("hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {ptAxisPart, {100, -5.0, 5.0}}}, doSumw);
       registry.add("hPhiResolution", "#phi resolution;#p_{T,part};Resolution", {HistType::kTH2F, {ptAxisPart, {100, -7.0, 7.0}}}, doSumw);
@@ -629,7 +629,7 @@ struct JetHadronRecoil {
         }
       }
 
-      registry.fill(HIST("hPtTruth"), jetTag.pt(), weight);
+      registry.fill(HIST("hPtTruth1D"), jetTag.pt(), weight);
 
       double dR = getWTAaxisDifference(jetTag, particles);
       if (jetTag.has_matchedJetGeo()) {
@@ -654,7 +654,7 @@ struct JetHadronRecoil {
           registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
           registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
         }
-      }
+      }s
     }
   }
 
