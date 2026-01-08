@@ -1344,7 +1344,7 @@ struct HfTrackIndexSkimCreator {
   o2::ccdb::CcdbApi ccdbApi;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using TracksWithPVRefitAndDCA = soa::Join<aod::FullTracks, aod::TracksWCovDcaExtra, aod::HfPvRefitTrack>;
+  using TracksWithPVRefitAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::HfPvRefitTrack>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions

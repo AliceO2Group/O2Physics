@@ -653,14 +653,6 @@ class TrackSelectorPidBase
   }
 
  private:
-  // ITS
-  float mPtItsMin = 0.;            ///< minimum pT for TPC PID [GeV/c]
-  float mPtItsMax = 100.;          ///< maximum pT for TPC PID [GeV/c]
-  float mNSigmaItsMin = -3.;       ///< minimum number of TPC σ
-  float mNSigmaItsMax = 3.;        ///< maximum number of TPC σ
-  float mNSigmaItsMinCondTpc = 0.; ///< minimum number of TPC σ if combined with TOF
-  float mNSigmaItsMaxCondTpc = 0.; ///< maximum number of TPC σ if combined with TOF
-
   // TPC
   float mPtTpcMin = 0.;            ///< minimum pT for TPC PID [GeV/c]
   float mPtTpcMax = 100.;          ///< maximum pT for TPC PID [GeV/c]
