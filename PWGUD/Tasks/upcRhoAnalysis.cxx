@@ -267,6 +267,7 @@ struct UpcRhoAnalysis {
     rQC.add("QC/tracks/trackSelections/hTpcNSigmaPi2D", ";TPC #it{n#sigma}(#pi)_{leading};TPC #it{n#sigma}(#pi)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
     rQC.add("QC/tracks/trackSelections/hTpcNSigmaEl2D", ";TPC #it{n#sigma}(e)_{leading};TPC #it{n#sigma}(e)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
     rQC.add("QC/tracks/trackSelections/hTpcNSigmaKa2D", ";TPC #it{n#sigma}(K)_{leading};TPC #it{n#sigma}(K)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
+    rQC.add("QC/tracks/trackSelections/hTpcNSigmaPr2D", ";TPC #it{n#sigma}(p)_{leading};TPC #it{n#sigma}(p)_{subleading};counts", kTH2D, {nSigmaAxis, nSigmaAxis});
     // selection counter
     std::vector<std::string> trackSelectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS #it{N}_{cls}", "itsClusterMap check", "ITS #it{#chi}^{2}/#it{N}_{cls}", "TPC hit", "found TPC #it{N}_{cls}", "TPC #it{#chi}^{2}/#it{N}_{cls}", "TPC crossed rows",
                                                             "TPC crossed rows/#it{N}_{cls}",
@@ -785,6 +786,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaKa2D"), cutTracks[0].tpcNSigmaKa(), cutTracks[1].tpcNSigmaKa());
+    rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaPr2D"), cutTracks[0].tpcNSigmaPr(), cutTracks[1].tpcNSigmaPr());
 
     // create a vector of 4-vectors for selected tracks
     std::vector<ROOT::Math::PxPyPzMVector> cutTracksLVs;
