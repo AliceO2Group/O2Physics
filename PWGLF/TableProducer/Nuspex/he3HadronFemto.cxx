@@ -38,7 +38,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -576,7 +576,7 @@ struct he3HadronFemto {
   {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && settingCompensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
-    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(correctedTPCinnerParam * 2.f / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
+    float expTPCSignal = o2::common::BetheBlochAleph(static_cast<float>(correctedTPCinnerParam * 2.f / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
 
     double resoTPC{expTPCSignal * mBBparamsHe[5]};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
@@ -1335,19 +1335,19 @@ struct he3HadronFemto {
         continue;
 
       const float itsNSigmaHad = settingHadPDGCode == PDG_t::kProton ? mResponseITS.nSigmaITS<o2::track::PID::Proton>(track.itsClusterSizes(), track.p(), track.eta()) : mResponseITS.nSigmaITS<o2::track::PID::Pion>(track.itsClusterSizes(), track.p(), track.eta());
-      mQaRegistry.fill(HIST("Had/h2NsigmaHadronITS_preselection"), track.pt(), itsNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronITS_preselection"), track.sign() * track.pt(), itsNSigmaHad);
 
       if (selectDcaNsigmaCut(track, Species::kHad) && (itsNSigmaHad > settingCutNsigmaITSHad)) {
 
-        mQaRegistry.fill(HIST("Had/hHadronPt"), track.pt());
-        mQaRegistry.fill(HIST("Had/h2NsigmaHadronITS"), track.pt(), itsNSigmaHad);
+        mQaRegistry.fill(HIST("Had/hHadronPt"), track.sign() * track.pt());
+        mQaRegistry.fill(HIST("Had/h2NsigmaHadronITS"), track.sign() * track.pt(), itsNSigmaHad);
 
         const float tpcNSigmaHad = computeTPCNSigmaHadron(track);
-        mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), track.pt(), tpcNSigmaHad);
+        mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), track.sign() * track.pt(), tpcNSigmaHad);
 
         if (track.hasTOF()) {
           const float tofNSigmaHad = computeTOFNSigmaHadron(track);
-          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), track.pt(), tofNSigmaHad);
+          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), track.sign() * track.pt(), tofNSigmaHad);
         }
       }
 
@@ -1358,10 +1358,10 @@ struct he3HadronFemto {
       if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(track, Species::kHe3) || (itsNSigmaHe3 < settingCutNsigmaITSHe3))
         continue;
 
-      mQaRegistry.fill(HIST("He3/hHe3Pt"), ptHe3Corrected);
+      mQaRegistry.fill(HIST("He3/hHe3Pt"), track.sign() * ptHe3Corrected);
       mQaRegistry.fill(HIST("He3/hDCAxyHe3"), track.dcaXY());
       mQaRegistry.fill(HIST("He3/hDCAzHe3"), track.dcaZ());
-      mQaRegistry.fill(HIST("He3/h2NsigmaHe3ITS"), ptHe3Corrected, itsNSigmaHe3);
+      mQaRegistry.fill(HIST("He3/h2NsigmaHe3ITS"), track.sign() * ptHe3Corrected, itsNSigmaHe3);
 
       bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
       float correctedTPCinnerParam = (heliumPID && settingCompensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();

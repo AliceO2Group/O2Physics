@@ -330,6 +330,7 @@ struct LambdaJetpolarization {
     registryData.add("LambdaQA/TProfile2DprotonCos2ThetaInJetV0", "TProfile2DprotonCos2ThetaInJetV0", kTProfile2D, {tprofile2DaxisMass, axisDeltaPhi});
     registryData.add("LambdaQA/TH1FprotonCosThetaInJetV0", "TH1FprotonCosThetaInJetV0", kTH1F, {{200, -1.0, 1.0}});
     registryData.add("LambdaQA/TH2FprotonCosThetaPhiInJetV0", "TH2FprotonCosThetaPhiInJetV0", kTH2F, {{200, -1.0, 1.0}, {200, 0.0, TMath::Pi()}});
+    registryData.add({"LambdaQA/TH3DLambdaMassDeltaPhiDeltaCosTheta", ";  Mass (GeV/c^{2}); #Delta #varphi_{jet} (rad); Cos(#theta^{*}_{p})", {HistType::kTH3D, {invMassLambdaAxis, axisDeltaPhi, axisCostheta}}});
 
     registryData.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
@@ -1949,6 +1950,7 @@ struct LambdaJetpolarization {
         registryData.fill(HIST("LambdaQA/TProfile2DprotonCos2ThetaInJetV0"), candidate.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame * protonCosThetaInJetV0frame);
         registryData.fill(HIST("LambdaQA/TH1FprotonCosThetaInJetV0"), protonCosThetaInJetV0frame);
         registryData.fill(HIST("LambdaQA/TH2FprotonCosThetaPhiInJetV0"), protonCosThetaInJetV0frame, TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)));
+        registryData.fill(HIST("LambdaQA/TH3DLambdaMassDeltaPhiDeltaCosTheta"), candidate.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame);
       }
       if (registryDataAcceptV0AntiLambda(candidate, pos, neg, collision)) {
         registryData.fill(HIST("hMassAntiLambda"), candidate.mAntiLambda());

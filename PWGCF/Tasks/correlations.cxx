@@ -89,7 +89,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
-  O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity")
+  O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality")
 
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
@@ -122,6 +122,10 @@ struct CorrelationTask {
 
   ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 5.0}, "invariant mass axis for histograms"};
 
+  ConfigurableAxis axisMultCorrCent{"axisMultCorrCent", {100, 0, 100}, "multiplicity correlation axis for centralities"};
+  ConfigurableAxis axisMultCorrV0{"axisMultCorrV0", {1000, 0, 100000}, "multiplicity correlation axis for V0 multiplicities"};
+  ConfigurableAxis axisMultCorrMult{"axisMultCorrMult", {1000, 0, 1000}, "multiplicity correlation axis for track multiplicities"};
+
   // This filter is applied to AOD and derived data (column names are identical)
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // This filter is only applied to AOD
@@ -147,7 +151,7 @@ struct CorrelationTask {
   std::vector<int> p2indexCache;
 
   std::unique_ptr<TFormula> multCutFormula;
-  std::array<uint, 4> multCutFormulaParamIndex;
+  std::array<uint, aod::cfmultset::NMultiplicityEstimators> multCutFormulaParamIndex;
 
   struct Config {
     bool mPairCuts = false;
@@ -190,13 +194,13 @@ struct CorrelationTask {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
       std::vector<AxisSpec> multAxes;
       if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
-        multAxes.emplace_back(100, 0, 100, "FT0C centrality");
+        multAxes.emplace_back(axisMultCorrCent, "FT0C centrality");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
-        multAxes.emplace_back(1000, 0, 100000, "V0A multiplicity");
+        multAxes.emplace_back(axisMultCorrV0, "V0A multiplicity");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
-        multAxes.emplace_back(100, 0, 1000, "Nch PV");
+        multAxes.emplace_back(axisMultCorrMult, "Nch PV");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
-        multAxes.emplace_back(100, 0, 1000, "Nch Global");
+        multAxes.emplace_back(axisMultCorrMult, "Nch Global");
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
@@ -229,7 +233,7 @@ struct CorrelationTask {
     if (!cfgMultCutFormula.value.empty()) {
       multCutFormula = std::make_unique<TFormula>("multCutFormula", cfgMultCutFormula.value.c_str());
       std::fill_n(multCutFormulaParamIndex.begin(), std::size(multCutFormulaParamIndex), ~0u);
-      std::array<std::string, 4> pars = {"cFT0C", "mFV0A", "mPV", "mGlob"}; // must correspond the order of MultiplicityEstimators
+      std::array<std::string, aod::cfmultset::NMultiplicityEstimators> pars = {"cFT0C", "mFV0A", "mPV", "mGlob", "cFT0M"}; // must correspond the order of MultiplicityEstimators
       for (uint i = 0, n = multCutFormula->GetNpar(); i < n; ++i) {
         auto m = std::find(pars.begin(), pars.end(), multCutFormula->GetParName(i));
         if (m == pars.end()) {
@@ -462,7 +466,7 @@ struct CorrelationTask {
   {
     if (cfgMultCutFormula.value.empty())
       return true;
-    for (uint i = 0; i < 4; ++i) {
+    for (uint i = 0; i < aod::cfmultset::NMultiplicityEstimators; ++i) {
       if ((cfgMultCorrelationsMask.value & (1u << i)) == 0 || multCutFormulaParamIndex[i] == ~0u)
         continue;
       auto estIndex = std::popcount(cfgMultCorrelationsMask.value & ((1u << i) - 1));

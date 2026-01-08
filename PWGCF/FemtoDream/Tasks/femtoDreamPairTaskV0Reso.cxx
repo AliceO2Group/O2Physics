@@ -257,7 +257,7 @@ struct FemtoDreamPairTaskV0Reso {
 
     eventHisto.init(&registry, Option.isMC);
 
-    v0HistoPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTTrack, Option.dummy, Option.dummy, Binning.tempFitVarV0, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.isMC, V01.pdgCode);
+    v0HistoPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTTrack, Option.dummy, Option.dummy, Binning.tempFitVarV0, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Binning.invMass, Option.dummy, Option.isMC, V01.pdgCode);
     posChildHistos.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTV0Child, Option.dummy, Option.dummy, Binning.tempFitVarV0Child, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
     negChildHistos.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTV0Child, Option.dummy, Option.dummy, Binning.tempFitVarV0Child, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
 

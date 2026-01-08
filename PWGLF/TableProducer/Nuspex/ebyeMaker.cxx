@@ -32,7 +32,7 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -409,7 +409,7 @@ struct EbyeMaker {
   {
     if ((doprocessMiniRun2 || doprocessMiniMcRun2) && track.hasITS()) {
       auto extra = trackExtraRun2.rawIteratorAt(track.globalIndex());
-      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.p() / kPartMass[0]), cfgBetheBlochParamsITS->get("p0"), cfgBetheBlochParamsITS->get("p1"), cfgBetheBlochParamsITS->get("p2"), cfgBetheBlochParamsITS->get("p3"), cfgBetheBlochParamsITS->get("p4"))};
+      double expBethe{common::BetheBlochAleph(static_cast<double>(track.p() / kPartMass[0]), cfgBetheBlochParamsITS->get("p0"), cfgBetheBlochParamsITS->get("p1"), cfgBetheBlochParamsITS->get("p2"), cfgBetheBlochParamsITS->get("p3"), cfgBetheBlochParamsITS->get("p4"))};
       double expSigma{expBethe * cfgBetheBlochParamsITS->get("resolution")};
       auto nSigmaITS = static_cast<float>((extra.itsSignal() - expBethe) / expSigma);
       return std::make_pair(extra.itsSignal(), nSigmaITS);
@@ -420,7 +420,7 @@ struct EbyeMaker {
   template <class T>
   float getCustomTPCPID(T const& track, float const mass, int const ip = 0)
   {
-    double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / mass), cfgBetheBlochParams->get(ip, "p0"), cfgBetheBlochParams->get(ip, "p1"), cfgBetheBlochParams->get(ip, "p2"), cfgBetheBlochParams->get(ip, "p3"), cfgBetheBlochParams->get(ip, "p4"))};
+    double expBethe{common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / mass), cfgBetheBlochParams->get(ip, "p0"), cfgBetheBlochParams->get(ip, "p1"), cfgBetheBlochParams->get(ip, "p2"), cfgBetheBlochParams->get(ip, "p3"), cfgBetheBlochParams->get(ip, "p4"))};
     double expSigma{expBethe * cfgBetheBlochParams->get(ip, "resolution")};
     return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }

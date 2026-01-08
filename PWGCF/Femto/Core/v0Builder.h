@@ -93,16 +93,16 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
 #undef V0_DEFAULT_BITS
 
 // base selection for analysis task for v0s
-#define V0_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                 \
-  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "V0 PDG code"};                         \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                       \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                     \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                  \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                   \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                    \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};       \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Lambda"}; \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Lambda"}; \
+#define V0_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                             \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "PDG code. Set sign to -1 for antiparticle"}; \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                   \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                 \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                              \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                               \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                   \
+  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Lambda"};             \
+  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Lambda"};             \
   o2::framework::Configurable<o2::aod::femtodatatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
@@ -118,6 +118,7 @@ template <const char* Prefix>
 struct ConfK0shortSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_SELECTIONS(0.47, 0.51, 310)
+  o2::framework::Configurable<int> sign{"sign", 0, "Dummy value. For compatability with Lambda selection"};
 };
 
 #undef V0_DEFAULT_SELECTIONS
@@ -142,8 +143,8 @@ enum V0Sels {
 
   // selection for daughter
   kDauAbsEtaMax, ///< Max. absolute pseudo rapidity
-  kDauDcaMin,    ///< Min. DCA of the positive daughters at primary vertex
-  kDauTpcClsMin, ///< Min. number of TPC clusters of positive daughter
+  kDauDcaMin,    ///< Min. DCA of the daughters at primary vertex
+  kDauTpcClsMin, ///< Min. number of TPC clusters of daughter
 
   // pid selection for daughters
   kPosDaughTpcPion,   ///< TPC Pion PID for positive daughter
@@ -165,9 +166,9 @@ const std::unordered_map<V0Sels, std::string> v0SelectionNames = {
   {kTransRadMin, "Min. transverse radius"},
   {kTransRadMax, "Max. transverse radius"},
 
-  {kDauAbsEtaMax, "Max. absolute pseudo rapidity"},
-  {kDauDcaMin, "Min. DCA of the positive daughters at primary vertex"},
-  {kDauTpcClsMin, "Min. number of TPC clusters of positive daughter"},
+  {kDauAbsEtaMax, "Max. absolute pseudo rapidity of daughters"},
+  {kDauDcaMin, "Min. DCA of the daughters at primary vertex"},
+  {kDauTpcClsMin, "Min. number of TPC clusters of daughters"},
 
   {kPosDaughTpcPion, "TPC Pion PID for positive daughter"},
   {kPosDaughTpcProton, "TPC Proton PID for positive daughter"},
@@ -372,7 +373,7 @@ class V0Builder
   }
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0products, T6 const& v0s, T7 const& tracks, T8 const& tracksWithItsPid, T9& trackBuilder)
+  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0Products, T6 const& v0s, T7 const& tracks, T8 const& tracksWithItsPid, T9& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -398,19 +399,62 @@ class V0Builder
       negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
-        fillLambda(collisionProducts, v0products, v0, 1.f, posDaughterIndex, negDaughterIndex);
+        fillLambda(collisionProducts, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
-        fillLambda(collisionProducts, v0products, v0, -1.f, posDaughterIndex, negDaughterIndex);
+        fillLambda(collisionProducts, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
-        fillK0short(collisionProducts, v0products, v0, posDaughterIndex, negDaughterIndex);
+        fillK0short(collisionProducts, v0Products, v0, posDaughterIndex, negDaughterIndex);
+      }
+    }
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+  void fillMcV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& v0Products, T7 const& v0s, T8 const& tracks, T9 const& tracksWithItsPid, T10& trackBuilder, T11 const& mcParticles, T12& mcBuilder, T13& mcProducts)
+  {
+
+    if (!mFillAnyTable) {
+      return;
+    }
+    int64_t posDaughterIndex = 0;
+    int64_t negDaughterIndex = 0;
+    for (const auto& v0 : v0s) {
+      if (!mV0Selection.checkFilters(v0)) {
+        continue;
+      }
+      mV0Selection.applySelections(v0, tracks);
+      if (!mV0Selection.passesAllRequiredSelections()) {
+        continue;
+      }
+
+      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+
+      auto posDaughter = tracks.iteratorAt(v0.posTrackId() - tracksWithItsPid.offset());
+      auto posDaughterWithItsPid = tracksWithItsPid.iteratorAt(v0.posTrackId() - tracksWithItsPid.offset());
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, posDaughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      auto negDaughter = tracks.iteratorAt(v0.negTrackId() - tracksWithItsPid.offset());
+      auto negDaughterWithItsPid = tracksWithItsPid.iteratorAt(v0.negTrackId() - tracksWithItsPid.offset());
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, negDaughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
+        fillLambda(collisionProducts, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
+        mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+      }
+      if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
+        fillLambda(collisionProducts, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
+        mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+      }
+      if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
+        fillK0short(collisionProducts, v0Products, v0, posDaughterIndex, negDaughterIndex);
+        mcBuilder.template fillMcK0shortWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
       }
     }
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillLambda(T1& collisionProducts, T2& v0products, T3 const& v0, float sign, int64_t posDaughterIndex, int64_t negDaughterIndex)
+  void fillLambda(T1& collisionProducts, T2& v0Products, T3 const& v0, float sign, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     float mass, massAnti;
     if (sign > 0.f) {
@@ -421,7 +465,7 @@ class V0Builder
       massAnti = v0.mLambda();
     }
     if (mProduceLambdas) {
-      v0products.producedLambdas(collisionProducts.producedCollision.lastIndex(),
+      v0Products.producedLambdas(collisionProducts.producedCollision.lastIndex(),
                                  sign * v0.pt(),
                                  v0.eta(),
                                  v0.phi(),
@@ -430,10 +474,10 @@ class V0Builder
                                  negDaughterIndex);
     }
     if (mProduceLambdaMasks) {
-      v0products.producedLambdaMasks(mV0Selection.getBitmask());
+      v0Products.producedLambdaMasks(mV0Selection.getBitmask());
     }
     if (mProduceLambdaExtras) {
-      v0products.producedLambdaExtras(
+      v0Products.producedLambdaExtras(
         massAnti,
         v0.mK0Short(),
         v0.v0cosPA(),
@@ -446,10 +490,10 @@ class V0Builder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillK0short(T1& collisionProducts, T2& v0products, T3 const& v0, int64_t posDaughterIndex, int64_t negDaughterIndex)
+  void fillK0short(T1& collisionProducts, T2& v0Products, T3 const& v0, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     if (mProduceK0shorts) {
-      v0products.producedK0shorts(collisionProducts.producedCollision.lastIndex(),
+      v0Products.producedK0shorts(collisionProducts.producedCollision.lastIndex(),
                                   v0.pt(),
                                   v0.eta(),
                                   v0.phi(),
@@ -458,10 +502,10 @@ class V0Builder
                                   negDaughterIndex);
     }
     if (mProduceK0shortMasks) {
-      v0products.producedK0shortMasks(mV0Selection.getBitmask());
+      v0Products.producedK0shortMasks(mV0Selection.getBitmask());
     }
     if (mProduceK0shortExtras) {
-      v0products.producedK0shortExtras(
+      v0Products.producedK0shortExtras(
         v0.mLambda(),
         v0.mAntiLambda(),
         v0.v0cosPA(),
@@ -473,7 +517,7 @@ class V0Builder
     }
   }
 
-  bool fillAnyTable() { return mFillAnyTable; }
+  bool fillAnyTable() const { return mFillAnyTable; }
 
  private:
   V0Selection<v0Type, HistName> mV0Selection;

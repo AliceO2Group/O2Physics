@@ -224,7 +224,7 @@ struct doubleCascTreeCreator {
     float momTot[3] = {momKaon[0] + momLambda[0] + realOmega.px(), momKaon[1] + momLambda[1] + realOmega.py(), momKaon[2] + momLambda[2] + realOmega.pz()};
     float eK = std::sqrt(o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged + momKaon[0] * momKaon[0] + momKaon[1] * momKaon[1] + momKaon[2] * momKaon[2]);
     float eL = std::sqrt(o2::constants::physics::MassLambda0 * o2::constants::physics::MassLambda0 + momLambda[0] * momLambda[0] + momLambda[1] * momLambda[1] + momLambda[2] * momLambda[2]);
-    float eO = std::sqrt(o2::constants::physics::MassOmegaMinus * o2::constants::physics::MassOmegaMinus + momTot[0] * momTot[0] + momTot[1] * momTot[1] + momTot[2] * momTot[2]);
+    float eO = std::sqrt(o2::constants::physics::MassOmegaMinus * o2::constants::physics::MassOmegaMinus + realOmega.px() * realOmega.px() + realOmega.py() * realOmega.py() + realOmega.pz() * realOmega.pz());
     float eTot = eK + eL + eO;
     float mass = std::sqrt(eTot * eTot - momTot[0] * momTot[0] - momTot[1] * momTot[1] - momTot[2] * momTot[2]);
     return mass;

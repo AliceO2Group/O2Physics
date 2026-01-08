@@ -124,7 +124,7 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
     }
 
-  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
+  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child || partType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child || partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
     switch (abs(motherPDG)) {
       case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
@@ -137,9 +137,19 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
     } // switch
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
-  } else if (partType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor) {
-    partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    switch (std::abs(motherPDG)) {
+      case kOmegaMinus:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterOmegaMinus;
+        break;
+      case 3324:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXistar0;
+        break;
+      case 3314:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterXistarMinus;
+        break;
+      default:
+        partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondary;
+    }
   }
   return partOrigin;
 };
