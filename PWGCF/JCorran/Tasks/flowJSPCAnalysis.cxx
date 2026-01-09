@@ -126,8 +126,10 @@ struct flowJSPCAnalysis {
         // histManager.FillTrackQA<0>(track, cBin, collision.posZ());
 
         using JInputClassIter = typename TrackT::iterator;
-        if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value) wNUA=track.weightNUA();
-        if constexpr (std::experimental::is_detected<HasWeightEff, const JInputClassIter>::value) wEff=track.weightEff();
+        if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value)
+          wNUA = track.weightNUA();
+        if constexpr (std::experimental::is_detected<HasWeightEff, const JInputClassIter>::value)
+          wEff = track.weightEff();
         histManager.fillTrackQA<1>(track, cBin, wEff, wNUA, collision.posZ());
 
         if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value) {
