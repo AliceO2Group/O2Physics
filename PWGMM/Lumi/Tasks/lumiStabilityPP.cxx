@@ -45,12 +45,12 @@ enum TriggerAliases { AllBCs = 0,
                       FT0CE = 2,
                       FDD = 3,
                       NTriggerAliases };
-enum BCCategories { BCA = 0,    // A side BCs (bunch-crossings that had beam only from A side)
-                    BCB = 1,    // B type BCs (bunch-crossings that had beam from both sides)
-                    BCC = 2,    // C side BCs (bunch-crossings that had beam only from C side)
-                    BCE = 3,    // empty BCs (bunch-crossings that did not have beam from either side)
-                    BCL = 4,    // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
-                    BCSL = 5,   // super-leading BCs (bunch-crossings that did not have FDD/FT0 activity for a configurable number of preceding BCs)
+enum BCCategories { BCA = 0,  // A side BCs (bunch-crossings that had beam only from A side)
+                    BCB = 1,  // B type BCs (bunch-crossings that had beam from both sides)
+                    BCC = 2,  // C side BCs (bunch-crossings that had beam only from C side)
+                    BCE = 3,  // empty BCs (bunch-crossings that did not have beam from either side)
+                    BCL = 4,  // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
+                    BCSL = 5, // super-leading BCs (bunch-crossings that did not have FDD/FT0 activity for a configurable number of preceding BCs)
                     NBCCategories };
 } // namespace lumi
 namespace aod
@@ -80,13 +80,13 @@ struct BuildBcFlagTable {
                aod::FDDs const& fdds)
   {
     int64_t idxFT0{-1}, idxFDD{-1};
-    for (const auto& ft0: ft0s) {
+    for (const auto& ft0 : ft0s) {
       if (ft0.bcId() == bc.globalIndex()) {
         idxFT0 = ft0.globalIndex();
         break;
       }
     }
-    for (const auto& fdd: fdds) {
+    for (const auto& fdd : fdds) {
       if (fdd.bcId() == bc.globalIndex()) {
         idxFDD = fdd.globalIndex();
         break;
@@ -137,7 +137,7 @@ struct LumiStabilityPP {
      {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_SL/nBCsVsBCID"},
      {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_SL/nBCsVsBCID"}};
 
-  const AxisSpec timeAxis{1440, 0., 1440., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{nBCsPerOrbit, -0.5, static_cast<float>(nBCsPerOrbit)-0.5, "#bf{BC ID in orbit}"};
+  const AxisSpec timeAxis{1440, 0., 1440., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{nBCsPerOrbit, -0.5, static_cast<float>(nBCsPerOrbit) - 0.5, "#bf{BC ID in orbit}"};
 
   int64_t bcSOR;
   int nBCsPerTF;
@@ -262,7 +262,7 @@ struct LumiStabilityPP {
 
       float timeSinceSOF = getTimeSinceSOF(bc);
       bool isTriggerTVX = (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex) : false);
-  
+
       if (isTriggerTVX) {
         histNBcsVsTime[runNumber]->Fill(timeSinceSOF);
       }
