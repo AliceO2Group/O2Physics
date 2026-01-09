@@ -18,8 +18,10 @@
 #include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
 
 #include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsFT0/Digit.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "Framework/ASoA.h"
@@ -51,6 +53,13 @@ enum BCCategories { BCA = 0,    // A side BCs (bunch-crossings that had beam onl
                     BCSL = 5,   // super-leading BCs (bunch-crossings that did not have FDD/FT0 activity for a configurable number of preceding BCs)
                     NBCCategories };
 } // namespace lumi
+namespace aod
+{
+// Columns to store the information about the presence of FT0 and FDD signals associated to a given BC
+DECLARE_SOA_TABLE(BcDetectorInfo, "AOD", "BCDETECTORINFO", //!
+                  indices::FT0Id,
+                  indices::FDDId);
+} // namespace aod
 } // namespace o2
 
 using namespace o2;
@@ -58,7 +67,34 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::lumi;
 
-using BCsWithTimeStampsAndSels = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>;
+using BCsWithTimeStamps = soa::Join<aod::BCs, aod::Timestamps, aod::BcDetectorInfo>;
+
+struct BuildBcFlagTable {
+
+  Produces<aod::BcDetectorInfo> bcFlags;
+
+  void init(InitContext&) {}
+
+  void process(aod::BC const& bc,
+               aod::FT0s const& ft0s,
+               aod::FDDs const& fdds)
+  {
+    int64_t idxFT0{-1}, idxFDD{-1};
+    for (const auto& ft0: ft0s) {
+      if (ft0.bcId() == bc.globalIndex()) {
+        idxFT0 = ft0.globalIndex();
+        break;
+      }
+    }
+    for (const auto& fdd: fdds) {
+      if (fdd.bcId() == bc.globalIndex()) {
+        idxFDD = fdd.globalIndex();
+        break;
+      }
+    }
+    bcFlags(idxFT0, idxFDD);
+  }
+};
 
 struct LumiStabilityPP {
 
@@ -101,7 +137,7 @@ struct LumiStabilityPP {
      {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_SL/nBCsVsBCID"},
      {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_SL/nBCsVsBCID"}};
 
-  const AxisSpec timeAxis{1440, 0., 1440., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{3600, 0., 3600., "#bf{BC ID in orbit}"};
+  const AxisSpec timeAxis{1440, 0., 1440., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{nBCsPerOrbit, -0.5, static_cast<float>(nBCsPerOrbit)-0.5, "#bf{BC ID in orbit}"};
 
   int64_t bcSOR;
   int nBCsPerTF;
@@ -146,8 +182,6 @@ struct LumiStabilityPP {
       return;
     }
 
-    createHistograms();
-
     auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
     uint64_t timeStamp = bc.timestamp();
 
@@ -159,6 +193,7 @@ struct LumiStabilityPP {
 
     runNumber = bc.runNumber();
     LOG(info) << "LHCIF data fetched for run " << runNumber << " and timestamp " << timeStamp;
+    createHistograms();
 
     beamPatternA = mLHCIFdata->getBunchFilling().getBeamPattern(0);
     beamPatternC = mLHCIFdata->getBunchFilling().getBeamPattern(1);
@@ -212,7 +247,9 @@ struct LumiStabilityPP {
     histBcVsBcId[iTrigger][iBCCategory][runNumber]->Fill(localBC);
   }
 
-  void process(BCsWithTimeStampsAndSels const& bcs, aod::FT0s const&)
+  void process(BCsWithTimeStamps const& bcs,
+               aod::FT0s const&,
+               aod::FDDs const&)
   {
     int64_t globalBCIdOfLastBCWithActivity = 0;
     for (const auto& bc : bcs) {
@@ -224,8 +261,9 @@ struct LumiStabilityPP {
       setLHCIFData(bc);
 
       float timeSinceSOF = getTimeSinceSOF(bc);
-
-      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      bool isTriggerTVX = (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex) : false);
+  
+      if (isTriggerTVX) {
         histNBcsVsTime[runNumber]->Fill(timeSinceSOF);
       }
 
@@ -325,5 +363,5 @@ struct LumiStabilityPP {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   metadataInfo.initMetadata(cfgc);
-  return WorkflowSpec{adaptAnalysisTask<LumiStabilityPP>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<BuildBcFlagTable>(cfgc), adaptAnalysisTask<LumiStabilityPP>(cfgc)};
 }
