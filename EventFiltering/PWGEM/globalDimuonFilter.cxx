@@ -528,10 +528,10 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, -77.5, mBz);
-    float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
-    float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
-    float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
+    // o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, -77.5, mBz);
+    // float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
+    // float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
+    // float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     // float pDCA = mchtrack.p() * dcaXY_Matched;
 
     if (pt < tagMuonCutGroup.minPt || tagMuonCutGroup.maxPt < pt) {
@@ -609,10 +609,10 @@ struct globalDimuonFilter {
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, -77.5, mBz);
-    float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
-    float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
-    float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
+    // o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, -77.5, mBz);
+    // float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
+    // float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
+    // float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     // float pDCA = mchtrack.p() * dcaXY_Matched;
 
     if (pt < probeMuonCutGroup.minPt || probeMuonCutGroup.maxPt < pt) {
