@@ -140,7 +140,7 @@ class ToTLUT
       LOG(warning) << "Provided filename is empty for PDG " << pdg;
       return false;
     }
-    if (filename.rfind("ccdb:", 0) == 0) { // Check if filename starts with "ccdb:"
+    if (filename.rfind("ccdb:", 0) == 0) {       // Check if filename starts with "ccdb:"
       std::string ccdbPath = filename.substr(5); // remove "ccdb:" prefix
       const std::string outPath = "/tmp/ToTLUTs/";
       const std::string localFilename = outPath + ccdbPath + "/snapshot.root";
@@ -154,7 +154,7 @@ class ToTLUT
         mCcdbManager->getCCDBAccessor().retrieveBlob(ccdbPath, outPath, metadata, 1);
         std::ifstream testFile(localFilename);
         if (!testFile.is_open()) {
-          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg << " in file "<< localFilename;
+          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg << " in file " << localFilename;
           return false;
         }
         testFile.close();
