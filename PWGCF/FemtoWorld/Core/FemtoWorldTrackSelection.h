@@ -92,7 +92,7 @@ class FemtoWorldTrackSelection : public FemtoWorldObjectSelection<float, femtoWo
                                dcaXYMax(-9999999.),
                                dcaZMax(-9999999.),
                                dcaMin(9999999.),
-                               nSigmaPIDMax(9999999.) {};
+                               nSigmaPIDMax(9999999.){};
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
