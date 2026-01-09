@@ -33,7 +33,6 @@
 #include <array>
 #include <cmath>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace o2
