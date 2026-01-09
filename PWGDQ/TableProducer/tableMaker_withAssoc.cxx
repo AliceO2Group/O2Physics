@@ -53,9 +53,9 @@
 #include "DataFormatsGlobalTracking/RecoContainer.h"
 #include "DataFormatsGlobalTracking/RecoContainerCreateTracksVariadic.h"
 #include "DataFormatsITSMFT/ROFRecord.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/PVertexerParams.h"
@@ -344,7 +344,7 @@ struct TableMaker {
 
   ctpRateFetcher mRateFetcher;
   parameters::GRPLHCIFData* mLHCIFdata = nullptr;
-  
+
   struct {
     std::map<int32_t, float> oMeanTimeShortA;
     std::map<int32_t, float> oMeanTimeShortC;
@@ -864,7 +864,7 @@ struct TableMaker {
           bool isCentral = fT0Triggers[o2::ft0::Triggers::bitCen];
 
           bool noBorder = bc.selection_bit(aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(aod::evsel::kNoITSROFrameBorder);
-          //bool isTriggerTVX = bc.selection_bit(aod::evsel::kIsTriggerTVX); // difference w.r.t fT0Triggers[o2::ft0::Triggers::bitVertex] ?
+          // bool isTriggerTVX = bc.selection_bit(aod::evsel::kIsTriggerTVX); // difference w.r.t fT0Triggers[o2::ft0::Triggers::bitVertex] ?
           bool isTriggerZNA = bc.selection_bit(aod::evsel::kIsBBZNA);
           bool isTriggerZNC = bc.selection_bit(aod::evsel::kIsBBZNC);
 
