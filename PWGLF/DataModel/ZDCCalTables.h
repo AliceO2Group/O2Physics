@@ -18,7 +18,6 @@
 #define PWGLF_DATAMODEL_ZDCCALTABLES_H_
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/AnalysisDataModel.h"

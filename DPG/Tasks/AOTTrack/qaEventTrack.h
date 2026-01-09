@@ -17,10 +17,10 @@
 /// \brief  Header file for QA tasks for the track and the event properties.
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 // Output table declaration
 namespace o2::aod
