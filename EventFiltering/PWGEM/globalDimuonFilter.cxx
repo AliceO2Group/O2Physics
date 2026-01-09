@@ -402,7 +402,7 @@ struct globalDimuonFilter {
   }
 
   template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTCovs>
-  bool isSelectedStandaloneMuon(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTCovs const& mftCovs, float& pt, float& eta, float& phi)
+  bool isSelectedStandaloneMuon(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTCovs const&, float& pt, float& eta, float& phi)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
       return false;
@@ -429,7 +429,7 @@ struct globalDimuonFilter {
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(fwdtrack, fwdtrack, collision, propagationPoint::kToDCA, -77.5, mBz);
     float dcaX = propmuonAtDCA.getX() - collision.posX();
     float dcaY = propmuonAtDCA.getY() - collision.posY();
-    float dcaZ = propmuonAtDCA.getZ() - collision.posZ();
+    // float dcaZ = propmuonAtDCA.getZ() - collision.posZ();
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
     float pDCA = fwdtrack.p() * dcaXY;
 
@@ -481,7 +481,7 @@ struct globalDimuonFilter {
     auto mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
     auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
 
-    float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
+    // float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
     int nClustersMFT = mfttrack.nClusters();
     int ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
     float chi2 = fwdtrack.chi2() / ndf_mchmft;
@@ -532,7 +532,7 @@ struct globalDimuonFilter {
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
-    float pDCA = mchtrack.p() * dcaXY_Matched;
+    // float pDCA = mchtrack.p() * dcaXY_Matched;
 
     if (pt < tagMuonCutGroup.minPt || tagMuonCutGroup.maxPt < pt) {
       return false;
@@ -571,7 +571,7 @@ struct globalDimuonFilter {
     auto mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
     auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
 
-    float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
+    // float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
     int nClustersMFT = mfttrack.nClusters();
     int ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
     float chi2 = fwdtrack.chi2() / ndf_mchmft;
@@ -613,7 +613,7 @@ struct globalDimuonFilter {
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
-    float pDCA = mchtrack.p() * dcaXY_Matched;
+    // float pDCA = mchtrack.p() * dcaXY_Matched;
 
     if (pt < probeMuonCutGroup.minPt || probeMuonCutGroup.maxPt < pt) {
       return false;
