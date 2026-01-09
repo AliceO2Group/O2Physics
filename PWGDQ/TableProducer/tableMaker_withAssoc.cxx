@@ -976,14 +976,14 @@ struct TableMaker {
             zdc(newbc_zdc.energyCommonZNA(), newbc_zdc.energyCommonZNC(), newbc_zdc.energyCommonZPA(), newbc_zdc.energyCommonZPC(),
                 newbc_zdc.timeZNA(), newbc_zdc.timeZNC(), newbc_zdc.timeZPA(), newbc_zdc.timeZPC());
           } else {
-            zdc(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0);
+            zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
           }
         } else if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
           zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
               bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
         } else {
-          zdc(-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0);
+          zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
         }
       }
       // Fill FIT table if requested
