@@ -241,6 +241,7 @@ struct HfCorrelatorDsHadrons {
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {200, 0., 800.}, "Multiplicity"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPid{"binsPid", {24, -12., 12.}, "n #sigma"};
+  ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
@@ -258,6 +259,7 @@ struct HfCorrelatorDsHadrons {
     AxisSpec const axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisStatus = {15, 0.5, 15.5, "Selection status"};
+    AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
     AxisSpec const axisPid{binsPid, "n #sigma"};
 
     // Histograms for data analysis
@@ -293,6 +295,7 @@ struct HfCorrelatorDsHadrons {
         registry.add("hTpcTofNSigmaCombPion", "n sigma tpc and tof combined for pion hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
         registry.add("hTpcTofNSigmaCombKaon", "n sigma tpc and tof combined for kaon hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
         registry.add("hTpcTofNSigmaCombProton", "n sigma tpc and tof combined for proton hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+        registry.add("hDcaXYVsPt", "DCA xy vs pt", {HistType::kTH2F, {{axisDcaXY}, {axisPtHadron}}});
       }
     }
     // Histograms for MC Reco analysis
@@ -626,13 +629,13 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hTpcTofNSigmaCombKaonMc"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), 2)), track.pt());
           registry.fill(HIST("hTpcTofNSigmaCombProtonMc"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), 2)), track.pt());
           // MC truth match
-          if (trkPIDspecies->at(0) == o2::track::PID::Kaon && mcParticle.pdgCode() != kKPlus) {
+          if (trkPIDspecies->at(0) == o2::track::PID::Kaon && std::abs(mcParticle.pdgCode()) != kKPlus) {
             continue;
           }
-          if (trkPIDspecies->at(0) == o2::track::PID::Pion && mcParticle.pdgCode() != kPiPlus) {
+          if (trkPIDspecies->at(0) == o2::track::PID::Pion && std::abs(mcParticle.pdgCode()) != kPiPlus) {
             continue;
           }
-          if (trkPIDspecies->at(0) == o2::track::PID::Proton && mcParticle.pdgCode() != kProton) {
+          if (trkPIDspecies->at(0) == o2::track::PID::Proton && std::abs(mcParticle.pdgCode()) != kProton) {
             continue;
           }
           // Physical primary requirement
@@ -654,9 +657,6 @@ struct HfCorrelatorDsHadrons {
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
           auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
           entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
-          //} else {
-          //  registry.fill(HIST("hFakeTracksMcRec"), track.pt());
-          //}
           // for secondary particle fraction estimation
           if (!isAlreadyFilledEvent) {
             registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
@@ -679,9 +679,6 @@ struct HfCorrelatorDsHadrons {
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
           auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
           entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
-          //} else {
-          //  registry.fill(HIST("hFakeTracksMcRec"), track.pt());
-          //}
           // for secondary particle fraction estimation
           if (!isAlreadyFilledEvent) {
             registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
@@ -898,6 +895,9 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hTpcTofNSigmaCombKaon"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), 2)), track.pt());
           registry.fill(HIST("hTpcTofNSigmaCombProton"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), 2)), track.pt());
         }
+
+        registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
+
         assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
       }
