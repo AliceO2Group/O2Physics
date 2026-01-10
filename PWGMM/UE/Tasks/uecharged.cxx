@@ -106,7 +106,7 @@ struct ueCharged {
   // Data table definitions
   using ColDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>;
   using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-  using FilTrackDataTable = soa::Filtered<TrackDataTable>;
+  using FilTrackDataTable = TrackDataTable;
 
   using ColMCTrueTable = aod::McCollisions;
   using TrackMCTrueTable = aod::McParticles;
