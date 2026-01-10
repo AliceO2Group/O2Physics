@@ -33,9 +33,9 @@
 #include <TPDGCode.h>
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 
 using namespace o2;
 using namespace o2::soa;
