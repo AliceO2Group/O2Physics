@@ -73,6 +73,8 @@ struct cksspinalignment {
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } rctCut;
 
+  Configurable<bool> useNoCollInTimeRangeStandard{"useNoCollInTimeRangeStandard", false, "Apply kNoCollInTimeRangeStandard selection bit"};
+  Configurable<bool> useGoodITSLayersAll{"useGoodITSLayersAll", true, "Apply kIsGoodITSLayersAll selection bit"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
 
   // events
@@ -101,6 +103,13 @@ struct cksspinalignment {
     Configurable<float> cutTOFBetaPiMeson{"cutTOFBetaPiMeson", 3.0, "Maximum beta cut for pi meson track"};
   } grpPion;
 
+  enum PionPidBits : uint8_t {
+    kPID1 = 1u << 0, // selectionPID
+    kPID2 = 1u << 1, // selectionPID2
+    kPID3 = 1u << 2, // selectionPID3
+    kPID4 = 1u << 3  // selectionPID4
+  };
+
   // Configs for V0
   Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<float> confV0PtMax{"confV0PtMax", 1000.f, "Maximum transverse momentum of V0"};
@@ -120,6 +129,10 @@ struct cksspinalignment {
   Configurable<float> confDaughTPCncrwsMin{"confDaughTPCncrwsMin", 70.f, "V0 Daugh sel: Min. nCrws TPC"};
   Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 3, "PID selections for Kshortpion daughters"};
 
+  // configurable for chargedkstar
+  Configurable<float> cfgKstarMassMin{"cfgKstarMassMin", 0.75f, "K* mass min"};
+  Configurable<float> cfgKstarMassMax{"cfgKstarMassMax", 1.05f, "K* mass max"};
+
   Configurable<int> iMNbins{"iMNbins", 50, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.09, "lower bin value in IM histograms"};
   Configurable<float> hbinIM{"hbinIM", 1.14, "higher bin value in IM histograms"};
@@ -130,6 +143,8 @@ struct cksspinalignment {
   {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     AxisSpec thnAxisInvMass{iMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
+
+    histos.add("hCent", "hCent", kTH1F, {{8, 0, 80.0}});
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
     histos.add("hTrkSelInfo", "hTrkSelInfo", kTH1F, {{5, 0, 5.0}});
     histos.add("hKShortMass", "hKShortMass", kTH1F, {thnAxisInvMass});
@@ -155,6 +170,81 @@ struct cksspinalignment {
       return true;
     }
     return false;
+  }
+
+  template <typename T>
+  bool selectionPID2(const T& candidate)
+  {
+    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < grpPion.nsigmaCutTPCPiMeson) {
+      return true;
+    }
+    if (candidate.hasTOF() && candidate.beta() > grpPion.cutTOFBetaPiMeson && std::sqrt(candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) < grpPion.nsigmaCutTOFPiMeson) {
+      return true;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionPID3(const T& candidate)
+  {
+    auto px = candidate.px();
+    auto py = candidate.py();
+    auto pz = candidate.pz();
+    auto pt = std::sqrt(px * px + py * py);
+    float lowmom = 0.5;
+    if (pt < lowmom) {
+      if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < grpPion.nsigmaCutTPCPiMeson) {
+        return true;
+      } else if (candidate.hasTOF() && std::sqrt(candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) < grpPion.nsigmaCutTOFPiMeson) {
+        return true;
+      }
+    } else if (candidate.hasTOF() && std::sqrt(candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) < grpPion.nsigmaCutTOFPiMeson) {
+      return true;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionPID4(const T& candidate)
+  {
+    // Use total momentum p (as you said). If you really want pT, replace with sqrt(px^2+py^2).
+    const float px = candidate.px();
+    const float py = candidate.py();
+    const float pz = candidate.pz();
+    const float pt = std::sqrt(px * px + py * py);
+
+    constexpr float pSwitch = 0.5f; // GeV/c
+
+    const float nTPC = candidate.tpcNSigmaPi();
+
+    // Low momentum: TPC-only, TOF not required and not used
+    if (pt < pSwitch) {
+      return std::abs(nTPC) < grpPion.nsigmaCutTPCPiMeson; // e.g. 3
+    }
+
+    // High momentum: TOF hit mandatory + separate 3σ cuts
+    if (!candidate.hasTOF()) {
+      return false;
+    }
+
+    const float nTOF = candidate.tofNSigmaPi();
+    return (std::abs(nTPC) < grpPion.nsigmaCutTPCPiMeson) &&
+           (std::abs(nTOF) < grpPion.nsigmaCutTOFPiMeson);
+  }
+
+  template <typename T>
+  uint8_t pionPidMask(const T& trk)
+  {
+    uint8_t m = 0;
+    if (selectionPID(trk))
+      m |= kPID1;
+    if (selectionPID2(trk))
+      m |= kPID2;
+    if (selectionPID3(trk))
+      m |= kPID3;
+    if (selectionPID4(trk))
+      m |= kPID4;
+    return m;
   }
 
   template <typename Collision, typename V0>
@@ -280,11 +370,12 @@ struct cksspinalignment {
     std::vector<float> dcaBetweenDaughter = {};
     std::vector<float> v0Lifetime = {};
     // std::vector<float> armenteros = {};
-    std::vector<float> pionBachelorIndex = {};
+    std::vector<int> pionBachelorIndex = {};
     // std::vector<float> pionBachelorSign = {};
-    std::vector<float> pionBachelorTPC = {};
-    std::vector<float> pionBachelorTOF = {};
-    std::vector<float> pionBachelorTOFHit = {};
+    // std::vector<float> pionBachelorTPC = {};
+    // std::vector<float> pionBachelorTOF = {};
+    // std::vector<int8_t> pionBachelorTOFHit = {};
+    std::vector<uint8_t> pionBachelorPidMask = {};
 
     int numbV0 = 0;
     auto centrality = collision.centFT0C();
@@ -296,10 +387,12 @@ struct cksspinalignment {
     // auto psiTPCR = collision.psiTPCR();
     // auto psiTPCL = collision.psiTPCL();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if ((rctCut.requireRCTFlagChecker && rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
+    // if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
+    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       if (collision.triggereventep()) {
         histos.fill(HIST("hEvtSelInfo"), 2.5);
+        histos.fill(HIST("hCent"), centrality);
 
         for (const auto& track1 : tracks) {
           histos.fill(HIST("hTrkSelInfo"), 0.5);
@@ -312,8 +405,12 @@ struct cksspinalignment {
             continue;
           }
           histos.fill(HIST("hTrkSelInfo"), 2.5);
-
-          if (grpPion.usePID && !selectionPID(track1)) {
+          /*
+                if (grpPion.usePID && !selectionPID2(track1)) {
+                  continue;
+            }*/
+          const uint8_t mask = pionPidMask(track1);
+          if (grpPion.usePID && mask == 0) {
             continue;
           }
           histos.fill(HIST("hTrkSelInfo"), 3.5);
@@ -334,9 +431,10 @@ struct cksspinalignment {
           pionBachelor.push_back(pionbach);
           pionBachelorIndex.push_back(track1ID);
           // pionBachelorSign.push_back(track1sign);
-          pionBachelorTPC.push_back(track1nsigTPC);
-          pionBachelorTOF.push_back(track1nsigTOF);
-          pionBachelorTOFHit.push_back(track1TOFHit);
+          // pionBachelorTPC.push_back(track1nsigTPC);
+          // pionBachelorTOF.push_back(track1nsigTOF);
+          // pionBachelorTOFHit.push_back(track1TOFHit);
+          pionBachelorPidMask.push_back(mask);
         }
         for (const auto& v0 : V0s) {
           histos.fill(HIST("hV0Info"), 0.5);
@@ -365,23 +463,66 @@ struct cksspinalignment {
           }
           numbV0 = numbV0 + 1;
         }
-        if (numbV0 > 1 && v0Cospa.size() > 1) {
-          histos.fill(HIST("hEvtSelInfo"), 3.5);
-          kshortpionEvent(centrality, vz, collision.index(), psiFT0C, psiFT0A, psiTPC);
-          auto indexEvent = kshortpionEvent.lastIndex();
-          //// Fill track table for Charged KStar//////////////////
-          for (auto icks = kshortMother.begin(); icks != kshortMother.end(); ++icks) {
-            auto iter = std::distance(kshortMother.begin(), icks);
-            kshortDummy = kshortMother.at(iter);
-            // chargedkstarDummy = chargedkstarMother.at(iter);
+        if (numbV0 > 1 && v0Cospa.size() > 1 && !kshortMother.empty() && !pionBachelor.empty()) {
 
-            kshortTrack(indexEvent, v0Cospa.at(iter), v0Radius.at(iter), dcaPositive.at(iter), dcaNegative.at(iter), dcaBetweenDaughter.at(iter), v0Lifetime.at(iter), kshortDummy.Px(), kshortDummy.Py(), kshortDummy.Pz(), kshortDummy.M(), positiveIndex.at(iter), negativeIndex.at(iter));
+          std::vector<uint8_t> useK0(kshortMother.size(), 0);
+          std::vector<uint8_t> usePi(pionBachelor.size(), 0);
+          bool anyPair = false;
+          for (size_t ik0 = 0; ik0 < kshortMother.size(); ++ik0) {
+            const auto& k0 = kshortMother[ik0];
+            const int posId = positiveIndex[ik0];
+            const int negId = negativeIndex[ik0];
+
+            for (size_t ipi = 0; ipi < pionBachelor.size(); ++ipi) {
+              const int piId = pionBachelorIndex[ipi];
+
+              // avoid self-combination: bachelor pion can't be a V0 daughter
+              if (piId == posId || piId == negId) {
+                continue;
+              }
+
+              const auto kstar = k0 + pionBachelor[ipi];
+              const float m = kstar.M();
+
+              if (m < cfgKstarMassMin || m > cfgKstarMassMax) {
+                continue;
+              }
+
+              useK0[ik0] = 1;
+              usePi[ipi] = 1;
+              anyPair = true;
+            }
           }
-          for (auto ipi = pionBachelor.begin(); ipi != pionBachelor.end(); ++ipi) {
-            auto iterpi = std::distance(pionBachelor.begin(), ipi);
-            pionDummy = pionBachelor.at(iterpi);
 
-            pionTrack(indexEvent, pionDummy.Px(), pionDummy.Py(), pionDummy.Pz(), pionBachelorTPC.at(iterpi), pionBachelorTOFHit.at(iterpi), pionBachelorTOF.at(iterpi), pionBachelorIndex.at(iterpi));
+          // only write event + tables if at least one K* candidate exists in window
+          if (anyPair) {
+            histos.fill(HIST("hEvtSelInfo"), 3.5);
+            // kshortpionEvent(centrality, vz, collision.index(), psiFT0C, psiFT0A, psiTPC);
+            kshortpionEvent(centrality, vz, psiFT0C, psiFT0A, psiTPC);
+            auto indexEvent = kshortpionEvent.lastIndex();
+            // write only used K0s
+            for (size_t ik0 = 0; ik0 < kshortMother.size(); ++ik0) {
+              if (!useK0[ik0]) {
+                continue;
+              }
+              kshortDummy = kshortMother[ik0];
+              kshortTrack(indexEvent, v0Cospa[ik0], v0Radius[ik0], dcaPositive[ik0], dcaNegative[ik0], dcaBetweenDaughter[ik0], v0Lifetime[ik0], kshortDummy.Px(), kshortDummy.Py(), kshortDummy.Pz(), kshortDummy.M(), positiveIndex[ik0], negativeIndex[ik0]);
+            }
+            // write only used pions
+            for (size_t ipi = 0; ipi < pionBachelor.size(); ++ipi) {
+              if (!usePi[ipi]) {
+                continue;
+              }
+              pionDummy = pionBachelor[ipi];
+              /*
+              pionTrack(indexEvent,
+            pionDummy.Px(), pionDummy.Py(), pionDummy.Pz(),
+            pionBachelorTPC[ipi],
+            pionBachelorTOFHit[ipi],
+            pionBachelorTOF[ipi],
+            pionBachelorIndex[ipi]);*/
+              pionTrack(indexEvent, pionDummy.Px(), pionDummy.Py(), pionDummy.Pz(), pionBachelorIndex[ipi], pionBachelorPidMask[ipi]);
+            }
           }
         }
       }
