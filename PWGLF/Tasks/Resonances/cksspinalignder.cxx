@@ -38,6 +38,7 @@
 #include <cmath> // for std::fabs
 #include <deque>
 // #include <iostream>
+#include <algorithm>
 #include <iterator>
 #include <random>
 #include <set> // <<< CHANGED: for dedup sets
