@@ -53,6 +53,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
@@ -144,6 +145,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdgdb;
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber{-1};
@@ -1124,7 +1126,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.rapOmegac = kfOmegaC0.GetRapidity();
 
       // KF cosThetaStar
-      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfBachPionToOmegaC, kfOmegaToOmegaC);
+      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfBachPionToOmegaC, kfOmegaToOmegaC, pdgdb);
 
       // KF ct
       kfOmegac0Candidate.ctV0 = kfV0.GetLifeTime();
@@ -1588,7 +1590,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfXic0Candidate.rapXic = kfXiC0.GetRapidity();
 
       // KF cosThetaStar
-      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4132, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC);
+      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4132, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC, pdgdb);
 
       // KF ct
       kfXic0Candidate.ctV0 = kfV0ToCasc.GetLifeTime();
@@ -1950,8 +1952,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       float const ptOmega = kfOmega.GetPt();
 
       // KF cosThetaStar
-      float const cosThetaStarKaFromOmegac = cosThetaStarFromKF(0, 4332, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
-      float const cosThetaStarKaFromXic = cosThetaStarFromKF(0, 4132, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
+      float const cosThetaStarKaFromOmegac = cosThetaStarFromKF(0, 4332, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa, pdgdb);
+      float const cosThetaStarKaFromXic = cosThetaStarFromKF(0, 4132, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa, pdgdb);
 
       // KF ct
       float const ctV0 = kfV0ToOmega.GetLifeTime();
