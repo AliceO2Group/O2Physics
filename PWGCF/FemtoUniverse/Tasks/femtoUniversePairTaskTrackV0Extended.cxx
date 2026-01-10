@@ -1222,7 +1222,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         const auto& mcParticle1 = mcparts.iteratorAt(mcPartId1);
         const auto& mcParticle2 = mcparts.iteratorAt(mcPartId2);
-        if (mcParticle1.pdgMCTruth() == confTrkPDGCodePartOne && mcParticle2.pdgMCTruth() == ConfV0Selection.confV0PDGCodePartTwo) {
+        if (mcParticle1.pdgMCTruth() == ConfTrkSelection.confTrkPDGCodePartOne && mcParticle2.pdgMCTruth() == ConfV0Selection.confV0PDGCodePartTwo) {
           registryMCreco.fill(HIST("mothersReco/motherParticlePDGCheck"), p1.motherPDG(), p2.motherPDG());
         }
       }
