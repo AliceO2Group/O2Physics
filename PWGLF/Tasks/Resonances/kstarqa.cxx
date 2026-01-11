@@ -90,6 +90,7 @@ struct Kstarqa {
     Configurable<bool> checkVzEvSigLoss{"checkVzEvSigLoss", false, "Check Vz event signal loss"};
     Configurable<bool> isApplyDeepAngle{"isApplyDeepAngle", false, "Deep Angle cut"};
     Configurable<bool> isApplyMCchecksClosure{"isApplyMCchecksClosure", true, "Apply MC checks for closure test"};
+    Configurable<float> deltaRCut{"deltaRCut", 0.0f, "Apply deltaR cut between two daughters"};
 
     // Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     Configurable<float> configOccCut{"configOccCut", 1000., "Occupancy cut"};
@@ -617,6 +618,10 @@ struct Kstarqa {
     if (selectionConfig.isApplyDeepAngle && angle < selectionConfig.cfgDeepAngle) {
       return false;
     }
+    double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(candidate1.phi() - candidate2.phi()) * TVector2::Phi_mpi_pi(candidate1.phi() - candidate2.phi()) + (candidate1.eta() - candidate2.eta()) * (candidate1.eta() - candidate2.eta()));
+    if (deltaRvalue < selectionConfig.deltaRCut) {
+      return false;
+    }
     return true;
   }
 
@@ -1135,9 +1140,9 @@ struct Kstarqa {
         hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
       }
 
-      // if (!selectionPair(track1, track2)) {
-      //   continue;
-      // }
+      if (!selectionPair(track1, track2)) {
+        continue;
+      }
       rEventSelection.fill(HIST("tracksCheckData"), 6.5);
 
       daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
@@ -1214,7 +1219,16 @@ struct Kstarqa {
                o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
           if (!selectionTrack(t1) || !selectionTrack(t2))
             continue;
-          if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
+          // if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
+          //   continue;
+          if (!applypTdepPID && !selectionPID(t1, 1)) // Track 1 is checked with Kaon
+            continue;
+          if (!applypTdepPID && !selectionPID(t2, 0)) // Track 2 is checked with Pion
+            continue;
+
+          if (applypTdepPID && !selectionPIDPtDep(t1, 1)) // Track 1 is checked with Kaon
+            continue;
+          if (applypTdepPID && !selectionPIDPtDep(t2, 0)) // Track 2 is checked with Pion
             continue;
 
           if (std::abs(t1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > selectionConfig.ctrackRapidity)
@@ -1239,9 +1253,9 @@ struct Kstarqa {
               continue;
           } */
 
-          // if (!selectionPair(t1, t2)) {
-          //   continue;
-          // }
+          if (!selectionPair(t1, t2)) {
+            continue;
+          }
 
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
           daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massPi);
@@ -1288,7 +1302,16 @@ struct Kstarqa {
         for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
           if (!selectionTrack(t1) || !selectionTrack(t2))
             continue;
-          if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
+          // if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
+          //   continue;
+          if (!applypTdepPID && !selectionPID(t1, 1)) // Track 1 is checked with Kaon
+            continue;
+          if (!applypTdepPID && !selectionPID(t2, 0)) // Track 2 is checked with Pion
+            continue;
+
+          if (applypTdepPID && !selectionPIDPtDep(t1, 1)) // Track 1 is checked with Kaon
+            continue;
+          if (applypTdepPID && !selectionPIDPtDep(t2, 0)) // Track 2 is checked with Pion
             continue;
 
           /* if (selectionConfig.isApplyParticleMID) {
@@ -2071,9 +2094,9 @@ struct Kstarqa {
             }
             rEventSelection.fill(HIST("recMCparticles"), 15.5);
 
-            // if (!selectionPair(track1, track2)) {
-            //   continue;
-            // }
+            if (!selectionPair(track1, track2)) {
+              continue;
+            }
             rEventSelection.fill(HIST("recMCparticles"), 16.5);
 
             oldindex = mothertrack1.globalIndex();
@@ -2284,9 +2307,9 @@ struct Kstarqa {
             }
             rEventSelection.fill(HIST("recMCparticles"), 14.5);
 
-            // if (!selectionPair(track1, track2)) {
-            //   continue;
-            // }
+            if (!selectionPair(track1, track2)) {
+              continue;
+            }
             rEventSelection.fill(HIST("recMCparticles"), 15.5);
 
             oldindex = mothertrack1.globalIndex();
