@@ -529,7 +529,7 @@ struct cksspinalignder {
 
             std::vector<MatchRef> subset;
             subset.reserve(cap);
-            for (int idx : chosen)
+            for (const int& idx : chosen)
               subset.push_back(matches[idx]);
             matches.swap(subset);
           } else {
@@ -769,7 +769,7 @@ struct MixBinnerK0 {
 
     std::vector<MatchRef> subset;
     subset.reserve(cap);
-    for (int idx : chosen) subset.push_back(matches[idx]);
+    for (const int& idx : chosen) subset.push_back(matches[idx]);
     matches.swap(subset);
   } else {
     std::shuffle(matches.begin(), matches.end(), rng);
