@@ -189,7 +189,7 @@ struct cksspinalignment {
   {
     auto px = candidate.px();
     auto py = candidate.py();
-    auto pz = candidate.pz();
+    // auto pz = candidate.pz();
     auto pt = std::sqrt(px * px + py * py);
     float lowmom = 0.5;
     if (pt < lowmom) {
@@ -210,7 +210,7 @@ struct cksspinalignment {
     // Use total momentum p (as you said). If you really want pT, replace with sqrt(px^2+py^2).
     const float px = candidate.px();
     const float py = candidate.py();
-    const float pz = candidate.pz();
+    // const float pz = candidate.pz();
     const float pt = std::sqrt(px * px + py * py);
 
     constexpr float pSwitch = 0.5f; // GeV/c
@@ -419,14 +419,14 @@ struct cksspinalignment {
           auto track1sign = track1.sign();
           if (track1sign == 0)
             continue;
-          auto track1nsigTPC = track1.tpcNSigmaPi();
+          /*auto track1nsigTPC = track1.tpcNSigmaPi();
           auto track1nsigTOF = -999.9;
           auto track1TOFHit = -1;
           if (track1.hasTOF()) {
             track1TOFHit = 1;
             track1nsigTOF = track1.tofNSigmaPi();
             histos.fill(HIST("hTrkSelInfo"), 4.5);
-          }
+      }*/
           pionbach = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassPionCharged);
           pionBachelor.push_back(pionbach);
           pionBachelorIndex.push_back(track1ID);
