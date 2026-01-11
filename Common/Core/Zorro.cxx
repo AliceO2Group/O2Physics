@@ -210,7 +210,7 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mZorroSummary.setupTOIs(mTOIs.size(), mTOIs);
   std::vector<double> toiCounters(mTOIs.size(), 0.);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
-    toiCounters[i] = mSelections->GetBinContent(mTOIidx[i] + 2);
+    toiCounters[i] = mScalers->GetBinContent(mTOIidx[i] + 2);
   }
   mZorroSummary.setupRun(runNumber, mInspectedTVX->GetBinContent(1), toiCounters);
 
