@@ -299,6 +299,8 @@ enum DecayType {
   DsToKKPi,
   XicToPKPi,
   CdToDeKPi,
+  CtToTrKPi,
+  ChToHeKPi,
   N3ProngDecays
 };
 } // namespace hf_cand_3prong

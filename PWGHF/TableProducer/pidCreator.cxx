@@ -47,6 +47,10 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
   Produces<aod::PidTpcTofFullDe> trackPidFullDe;
   Produces<aod::PidTpcTofTinyDe> trackPidTinyDe;
+  Produces<aod::PidTpcTofFullTr> trackPidFullTr;
+  Produces<aod::PidTpcTofTinyTr> trackPidTinyTr;
+  Produces<aod::PidTpcTofFullHe> trackPidFullHe;
+  Produces<aod::PidTpcTofTinyHe> trackPidTinyHe;
 
   /// Function to check whether the process function flag matches the need for filling the table
   /// \param initContext  workflow context (argument of the init function)
@@ -81,6 +85,10 @@ struct HfPidCreator {
     checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
     checkTableSwitch(initContext, "PidTpcTofFullDe", doprocessFullDe);
     checkTableSwitch(initContext, "PidTpcTofTinyDe", doprocessTinyDe);
+    checkTableSwitch(initContext, "PidTpcTofFullTr", doprocessFullTr);
+    checkTableSwitch(initContext, "PidTpcTofTinyTr", doprocessTinyTr);
+    checkTableSwitch(initContext, "PidTpcTofFullHe", doprocessFullHe);
+    checkTableSwitch(initContext, "PidTpcTofTinyHe", doprocessTinyHe);
   }
 
   void processDummy(aod::Collisions const&) {}
@@ -111,6 +119,8 @@ struct HfPidCreator {
   PROCESS_PID(Ka)
   PROCESS_PID(Pr)
   PROCESS_PID(De)
+  PROCESS_PID(Tr)
+  PROCESS_PID(He)
 
 #undef PROCESS_PID
 };

@@ -45,6 +45,8 @@ using TracksPidPi = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi>;
 using TracksPidKa = soa::Join<aod::pidTPCFullKa, aod::pidTOFFullKa>;
 using TracksPidPr = soa::Join<aod::pidTPCFullPr, aod::pidTOFFullPr>;
 using TracksPidDe = soa::Join<aod::pidTPCFullDe, aod::pidTOFFullDe>;
+using TracksPidTr = soa::Join<aod::pidTPCFullTr, aod::pidTOFFullTr>;
+using TracksPidHe = soa::Join<aod::pidTPCFullHe, aod::pidTOFFullHe>;
 
 using TracksPidTinyEl = soa::Join<aod::pidTPCEl, aod::pidTOFEl>;
 using TracksPidTinyMu = soa::Join<aod::pidTPCMu, aod::pidTOFMu>;
@@ -52,6 +54,8 @@ using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
 using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
 using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
 using TracksPidTinyDe = soa::Join<aod::pidTPCDe, aod::pidTOFDe>;
+using TracksPidTinyTr = soa::Join<aod::pidTPCTr, aod::pidTOFTr>;
+using TracksPidTinyHe = soa::Join<aod::pidTPCHe, aod::pidTOFHe>;
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_ALIASTABLES_H_
