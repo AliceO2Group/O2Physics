@@ -160,7 +160,7 @@ struct PhiMesonCandProducer {
   {
     ROOT::Math::PxPyPzMVector daughter1(track1.px(), track1.py(), track1.pz(), massdaughter1); // set the daughter1 4-momentum
     ROOT::Math::PxPyPzMVector daughter2(track2.px(), track2.py(), track2.pz(), massdaughter2); // set the daughter2 4-momentum
-    ROOT::Math::PxPyPzMVector mother = daughter1 + daughter2;                              // calculate the mother 4-momentum
+    ROOT::Math::PxPyPzMVector mother = daughter1 + daughter2;                                  // calculate the mother 4-momentum
 
     return mother;
   }
