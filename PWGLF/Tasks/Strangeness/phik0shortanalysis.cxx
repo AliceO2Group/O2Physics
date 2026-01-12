@@ -3483,6 +3483,5 @@ struct Phik0shortanalysis {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<Phik0shortanalysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Phik0shortanalysis>(cfgc)};
 }
