@@ -786,6 +786,17 @@ struct matchingMFT {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
           continue;
         }
+
+        if (cfgBestMatchFinder == 0) { // chi2
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+            continue;
+          }
+        } else if (cfgBestMatchFinder == 1) { // dr
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
+            continue;
+          }
+        }
+
         fillHistograms<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
       } // end of fwdtrack loop
     } // end of collision loop
@@ -834,6 +845,17 @@ struct matchingMFT {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
           continue;
         }
+
+        if (cfgBestMatchFinder == 0) { // chi2
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+            continue;
+          }
+        } else if (cfgBestMatchFinder == 1) { // dr
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
+            continue;
+          }
+        }
+
         fillHistograms<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
       } // end of fwdtrack loop
     } // end of collision loop
@@ -886,6 +908,9 @@ struct matchingMFT {
       auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
+        if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
 
         if (cfgBestMatchFinder == 0) { // chi2
           if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
@@ -893,10 +918,6 @@ struct matchingMFT {
           }
         } else if (cfgBestMatchFinder == 1) { // dr
           if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
-            continue;
-          }
-        } else { // best match is not selected. Histograms are filled with all global muons.
-          if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
             continue;
           }
         }
