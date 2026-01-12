@@ -221,6 +221,7 @@ struct TableMaker {
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+    Configurable<std::string> fConfigIrEstimator{"cfgIrEstimator", "", "Estimator of the interaction rate (pp,OO --> T0VTX, Pb-Pb --> ZNC hadronic), to be used with cfgFillBcStat"};
   } fConfigHistOutput;
 
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
@@ -821,7 +822,14 @@ struct TableMaker {
 
     auto bfilling = mLHCIFdata->getBunchFilling();
     double nbc = bfilling.getFilledBCs().size();
-    double tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), "T0VTX");
+
+    double tvxRate;
+    if (fConfigHistOutput.fConfigIrEstimator.value.empty()) {
+      tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), "T0VTX");
+    } else {
+      tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
+    }
+
     double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
     double mu = -std::log(1 - nTriggersPerFilledBC);
     return mu;
