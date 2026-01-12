@@ -1634,7 +1634,7 @@ class BuilderModule
               //      code that is agnostic with respect to the joinability of
               //      V0Cores and V0MCCores (always dereference -> safe)
               if (baseOpts.mEnabledTables[kV0CoreMCLabels]) {
-                products.v0CoreMCLabels(iv0); // interlink index
+                products.v0CoreMCLabels(products.v0mccores.lastIndex()); // interlink index
                 histos.fill(HIST("hTableBuildingStatistics"), kV0CoreMCLabels);
               }
             }

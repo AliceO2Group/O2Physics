@@ -273,6 +273,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
     return cut;
   }
+  if (!nameStr.compare("jpsiKineDcaQualitynoPID")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    return cut;
+  }
   if (!nameStr.compare("electronSelection1_ionut_withTOFPID")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -4174,6 +4180,30 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cutAorC->AddCut(cutA);
     cutAorC->AddCut(cutC);
     return cutAorC;
+  }
+
+  if (!nameStr.compare("eventXn0nTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0, true);
+    return cut;
+  }
+
+  if (!nameStr.compare("event0nXnTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0, true);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("event0n0nTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0, true);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0, true);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventXnXnTime")) {
+    cut->AddCut(VarManager::kTimeZNA, -2.0, 2.0);
+    cut->AddCut(VarManager::kTimeZNC, -2.0, 2.0);
+    return cut;
   }
 
   // Event cuts based on centrality

@@ -33,6 +33,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -134,6 +135,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   // QA histos
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -148,9 +150,8 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       hfEvSel.triggerClass.value = std::distance(aliasLabels, triggerAlias);
     }
 
+    hfEvSel.init(registry, &zorroSummary); // collision monitoring
     if (fillHistograms) {
-      hfEvSel.addHistograms(registry); // collision monitoring
-
       if (doprocessTrigAndCentFT0ASel || doprocessTrigAndCentFT0CSel || doprocessTrigAndCentFT0MSel || doprocessTrigAndCentFV0ASel) {
         const AxisSpec axisCentrality{200, 0., 100., "centrality percentile"};
         registry.add("hCentralitySelected", "Centrality percentile of selected events in the centrality interval; centrality percentile;entries", {HistType::kTH1D, {axisCentrality}});

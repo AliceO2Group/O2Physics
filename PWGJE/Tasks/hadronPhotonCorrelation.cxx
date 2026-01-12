@@ -40,10 +40,10 @@
 #include "Framework/runDataProcessing.h"
 
 #include <TClonesArray.h>
-#include <TLorentzVector.h> // o2-linter: disable= root/lorentz-vector (TLorentzVector is needed for TPythia8Decayer)
+// #include <TLorentzVector.h> // o2-linter: disable= root/lorentz-vector (TLorentzVector is needed for TPythia8Decayer)
 #include <TPDGCode.h>
-#include <TParticle.h>
-#include <TPythia8Decayer.h>
+// #include <TParticle.h>
+// #include <TPythia8Decayer.h>
 
 #include <cmath>
 #include <map>
@@ -112,9 +112,9 @@ struct HadronPhotonCorrelation {
   float ptMinAssoc;
   float ptMaxAssoc;
 
-  TPythia8Decayer* decayer = new TPythia8Decayer;
-  TLorentzVector* motherLV = new TLorentzVector(); // o2-linter: disable= root/lorentz-vector (TLorentzVector is needed for TPythia8Decayer)
-  TClonesArray* decayParticles = new TClonesArray("TParticle", 10);
+  // TPythia8Decayer* decayer = new TPythia8Decayer;
+  // TLorentzVector* motherLV = new TLorentzVector(); // o2-linter: disable= root/lorentz-vector (TLorentzVector is needed for TPythia8Decayer)
+  // TClonesArray* decayParticles = new TClonesArray("TParticle", 10);
 
   HistogramRegistry registry{"histogram registry"};
 
@@ -391,7 +391,7 @@ struct HadronPhotonCorrelation {
   }
 
   // Initialize Pythia8 decay particle
-  bool initDecayParticle(const TParticle* particle)
+  /*bool initDecayParticle(const TParticle* particle)
   {
 
     if (particle->GetMother(0) != 0) {
@@ -411,7 +411,7 @@ struct HadronPhotonCorrelation {
     }
 
     return true;
-  }
+  }*/
 
   // Initialize trigger tracks
   template <typename T>
@@ -991,7 +991,7 @@ struct HadronPhotonCorrelation {
       }
 
       // Use PYTHIA to simulate decay
-      decayer->Init();
+      /*decayer->Init();
       for (int pid = 1; pid <= nHadrons; pid++) {
         TParticlePDG* pdgParticle = nullptr;
 
@@ -1025,7 +1025,7 @@ struct HadronPhotonCorrelation {
             registry.fill(HIST("generated/charged/hCocktailPhotonCorrelGen"), track_trig.pt(), track_assoc.pt(), daughter->Pt(), daughter->Eta() - track_trig.eta(), dphi, pidCodes[pdgParticle->GetName()], collision.weight());
           }
         }
-      }
+      }*/
     }
     registry.fill(HIST("generated/charged/hPionMultGen"), nPions, collision.weight());
   }
@@ -1147,7 +1147,7 @@ struct HadronPhotonCorrelation {
       }
 
       // Use PYTHIA to simulate decay
-      decayer->Init();
+      /*decayer->Init();
       motherLV->SetPtEtaPhiM(track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), pdgParticle->Mass());
       decayer->Decay(track_assoc.pdgCode(), motherLV);
       decayer->ImportParticles(decayParticles);
@@ -1167,7 +1167,7 @@ struct HadronPhotonCorrelation {
           float dphi = RecoDecay::constrainAngle(daughter->Phi() - track_trig.phi(), -PIHalf);
           registry.fill(HIST("generated/neutral/hCocktailPhotonCorrelGen"), track_trig.pt(), track_assoc.pt(), daughter->Pt(), daughter->Eta() - track_trig.eta(), dphi, pidCodes[pdgParticle->GetName()], collision.weight());
         }
-      }
+      }*/
     }
     registry.fill(HIST("generated/neutral/hNeutralMultGen"), nNeutrals, collision.weight());
   }

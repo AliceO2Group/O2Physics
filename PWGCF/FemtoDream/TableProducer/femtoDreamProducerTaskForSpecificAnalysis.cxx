@@ -730,6 +730,167 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
     createSpecifiedDerivedDataK0ShortKStar<false>(col, thegroupSelectedV0s, thegroupSelectedResos, parts);
   }
   PROCESS_SWITCH(FemtoDreamProducerTaskForSpecificAnalysis, createSpecifiedDerivedDataNK0ShortNKStar, "Enable producing data with pp collisions for data K0Short-KStar", false);
+
+  /// The current version of femtoDreamProducerTaskReso.cxx still uses kV0Child and kResoChild for daughters of V0K0Short and ResoKStar, respectively.
+  /// That means, that createSpecifiedDerivedDataK0ShortKStar() cannot fill the output tables correctly.
+  /// For that, this function is created.
+  /// For eventual future changes of femtoDreamProducerTaskReso.cxx, createSpecifiedDerivedDataK0ShortKStar() is kept as it is
+  template <bool isMC, typename PartitionType, typename PartType>
+  void createSpecifiedDerivedDataK0ShortKStarLegacy(const o2::aod::FDCollision& col, PartitionType groupSelectedV0s, PartitionType groupSelectedResos, PartType parts)
+  {
+    // check v0's
+    int v0Count = 0;
+    int antiV0Count = 0;
+    int resoCount = 0; // no antiparticles
+
+    for (const auto& V0 : groupSelectedV0s) {
+      if ((V0.mLambda() > confMinInvMassV0) && (V0.mLambda() < confMaxInvMassV0)) {
+        if (confRequireBitmask) {
+          if (ncheckbit(V0.cut(), confCutV0SameForAntipart)) {
+            const auto& posChild = parts.iteratorAt(V0.index() - 2);
+            const auto& negChild = parts.iteratorAt(V0.index() - 1);
+            if (((posChild.cut() & confChildPosCutV0) == confChildPosCutV0 &&
+                 (posChild.pidcut() & confChildPosTPCBitV0) == confChildPosTPCBitV0 &&
+                 (negChild.cut() & confChildNegCutV0) == confChildNegCutV0 &&
+                 (negChild.pidcut() & confChildNegTPCBitV0) == confChildNegTPCBitV0)) {
+              v0Count++;
+            }
+          }
+        } else {
+          v0Count++;
+        }
+      } else if ((V0.mAntiLambda() > confMinInvMassAntiV0) && (V0.mAntiLambda() < confMaxInvMassAntiV0)) {
+        if (confRequireBitmask) {
+          if (ncheckbit(V0.cut(), confCutV0SameForAntipart)) {
+            const auto& posChild = parts.iteratorAt(V0.index() - 2);
+            const auto& negChild = parts.iteratorAt(V0.index() - 1);
+            if (((posChild.cut() & confChildPosCutV0) == confChildPosCutV0 &&
+                 (posChild.pidcut() & confChildNegTPCBitV0) == confChildNegTPCBitV0 && // exchanged values because checking antiparticle daughters and pid of particles exchange
+                 (negChild.cut() & confChildNegCutV0) == confChildNegCutV0 &&
+                 (negChild.pidcut() & confChildPosTPCBitV0) == confChildPosTPCBitV0)) { // exchanged values because checking antiparticle daughters and pid of particles exchange
+              antiV0Count++;
+            }
+          }
+        } else {
+          antiV0Count++;
+        }
+      }
+    }
+
+    for (const auto& reso : groupSelectedResos) {
+      if (confRequireBitmask) {
+
+        const auto& posresoChild = parts.iteratorAt(reso.index() - 2);
+        const auto& negresoChild = parts.iteratorAt(reso.index() - 1);
+
+        if (((posresoChild.cut() & Reso.daughPosCutBit) == Reso.daughPosCutBit) &&
+            ((negresoChild.cut() & Reso.daughNegCutBit) == Reso.daughNegCutBit)) {
+
+          resoCount++;
+        }
+      } else {
+        resoCount++;
+      }
+    }
+
+    std::vector<int> tmpIDtrack;
+
+    if ((v0Count >= confNumberOfV0 && resoCount >= confNumberOfReso) || (antiV0Count >= confNumberOfV0 && resoCount >= confNumberOfReso)) {
+      eventRegistry.fill(HIST("hStatistiscs"), 1);
+      outputCollision(col.posZ(), col.multV0M(), col.multNtr(), col.sphericity(), col.magField());
+
+      for (const auto& femtoParticle : parts) {
+
+        if (aod::femtodreamparticle::ParticleType::kResoChild == femtoParticle.partType()) {
+          std::vector<int> childIDs;
+          const auto& children = femtoParticle.childrenIds();
+          childIDs.push_back(children[0]);
+          childIDs.push_back(children[1]);
+          outputParts(outputCollision.lastIndex(),
+                      femtoParticle.pt(),
+                      femtoParticle.eta(),
+                      femtoParticle.phi(),
+                      femtoParticle.partType(),
+                      femtoParticle.cut(),
+                      femtoParticle.pidcut(),
+                      femtoParticle.tempFitVar(),
+                      childIDs,
+                      femtoParticle.mLambda(),
+                      femtoParticle.mAntiLambda());
+        }
+
+        if ((femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTPC)) ||
+            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTPC_NegdaughTOF)) ||
+            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTPC)) ||
+            (femtoParticle.partType() == uint8_t(aod::femtodreamparticle::kResoKStarPosdaughTOF_NegdaughTOF))) {
+
+          std::vector<int> childIDs;
+          const auto& children = femtoParticle.childrenIds();
+          childIDs.push_back(children[0]);
+          childIDs.push_back(children[1]);
+          outputParts(outputCollision.lastIndex(),
+                      femtoParticle.pt(),
+                      femtoParticle.eta(),
+                      femtoParticle.phi(),
+                      femtoParticle.partType(),
+                      femtoParticle.cut(),
+                      femtoParticle.pidcut(),
+                      femtoParticle.tempFitVar(),
+                      childIDs,
+                      femtoParticle.mLambda(),
+                      femtoParticle.mAntiLambda());
+        }
+
+        if (aod::femtodreamparticle::ParticleType::kV0Child == femtoParticle.partType()) {
+          std::vector<int> childIDs;
+          const auto& children = femtoParticle.childrenIds();
+          childIDs.push_back(children[0]);
+          childIDs.push_back(children[1]);
+
+          outputParts(outputCollision.lastIndex(),
+                      femtoParticle.pt(),
+                      femtoParticle.eta(),
+                      femtoParticle.phi(),
+                      femtoParticle.partType(),
+                      femtoParticle.cut(),
+                      femtoParticle.pidcut(),
+                      femtoParticle.tempFitVar(),
+                      childIDs,
+                      femtoParticle.mLambda(),
+                      femtoParticle.mAntiLambda());
+        }
+        if (aod::femtodreamparticle::ParticleType::kV0K0Short == femtoParticle.partType()) {
+          std::vector<int> childIDs;
+          const auto& children = femtoParticle.childrenIds();
+          childIDs.push_back(children[0]);
+          childIDs.push_back(children[1]);
+          outputParts(outputCollision.lastIndex(),
+                      femtoParticle.pt(),
+                      femtoParticle.eta(),
+                      femtoParticle.phi(),
+                      femtoParticle.partType(),
+                      femtoParticle.cut(),
+                      femtoParticle.pidcut(),
+                      femtoParticle.tempFitVar(),
+                      childIDs,
+                      femtoParticle.mLambda(),
+                      femtoParticle.mAntiLambda());
+        }
+      }
+    } else {
+      eventRegistry.fill(HIST("hStatistiscs"), 2);
+    }
+  }
+  void createSpecifiedDerivedDataNK0ShortNKStarLegacy(const o2::aod::FDCollision& col,
+                                                      const o2::aod::FDParticles& parts)
+  {
+    eventRegistry.fill(HIST("hStatistiscs"), 0);
+    auto thegroupSelectedResos = selectedKStar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupSelectedV0s = selectedK0Short->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+
+    createSpecifiedDerivedDataK0ShortKStarLegacy<false>(col, thegroupSelectedV0s, thegroupSelectedResos, parts);
+  }
+  PROCESS_SWITCH(FemtoDreamProducerTaskForSpecificAnalysis, createSpecifiedDerivedDataNK0ShortNKStarLegacy, "Enable producing data with pp collisions for data K0Short-KStar with kV0Child/KResoChild daughter types", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

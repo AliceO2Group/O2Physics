@@ -113,8 +113,6 @@ enum ParticleType {
   kCascadeV0Child,
   kCascadeBachelor,             //! Bachelor track of a cascade
   kCharmHadron3Prong,           //! Charm 3prong Candidates
-  kCharmHadron2Prong,           //! Charm 2prong Candidates
-  kCharmHadronDstar,            //! Charm Dstar Candidates
   kReso,                        //! Resonances (phi)
   kResoChild,                   // Child track of a Resonance
   kResoPosdaughTPC_NegdaughTPC, // cases for Phi-daughters for TPC or TOF combinations
@@ -133,7 +131,9 @@ enum ParticleType {
   kOmegaV0,
   kOmegaV0Child,
   kOmegaBachelor,
-  kNParticleTypes //! Number of particle types
+  kCharmHadron2Prong, //! Charm 2prong Candidates
+  kCharmHadronDstar,  //! Charm Dstar Candidates
+  kNParticleTypes     //! Number of particle types
 };
 
 enum MomentumType {
@@ -142,9 +142,9 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF", "ResoKStarPosdaughTPC_NegdaughTPC", "ResoKStarPosdaughTPC_NegdaughTOF", "ResoKStarPosdaughTOF_NegdaughTPC", "ResoKStarPosdaughTOF_NegdaughTOF", "V0K0Short", "V0K0ShortChild", "ResoKStarChild", "ResoKStar", "Omega", "OmegaV0", "OmegaV0Child", "OmegaBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron3Prong", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF", "ResoKStarPosdaughTPC_NegdaughTPC", "ResoKStarPosdaughTPC_NegdaughTOF", "ResoKStarPosdaughTOF_NegdaughTPC", "ResoKStarPosdaughTOF_NegdaughTOF", "V0K0Short", "V0K0ShortChild", "ResoKStarChild", "ResoKStar", "Omega", "OmegaV0", "OmegaV0Child", "OmegaBachelor", "CharmHadron2Prong", "CharmHadronDstar"}; //! Naming of the different particle types
 
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -273,6 +273,7 @@ DECLARE_SOA_COLUMN(Kstar, kstar, float);                         //! Relative mo
 DECLARE_SOA_COLUMN(KT, kT, float);                               //! kT distribution of particle pairs
 DECLARE_SOA_COLUMN(MT, mT, float);                               //! Transverse mass distribution
 DECLARE_SOA_COLUMN(CharmM, charmM, float);                       //! Charm hadron mass
+DECLARE_SOA_COLUMN(CharmDaughM, charmDaughM, float);             //! Charm hadron daughter mass
 DECLARE_SOA_COLUMN(CharmTrkM, charmtrkM, float);                 //! Charm hadron track mass
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                     //! Transverse momentum of charm hadron for result task
 DECLARE_SOA_COLUMN(CharmEta, charmEta, float);                   //! Eta of charm hadron for result task
@@ -356,7 +357,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
                                                                                                                                                                                                         RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
                                                                                                                                                                                                         RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2)},
                                                                                                                                                                                                       m); }); //! Charm hadron mass
-DECLARE_SOA_DYNAMIC_COLUMN(P, p,                                                                                                                                                                                                                                                                                                                                 //!
+
+DECLARE_SOA_DYNAMIC_COLUMN(MDaughD0, mDaughD0, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, const std::array<double, 2>& m) -> float { return RecoDecay::m(std::array{
+                                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1)},
+                                                                                                                                                                   m); }); //! Charm hadron mass
+
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::p(RecoDecay::pVec(
                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
@@ -458,6 +466,7 @@ DECLARE_SOA_TABLE(FDHfCandDstar, "AOD", "FDHFCANDDSTAR", //! Table to store the 
                   fdhf::BDTPrompt,
                   fdhf::BDTFD,
                   fdhf_dstar::M<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf_dstar::MDaughD0<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta>,
                   fdhf_dstar::P<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf_dstar::Y<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf_dstar::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
@@ -516,6 +525,7 @@ DECLARE_SOA_TABLE(FDHfCharmDstar, "AOD", "FDHFCHARMDSTAR", //! table to store re
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
                   fdhf::CharmM,
+                  fdhf::CharmDaughM,
                   fdhf::CharmPt,
                   fdhf::CharmEta,
                   fdhf::CharmPhi,
@@ -650,18 +660,21 @@ namespace femtodreamMCparticle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,                    //! Primary track or V0
-  kSecondary,                  //! Particle from a decay
-  kMaterial,                   //! Particle from a material
-  kNotPrimary,                 //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,                       //! particle, that has NOT the PDG code of the current analysed particle
-  kWrongCollision,             //! particle, that was associated wrongly to the collision
-  kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
-  kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
-  kSecondaryDaughterSigma0,    //! Daughter from a Sigma^0 decay
-  kSecondaryDaughterXiMinus,   //! Daughter from a Xi^- decay
-  kSecondaryDaughterXi0,       //! Daughter from a Xi^0 decay
-  kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
+  kPrimary,                      //! Primary track or V0
+  kSecondary,                    //! Particle from a decay
+  kMaterial,                     //! Particle from a material
+  kNotPrimary,                   //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,                         //! particle, that has NOT the PDG code of the current analysed particle
+  kWrongCollision,               //! particle, that was associated wrongly to the collision
+  kSecondaryDaughterLambda,      //! Daughter from a Lambda decay
+  kSecondaryDaughterSigmaplus,   //! Daughter from a Sigma^plus decay
+  kSecondaryDaughterSigma0,      //! Daughter from a Sigma^0 decay
+  kSecondaryDaughterXiMinus,     //! Daughter from a Xi^- decay
+  kSecondaryDaughterXi0,         //! Daughter from a Xi^0 decay
+  kSecondaryDaughterOmegaMinus,  //! Daughter from a Omega^- decay
+  kSecondaryDaughterXistar0,     //! Daughter from a Xi*^0 decay
+  kSecondaryDaughterXistarMinus, //! Daughter from a Xi*^- decay
+  kElse,                         //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };
 
