@@ -9,7 +9,7 @@
 // or submit itself to any jurisdiction.
 ///
 
-/// \file factorialMomentsTask.cxx
+/// \file FactorialMomentsTask.cxx
 /// \brief This task is for Normalized Factorial Moments Analysis: PRC 85, 044914 (2012), nucl-ex:1411.6083
 /// \author Salman Malik,  Balwan Singh
 
