@@ -248,6 +248,7 @@ struct OnTheFlyTracker {
   struct v0candidate {
     int positiveId; // track index in the Tracks table
     int negativeId; // track index in the Tracks table
+    int mcParticleId; // mc particle index
 
     float pt;
 
@@ -1193,6 +1194,7 @@ struct OnTheFlyTracker {
           // n-2: negative Track from V0
           thisV0.positiveId = lastTrackIndex + tracksAlice3.size() - 1;
           thisV0.negativeId = lastTrackIndex + tracksAlice3.size() - 2;
+          thisV0.mcParticleId = mcParticle.globalIndex();
           // use DCA fitters
           int nCand = 0;
           bool dcaFitterOK_V0 = true;
@@ -1535,6 +1537,7 @@ struct OnTheFlyTracker {
     // populate V0s
     for (const auto& v0 : v0sAlice3) {
       tableUpgradeV0s(tableCollisions.lastIndex(), // now we know the collision index -> populate table
+                      v0.mcParticleId,
                       v0.positiveId,
                       v0.negativeId,
                       v0.dcaV0dau,
