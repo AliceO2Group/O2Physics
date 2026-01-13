@@ -30,12 +30,12 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/MathConstants.h"
-#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include <Framework/Configurable.h>
 
 #include <Math/GenVector/Boost.h>
@@ -48,6 +48,7 @@
 
 #include <iostream>
 #include <iterator>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -69,8 +70,14 @@ struct f1protonreducedtable {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // Configs for events
-  Configurable<bool> ConfEvtSelectZvtx{"ConfEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
-  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+
+  /// Event selection
+  struct : ConfigurableGroup {
+    std::string prefix = std::string("EventSel");
+    Configurable<bool> ConfEvtSelectZvtx{"ConfEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
+    Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<bool> ConfEvtSel8{"ConfEvtSel8", true, "Event selection sel8"};
+  } EventSel;
 
   // event spherocity calculation
   Configurable<int> trackSphDef{"trackSphDef", 0, "Spherocity Definition: |pT| = 1 -> 0, otherwise -> 1"};
@@ -184,7 +191,10 @@ struct f1protonreducedtable {
   template <typename T>
   bool isSelectedEvent(T const& col)
   {
-    if (ConfEvtSelectZvtx && std::abs(col.posZ()) > ConfEvtZvtx) {
+    if (EventSel.ConfEvtSelectZvtx && std::abs(col.posZ()) > EventSel.ConfEvtZvtx) {
+      return false;
+    }
+    if (EventSel.ConfEvtSel8 && !col.sel8()) {
       return false;
     }
     return true;
@@ -497,7 +507,7 @@ struct f1protonreducedtable {
   Filter dcaFilter = nabs(aod::track::dcaXY) < ConfTrkDCAxyMaxF1Proton && nabs(aod::track::dcaZ) < ConfTrkDCAzMaxF1Proton;
 
   // using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-  using EventCandidates = aod::Collisions;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels>;
   using ResoV0s = aod::V0Datas;
   using PrimaryTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                          aod::pidTPCFullPi, aod::pidTOFFullPi,
