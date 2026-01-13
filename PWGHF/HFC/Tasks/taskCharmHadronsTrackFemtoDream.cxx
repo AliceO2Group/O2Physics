@@ -463,8 +463,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
       if constexpr (Channel == DecayChannel::D0ToPiK) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id()) {
           continue;
+        }
 
         if (useCPR.value) {
           if (pairCloseRejectionSE2Prong.isClosePair(p1, p2, parts, col.magField())) {
@@ -478,8 +479,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
 
       if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id()) {
           continue;
+        }
         if (useCPR.value) {
           if (pairCloseRejectionSE3Prong.isClosePair(p1, p2, parts, col.magField())) {
             continue;
@@ -492,8 +494,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
 
       if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id()) {
           continue;
+        }
         if (useCPR.value) {
           if (pairCloseRejectionSEDstar.isClosePair(p1, p2, parts, col.magField())) {
             continue;

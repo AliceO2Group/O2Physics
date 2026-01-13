@@ -722,10 +722,12 @@ struct HfTaskFlow {
 
     float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
 
-    if (dPhiStar > constants::math::PI)
+    if (dPhiStar > constants::math::PI) {
       dPhiStar = constants::math::TwoPI - dPhiStar;
-    if (dPhiStar < -constants::math::PI)
+    }
+    if (dPhiStar < -constants::math::PI) {
       dPhiStar = -constants::math::TwoPI - dPhiStar;
+    }
 
     return dPhiStar;
   }
@@ -1114,8 +1116,9 @@ struct HfTaskFlow {
                   break;
                 }
               }
-              if (bIsBelow)
+              if (bIsBelow) {
                 continue;
+              }
             }
           }
         }

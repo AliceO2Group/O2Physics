@@ -414,14 +414,17 @@ struct HfTaskCharmHadronsV0FemtoDream {
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceV01, sliceCharmHad))) {
 
       if constexpr (Channel == DecayChannel::D0ToPiK) {
-        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id())
+        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id()) {
           continue;
+        }
       } else if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
-        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id())
+        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id()) {
           continue;
+        }
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id())
+        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id()) {
           continue;
+        }
       }
       // v0 daughters selection
       const auto& posChild = femtoParts.iteratorAt(p1.index() - 2);
@@ -451,10 +454,11 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
 
       float invMassV0 = 0.f;
-      if (p1.sign() > 0)
+      if (p1.sign() > 0) {
         invMassV0 = p1.mLambda();
-      else
+      } else {
         invMassV0 = p1.mAntiLambda();
+      }
 
       float chargeV0 = 0.;
       if ((p1.cut() & p1.sign()) == CutBitChargePositive) {
@@ -541,10 +545,11 @@ struct HfTaskCharmHadronsV0FemtoDream {
         }
 
         float invMassV0 = 0.f;
-        if (p1.sign() > 0)
+        if (p1.sign() > 0) {
           invMassV0 = p1.mLambda();
-        else
+        } else {
           invMassV0 = p1.mAntiLambda();
+        }
 
         float chargeV0 = 0.;
         if ((p1.cut() & p1.sign()) == CutBitChargePositive) {
@@ -721,8 +726,9 @@ struct HfTaskCharmHadronsV0FemtoDream {
                  FDV0Particles const& parts,
                  CharmPart& charmPart)
   {
-    if (!mixSetting.doMixEvent)
+    if (!mixSetting.doMixEvent) {
       return;
+    }
     auto run = [&](auto& v0Part) {
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
@@ -739,12 +745,13 @@ struct HfTaskCharmHadronsV0FemtoDream {
       }
     };
 
-    if (v0Sel.pdgCodeV0 == kLambda0)
+    if (v0Sel.pdgCodeV0 == kLambda0) {
       run(partitionLambda);
-    else if (v0Sel.pdgCodeV0 == kK0Short)
+    } else if (v0Sel.pdgCodeV0 == kK0Short) {
       run(partitionK0Short);
-    else
+    } else {
       LOG(fatal) << "Unsupported V0 PDG: " << v0Sel.pdgCodeV0 << " (allowed: 3122, 310) for mixed-events";
+    }
   }
 
   void processDataLcV0(FilteredCollisions const& cols,
