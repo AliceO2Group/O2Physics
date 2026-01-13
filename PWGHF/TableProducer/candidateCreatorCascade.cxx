@@ -234,7 +234,7 @@ struct HfCandidateCreatorCascade {
         }
       } else {
         if (!silenceV0DataWarning) {
-            LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+          LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
         }
         continue; // this was inadequately linked, should not happen
       }
