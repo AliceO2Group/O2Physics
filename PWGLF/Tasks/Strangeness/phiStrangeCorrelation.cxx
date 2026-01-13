@@ -60,6 +60,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 #include <ranges>
 #include <string>
 #include <string_view>
