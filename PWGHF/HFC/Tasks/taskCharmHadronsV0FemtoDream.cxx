@@ -23,8 +23,6 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGHF/Core/DecayChannels.h"
 
-#include "Common/Core/RecoDecay.h"
-
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
@@ -45,8 +43,8 @@
 
 #include <array>
 #include <cstdint>
+#include <numeric>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace o2;
