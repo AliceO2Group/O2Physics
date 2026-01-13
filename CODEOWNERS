@@ -22,13 +22,13 @@
 /DPG/Tasks/FT0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
 /DPG/Tasks/FV0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
 /DPG/Tasks/FDD @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
-/EventFiltering @alibuild @mpuccio @lietava
-/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava
-/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava
-/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @lietava
-/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava
-/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava
-/EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava
+/EventFiltering @alibuild @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava @ariedel-cern
+/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava @fgrosa @ariedel-cern
 
 /PWGCF               @alibuild @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGCF/Core          @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
