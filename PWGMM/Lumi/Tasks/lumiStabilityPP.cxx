@@ -31,6 +31,7 @@
 
 #include <limits>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -287,7 +288,7 @@ struct LumiStabilityPP {
 
       if (thisTFid != currentTFid) {
         currentTFid = thisTFid;
-        histNBcsVsTime[runNumber]->Fill(timeSinceSOF);
+        histTfPerMin[runNumber]->Fill(timeSinceSOF);
       }
 
       std::bitset<64> ctpInputMask(bc.inputMask());
