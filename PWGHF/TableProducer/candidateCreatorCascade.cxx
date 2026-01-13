@@ -92,7 +92,7 @@ struct HfCandidateCreatorCascade {
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
@@ -187,10 +187,10 @@ struct HfCandidateCreatorCascade {
       }
 
       int posGlobalIndex = -1, negGlobalIndex = -1;
-      float v0X, v0Y, v0Z, v0px, v0py, v0pz;
-      float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
-      float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
-      std::array<float, 21> covV = {0.};
+      float v0X{}, v0Y{}, v0Z{}, v0px{}, v0py{}, v0pz{};
+      float v0PosPx{}, v0PosPy{}, v0PosPz{}, v0NegPx{}, v0NegPy{}, v0NegPz{};
+      float dcaV0dau{}, dcaPosToPV{}, dcaNegToPV{}, v0cosPA{};
+      std::array<float, 21> covV{};
 
       auto v0index = casc.template v0_as<o2::aod::V0sLinked>();
       if (v0index.has_v0Data()) {
@@ -287,7 +287,7 @@ struct HfCandidateCreatorCascade {
       trackParVarBach.propagateToDCA(primaryVertex, bz, &impactParameterBach);
 
       // get uncertainty of the decay length
-      double phi, theta;
+      double phi{}, theta{};
       getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));

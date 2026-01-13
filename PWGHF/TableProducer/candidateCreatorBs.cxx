@@ -98,7 +98,7 @@ struct HfCandidateCreatorBs {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
@@ -336,7 +336,7 @@ struct HfCandidateCreatorBs {
           trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
 
           // get uncertainty of the decay length
-          double phi, theta;
+          double phi{}, theta{};
           // getPointDirection modifies phi and theta
           getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexBs, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));

@@ -225,7 +225,7 @@ struct HfCandidateCreatorLb {
         hCovPVXX->Fill(covMatrixPV[0]);
 
         // get uncertainty of the decay length
-        double phi, theta;
+        double phi{}, theta{};
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexLb, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
