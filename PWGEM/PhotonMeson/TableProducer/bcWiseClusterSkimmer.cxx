@@ -376,10 +376,10 @@ struct bcWiseClusterSkimmer {
           bool isFromWD = (aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcCollision, mcParticle, mcParticles)) > 0;
 
           if (mcParticle.pdgCode() == 111) {
-            mcpi0Table(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+            mcpi0Table(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapPi0Index[mcParticle.globalIndex()] = static_cast<int32_t>(mcpi0Table.lastIndex());
           } else if (mcParticle.pdgCode() == 221) {
-            mcetaTable(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+            mcetaTable(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapEtaIndex[mcParticle.globalIndex()] = static_cast<int32_t>(mcetaTable.lastIndex());
           }
         }
