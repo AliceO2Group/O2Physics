@@ -129,6 +129,12 @@ struct RadialFlowDecorr {
     kCentFT0M = 3,
     kCentFV0A = 4
   };
+  enum SystemCounter {
+    kPbPb = 1,
+    kOO = 2,
+    kpPb = 3,
+    kpp = 4
+  };
   static constexpr float KinvalidCentrality = -1.0f;
   const std::vector<std::string> pidSuffix = {"", "_PID"};
 
@@ -416,10 +422,7 @@ struct RadialFlowDecorr {
     const int iby = h->GetYaxis()->FindBin(eta);
     const int ibz = h->GetZaxis()->FindBin(phi);
     float val = h->GetBinContent(ibx, iby, ibz);
-    if (cfgFlat)
-      return val;
-    else
-      return 1.0;
+    return val;
   }
 
   template <int KIntM, int KIntK>
@@ -794,16 +797,16 @@ struct RadialFlowDecorr {
     declareCommonQA();
 
     std::string userCcdbPath;
-    if (cfgSys == 1) {
+    if (cfgSys == kPbPb) {
       userCcdbPath = "/Users/s/somadutt/PbPbTest/";
     }
-    if (cfgSys == 2) {
+    if (cfgSys == kOO) {
       userCcdbPath = "/Users/s/somadutt/OOTest/";
     }
-    if (cfgSys == 3) {
+    if (cfgSys == kpPb) {
       userCcdbPath = "/Users/s/somadutt/pPbTest/";
     }
-    if (cfgSys == 4) {
+    if (cfgSys == kpp) {
       userCcdbPath = "/Users/s/somadutt/ppTest/";
     }
 
@@ -1193,6 +1196,8 @@ struct RadialFlowDecorr {
           float effIncl = getEfficiency(col.multNTracksPV(), pt, eta, kInclusive, 0);
           float fakeIncl = getEfficiency(col.multNTracksPV(), pt, eta, kInclusive, 1);
           float flatWeightIncl = getFlatteningWeight(cent, eta, phi, kInclusive);
+          if (!cfgFlat)
+            flatWeightIncl = 1.0;
           float wIncl = flatWeightIncl * (1.0 - fakeIncl) / effIncl;
 
           histos.fill(HIST("hCentEtaPhiWtd"), cent, eta, track.phi(), flatWeightIncl);
@@ -1233,6 +1238,8 @@ struct RadialFlowDecorr {
             float effPid = getEfficiency(col.multNTracksPV(), pt, eta, kCombinedPID, 0);
             float fakePid = getEfficiency(col.multNTracksPV(), pt, eta, kCombinedPID, 1);
             float flatWeightPid = getFlatteningWeight(cent, eta, phi, kCombinedPID);
+            if (!cfgFlat)
+              flatWeightPid = 1.0;
             float wPid = flatWeightPid * (1.0 - fakePid) / effPid;
 
             histos.fill(HIST("hCentEtaPhiWtd_PID"), cent, eta, track.phi(), flatWeightPid);
@@ -1505,6 +1512,8 @@ struct RadialFlowDecorr {
           float effIncl = getEfficiency(col.multNTracksPV(), pt, eta, kInclusive, 0);
           float fakeIncl = getEfficiency(col.multNTracksPV(), pt, eta, kInclusive, 1);
           float flatWeightIncl = getFlatteningWeight(cent, eta, phi, kInclusive);
+          if (!cfgFlat)
+            flatWeightIncl = 1.0;
           float wIncl = flatWeightIncl * (1.0 - fakeIncl) / effIncl;
           if (!std::isfinite(wIncl) || wIncl <= 0.f)
             continue;
@@ -1540,6 +1549,8 @@ struct RadialFlowDecorr {
             float effPid = getEfficiency(col.multNTracksPV(), pt, eta, kCombinedPID, 0);
             float fakePid = getEfficiency(col.multNTracksPV(), pt, eta, kCombinedPID, 1);
             float flatWeightPid = getFlatteningWeight(cent, eta, phi, kCombinedPID);
+            if (!cfgFlat)
+              flatWeightPid = 1.0;
             float wPid = flatWeightPid * (1.0 - fakePid) / effPid;
             if (effPid >= 1.f || fakePid >= 1.f || !std::isfinite(effPid) || effPid <= KFloatEpsilon || !std::isfinite(fakePid) || !std::isfinite(flatWeightPid))
               continue;
@@ -2060,6 +2071,8 @@ struct RadialFlowDecorr {
       float effIncl = getEfficiency(coll.multNTracksPV(), pt, eta, kInclusive, 0);
       float fakeIncl = getEfficiency(coll.multNTracksPV(), pt, eta, kInclusive, 1);
       float flatWeightIncl = getFlatteningWeight(cent, eta, phi, kInclusive);
+      if (!cfgFlat)
+        flatWeightIncl = 1.0;
       float wIncl = flatWeightIncl * (1.0 - fakeIncl) / effIncl;
       if (!std::isfinite(wIncl) || wIncl <= KFloatEpsilon || effIncl <= KFloatEpsilon)
         continue;
@@ -2086,6 +2099,8 @@ struct RadialFlowDecorr {
         float effPid = getEfficiency(coll.multNTracksPV(), pt, eta, kCombinedPID, 0);
         float fakePid = getEfficiency(coll.multNTracksPV(), pt, eta, kCombinedPID, 1);
         float flatWeightPid = getFlatteningWeight(cent, eta, phi, kCombinedPID);
+        if (!cfgFlat)
+          flatWeightPid = 1.0;
         float wPid = flatWeightPid * (1.0 - fakePid) / effPid;
         if (!std::isfinite(wPid) || wPid <= KFloatEpsilon || effPid <= KFloatEpsilon)
           continue;
@@ -2162,7 +2177,8 @@ struct RadialFlowDecorr {
       float effIncl = getEfficiency(coll.multNTracksPV(), pt, eta, kInclusive, 0);
       float fakeIncl = getEfficiency(coll.multNTracksPV(), pt, eta, kInclusive, 1);
       float flatWeightIncl = getFlatteningWeight(cent, eta, phi, kInclusive);
-
+      if (!cfgFlat)
+        flatWeightIncl = 1.0;
       float wIncl = flatWeightIncl * (1.0 - fakeIncl) / effIncl;
       if (!std::isfinite(wIncl) || wIncl <= KFloatEpsilon || effIncl <= KFloatEpsilon)
         continue;
@@ -2188,7 +2204,8 @@ struct RadialFlowDecorr {
         float effPid = getEfficiency(coll.multNTracksPV(), pt, eta, kCombinedPID, 0);
         float fakePid = getEfficiency(coll.multNTracksPV(), pt, eta, kCombinedPID, 1);
         float flatWeightPid = getFlatteningWeight(cent, eta, phi, kCombinedPID);
-
+        if (!cfgFlat)
+          flatWeightPid = 1.0;
         float wPid = flatWeightPid * (1.0 - fakePid) / effPid;
         if (!std::isfinite(wPid) || wPid <= KFloatEpsilon || effPid <= KFloatEpsilon)
           continue;
