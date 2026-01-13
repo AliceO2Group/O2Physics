@@ -139,7 +139,14 @@ def main(rootfile_path, tdir_path="femto-producer"):
     print("\nHistograms found in directory:")
     for i, hname in enumerate(histograms):
         print(f"  [{i}] {hname}")
-    hidx = int(input("\nSelect histogram index: "))
+    while True:
+        try:
+            hidx = int(input("\nSelect histogram index: "))
+            if 0 <= hidx < len(histograms):
+                break
+        except ValueError:
+            pass
+        print("Invalid index.")
     hname = histograms[hidx]
     hist = d.Get(hname)
     nbins = hist.GetNbinsX()

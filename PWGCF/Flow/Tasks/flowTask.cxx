@@ -41,6 +41,7 @@
 #include "TList.h"
 #include <TF1.h>
 #include <TObjArray.h>
+#include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
 
@@ -63,7 +64,7 @@ struct FlowTask {
 
   // Basic event&track selections
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT")
   O2_DEFINE_CONFIGURABLE(cfgCentFT0CMin, float, 0.0f, "Minimum centrality (FT0C) to cut events in filter")
   O2_DEFINE_CONFIGURABLE(cfgCentFT0CMax, float, 100.0f, "Maximum centrality (FT0C) to cut events in filter")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -184,7 +185,7 @@ struct FlowTask {
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   // Filter for MCcollisions
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
@@ -193,7 +194,7 @@ struct FlowTask {
   Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
-  using FilteredSmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using FilteredSmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -229,6 +230,9 @@ struct FlowTask {
     kCentFT0CVariant1,
     kCentFT0M,
     kCentFV0A,
+    kCentNTPV,
+    kCentNGlobal,
+    kCentMFT,
     // Count the total number of enum
     kCount_CentEstimators
   };
@@ -300,6 +304,7 @@ struct FlowTask {
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
     registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
     if (doprocessMCGen) {
+      registry.add("MCGen/hMCEventCount", "Number of Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
       registry.add("MCGen/MChVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
       registry.add("MCGen/MChMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
       registry.add("MCGen/MChCent", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
@@ -360,7 +365,7 @@ struct FlowTask {
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
-      registry.add("MCGen/MChPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+      registry.add("MCGen/MChPt", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
       registry.add("hMeanPtWithinGap08_MC", "mean p_{T}", {HistType::kTProfile, {axisIndependent}});
       for (auto i = 0; i < cfgNbootstrap; i++) {
         bootstrapArray[i][kMeanPtWithinGap08_MC] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08_MC", i), "", {HistType::kTProfile, {axisIndependent}});
@@ -990,6 +995,15 @@ struct FlowTask {
       case kCentFV0A:
         cent = collision.centFV0A();
         break;
+      case kCentNTPV:
+        cent = collision.centNTPV();
+        break;
+      case kCentNGlobal:
+        cent = collision.centNGlobal();
+        break;
+      case kCentMFT:
+        cent = collision.centMFT();
+        break;
       default:
         cent = collision.centFT0C();
     }
@@ -1242,13 +1256,25 @@ struct FlowTask {
 
   void processMCGen(FilteredMcCollisions::iterator const& mcCollision, FilteredSmallGroupMcCollisions const& collisions, FilteredMcParticles const& mcParticles)
   {
+    registry.fill(HIST("MCGen/hMCEventCount"), 0.5);
     if (collisions.size() != 1)
       return;
+    registry.fill(HIST("MCGen/hMCEventCount"), 1.5);
 
     float cent = -1.;
     for (const auto& collision : collisions) {
       cent = getCentrality(collision);
     }
+
+    if (cfgUseAdditionalEventCut) {
+      for (auto const& collision : collisions) {
+        if (!collision.sel8())
+          return;
+        if (!eventSelected(collision, mcParticles.size(), cent))
+          return;
+      }
+    }
+    registry.fill(HIST("MCGen/hMCEventCount"), 2.5);
 
     float lRandom = fRndm->Rndm();
     float vtxz = mcCollision.posZ();
@@ -1262,26 +1288,25 @@ struct FlowTask {
     fGFW->Clear();
     fFCptgen->clearVector();
 
-    if (cfgUseAdditionalEventCut) {
-      for (auto const& collision : collisions) {
-        if (!eventSelected(collision, mcParticles.size(), cent))
-          return;
-      }
-    }
-
     double ptSum_Gap08 = 0.;
     double count_Gap08 = 0.;
     for (const auto& mcParticle : mcParticles) {
+      int pdgCode = std::abs(mcParticle.pdgCode());
+      bool extraPDGType = (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0);
+      if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        continue;
       if (!mcParticle.isPhysicalPrimary())
+        continue;
+      if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
       bool withinEtaGap08 = (std::abs(mcParticle.eta()) < cfgCutEta);
 
+      registry.fill(HIST("MCGen/MChPt"), mcParticle.pt());
       if (withinPtRef) {
         registry.fill(HIST("MCGen/MChPhi"), mcParticle.phi());
         registry.fill(HIST("MCGen/MChEta"), mcParticle.eta());
-        registry.fill(HIST("MCGen/MChPtRef"), mcParticle.pt());
         if (withinEtaGap08) {
           ptSum_Gap08 += mcParticle.pt();
           count_Gap08 += 1.;

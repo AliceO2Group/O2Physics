@@ -191,6 +191,50 @@ bool isWeakDecayFromBeautyHadron(T const& mcParticle, U const& mcParticles)
   }
 }
 //_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles>
+bool isDiquark(TMCParticle const& p1, TMCParticle const& p2, TMCParticles const& mcParticles)
+{
+  bool isDiquark = false;
+
+  int motherid1 = p1.mothersIds()[0]; // first mother index
+  while (motherid1 > -1) {
+    if (motherid1 < mcParticles.size()) { // protect against bad mother indices. why is this needed?
+      auto mp1 = mcParticles.iteratorAt(motherid1);
+      if (mp1.has_mothers()) {
+        motherid1 = mp1.mothersIds()[0];
+      } else {
+        motherid1 = -999;
+      }
+    } else {
+      LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid1, mcParticles.size());
+      break;
+    }
+
+    int motherid2 = p2.mothersIds()[0]; // first mother index
+    while (motherid2 > -1) {
+      if (motherid2 < mcParticles.size()) { // protect against bad mother indices. why is this needed?
+        auto mp2 = mcParticles.iteratorAt(motherid2);
+        if (mp2.has_mothers()) {
+          motherid2 = mp2.mothersIds()[0];
+        } else {
+          motherid2 = -999;
+        }
+      } else {
+        LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid2, mcParticles.size());
+        break;
+      }
+
+      if (motherid1 == motherid2) { // common mother is found.
+        auto common_mp = mcParticles.iteratorAt(motherid1);
+        int mp_pdg = common_mp.pdgCode();
+        isDiquark = (1100 < std::abs(mp_pdg) && std::abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
+      }
+
+    } // end of motherid2
+  } // end of motherid1
+
+  return isDiquark;
+}
 //_______________________________________________________________________
 template <typename TMCParticle1, typename TMCParticle2>
 int FindCommonMotherFrom2ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2)
@@ -518,6 +562,10 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     return static_cast<int>(EM_HFeeType::kUndef); // this never happens in correlated HF->ee decays
   }
 
+  if (isDiquark(p1, p2, mcparticles)) {
+    return static_cast<int>(EM_HFeeType::kUndef); // remove diquark
+  }
+
   // store all mother1 relation
   std::vector<int> mothers_id1;
   std::vector<int> mothers_pdg1;
@@ -560,12 +608,10 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     }
   }
 
-  // require correlation between q-qbar. (not q-q) // need statusCode
-
-  auto mpfh1 = mcparticles.iteratorAt(find1stHadron(p1, mcparticles));
-  auto mpfh2 = mcparticles.iteratorAt(find1stHadron(p2, mcparticles));
-  bool isFOat1stDecay1 = isFlavorOscillationB(mpfh1); // oscillation occured at 1st hb decay.
-  bool isFOat1stDecay2 = isFlavorOscillationB(mpfh2); // oscillation occured at 1st hb decay.
+  // auto mpfh1 = mcparticles.iteratorAt(find1stHadron(p1, mcparticles));
+  // auto mpfh2 = mcparticles.iteratorAt(find1stHadron(p2, mcparticles));
+  // bool isFOat1stDecay1 = isFlavorOscillationB(mpfh1); // oscillation occured at 1st hb decay.
+  // bool isFOat1stDecay2 = isFlavorOscillationB(mpfh2); // oscillation occured at 1st hb decay.
 
   bool is_direct_from_b1 = isWeakDecayFromBeautyHadron(p1, mcparticles);
   bool is_direct_from_b2 = isWeakDecayFromBeautyHadron(p2, mcparticles);
@@ -574,7 +620,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   bool is_c_from_b1 = isWeakDecayFromCharmHadron(p1, mcparticles) && IsFromBeauty(p1, mcparticles) > 0;
   bool is_c_from_b2 = isWeakDecayFromCharmHadron(p2, mcparticles) && IsFromBeauty(p2, mcparticles) > 0;
 
-  if (is_prompt_c1 && is_prompt_c2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0) { // charmed mesons never oscillate. Be careful with D(2007)*0 -> D0 e+ e-
+  if (is_prompt_c1 && is_prompt_c2) { // don't check sign of first hadrons. // charmed mesons never oscillate. Be careful with D(2007)*0 -> D0 e+ e-
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -586,11 +632,11 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     return static_cast<int>(EM_HFeeType::kCe_Ce); // cc->ee, decay type = 0
   }
 
-  bool b2l_b2l_case0 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
-  bool b2l_b2l_case1 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
-  bool b2l_b2l_case2 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
+  // bool b2l_b2l_case0 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
+  // bool b2l_b2l_case1 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
+  // bool b2l_b2l_case2 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
 
-  if (b2l_b2l_case0 || b2l_b2l_case1 || b2l_b2l_case2) {
+  if (is_direct_from_b1 && is_direct_from_b2) { // analyzer should do ULS - LS to take into flavor oscillation account.
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -602,11 +648,11 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     return static_cast<int>(EM_HFeeType::kBe_Be); // bb->ee, decay type = 2
   }
 
-  bool b2c2l_b2c2l_case0 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
-  bool b2c2l_b2c2l_case1 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
-  bool b2c2l_b2c2l_case2 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
+  // bool b2c2l_b2c2l_case0 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
+  // bool b2c2l_b2c2l_case1 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
+  // bool b2c2l_b2c2l_case2 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
 
-  if (b2c2l_b2c2l_case0 || b2c2l_b2c2l_case1 || b2c2l_b2c2l_case2) {
+  if (is_c_from_b1 && is_c_from_b2) {
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -619,14 +665,12 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   }
 
   if ((is_direct_from_b1 && is_c_from_b2) || (is_direct_from_b2 && is_c_from_b1)) {
-    // No pair sign oscillation due to B0(s) oscillation for the same mother.
     for (const auto& mid1 : mothers_id1) {
       for (const auto& mid2 : mothers_id2) {
         if (mid1 == mid2) {
           auto common_mp = mcparticles.iteratorAt(mid1);
           int mp_pdg = common_mp.pdgCode();
-          bool is_mp_diquark = (1100 < std::abs(mp_pdg) && std::abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
-          if (!is_mp_diquark && std::abs(mp_pdg) < 1e+9 && (std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 3] == '5' || std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 4] == '5')) {
+          if (std::abs(mp_pdg) < 1e+9 && (std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 3] == '5' || std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 4] == '5')) {
             mothers_id1.clear();
             mothers_pdg1.clear();
             mothers_id2.clear();
@@ -635,27 +679,25 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
             mothers_pdg1.shrink_to_fit();
             mothers_id2.shrink_to_fit();
             mothers_pdg2.shrink_to_fit();
-            return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3
+            return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3 // No pair sign oscillation due to B0(s) oscillation for the same mother.
           }
         }
       } // end of motherid2
     } // end of motherid1
 
-    bool b2c2l_b2l_diffb_case0 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll LS
-    bool b2c2l_b2l_diffb_case1 = mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll ULS
-    bool b2c2l_b2l_diffb_case2 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll LS
+    // bool b2c2l_b2l_diffb_case0 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll LS
+    // bool b2c2l_b2l_diffb_case1 = mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll ULS
+    // bool b2c2l_b2l_diffb_case2 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll LS
 
-    if (b2c2l_b2l_diffb_case0 || b2c2l_b2l_diffb_case1 || b2c2l_b2l_diffb_case2) {
-      mothers_id1.clear();
-      mothers_pdg1.clear();
-      mothers_id2.clear();
-      mothers_pdg2.clear();
-      mothers_id1.shrink_to_fit();
-      mothers_pdg1.shrink_to_fit();
-      mothers_id2.shrink_to_fit();
-      mothers_pdg2.shrink_to_fit();
-      return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and b->e, decay type = 4
-    }
+    mothers_id1.clear();
+    mothers_pdg1.clear();
+    mothers_id2.clear();
+    mothers_pdg2.clear();
+    mothers_id1.shrink_to_fit();
+    mothers_pdg1.shrink_to_fit();
+    mothers_id2.shrink_to_fit();
+    mothers_pdg2.shrink_to_fit();
+    return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and b->e, decay type = 4
   }
 
   mothers_id1.clear();

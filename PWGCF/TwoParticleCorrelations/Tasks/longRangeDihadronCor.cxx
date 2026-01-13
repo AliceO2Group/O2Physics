@@ -111,6 +111,8 @@ struct LongRangeDihadronCor {
   O2_DEFINE_CONFIGURABLE(cfgRejectFT0AOutside, bool, false, "Rejection of outer ring channels of the FT0A detector")
   O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
   O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector")
+  O2_DEFINE_CONFIGURABLE(cfgRemapFT0ADeadChannels, bool, false, "If true, remap FT0A channels 60-63 to amplitudes from 92-95 respectively")
+  O2_DEFINE_CONFIGURABLE(cfgRemapFT0CDeadChannels, bool, false, "If true, remap FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -249,6 +251,19 @@ struct LongRangeDihadronCor {
     kFT0CInnerRingMax = 143,
     kFT0COuterRingMin = 144,
     kFT0COuterRingMax = 207
+  };
+  enum MirroringConstants {
+    kFT0AOuterMirror = 32,
+    kFT0AInnerMirror = 16,
+    kFT0COuterMirror = 32,
+    kFT0CInnerMirror = 24
+  };
+  enum DeadChannels {
+    kFT0ARemapChannelStart = 92,
+    kFT0ARemapChannelEnd = 95,
+    kFT0CRemapChannelStart = 144,
+    kFT0CRemapChannelEnd = 147,
+    kFT0CRemapChannelInnerRing = 115
   };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
@@ -653,6 +668,19 @@ struct LongRangeDihadronCor {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
+      if (cfgRemapFT0CDeadChannels) {
+        if (id == kFT0CRemapChannelInnerRing) {
+          int dead_id = id + kFT0CInnerMirror;
+          registry.fill(HIST("FT0Amp"), dead_id, ampl);
+          ampl = ampl / cstFT0RelGain[iCh];
+          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
+        } else if (id >= kFT0CRemapChannelStart && id <= kFT0CRemapChannelEnd) {
+          int dead_id = id + kFT0COuterMirror;
+          registry.fill(HIST("FT0Amp"), dead_id, ampl);
+          ampl = ampl / cstFT0RelGain[iCh];
+          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
+        }
+      }
       if ((cfgRejectFT0CInside && (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax)))
         ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);
@@ -661,6 +689,14 @@ struct LongRangeDihadronCor {
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
+      if (cfgRemapFT0ADeadChannels) {
+        if (id >= kFT0ARemapChannelStart && id <= kFT0ARemapChannelEnd) {
+          int dead_id = id - kFT0AOuterMirror;
+          registry.fill(HIST("FT0Amp"), dead_id, ampl);
+          ampl = ampl / cstFT0RelGain[iCh];
+          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
+        }
+      }
       if ((cfgRejectFT0AInside && (id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax)))
         ampl = 0.;
       registry.fill(HIST("FT0Amp"), id, ampl);

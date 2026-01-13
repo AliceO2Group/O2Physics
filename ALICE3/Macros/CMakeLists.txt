@@ -10,8 +10,10 @@
 # or submit itself to any jurisdiction.
 
 install(FILES Configuration/a3geo.ini
-        Configuration/a3geometry_v2.ini
-        Configuration/a3geometry_v4.ini
+              Configuration/a3geometry_v2_10kG.ini
+              Configuration/a3geometry_v2_20kG_dipole.ini
+              Configuration/a3geometry_v2_20kG.ini
+              Configuration/a3geometry_v3.ini
+              Configuration/a3geometry_v4.ini
         PERMISSIONS GROUP_READ GROUP_EXECUTE OWNER_EXECUTE OWNER_WRITE OWNER_READ WORLD_EXECUTE WORLD_READ
         DESTINATION share/alice3/)
-
