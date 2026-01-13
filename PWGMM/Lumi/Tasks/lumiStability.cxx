@@ -57,6 +57,7 @@ struct LumiStabilityTask {
   Configurable<bool> is2022Data{"is2022Data", true, "To 2022 data"};
   Configurable<int> minEmpty{"minEmpty", 5, "number of BCs empty for leading BC"};
 
+  //
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   parameters::GRPLHCIFData* grplhcif = nullptr;
   int nBCsPerOrbit = 3564;
