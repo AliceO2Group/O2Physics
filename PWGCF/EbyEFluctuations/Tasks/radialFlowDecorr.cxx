@@ -179,6 +179,7 @@ struct RadialFlowDecorr {
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
   Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
+  Configurable<int> cfgSys{"cfgSys", 2, "Efficiency to be used for which wystem? 1-->PbPb, 2-->OO, 3-->pPb, 4-->pp"};
 
   Service<ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -407,6 +408,7 @@ struct RadialFlowDecorr {
 
   float getFlatteningWeight(float cent, float eta, float phi, PID pidType) const
   {
+    /*
     TH3F* h = hWeightMap3D[pidType];
     if (!h)
       return -1;
@@ -415,6 +417,8 @@ struct RadialFlowDecorr {
     const int ibz = h->GetZaxis()->FindBin(phi);
     float val = h->GetBinContent(ibx, iby, ibz);
     return val;
+    */
+    return 1.0;//set to 1 for now, will be restored later
   }
 
   template <int KIntM, int KIntK>
@@ -788,7 +792,11 @@ struct RadialFlowDecorr {
 
     declareCommonQA();
 
-    const std::string userCcdbPath = "/Users/s/somadutt/PbPbTest/";
+    std::string userCcdbPath;
+    if(cfgSys==1) userCcdbPath = "/Users/s/somadutt/PbPbTest/";
+    if(cfgSys==2) userCcdbPath = "/Users/s/somadutt/OOTest/";
+    if(cfgSys==3) userCcdbPath = "/Users/s/somadutt/pPbTest/";
+    if(cfgSys==4) userCcdbPath = "/Users/s/somadutt/ppTest/";
 
     if (cfgRunMCMean || cfgRunMCFluc || cfgRunGetEff) {
       declareMCCommonHists();
@@ -857,7 +865,7 @@ struct RadialFlowDecorr {
 
       loadEffFakeForPID(kInclusive);
       loadEffFakeForPID(kCombinedPID);
-
+      /*
       const bool isDataRun = cfgRunDataMean || cfgRunDataFluc;
       if (isDataRun) {
         LOGF(info, "Data Run: Loading flattening maps from CCDB path: %s", userCcdbPath.c_str());
@@ -894,6 +902,7 @@ struct RadialFlowDecorr {
         loadFlatForPID(kInclusive);
         loadFlatForPID(kCombinedPID);
       }
+      */
     }
 
     auto loadTProfile3DFromCCDB = [&](const std::string& ccdbPath, const char* objName, TProfile3D*& target) {
