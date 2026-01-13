@@ -37,6 +37,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <Framework/StaticFor.h>
 
@@ -132,14 +133,6 @@ struct BoundEfficiencyMap {
   }
 };
 
-/*
-struct AnalysisRegion {
-  std::string suffix;
-  float minMass;
-  float maxMass;
-};
-*/
-
 struct PhiStrangenessCorrelation {
   HistogramRegistry histos{"phiStrangenessCorrelation", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -161,7 +154,6 @@ struct PhiStrangenessCorrelation {
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
     Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
     Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
-    Configurable<float> pTToUseTOF{"pTToUseTOF", 0.5f, "pT above which use TOF"};
     Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
     Configurable<std::vector<float>> cMaxDCArToPVPhi{"cMaxDCArToPVPhi", {0.004f, 0.013f, 1.0f}, "Track DCAr cut to PV for Phi"};
 
@@ -183,6 +175,12 @@ struct PhiStrangenessCorrelation {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
     Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
+
+    Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
+    Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
+    Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID, proton, pion, kaon"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2., 0., 0.}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2., 0., 0.}, "maximum nSigma TOF"};
   } trackConfigs;
 
   // Configurables on phi selection
@@ -270,10 +268,11 @@ struct PhiStrangenessCorrelation {
 
   // Preslice for manual slicing
   struct : PresliceGroup {
-    PresliceUnsorted<aod::McCollisionLabels> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
+    Preslice<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
+    Preslice<FullMCV0s> v0PerCollision = aod::v0::collisionId;
+    Preslice<FullMCTracks> trackPerCollision = aod::track::collisionId;
     Preslice<aod::PhimesonCandidates> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    Preslice<aod::V0Datas> v0PerCollision = aod::v0::collisionId;
-    Preslice<aod::Tracks> trackPerCollision = aod::track::collisionId;
+
     // Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
   } preslices;
 
@@ -344,8 +343,6 @@ struct PhiStrangenessCorrelation {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
-      // getEfficiencyMapsFromCCDB();
-
       for (int i = 0; i < 4; ++i) {
         loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
       }
@@ -359,12 +356,6 @@ struct PhiStrangenessCorrelation {
       LOG(fatal) << "Could not load efficiency map for " << particleOfInterestLabels[poi] << "!";
     LOG(info) << "Efficiency map for " << particleOfInterestLabels[poi] << " loaded from CCDB";
   }
-
-  /*
-  void getEfficiencyMapsFromCCDB()
-  {
-  }
-  */
 
   // Compute weight based on efficiencies
   template <typename... BoundEffMaps>
@@ -435,7 +426,46 @@ struct PhiStrangenessCorrelation {
     return true;
   }
 
-  // Topological selection for pions
+  // PID selection for Pions
+  template <typename T>
+  bool pidSelectionPion(const T& track)
+  {
+    for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
+      auto const& pid = trackConfigs.trkPIDspecies->at(speciesIndex);
+      auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
+
+      if (trackConfigs.forceTOF && !track.hasTOF()) {
+        return false;
+      }
+
+      if (speciesIndex == 0) { // First species logic
+        if (std::abs(nSigmaTPC) >= trackConfigs.pidTPCMax->at(speciesIndex)) {
+          return false; // TPC check failed
+        }
+        if (trackConfigs.forceTOF || (track.pt() > trackConfigs.tofPIDThreshold && track.hasTOF())) {
+          auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+          if (std::abs(nSigmaTOF) >= trackConfigs.pidTOFMax->at(speciesIndex)) {
+            return false; // TOF check failed
+          }
+        }
+      } else {                                                                // Other species logic
+        if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMax->at(speciesIndex)) { // Check TPC nSigma  first
+          if (track.hasTOF()) {
+            auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+            if (std::abs(nSigmaTOF) < trackConfigs.pidTOFMax->at(speciesIndex)) {
+              return false; // Reject if both TPC and TOF are within thresholds
+            }
+          } else {
+            return false; // Reject if only TPC is within threshold and TOF is unavailable
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // Track selection for Pions
   template <typename T>
   bool selectionPion(const T& track)
   {
@@ -460,69 +490,26 @@ struct PhiStrangenessCorrelation {
         return false;
     }
 
-    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
+    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && !track.hasTOF())
       return false;
 
+    if (analysisMode == 1 && !pidSelectionPion(track))
+      return false;
+
+    /*
     if (analysisMode == 1) {
-      if (track.pt() < trackConfigs.pTToUseTOF && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
+      if (track.pt() < trackConfigs.tofPIDThreshold && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
         return false;
-      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.pTToUseTOF && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
+      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
         return false;
     }
+    */
 
     if (std::abs(track.rapidity(massPi)) > yConfigs.cfgYAcceptance)
       return false;
 
     return true;
   }
-
-  /*
-  void processPhiK0SPionDeltayDeltaphiData2D(SelCollisions::iterator const& collision, aod::PhimesonCandidates const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
-  {
-    float multiplicity = collision.centFT0M();
-
-    std::vector<AnalysisRegion> analysisRegions = {
-      {"Signal", phiConfigs.rangeMPhiSignal.first, phiConfigs.rangeMPhiSignal.second},
-      {"Sideband", phiConfigs.rangeMPhiSideband.first, phiConfigs.rangeMPhiSideband.second}};
-
-    // Loop over all positive tracks
-    for (const auto& phiCand : phiCandidates) {
-      float weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
-
-      histos.fill(HIST("phi/h3PhiData"), multiplicity, phiCand.pt(), phiCand.m(), weightPhi);
-
-      for (const auto& region : analysisRegions) {
-        if (!phiCand.inMassRegion(region.minMass, region.maxMass))
-          continue;
-
-        // V0 already reconstructed by the builder
-        for (const auto& v0 : V0s) {
-          // Cut on V0 dynamic columns
-          if (!selectionV0<false>(v0, collision))
-            continue;
-
-          float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
-                                             BoundEfficiencyMap(effMapK0S, multiplicity, v0.pt(), v0.yK0Short()));
-
-          histos.fill(HIST("phiK0S/h5PhiK0SData2PartCorr"), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), phiCand.phi() - v0.phi(), weightPhiK0S);
-        }
-
-        // Loop over all primary pion candidates
-        for (const auto& track : fullTracks) {
-          if (!selectionPion(track))
-            continue;
-
-          float weightPhiPion = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
-                                              track.pt() < trackConfigs.pTToUseTOF ? BoundEfficiencyMap(effMapPionTPC, multiplicity, track.pt(), track.rapidity(massPi)) : BoundEfficiencyMap(effMapPionTPCTOF, multiplicity, track.pt(), track.rapidity(massPi)));
-
-          histos.fill(HIST("phiPi/h5PhiPiData2PartCorr"), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), phiCand.phi() - track.phi(), weightPhiPion);
-        }
-      }
-    }
-  }
-
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDeltayDeltaphiData2D, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
-  */
 
   void processPhiK0SPionDeltayDeltaphiData2D(SelCollisions::iterator const& collision, aod::PhimesonCandidates const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
@@ -565,12 +552,12 @@ struct PhiStrangenessCorrelation {
           if (!selectionPion(track))
             continue;
 
-          auto Pion = track.pt() < trackConfigs.pTToUseTOF ? PionTPC : PionTPCTOF;
+          auto Pion = track.pt() < trackConfigs.tofPIDThreshold ? PionTPC : PionTPCTOF;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
 
-          /*auto effMapPion = track.pt() < trackConfigs.pTToUseTOF ? effMapPionTPC : effMapPionTPCTOF;
+          /*auto effMapPion = track.pt() < trackConfigs.tofPIDThreshold ? effMapPionTPC : effMapPionTPCTOF;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMapPion, multiplicity, track.pt(), track.rapidity(massPi)));*/
