@@ -185,7 +185,7 @@ struct HfCandidateCreatorXicc {
         trackParVarPi.propagateToDCA(primaryVertex, bz, &impactParameter1);
 
         // get uncertainty of the decay length
-        double phi, theta;
+        double phi{}, theta{};
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexXicc, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
@@ -225,9 +225,9 @@ struct HfCandidateCreatorXiccMc {
                aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
-    int8_t sign = 0;
-    int8_t flag;
-    int8_t origin;
+    int8_t sign{};
+    int8_t flag{};
+    int8_t origin{};
 
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {

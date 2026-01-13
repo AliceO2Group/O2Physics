@@ -102,7 +102,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
 
   // CCDB service
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   double bz{0.};
   int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
 

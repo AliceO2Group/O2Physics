@@ -192,7 +192,7 @@ struct HfDataCreatorJpsiHadReduced {
   TrackSelectorEl selectorElectron;
 
   // CCDB service
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
 

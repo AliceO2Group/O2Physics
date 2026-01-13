@@ -1105,7 +1105,7 @@ struct HfTaskMcValidationRec {
         if (std::abs(cand2Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           whichHad = DzeroToKPi;
         }
-        int whichOrigin;
+        int whichOrigin{};
         if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
           whichOrigin = 0;
         } else {
@@ -1153,7 +1153,7 @@ struct HfTaskMcValidationRec {
         } else if (isXicSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
           whichHad = XiCplusToPKPi;
         }
-        int whichOrigin;
+        int whichOrigin{};
         if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
           whichOrigin = 0;
         } else {

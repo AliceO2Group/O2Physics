@@ -255,7 +255,7 @@ struct HfTaskFlow {
 
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   std::vector<o2::detectors::AlignParam>* offsetFT0{};
   std::vector<o2::detectors::AlignParam>* offsetFV0{};
   o2::ccdb::CcdbApi ccdbApi;

@@ -88,7 +88,7 @@ struct HfTaskLc {
   HfEventSelection hfEvSel;         // event selection and monitoring
   HfUpcGapThresholds upcThresholds; // UPC gap determination thresholds
   SliceCache cache;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;

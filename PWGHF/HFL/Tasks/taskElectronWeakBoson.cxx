@@ -138,7 +138,7 @@ struct HfTaskElectronWeakBoson {
   Configurable<bool> enableZeeRecoQA{"enableZeeRecoQA", false, "Enable QA for Z->ee reconstruction"};
   Configurable<float> massZMinQA{"massZMinQA", 0.1, "minimum mass cut for Zee Reco QA"};
   // CCDB service object
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   struct HfElectronCandidate {
     float pt, eta, phi, dcaxyTrk, dcazTrk, eop, energyIso, momIso;

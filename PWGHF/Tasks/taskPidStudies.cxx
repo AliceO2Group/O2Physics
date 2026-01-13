@@ -213,7 +213,7 @@ struct HfTaskPidStudies {
   HfEventSelectionMc hfEvSelMc;
   double interactionRate{-1.};
 
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry registry{"registry", {}};
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 

@@ -112,7 +112,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions (effective only for KFParticle w/o derived data)"};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
@@ -362,7 +362,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // Lambda daughters
       auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaPidPrPi>();
       auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaPidPrPi>();
-      float pPiFromLambda, pPrFromLambda, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda;
+      float pPiFromLambda{}, pPrFromLambda{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (signXic == +1) {
         pPiFromLambda = trackNegLambdaDaughter.p();
         nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
@@ -591,7 +591,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // mass of Xi-Pi0 pair
       KFParticle kfXiPi0;
-      float errMassXiPi0;
+      float errMassXiPi0{};
       const KFParticle* kfXiResonanceDaughtersPi0[2] = {&kfXi, &kfCharmBachelor0};
       kfXiPi0.SetConstructMethod(kfConstructMethod);
       try {
@@ -603,7 +603,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // mass of Xi-Pi1 pair
       KFParticle kfXiPi1;
-      float errMassXiPi1;
+      float errMassXiPi1{};
       const KFParticle* kfXiResonanceDaughtersPi1[2] = {&kfXi, &kfCharmBachelor1};
       kfXiPi1.SetConstructMethod(kfConstructMethod);
       try {
@@ -614,7 +614,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       kfXiPi1.GetMass(massXiPi1, errMassXiPi1);
 
       // get invariant mass of Xic candidate
-      float errMassXiPiPi;
+      float errMassXiPiPi{};
       kfXicPlus.GetMass(massXiPiPi, errMassXiPiPi);
 
       // decay length of XicPlus
@@ -637,7 +637,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // Lambda daughters
       auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovExtraPidPrPi>();
       auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovExtraPidPrPi>();
-      float pPiFromLambda, pPrFromLambda, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda;
+      float pPiFromLambda{}, pPrFromLambda{}, nSigTpcPiFromLambda{}, nSigTofPiFromLambda{}, nSigTpcPrFromLambda{}, nSigTofPrFromLambda{};
       if (signXic == +1) {
         pPiFromLambda = trackNegLambdaDaughter.p();
         nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();

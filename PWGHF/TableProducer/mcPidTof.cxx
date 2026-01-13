@@ -351,7 +351,7 @@ struct TofSignal {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // Detector response and input parameters
   o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   struct : ConfigurableGroup {
     Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
@@ -471,7 +471,7 @@ struct TofEventTime {
   bool enableTableEvTimeTOFOnly = false;
   // Detector response and input parameters
   o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
 
   // Event time configurations
@@ -737,7 +737,7 @@ struct McPidTof {
 
   // Detector response parameters
   o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
   Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
 

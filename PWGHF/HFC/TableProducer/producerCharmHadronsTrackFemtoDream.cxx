@@ -184,7 +184,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   std::vector<float> outputMlPiKP;
   o2::ccdb::CcdbApi ccdbApi;
   o2::hf_evsel::HfEventSelection hfEvSel;
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; /// Accessing the CCDB
   o2::base::MatLayerCylSet* lut{};
   // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
 

@@ -101,7 +101,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   TrackSelection softPiCuts;
 
   // Needed for dcaXY, dcaZ recalculation of soft pions reassigned to a new collision
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber{};
