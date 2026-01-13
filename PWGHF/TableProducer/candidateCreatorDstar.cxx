@@ -113,7 +113,6 @@ struct HfCandidateCreatorDstar {
   int runNumber{};
   double bz{};
   static constexpr float CmToMicrometers = 10000.; // from cm to µm
-  double massPi{}, massK{}, massD0{};
 
   using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -177,9 +176,6 @@ struct HfCandidateCreatorDstar {
     hfEvSel.init(registry, &zorroSummary);
 
     // LOG(info) << "Init Function Invoked";
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massD0 = MassD0;
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);

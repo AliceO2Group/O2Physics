@@ -103,9 +103,6 @@ struct HfCandidateCreatorBs {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber{0};
-  double massPi{0.};
-  double massDs{0.};
-  double massBs{0.};
   double massDsPi{0.};
   double bz{0.};
 
@@ -130,10 +127,6 @@ struct HfCandidateCreatorBs {
 
   void init(InitContext const&)
   {
-    massPi = MassPiPlus;
-    massDs = MassDSBar;
-    massBs = MassBS;
-
     // Initialise fitter for Bs vertex (2-prong vertex fitter)
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -331,8 +324,8 @@ struct HfCandidateCreatorBs {
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Bs vertex
 
           // calculate invariant mass and apply selection
-          massDsPi = RecoDecay::m(std::array{pVecDs, pVecPion}, std::array{massDs, massPi});
-          if (std::abs(massDsPi - massBs) > invMassWindowBs) {
+          massDsPi = RecoDecay::m(std::array{pVecDs, pVecPion}, std::array{MassDSBar, MassPiPlus});
+          if (std::abs(massDsPi - MassBS) > invMassWindowBs) {
             continue;
           }
 

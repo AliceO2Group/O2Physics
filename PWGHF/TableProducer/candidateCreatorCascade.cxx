@@ -97,10 +97,6 @@ struct HfCandidateCreatorCascade {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber{0};
-  double massP{0.};
-  double massK0s{0.};
-  double massPi{0.};
-  double massLc{0.};
   double mass2K0sP{0.};
   double bz = 0.;
 
@@ -142,11 +138,6 @@ struct HfCandidateCreatorCascade {
 
     // init HF event selection helper
     hfEvSel.init(registry, &zorroSummary);
-
-    massP = MassProton;
-    massK0s = MassK0Short;
-    massPi = MassPiPlus;
-    massLc = MassLambdaCPlus;
 
     // df.setBz(bz);
     df.setPropagateToPCA(propagateToPCA);
@@ -324,7 +315,7 @@ struct HfCandidateCreatorCascade {
       // fill histograms
       if (fillHistograms) {
         // calculate invariant masses
-        mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
+        mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassProton, MassK0Short});
         registry.fill(HIST("hMass2"), mass2K0sP);
       }
     }
