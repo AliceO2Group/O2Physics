@@ -992,13 +992,23 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 25, coschiBins, VarManager::kMCCosChi_randomPhi_toward, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_toward);
     hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 25, coschiBins, VarManager::kMCCosChi_randomPhi_away, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_away);
   }
-
   if (!groupStr.CompareTo("energy-correlator-unfolding")) {
     double coschiBins[26];
     for (int i = 0; i < 26; i++) {
       coschiBins[i] = -1.0 + 0.08 * i;
     }
     hm->AddHistogram(histClass, "Coschi_unfolding", "", false, 25, coschiBins, VarManager::kMCCosChi_rec, 25, coschiBins, VarManager::kMCCosChi_gen);
+  }
+  if (!groupStr.CompareTo("polarization-pseudoproper-gen")) {
+    int varspTHE[3] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCVertexingTauxyProjected};
+    int varspTCS[3] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
+    int varspTRM[3] = {VarManager::kMCPt, VarManager::kMCCosThetaRM, VarManager::kMCVertexingTauxyProjected};
+    int bins[3] = {20, 20, 1000};
+    double xmin[3] = {0., -1., -0.5};
+    double xmax[3] = {20., 1., 0.5};
+    hm->AddHistogram(histClass, "Pt_cosThetaHE_Tauxy", "", 3, varspTHE, bins, xmin, xmax, 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "Pt_cosThetaCS_Tauxy", "", 3, varspTCS, bins, xmin, xmax, 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "Pt_cosThetaRM_Tauxy", "", 3, varspTRM, bins, xmin, xmax, 0, -1, kFALSE);
   }
   if (!groupStr.CompareTo("pair")) {
     if (subGroupStr.Contains("cepf")) {
