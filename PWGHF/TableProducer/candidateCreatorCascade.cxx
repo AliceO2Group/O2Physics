@@ -233,7 +233,9 @@ struct HfCandidateCreatorCascade {
           covV[i] = v0row.positionCovMat()[i];
         }
       } else {
-        LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        if (!silenceV0DataWarning) {
+            LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        }
         continue; // this was inadequately linked, should not happen
       }
 
