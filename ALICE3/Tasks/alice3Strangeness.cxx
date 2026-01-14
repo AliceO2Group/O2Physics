@@ -34,13 +34,10 @@
 #include <DetectorsVertexing/PVertexerHelpers.h>
 #include <Field/MagneticField.h>
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/StaticFor.h>
-#include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <SimulationDataFormat/InteractionSampler.h>
 
@@ -174,10 +171,8 @@ struct Alice3Strangeness {
     if (!selectionFlags.applyLifetimeSelection)
       SETBIT(appliedSelectionCheckMask, 5);
   }
-  long int nEvents = 0;
-  void processAllFindableCandidates(aod::Collisions const& collisions, aod::McCollisions const& mcCollisions, aod::UpgradeV0s const& v0Recos, Alice3tracks const&)
+  void processAllFindableCandidates(aod::Collisions const& collisions, aod::McCollisions const&, aod::UpgradeV0s const& v0Recos, Alice3tracks const&)
   {
-    LOG(info) << "Event processed " << nEvents++ << " :" << collisions.size() << " " << mcCollisions.size();
     for (const auto& collision : collisions) {
       float collisionZ = collision.posZ();
       // std::cout << "______ process V0_______" <<  collision.size() << std::endl;
