@@ -3086,7 +3086,7 @@ struct AnalysisDileptonTrack {
   void processMCEnergyCorrelatorsUnfolding(soa::Filtered<MyEventsSelected> const& events, BCsWithTimestamps const& bcs,
                                            soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs,
                                            MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons,
-                                           McCollisions const& /* mcEvents*/, McParticles const& mcTracks)
+                                           McCollisions const& /* mcEvents*/, McParticles const& /*mcTracks*/)
   {
     // set up KF or DCAfitter
     if (events.size() == 0) {
