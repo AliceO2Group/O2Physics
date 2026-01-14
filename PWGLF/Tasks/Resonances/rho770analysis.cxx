@@ -14,11 +14,6 @@
 /// \author Hyunji Lim (hyunji.lim@cern.ch)
 /// \since 14/01/2026
 
-#include <Framework/Configurable.h>
-#include "Math/Vector4D.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
@@ -29,10 +24,14 @@
 #include "Common/DataModel/PIDResponse.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+#include <Framework/Configurable.h>
+
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -83,8 +82,8 @@ struct rho770analysis {
   Configurable<int> cfgTPCRows{"cfgTPCRows", 80, "Minimum Number of TPC Crossed Rows "};
 
   // PID
-  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
-  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                          // TOF
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                          // TPC
   Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 3.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
   Configurable<PionPIDMode> selectType{"selectType", TrackPIDMode::OnlyTPC, "Pion PID selection mode"};
@@ -188,7 +187,7 @@ struct rho770analysis {
       if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (selectType == TrackPIDMode::TPCWithTOFVeto) { //TPC TOF veto
+    if (selectType == TrackPIDMode::TPCWithTOFVeto) { // TPC TOF veto
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
           return false;
