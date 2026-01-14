@@ -42,6 +42,10 @@ using namespace o2::constants::physics;
 using LorentzVectorPxPyPzMVector = ROOT::Math::PxPyPzMVector;
 using LorentzVectorPxPyPzEVector = ROOT::Math::PxPyPzEVector;
 
+enum {
+  kKstar
+};
+
 struct rho770analysis {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -106,6 +110,8 @@ struct rho770analysis {
     histos.add("hInvMass_Kstar_US", "Kstar unlike invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
     histos.add("hInvMass_Kstar_LSpp", "Kstar ++ invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
     histos.add("hInvMass_Kstar_LSmm", "Kstar -- invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
+
+    histos.add("QA/hMultiplicityPercent", "Multiplicity percentile of collision", HistType::kTH1F, {centAxis});
 
     histos.add("QA/Nsigma_TPC_BF", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
     histos.add("QA/Nsigma_TOF_BF", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
@@ -221,6 +227,8 @@ struct rho770analysis {
   template <bool IsMC, typename CollisionType, typename CenMult, typename TracksType>
   void fillHistograms(const CollisionType& collision, const CenMult& multiplicity, const TracksType& dTracks)
   {
+    histos.fill(HIST("QA/hMultiplicityPercent"), multiplicity);
+
     LorentzVectorPxPyPzMVector part1, part2, reco;
     for (const auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
 
@@ -257,17 +265,17 @@ struct rho770analysis {
           if constexpr (IsMC) {
             if (trk1.motherId() != trk2.motherId())
               continue;
-            if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211) {
-              if (std::abs(trk1.motherPDG()) == 113) {
+            if (std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == kPiPlus) {
+              if (std::abs(trk1.motherPDG()) == kRho770_0) {
                 histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), multiplicity);
-              } else if (std::abs(trk1.motherPDG()) == 223) {
+              } else if (std::abs(trk1.motherPDG()) == kOmega ) {
                 histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), multiplicity);
-              } else if (std::abs(trk1.motherPDG()) == 310) {
+              } else if (std::abs(trk1.motherPDG()) == kK0Short) {
                 histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), multiplicity);
                 histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), multiplicity);
               }
-            } else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
-              if (std::abs(trk1.motherPDG()) == 313) {
+            } else if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == kPiPlus)) {
+              if (std::abs(trk1.motherPDG()) == kK0Star892) {
                 histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), multiplicity);
               }
             }
@@ -300,7 +308,7 @@ struct rho770analysis {
           if constexpr (IsMC) {
             if (trk1.motherId() != trk2.motherId())
               continue;
-            if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
+            if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == kPiPlus)) {
               if (std::abs(trk1.motherPDG()) == 313) {
                 histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), multiplicity);
               }
@@ -366,13 +374,13 @@ struct rho770analysis {
     multiplicity = mcColl.centFT0M();
 
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
-      if (std::abs(part.pdgCode()) != 113)
+      if (std::abs(part.pdgCode()) != kRho770_0)
         continue;
       if (!part.producedByGenerator())
         continue;
       if (part.y() < cfgMinRap || part.y() > cfgMaxRap)
         continue;
-      if (!(std::abs(part.daughterPDG1()) == 211 && std::abs(part.daughterPDG2()) == 211))
+      if (!(std::abs(part.daughterPDG1()) == kPiPlus && std::abs(part.daughterPDG2()) == kPiPlus))
         continue;
 
       LorentzVectorPxPyPzEVector truthpar;
