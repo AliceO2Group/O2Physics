@@ -86,7 +86,7 @@ struct rho770analysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                          // TPC
   Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 3.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
-  Configurable<PionPIDMode> selectType{"selectType", TrackPIDMode::OnlyTPC, "Pion PID selection mode"};
+  Configurable<TrackPIDMode> selectType{"selectType", TrackPIDMode::OnlyTPC, "Pion PID selection mode"};
 
   // Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -227,7 +227,7 @@ struct rho770analysis {
   }
 
   template <bool IsMC, typename CollisionType, typename CenMult, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const CenMult& multiplicity, const TracksType& dTracks)
+  void fillHistograms(const CollisionType& /*collision*/, const CenMult& multiplicity, const TracksType& dTracks)
   {
     histos.fill(HIST("QA/hMultiplicityPercent"), multiplicity);
 
