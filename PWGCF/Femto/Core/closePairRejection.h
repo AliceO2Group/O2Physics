@@ -65,8 +65,8 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
   o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
   o2::framework::Configurable<float> dphistarCenter{"dphistarCenter", 0.f, "Center of dphistar cut"};
-  o2::framework::Configurable<float> kstarMin{"kstarMin", -1.f, "Minimum kstar of pair for plotting (Set to negative value to turn off the cut)"};
-  o2::framework::Configurable<float> kstarMax{"kstarMax", -1.f, "Maximum kstar of pair for plotting (Set to negative value to turn off the cut)"};
+  o2::framework::Configurable<float> kinematicMin{"kinematicMin", -1.f, "Minimum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
+  o2::framework::Configurable<float> kinematicMax{"kinematicMax", -1.f, "Maximum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
   o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{250, -0.5, 0.5}}, "deta"};
   o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{250, -0.5, 0.5}}, "dphi"};
 };
@@ -79,6 +79,7 @@ constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0Daught
 constexpr const char PrefixCprV0DaughterV0DaughterNeg[] = "CprV0DaughterV0DaughterNeg";
 constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor";
 
+// pairs
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
 using ConfCprTrackV0Daughter = ConfCpr<PrefixCprTrackV0Daughter>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
@@ -168,8 +169,8 @@ class CloseTrackRejection
     mCutAverage = confCpr.cutAverage.value;
     mCutAnyRadius = confCpr.cutAnyRadius.value;
 
-    mKstarMin = confCpr.kstarMin.value;
-    mKstarMax = confCpr.kstarMax.value;
+    mKinematicMin = confCpr.kinematicMin.value;
+    mKinematicMax = confCpr.kinematicMax.value;
 
     mPlotAverage = confCpr.plotAverage.value;
     mPlotAllRadii = confCpr.plotAllRadii.value;
@@ -229,17 +230,17 @@ class CloseTrackRejection
     }
   }
 
-  void fill(float kstar)
+  void fill(float kinematic)
   {
     if (!mIsActivated) {
       return;
     }
 
-    if (mKstarMin > 0.f && kstar < mKstarMin) {
+    if (mKinematicMin > 0.f && kinematic < mKinematicMin) {
       return;
     }
 
-    if (mKstarMax > 0.f && kstar > mKstarMax) {
+    if (mKinematicMax > 0.f && kinematic > mKinematicMax) {
       return;
     }
 
@@ -312,8 +313,8 @@ class CloseTrackRejection
   bool mPlotAllRadii = false;
   bool mPlotAverage = false;
 
-  float mKstarMin = -1.f;
-  float mKstarMax = -1.f;
+  float mKinematicMin = -1.f;
+  float mKinematicMax = -1.f;
 
   bool mCutAverage = false;
   bool mCutAnyRadius = false;
