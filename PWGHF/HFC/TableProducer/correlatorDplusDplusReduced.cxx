@@ -17,10 +17,6 @@
 /// \author Valerio DI BELLA <valerio.di.bella@cern.ch>, IPHC Strasbourg
 /// Based on the code of Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include "RecoDecay.h"
-#include "Zorro.h"
-#include "ZorroSummary.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -28,6 +24,9 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/ReducedDMesonPairsTables.h"
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 
 #include <CCDB/BasicCCDBManager.h>
