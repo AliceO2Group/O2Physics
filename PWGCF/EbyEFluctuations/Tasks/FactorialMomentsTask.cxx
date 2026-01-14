@@ -4,14 +4,14 @@
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-
-/// \file FactorialMomentsTask.cxx
 /// \brief This task is for Normalized Factorial Moments Analysis: PRC 85, 044914 (2012), nucl-ex:1411.6083
-/// \author Salman Malik,  Balwan Singh
+/// \author Salman Malik
+/// \author Balwan Singh
 
 #include "TRandom.h"
 #include <TH1F.h>
