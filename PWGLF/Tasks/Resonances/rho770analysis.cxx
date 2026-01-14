@@ -41,7 +41,7 @@ using namespace o2::constants::physics;
 using LorentzVectorPxPyPzMVector = ROOT::Math::PxPyPzMVector;
 using LorentzVectorPxPyPzEVector = ROOT::Math::PxPyPzEVector;
 
-enum class TrackPIDMode {
+enum class TrackPIDMode : int {
   TPCOrTOF = 0,
   OnlyTPC = 1,
   Combined = 2,
@@ -86,7 +86,7 @@ struct rho770analysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                          // TPC
   Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 3.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
-  Configurable<TrackPIDMode> selectType{"selectType", TrackPIDMode::OnlyTPC, "Pion PID selection mode"};
+  Configurable<int> selectTypeInt{"selectType", static_cast<int>(TrackPIDMode::OnlyTPC), "Pion PID selection mode: 0=TPCOrTOF, 1=OnlyTPC, 2=Combined, 3=TPCWithTOFVeto"};
 
   // Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -175,19 +175,21 @@ struct rho770analysis {
   template <typename TrackType>
   bool selPion(const TrackType track)
   {
-    if (selectType == TrackPIDMode::TPCOrTOF) { // TPC or TOF
+    const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
+
+    if (mode == TrackPIDMode::TPCOrTOF) { // TPC or TOF
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
         return false;
     }
-    if (selectType == TrackPIDMode::OnlyTPC) { // only TPC
+    if (mode == TrackPIDMode::OnlyTPC) { // only TPC
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion)
         return false;
     }
-    if (selectType == TrackPIDMode::Combined) { // combining
+    if (mode == TrackPIDMode::Combined) { // combining
       if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (selectType == TrackPIDMode::TPCWithTOFVeto) { // TPC TOF veto
+    if (mode == TrackPIDMode::TPCWithTOFVeto) { // TPC TOF veto
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
           return false;
@@ -202,19 +204,21 @@ struct rho770analysis {
   template <typename TrackType>
   bool selKaon(const TrackType track)
   {
-    if (selectType == TrackPIDMode::TPCOrTOF) {
+    const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
+
+    if (mode == TrackPIDMode::TPCOrTOF) {
       if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
         return false;
     }
-    if (selectType == TrackPIDMode::OnlyTPC) {
+    if (mode == TrackPIDMode::OnlyTPC) {
       if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion)
         return false;
     }
-    if (selectType == TrackPIDMode::Combined) {
+    if (mode == TrackPIDMode::Combined) {
       if (track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (selectType == TrackPIDMode::TPCWithTOFVeto) {
+    if (mode == TrackPIDMode::TPCWithTOFVeto) {
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
           return false;
