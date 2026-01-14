@@ -21,14 +21,15 @@
 #include "PWGHF/HFC/DataModel/ReducedDMesonPairsTables.h"
 
 #include "Framework/runDataProcessing.h"
-#include <Framework/Configurable.h>
 #include <Framework/ASoA.h>
-#include <Framework/Expressions.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/InitContext.h>
-#include <cstdlib>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;

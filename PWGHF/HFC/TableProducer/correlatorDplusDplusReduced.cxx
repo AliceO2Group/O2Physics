@@ -17,26 +17,28 @@
 /// \author Valerio DI BELLA <valerio.di.bella@cern.ch>, IPHC Strasbourg
 /// Based on the code of Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "RecoDecay.h"
 #include "Zorro.h"
 #include "ZorroSummary.h"
+
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "RecoDecay.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/ReducedDMesonPairsTables.h"
+
 #include "Common/DataModel/Centrality.h"
 
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/Configurable.h>
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/InitContext.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
 #include <cstdint>

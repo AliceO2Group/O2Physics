@@ -19,6 +19,7 @@
 #define PWGHF_HFC_DATAMODEL_REDUCEDDMESONPAIRSTABLES_H_
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
