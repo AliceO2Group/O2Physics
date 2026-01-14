@@ -150,6 +150,7 @@ struct ConfTrackBinning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixTrackBinning1[] = "TrackBinning1";
 constexpr const char PrefixTrackBinning2[] = "TrackBinning2";
+constexpr const char PrefixTrackBinning3[] = "TrackBinning3";
 constexpr const char PrefixResonancePosDauBinning[] = "ResonancePosDauBinning";
 constexpr const char PrefixResonanceNegDauBinning[] = "ResonanceNegDauBinning";
 constexpr const char PrefixV0PosDauBinning[] = "V0PosDauBinning";
@@ -161,6 +162,7 @@ constexpr const char PrefixKinkChaDauBinning[] = "KinkChaDauBinning";
 
 using ConfTrackBinning1 = ConfTrackBinning<PrefixTrackBinning1>;
 using ConfTrackBinning2 = ConfTrackBinning<PrefixTrackBinning2>;
+using ConfTrackBinning3 = ConfTrackBinning<PrefixTrackBinning3>;
 using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning>;
 using ConfResonanceNegDauBinning = ConfTrackBinning<PrefixResonanceNegDauBinning>;
 using ConfV0PosDauBinning = ConfTrackBinning<PrefixV0PosDauBinning>;
