@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file alice3-strangeness.cxx
+/// \file alice3Strangeness.cxx
 ///
 /// \brief This task produces invariant mass distributions for strange hadrons
 ///
@@ -46,7 +46,6 @@
 
 #include <TGenPhaseSpace.h>
 #include <TGeoGlobalMagField.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
 
@@ -59,11 +58,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::constants::math;
 
-using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
-using fullV0Candidates = soa::Join<aod::V0CandidateIndices, aod::V0CandidateCores>;
-using fullCollisions = soa::Join<aod::OTFLUTConfigId, aod::Collisions>;
+using Alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
+using FullV0Candidates = soa::Join<aod::V0CandidateIndices, aod::V0CandidateCores>;
+using FullCollisions = soa::Join<aod::OTFLUTConfigId, aod::Collisions>;
 
-struct alice3strangeness {
+struct Alice3Strangeness {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<int> idGeometry{"idGeometry", 0, "geometry ID used for propagation"};
@@ -109,12 +108,15 @@ struct alice3strangeness {
     Configurable<float> lifetimecutambda{"lifetimecutambda", 30, "lifetime cut for Lambda in cm"};
     Configurable<float> lifetimecutak0{"lifetimecutak0", 20, "lifetime cut for K0 in cm"};
     Configurable<float> etaDaughterSelection{"etaDaughterSelection", 0.8f, "eta daughter selection"};
+    Configurable<float> acceptedLambdaMassWindow{"acceptedLambdaMassWindow", 0.2f, "accepted Lambda mass window around PDG mass"};
+    Configurable<float> acceptedK0MassWindow{"acceptedK0MassWindow", 0.3f, "accepted K0 mass window around PDG mass"};
   } selectionValues;
 
-  uint16_t AppliedSelectionCheckMask;
+  uint16_t appliedSelectionCheckMask;
   double selectionCheck;
   double selectionCheckPos;
-  static constexpr std::string_view kSelectionNames[] = {"DCAV0Daughters", "PointingAngle", "DCAtoPVNegDaughter", "DCAtoPVPosDaughter", "V0Radius", "ProperLifeTime"};
+  const int posDaugDCAselIDx = 3;
+  static constexpr std::string_view KSelectionNames[] = {"DCAV0Daughters", "PointingAngle", "DCAtoPVNegDaughter", "DCAtoPVPosDaughter", "V0Radius", "ProperLifeTime"};
 
   void init(InitContext&)
   {
@@ -158,22 +160,22 @@ struct alice3strangeness {
     }
     histos.addClone("reconstructedCandidates/Lambda/", "reconstructedCandidates/AntiLambda/");
 
-    AppliedSelectionCheckMask = 0;
+    appliedSelectionCheckMask = 0;
     if (!selectionFlags.applyDCAdaughterSelection)
-      SETBIT(AppliedSelectionCheckMask, 0);
+      SETBIT(appliedSelectionCheckMask, 0);
     if (!selectionFlags.applyCosOfPAngleSelection)
-      SETBIT(AppliedSelectionCheckMask, 1);
+      SETBIT(appliedSelectionCheckMask, 1);
     if (!selectionFlags.applyDCADaughtersToPVSelection) {
-      SETBIT(AppliedSelectionCheckMask, 2);
-      SETBIT(AppliedSelectionCheckMask, 3);
+      SETBIT(appliedSelectionCheckMask, 2);
+      SETBIT(appliedSelectionCheckMask, 3);
     }
     if (!selectionFlags.applyV0RadiusSelection)
-      SETBIT(AppliedSelectionCheckMask, 4);
+      SETBIT(appliedSelectionCheckMask, 4);
     if (!selectionFlags.applyLifetimeSelection)
-      SETBIT(AppliedSelectionCheckMask, 5);
+      SETBIT(appliedSelectionCheckMask, 5);
   }
   long int nEvents = 0;
-  void processAllFindableCandidates(aod::Collisions const& collisions, aod::McCollisions const& mcCollisions, aod::UpgradeV0s const& v0Recos, alice3tracks const&)
+  void processAllFindableCandidates(aod::Collisions const& collisions, aod::McCollisions const& mcCollisions, aod::UpgradeV0s const& v0Recos, Alice3tracks const&)
   {
     LOG(info) << "Event processed " << nEvents++ << " :" << collisions.size() << " " << mcCollisions.size();
     for (const auto& collision : collisions) {
@@ -182,8 +184,8 @@ struct alice3strangeness {
       histos.fill(HIST("hPVz"), collisionZ);
       for (const auto& v0Cand : v0Recos) {
 
-        auto negV0Daughter = v0Cand.negTrack_as<alice3tracks>(); // de-reference neg track
-        auto posV0Daughter = v0Cand.posTrack_as<alice3tracks>(); // de-reference pos track
+        auto negV0Daughter = v0Cand.negTrack_as<Alice3tracks>(); // de-reference neg track
+        auto posV0Daughter = v0Cand.posTrack_as<Alice3tracks>(); // de-reference pos track
 
         bool isK0 = v0Cand.mK0() > 0;
         if (isK0) {
@@ -191,19 +193,19 @@ struct alice3strangeness {
           histos.fill(HIST("K0/hSelections"), 0); // all candidates
           histos.fill(HIST("K0/hDCANegDaughter"), negV0Daughter.dcaXY());
           histos.fill(HIST("K0/hDCAPosDaughter"), posV0Daughter.dcaXY());
-          if (std::abs(negV0Daughter.dcaXY()) < 0.05)
+          if (std::abs(negV0Daughter.dcaXY()) < selectionValues.dcaDaughtersToPVSelection)
             continue;
           histos.fill(HIST("K0/hSelections"), 1); // dcaXY cut
-          if (std::abs(posV0Daughter.dcaXY()) < 0.05)
+          if (std::abs(posV0Daughter.dcaXY()) < selectionValues.dcaDaughtersToPVSelection)
             continue;
           histos.fill(HIST("K0/hSelections"), 2); // dcaXY cut
-          if (v0Cand.dcaV0Daughters() > 1.0)
+          if (v0Cand.dcaV0Daughters() > selectionValues.dcaDaughterSelection)
             continue;
           histos.fill(HIST("K0/hSelections"), 3); // dca between daughters
-          if (v0Cand.v0Radius() < 0.5)
+          if (v0Cand.v0Radius() < selectionValues.v0RadiusSelection)
             continue;
           histos.fill(HIST("K0/hSelections"), 4); // radius cut
-          if (std::abs(negV0Daughter.eta()) > 0.8 || std::abs(posV0Daughter.eta()) > 0.8)
+          if (std::abs(negV0Daughter.eta()) > selectionValues.etaDaughterSelection || std::abs(posV0Daughter.eta()) > selectionValues.etaDaughterSelection)
             continue;
           histos.fill(HIST("K0/hSelections"), 5); // eta cut
           histos.fill(HIST("K0/hMassSelected"), v0Cand.mK0(), v0Cand.pt());
@@ -211,14 +213,14 @@ struct alice3strangeness {
       }
     }
   }
-  void processFoundV0Candidates(aod::Collision const& collision, fullV0Candidates const& v0Candidates, alice3tracks const&, aod::McParticles const&)
+  void processFoundV0Candidates(aod::Collision const& collision, FullV0Candidates const& v0Candidates, Alice3tracks const&, aod::McParticles const&)
   {
     // if(collision.lutConfigId()!=idGeometry)
     // return;
     for (auto const& v0 : v0Candidates) {
-      bool isK0 = (v0.mK0Short() - o2::constants::physics::MassK0Short) < 0.3;
-      bool isLambda = (v0.mLambda() - o2::constants::physics::MassLambda0) < 0.2;
-      bool isAntiLambda = (v0.mAntiLambda() - o2::constants::physics::MassLambda0) < 0.2;
+      bool isK0 = (v0.mK0Short() - o2::constants::physics::MassK0Short) < selectionValues.acceptedK0MassWindow;
+      bool isLambda = (v0.mLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
+      bool isAntiLambda = (v0.mAntiLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
 
       histos.fill(HIST("reconstructedCandidates/hArmeterosBeforeAllSelections"), v0.alpha(), v0.qtarm());
       histos.fill(HIST("hV0CandidateCounter"), 0.5);
@@ -289,8 +291,8 @@ struct alice3strangeness {
           selectionCheck = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
       }
       histos.fill(HIST("hV0CandidateCounter"), 8.5);
-      auto posTrack = v0.template posTrack_as<alice3tracks>();
-      auto negTrack = v0.template negTrack_as<alice3tracks>();
+      auto posTrack = v0.template posTrack_as<Alice3tracks>();
+      auto negTrack = v0.template negTrack_as<Alice3tracks>();
       if (selectionFlags.applyEtaDaughterSelection) {
         if (std::abs(posTrack.eta()) > selectionValues.etaDaughterSelection || std::abs(negTrack.eta()) > selectionValues.etaDaughterSelection)
           continue;
@@ -303,15 +305,15 @@ struct alice3strangeness {
       if (selectionFlags.doQAforSelectionVariables) {
         static_for<0, 5>([&](auto i) {
           constexpr int In = i.value;
-          if (TESTBIT(AppliedSelectionCheckMask, In)) {
-            if (In == 3)
+          if (TESTBIT(appliedSelectionCheckMask, In)) {
+            if (In == posDaugDCAselIDx)
               selectionCheck = selectionCheckPos;
             if (isK0)
-              histos.fill(HIST("reconstructedCandidates/K0/h") + HIST(kSelectionNames[In]), v0.mK0Short(), v0.pt(), selectionCheck);
+              histos.fill(HIST("reconstructedCandidates/K0/h") + HIST(KSelectionNames[In]), v0.mK0Short(), v0.pt(), selectionCheck);
             if (isLambda)
-              histos.fill(HIST("reconstructedCandidates/Lambda/h") + HIST(kSelectionNames[In]), v0.mLambda(), v0.pt(), selectionCheck);
+              histos.fill(HIST("reconstructedCandidates/Lambda/h") + HIST(KSelectionNames[In]), v0.mLambda(), v0.pt(), selectionCheck);
             if (isAntiLambda)
-              histos.fill(HIST("reconstructedCandidates/AntiLambda/h") + HIST(kSelectionNames[In]), v0.mAntiLambda(), v0.pt(), selectionCheck);
+              histos.fill(HIST("reconstructedCandidates/AntiLambda/h") + HIST(KSelectionNames[In]), v0.mAntiLambda(), v0.pt(), selectionCheck);
           }
         });
       }
@@ -329,12 +331,12 @@ struct alice3strangeness {
       }
     }
   }
-  PROCESS_SWITCH(alice3strangeness, processAllFindableCandidates, "", false);
-  PROCESS_SWITCH(alice3strangeness, processFoundV0Candidates, "", true);
+  PROCESS_SWITCH(Alice3Strangeness, processAllFindableCandidates, "", false);
+  PROCESS_SWITCH(Alice3Strangeness, processFoundV0Candidates, "", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<alice3strangeness>(cfgc)};
+    adaptAnalysisTask<Alice3Strangeness>(cfgc)};
 }
