@@ -391,7 +391,7 @@ struct Rho770Analysis {
       auto mass = truthpar.M();
 
       histos.fill(HIST("MCL/hpT_rho770_GEN"), 0, mass, part.pt(), multiplicity);
-      
+
       if (collision.isVtxIn10()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 1, mass, part.pt(), multiplicity);
       }
