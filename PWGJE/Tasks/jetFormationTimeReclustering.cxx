@@ -20,6 +20,64 @@
 //                                                        *
 //*********************************************************
 
+
+#ifndef PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
+#define PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
+
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGJE/DataModel/Jet.h" // IWYU pragma: keep
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetReducedDataDQ.h"
+
+#include "PWGJE/DataModel/JetSubstructure.h" // new 
+
+#include <Framework/ASoA.h>
+
+#include <cmath>
+#include <cstdint>
+#include <vector>
+
+namespace o2::aod
+{
+// new part 
+namespace jetTFsubstructure
+{                                                                      //!
+DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>);    //!
+DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);          //!
+DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>);    //!
+DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);                  //!
+DECLARE_SOA_COLUMN(PtLeadingConstituent, ptLeadingConstituent, float); //!
+DECLARE_SOA_COLUMN(TauForm, tauForm, std::vector<float>);              //!
+
+DECLARE_SOA_COLUMN(Z, z, std::vector<float>);               //!
+DECLARE_SOA_COLUMN(Ptg, ptg, std::vector<float>);           //!
+DECLARE_SOA_COLUMN(Thetag, thetag, std::vector<float>);     //!
+DECLARE_SOA_COLUMN(Zg, zg, std::vector<float>);             //!
+DECLARE_SOA_COLUMN(TauFormg, tauFormg, std::vector<float>); //!
+                                                            //!
+} // namespace jetTFsubstructure
+
+// all tbales have the same content (for now)
+DECLARE_SOA_TABLE(CJetTFSSs, "AOD", "CJETTFSS", jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg); \
+DECLARE_SOA_TABLE(CMCDJetTFSSs, "AOD", "CMCDJETTFSS", jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg); \
+DECLARE_SOA_TABLE(CMCPJetTFSSs, "AOD", "CMCPJETTFSS", jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg); \
+DECLARE_SOA_TABLE(CEWSJetTFSSs, "AOD", "CEWSJETTFSS", jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg); \
+
+} // namespace o2::aod
+
+#endif // PWGJE_DATAMODEL_JETFORMATIONTIMERECLUSTERING_H_
+
+
+
+//*********************************************************
+//                                                        *
+//              Table definitions  old                    *
+//                                                        *
+//*********************************************************
+
+/*
+
 #ifndef PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
 #define PWGJE_TASKS_JETFORMATIONTIMERECLUSTERING_H_
 
@@ -56,7 +114,7 @@ DECLARE_SOA_COLUMN(XsectErr, xsectErr, float);       //!
 DECLARE_SOA_COLUMN(EventWeight, eventWeight, float); //!
 } // namespace jetmccollision
 
-namespace jetsubstructure
+namespace jetTFsubstructure
 {                                                                      //!
 DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>);    //!
 DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);          //!
@@ -71,7 +129,7 @@ DECLARE_SOA_COLUMN(Thetag, thetag, std::vector<float>);     //!
 DECLARE_SOA_COLUMN(Zg, zg, std::vector<float>);             //!
 DECLARE_SOA_COLUMN(TauFormg, tauFormg, std::vector<float>); //!
                                                             //!
-} // namespace jetsubstructure
+} // namespace jetTFsubstructure
 
 namespace splitting
 {                                                                                     //!
@@ -158,8 +216,8 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
     DECLARE_SOA_INDEX_COLUMN_CUSTOM(_jet_type_##O, outputTable, _jet_description_ "OS");                                                                                                                                                                                                                                                                                                                                                                                      \
     DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_, dummy##_jet_type_, []() -> int { return 0; });                                                                                                                                                                                                                                                                                                                                                                              \
   }                                                                                                                                                                                                                                                                                                                                                                                                                                                                           \
-  DECLARE_SOA_TABLE(_jet_type_##SSs, "AOD", _jet_description_ "SS", jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetsubstructure::EnergyMother, jetsubstructure::PtLeading, jetsubstructure::PtSubLeading, jetsubstructure::Theta, jetsubstructure::PtLeadingConstituent, jetsubstructure::TauForm, jetsubstructure::Z, jetsubstructure::Ptg, jetsubstructure::Thetag, jetsubstructure::Zg, jetsubstructure::TauFormg, _name_##substructure::Dummy##_jet_type_<>); \
-  DECLARE_SOA_TABLE(_jet_type_##SSOs, "AOD", _jet_description_ "SSO", _name_##substructure::_jet_type_##OId, jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetsubstructure::EnergyMother, jetsubstructure::PtLeading, jetsubstructure::PtSubLeading, jetsubstructure::Theta, jetsubstructure::PtLeadingConstituent, jetsubstructure::TauForm, jetsubstructure::Z, jetsubstructure::Ptg, jetsubstructure::Thetag, jetsubstructure::Zg, jetsubstructure::TauFormg);   \
+  DECLARE_SOA_TABLE(_jet_type_##SSs, "AOD", _jet_description_ "SS", jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg, _name_##substructure::Dummy##_jet_type_<>); \
+  DECLARE_SOA_TABLE(_jet_type_##SSOs, "AOD", _jet_description_ "SSO", _name_##substructure::_jet_type_##OId, jetoutput::JetPt, jetoutput::JetPhi, jetoutput::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);   \
                                                                                                                                                                                                                                                                                                                                                                                                                                                                               \
   using _jet_type_##O = _jet_type_##Os::iterator;                                                                                                                                                                                                                                                                                                                                                                                                                             \
   using _jet_type_##SSO = _jet_type_##SSOs::iterator;
@@ -181,6 +239,8 @@ JETSUBSTRUCTURE_TABLES_DEF(C, "C", Charged, charged, JTracks, CJetCOs, "CJETCO",
 
 #endif // PWGJE_DATAMODEL_JETFORMATIONTIMERECLUSTERING_H_
 
+*/
+
 //*********************************************************
 //                                                        *
 //              Begin of the task                         *
@@ -188,7 +248,7 @@ JETSUBSTRUCTURE_TABLES_DEF(C, "C", Charged, charged, JTracks, CJetCOs, "CJETCO",
 //*********************************************************
 
 #include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
+//#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetSubstructureUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 
@@ -218,11 +278,17 @@ using namespace o2::framework::expressions;
 
 struct FormationTimeReclustering {
 
+  Produces<aod::CJetTFSSs> jetSubstructureDataTable;
+  Produces<aod::CMCDJetTFSSs> jetSubstructureMCDTable;
+  Produces<aod::CMCPJetTFSSs> jetSubstructureMCPTable;
+  Produces<aod::CEWSJetTFSSs> jetSubstructureDataSubTable;
+/*
+
   Produces<aod::CJetSSs> jetSubstructureDataTable;
   Produces<aod::CMCDJetSSs> jetSubstructureMCDTable;
   Produces<aod::CMCPJetSSs> jetSubstructureMCPTable;
   Produces<aod::CEWSJetSSs> jetSubstructureDataSubTable;
-
+*/
   Produces<aod::ChargedSPs> jetSplittingsDataTable;
   Produces<aod::ChargedMCDetectorLevelSPs> jetSplittingsMCDTable;
   Produces<aod::ChargedMCParticleLevelSPs> jetSplittingsMCPTable;
@@ -320,7 +386,7 @@ struct FormationTimeReclustering {
       }
       splittingTable(jet.globalIndex(), tracks, clusters, candidates, parentSubJet2.perp(), parentSubJet2.eta(), parentSubJet2.phi(), 0);
       auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
-      auto theta = parentSubJet1.delta_R(parentSubJet2);
+      auto theta = parentSubJet1.delta_R(parentSubJet2); // this is deltaR - divide by R in postprocessing
       auto tau = (parentSubJet1.perp() + parentSubJet2.perp()) / (parentSubJet1.perp() * parentSubJet2.perp() * theta * theta); // as in run2 aliphysics
       energyMotherVec.push_back(daughterSubJet.e());
       ptLeadingVec.push_back(parentSubJet1.pt());
