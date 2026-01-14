@@ -671,14 +671,16 @@ struct LongRangeDihadronCor {
       if (cfgRemapFT0CDeadChannels) {
         if (id == kFT0CRemapChannelInnerRing) {
           int dead_id = id + kFT0CInnerMirror;
-          registry.fill(HIST("FT0Amp"), dead_id, ampl);
-          ampl = ampl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
+          float Mirroredampl = ampl;
+          float MirroredAmplCorrected = Mirroredampl / cstFT0RelGain[iCh];
+          registry.fill(HIST("FT0Amp"), dead_id, Mirroredampl);
+          registry.fill(HIST("FT0AmpCorrect"), dead_id, MirroredAmplCorrected);
         } else if (id >= kFT0CRemapChannelStart && id <= kFT0CRemapChannelEnd) {
           int dead_id = id + kFT0COuterMirror;
-          registry.fill(HIST("FT0Amp"), dead_id, ampl);
-          ampl = ampl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
+          float Mirroredampl = ampl;
+          float MirroredAmplCorrected = Mirroredampl / cstFT0RelGain[iCh];
+          registry.fill(HIST("FT0Amp"), dead_id, Mirroredampl);
+          registry.fill(HIST("FT0AmpCorrect"), dead_id, MirroredAmplCorrected);
         }
       }
       if ((cfgRejectFT0CInside && (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax)))
@@ -692,9 +694,10 @@ struct LongRangeDihadronCor {
       if (cfgRemapFT0ADeadChannels) {
         if (id >= kFT0ARemapChannelStart && id <= kFT0ARemapChannelEnd) {
           int dead_id = id - kFT0AOuterMirror;
-          registry.fill(HIST("FT0Amp"), dead_id, ampl);
-          ampl = ampl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
+          float Mirroredampl = ampl;
+          float MirroredAmplCorrected = Mirroredampl / cstFT0RelGain[iCh];
+          registry.fill(HIST("FT0Amp"), dead_id, Mirroredampl);
+          registry.fill(HIST("FT0AmpCorrect"), dead_id, MirroredAmplCorrected);
         }
       }
       if ((cfgRejectFT0AInside && (id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax)))
@@ -751,6 +754,13 @@ struct LongRangeDihadronCor {
         int chanelid = 0;
         float ampl = 0.;
         getChannel(ft0, iCh, chanelid, ampl, corType);
+        if (corType == kFT0C) {
+          if ((cfgRejectFT0CInside && (chanelid >= kFT0CInnerRingMin && chanelid <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (chanelid >= kFT0COuterRingMin && chanelid <= kFT0COuterRingMax)))
+            continue;
+        } else if (corType == kFT0A) {
+          if ((cfgRejectFT0AInside && (chanelid >= kFT0AInnerRingMin && chanelid <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (chanelid >= kFT0AOuterRingMin && chanelid <= kFT0AOuterRingMax)))
+            continue;
+        }
         auto phi = getPhiFT0(chanelid, corType);
         auto eta = getEtaFT0(chanelid, corType);
         if (cfgDrawEtaPhiDis && system == SameEvent) {
