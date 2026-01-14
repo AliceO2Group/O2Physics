@@ -26,9 +26,10 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_PCM(FEATURE) \
-  {                           \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesPCM::FEATURE)}
+#define FILL_MAP_PCM(FEATURE)                                 \
+  {                                                           \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesPCM::FEATURE) \
+  }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -52,17 +53,17 @@ namespace o2::analysis
 {
 
 enum class InputFeaturesPCM : uint8_t {
-  V0PhotonCandidate_fDCAxyToPV,
-  V0PhotonCandidate_fDCAzToPV,
-  V0PhotonCandidate_fPCA,
-  V0PhotonCandidate_fAlpha,
-  V0PhotonCandidate_fQtArm,
-  V0PhotonCandidate_fChiSquareNDF,
-  V0PhotonCandidate_fCosPA,
-  Pos_V0Leg_fTPCNSigmaEl,
-  Pos_V0Leg_fTPCNSigmaPi,
-  Neg_V0Leg_fTPCNSigmaEl,
-  Neg_V0Leg_fTPCNSigmaPi
+  v0PhotonCandidatefDCAxyToPV,
+  v0PhotonCandidatefDCAzToPV,
+  v0PhotonCandidatefPCA,
+  v0PhotonCandidatefAlpha,
+  v0PhotonCandidatefQtArm,
+  v0PhotonCandidatefChiSquareNDF,
+  v0PhotonCandidatefCosPA,
+  posV0LegfTPCNSigmaEl,
+  posV0LegfTPCNSigmaPi,
+  negV0LegfTPCNSigmaEl,
+  negV0LegfTPCNSigmaPi
 };
 
 template <typename TypeOutputScore = float>
@@ -84,17 +85,17 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, V0PhotonCandidate_fDCAxyToPV, GetDcaXYToPV);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, V0PhotonCandidate_fDCAzToPV, GetDcaZToPV);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, V0PhotonCandidate_fPCA, GetPCA);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, V0PhotonCandidate_fAlpha, GetAlpha);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, V0PhotonCandidate_fQtArm, GetQt);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, V0PhotonCandidate_fChiSquareNDF, GetChi2NDF);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, V0PhotonCandidate_fCosPA, GetCosPA);
-        CHECK_AND_FILL_VEC_PCM_FULL(posLeg, Pos_V0Leg_fTPCNSigmaEl, tpcNSigmaEl);
-        CHECK_AND_FILL_VEC_PCM_FULL(posLeg, Pos_V0Leg_fTPCNSigmaPi, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_PCM_FULL(negLeg, Neg_V0Leg_fTPCNSigmaEl, tpcNSigmaEl);
-        CHECK_AND_FILL_VEC_PCM_FULL(negLeg, Neg_V0Leg_fTPCNSigmaPi, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAxyToPV, GetDcaXYToPV);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAzToPV, GetDcaZToPV);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefPCA, GetPCA);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefAlpha, GetAlpha);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefQtArm, GetQt);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefChiSquareNDF, GetChi2NDF);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefCosPA, GetCosPA);
+        CHECK_AND_FILL_VEC_PCM_FULL(posLeg, posV0LegfTPCNSigmaEl, tpcNSigmaEl);
+        CHECK_AND_FILL_VEC_PCM_FULL(posLeg, posV0LegfTPCNSigmaPi, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_PCM_FULL(negLeg, negV0LegfTPCNSigmaEl, tpcNSigmaEl);
+        CHECK_AND_FILL_VEC_PCM_FULL(negLeg, negV0LegfTPCNSigmaPi, tpcNSigmaPi);
       }
     }
     return inputFeatures;
@@ -105,17 +106,17 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-      FILL_MAP_PCM(V0PhotonCandidate_fDCAxyToPV),
-      FILL_MAP_PCM(V0PhotonCandidate_fDCAzToPV),
-      FILL_MAP_PCM(V0PhotonCandidate_fPCA),
-      FILL_MAP_PCM(V0PhotonCandidate_fAlpha),
-      FILL_MAP_PCM(V0PhotonCandidate_fQtArm),
-      FILL_MAP_PCM(V0PhotonCandidate_fChiSquareNDF),
-      FILL_MAP_PCM(V0PhotonCandidate_fCosPA),
-      FILL_MAP_PCM(Pos_V0Leg_fTPCNSigmaEl),
-      FILL_MAP_PCM(Pos_V0Leg_fTPCNSigmaPi),
-      FILL_MAP_PCM(Neg_V0Leg_fTPCNSigmaEl),
-      FILL_MAP_PCM(Neg_V0Leg_fTPCNSigmaPi)};
+      FILL_MAP_PCM(v0PhotonCandidatefDCAxyToPV),
+      FILL_MAP_PCM(v0PhotonCandidatefDCAzToPV),
+      FILL_MAP_PCM(v0PhotonCandidatefPCA),
+      FILL_MAP_PCM(v0PhotonCandidatefAlpha),
+      FILL_MAP_PCM(v0PhotonCandidatefQtArm),
+      FILL_MAP_PCM(v0PhotonCandidatefChiSquareNDF),
+      FILL_MAP_PCM(v0PhotonCandidatefCosPA),
+      FILL_MAP_PCM(posV0LegfTPCNSigmaEl),
+      FILL_MAP_PCM(posV0LegfTPCNSigmaPi),
+      FILL_MAP_PCM(negV0LegfTPCNSigmaEl),
+      FILL_MAP_PCM(negV0LegfTPCNSigmaPi)};
   }
 };
 
