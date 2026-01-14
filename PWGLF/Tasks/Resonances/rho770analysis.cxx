@@ -86,7 +86,7 @@ struct rho770analysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                          // TPC
   Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 3.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
-  Configurable<int> selectTypeInt{"selectType", static_cast<int>(TrackPIDMode::OnlyTPC), "Pion PID selection mode: 0=TPCOrTOF, 1=OnlyTPC, 2=Combined, 3=TPCWithTOFVeto"};
+  Configurable<int> selectTypeInt{"selectTypeInt", static_cast<int>(TrackPIDMode::OnlyTPC), "Pion PID selection mode: 0=TPCOrTOF, 1=OnlyTPC, 2=Combined, 3=TPCWithTOFVeto"};
 
   // Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
