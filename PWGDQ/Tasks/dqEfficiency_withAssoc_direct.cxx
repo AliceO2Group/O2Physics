@@ -2138,7 +2138,6 @@ struct AnalysisDileptonTrack {
     bool isDummy = context.mOptions.get<bool>("processDummy");
     bool isMCGen_energycorrelators = context.mOptions.get<bool>("processMCGenEnergyCorrelators") || context.mOptions.get<bool>("processMCGenEnergyCorrelatorsPion");
     bool isMCGen_energycorrelatorsME = context.mOptions.get<bool>("processMCGenEnergyCorrelatorsME") || context.mOptions.get<bool>("processMCGenEnergyCorrelatorsPionME");
-    bool isMC_energycorrelatorsUnfolding = context.mOptions.get<bool>("processMCEnergyCorrelatorsUnfolding");
 
     if (isDummy) {
       if (isBarrel || isMCGen /*|| isBarrelAsymmetric*/ /*|| isMuon*/) {
@@ -2395,9 +2394,6 @@ struct AnalysisDileptonTrack {
           DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s", pairLegCutName.Data(), fTrackCutNames[iCutTrack].Data()), fConfigOptions.fConfigHistogramSubgroups.value.data());
           for (auto& sig : fRecMCSignals) {
             DefineHistograms(fHistMan, Form("DileptonTrackMCMatched_%s_%s_%s", pairLegCutName.Data(), fTrackCutNames[iCutTrack].Data(), sig->GetName()), fConfigOptions.fConfigHistogramSubgroups.value.data());
-            if (isMC_energycorrelatorsUnfolding) {
-              DefineHistograms(fHistMan, Form("DileptonTrackMCUnfold_%s_%s_%s", pairLegCutName.Data(), fTrackCutNames[iCutTrack].Data(), sig->GetName()), "");
-            }
           }
 
           if (!cfgPairing_strCommonTrackCuts.IsNull()) {
@@ -2585,12 +2581,14 @@ struct AnalysisDileptonTrack {
           // compute needed quantities
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
-          // for the energy correlator analysis
-          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fConfigOptions.fConfigApplyMassEC);
           if (!track.has_mcParticle()) {
             continue;
           }
           auto trackMC = track.mcParticle();
+          // for the energy correlator analysis
+          auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
+          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fConfigOptions.fConfigApplyMassEC);
+          VarManager::FillEnergyCorrelatorsMCUnfolding<VarManager::kJpsiHadronMass>(dilepton, track, motherParticle, trackMC, fValuesHadron);
           mcDecision = 0;
           isig = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
@@ -3083,99 +3081,6 @@ struct AnalysisDileptonTrack {
     }
   }
 
-  void processMCEnergyCorrelatorsUnfolding(soa::Filtered<MyEventsSelected> const& events, BCsWithTimestamps const& bcs,
-                                           soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs,
-                                           MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons,
-                                           McCollisions const& /* mcEvents*/, McParticles const& /*mcTracks*/)
-  {
-    // set up KF or DCAfitter
-    if (events.size() == 0) {
-      return;
-    }
-    if (fCurrentRun != bcs.begin().runNumber()) { // start: runNumber
-      initParamsFromCCDB(bcs.begin().timestamp());
-      fCurrentRun = bcs.begin().runNumber();
-    } // end: runNumber
-    for (auto& event : events) {
-      if (!event.isEventSelected_bit(0)) {
-        continue;
-      }
-      auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
-      auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
-
-      uint32_t mcDecision = static_cast<uint32_t>(0);
-      size_t isig = 0;
-
-      for (auto dilepton : groupedDielectrons) {
-        // get full track info of tracks based on the index
-        auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
-        auto lepton2 = tracks.rawIteratorAt(dilepton.index1Id());
-        if (!lepton1.has_mcParticle() || !lepton2.has_mcParticle()) {
-          continue;
-        }
-        auto lepton1MC = lepton1.mcParticle();
-        auto lepton2MC = lepton2.mcParticle();
-        if (!lepton1MC.has_mothers())
-          continue;
-        const auto& motherParticle = lepton1MC.template mothers_first_as<McParticles>();
-        // Check that the dilepton has zero charge
-        if (dilepton.sign() != 0) {
-          continue;
-        }
-        // loop over track associations
-        for (auto& assoc : groupedBarrelAssocs) {
-          uint32_t trackSelection = 0;
-          // check the cuts fulfilled by this candidate track; if none just continue
-          trackSelection = (assoc.isBarrelSelected_raw() & fTrackCutBitMap);
-          if (!trackSelection) {
-            continue;
-          }
-          // get the track from this association
-          auto track = tracks.rawIteratorAt(assoc.trackId());
-          // check that this track is not included in the current dilepton
-          if (track.globalIndex() == dilepton.index0Id() || track.globalIndex() == dilepton.index1Id()) {
-            continue;
-          }
-
-          if (!track.has_mcParticle()) {
-            continue;
-          }
-          auto trackMC = track.mcParticle();
-          VarManager::FillEnergyCorrelatorsMCUnfolding<VarManager::kJpsiHadronMass>(dilepton, track, motherParticle, trackMC, VarManager::fgValues);
-
-          mcDecision = 0;
-          isig = 0;
-          for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-            if ((*sig)->CheckSignal(true, lepton1MC, lepton2MC, trackMC)) {
-              mcDecision |= (static_cast<uint32_t>(1) << isig);
-            }
-          }
-          // Fill histograms for the triplets
-          // loop over dilepton / ditrack cuts and MC signals
-          for (int icut = 0; icut < fNCuts; icut++) {
-
-            if (!dilepton.filterMap_bit(icut)) {
-              continue;
-            }
-
-            // loop over specified track cuts (the tracks to be combined with the dileptons)
-            for (int iTrackCut = 0; iTrackCut < fNCuts; iTrackCut++) {
-
-              if (!(trackSelection & (static_cast<uint32_t>(1) << iTrackCut))) {
-                continue;
-              }
-              for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
-                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-                  fHistMan->FillHistClass(Form("DileptonTrackMCUnfold_%s_%s_%s", fLegCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), VarManager::fgValues);
-                }
-              }
-            }
-          } // end loop over track cuts
-        } // end loop over dilepton cuts
-      } // end loop over dileptons
-    } // end loop over events
-  }
-
   void processDummy(MyEvents&)
   {
     // do nothing
@@ -3189,7 +3094,6 @@ struct AnalysisDileptonTrack {
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenEnergyCorrelatorsPion, "Loop over MC particle stack and fill generator level histograms(energy correlators)", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenEnergyCorrelatorsME, "Loop over MC particle stack and fill generator level histograms(energy correlators)", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenEnergyCorrelatorsPionME, "Loop over MC particle stack and fill generator level histograms(energy correlators)", false);
-  PROCESS_SWITCH(AnalysisDileptonTrack, processMCEnergyCorrelatorsUnfolding, "Loop over MC particle stack and fill response matrix(energy correlators)", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", true);
 };
 
@@ -3303,9 +3207,6 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
 
     if (classStr.Contains("MCTruthEenergyCorrelators")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "energy-correlator-gen");
-    }
-    if (classStr.Contains("DileptonTrackMCUnfold")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "energy-correlator-unfolding");
     }
   } // end loop over histogram classes
 }
