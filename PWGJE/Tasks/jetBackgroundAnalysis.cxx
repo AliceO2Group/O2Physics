@@ -171,7 +171,7 @@ struct JetBackgroundAnalysisTask {
             }
           }
         }
-      }    
+      }
       registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
       // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
@@ -184,7 +184,7 @@ struct JetBackgroundAnalysisTask {
           if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
             if (!trackIsInJet(track, jets.iteratorAt(0))) {
               randomConePtWithoutOneLeadJet += track.pt();
-              if (jets.size() > 1 && !trackIsInJet(track, jets.iteratorAt(1))) {  // if there are jets in the acceptance (from the jetfinder cuts) less than two then one cannot find 2 leading jets
+              if (jets.size() > 1 && !trackIsInJet(track, jets.iteratorAt(1))) { // if there are jets in the acceptance (from the jetfinder cuts) less than two then one cannot find 2 leading jets
                 randomConePtWithoutTwoLeadJet += track.pt();
               }
             }
@@ -197,7 +197,7 @@ struct JetBackgroundAnalysisTask {
       }
     }
   }
-  
+
   void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
