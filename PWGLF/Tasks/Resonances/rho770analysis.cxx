@@ -49,7 +49,7 @@ enum class TrackPIDMode {
   TPCWithTOFVeto = 3
 };
 
-struct Rho770Analysis {
+struct rho770analysis {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -77,7 +77,7 @@ struct Rho770Analysis {
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Number of TPC cluster"};
-  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"}; //refit is included in global track selection
+  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"}; // refit is included in global track selection
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
   Configurable<int> cfgTPCRows{"cfgTPCRows", 80, "Minimum Number of TPC Crossed Rows "};
@@ -271,7 +271,7 @@ struct Rho770Analysis {
             if (std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == kPiPlus) {
               if (std::abs(trk1.motherPDG()) == kRho770_0) {
                 histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), multiplicity);
-              } else if (std::abs(trk1.motherPDG()) == kOmega ) {
+              } else if (std::abs(trk1.motherPDG()) == kOmega) {
                 histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), multiplicity);
               } else if (std::abs(trk1.motherPDG()) == kK0Short) {
                 histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), multiplicity);
