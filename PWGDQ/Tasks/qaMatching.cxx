@@ -151,6 +151,10 @@ struct qaMatching {
     Configurable<std::string> fConfigGrpMagPath{"grpmagPath-", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   } fConfigCCDB;
 
+  struct : ConfigurableGroup {
+    Configurable<bool> fCreatePdgMomHistograms{"cfgCreatePdgMomHistograms", false, "create matching characteristics plots with particle mom PDG codes"};
+  } fConfigQAs;
+
   ///    Variables for histograms configuration
   Configurable<int> fNCandidatesMax{"nCandidatesMax", 5, ""};
 
@@ -297,12 +301,20 @@ struct qaMatching {
   struct EfficiencyPlotter {
     o2::framework::HistPtr p_num;
     o2::framework::HistPtr p_den;
+    o2::framework::HistPtr p_pdg_num;
+    o2::framework::HistPtr p_pdg_den;
     o2::framework::HistPtr pt_num;
     o2::framework::HistPtr pt_den;
+    o2::framework::HistPtr pt_pdg_num;
+    o2::framework::HistPtr pt_pdg_den;
     o2::framework::HistPtr phi_num;
     o2::framework::HistPtr phi_den;
+    o2::framework::HistPtr phi_pdg_num;
+    o2::framework::HistPtr phi_pdg_den;
     o2::framework::HistPtr eta_num;
     o2::framework::HistPtr eta_den;
+    o2::framework::HistPtr eta_pdg_num;
+    o2::framework::HistPtr eta_pdg_den;
 
     EfficiencyPlotter(std::string path, std::string title,
                       HistogramRegistry& registry)
@@ -311,6 +323,7 @@ struct qaMatching {
       AxisSpec pTAxis = {100, 0, 10, "p_{T} (GeV/c)"};
       AxisSpec etaAxis = {100, -4, -2, "#eta"};
       AxisSpec phiAxis = {90, -180, 180, "#phi (degrees)"};
+      AxisSpec motherPDGAxis{1201, -600.5, 600.5, "Direct mother PDG"};
 
       std::string histName;
       std::string histTitle;
@@ -324,6 +337,14 @@ struct qaMatching {
       histTitle = title + " vs. p - den";
       p_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {pAxis}});
 
+      histName = path + "p_pdg_num";
+      histTitle = title + " vs. p vs pdg ID - num";
+      p_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, motherPDGAxis}});
+
+      histName = path + "p_pdg_den";
+      histTitle = title + " vs. p vs pdg ID - den";
+      p_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, motherPDGAxis}});
+
       // pT dependence
       histName = path + "pt_num";
       histTitle = title + " vs. p_{T} - num";
@@ -332,6 +353,14 @@ struct qaMatching {
       histName = path + "pt_den";
       histTitle = title + " vs. p_{T} - den";
       pt_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {pTAxis}});
+
+      histName = path + "pt_pdg_num";
+      histTitle = title + " vs. p_{T} vs pdg ID - num";
+      pt_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pTAxis, motherPDGAxis}});
+
+      histName = path + "pt_pdg_den";
+      histTitle = title + " vs. p_{T} vs pdg ID - den";
+      pt_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pTAxis, motherPDGAxis}});
 
       // eta dependence
       histName = path + "eta_num";
@@ -342,6 +371,14 @@ struct qaMatching {
       histTitle = title + " vs. #eta - den";
       eta_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {etaAxis}});
 
+      histName = path + "eta_pdg_num";
+      histTitle = title + " vs. #eta vs pdg ID - num";
+      eta_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {etaAxis, motherPDGAxis}});
+
+      histName = path + "eta_pdg_den";
+      histTitle = title + " vs. #eta vs pdg ID - den";
+      eta_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {etaAxis, motherPDGAxis}});
+
       // phi dependence
       histName = path + "phi_num";
       histTitle = title + " vs. #phi - num";
@@ -350,6 +387,14 @@ struct qaMatching {
       histName = path + "phi_den";
       histTitle = title + " vs. #phi - den";
       phi_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {phiAxis}});
+
+      histName = path + "phi_pdg_num";
+      histTitle = title + " vs. #phi vs pdg ID - num";
+      phi_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {phiAxis, motherPDGAxis}});
+
+      histName = path + "phi_pdg_den";
+      histTitle = title + " vs. #phi vs pdg ID - den";
+      phi_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {phiAxis, motherPDGAxis}});
     }
 
     template <class T>
@@ -366,6 +411,24 @@ struct qaMatching {
         std::get<std::shared_ptr<TH1>>(pt_num)->Fill(track.pt());
         std::get<std::shared_ptr<TH1>>(eta_num)->Fill(track.eta());
         std::get<std::shared_ptr<TH1>>(phi_num)->Fill(phi);
+      }
+    }
+
+    // Study the PDG origin of particles and their effect on the purity score
+    template <class T>
+    void Fill(const T& track, int pdgCode, bool passed)
+    {
+      double phi = track.phi() * 180 / TMath::Pi();
+      std::get<std::shared_ptr<TH2>>(p_pdg_den)->Fill(track.p(), pdgCode);
+      std::get<std::shared_ptr<TH2>>(pt_pdg_den)->Fill(track.pt(), pdgCode);
+      std::get<std::shared_ptr<TH2>>(eta_pdg_den)->Fill(track.eta(), pdgCode);
+      std::get<std::shared_ptr<TH2>>(phi_pdg_den)->Fill(phi, pdgCode);
+
+      if (passed) {
+        std::get<std::shared_ptr<TH2>>(p_pdg_num)->Fill(track.p(), pdgCode);
+        std::get<std::shared_ptr<TH2>>(pt_pdg_num)->Fill(track.pt(), pdgCode);
+        std::get<std::shared_ptr<TH2>>(eta_pdg_num)->Fill(track.eta(), pdgCode);
+        std::get<std::shared_ptr<TH2>>(phi_pdg_num)->Fill(phi, pdgCode);
       }
     }
   };
@@ -2066,10 +2129,26 @@ struct qaMatching {
       // check if the matching candidate is a true one
       bool isTrueMatch = IsTrueGlobalMatching(muonTrack, matchablePairs);
 
-      if (verbose)
+      // ---- MC ancestry ----
+      auto motherParticles = GetMotherParticles(muonTrack);
+      int motherPDG = 0;
+      if (motherParticles.size() > 1) {
+        motherPDG = motherParticles[1].first;
+      }
+
+      if (verbose) {
         std::cout << std::format("    MCH track #{} -> Muon track #{}, isTrueMatch={}", mchIndex, globalTracksVector[0].globalTrackId, isTrueMatch) << std::endl;
+        std::cout << "      MC ancestry (pdg): ";
+        for (auto const& [pdg, idx] : motherParticles) {
+          std::cout << "(" << pdg << ") ";
+        }
+        std::cout << std::endl;
+      }
       // fill matching purity plots
       plotter->fMatchingPurityPlotter.Fill(mchTrack, isTrueMatch);
+      if (fConfigQAs.fCreatePdgMomHistograms) {
+        plotter->fMatchingPurityPlotter.Fill(mchTrack, motherPDG, isTrueMatch);
+      }
     }
 
     // ====================================
@@ -2105,10 +2184,34 @@ struct qaMatching {
         }
       }
 
+      // ---- MC ancestry ----
+      auto motherParticles = GetMotherParticles(mchTrack);
+      int motherPDG = 0;
+      if (motherParticles.size() > 1) {
+        motherPDG = motherParticles[1].first;
+      }
+
+      if (verbose) {
+        std::cout << "      MC ancestry (pdg): ";
+        for (auto const& [pdg, idx] : motherParticles) {
+          std::cout << "(" << pdg << ") ";
+        }
+        std::cout << std::endl;
+      }
+
       // fill matching efficiency plots
       plotter->fPairingEfficiencyPlotter.Fill(mchTrack, goodMatchFound);
+      if (fConfigQAs.fCreatePdgMomHistograms) {
+        plotter->fPairingEfficiencyPlotter.Fill(mchTrack, motherPDG, goodMatchFound);
+      }
       plotter->fMatchingEfficiencyPlotter.Fill(mchTrack, (goodMatchFound && isTrueMatch));
+      if (fConfigQAs.fCreatePdgMomHistograms) {
+        plotter->fMatchingEfficiencyPlotter.Fill(mchTrack, motherPDG, (goodMatchFound && isTrueMatch));
+      }
       plotter->fFakeMatchingEfficiencyPlotter.Fill(mchTrack, (goodMatchFound && !isTrueMatch));
+      if (fConfigQAs.fCreatePdgMomHistograms) {
+        plotter->fFakeMatchingEfficiencyPlotter.Fill(mchTrack, motherPDG, (goodMatchFound && !isTrueMatch));
+      }
     }
   }
 
