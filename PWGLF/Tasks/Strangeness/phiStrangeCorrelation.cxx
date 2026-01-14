@@ -443,7 +443,7 @@ struct PhiStrangenessCorrelation {
         if (std::abs(nSigmaTPC) >= trackConfigs.pidTPCMax->at(speciesIndex)) {
           return false; // TPC check failed
         }
-        if (trackConfigs.forceTOF || (track.pt() > trackConfigs.tofPIDThreshold && track.hasTOF())) {
+        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF())) {
           auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
           if (std::abs(nSigmaTOF) >= trackConfigs.pidTOFMax->at(speciesIndex)) {
             return false; // TOF check failed
