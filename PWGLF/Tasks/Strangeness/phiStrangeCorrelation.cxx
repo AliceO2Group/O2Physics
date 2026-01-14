@@ -288,7 +288,7 @@ struct PhiStrangenessCorrelation {
   std::shared_ptr<TH3> effMapPionTPC = nullptr;
   std::shared_ptr<TH3> effMapPionTPCTOF = nullptr;*/
 
-  std::array<std::shared_ptr<TH3>, 4> effMaps{};
+  std::array<std::shared_ptr<TH3>, ParticleOfInterestSize> effMaps{};
 
   void init(InitContext&)
   {
