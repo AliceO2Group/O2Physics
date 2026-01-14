@@ -78,11 +78,13 @@ static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "
 enum ParticleOfInterest {
   Phi = 0,
   K0S,
-  PionTPC,
-  PionTPCTOF
+  Pion,
+  /*PionTPC,
+  PionTPCTOF*/
+  ParticleOfInterestSize
 };
 
-static constexpr std::array<std::string_view, 4> particleOfInterestLabels{"Phi", "K0S", "PionTPC", "PionTPCTOF"};
+static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
 
 /*
 #define LIST_OF_PARTICLES_OF_INTEREST \
@@ -180,8 +182,8 @@ struct PhiStrangenessCorrelation {
     Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
     Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID, proton, pion, kaon"};
-    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2., 0., 0.}, "maximum nSigma TPC"};
-    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2., 0., 0.}, "maximum nSigma TOF"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TOF"};
   } trackConfigs;
 
   // Configurables on phi selection
@@ -261,7 +263,7 @@ struct PhiStrangenessCorrelation {
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
   // Defining the type of the tracks for data and MC
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FullMCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
 
   // using FilteredTracks = soa::Filtered<FullTracks>;
@@ -286,7 +288,7 @@ struct PhiStrangenessCorrelation {
   std::shared_ptr<TH3> effMapPionTPC = nullptr;
   std::shared_ptr<TH3> effMapPionTPCTOF = nullptr;*/
 
-  std::array<std::shared_ptr<TH3>, 4> effMaps{};
+  std::array<std::shared_ptr<TH3>, ParticleOfInterestSize> effMaps{};
 
   void init(InitContext&)
   {
@@ -344,7 +346,7 @@ struct PhiStrangenessCorrelation {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
-      for (int i = 0; i < 4; ++i) {
+      for (int i = 0; i < ParticleOfInterestSize; ++i) {
         loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
       }
     }
@@ -443,7 +445,7 @@ struct PhiStrangenessCorrelation {
         if (std::abs(nSigmaTPC) >= trackConfigs.pidTPCMax->at(speciesIndex)) {
           return false; // TPC check failed
         }
-        if (trackConfigs.forceTOF || (track.pt() > trackConfigs.tofPIDThreshold && track.hasTOF())) {
+        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF())) {
           auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
           if (std::abs(nSigmaTOF) >= trackConfigs.pidTOFMax->at(speciesIndex)) {
             return false; // TOF check failed
@@ -553,7 +555,7 @@ struct PhiStrangenessCorrelation {
           if (!selectionPion(track))
             continue;
 
-          auto Pion = track.pt() < trackConfigs.tofPIDThreshold ? PionTPC : PionTPCTOF;
+          // auto Pion = track.pt() < trackConfigs.tofPIDThreshold ? PionTPC : PionTPCTOF;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
