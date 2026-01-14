@@ -127,7 +127,7 @@ struct StrangenessInJetsIons {
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from detector edge"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
-  Configurable<std::string> centrEstimator{"centrEstimator", "FT0C", "Select centrality estimator. Options: FT0C, FT0M"};
+  Configurable<int> centrEstimator{"centrEstimator", 0, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M"};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -212,13 +212,12 @@ struct StrangenessInJetsIons {
 
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
     std::string multAxTitle;
-    std::string centrEstimatorStr = static_cast<std::string>(centrEstimator);
-    if (centrEstimatorStr == "FT0C") {
+    if (centrEstimator == 0) {
       multAxTitle = "FT0C percentile";
-    } else if (centrEstimatorStr == "FT0M") {
+    } else if (centrEstimator == 1) {
       multAxTitle = "FT0M percentile";
     } else {
-      LOG(fatal) << "Centrality estimator " << centrEstimatorStr << " not available. Exit." << endl;
+      LOG(fatal) << "Centrality estimator " << centrEstimator << " not available. Exit." << endl;
     }
     AxisSpec multAxis = {multBinning, multAxTitle};
 
@@ -1158,7 +1157,7 @@ struct StrangenessInJetsIons {
 
     // Event multiplicity
     float multiplicity;
-    if (static_cast<std::string>(centrEstimator) == "FT0C") {
+    if (centrEstimator == 0) {
       multiplicity = collision.centFT0C();
     } else {
       multiplicity = collision.centFT0M();
@@ -1373,7 +1372,7 @@ struct StrangenessInJetsIons {
           if (!selectRecoEvent(recoColl))
             continue;
 
-          if (static_cast<std::string>(centrEstimator) == "FT0C") {
+          if (centrEstimator == 0) {
             multiplicity = recoColl.centFT0C();
           } else {
             multiplicity = recoColl.centFT0M();
@@ -1695,7 +1694,7 @@ struct StrangenessInJetsIons {
 
       // Event multiplicity
       float multiplicity;
-      if (static_cast<std::string>(centrEstimator) == "FT0C") {
+      if (centrEstimator == 0) {
         multiplicity = collision.centFT0C();
       } else {
         multiplicity = collision.centFT0M();
