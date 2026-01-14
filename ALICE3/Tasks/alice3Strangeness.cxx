@@ -222,7 +222,7 @@ struct Alice3Strangeness {
       bool isLambda = (v0.mLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
       bool isAntiLambda = (v0.mAntiLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
 
-      histos.fill(HIST("reconstructedCandidates/hArmeterosBeforeAllSelections"), v0.alpha(), v0.qtarm());
+      histos.fill(HIST("reconstructedCandidates/hArmeterosBeforeAllSelections"), v0.alpha(), v0.qtArm());
       histos.fill(HIST("hV0CandidateCounter"), 0.5);
       if (selectionFlags.applyRapiditySelection) {
         if (isK0 && std::abs(v0.yK0Short()) > selectionValues.yK0Selection)
@@ -263,7 +263,7 @@ struct Alice3Strangeness {
       histos.fill(HIST("hV0CandidateCounter"), 5.5);
       if (isK0) {
         if (selectionFlags.applyArmenterosSelection) {
-          if (v0.qtarm() < selectionValues.armenterosSelection * std::abs(v0.alpha()))
+          if (v0.qtArm() < selectionValues.armenterosSelection * std::abs(v0.alpha()))
             continue;
         }
       }
@@ -280,15 +280,15 @@ struct Alice3Strangeness {
       }
       histos.fill(HIST("hV0CandidateCounter"), 7.5);
       if (selectionFlags.applyLifetimeSelection) {
-        if (isK0 && v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short > selectionValues.lifetimecutak0)
+        if (isK0 && v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short > selectionValues.lifetimecutak0)
           continue;
-        if ((isLambda || isAntiLambda) && v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 > selectionValues.lifetimecutambda)
+        if ((isLambda || isAntiLambda) && v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 > selectionValues.lifetimecutambda)
           continue;
       } else {
         if (isK0)
-          selectionCheck = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+          selectionCheck = v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
         else
-          selectionCheck = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+          selectionCheck = v0.distOverTotMom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
       }
       histos.fill(HIST("hV0CandidateCounter"), 8.5);
       auto posTrack = v0.template posTrack_as<Alice3tracks>();
@@ -301,7 +301,7 @@ struct Alice3Strangeness {
       histos.fill(HIST("reconstructedCandidates/hEtaDaughters"), negTrack.eta());
       histos.fill(HIST("hV0CandidateCounter"), 9.5);
 
-      histos.fill(HIST("reconstructedCandidates/hArmeterosAfterAllSelections"), v0.alpha(), v0.qtarm());
+      histos.fill(HIST("reconstructedCandidates/hArmeterosAfterAllSelections"), v0.alpha(), v0.qtArm());
       if (selectionFlags.doQAforSelectionVariables) {
         static_for<0, 5>([&](auto i) {
           constexpr int In = i.value;
