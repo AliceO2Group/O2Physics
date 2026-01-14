@@ -129,13 +129,12 @@ class svPoolCreator
     }
 
     // now loop over all the collisions to make the pool
-    for (int i = firstCollIdx; i < collisions.size(); i++) {
+    for (int collIdx = firstCollIdx; collIdx < collisions.size(); collIdx++) {
       const auto& collision = collisions.rawIteratorAt(i);
       float collTime = collision.collisionTime();
       float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.template bc_as<BC>().globalBC();
       // int collIdx = collision.globalIndex();
-      int collIdx = i;
       int64_t bcOffset = globalBC - static_cast<int64_t>(collBC);
       if (static_cast<uint64_t>(std::abs(bcOffset)) > bOffsetMax) {
         if (bcOffset < 0) {
