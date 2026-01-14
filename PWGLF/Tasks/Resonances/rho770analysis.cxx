@@ -12,7 +12,7 @@
 /// \file rho770analysis.cxx
 /// \brief rho(770)0 analysis in pp 13 & 13.6 TeV
 /// \author Hyunji Lim (hyunji.lim@cern.ch)
-/// \since 12/01/2026
+/// \since 14/01/2026
 
 #include <Framework/Configurable.h>
 #include "Math/Vector4D.h"
@@ -42,11 +42,14 @@ using namespace o2::constants::physics;
 using LorentzVectorPxPyPzMVector = ROOT::Math::PxPyPzMVector;
 using LorentzVectorPxPyPzEVector = ROOT::Math::PxPyPzEVector;
 
-enum {
-  kKstar
+enum class TrackPIDMode {
+  TPCOrTOF = 0,
+  OnlyTPC = 1,
+  Combined = 2,
+  TPCWithTOFVeto = 3
 };
 
-struct rho770analysis {
+struct Rho770Analysis {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -84,7 +87,7 @@ struct rho770analysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 3.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
-  Configurable<int> selectType{"selectType", 1, "PID selection type"};
+  Configurable<PionPIDMode> selectType{"selectType", TrackPIDMode::OnlyTPC, "Pion PID selection mode"};
 
   // Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -173,19 +176,19 @@ struct rho770analysis {
   template <typename TrackType>
   bool selPion(const TrackType track)
   {
-    if (selectType == 0) { // TPC or TOF
+    if (selectType == TrackPIDMode::TPCOrTOF) { // TPC or TOF
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
         return false;
     }
-    if (selectType == 1) { // only TPC
+    if (selectType == TrackPIDMode::OnlyTPC) { // only TPC
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion)
         return false;
     }
-    if (selectType == 2) { // combining
+    if (selectType == TrackPIDMode::Combined) { // combining
       if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (selectType == 3) { //TPC TOF veto
+    if (selectType == TrackPIDMode::TPCWithTOFVeto) { //TPC TOF veto
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
           return false;
@@ -200,19 +203,19 @@ struct rho770analysis {
   template <typename TrackType>
   bool selKaon(const TrackType track)
   {
-    if (selectType == 0) {
+    if (selectType == TrackPIDMode::TPCOrTOF) {
       if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
         return false;
     }
-    if (selectType == 1) {
+    if (selectType == TrackPIDMode::OnlyTPC) {
       if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion)
         return false;
     }
-    if (selectType == 2) {
+    if (selectType == TrackPIDMode::Combined) {
       if (track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (selectType == 3) {
+    if (selectType == TrackPIDMode::TPCWithTOFVeto) {
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
           return false;
@@ -274,7 +277,7 @@ struct rho770analysis {
                 histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), multiplicity);
                 histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), multiplicity);
               }
-            } else if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == kPiPlus)) {
+            } else if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == kKPlus) || (std::abs(trk1.pdgCode()) == kKPlus && std::abs(trk2.pdgCode()) == kPiPlus)) {
               if (std::abs(trk1.motherPDG()) == kK0Star892) {
                 histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), multiplicity);
               }
@@ -308,8 +311,8 @@ struct rho770analysis {
           if constexpr (IsMC) {
             if (trk1.motherId() != trk2.motherId())
               continue;
-            if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == kPiPlus)) {
-              if (std::abs(trk1.motherPDG()) == 313) {
+            if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == kKPlus) || (std::abs(trk1.pdgCode()) == kKPlus && std::abs(trk2.pdgCode()) == kPiPlus)) {
+              if (std::abs(trk1.motherPDG()) == kK0Star892) {
                 histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), multiplicity);
               }
             }
