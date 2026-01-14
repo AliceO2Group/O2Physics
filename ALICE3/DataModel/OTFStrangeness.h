@@ -107,6 +107,9 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg"); //!
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
 
+// Label to MC particle
+DECLARE_SOA_INDEX_COLUMN_FULL(MCParticle, mcParticle, int, McParticles, ""); //! label to the MC particle corresponding to the V0
+
 // General V0 properties: position, momentum
 DECLARE_SOA_COLUMN(PosX, posX, float);   //! positive track X at min
 DECLARE_SOA_COLUMN(NegX, negX, float);   //! negative track X at min
@@ -213,7 +216,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
                            [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
 } // namespace candidatev0
 DECLARE_SOA_TABLE(V0CandidateIndices, "AOD", "V0CANDIDATEINDEX", //! index table
-                  o2::soa::Index<>, candidatev0::CollisionId, candidatev0::PosTrackId, candidatev0::NegTrackId);
+                  o2::soa::Index<>, candidatev0::CollisionId, candidatev0::PosTrackId, candidatev0::NegTrackId, candidatev0::MCParticleId);
 
 DECLARE_SOA_TABLE(V0CandidateCores, "AOD", "V0CANDIDATECORE",
                   o2::soa::Index<>,

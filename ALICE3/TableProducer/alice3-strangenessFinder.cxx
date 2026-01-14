@@ -33,6 +33,7 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
 
 #include <cstdlib>
 
@@ -42,19 +43,41 @@ using namespace o2::framework;
 using namespace o2::constants::physics;
 
 using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTrkPids, aod::UpgradeTofs, aod::UpgradeRichs>;
-using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension>;
+using Alice3Tracks = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3>;
 
 struct alice3strangenessFinder {
   SliceCache cache;
 
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   Produces<aod::V0CandidateIndices> v0CandidateIndices; // contains V0 candidate indices
   Produces<aod::V0CandidateCores> v0CandidateCores;     // contains V0 candidate core information
-
-  Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
 
   Configurable<float> nSigmaTOF{"nSigmaTOF", 5.0f, "Nsigma for TOF PID (if enabled)"};
   Configurable<float> dcaXYconstant{"dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+
+  // Vertexing
+  Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  Configurable<double> maxR{"maxR", 150., "reject PCA's above this radius"};
+  Configurable<double> maxDZIni{"maxDZIni", 5, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<double> maxDXYIni{"maxDXYIni", 4, "reject (if>0) PCA candidate if tracks DXY exceeds threshold"};
+  Configurable<double> maxVtxChi2{"maxVtxChi2", 2, "reject (if>0) vtx. chi2 above this value"};
+  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  // Operation and minimisation criteria
+  Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
+  Configurable<bool> doDCAplotsD{"doDCAplotsD", true, "do daughter prong DCA plots for D mesons"};
+  Configurable<bool> doDCAplots3Prong{"doDCAplots3Prong", true, "do daughter prong DCA plots for Lc baryons"};
+  Configurable<bool> doTopoPlotsForSAndB{"doTopoPlotsForSAndB", true, "do topological variable distributions for S and B separately"};
+  Configurable<float> dcaDaughtersSelection{"dcaDaughtersSelection", 1000.0f, "DCA between daughters (cm)"};
+  Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
+  // propagation options
+  Configurable<bool> usePropagator{"usePropagator", false, "use external propagator"};
+  Configurable<bool> refitWithMatCorr{"refitWithMatCorr", false, "refit V0 applying material corrections"};
+  Configurable<bool> useCollinearV0{"useCollinearV0", true, "use collinear approximation for V0 fitting"};
 
   o2::vertexing::DCAFitterN<2> fitter;
   o2::vertexing::DCAFitterN<3> fitter3;
@@ -82,6 +105,21 @@ struct alice3strangenessFinder {
   void init(InitContext&)
   {
     // Initialization code here
+    fitter.setBz(magneticField);
+    fitter.setUseAbsDCA(useAbsDCA);
+    fitter.setPropagateToPCA(propagateToPCA);
+    fitter.setMaxR(maxR);
+    fitter.setMinParamChange(minParamChange);
+    fitter.setMinRelChi2Change(minRelChi2Change);
+    fitter.setMaxDZIni(maxDZIni);
+    fitter.setMaxDXYIni(maxDXYIni);
+    fitter.setMaxChi2(maxVtxChi2);
+    fitter.setUsePropagator(usePropagator);
+    fitter.setRefitWithMatCorr(refitWithMatCorr);
+    fitter.setCollinear(useCollinearV0);
+    fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
+
+    histos.add("hV0Counter", "", kTH1D, {{4, 0, 4}}); // For QA reasons, counting found V0, 0: K0s, 1: Lambda, 2:AntiLambda, 3: wrongly identified V0
   }
   /// function to check if tracks have the same mother in MC
   template <typename TTrackType>
@@ -92,14 +130,8 @@ struct alice3strangenessFinder {
       return sameMother;
     auto mcParticle1 = track1.template mcParticle_as<aod::McParticles>();
     auto mcParticle2 = track2.template mcParticle_as<aod::McParticles>();
-    if (!mcParticle1.has_mothers() || !mcParticle2.has_mothers())
-      return sameMother;
-    for (auto& mcParticleMother1 : mcParticle1.template mothers_as<aod::McParticles>()) {
-      for (auto& mcParticleMother2 : mcParticle2.template mothers_as<aod::McParticles>()) {
-        if (mcParticleMother1.globalIndex() == mcParticleMother2.globalIndex()) {
-          sameMother = true;
-        }
-      }
+    if (mcParticle2.globalIndex() == mcParticle1.globalIndex()) { // for the V0 daughters we store the mc label of the mother particle in the daughter tracks
+      sameMother = true;
     }
     return sameMother;
   }
@@ -122,6 +154,10 @@ struct alice3strangenessFinder {
       return false;
     }
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
+    if (!fitter.isPropagateTracksToVertexDone() && !fitter.propagateTracksToVertex()) {
+      LOG(debug) << "RejProp failed";
+      return false;
+    }
 
     posTrackCov = fitter.getTrack(0);
     negTrackCov = fitter.getTrack(1);
@@ -139,7 +175,7 @@ struct alice3strangenessFinder {
     v0cand.P[0] = posP[0] + negP[0];
     v0cand.P[1] = posP[1] + negP[1];
     v0cand.P[2] = posP[2] + negP[2];
-    const auto posSV = fitter.getPCACandidate();
+    const auto posSV = fitter.getPCACandidatePos();
     v0cand.posSV[0] = posSV[0];
     v0cand.posSV[1] = posSV[1];
     v0cand.posSV[2] = posSV[2];
@@ -156,7 +192,14 @@ struct alice3strangenessFinder {
     auto positiveSecondaryTracksGrouped = positiveSecondaryTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     for (auto const& posTrack : positiveSecondaryTracksGrouped) {
+      if (!posTrack.isReconstructed()) {
+        continue; // no ghost tracks
+      }
       for (auto const& negTrack : negativeSecondaryTracksGrouped) {
+        if (!negTrack.isReconstructed()) {
+          continue; // no ghost tracks
+        }
+        auto mcParticle1 = posTrack.template mcParticle_as<aod::McParticles>();
 
         if (mcSameMotherCheck && !checkSameMother(posTrack, negTrack))
           continue;
@@ -169,13 +212,23 @@ struct alice3strangenessFinder {
           collision.posX(), collision.posY(), collision.posZ());
         v0CandidateIndices(collision.globalIndex(),
                            posTrack.globalIndex(),
-                           negTrack.globalIndex());
+                           negTrack.globalIndex(),
+                           mcParticle1.globalIndex());
         v0CandidateCores(
           v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2],
           v0cand.Pdaug[0], v0cand.Pdaug[1], v0cand.Pdaug[2],
           v0cand.Ndaug[0], v0cand.Ndaug[1], v0cand.Ndaug[2],
           v0cand.dcaDau, posTrack.dcaXY(), negTrack.dcaXY(),
           v0cand.cosPA, v0cand.dcaToPV);
+        if (mcParticle1.pdgCode() == 310) {
+          histos.fill(HIST("hV0Counter"), 0.5);
+        } else if (mcParticle1.pdgCode() == 3122) {
+          histos.fill(HIST("hV0Counter"), 1.5);
+        } else if (mcParticle1.pdgCode() == -3122) {
+          histos.fill(HIST("hV0Counter"), 2.5);
+        } else {
+          histos.fill(HIST("hV0Counter"), 3.5);
+        }
       }
     }
   }
