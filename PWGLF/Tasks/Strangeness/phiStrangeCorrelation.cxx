@@ -182,8 +182,8 @@ struct PhiStrangenessCorrelation {
     Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
     Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID, proton, pion, kaon"};
-    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2., 0., 0.}, "maximum nSigma TPC"};
-    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2., 0., 0.}, "maximum nSigma TOF"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TOF"};
   } trackConfigs;
 
   // Configurables on phi selection
