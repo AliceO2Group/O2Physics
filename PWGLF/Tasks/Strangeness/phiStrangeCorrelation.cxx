@@ -78,11 +78,13 @@ static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "
 enum ParticleOfInterest {
   Phi = 0,
   K0S,
-  PionTPC,
-  PionTPCTOF
+  Pion,
+  /*PionTPC,
+  PionTPCTOF*/
+  ParticleOfInterestSize
 };
 
-static constexpr std::array<std::string_view, 4> particleOfInterestLabels{"Phi", "K0S", "PionTPC", "PionTPCTOF"};
+static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
 
 /*
 #define LIST_OF_PARTICLES_OF_INTEREST \
@@ -344,7 +346,7 @@ struct PhiStrangenessCorrelation {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
-      for (int i = 0; i < 4; ++i) {
+      for (int i = 0; i < ParticleOfInterestSize; ++i) {
         loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
       }
     }
@@ -553,7 +555,7 @@ struct PhiStrangenessCorrelation {
           if (!selectionPion(track))
             continue;
 
-          auto Pion = track.pt() < trackConfigs.tofPIDThreshold ? PionTPC : PionTPCTOF;
+          // auto Pion = track.pt() < trackConfigs.tofPIDThreshold ? PionTPC : PionTPCTOF;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
