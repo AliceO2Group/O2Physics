@@ -3015,28 +3015,30 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
 template <int pairType, typename T1, typename T2, typename T, typename T3>
 void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values)
 {
-  // energy correlators
-  float MassHadron;
-  if constexpr (pairType == kJpsiHadronMass) {
-    MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
-  }
-  if constexpr (pairType == kJpsiPionMass) {
-    MassHadron = o2::constants::physics::MassPionCharged;
-  }
-  ROOT::Math::PtEtaPhiMVector v1_gen(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
-  ROOT::Math::PtEtaPhiMVector v2_gen(t1.pt(), t1.eta(), t1.phi(), MassHadron);
-  float E_boost_gen = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_gen);
-  float CosChi_gen = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_gen);
-  values[kMCCosChi_gen] = CosChi_gen;
-  values[kMCWeight_gen] = E_boost_gen / o2::constants::physics::MassJPsi;
-  values[kMCdeltaeta_gen] = track.eta() - t1.eta();
+  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
+    // energy correlators
+    float MassHadron;
+    if constexpr (pairType == kJpsiHadronMass) {
+      MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
+    }
+    if constexpr (pairType == kJpsiPionMass) {
+      MassHadron = o2::constants::physics::MassPionCharged;
+    }
+    ROOT::Math::PtEtaPhiMVector v1_gen(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
+    ROOT::Math::PtEtaPhiMVector v2_gen(t1.pt(), t1.eta(), t1.phi(), MassHadron);
+    float E_boost_gen = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_gen);
+    float CosChi_gen = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_gen);
+    values[kMCCosChi_gen] = CosChi_gen;
+    values[kMCWeight_gen] = E_boost_gen / o2::constants::physics::MassJPsi;
+    values[kMCdeltaeta_gen] = track.eta() - t1.eta();
 
-  ROOT::Math::PtEtaPhiMVector v1_rec(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
-  ROOT::Math::PtEtaPhiMVector v2_rec(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
-  values[kMCCosChi_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_rec);
-  float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
-  values[kMCWeight_rec] = E_boost_rec / v1_rec.M();
-  values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
+    ROOT::Math::PtEtaPhiMVector v1_rec(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
+    ROOT::Math::PtEtaPhiMVector v2_rec(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_rec);
+    float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
+    values[kMCWeight_rec] = E_boost_rec / v1_rec.M();
+    values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
+  }
 }
 
 template <uint32_t fillMap, typename T1, typename T2, typename C>

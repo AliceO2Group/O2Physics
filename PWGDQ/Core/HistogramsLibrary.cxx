@@ -984,21 +984,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     for (int i = 0; i < 26; i++) {
       coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
     }
-
     hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kMCCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight);
+  }
 
-    // for bkg
-    hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 25, coschiBins, VarManager::kMCCosChi_randomPhi_trans, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_trans);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 25, coschiBins, VarManager::kMCCosChi_randomPhi_toward, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_toward);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 25, coschiBins, VarManager::kMCCosChi_randomPhi_away, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_away);
-  }
-  if (!groupStr.CompareTo("energy-correlator-unfolding")) {
-    double coschiBins[26];
-    for (int i = 0; i < 26; i++) {
-      coschiBins[i] = -1.0 + 0.08 * i;
-    }
-    hm->AddHistogram(histClass, "Coschi_unfolding", "", false, 25, coschiBins, VarManager::kMCCosChi_rec, 25, coschiBins, VarManager::kMCCosChi_gen);
-  }
   if (!groupStr.CompareTo("polarization-pseudoproper-gen")) {
     int varspTHE[3] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCVertexingTauxyProjected};
     int varspTCS[3] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
@@ -1947,6 +1935,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
       }
 
+      hm->AddHistogram(histClass, "Coschi_unfolding", "", false, 25, coschiBins, VarManager::kMCCosChi_rec, 25, coschiBins, VarManager::kMCCosChi_gen);
       hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
       hm->AddHistogram(histClass, "DeltaEta_DeltaPhi_weight", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, "", "", "", -1, VarManager::kPtDau);
     }
