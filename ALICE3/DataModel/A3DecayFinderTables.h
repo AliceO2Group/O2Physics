@@ -389,7 +389,6 @@ namespace a3_mc_truth
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);           //!
 DECLARE_SOA_COLUMN(BHadMotherPtRec, bHadMotherPtRec, float); //!
 DECLARE_SOA_COLUMN(FlagMcRec, flagMcRec, int);               //!
-DECLARE_SOA_COLUMN(ParticleMcRec, particleMcRec, int);       //!
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);           //!
 DECLARE_SOA_COLUMN(BHadMotherPtGen, bHadMotherPtGen, float); //!
 DECLARE_SOA_COLUMN(FlagMcGen, flagMcGen, int);               //!
@@ -397,8 +396,7 @@ DECLARE_SOA_COLUMN(FlagMcGen, flagMcGen, int);               //!
 DECLARE_SOA_TABLE(Alice3McRecFlags, "AOD", "ALICE3MCRECFLAG", //!
                   a3_mc_truth::OriginMcRec,
                   a3_mc_truth::BHadMotherPtRec,
-                  a3_mc_truth::FlagMcRec,
-                  a3_mc_truth::ParticleMcRec);
+                  a3_mc_truth::FlagMcRec);
 
 DECLARE_SOA_TABLE(Alice3McGenFlags, "AOD", "ALICE3MCGENFLAG", //!
                   a3_mc_truth::OriginMcGen,
