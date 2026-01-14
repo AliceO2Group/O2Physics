@@ -261,7 +261,7 @@ struct PhiStrangenessCorrelation {
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
   // Defining the type of the tracks for data and MC
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FullMCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
 
   // using FilteredTracks = soa::Filtered<FullTracks>;
