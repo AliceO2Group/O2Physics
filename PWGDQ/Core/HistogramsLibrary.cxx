@@ -1947,10 +1947,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
       }
 
-      double deltaetaBins[21];
-      for (int i = 0; i < 21; i++) {
-        deltaetaBins[i] = -2.0 + 0.2 * i;
-      }
       hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
       hm->AddHistogram(histClass, "DeltaEta_DeltaPhi_weight", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, "", "", "", -1, VarManager::kPtDau);
     }
