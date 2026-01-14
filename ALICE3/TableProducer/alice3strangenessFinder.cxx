@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file alice3-strangenessFinder.cxx
+/// \file alice3strangenessFinder.cxx
 ///
 /// \brief finding of V0 and cascade candidates for ALICE 3
 ///
@@ -45,7 +45,7 @@ using namespace o2::constants::physics;
 using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTrkPids, aod::UpgradeTofs, aod::UpgradeRichs>;
 using Alice3Tracks = soa::Join<aod::StoredTracks, aod::StoredTracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksCovExtension, aod::TracksAlice3>;
 
-struct alice3strangenessFinder {
+struct Alice3strangenessFinder {
   SliceCache cache;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -95,9 +95,9 @@ struct alice3strangenessFinder {
   struct {
     float dcaDau;
     std::array<float, 3> posSV;
-    std::array<float, 3> P;
-    std::array<float, 3> Pdaug; // positive track
-    std::array<float, 3> Ndaug; // negative track
+    std::array<float, 3> pV0;
+    std::array<float, 3> pPos; // positive track
+    std::array<float, 3> pNeg; // negative track
     float cosPA;
     float dcaToPV;
   } v0cand;
@@ -165,16 +165,16 @@ struct alice3strangenessFinder {
     std::array<float, 3> negP;
     posTrackCov.getPxPyPzGlo(posP);
     negTrackCov.getPxPyPzGlo(negP);
-    v0cand.dcaDau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    v0cand.Pdaug[0] = posP[0];
-    v0cand.Pdaug[1] = posP[1];
-    v0cand.Pdaug[2] = posP[2];
-    v0cand.Ndaug[0] = negP[0];
-    v0cand.Ndaug[1] = negP[1];
-    v0cand.Ndaug[2] = negP[2];
-    v0cand.P[0] = posP[0] + negP[0];
-    v0cand.P[1] = posP[1] + negP[1];
-    v0cand.P[2] = posP[2] + negP[2];
+    v0cand.dcaDau = std::sqrt(fitter.getChi2AtPCACandidate());
+    v0cand.pPos[0] = posP[0];
+    v0cand.pPos[1] = posP[1];
+    v0cand.pPos[2] = posP[2];
+    v0cand.pNeg[0] = negP[0];
+    v0cand.pNeg[1] = negP[1];
+    v0cand.pNeg[2] = negP[2];
+    v0cand.pV0[0] = posP[0] + negP[0];
+    v0cand.pV0[1] = posP[1] + negP[1];
+    v0cand.pV0[2] = posP[2] + negP[2];
     const auto posSV = fitter.getPCACandidatePos();
     v0cand.posSV[0] = posSV[0];
     v0cand.posSV[1] = posSV[1];
@@ -182,7 +182,7 @@ struct alice3strangenessFinder {
 
     return true;
   }
-  float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+  float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
   {
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
   }
@@ -205,10 +205,10 @@ struct alice3strangenessFinder {
           continue;
         if (!buildDecayCandidateTwoBody(posTrack, negTrack))
           continue;
-        v0cand.cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2]}, std::array{v0cand.P[0], v0cand.P[1], v0cand.P[2]});
-        v0cand.dcaToPV = CalculateDCAStraightToPV(
+        v0cand.cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2]}, std::array{v0cand.pV0[0], v0cand.pV0[1], v0cand.pV0[2]});
+        v0cand.dcaToPV = calculateDCAStraightToPV(
           v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2],
-          v0cand.P[0], v0cand.P[1], v0cand.P[2],
+          v0cand.pV0[0], v0cand.pV0[1], v0cand.pV0[2],
           collision.posX(), collision.posY(), collision.posZ());
         v0CandidateIndices(collision.globalIndex(),
                            posTrack.globalIndex(),
@@ -216,15 +216,15 @@ struct alice3strangenessFinder {
                            mcParticle1.globalIndex());
         v0CandidateCores(
           v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2],
-          v0cand.Pdaug[0], v0cand.Pdaug[1], v0cand.Pdaug[2],
-          v0cand.Ndaug[0], v0cand.Ndaug[1], v0cand.Ndaug[2],
+          v0cand.pPos[0], v0cand.pPos[1], v0cand.pPos[2],
+          v0cand.pNeg[0], v0cand.pNeg[1], v0cand.pNeg[2],
           v0cand.dcaDau, posTrack.dcaXY(), negTrack.dcaXY(),
           v0cand.cosPA, v0cand.dcaToPV);
-        if (mcParticle1.pdgCode() == 310) {
+        if (mcParticle1.pdgCode() == kK0Short) {
           histos.fill(HIST("hV0Counter"), 0.5);
-        } else if (mcParticle1.pdgCode() == 3122) {
+        } else if (mcParticle1.pdgCode() == kLambda0) {
           histos.fill(HIST("hV0Counter"), 1.5);
-        } else if (mcParticle1.pdgCode() == -3122) {
+        } else if (mcParticle1.pdgCode() == kLambda0Bar) {
           histos.fill(HIST("hV0Counter"), 2.5);
         } else {
           histos.fill(HIST("hV0Counter"), 3.5);
@@ -239,12 +239,12 @@ struct alice3strangenessFinder {
   //         auto secondaryProtonsGrouped = secondaryProtons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
   //         auto secondaryAntiProtonsGrouped = secondaryAntiProtons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
   //     }
-  PROCESS_SWITCH(alice3strangenessFinder, processFindV0CandidateNoPid, "find V0 without PID", true);
+  PROCESS_SWITCH(Alice3strangenessFinder, processFindV0CandidateNoPid, "find V0 without PID", true);
   // PROCESS_SWITCH(alice3strangenessFinder, processFindV0CandidateWithPid, "find V0 with PID", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<alice3strangenessFinder>(cfgc)};
+    adaptAnalysisTask<Alice3strangenessFinder>(cfgc)};
 }
