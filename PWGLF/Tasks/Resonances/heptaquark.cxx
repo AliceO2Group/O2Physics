@@ -24,6 +24,7 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
