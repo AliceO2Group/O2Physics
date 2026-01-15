@@ -251,6 +251,28 @@ struct StudyPnch {
     return nTrk;
   }
 
+  template <typename countTrk, typename McColType>
+  int countNTracksMcCol(countTrk const& tracks, McColType const& McCol)
+  {
+    auto nTrk = 0;
+    for (const auto& track : tracks) {
+      if (!isTrackSelected(track)) {
+        continue;
+      }
+
+      // Verify that the track belongs to the given MC collision
+      if (track.has_mcParticle()) {
+        auto particle = track.mcParticle();
+        if (particle.mcCollisionId() != McCol.mcCollisionId()) {
+          continue;
+        }
+      }
+      histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
+      nTrk++;
+    }
+    return nTrk;
+  }
+
   Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                               ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
   Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
@@ -287,7 +309,7 @@ struct StudyPnch {
         continue;
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
-      auto multrec = countNTracks(recTracksPart);
+      auto multrec = countNTracksMcCol(recTracksPart, RecCol);
       histos.fill(HIST("hMultiplicityMCrec"), multrec);
       auto multgen = countGenTracks(GenParticles);
       histos.fill(HIST("hMultiplicityMCgen"), multgen);
