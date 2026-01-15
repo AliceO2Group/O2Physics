@@ -118,7 +118,6 @@ struct FemtoV0Qa {
     if ((doprocessLambda + doprocessLambdaMc + doprocessK0short + doprocessK0shortMc) > 1) {
       LOG(fatal) << "Only one process can be activated";
     }
-
     bool processData = doprocessLambda || doprocessK0short;
 
     if (processData) {
@@ -169,7 +168,7 @@ struct FemtoV0Qa {
       k0shortHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(k0short, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
-  PROCESS_SWITCH(FemtoV0Qa, processK0shortMc, "Process k0shorts", false);
+  PROCESS_SWITCH(FemtoV0Qa, processK0shortMc, "Process k0shorts with MC information", false);
 
   void processLambda(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {

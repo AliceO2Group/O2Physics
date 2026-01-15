@@ -398,20 +398,66 @@ class CascadeBuilder
         continue;
       }
 
-      // cleaner, but without ITS pid: auto bachelor = cascade.template bachelor_as<T7>();
-      auto bachelor = tracksWithItsPid.iteratorAt(cascade.bachelorId() - tracksWithItsPid.offset());
-      // cleaner, but without ITS pid: auto posDaughter = cascade.template posTrack_as<T7>();
-      auto posDaughter = tracksWithItsPid.iteratorAt(cascade.posTrackId() - tracksWithItsPid.offset());
-      // cleaner, but without ITS pid: auto negDaughter = cascade.template negTrack_as<T7>();
-      auto negDaughter = tracksWithItsPid.iteratorAt(cascade.negTrackId() - tracksWithItsPid.offset());
-
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
+      // cleaner, but without ITS pid: auto bachelor = cascade.template bachelor_as<T7>();
+      auto bachelor = tracksWithItsPid.iteratorAt(cascade.bachelorId() - tracksWithItsPid.offset());
       bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts);
+
+      // cleaner, but without ITS pid: auto posDaughter = cascade.template posTrack_as<T7>();
+      auto posDaughter = tracksWithItsPid.iteratorAt(cascade.posTrackId() - tracksWithItsPid.offset());
       posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
+
+      // cleaner, but without ITS pid: auto negDaughter = cascade.template negTrack_as<T7>();
+      auto negDaughter = tracksWithItsPid.iteratorAt(cascade.negTrackId() - tracksWithItsPid.offset());
       negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
 
       fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
+    }
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+  void fillMcCascades(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& cascadeProducts, T7 const& cascades, T8 const& tracks, T9 const& tracksWithItsPid, T10& trackBuilder, T11 const& mcParticles, T12& mcBuilder, T13& mcProducts)
+  {
+    if (!mFillAnyTable) {
+      return;
+    }
+
+    int64_t bachelorIndex = 0;
+    int64_t posDaughterIndex = 0;
+    int64_t negDaughterIndex = 0;
+    for (const auto& cascade : cascades) {
+      if (!mCascadeSelection.checkFilters(cascade)) {
+        continue;
+      }
+      mCascadeSelection.applySelections(cascade, tracks, col);
+      if (!mCascadeSelection.passesAllRequiredSelections()) {
+        continue;
+      }
+
+      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+
+      auto bachelor = tracks.iteratorAt(cascade.bachelorId() - tracks.offset());
+      auto bachelorWithItsPid = tracksWithItsPid.iteratorAt(cascade.bachelorId() - tracksWithItsPid.offset());
+      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, bachelor, bachelorWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      auto posDaughter = tracks.iteratorAt(cascade.posTrackId() - tracks.offset());
+      auto posDaughterWithItsPid = tracksWithItsPid.iteratorAt(cascade.posTrackId() - tracksWithItsPid.offset());
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, posDaughter, posDaughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      auto negDaughter = tracks.iteratorAt(cascade.negTrackId() - tracks.offset());
+      auto negDaughterWithItsPid = tracksWithItsPid.iteratorAt(cascade.negTrackId() - tracksWithItsPid.offset());
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, negDaughter, negDaughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
+      if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+        mcBuilder.template fillMcXiWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
+        ;
+      }
+      if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
+        mcBuilder.template fillMcOmegaWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
+        ;
+      }
     }
   }
 
