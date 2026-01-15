@@ -161,7 +161,7 @@ struct RecoilJets {
   template <typename AxisObject>
   struct AxisDesc {
     AxisDesc(const char* label_, const AxisObject& axis_, const std::string& axisName_ = "")
-      : label(label_), axis(axis_), axisName(axisName_){}
+      : label(label_), axis(axis_), axisName(axisName_) {}
 
     const char* label;      // "FT0C" / "FT0M"
     const AxisObject& axis; // AxisSpec or ConfigurableAxis
