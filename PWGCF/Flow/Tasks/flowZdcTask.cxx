@@ -475,7 +475,7 @@ struct FlowZdcTask {
           histos.fill(HIST("ZPASector"), sumZPA);
           histos.fill(HIST("ZPAVsFT0A"), aT0A / 100., zpA);
           histos.fill(HIST("ZPAVsFT0C"), aT0C / 100., zpA);
-          histos.fill(HIST("ZPAVsFT0M"), (aT0A + aT0C) / 100., zpA);     
+          histos.fill(HIST("ZPAVsFT0M"), (aT0A + aT0C) / 100., zpA);
         }
         if ((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) {
           histos.fill(HIST("ZPC"), zpC);
@@ -498,7 +498,7 @@ struct FlowZdcTask {
           histos.fill(HIST("ZPVsFT0A"), aT0A / 100., zpA + zpC);
           histos.fill(HIST("ZPVsFT0C"), aT0C / 100., zpA + zpC);
           histos.fill(HIST("ZPVsFT0M"), (aT0A + aT0C) / 100., zpA + zpC);
-        }        
+        }
         if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))
           histos.fill(HIST("ZNAVsZPA"), zpA, znA);
         if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))
