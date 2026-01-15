@@ -12,28 +12,32 @@
 /// \brief this is a starting point for the Resonances tutorial
 /// \author junlee kim
 
+#include "PWGLF/DataModel/ReducedHeptaQuarkTables.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
-#include <TLorentzVector.h>
+
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
+#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TRandom3.h>
+
 #include <fairlogger/Logger.h>
+
+#include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
-#include <algorithm>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/ReducedHeptaQuarkTables.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -203,15 +207,15 @@ struct heptaquark {
     double cosHel = hqlambda_boost.Vect().Dot(hqphipair_boost.Vect()) / (hqlambda_boost.Vect().Mag() * hqphipair_boost.Vect().Mag());
     if (std::abs(cosHel) > cfgCollinear)
       selection += 4;
-/*
-    ROOT::Math::XYZVector rPV(col.posX(), col.posY(), col.posZ());
-    ROOT::Math::XYZVector rSV(hq3.hqx(), hq3.hqy(), hq3.hqz());
-    ROOT::Math::XYZVector L = rSV - rPV;
-    ROOT::Math::XYZVector exMom(ex.Px(), ex.Py(), ex.Pz());
-    double cosPoint = L.Dot(exMom) / (L.R() * pEx.R() + 1e-9);
-    if (cosPoint < cfgCosPoint)
-      return 8;
-*/
+    /*
+        ROOT::Math::XYZVector rPV(col.posX(), col.posY(), col.posZ());
+        ROOT::Math::XYZVector rSV(hq3.hqx(), hq3.hqy(), hq3.hqz());
+        ROOT::Math::XYZVector L = rSV - rPV;
+        ROOT::Math::XYZVector exMom(ex.Px(), ex.Py(), ex.Pz());
+        double cosPoint = L.Dot(exMom) / (L.R() * pEx.R() + 1e-9);
+        if (cosPoint < cfgCosPoint)
+          return 8;
+    */
     return selection;
   }
 
