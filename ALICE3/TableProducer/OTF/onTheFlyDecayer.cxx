@@ -102,7 +102,7 @@ struct OnTheFlyDecayer {
     histos.add("AntiXi/hGenAntiXi", "hGenAntiXi", kTH1D, {axisPt});
     histos.add("Omega/hGenOmega", "hGenOmega", kTH1D, {axisPt});
     histos.add("AntiOmega/hGenAntiOmega", "hGenAntiOmega", kTH1D, {axisPt});
-    
+
     histos.add("GeneratedElectron/hGenEl", "hGenEl", kTH1D, {axisPt});
     histos.add("GeneratedMuon/hGenMu", "hGenMu", kTH1D, {axisPt});
     histos.add("GeneratedPion/hGenPi", "hGenPi", kTH1D, {axisPt});
@@ -150,7 +150,6 @@ struct OnTheFlyDecayer {
           LOG(error) << "Attempted to decay " << particle.pdgCode() << " but resulting vector of daugthers were empty";
           continue;
         }
-
 
         switch (particle.pdgCode()) {
           case kK0Short:
@@ -276,7 +275,7 @@ struct OnTheFlyDecayer {
           case kProton:
             histos.fill(HIST("GeneratedProton/hGenPr"), pt);
             break;
-        
+
           default:
             break;
         }

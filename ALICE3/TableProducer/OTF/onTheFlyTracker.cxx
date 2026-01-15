@@ -672,7 +672,7 @@ struct OnTheFlyTracker {
   }
 
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
-  void processConfiguration(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, int const& icfg)
+  void processWithLUTs(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, int const& icfg)
   {
     LOG(debug) << "Processing event " << mcCollision.globalIndex() << " with LUTs for configuration " << icfg;
     int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
@@ -1446,6 +1446,24 @@ struct OnTheFlyTracker {
           getHist(TH2, histPath + "h2dDCAz")->Fill(trackParametrization.getPt(), dcaZ * 1e+4);
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
+        if (cascadeDecaySettings.doXiQA) {
+          if (trackParCov.isUsedInCascading == 1) {
+            histos.fill(HIST("h2dDCAxyCascade"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+            histos.fill(HIST("h2dDCAzCascade"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
+          if (trackParCov.isUsedInCascading == 2) {
+            histos.fill(HIST("h2dDCAxyCascadeBachelor"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+            histos.fill(HIST("h2dDCAzCascadeBachelor"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
+          if (trackParCov.isUsedInCascading == 3) {
+            histos.fill(HIST("h2dDCAxyCascadeNegative"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+            histos.fill(HIST("h2dDCAzCascadeNegative"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
+          if (trackParCov.isUsedInCascading == 4) {
+            histos.fill(HIST("h2dDCAxyCascadePositive"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+            histos.fill(HIST("h2dDCAzCascadePositive"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
+        }
         tableTracksDCA(dcaXY, dcaZ);
         if (populateTracksDCACov) {
           tableTracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
@@ -1685,7 +1703,7 @@ struct OnTheFlyTracker {
       const float nsToMus = 1e-3f;
       const float timeResolutionUs = timeResolutionNs * nsToMus; // us
       const float time = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
-      
+
       bool reconstructed = false;
       if (enablePrimarySmearing && mcParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
@@ -1760,7 +1778,7 @@ struct OnTheFlyTracker {
       aod::track::TrackTypeEnum trackType = aod::track::Track;
 
       if (populateTracksDCA) {
-       float dcaXY = 1e+10, dcaZ = 1e+10;
+        float dcaXY = 1e+10, dcaZ = 1e+10;
         o2::track::TrackParCov trackParametrization(trackParCov);
         if (trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
@@ -1806,12 +1824,12 @@ struct OnTheFlyTracker {
       aod::track::TrackTypeEnum trackType = aod::track::Track;
 
       if (populateTracksDCA) {
-       float dcaXY = 1e+10, dcaZ = 1e+10;
+        float dcaXY = 1e+10, dcaZ = 1e+10;
         o2::track::TrackParCov trackParametrization(trackParCov);
         if (trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
-        } 
+        }
 
         tableTracksDCA(dcaXY, dcaZ);
         if (populateTracksDCACov) {
@@ -1846,7 +1864,7 @@ struct OnTheFlyTracker {
       tableTracksAlice3(true);
     }
   }
-  
+
   void processDecayer(aod::McCollision const& mcCollision, aod::McParticlesWithDau const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
@@ -1856,7 +1874,6 @@ struct OnTheFlyTracker {
 
   PROCESS_SWITCH(OnTheFlyTracker, processOnTheFly, "Enable default workflow", true);
   PROCESS_SWITCH(OnTheFlyTracker, processDecayer, "Enable experimental decayer workflow", false);
-
 };
 
 /// Extends TracksExtra if necessary
