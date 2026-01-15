@@ -189,8 +189,8 @@ typedef struct Str_dEdx_correction {
     for (int i = 0; i < fMatrix.GetNrows(); i++) {
       for (int j = 0; j < fMatrix.GetNcols(); j++) {
         double param = fMatrix(i, j);
-        double value1 = i > static_cast<int>(vec1.size()) ? 0 : vec1[i];
-        double value2 = j > static_cast<int>(vec2.size()) ? 0 : vec2[j];
+        double value1 = i >= static_cast<int>(vec1.size()) ? 0 : vec1[i];
+        double value2 = j >= static_cast<int>(vec2.size()) ? 0 : vec2[j];
         result += param * value1 * value2;
       }
     }
@@ -201,14 +201,10 @@ typedef struct Str_dEdx_correction {
 class pidTPCModule
 {
  public:
-  pidTPCModule()
-  {
-    // constructor
-  }
   o2::aod::pid::pidTPCConfigurables pidTPCopts;
 
   // TPC PID Response
-  o2::pid::tpc::Response* response;
+  o2::pid::tpc::Response* response{nullptr};
 
   // Network correction for TPC PID response
   ml::OnnxModel network;
@@ -237,13 +233,13 @@ class pidTPCModule
     pidTPCopts = external_pidtpcopts;
 
     if (pidTPCopts.useCorrecteddEdx.value) {
-      LOGF(info, "***************************************************");
-      LOGF(info, " WARNING: YOU HAVE SWITCHED ON 'corrected dEdx!");
-      LOGF(info, " This mode is still in development and it is meant");
-      LOGF(info, " ONLY FOR EXPERTS at this time. Please switch ");
-      LOGF(info, " this option off UNLESS you are absolutely SURE");
-      LOGF(info, " of what you're doing! You've been warned!");
-      LOGF(info, "***************************************************");
+      LOGF(warning, "***************************************************");
+      LOGF(warning, " WARNING: YOU HAVE SWITCHED ON 'corrected dEdx!");
+      LOGF(warning, " This mode is still in development and it is meant");
+      LOGF(warning, " ONLY FOR EXPERTS at this time. Please switch ");
+      LOGF(warning, " this option off UNLESS you are absolutely SURE");
+      LOGF(warning, " of what you're doing! You've been warned!");
+      LOGF(warning, "***************************************************");
     }
 
     if (pidTPCopts.skipTPCOnly.value == -1) {
@@ -262,7 +258,7 @@ class pidTPCModule
       pidTPCopts.skipTPCOnly.value = 1;
 
       // loop over devices in this execution
-      auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+      auto const& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
       for (o2::framework::DeviceSpec const& device : workflows.devices) {
         // Look for propagation service
         if (device.name.compare("propagation-service") == 0) {
@@ -544,7 +540,7 @@ class pidTPCModule
     constexpr int ExpectedInputDimensionsNNV3 = 8;
     constexpr auto NetworkVersionV2 = "2";
     constexpr auto NetworkVersionV3 = "3";
-    for (int i = 0; i < NParticleTypes; i++) { // Loop over particle number for which network correction is used
+    for (int j = 0; j < NParticleTypes; j++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
           continue;
@@ -557,7 +553,7 @@ class pidTPCModule
         track_properties[counter_track_props] = trk.tpcInnerParam();
         track_properties[counter_track_props + 1] = trk.tgl();
         track_properties[counter_track_props + 2] = trk.signed1Pt();
-        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[j];
         track_properties[counter_track_props + 4] = trk.has_collision() ? mults[trk.collisionId()] / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
         if (input_dimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
@@ -587,9 +583,9 @@ class pidTPCModule
       float* output_network = network.evalModel(track_properties);
       auto stop_network_eval = std::chrono::high_resolution_clock::now();
       duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
-        for (int j = 0; j < output_dimensions; j++) {
-          network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+      for (uint64_t k = 0; k < prediction_size; k += output_dimensions) {
+        for (int l = 0; l < output_dimensions; l++) {
+          network_prediction[k + l + prediction_size * loop_counter] = output_network[k + l];
         }
       }
 
