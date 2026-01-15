@@ -314,5 +314,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
   return WorkflowSpec{adaptAnalysisTask<FormationTimeReclustering>(
-    cfgc, TaskName{"jet-formationtimereclustering"})};
+    cfgc, TaskName{"jet-formation-time-reclustering"})};
 }
