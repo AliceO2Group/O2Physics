@@ -445,17 +445,17 @@ struct FemtoUniverseEfficiencyBase {
       for (const auto& part : grouppartsTwoMCRec) {
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 0);
 
-        if (part.partType() != confParticleTypePartOne) {
+        if (part.partType() != confParticleTypePartTwo) {
           continue;
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 1);
 
-        if (part.sign() != confChargePart1) {
+        if (part.sign() != confChargePart2) {
           continue;
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 2);
 
-        if (!isParticleNSigma(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+        if (!isParticleNSigma(confPDGCodePartTwo, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
           continue;
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 3);
