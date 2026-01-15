@@ -30,6 +30,7 @@ bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgzMatching = -77.5;
+float VarManager::fgzShiftFwd = 0.0;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 float VarManager::fgTPCInterSectorBoundary = 1.0; // cm
 int VarManager::fgITSROFbias = 0;
@@ -369,6 +370,18 @@ void VarManager::SetDefaultVarNames()
 
   fgVariableNames[kRunNo] = "Run number";
   fgVariableUnits[kRunNo] = "";
+  fgVariableNames[kTFNBCs] = "Number of bunch crossings per TF";
+  fgVariableUnits[kTFNBCs] = "";
+  fgVariableNames[kTFNCollisions] = "Number of collisions per TF";
+  fgVariableUnits[kTFNCollisions] = "";
+  fgVariableNames[kTFNMCCollisions] = "Number of MC collisions per TF";
+  fgVariableUnits[kTFNMCCollisions] = "";
+  fgVariableNames[kTFNTracks] = "Number of tracks per TF";
+  fgVariableUnits[kTFNTracks] = "";
+  fgVariableNames[kTFNMuons] = "Number of muons per TF";
+  fgVariableUnits[kTFNMuons] = "";
+  fgVariableNames[kTFNMFTs] = "Number of MFT tracks per TF";
+  fgVariableUnits[kTFNMFTs] = "";
   fgVariableNames[kBC] = "Bunch crossing";
   fgVariableUnits[kBC] = "";
   fgVariableNames[kTimeFromSOR] = "time since SOR";
@@ -1296,6 +1309,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsSingleGapC] = "";
   fgVariableNames[kIsSingleGap] = "is single gap event";
   fgVariableUnits[kIsSingleGap] = "";
+  fgVariableNames[kIsNoGap] = "is no gap event";
+  fgVariableUnits[kIsNoGap] = "";
   fgVariableNames[kIsITSUPCMode] = "UPC settings used";
   fgVariableUnits[kIsITSUPCMode] = "";
   fgVariableNames[kQuadMass] = "mass quadruplet";
@@ -1402,6 +1417,12 @@ void VarManager::SetDefaultVarNames()
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
   fgVarNamesMap["kRunNo"] = kRunNo;
+  fgVarNamesMap["kTFNBCs"] = kTFNBCs;
+  fgVarNamesMap["kTFNCollisions"] = kTFNCollisions;
+  fgVarNamesMap["kTFNMCCollisions"] = kTFNMCCollisions;
+  fgVarNamesMap["kTFNTracks"] = kTFNTracks;
+  fgVarNamesMap["kTFNMuons"] = kTFNMuons;
+  fgVarNamesMap["kTFNMFTs"] = kTFNMFTs;
   fgVarNamesMap["kNRunWiseVariables"] = kNRunWiseVariables;
   fgVarNamesMap["kTimestamp"] = kTimestamp;
   fgVarNamesMap["kTimeFromSOR"] = kTimeFromSOR;
@@ -1601,6 +1622,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsSingleGapA"] = kIsSingleGapA;
   fgVarNamesMap["kIsSingleGapC"] = kIsSingleGapC;
   fgVarNamesMap["kIsSingleGap"] = kIsSingleGap;
+  fgVarNamesMap["kIsNoGap"] = kIsNoGap;
   fgVarNamesMap["kIsITSUPCMode"] = kIsITSUPCMode;
   fgVarNamesMap["kTwoEvPosZ1"] = kTwoEvPosZ1;
   fgVarNamesMap["kTwoEvPosZ2"] = kTwoEvPosZ2;

@@ -120,6 +120,7 @@ struct Alice3HfSelector3Prong {
       labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
       static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
       registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+      registry.add("hSelectionsTopology", "hSelectionsTopology", {HistType::kTH1D, {{10, -0.5, 9.5, "Selection step"}}});
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
@@ -151,11 +152,17 @@ struct Alice3HfSelector3Prong {
   bool selectionTopol(const T& cand, float candPt)
   {
     int const ptBin = findBin(binsPt, candPt);
-
+    auto fillQAHistogram = [&](float bin) {
+      if (activateQA) {
+        registry.fill(HIST("hSelectionsTopology"), bin);
+      }
+    };
+    fillQAHistogram(0.f);
     // check that the cand pT is within the analysis range
     if (candPt < ptCandMin || candPt >= ptCandMax) {
       return false;
     }
+    fillQAHistogram(1.f);
 
     // cut on daughter pT
     if (cand.ptProng0() < cuts->get(ptBin, "pT prong 0") ||
@@ -163,40 +170,48 @@ struct Alice3HfSelector3Prong {
         cand.ptProng2() < cuts->get(ptBin, "pT prong 2")) {
       return false;
     }
+    fillQAHistogram(2.f);
 
     // cosine of pointing angle
     if (cand.cpa() <= cuts->get(ptBin, "cos pointing angle")) {
       return false;
     }
+    fillQAHistogram(3.f);
 
     // cand chi2PCA
     if (cand.chi2PCA() > cuts->get(ptBin, "Chi2PCA")) {
       return false;
     }
+    fillQAHistogram(4.f);
 
     if (cand.decayLength() <= cuts->get(ptBin, "decay length")) {
       return false;
     }
+    fillQAHistogram(5.f);
 
     // cand decay length XY
     if (cand.decayLengthXY() <= cuts->get(ptBin, "decLengthXY")) {
       return false;
     }
+    fillQAHistogram(6.f);
 
     // cand normalized decay length XY
     if (cand.decayLengthXYNormalised() < cuts->get(ptBin, "normDecLXY")) {
       return false;
     }
+    fillQAHistogram(7.f);
 
     // cand impact parameter XY
     if (std::abs(cand.impactParameterXY()) > cuts->get(ptBin, "impParXY")) {
       return false;
     }
+    fillQAHistogram(8.f);
 
     // cand daughter prong DCA
     if (!isSelectedCandidateProngDca(cand)) {
       return false;
     }
+    fillQAHistogram(9.f);
 
     return true;
   }
@@ -292,6 +307,9 @@ struct Alice3HfSelector3Prong {
 
     // looping over 3-prong cands
     for (const auto& cand : cands) {
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 1, cand.pt());
+      }
       outputMl = {-1.f, -1.f, -1.f};
       pidMask = 0;
 

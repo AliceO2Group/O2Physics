@@ -33,6 +33,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
   groupStr.ToLower();
   TString subGroupStr = subGroupName;
   subGroupStr.ToLower();
+  if (groupStr.Contains("timeframe")) {
+    hm->AddHistogram(histClass, "TF_NCollisions", "Number of collisions per TF", false, 1000, 0.0, 5000.0, VarManager::kTFNCollisions);
+    hm->AddHistogram(histClass, "TF_NMCCollisions", "Number of MC collisions per TF", false, 1000, 0.0, 5000.0, VarManager::kTFNMCCollisions);
+    hm->AddHistogram(histClass, "TF_NBCs", "Number of BCs per TF", false, 1000, 0.0, 50000.0, VarManager::kTFNBCs);
+    hm->AddHistogram(histClass, "TF_NTracks", "Number of tracks per TF", false, 1000, 0.0, 200000.0, VarManager::kTFNTracks);
+    hm->AddHistogram(histClass, "TF_NMuons", "Number of muons per TF", false, 1000, 0.0, 5000.0, VarManager::kTFNMuons);
+    hm->AddHistogram(histClass, "TF_NMFTs", "Number of MFT tracks per TF", false, 1000, 0.0, 200000.0, VarManager::kTFNMFTs);
+  }
   if (!groupStr.CompareTo("event")) {
     if (!subGroupStr.Contains("generator")) {
       hm->AddHistogram(histClass, "VtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ);
@@ -411,10 +419,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Profile_R2EP_Im_TPCFT0C_CentFT0C", "Profile_R2EP_Im_TPCFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_AC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_AC_Im);
       hm->AddHistogram(histClass, "Profile_R2EP_Im_FT0AFT0C_CentFT0C", "Profile_R2EP_Im_FT0AFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_BC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_BC_Im);
     }
-    if (subGroupStr.Contains("filter")) {
+    if (subGroupStr.Contains("rapidity-gap")) {
       hm->AddHistogram(histClass, "IsDoubleGap", "Is double gap", false, 2, -0.5, 1.5, VarManager::kIsDoubleGap);
       hm->AddHistogram(histClass, "IsSingleGapA", "Is single gap on side A", false, 2, -0.5, 1.5, VarManager::kIsSingleGapA);
       hm->AddHistogram(histClass, "IsSingleGapC", "Is single gap on side C", false, 2, -0.5, 1.5, VarManager::kIsSingleGapC);
+      hm->AddHistogram(histClass, "IsNoGap", "Is no gap event", false, 2, -0.5, 1.5, VarManager::kIsNoGap);
       hm->AddHistogram(histClass, "IsITSUPCMode", "UPC settings used", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode);
       hm->AddHistogram(histClass, "IsITSUPCMode_IsSingleGap", "UPC settings used vs Is single gap", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode, 2, -0.5, 1.5, VarManager::kIsSingleGap);
     }
@@ -1934,23 +1943,34 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Delta_Mass_DstarD0region", "", false, 50, 0.14, 0.16, VarManager::kDeltaMass);
     }
     if (subGroupStr.Contains("energy-correlator")) {
-      hm->AddHistogram(histClass, "Coschi", "", false, 40, -1.0, 1.0, VarManager::kCosChi, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kECWeight);
-      hm->AddHistogram(histClass, "CosTheta_woweight", "", false, 40, -1.0, 1.0, VarManager::kCosTheta);
-      hm->AddHistogram(histClass, "CosTheta", "", false, 40, -1.0, 1.0, VarManager::kCosTheta, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
+      double coschiBins[26];
+      for (int i = 0; i < 26; i++) {
+        coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
+      }
+
+      double deltaetaBins[21];
+      for (int i = 0; i < 21; i++) {
+        deltaetaBins[i] = -2.0 + 0.2 * i;
+      }
+
+      hm->AddHistogram(histClass, "dileptonmass", "", false, 125, 2.5, 3.5, VarManager::kdileptonmass);
+      hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
       hm->AddHistogram(histClass, "Pt_Hadron", ";P_{T}", false, 120, 0.0, 30.0, VarManager::kPtDau);
+      hm->AddHistogram(histClass, "Coschi_wo", "", false, 25, coschiBins, VarManager::kCosChi);
       hm->AddHistogram(histClass, "Eta_Hadron", ";#eta", false, 120, -2.0, 2.0, VarManager::kEtaDau);
       hm->AddHistogram(histClass, "Phi_Hadron", ";#phi", false, 120, -8, 8, VarManager::kPhiDau);
-      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhi);
-      hm->AddHistogram(histClass, "DeltaEta", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta);
-      hm->AddHistogram(histClass, "DeltaPhi", "", false, 50, -8.0, 8.0, VarManager::kDeltaPhi);
+      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi_weight", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
+      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi);
+      hm->AddHistogram(histClass, "Coschi_DeltaEta", "", false, 25, coschiBins, VarManager::kCosChi, 20, deltaetaBins, VarManager::kDeltaEta, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
+      hm->AddHistogram(histClass, "Coschi_wo_DeltaEta", "", false, 25, coschiBins, VarManager::kCosChi, 20, deltaetaBins, VarManager::kDeltaEta);
       // for bkg
-      hm->AddHistogram(histClass, "DeltaPhi_randomPhi_trans", "", false, 50, -8.0, 8.0, VarManager::kdeltaphi_randomPhi_trans);
-      hm->AddHistogram(histClass, "DeltaPhi_randomPhi_toward", "", false, 50, -8.0, 8.0, VarManager::kdeltaphi_randomPhi_toward);
-      hm->AddHistogram(histClass, "DeltaPhi_randomPhi_away", "", false, 50, -8.0, 8.0, VarManager::kdeltaphi_randomPhi_away);
+      hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_trans, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kWeight_randomPhi_trans);
+      hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_toward, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kWeight_randomPhi_toward);
+      hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_away, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kWeight_randomPhi_away);
 
-      hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 40, -1.0, 1.0, VarManager::kCosChi_randomPhi_trans, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kWeight_randomPhi_trans);
-      hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 40, -1.0, 1.0, VarManager::kCosChi_randomPhi_toward, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kWeight_randomPhi_toward);
-      hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 40, -1.0, 1.0, VarManager::kCosChi_randomPhi_away, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kWeight_randomPhi_away);
+      hm->AddHistogram(histClass, "Coschi_wo_randomPhi_trans", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_trans);
+      hm->AddHistogram(histClass, "Coschi_wo_randomPhi_toward", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_toward);
+      hm->AddHistogram(histClass, "Coschi_wo_randomPhi_away", "", false, 25, coschiBins, VarManager::kCosChi_randomPhi_away);
     }
   }
 

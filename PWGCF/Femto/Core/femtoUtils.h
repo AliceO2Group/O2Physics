@@ -207,6 +207,12 @@ using HasMass = decltype(std::declval<T&>().mass());
 template <typename T>
 using HasSign = decltype(std::declval<T&>().sign());
 
+template <typename T>
+inline int signum(T x)
+{
+  return (T(0) < x) - (x < T(0));
+}
+
 }; // namespace utils
 }; // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_FEMTOUTILS_H_

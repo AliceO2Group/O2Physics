@@ -49,8 +49,8 @@ struct NucleiAntineutronCex {
   using TracksWCovMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels, o2::aod::TracksCovIU>;
 
   // === Cut values ===
-  static constexpr double kIts2MinR = 2.2;    // ITS2 min radius [cm]
-  static constexpr double kIts2MaxR = 39.0;   // ITS2 max radius [cm]
+  static constexpr double kIts2MinR = 4.5;    // ITS2 min radius (exluding IB) [cm]
+  static constexpr double kIts2MaxR = 45.0;   // ITS2 max radius [cm]
   static constexpr double kIts2MaxVz = 39.0;  // ITS2 max |vz| [cm]
   static constexpr double kAccMaxEta = 1.2;   // acceptance |eta|
   static constexpr double kAccMaxVz = 5.3;    // acceptance |vz| [cm]

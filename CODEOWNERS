@@ -36,24 +36,24 @@
 /PWGCF/TableProducer @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGCF/Tasks         @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGDQ @alibuild @iarsene @mcoquet642 @lucamicheletti93 @XiaozhiBai
-/PWGEM @alibuild @feisenhu @dsekihat @ivorobye
-/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid
-/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
-/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng
+/PWGEM @alibuild @feisenhu @dsekihat @ivorobye @jokonig
+/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid @jokonig
+/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat @jokonig
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng @singhra1994
 # PWG-LF
-/PWGLF @alibuild @sustripathy @skundu692 @mpuccio
-/PWGLF/DataModel @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Tasks/GlobalEventProperties @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @omvazque
-/PWGLF/TableProducer/GlobalEventProperties @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @omvazque
-/PWGLF/Tasks/Nuspex @alibuild @sustripathy @skundu692 @mpuccio @fmazzasc @maciacco
-/PWGLF/TableProducer/Nuspex @alibuild @sustripathy @skundu692 @mpuccio @fmazzasc @maciacco
-/PWGLF/Tasks/Resonances @alibuild @sustripathy @skundu692 @mpuccio @dmallick2 @smaff92
-/PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @mpuccio @dmallick2 @smaff92
-/PWGLF/Tasks/Strangeness @alibuild @sustripathy @skundu692 @mpuccio @ercolessi @romainschotter
-/PWGLF/TableProducer/Strangeness @alibuild @sustripathy @mpuccio @skundu692 @ercolessi @romainschotter
-/PWGLF/TableProducer/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Tasks/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Utils @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF @alibuild @omvazque @skundu692 @mpuccio
+/PWGLF/DataModel @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
+/PWGLF/TableProducer/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
+/PWGLF/Tasks/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
+/PWGLF/TableProducer/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
+/PWGLF/Tasks/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92
+/PWGLF/Tasks/Strangeness @alibuild @omvazque @skundu692 @mpuccio @ercolessi @romainschotter
+/PWGLF/TableProducer/Strangeness @alibuild @omvazque @mpuccio @skundu692 @ercolessi @romainschotter
+/PWGLF/TableProducer/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Utils @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
 
 # PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
 /PWGMM      @alibuild @mpuccio @skundu692 @aalkin @jgcn

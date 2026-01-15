@@ -93,9 +93,9 @@ struct ChargedJetHadron {
   // Filter ..................
   Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut &&
                             aod::jcollision::trackOccupancyInTimeRange >= trackOccupancyInTimeRangeMin && aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax &&
-                            ((skipMBGapEvents.node() == false) || (aod::jcollision::subGeneratorId != static_cast<int>(jetderiveddatautilities::JCollisionSubGeneratorId::mbGap))));
+                            ((skipMBGapEvents.node() == false) || (aod::jcollision::getSubGeneratorId != static_cast<int>(jetderiveddatautilities::JCollisionSubGeneratorId::mbGap))));
   Filter mcCollisionFilter = (nabs(aod::jmccollision::posZ) < vertexZCut &&
-                              ((skipMBGapEvents.node() == false) || (aod::jmccollision::subGeneratorId != static_cast<int>(jetderiveddatautilities::JCollisionSubGeneratorId::mbGap))));
+                              ((skipMBGapEvents.node() == false) || (aod::jmccollision::getSubGeneratorId != static_cast<int>(jetderiveddatautilities::JCollisionSubGeneratorId::mbGap))));
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta >= trackEtaMin && aod::jtrack::eta <= trackEtaMax);
   Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta >= trackEtaMin && aod::jmcparticle::eta <= trackEtaMax);
   Filter eventCuts;

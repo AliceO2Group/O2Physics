@@ -9,16 +9,24 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file GFWConfig.h
+/// \brief Utility classes for Generic Framework
+/// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCONFIG_H_
 
+#include "GFW.h"
+
+#include "Framework/Logger.h"
+
+#include <TMath.h>
+#include <TObject.h>
+
 #include <algorithm>
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
-#include <TObject.h>
-#include <TMath.h>
-#include "GFW.h"
 
 namespace o2
 {

@@ -171,7 +171,7 @@ struct HfDataCreatorCharmResoToDstarReduced {
     fitter.setWeightedFinalPCA(false);
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {

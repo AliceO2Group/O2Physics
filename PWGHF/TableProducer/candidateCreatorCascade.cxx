@@ -141,7 +141,7 @@ struct HfCandidateCreatorCascade {
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     massP = MassProton;
     massK0s = MassK0Short;

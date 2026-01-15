@@ -82,6 +82,7 @@ struct JetHadronRecoil {
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
   Configurable<bool> outlierRejectEvent{"outlierRejectEvent", true, "where outliers are found, reject event (true) or just reject the single track/jet (false)"};
   Configurable<bool> doSumw{"doSumw", false, "enable sumw2 for weighted histograms"};
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
 
   TRandom3* rand = new TRandom3(0);
 
@@ -204,9 +205,11 @@ struct JetHadronRecoil {
     if (doprocessJetsMCPMCDMatched || doprocessJetsMCPMCDMatchedWithRhoSubtraction || doprocessJetsMCPMCDMatchedWeighted || doprocessJetsMCPMCDMatchedWeightedWithRhoSubtraction || doprocessRecoilJetsMCPMCDMatched || doprocessRecoilJetsMCPMCDMatchedWeighted || doprocessRecoilJetsMCPMCDMatchedWeightedWithRhoSubtraction) {
       registry.add("hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {ptAxisDet, ptAxisPart}}, doSumw);
       registry.add("hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {phiAxisDet, phiAxisPart}}, doSumw);
-      registry.add("hPhiMatched2d", "#phi matching 2d;#phi;p_{T}", {HistType::kTH2F, {phiAxisPart, ptAxisPart}}, doSumw);
+      registry.add("hPhiMatchedPt", "#phi matching 2d;#phi;p_{T}", {HistType::kTH2F, {{400, 0, 400}, phiAxisPart}}, doSumw);
       registry.add("hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {dRAxisDet, dRAxisPart}}, doSumw);
       registry.add("hPtMatched1d", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{400, 0, 400}}}, doSumw);
+      registry.add("hPtTruth2D", "p_{T} truth 2d;p_{T,part};dphip", {HistType::kTH2F, {{400, 0, 400}, phiAxisPart}}, doSumw);
+      registry.add("hPtTruth1D", "p_{T} truth 1d;p_{T,part}", {HistType::kTH1F, {{400, 0, 400}}}, doSumw);
       registry.add("hDeltaRMatched1d", "#DeltaR matching 1d;#DeltaR_{part}", {HistType::kTH1F, {dRAxisPart}}, doSumw);
       registry.add("hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {ptAxisPart, {100, -5.0, 5.0}}}, doSumw);
       registry.add("hPhiResolution", "#phi resolution;#p_{T,part};Resolution", {HistType::kTH2F, {ptAxisPart, {100, -7.0, 7.0}}}, doSumw);
@@ -626,9 +629,10 @@ struct JetHadronRecoil {
         }
       }
 
-      double dR = getWTAaxisDifference(jetTag, particles);
+      registry.fill(HIST("hPtTruth1D"), jetTag.pt(), weight);
 
-      if (jetTag.has_matchedJetGeo() && jetTag.has_matchedJetPt()) {
+      double dR = getWTAaxisDifference(jetTag, particles);
+      if (jetTag.has_matchedJetGeo()) {
         for (const auto& jetBase : jetTag.template matchedJetGeo_as<std::decay_t<T>>()) {
           if (jetBase.pt() > pTHatMaxMCD * pTHat) {
             if (outlierRejectEvent) {
@@ -701,32 +705,31 @@ struct JetHadronRecoil {
 
       float dphip = RecoDecay::constrainAngle(jetTag.phi() - phiTT);
       double dRp = getWTAaxisDifference(jetTag, particles);
-
-      if (jetTag.has_matchedJetGeo() && jetTag.has_matchedJetPt()) {
+      registry.fill(HIST("hPtTruth1D"), jetTag.pt(), weight);
+      registry.fill(HIST("hPtTruth2D"), jetTag.pt(), dphip, weight);
+      if (jetTag.has_matchedJetGeo()) {
         for (const auto& jetBase : jetTag.template matchedJetGeo_as<std::decay_t<T>>()) {
-          if (jetTag.template matchedJetGeo_first_as<std::decay_t<T>>().globalIndex() == jetTag.template matchedJetPt_first_as<std::decay_t<T>>().globalIndex()) {
-            if (jetBase.pt() > pTHatMaxMCD * pTHat) {
-              if (outlierRejectEvent) {
-                return;
-              } else {
-                continue;
-              }
+          if (jetBase.pt() > pTHatMaxMCD * pTHat) {
+            if (outlierRejectEvent) {
+              return;
+            } else {
+              continue;
             }
+          }
 
-            float dphi = RecoDecay::constrainAngle(jetBase.phi() - phiTT);
-            double dR = getWTAaxisDifference(jetBase, tracks);
-            registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
-            registry.fill(HIST("hPhiMatched2d"), jetTag.phi(), jetTag.pt(), weight);
-            registry.fill(HIST("hPhiResolution"), jetTag.pt(), dphip - dphi, weight);
-            registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
-            if ((std::abs(dphip - o2::constants::math::PI) < 0.6)) {
-              registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
-              registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
-              registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
-              registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
-              registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
-              registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
-            }
+          float dphi = RecoDecay::constrainAngle(jetBase.phi() - phiTT);
+          double dR = getWTAaxisDifference(jetBase, tracks);
+          registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
+          registry.fill(HIST("hPhiMatchedPt"), jetTag.pt(), dphip, weight);
+          registry.fill(HIST("hPhiResolution"), jetTag.pt(), dphip - dphi, weight);
+          registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
+          registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
+          if ((std::abs(dphip - o2::constants::math::PI) < 0.6)) {
+            registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
+            registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
+            registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
+            registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
+            registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
           }
         }
       }
@@ -768,10 +771,7 @@ struct JetHadronRecoil {
                   soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& jets,
                   soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JMcTrackLbs>> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -793,10 +793,7 @@ struct JetHadronRecoil {
                                     soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& jets,
                                     soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JMcTrackLbs>> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -818,10 +815,7 @@ struct JetHadronRecoil {
                           soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& jets,
                           soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JMcTrackLbs>> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -843,10 +837,7 @@ struct JetHadronRecoil {
                                             soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& jets,
                                             soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JMcTrackLbs>> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -871,7 +862,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -901,7 +892,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -933,7 +924,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -965,7 +956,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -997,7 +988,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1029,7 +1020,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1061,7 +1052,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1093,7 +1084,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -1125,7 +1116,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (skipMBGapEvents && mccollision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
