@@ -318,12 +318,10 @@ void V0PhotonCut::SetNamesInputFeatures(const std::vector<std::string>& featureN
 void V0PhotonCut::SetCentrality(float cent)
 {
   mCent = cent;
-  LOG(info) << "V0 Photon Cut, set centrality: " << mCent;
 }
 void V0PhotonCut::SetD_Bz(float d_bz)
 {
   mD_Bz = d_bz;
-  LOG(info) << "V0 Photon Cut, set d_bz: " << mD_Bz;
 }
 
 void V0PhotonCut::SetCutDirMl(const std::vector<int>& cutDirMl)
