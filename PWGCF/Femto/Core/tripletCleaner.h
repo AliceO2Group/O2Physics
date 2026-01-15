@@ -27,6 +27,7 @@ class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner
 {
  public:
   TrackTrackTrackTripletCleaner() = default;
+  ~TrackTrackTrackTripletCleaner() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& /*trackTable*/) const

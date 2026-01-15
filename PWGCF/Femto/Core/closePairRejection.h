@@ -222,7 +222,7 @@ class CloseTrackRejection
         count++;
       }
     }
-    // for small momemeta the calculation of phistar might fail, if the particle did not reach a certain radius
+    // for small momemeta the calculation of phistar might fail, if the particle did not reach one or more of the outer radii
     if (count > 0) {
       mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
     } else {
