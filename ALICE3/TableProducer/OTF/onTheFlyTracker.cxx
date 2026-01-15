@@ -1593,7 +1593,7 @@ struct OnTheFlyTracker {
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       LOG(debug) << "  -> Processing OTF tracking with LUT configuration ID " << icfg;
-      processConfiguration(mcCollision, mcParticles, static_cast<int>(icfg));
+      processWithLUTs(mcCollision, mcParticles, static_cast<int>(icfg));
     }
   }
 
