@@ -180,12 +180,17 @@ class McBuilder
 
   bool fillAnyTable() const { return mFillAnyTable; }
 
-  void reset()
+  template <typename T1, typename T2>
+  void reset(T1 const& mcCollisions, T2 const& mcParticles)
   {
     mCollisionMap.clear();
+    mCollisionMap.reserve(mcCollisions.size());
     mMcParticleMap.clear();
+    mMcParticleMap.reserve(mcParticles.size());
     mMcMotherMap.clear();
+    mMcMotherMap.reserve(mcParticles.size());
     mMcPartonicMotherMap.clear();
+    mMcPartonicMotherMap.reserve(mcParticles.size());
   }
 
  private:

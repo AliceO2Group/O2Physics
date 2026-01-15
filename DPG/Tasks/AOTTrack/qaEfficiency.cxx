@@ -597,6 +597,10 @@ struct QaEfficiency {
       LOG(fatal) << "Both processMC and processMCWithoutCollisions are set to true. Please set only one of them to true.";
     }
 
+    if (numSameCollision && doprocessMCWithoutCollisions) {
+      LOG(fatal) << "Inconsistent configuration for process without MC collisions, but numSameCollision set to true. Please fix your configuration.";
+    }
+
     auto h = histos.add<TH1>("MC/trackSelection", "Track Selection", kTH1D, {axisSel});
     h->GetXaxis()->SetBinLabel(trkCutIdxTrkRead, "Tracks read");
     h->GetXaxis()->SetBinLabel(trkCutIdxHasMcPart, "Passed has MC part.");
@@ -1075,9 +1079,9 @@ struct QaEfficiency {
     constexpr int histogramIndex = id + pdgSign * nSpecies;
     LOG(debug) << "fillMCTrackHistograms for pdgSign '" << pdgSign << "' and id '" << static_cast<int>(id) << "' " << particleName(pdgSign, id) << " with index " << histogramIndex;
     auto const& mcParticle = track.mcParticle();
-    auto const& collision = track.collision_as<Colls>();
     float radius = std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
     if (numSameCollision) {
+      auto const& collision = track.collision_as<Colls>();
       if (!collision.has_mcCollision()) {
         return;
       }
@@ -2025,7 +2029,7 @@ struct QaEfficiency {
 
       /// checking the PV z coordinate, if the track has been assigned to any collision
       if (applyPvZCutInProcessMcWoColl && track.has_collision()) {
-        const auto collision = track.collision();
+        const auto collision = track.collision_as<CollisionsWithMcLabels>();
         const float posZ = collision.posZ();
         if (posZ < vertexZMin || posZ > vertexZMax) {
           continue;

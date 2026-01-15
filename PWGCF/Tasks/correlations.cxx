@@ -201,6 +201,8 @@ struct CorrelationTask {
         multAxes.emplace_back(axisMultCorrMult, "Nch PV");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
         multAxes.emplace_back(axisMultCorrMult, "Nch Global");
+      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0M)
+        multAxes.emplace_back(axisMultCorrCent, "FT0M centrality");
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
@@ -434,6 +436,17 @@ struct CorrelationTask {
   bool checkObject(TTrack& track)
   {
     if constexpr (step <= CorrelationContainer::kCFStepAnaTopology) {
+      // If using MC trigger PDGs, allow ONLY those PDGs to bypass isPhysicalPrimary
+      if (!cfgMcTriggerPDGs->empty()) {
+        // track has pdgCode in this compilation branch (you only call checkObject where that is true)
+        const bool isWantedTrigger =
+          std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track.pdgCode()) != cfgMcTriggerPDGs->end();
+        if (isWantedTrigger) {
+          return true; // allow phi, K*, etc. even if not physical primary
+        }
+        // For everything else keep original definition
+        return track.isPhysicalPrimary();
+      }
       return track.isPhysicalPrimary();
     } else if constexpr (step == CorrelationContainer::kCFStepTrackedOnlyPrim) {
       return track.isPhysicalPrimary() && (track.flags() & aod::cfmcparticle::kReconstructed);

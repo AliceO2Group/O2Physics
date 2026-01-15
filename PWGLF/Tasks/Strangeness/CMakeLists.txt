@@ -89,6 +89,11 @@ o2physics_add_dpl_workflow(phik0shortanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phi-strange-correlation
+    SOURCES phiStrangeCorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lambdapolarization
     SOURCES lambdapolarization.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

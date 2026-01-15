@@ -980,26 +980,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
   }
 
   if (!groupStr.CompareTo("energy-correlator-gen")) {
-    hm->AddHistogram(histClass, "MCCostheta", "Cos#theta", false, 40, -1.0, 1.0, VarManager::kMCCosTheta, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_before);
-    hm->AddHistogram(histClass, "MCHadronPdgCode", "MCHadronPdgCode", false, 6000, -3000, 3000, VarManager::kMCHadronPdgCode);
-    hm->AddHistogram(histClass, "MCMotherPdgCode", "MCMotherPdgCode", false, 6000, -3000, 3000, VarManager::kMCMotherPdgCode);
-    hm->AddHistogram(histClass, "MCPdgCode", "MCPdgCode", false, 1000, -1000, 1000, VarManager::kMCPdgCode);
-    hm->AddHistogram(histClass, "Coschi", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight);
-    hm->AddHistogram(histClass, "Pt_Hadron", "", false, 120, 0.0, 30.0, VarManager::kMCHadronPt);
-    hm->AddHistogram(histClass, "Eta_Hadron", "", false, 120, -2.0, 2.0, VarManager::kMCHadronEta);
-    hm->AddHistogram(histClass, "Phi_Hadron", "", false, 120, -2.0, 2.0, VarManager::kMCHadronPhi);
-    hm->AddHistogram(histClass, "DeltaEta", "", false, 20, -2.0, 2.0, VarManager::kMCdeltaeta);
-    hm->AddHistogram(histClass, "DeltaPhi", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi);
-    hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kMCdeltaeta, 50, -8.0, 8.0, VarManager::kMCdeltaphi);
-    // for bkg
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_trans", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_trans);
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_toward", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_toward);
-    hm->AddHistogram(histClass, "DeltaPhi_randomPhi_away", "", false, 50, -8.0, 8.0, VarManager::kMCdeltaphi_randomPhi_away);
-
-    hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_trans, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_trans);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_toward, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_toward);
-    hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 40, -1.0, 1.0, VarManager::kMCCosChi_randomPhi_away, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kMCWeight_randomPhi_away);
+    double coschiBins[26];
+    for (int i = 0; i < 26; i++) {
+      coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
+    }
+    hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kMCCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight);
   }
+
   if (!groupStr.CompareTo("polarization-pseudoproper-gen")) {
     int varspTHE[3] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCVertexingTauxyProjected};
     int varspTCS[3] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
@@ -1943,23 +1930,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Delta_Mass_DstarD0region", "", false, 50, 0.14, 0.16, VarManager::kDeltaMass);
     }
     if (subGroupStr.Contains("energy-correlator")) {
-      hm->AddHistogram(histClass, "Coschi", "", false, 40, -1.0, 1.0, VarManager::kCosChi, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kECWeight);
-      hm->AddHistogram(histClass, "CosTheta_woweight", "", false, 40, -1.0, 1.0, VarManager::kCosTheta);
-      hm->AddHistogram(histClass, "CosTheta", "", false, 40, -1.0, 1.0, VarManager::kCosTheta, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kEWeight_before);
-      hm->AddHistogram(histClass, "Pt_Hadron", ";P_{T}", false, 120, 0.0, 30.0, VarManager::kPtDau);
-      hm->AddHistogram(histClass, "Eta_Hadron", ";#eta", false, 120, -2.0, 2.0, VarManager::kEtaDau);
-      hm->AddHistogram(histClass, "Phi_Hadron", ";#phi", false, 120, -8, 8, VarManager::kPhiDau);
-      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhi);
-      hm->AddHistogram(histClass, "DeltaEta", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta);
-      hm->AddHistogram(histClass, "DeltaPhi", "", false, 50, -8.0, 8.0, VarManager::kDeltaPhi);
-      // for bkg
-      hm->AddHistogram(histClass, "DeltaPhi_randomPhi_trans", "", false, 50, -8.0, 8.0, VarManager::kdeltaphi_randomPhi_trans);
-      hm->AddHistogram(histClass, "DeltaPhi_randomPhi_toward", "", false, 50, -8.0, 8.0, VarManager::kdeltaphi_randomPhi_toward);
-      hm->AddHistogram(histClass, "DeltaPhi_randomPhi_away", "", false, 50, -8.0, 8.0, VarManager::kdeltaphi_randomPhi_away);
+      double coschiBins[26];
+      for (int i = 0; i < 26; i++) {
+        coschiBins[i] = -1.0 + 2.0 * TMath::Power(0.04 * i, 2.0);
+      }
 
-      hm->AddHistogram(histClass, "Coschi_randomPhi_trans", "", false, 40, -1.0, 1.0, VarManager::kCosChi_randomPhi_trans, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kWeight_randomPhi_trans);
-      hm->AddHistogram(histClass, "Coschi_randomPhi_toward", "", false, 40, -1.0, 1.0, VarManager::kCosChi_randomPhi_toward, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kWeight_randomPhi_toward);
-      hm->AddHistogram(histClass, "Coschi_randomPhi_away", "", false, 40, -1.0, 1.0, VarManager::kCosChi_randomPhi_away, 0, 0, 0, -1, 0, 0, 0, -1, "", "", "", -1, VarManager::kWeight_randomPhi_away);
+      hm->AddHistogram(histClass, "Coschi_unfolding", "", false, 25, coschiBins, VarManager::kMCCosChi_rec, 25, coschiBins, VarManager::kMCCosChi_gen);
+      hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins, VarManager::kCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kECWeight);
+      hm->AddHistogram(histClass, "DeltaEta_DeltaPhi_weight", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -2.0, 6.0, VarManager::kDeltaPhi, 0, 0, 0, -1, "", "", "", -1, VarManager::kPtDau);
     }
   }
 

@@ -246,8 +246,9 @@ struct OnTheFlyTracker {
 
   // Helper struct to pass V0 information
   struct v0candidate {
-    int positiveId; // track index in the Tracks table
-    int negativeId; // track index in the Tracks table
+    int positiveId;   // track index in the Tracks table
+    int negativeId;   // track index in the Tracks table
+    int mcParticleId; // mc particle index
 
     float pt;
 
@@ -634,12 +635,12 @@ struct OnTheFlyTracker {
       negDauMass = o2::constants::physics::MassPionCharged;
       posDauMass = o2::constants::physics::MassPionCharged;
       ctau = 2.68;
-    } else if (std::abs(pdgCode) == kLambda0) {
+    } else if (pdgCode == kLambda0) {
       v0Mass = o2::constants::physics::MassLambda;
       negDauMass = o2::constants::physics::MassPionCharged;
       posDauMass = o2::constants::physics::MassProton;
       ctau = 7.845;
-    } else if (std::abs(pdgCode) == kLambda0Bar) {
+    } else if (pdgCode == kLambda0Bar) {
       v0Mass = o2::constants::physics::MassLambda;
       negDauMass = o2::constants::physics::MassProton;
       posDauMass = o2::constants::physics::MassPionCharged;
@@ -750,10 +751,10 @@ struct OnTheFlyTracker {
           laDecayRadius2D = std::hypot(laDecayVertex[0], laDecayVertex[1]);
         }
       }
-      const bool isV0 = std::find(v0PDGs.begin(), v0PDGs.end(), std::abs(mcParticle.pdgCode())) != v0PDGs.end();
+      const bool isV0 = std::find(v0PDGs.begin(), v0PDGs.end(), mcParticle.pdgCode()) != v0PDGs.end();
 
       if (v0DecaySettings.decayV0 && isV0) {
-        decayV0Particle(mcParticle, v0DecayProducts, v0DecayVertex, std::abs(mcParticle.pdgCode()));
+        decayV0Particle(mcParticle, v0DecayProducts, v0DecayVertex, mcParticle.pdgCode());
         v0DecayRadius2D = std::hypot(v0DecayVertex[0], v0DecayVertex[1]);
       }
 
@@ -1193,6 +1194,7 @@ struct OnTheFlyTracker {
           // n-2: negative Track from V0
           thisV0.positiveId = lastTrackIndex + tracksAlice3.size() - 1;
           thisV0.negativeId = lastTrackIndex + tracksAlice3.size() - 2;
+          thisV0.mcParticleId = mcParticle.globalIndex();
           // use DCA fitters
           int nCand = 0;
           bool dcaFitterOK_V0 = true;
@@ -1244,8 +1246,8 @@ struct OnTheFlyTracker {
             if (mcParticle.pdgCode() == kLambda0) {
               thisV0.mLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                        std::array{negP[0], negP[1], negP[2]}},
-                                            std::array{o2::constants::physics::MassPionCharged,
-                                                       o2::constants::physics::MassProton});
+                                            std::array{o2::constants::physics::MassProton,
+                                                       o2::constants::physics::MassPionCharged});
             } else {
               thisV0.mLambda = -1;
             }
@@ -1253,17 +1255,23 @@ struct OnTheFlyTracker {
             if (mcParticle.pdgCode() == kLambda0Bar) {
               thisV0.mAntiLambda = RecoDecay::m(std::array{std::array{posP[0], posP[1], posP[2]},
                                                            std::array{negP[0], negP[1], negP[2]}},
-                                                std::array{o2::constants::physics::MassProton,
-                                                           o2::constants::physics::MassPionCharged});
+                                                std::array{o2::constants::physics::MassPionCharged,
+                                                           o2::constants::physics::MassProton});
             } else {
               thisV0.mAntiLambda = -1;
             }
 
             if (v0DecaySettings.doV0QA) {
               fillHist(TH1, Form("V0Building_Configuration_%i/hV0Building", icfg), 4.0f);
-              fillHist(TH2, Form("V0Building_Configuration_%i/K0/hMass", icfg), thisV0.mK0, thisV0.pt);
-              fillHist(TH2, Form("V0Building_Configuration_%i/Lambda/hMass", icfg), thisV0.mLambda, thisV0.pt);
-              fillHist(TH2, Form("V0Building_Configuration_%i/AntiLambda/hMass", icfg), thisV0.mAntiLambda, thisV0.pt);
+              if (std::abs(mcParticle.pdgCode()) == kK0Short) {
+                fillHist(TH2, Form("V0Building_Configuration_%i/K0/hMass", icfg), thisV0.mK0, thisV0.pt);
+              }
+              if (mcParticle.pdgCode() == kLambda0) {
+                fillHist(TH2, Form("V0Building_Configuration_%i/Lambda/hMass", icfg), thisV0.mLambda, thisV0.pt);
+              }
+              if (mcParticle.pdgCode() == kLambda0Bar) {
+                fillHist(TH2, Form("V0Building_Configuration_%i/AntiLambda/hMass", icfg), thisV0.mAntiLambda, thisV0.pt);
+              }
             }
 
             // add this V0 to vector (will fill cursor later with collision ID)
@@ -1274,6 +1282,9 @@ struct OnTheFlyTracker {
 
       if (doExtraQA) {
         histos.fill(HIST("hSimTrackX"), trackParCov.getX());
+      }
+      if (isV0) {
+        continue; // V0 handling done, should not be considered anymore
       }
 
       bool reconstructed = true;
@@ -1535,6 +1546,7 @@ struct OnTheFlyTracker {
     // populate V0s
     for (const auto& v0 : v0sAlice3) {
       tableUpgradeV0s(tableCollisions.lastIndex(), // now we know the collision index -> populate table
+                      v0.mcParticleId,
                       v0.positiveId,
                       v0.negativeId,
                       v0.dcaV0dau,
