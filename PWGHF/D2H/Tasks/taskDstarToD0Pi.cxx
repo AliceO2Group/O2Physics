@@ -308,7 +308,7 @@ struct HfTaskDstarToD0Pi {
           hWeights.resize(nWeights);
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
             std::string const histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
-            hWeights[ithWeight] = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
+            hWeights[ithWeight] = dynamic_cast<TH2F*>(weightFile->Get(histName.c_str()));
             if (hWeights[ithWeight] == nullptr) {
               LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());
               return;
@@ -651,8 +651,8 @@ struct HfTaskDstarToD0Pi {
           }
         }
 
-        float centFT0MGen;
-        float pvContributors;
+        float centFT0MGen{0.f};
+        float pvContributors{0.f};
         // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
         if (recCollisions.size() != 0) {
           std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;

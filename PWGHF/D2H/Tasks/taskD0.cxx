@@ -404,7 +404,7 @@ struct HfTaskD0 {
         continue;
       }
 
-      float massD0, massD0bar;
+      float massD0{0.f}, massD0bar{0.f};
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
@@ -770,7 +770,7 @@ struct HfTaskD0 {
         auto bc = collision.template foundBC_as<BCsType>();
         ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
       }
-      float massD0, massD0bar;
+      float massD0{0.f}, massD0bar{0.f};
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();

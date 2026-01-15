@@ -194,7 +194,7 @@ struct HfDataCreatorJpsiHadReduced {
   // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl>;
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;

@@ -214,7 +214,7 @@ struct HfDataCreatorCharmHadPiReduced {
   int runNumber{};
 
   // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   double massC{0.};
   double massB{0.};

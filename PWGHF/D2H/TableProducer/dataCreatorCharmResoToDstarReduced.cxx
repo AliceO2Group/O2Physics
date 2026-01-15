@@ -110,7 +110,7 @@ struct HfDataCreatorCharmResoToDstarReduced {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   // vertex fitter
   o2::vertexing::DCAFitterN<2> fitter;
