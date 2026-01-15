@@ -724,7 +724,6 @@ struct ZdcQVectors {
     std::vector<float> centralities;
 
     auto cent = collision.centFT0C();
-    centrality = cent;
 
     centralities.push_back(collision.centFT0C());
 
@@ -751,6 +750,7 @@ struct ZdcQVectors {
 
     v = {collision.posX(), collision.posY(), collision.posZ()};
     cents = centralities;
+    centrality = cent;
 
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     runnumber = foundBC.runNumber();
