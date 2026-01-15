@@ -80,6 +80,10 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
   Configurable<o2::aod::femtodreamparticle::cutContainerType> confChildNegCutV0{"confChildNegCutV0", 149, "Selection bit for negative child of V0"};
   Configurable<o2::aod::femtodreamparticle::cutContainerType> confChildNegTPCBitV0{"confChildNegTPCBitV0", 2, "PID TPC bit for negative child of V0"};
 
+  Configurable<bool> confCheckV0PIDcutLegacy{"confCheckV0PIDcutLegacy", false, "Flag for V0-children must fulfill PID cut in K0Short-K*-Legacy selection"};
+  Configurable<aod::femtodreamparticle::cutContainerType> confV0ParticleType1TPCBitLegacy{"confV0ParticleType1TPCBitLegacy", 0, "PID TPC bit for first particle type of V0 child, checked in K0Short-K*-Legacy selection"};
+  Configurable<aod::femtodreamparticle::cutContainerType> confV0ParticleType2TPCBitLegacy{"confV0ParticleType2TPCBitLegacy", 0, "PID TPC bit for second particle type of V0 child, checked in K0Short-K*-Legacy selection"};
+
   /// Cascade selection
   Configurable<float> confMinInvMassCascade{"confMinInvMassCascade", 1.2, "Minimum invariant mass of Cascade (particle)"};
   Configurable<float> confMaxInvMassCascade{"confMaxInvMassCascade", 1.5, "Maximum invariant mass of Cascade (particle)"};
@@ -93,6 +97,10 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
 
     Configurable<aod::femtodreamparticle::cutContainerType> daughPosCutBit{"daughPosCutBit", 2401446, "Selection bit for positive child of Reso"};
     Configurable<aod::femtodreamparticle::cutContainerType> daughNegCutBit{"daughNegCutBit", 2401445, "Selection bit for negative child of Reso"};
+
+    Configurable<bool> confCheckResoPIDcutLegacy{"confCheckResoPIDcutLegacy", false, "Flag for Reso-children must fulfill PID cut in K0Short-K*-Legacy selection"};
+    Configurable<aod::femtodreamparticle::cutContainerType> confParticleType1TPCBitLegacy{"confParticleType1TPCBitLegacy", 0, "PID TPC bit for first particle type of Reso child, checked in K0Short-K*-Legacy selection"};
+    Configurable<aod::femtodreamparticle::cutContainerType> confParticleType2TPCBitLegacy{"confParticleType2TPCBitLegacy", 0, "PID TPC bit for second particle type of Reso child, checked in K0Short-K*-Legacy selection"};
   } Reso;
 
   // Partition for selected particles
@@ -801,7 +809,11 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
 
       for (const auto& femtoParticle : parts) {
 
-        if (aod::femtodreamparticle::ParticleType::kResoChild == femtoParticle.partType()) {
+        bool resoChildFulfillsPID = !Reso.confCheckResoPIDcutLegacy ||
+                                    ((femtoParticle.pidcut() & Reso.confParticleType1TPCBitLegacy) == Reso.confParticleType1TPCBitLegacy) ||
+                                    ((femtoParticle.pidcut() & Reso.confParticleType2TPCBitLegacy) == Reso.confParticleType2TPCBitLegacy);
+
+        if ((aod::femtodreamparticle::ParticleType::kResoChild == femtoParticle.partType()) && resoChildFulfillsPID) {
           std::vector<int> childIDs;
           const auto& children = femtoParticle.childrenIds();
           childIDs.push_back(children[0]);
@@ -841,7 +853,11 @@ struct FemtoDreamProducerTaskForSpecificAnalysis {
                       femtoParticle.mAntiLambda());
         }
 
-        if (aod::femtodreamparticle::ParticleType::kV0Child == femtoParticle.partType()) {
+        bool v0ChildFulfillsPID = !confCheckV0PIDcutLegacy ||
+                                  ((femtoParticle.pidcut() & confV0ParticleType1TPCBitLegacy) == confV0ParticleType1TPCBitLegacy) ||
+                                  ((femtoParticle.pidcut() & confV0ParticleType1TPCBitLegacy) == confV0ParticleType1TPCBitLegacy);
+
+        if ((aod::femtodreamparticle::ParticleType::kV0Child == femtoParticle.partType()) && v0ChildFulfillsPID) {
           std::vector<int> childIDs;
           const auto& children = femtoParticle.childrenIds();
           childIDs.push_back(children[0]);
