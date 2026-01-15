@@ -90,11 +90,19 @@ static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOf
 #define LIST_OF_PARTICLES_OF_INTEREST \
   X(Phi)                          \
   X(K0S)                          \
-  X(PionTPC)                      \
-  X(PionTPCTOF)
+  X(Pion)                         \
+  //X(PionTPC)                      \
+  //X(PionTPCTOF)
 
 enum ParticleOfInterest {
 #define X(name) name,
+  LIST_OF_PARTICLES_OF_INTEREST
+#undef X
+  ParticleOfInterestSize
+};
+
+static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{
+#define X(name) #name,
   LIST_OF_PARTICLES_OF_INTEREST
 #undef X
 };
@@ -251,9 +259,9 @@ struct PhiStrangenessCorrelation {
   Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
   // Defining the type of the collisions for data and MC
-  using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults, aod::PhimesonSelection>>;
+  using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults, aod::PhimesonSelectionData>>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
-  using MCCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::PhimesonSelection>>;
+  using MCCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::PhimesonSelectionMcGen>>;
 
   // Defining the type of the V0s and corresponding daughter tracks for data and MC
   using FullV0s = soa::Filtered<aod::V0Datas>;
@@ -274,7 +282,7 @@ struct PhiStrangenessCorrelation {
     Preslice<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
     Preslice<FullMCV0s> v0PerCollision = aod::v0::collisionId;
     Preslice<FullMCTracks> trackPerCollision = aod::track::collisionId;
-    Preslice<aod::PhimesonCandidates> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
+    PresliceUnsorted<aod::PhimesonCandidatesData> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
 
     // Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
   } preslices;
@@ -514,7 +522,7 @@ struct PhiStrangenessCorrelation {
     return true;
   }
 
-  void processPhiK0SPionDeltayDeltaphiData2D(SelCollisions::iterator const& collision, aod::PhimesonCandidates const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiK0SPionDeltayDeltaphiData2D(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     float multiplicity = collision.centFT0M();
 
@@ -573,7 +581,7 @@ struct PhiStrangenessCorrelation {
 
   PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDeltayDeltaphiData2D, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
 
-  void processParticleEfficiency(MCCollisions::iterator const& mcCollision, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidates const& phiCandidates)
+  void processParticleEfficiency(MCCollisions::iterator const& mcCollision, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidatesData const& phiCandidates)
   {
     uint16_t numberAssocColls{0};
     std::vector<float> zVtxs;
