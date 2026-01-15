@@ -704,9 +704,9 @@ struct FlowZdcTask {
             histos.fill(HIST("ZnaVsZnc"), znA, znC);
           if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
             histos.fill(HIST("ZpaVsZpc"), zpA, zpC);
-          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))
+          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
             histos.fill(HIST("ZnaVsZpa"), znA, zpA);
-          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))
+          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
             histos.fill(HIST("ZncVsZpc"), znC, zpC);
         } else {
           histos.fill(HIST("ampZna"), znA);
