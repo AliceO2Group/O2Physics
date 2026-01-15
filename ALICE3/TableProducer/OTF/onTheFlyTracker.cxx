@@ -741,7 +741,7 @@ struct OnTheFlyTracker {
     double xiDecayRadius2D = 0;
     double laDecayRadius2D = 0;
     double v0DecayRadius2D = 0;
-    std::vector<TLorentzVector> decayProducts;
+    std::vector<TLorentzVector> cascadeDecayProducts;
     std::vector<TLorentzVector> v0DecayProducts;
     std::vector<double> xiDecayVertex, laDecayVertex, v0DecayVertex;
     for (const auto& mcParticle : mcParticles) {
@@ -752,14 +752,17 @@ struct OnTheFlyTracker {
       laDecayVertex.clear();
       v0DecayVertex.clear();
 
-      decayProducts.clear();
+      cascadeDecayProducts.clear();
       v0DecayProducts.clear();
 
       if (cascadeDecaySettings.decayXi) {
         if (mcParticle.pdgCode() == kXiMinus) {
           o2::track::TrackParCov xiTrackParCov;
           o2::upgrade::convertMCParticleToO2Track(mcParticle, xiTrackParCov, pdgDB);
-          decayCascade(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, laDecayVertex);
+          decayCascade(mcParticle, xiTrackParCov, cascadeDecayProducts, xiDecayVertex, laDecayVertex);
+          if (cascadeDecayProducts.size() != 3) {
+            LOG(fatal) << "Xi decay did not produce 3 daughters as expected!";
+          }
           xiDecayRadius2D = std::hypot(xiDecayVertex[0], xiDecayVertex[1]);
           laDecayRadius2D = std::hypot(laDecayVertex[0], laDecayVertex[1]);
         }
@@ -768,6 +771,9 @@ struct OnTheFlyTracker {
 
       if (v0DecaySettings.decayV0 && isV0) {
         decayV0Particle(mcParticle, v0DecayProducts, v0DecayVertex, mcParticle.pdgCode());
+        if (v0DecayProducts.size() != 2) {
+          LOG(fatal) << "V0 decay did not produce 2 daughters as expected!";
+        }
         v0DecayRadius2D = std::hypot(v0DecayVertex[0], v0DecayVertex[1]);
       }
 
@@ -805,9 +811,9 @@ struct OnTheFlyTracker {
       }
       if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == kXiMinus) {
         histos.fill(HIST("hGenXi"), xiDecayRadius2D, mcParticle.pt());
-        histos.fill(HIST("hGenPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
-        histos.fill(HIST("hGenPiFromLa"), laDecayRadius2D, decayProducts[1].Pt());
-        histos.fill(HIST("hGenPrFromLa"), laDecayRadius2D, decayProducts[2].Pt());
+        histos.fill(HIST("hGenPiFromXi"), xiDecayRadius2D, cascadeDecayProducts[0].Pt());
+        histos.fill(HIST("hGenPiFromLa"), laDecayRadius2D, cascadeDecayProducts[1].Pt());
+        histos.fill(HIST("hGenPrFromLa"), laDecayRadius2D, cascadeDecayProducts[2].Pt());
       }
       if (v0DecaySettings.doV0QA && isV0) {
         for (size_t indexV0 = 0; indexV0 < v0PDGs.size(); indexV0++) {
@@ -848,9 +854,9 @@ struct OnTheFlyTracker {
           histos.fill(HIST("hXiBuilding"), 0.0f);
         }
 
-        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0], pdgDB);
-        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, decayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1], pdgDB);
-        o2::upgrade::convertTLorentzVectorToO2Track(kProton, decayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, cascadeDecayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, cascadeDecayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(kProton, cascadeDecayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2], pdgDB);
 
         for (int i = 0; i < kCascProngs; i++) {
           isReco[i] = false;
@@ -897,11 +903,11 @@ struct OnTheFlyTracker {
             histos.fill(HIST("hRecoXi"), xiDecayRadius2D, mcParticle.pt());
           }
           if (isReco[0])
-            histos.fill(HIST("hRecoPiFromXi"), xiDecayRadius2D, decayProducts[0].Pt());
+            histos.fill(HIST("hRecoPiFromXi"), xiDecayRadius2D, cascadeDecayProducts[0].Pt());
           if (isReco[1])
-            histos.fill(HIST("hRecoPiFromLa"), laDecayRadius2D, decayProducts[1].Pt());
+            histos.fill(HIST("hRecoPiFromLa"), laDecayRadius2D, cascadeDecayProducts[1].Pt());
           if (isReco[2])
-            histos.fill(HIST("hRecoPrFromLa"), laDecayRadius2D, decayProducts[2].Pt());
+            histos.fill(HIST("hRecoPrFromLa"), laDecayRadius2D, cascadeDecayProducts[2].Pt());
         }
 
         // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
