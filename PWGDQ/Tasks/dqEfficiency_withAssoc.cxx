@@ -3592,6 +3592,7 @@ struct AnalysisDileptonTrack {
   Configurable<float> fConfigMCGenDileptonLegEtaAbs{"cfgMCGenDileptonLegEtaAbs", 0.9f, "eta abs range for the dilepton leg"};
   Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
   Configurable<bool> fConfigUseMCRapcut{"cfgUseMCRapcut", false, "Use Rap cut for dileptons used in the triplet vertexing(reconstructed)"};
+  Configurable<bool> fConfigUseCorrectlyAssociatedMC{"cfgUseCorrectlyAssociatedMC", true, "Use only correctly associated track to construct triplet"};
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
@@ -3982,6 +3983,9 @@ struct AnalysisDileptonTrack {
 
     uint32_t mcDecision = static_cast<uint32_t>(0);
     size_t isig = 0;
+    bool isCorrectAssoc_lepton1 = false;
+    bool isCorrectAssoc_lepton2 = false;
+    bool isCorrectAssoc_assoc = false;
 
     for (auto dilepton : dileptons) {
       // get full track info of tracks based on the index
@@ -4000,6 +4004,12 @@ struct AnalysisDileptonTrack {
       float rap = dilepton.rap();
       if (fConfigUseMCRapcut && abs(rap) > fConfigDileptonRapCutAbs)
         continue;
+
+      // Correct association
+      if (fConfigUseCorrectlyAssociatedMC) {
+        isCorrectAssoc_lepton1 = (lepton1MC.reducedMCevent() == event.reducedMCevent());
+        isCorrectAssoc_lepton2 = (lepton2MC.reducedMCevent() == event.reducedMCevent());
+      }
 
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
 
@@ -4051,11 +4061,22 @@ struct AnalysisDileptonTrack {
           if (track.globalIndex() == dilepton.index0Id() || track.globalIndex() == dilepton.index1Id()) {
             continue;
           }
+
+          auto trackMC = track.reducedMCTrack();
+          if (fConfigUseCorrectlyAssociatedMC) { // check if correctly associated
+            isCorrectAssoc_assoc = (trackMC.reducedMCevent() == event.reducedMCevent());
+          }
+          bool isCorrect_triplet = isCorrectAssoc_lepton1 && isCorrectAssoc_lepton2 && isCorrectAssoc_assoc;
+          if (fConfigUseCorrectlyAssociatedMC) {
+            if (!isCorrect_triplet) {
+              continue;
+            }
+          }
+
           // compute needed quantities
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
 
-          auto trackMC = track.reducedMCTrack();
           mcDecision = 0;
           isig = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
