@@ -166,7 +166,7 @@ struct HfTaskElectronWeakBoson {
   // pp
   // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
 
-  Filter eventFilter = (applySel8 ? (o2::aod::evsel::sel8 == true) : (o2::aod::evsel::sel8 == o2::aod::evsel::sel8));
+  Filter eventFilter = (applySel8 ? (o2::aod::evsel::sel8 == true) : (o2::aod::evsel::sel8 == o2::aod::evsel::sel8)); // FIXME: both sides of overloaded operator are equivalent
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
   Filter etafilter = (aod::track::eta < etaTrMax) && (aod::track::eta > etaTrMin);
@@ -442,7 +442,7 @@ struct HfTaskElectronWeakBoson {
       if (chiSqNdf > chiSqNdfMax) {
         continue;
       }
-      float massZee, massZeeErr;
+      float massZee{}, massZeeErr{};
       zeeKF.GetMass(massZee, massZeeErr);
       registry.fill(HIST("hKfInvMassZee"), centrality, track.sign() * charge, kfpIsoEle.GetPt(), massZee);
       // LOG(info) << "Invarimass cal by KF particle mass = " << massZee;

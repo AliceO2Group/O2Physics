@@ -515,8 +515,8 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("tofNSigPt"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("tpcNSigPt"), track.pt(), track.tpcNSigmaEl());
 
-      int mpdg;   // electron source pdg code
-      double mpt; // electron source pt
+      int mpdg{};   // electron source pdg code
+      double mpt{}; // electron source pt
       int const source = getElecSource(track, mpt, mpdg);
 
       if (source == DirectBeauty || source == BeautyCharm) {

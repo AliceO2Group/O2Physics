@@ -663,7 +663,7 @@ struct HfTaskMcValidationRec {
   Preslice<HfCand2ProngWithMCRec> cand2ProngPerCollision = aod::hf_cand::collisionId;
   Preslice<HfCand3ProngWithMCRec> cand3ProngPerCollision = aod::hf_cand::collisionId;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HfEventSelection hfEvSel; // event selection and monitoring
 
   AxisSpec axisDeltaMom{2000, -1., 1.};

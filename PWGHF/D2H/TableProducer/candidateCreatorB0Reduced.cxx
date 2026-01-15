@@ -210,7 +210,7 @@ struct HfCandidateCreatorB0Reduced {
         trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaBachPion);
 
         // get uncertainty of the decay length
-        float phi, theta;
+        float phi{}, theta{};
         // getPointDirection modifies phi and theta
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
@@ -314,7 +314,7 @@ struct HfCandidateCreatorB0Reduced {
         trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
 
         // get uncertainty of the decay length
-        float phi, theta;
+        float phi{}, theta{};
         // getPointDirection modifies phi and theta
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
