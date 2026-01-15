@@ -317,7 +317,7 @@ struct qaMatching {
     o2::framework::HistPtr eta_pdg_den;
 
     EfficiencyPlotter(std::string path, std::string title,
-                      HistogramRegistry& registry)
+                      HistogramRegistry& registry, bool createPdgMomHistograms)
     {
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
       AxisSpec pTAxis = {100, 0, 10, "p_{T} (GeV/c)"};
@@ -337,13 +337,15 @@ struct qaMatching {
       histTitle = title + " vs. p - den";
       p_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {pAxis}});
 
-      histName = path + "p_pdg_num";
-      histTitle = title + " vs. p vs pdg ID - num";
-      p_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, motherPDGAxis}});
+      if (createPdgMomHistograms) {
+        histName = path + "p_pdg_num";
+        histTitle = title + " vs. p vs pdg ID - num";
+        p_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, motherPDGAxis}});
 
-      histName = path + "p_pdg_den";
-      histTitle = title + " vs. p vs pdg ID - den";
-      p_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, motherPDGAxis}});
+        histName = path + "p_pdg_den";
+        histTitle = title + " vs. p vs pdg ID - den";
+        p_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, motherPDGAxis}});
+      }
 
       // pT dependence
       histName = path + "pt_num";
@@ -354,13 +356,16 @@ struct qaMatching {
       histTitle = title + " vs. p_{T} - den";
       pt_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {pTAxis}});
 
-      histName = path + "pt_pdg_num";
-      histTitle = title + " vs. p_{T} vs pdg ID - num";
-      pt_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pTAxis, motherPDGAxis}});
+      if (createPdgMomHistograms) {
+        histName = path + "pt_pdg_num";
+        histTitle = title + " vs. p_{T} vs pdg ID - num";
+        pt_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pTAxis, motherPDGAxis}});
+        
 
-      histName = path + "pt_pdg_den";
-      histTitle = title + " vs. p_{T} vs pdg ID - den";
-      pt_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pTAxis, motherPDGAxis}});
+        histName = path + "pt_pdg_den";
+        histTitle = title + " vs. p_{T} vs pdg ID - den";
+        pt_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pTAxis, motherPDGAxis}});
+      }
 
       // eta dependence
       histName = path + "eta_num";
@@ -371,13 +376,15 @@ struct qaMatching {
       histTitle = title + " vs. #eta - den";
       eta_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {etaAxis}});
 
-      histName = path + "eta_pdg_num";
-      histTitle = title + " vs. #eta vs pdg ID - num";
-      eta_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {etaAxis, motherPDGAxis}});
+      if (createPdgMomHistograms) {
+        histName = path + "eta_pdg_num";
+        histTitle = title + " vs. #eta vs pdg ID - num";
+        eta_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {etaAxis, motherPDGAxis}});
 
-      histName = path + "eta_pdg_den";
-      histTitle = title + " vs. #eta vs pdg ID - den";
-      eta_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {etaAxis, motherPDGAxis}});
+        histName = path + "eta_pdg_den";
+        histTitle = title + " vs. #eta vs pdg ID - den";
+        eta_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {etaAxis, motherPDGAxis}});
+      }
 
       // phi dependence
       histName = path + "phi_num";
@@ -388,13 +395,15 @@ struct qaMatching {
       histTitle = title + " vs. #phi - den";
       phi_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {phiAxis}});
 
-      histName = path + "phi_pdg_num";
-      histTitle = title + " vs. #phi vs pdg ID - num";
-      phi_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {phiAxis, motherPDGAxis}});
+      if (createPdgMomHistograms) {
+        histName = path + "phi_pdg_num";
+        histTitle = title + " vs. #phi vs pdg ID - num";
+        phi_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {phiAxis, motherPDGAxis}});
 
-      histName = path + "phi_pdg_den";
-      histTitle = title + " vs. #phi vs pdg ID - den";
-      phi_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {phiAxis, motherPDGAxis}});
+        histName = path + "phi_pdg_den";
+        histTitle = title + " vs. #phi vs pdg ID - den";
+        phi_pdg_den = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {phiAxis, motherPDGAxis}});
+      }
     }
 
     template <class T>
@@ -521,11 +530,11 @@ struct qaMatching {
     HistogramRegistry* registry;
 
     MatchingPlotter(std::string path,
-                    HistogramRegistry* reg)
-      : fMatchingPurityPlotter(path + "matching-purity/", "Matching purity", *reg),
-        fPairingEfficiencyPlotter(path + "pairing-efficiency/", "Pairing efficiency", *reg),
-        fMatchingEfficiencyPlotter(path + "matching-efficiency/", "Matching efficiency", *reg),
-        fFakeMatchingEfficiencyPlotter(path + "fake-matching-efficiency/", "Fake matching efficiency", *reg)
+                    HistogramRegistry* reg, bool createPdgMomHistograms)
+      : fMatchingPurityPlotter(path + "matching-purity/", "Matching purity", *reg, createPdgMomHistograms),
+        fPairingEfficiencyPlotter(path + "pairing-efficiency/", "Pairing efficiency", *reg, createPdgMomHistograms),
+        fMatchingEfficiencyPlotter(path + "matching-efficiency/", "Matching efficiency", *reg, createPdgMomHistograms),
+        fFakeMatchingEfficiencyPlotter(path + "fake-matching-efficiency/", "Fake matching efficiency", *reg, createPdgMomHistograms)
     {
       registry = reg;
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
@@ -751,19 +760,19 @@ struct qaMatching {
     registry.add((histPath + "selectedMCHTracksAtMFTTrue").c_str(), "Selected MCH tracks position at MFT end - true", {HistType::kTH2F, {trackPositionXAtMFTAxis, trackPositionYAtMFTAxis}});
     registry.add((histPath + "selectedMCHTracksAtMFTFake").c_str(), "Selected MCH tracks position at MFT end - fake", {HistType::kTH2F, {trackPositionXAtMFTAxis, trackPositionYAtMFTAxis}});
 
-    fChi2MatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Prod/", &registryMatching);
+    fChi2MatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Prod/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms);
     int registryIndex = 0;
     for (const auto& [label, func] : matchingChi2Functions) {
-      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", registryMatchingVec[registryIndex]);
+      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", registryMatchingVec[registryIndex], fConfigQAs.fCreatePdgMomHistograms);
       registryIndex += 1;
     }
     for (const auto& [label, response] : matchingMlResponses) {
-      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", (registryMatchingVec[registryIndex]));
+      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", (registryMatchingVec[registryIndex]), fConfigQAs.fCreatePdgMomHistograms);
       registryIndex += 1;
     }
 
-    fTaggedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Tagged/", &registryMatching);
-    fSelectedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Selected/", &registryMatching);
+    fTaggedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Tagged/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms);
+    fSelectedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Selected/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms);
   }
 
   void CreateDimuonHistos()
