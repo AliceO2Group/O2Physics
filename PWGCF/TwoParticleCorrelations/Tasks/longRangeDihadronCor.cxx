@@ -671,16 +671,6 @@ struct LongRangeDihadronCor {
       if (cfgRemapFT0CDeadChannels) {
         if (id == kFT0CRemapChannelInnerRing) {
           int dead_id = id + kFT0CInnerMirror;
-<<<<<<< Updated upstream
-          registry.fill(HIST("FT0Amp"), dead_id, ampl);
-          ampl = ampl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
-        } else if (id >= kFT0CRemapChannelStart && id <= kFT0CRemapChannelEnd) {
-          int dead_id = id + kFT0COuterMirror;
-          registry.fill(HIST("FT0Amp"), dead_id, ampl);
-          ampl = ampl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
-=======
           float mirroredAmpl = ampl;
           float mirroredAmplCorrected = mirroredAmpl / cstFT0RelGain[iCh];
           registry.fill(HIST("FT0Amp"), dead_id, mirroredAmpl);
@@ -691,7 +681,6 @@ struct LongRangeDihadronCor {
           float mirroredAmplCorrected = mirroredAmpl / cstFT0RelGain[iCh];
           registry.fill(HIST("FT0Amp"), dead_id, mirroredAmpl);
           registry.fill(HIST("FT0AmpCorrect"), dead_id, mirroredAmplCorrected);
->>>>>>> Stashed changes
         }
       }
       if ((cfgRejectFT0CInside && (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax)))
@@ -705,16 +694,10 @@ struct LongRangeDihadronCor {
       if (cfgRemapFT0ADeadChannels) {
         if (id >= kFT0ARemapChannelStart && id <= kFT0ARemapChannelEnd) {
           int dead_id = id - kFT0AOuterMirror;
-<<<<<<< Updated upstream
-          registry.fill(HIST("FT0Amp"), dead_id, ampl);
-          ampl = ampl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, ampl);
-=======
           float mirroredAmpl = ampl;
           float mirroredAmplCorrected = mirroredAmpl / cstFT0RelGain[iCh];
           registry.fill(HIST("FT0Amp"), dead_id, mirroredAmpl);
           registry.fill(HIST("FT0AmpCorrect"), dead_id, mirroredAmplCorrected);
->>>>>>> Stashed changes
         }
       }
       if ((cfgRejectFT0AInside && (id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax)))
