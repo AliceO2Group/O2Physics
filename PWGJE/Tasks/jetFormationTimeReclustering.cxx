@@ -101,7 +101,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct FormationTimeReclustering {
+struct JetFormationTimeReclustering {
 
   Produces<aod::CJetTFSSs> jetSubstructureDataTable;
   Produces<aod::CMCDJetTFSSs> jetSubstructureMCDTable;
@@ -272,28 +272,28 @@ struct FormationTimeReclustering {
   void processDummy(aod::JetTracks const&)
   {
   }
-  PROCESS_SWITCH(FormationTimeReclustering, processDummy, "Dummy process function turned on by default", true);
+  PROCESS_SWITCH(JetFormationTimeReclustering, processDummy, "Dummy process function turned on by default", true);
 
   void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,
                               aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks, TracksPerCollision, jetSubstructureDataTable, jetSplittingsDataTable);
   }
-  PROCESS_SWITCH(FormationTimeReclustering, processChargedJetsData, "charged jet substructure", false);
+  PROCESS_SWITCH(JetFormationTimeReclustering, processChargedJetsData, "charged jet substructure", false);
 
   void processChargedJetsEventWiseSubData(soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>::iterator const& jet,
                                           aod::JetTracksSub const& tracks)
   {
     analyseCharged<true>(jet, tracks, TracksPerCollisionDataSub, jetSubstructureDataSubTable, jetSplittingsDataSubTable);
   }
-  PROCESS_SWITCH(FormationTimeReclustering, processChargedJetsEventWiseSubData, "eventwise-constituent subtracted charged jet substructure", false);
+  PROCESS_SWITCH(JetFormationTimeReclustering, processChargedJetsEventWiseSubData, "eventwise-constituent subtracted charged jet substructure", false);
 
   void processChargedJetsMCD(typename soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet,
                              aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks, TracksPerCollision, jetSubstructureMCDTable, jetSplittingsMCDTable);
   }
-  PROCESS_SWITCH(FormationTimeReclustering, processChargedJetsMCD, "charged jet substructure", false);
+  PROCESS_SWITCH(JetFormationTimeReclustering, processChargedJetsMCD, "charged jet substructure", false);
 
   void processChargedJetsMCP(typename soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet)
   {
@@ -307,12 +307,12 @@ struct FormationTimeReclustering {
     jetReclustering<true, false>(jet, jetSplittingsMCPTable);
     jetSubstructureMCPTable(ptJet, phiJet, etaJet, energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, leadingConstituentPt, tauFormVec, zVec, ptgVec, thetagVec, zgVec, taugVec);
   }
-  PROCESS_SWITCH(FormationTimeReclustering, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
+  PROCESS_SWITCH(JetFormationTimeReclustering, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
-  return WorkflowSpec{adaptAnalysisTask<FormationTimeReclustering>(
+  return WorkflowSpec{adaptAnalysisTask<JetFormationTimeReclustering>(
     cfgc, TaskName{"jet-formation-time-reclustering"})};
 }
