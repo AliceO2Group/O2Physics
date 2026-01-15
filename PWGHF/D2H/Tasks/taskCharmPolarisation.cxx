@@ -100,7 +100,7 @@ enum QvecEstimator : uint8_t {
 };
 
 /// columns for table to study the Lc->PKPi background
-DECLARE_SOA_COLUMN(MassLc, MassLambdaCPlus, float);
+DECLARE_SOA_COLUMN(MassLc, massLc, float);
 DECLARE_SOA_COLUMN(PtLc, ptLc, float);
 DECLARE_SOA_COLUMN(RapidityLc, rapidityLc, float);
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
