@@ -360,7 +360,6 @@ struct qaMatching {
         histName = path + "pt_pdg_num";
         histTitle = title + " vs. p_{T} vs pdg ID - num";
         pt_pdg_num = registry.add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pTAxis, motherPDGAxis}});
-        
 
         histName = path + "pt_pdg_den";
         histTitle = title + " vs. p_{T} vs pdg ID - den";
