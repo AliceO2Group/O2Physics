@@ -2615,7 +2615,7 @@ struct cascadeFlow {
         if (isPrimary) {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 0);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 0);
-        } else{
+        } else {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 1);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 1);
         }
