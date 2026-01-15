@@ -149,7 +149,6 @@ struct HfTaskCorrelationDstarHadrons {
       //   ptTrack = 10.5;
       // }
       float netEfficiencyWeight = 1.0;
-      float const efficiencyWeightTracks = 1.0;
 
       if (applyEfficiency) {
         float const efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
