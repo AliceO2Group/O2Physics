@@ -201,7 +201,7 @@ class FemtoUniverseContainer
     if (use3dplots) {
       mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult, weight);
       mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarkTMult"), femtoObs, kT, mult, weight);
-      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkTPtPart1PtPart2"), kT, part1.pt(), part2.pt());    
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkTPtPart1PtPart2"), kT, part1.pt(), part2.pt());
     }
   }
 
