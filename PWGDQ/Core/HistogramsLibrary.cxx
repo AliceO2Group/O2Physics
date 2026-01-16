@@ -234,8 +234,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MCVtxX_VtxY", "Vtx X vs Vtx Y", false, 200, -0.2, 0.2, VarManager::kMCVtxX, 200, -0.2, 0.2, VarManager::kMCVtxY);
       hm->AddHistogram(histClass, "MCVtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kMCVtxZ);
       hm->AddHistogram(histClass, "MCVtxZ_VtxX", "Vtx X vs Vtx Z", false, 60, -15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxX);
-      hm->AddHistogram(histClass, "MCVtxX_VtxY", "Vtx X vs Vtx Y", false, 200, 15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxY);
-      hm->AddHistogram(histClass, "MCImpPar", "MC impact param", false, 20, 0.0, 20.0, VarManager::kMCEventImpParam);
+      hm->AddHistogram(histClass, "MCVtxZ_VtxY", "Vtx Y vs Vtx Z", false, 200, 15.0, 15.0, VarManager::kMCVtxZ, 200, -0.2, 0.2, VarManager::kMCVtxY);
+      hm->AddHistogram(histClass, "MCImpPar", "MC impact param", false, 200, 0.0, 20.0, VarManager::kMCEventImpParam);
       hm->AddHistogram(histClass, "MCCentrFT0C", "MC Centrality FT0C", false, 100, 0.0, 100.0, VarManager::kMCEventCentrFT0C);
       hm->AddHistogram(histClass, "MultMCNParticlesEta05", "MultMCNParticlesEta05", false, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta05);
       hm->AddHistogram(histClass, "MultMCNParticlesEta08", "MultMCNParticlesEta08", false, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta08);
