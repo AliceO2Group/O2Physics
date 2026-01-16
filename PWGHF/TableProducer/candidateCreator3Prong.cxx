@@ -606,9 +606,9 @@ struct HfCandidateCreator3Prong {
       if (applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
         kfCandPKPi.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
         kfCandPiKP.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
-        kfCandPiKPi.SetNonlinearMassConstraint(MassDPlus);
-        kfCandKKPi.SetNonlinearMassConstraint(MassDS);
-        kfCandPiKK.SetNonlinearMassConstraint(MassDS);
+        kfCandPiKPi.SetNonlinearMassConstraint(static_cast<float>(MassDPlus));
+        kfCandKKPi.SetNonlinearMassConstraint(static_cast<float>(MassDS));
+        kfCandPiKK.SetNonlinearMassConstraint(static_cast<float>(MassDS));
       }
 
       const float chi2geo = kfCandPKPi.Chi2() / static_cast<float>(kfCandPKPi.NDF());
