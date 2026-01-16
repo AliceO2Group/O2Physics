@@ -1255,9 +1255,11 @@ struct associateSameMFT {
           if (global_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
             continue;
           }
-          if (global_muon.collisionId() == muon.collisionId()) {
-            self_Ids.emplace_back(global_muon.globalIndex());
-          }
+          self_Ids.emplace_back(global_muon.globalIndex());
+
+          // if (global_muon.collisionId() == muon.collisionId()) {
+          //   self_Ids.emplace_back(global_muon.globalIndex());
+          // }
         }
         em_same_mft_ids(self_Ids);
         self_Ids.clear();
