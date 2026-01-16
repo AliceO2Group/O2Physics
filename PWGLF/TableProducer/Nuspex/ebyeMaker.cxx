@@ -194,8 +194,8 @@ struct EbyeMaker {
   const AxisSpec zVtxAxis{100, -20.f, 20.f, "vertex z in cm"};
   const AxisSpec nTpcAxis{160, 0, 160, "N TPC"};
   const AxisSpec dcaAxis{2000, -1., 1., "DCA in cm"};
-  const AxisSpec phiAxis(650, 0, 6.5, "#phi (rad)");
-  const AxisSpec signMomAxis(1e3, -5.f, 5.f, "#it{p}_{T}/#it{Z} (GeV/#it{c})");
+  const AxisSpec phiAxis{650, 0, 6.5, "#phi (rad)"};
+  const AxisSpec signMomAxis{1e3, -5.f, 5.f, "#it{p}_{T}/#it{Z} (GeV/#it{c})"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
@@ -537,7 +537,7 @@ struct EbyeMaker {
     histos.add<TH2>("QA/tpcCRvsCls", ";#it{N}_{TPCCR};#it{N}_{TPCcls}", HistType::kTH2F, {nTpcAxis, nTpcAxis});
     histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
     histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
-    histos.add<TH3>("QA/phiVsPtVsCR", "#it{N}^{TPC}_{CR};'it{p}_{T} (GeV/#it{c});#phi (rad);", HistType::kTH3F, {nTpcAxis, signMomAxis, phiAxis});
+    histos.add<TH3>("QA/phiVsPtVsCR", ";#it{N}^{TPC}_{CR};#it{p}_{T} (GeV/#it{c});#phi (rad)", HistType::kTH3F, {nTpcAxis, signMomAxis, phiAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
