@@ -739,6 +739,7 @@ DECLARE_SOA_COLUMN(VertexPz, vertexPz, float);                                  
 DECLARE_SOA_COLUMN(SVertex, sVertex, float);                                             //! Secondary vertex of lepton pair
 DECLARE_SOA_COLUMN(Tauxy, tauxy, float);                                                 //! Transverse pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);                                           //! Error on transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauxyPoleJpsiMass, tauxyPoleJpsiMass, float);                         //! Transverse pseudo-proper time of lepton pair computed with J/psi pole mass (in ns)
 DECLARE_SOA_COLUMN(Lz, lz, float);                                                       //! Longitudinal projection of decay length
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                                                     //! Transverse projection of decay length
 DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);                                             //! Chi2 for PCA of the dilepton
@@ -865,6 +866,7 @@ DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
                   reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
 DECLARE_SOA_TABLE_STAGED(DielectronsAll, "RTDIELECTRONALL", //!
+                         collision::NumContrib,
                          reducedpair::Mass,
                          reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                          reducedpair::FilterMap,
@@ -876,7 +878,7 @@ DECLARE_SOA_TABLE_STAGED(DielectronsAll, "RTDIELECTRONALL", //!
                          reducedpair::MassKFGeo, reducedpair::Chi2OverNDFKFGeo, reducedpair::DecayLengthKFGeo, reducedpair::DecayLengthOverErrKFGeo, reducedpair::DecayLengthXYKFGeo, reducedpair::DecayLengthXYOverErrKFGeo, reducedpair::PseudoproperDecayTimeKFGeo, reducedpair::PseudoproperDecayTimeErrKFGeo, reducedpair::CosPAKFGeo, reducedpair::PairDCAxyz, reducedpair::PairDCAxy,
                          reducedpair::DeviationPairKF, reducedpair::DeviationxyPairKF,
                          reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop,
-                         reducedpair::Tauz, reducedpair::Tauxy,
+                         reducedpair::Tauz, reducedpair::Tauxy, reducedpair::TauxyPoleJpsiMass,
                          reducedpair::Lz,
                          reducedpair::Lxy);
 

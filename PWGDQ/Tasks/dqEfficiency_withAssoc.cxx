@@ -1370,6 +1370,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> genSignalsJSON{"cfgMCGenSignalsJSON", "", "Additional list of MC signals (generated) via JSON"};
     Configurable<std::string> recSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
+    Configurable<std::string> finalStateSignals{"cfgBarrelMCFinalStateSignals", "eFromJpsi", "Comma separated list of MC signals (final state particles)"};
     Configurable<bool> skimSignalOnly{"cfgSkimSignalOnly", false, "Configurable to select only matched candidates"};
   } fConfigMC;
 
@@ -1396,6 +1397,7 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fMuonHistNamesMCmatched;
   std::vector<MCSignal*> fRecMCSignals;
   std::vector<MCSignal*> fGenMCSignals;
+  std::vector<MCSignal*> fFinalStateMCSignals;
 
   std::vector<AnalysisCompositeCut> fPairCuts;
   std::vector<AnalysisCut*> fMCGenAccCuts;
@@ -1691,6 +1693,16 @@ struct AnalysisSameEventPairing {
       }
     }
 
+    // define final state MC signals
+    TString sigFinalStateNamesStr = fConfigMC.finalStateSignals.value;
+    std::unique_ptr<TObjArray> objFinalStateSigArray(sigFinalStateNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objFinalStateSigArray->GetEntries(); isig++) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objFinalStateSigArray->At(isig)->GetName());
+      if (sig) {
+        fFinalStateMCSignals.push_back(sig);
+      }
+    }
+
     if (isMCGen) {
       for (auto& sig : fGenMCSignals) {
         if (sig->GetNProngs() == 1) {
@@ -1901,26 +1913,24 @@ struct AnalysisSameEventPairing {
             }
             if constexpr (trackHasCov && TTwoProngFitter) {
               dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
-              if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
-                if (fConfigOptions.flatTables.value && t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-                  dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), twoTrackFilter, mcDecision,
-                                    t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
-                                    t2.pt(), t2.eta(), t2.phi(), t2.itsClusterMap(), t2.itsChi2NCl(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
-                                    VarManager::fgValues[VarManager::kKFTrack0DCAxyz], VarManager::fgValues[VarManager::kKFTrack1DCAxyz], VarManager::fgValues[VarManager::kKFDCAxyzBetweenProngs], VarManager::fgValues[VarManager::kKFTrack0DCAxy], VarManager::fgValues[VarManager::kKFTrack1DCAxy], VarManager::fgValues[VarManager::kKFDCAxyBetweenProngs],
-                                    VarManager::fgValues[VarManager::kKFTrack0DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack0DeviationxyFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationxyFromPV],
-                                    VarManager::fgValues[VarManager::kKFMass], VarManager::fgValues[VarManager::kKFChi2OverNDFGeo], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr], VarManager::fgValues[VarManager::kVertexingLxy], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kKFCosPA], VarManager::fgValues[VarManager::kKFJpsiDCAxyz], VarManager::fgValues[VarManager::kKFJpsiDCAxy],
-                                    VarManager::fgValues[VarManager::kKFPairDeviationFromPV], VarManager::fgValues[VarManager::kKFPairDeviationxyFromPV],
-                                    VarManager::fgValues[VarManager::kKFMassGeoTop], VarManager::fgValues[VarManager::kKFChi2OverNDFGeoTop],
-                                    VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjected],
-                                    VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
-                }
-                if (fConfigOptions.polarTables.value && t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-                  dileptonPolarList(VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
-                                    VarManager::fgValues[VarManager::kCosThetaCS], VarManager::fgValues[VarManager::kPhiCS], VarManager::fgValues[VarManager::kPhiTildeCS],
-                                    VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
-                                    VarManager::fgValues[VarManager::kCosThetaRM],
-                                    VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C]);
-                }
+              if (fConfigOptions.flatTables.value && t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
+                dielectronAllList(VarManager::fgValues[VarManager::kVtxNcontribReal], VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), twoTrackFilter, mcDecision,
+                                  t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
+                                  t2.pt(), t2.eta(), t2.phi(), t2.itsClusterMap(), t2.itsChi2NCl(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
+                                  VarManager::fgValues[VarManager::kKFTrack0DCAxyz], VarManager::fgValues[VarManager::kKFTrack1DCAxyz], VarManager::fgValues[VarManager::kKFDCAxyzBetweenProngs], VarManager::fgValues[VarManager::kKFTrack0DCAxy], VarManager::fgValues[VarManager::kKFTrack1DCAxy], VarManager::fgValues[VarManager::kKFDCAxyBetweenProngs],
+                                  VarManager::fgValues[VarManager::kKFTrack0DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack0DeviationxyFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationxyFromPV],
+                                  VarManager::fgValues[VarManager::kKFMass], VarManager::fgValues[VarManager::kKFChi2OverNDFGeo], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr], VarManager::fgValues[VarManager::kVertexingLxy], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kKFCosPA], VarManager::fgValues[VarManager::kKFJpsiDCAxyz], VarManager::fgValues[VarManager::kKFJpsiDCAxy],
+                                  VarManager::fgValues[VarManager::kKFPairDeviationFromPV], VarManager::fgValues[VarManager::kKFPairDeviationxyFromPV],
+                                  VarManager::fgValues[VarManager::kKFMassGeoTop], VarManager::fgValues[VarManager::kKFChi2OverNDFGeoTop],
+                                  VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass],
+                                  VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
+              }
+              if (fConfigOptions.polarTables.value && t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
+                dileptonPolarList(VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
+                                  VarManager::fgValues[VarManager::kCosThetaCS], VarManager::fgValues[VarManager::kPhiCS], VarManager::fgValues[VarManager::kPhiTildeCS],
+                                  VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
+                                  VarManager::fgValues[VarManager::kCosThetaRM],
+                                  VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C]);
               }
             }
           }
@@ -2161,23 +2171,27 @@ struct AnalysisSameEventPairing {
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
   template <int TPairType>
-  void runMCGenWithGrouping(MyEventsVtxCovSelected const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  void runMCGen(MyEventsVtxCovSelected const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
+    cout << "AnalysisSameEventPairing::runMCGen() called" << endl;
     uint32_t mcDecision = 0;
     int isig = 0;
 
+    // Loop over all MC single particles to fill generator level histograms, disregarding of whether they belong to selected reconstructed events or not
     for (auto& mctrack : mcTracks) {
-      VarManager::FillTrackMC(mcTracks, mctrack);
-      // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
-      // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
-      // TODO:  Use the mcReducedFlags to select signals
       for (auto& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, mctrack)) {
+          VarManager::FillTrackMC(mcTracks, mctrack);
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
         }
       }
     }
-    // Fill Generated histograms taking into account selected collisions
+    // cout << "Filled single MC particle generator histograms." << endl;
+
+    // make a vector of global indices of mc particles which fulfill the selected track-level signal definition (to speed up the two mc particle combinatorics)
+    std::vector<uint64_t> FinalStateMcParticleIndices;
+
+    // Now loop over reconstructed events to select only MC particles belonging to the same MC collision as the reconstructed event
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
@@ -2186,16 +2200,21 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      for (auto& track : mcTracks) {
-        if (track.reducedMCeventId() != event.reducedMCeventId()) {
-          continue;
-        }
-        VarManager::FillTrackMC(mcTracks, track);
+      FinalStateMcParticleIndices.clear();
+
+      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
+      groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+
+      for (auto& track : groupedMCTracks) {
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         mcDecision = 0;
         isig = 0;
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
+            if (track.reducedMCeventId() != event.reducedMCeventId()) { // check that the mc track belongs to the same mc collision as the reconstructed event
+              continue;
+            }
+            VarManager::FillTrackMC(mcTracks, track);
             mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
             MCTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
@@ -2207,50 +2226,39 @@ struct AnalysisSameEventPairing {
           }
           isig++;
         }
-      }
-    } // end loop over reconstructed events
-
-    if (fHasTwoProngGenMCsignals) {
-      for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
-        auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
-        auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-        if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
-          for (auto& sig : fGenMCSignals) {
-            if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
-              continue;
-            }
-            if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              VarManager::FillPairMC<TPairType>(t1, t2);
-              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
-            }
+        for (auto& sig : fFinalStateMCSignals) {
+          if (sig->CheckSignal(true, track_raw)) {
+            FinalStateMcParticleIndices.push_back(track.globalIndex());
+            break; // if one of the final state signals is matched, no need to check the others
           }
         }
+        // cout << "Filled single MC particle generator histograms for reconstructed event." << endl;
       }
-    }
-    for (auto& event : events) {
-      if (!event.isEventSelected_bit(0)) {
-        continue;
-      }
-      if (!event.has_reducedMCevent()) {
-        continue;
-      }
-      // CURRENTLY ONLY FOR 1-GENERATION 2-PRONG SIGNALS
+
       if (fHasTwoProngGenMCsignals) {
-        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
-        groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-        for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-          auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
-          auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-          if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+        // loop over combinations of the selected mc particles to fill generator level pair histograms
+        for (auto& t1 : FinalStateMcParticleIndices) {
+          auto t1_raw = mcTracks.rawIteratorAt(t1);
+          for (auto& t2 : FinalStateMcParticleIndices) {
+            if (t2 <= t1) {
+              continue; // avoid double counting and self-pairing
+            }
+            // for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
+            // cout << "Processing pair of mcTracks with globalIndices = " << t1.globalIndex() << ", " << t2.globalIndex() << endl;
+            auto t2_raw = mcTracks.rawIteratorAt(t2);
+
             mcDecision = 0;
             isig = 0;
             for (auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
                 continue;
               }
+              // cout << "      Checking signal: " << sig->GetName() << endl;
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+                // cout << "      Signal matched!" << endl;
                 mcDecision |= (static_cast<uint32_t>(1) << isig);
-                VarManager::FillPairMC<TPairType>(t1, t2);
+                VarManager::FillPairMC<TPairType>(t1_raw, t2_raw);
+                // cout << "      Filled VarManager for the pair." << endl;
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
                 // Fill also acceptance cut histograms if requested
                 if (fUseMCGenAccCut) {
@@ -2262,15 +2270,16 @@ struct AnalysisSameEventPairing {
                 }
                 if (useMiniTree.fConfigMiniTree) {
                   // WARNING! To be checked
-                  dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                  dileptonMiniTreeGen(mcDecision, -999, t1_raw.pt(), t1_raw.eta(), t1_raw.phi(), t2_raw.pt(), t2_raw.eta(), t2_raw.phi());
                 }
               }
               isig++;
             }
-          }
-        }
-      } // end loop over reconstructed events
-    }
+          } // end loop over second mc particle
+        } // end loop over first mc particle
+      }
+    } // end loop over reconstructed events
+  //   cout << "AnalysisSameEventPairing::runMCGen() completed" << endl;
   }
 
   void processAllSkimmed(MyEventsVtxCovSelected const& events,
@@ -2292,7 +2301,8 @@ struct AnalysisSameEventPairing {
                                 MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
-    runMCGenWithGrouping<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
+    // runMCGenWithGrouping<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
+    runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
   void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
@@ -2300,7 +2310,7 @@ struct AnalysisSameEventPairing {
                                         MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
-    runMCGenWithGrouping<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
+    runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,

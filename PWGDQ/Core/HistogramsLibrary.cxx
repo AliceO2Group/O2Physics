@@ -1067,6 +1067,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("polarization")) {
+        if (subGroupStr.Contains("qa")) {
+          hm->AddHistogram(histClass, "CosThetaHE", "", false, 100, -1.0, 1.0, VarManager::kCosThetaHE);
+          hm->AddHistogram(histClass, "PhiHE", "", false, 100, 0.0, 2 * o2::constants::math::PI, VarManager::kPhiHE);
+          hm->AddHistogram(histClass, "PhiTildeHE", "", false, 100, 0.0, 2 * o2::constants::math::PI, VarManager::kPhiTildeHE);
+          hm->AddHistogram(histClass, "CosThetaCS", "", false, 100, -1.0, 1.0, VarManager::kCosThetaCS);
+          hm->AddHistogram(histClass, "PhiCS", "", false, 100, 0.0, 2 * o2::constants::math::PI, VarManager::kPhiCS);
+          hm->AddHistogram(histClass, "PhiTildeCS", "", false, 100, 0.0, 2 * o2::constants::math::PI, VarManager::kPhiTildeCS);
+          hm->AddHistogram(histClass, "CosThetaPP", "", false, 100, -1.0, 1.0, VarManager::kCosThetaPP);
+          hm->AddHistogram(histClass, "PhiPP", "", false, 100, 0.0, 2 * o2::constants::math::PI, VarManager::kPhiPP);
+          hm->AddHistogram(histClass, "PhiTildePP", "", false, 100, 0.0, 2 * o2::constants::math::PI, VarManager::kPhiTildePP);
+          hm->AddHistogram(histClass, "CosThetaRM", "", false, 100, -1.0, 1.0, VarManager::kCosThetaRM);
+        }
         if (subGroupStr.Contains("helicity")) {
           hm->AddHistogram(histClass, "Mass_Pt_CosThetaHE", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, -1., 1., VarManager::kCosThetaHE);
           hm->AddHistogram(histClass, "Mass_Pt_PhiHE", "", false, 100, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, 0., 2 * o2::constants::math::PI, VarManager::kPhiHE);
