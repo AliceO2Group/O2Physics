@@ -347,7 +347,7 @@ void fillDielectronCandidateTable(T const& candidate, int32_t collisionIndex, U&
     candidate.pairDCAxyz(), candidate.pairDCAxy(),
     candidate.deviationPairKF(), candidate.deviationxyPairKF(),
     candidate.massKFGeoTop(), candidate.chi2overndfKFGeoTop(),
-    candidate.tauz(), candidate.tauxy(), candidate.tauxyPoleJpsiMass, candidate.lz(), candidate.lxy());
+    candidate.tauz(), candidate.tauxy(), candidate.tauxyPoleJpsiMass(), candidate.lz(), candidate.lxy());
 }
 
 template <typename T, typename U>
