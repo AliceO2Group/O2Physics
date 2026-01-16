@@ -937,7 +937,7 @@ struct EbyeMaker {
 
       fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
       histos.fill(HIST("QA/PvMultVsCent"), centrality, nTracksColl);
-      
+
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
