@@ -18,6 +18,7 @@
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
@@ -71,6 +72,9 @@ struct FemtoCascadeQa {
   // setup for xis
   cascadebuilder::ConfXiSelection confXiSelection;
 
+  particlecleaner::ConfXiCleaner1 confXiCleaner;
+  particlecleaner::ParticleCleaner xiCleaner;
+
   Partition<FemtoXis> xiPartition = MAKE_CASCADE_PARTITION(confXiSelection);
   Preslice<FemtoXis> preColXis = femtobase::stored::fColId;
 
@@ -89,6 +93,9 @@ struct FemtoCascadeQa {
 
   // setup for omegas
   cascadebuilder::ConfOmegaSelection confOmegaSelection;
+
+  particlecleaner::ConfOmegaCleaner1 confOmegaCleaner;
+  particlecleaner::ParticleCleaner omegaCleaner;
 
   Partition<FemtoOmegas> omegaPartition = MAKE_CASCADE_PARTITION(confOmegaSelection);
   Preslice<FemtoOmegas> preColOmegas = femtobase::stored::fColId;
@@ -122,6 +129,8 @@ struct FemtoCascadeQa {
       LOG(fatal) << "Only one process can be activated";
     }
     bool processData = doprocessXi || doprocessOmega;
+    xiCleaner.init(confXiCleaner);
+    omegaCleaner.init(confOmegaCleaner);
     if (processData) {
       auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
@@ -169,6 +178,9 @@ struct FemtoCascadeQa {
     colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto xiSlice = xiWithLabelPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
+      if (!xiCleaner.isClean(xi, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       xiHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(xi, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
@@ -189,6 +201,9 @@ struct FemtoCascadeQa {
     colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto omegaSlice = omegaWithLabelPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
+      if (!omegaCleaner.isClean(omega, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       omegaHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(omega, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }

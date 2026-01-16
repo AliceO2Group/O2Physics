@@ -94,7 +94,8 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10,
-          typename T11>
+          typename T11,
+          typename T12>
 void processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& mcParticles,
@@ -104,14 +105,23 @@ void processSameEvent(T1 const& SliceParticle,
                       T7 const& mcCollisions,
                       T8& ParticleHistManager,
                       T9& PairHistManager,
-                      T10& CprManager,
-                      T11& PcManager,
+                      T10& ParticleCleaner,
+                      T11& CprManager,
+                      T12& PcManager,
                       PairOrder pairOrder)
 {
   for (auto const& part : SliceParticle) {
+    if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
+    // check if particles are clean
+    if (!ParticleCleaner.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+        !ParticleCleaner.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     // check if pair is clean
     if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
       continue;
@@ -201,7 +211,9 @@ template <modes::Mode mode,
           typename T10,
           typename T11,
           typename T12,
-          typename T13>
+          typename T13,
+          typename T14,
+          typename T15>
 void processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& TrackTable,
@@ -213,17 +225,30 @@ void processSameEvent(T1 const& SliceParticle1,
                       T9& ParticleHistManager1,
                       T10& ParticleHistManager2,
                       T11& PairHistManager,
-                      T12& CprManager,
-                      T13& PcManager)
+                      T12& ParticleCleaner1,
+                      T13& ParticleCleaner2,
+                      T14& CprManager,
+                      T15& PcManager)
 {
   // Fill single particle histograms
   for (auto const& part : SliceParticle1) {
+    if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle2) {
+    if (!ParticleCleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager2.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
+    // check if particles are clean
+    if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+        !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     // pair cleaning
     if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
       continue;
@@ -305,20 +330,28 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10,
+          typename T11,
           typename T12,
-          typename T11>
+          typename T13,
+          typename T14,
+          typename T15,
+          typename T16>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
                        T4& Partition2,
                        T5 const& TrackTable,
                        T6 const& mcParticles,
-                       T7& cache,
-                       T8 const& policy,
-                       T9 const& depth,
-                       T10& PairHistManager,
-                       T11& CprManager,
-                       T12& PcManager)
+                       T7 const& mcMothers,
+                       T8 const& mcPartonicMothers,
+                       T9& cache,
+                       T10 const& policy,
+                       T11 const& depth,
+                       T12& PairHistManager,
+                       T13& ParticleCleaner1,
+                       T14& ParticleCleaner2,
+                       T15& CprManager,
+                       T16& PcManager)
 {
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
     if (collision1.magField() != collision2.magField()) {
@@ -331,6 +364,11 @@ void processMixedEvent(T1 const& Collisions,
       continue;
     }
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+      // particle cleaning
+      if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+          !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       // pair cleaning
       if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
         continue;
