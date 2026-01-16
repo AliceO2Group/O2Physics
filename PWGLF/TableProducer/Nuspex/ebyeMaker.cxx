@@ -195,7 +195,7 @@ struct EbyeMaker {
   const AxisSpec nTpcAxis{160, 0, 160, "N TPC"};
   const AxisSpec dcaAxis{2000, -1., 1., "DCA in cm"};
   const AxisSpec phiAxis{650, 0, 6.5, "#phi (rad)"};
-  const AxisSpec signMomAxis{1e3, -5.f, 5.f, "#it{p}_{T}/#it{Z} (GeV/#it{c})"};
+  const AxisSpec signMomAxis{1000, -5.f, 5.f, "#it{p}_{T}/#it{Z} (GeV/#it{c})"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
