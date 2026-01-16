@@ -47,7 +47,6 @@
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include <TDatabasePDG.h>
 #include <TPDGCode.h>
 
 #include <KFPTrack.h>
