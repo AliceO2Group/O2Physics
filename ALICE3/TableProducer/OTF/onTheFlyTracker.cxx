@@ -267,6 +267,17 @@ struct OnTheFlyTracker {
                                                 kLambda0,
                                                 kLambda0Bar};
 
+  static constexpr std::array<int, 5> longLivedHandledPDGs = {kElectron,
+                                                              kMuonMinus,
+                                                              kPiPlus,
+                                                              kKPlus,
+                                                              kProton};
+
+  static constexpr std::array<int, 4> nucleiPDGs = {o2::constants::physics::kDeuteron,
+                                                    o2::constants::physics::kTriton,
+                                                    o2::constants::physics::kHelium3,
+                                                    o2::constants::physics::kAlpha};
+
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -690,17 +701,6 @@ struct OnTheFlyTracker {
     // generate collision time
     auto ir = irSampler.generateCollisionTime();
     const float eventCollisionTimeNS = ir.timeInBCNS;
-
-    constexpr std::array<int, 5> longLivedHandledPDGs = {kElectron,
-                                                         kMuonMinus,
-                                                         kPiPlus,
-                                                         kKPlus,
-                                                         kProton};
-
-    constexpr std::array<int, 4> nucleiPDGs = {o2::constants::physics::kDeuteron,
-                                               o2::constants::physics::kTriton,
-                                               o2::constants::physics::kHelium3,
-                                               o2::constants::physics::kAlpha};
 
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
@@ -1601,7 +1601,6 @@ struct OnTheFlyTracker {
   {
     // const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
-
     tracksAlice3.clear();
     ghostTracksAlice3.clear();
     bcData.clear();
@@ -1614,17 +1613,6 @@ struct OnTheFlyTracker {
     // generate collision time
     auto ir = irSampler.generateCollisionTime();
     const float eventCollisionTimeNS = ir.timeInBCNS;
-
-    constexpr std::array<int, 5> longLivedHandledPDGs = {kElectron,
-                                                         kMuonMinus,
-                                                         kPiPlus,
-                                                         kKPlus,
-                                                         kProton};
-
-    constexpr std::array<int, 4> nucleiPDGs = {o2::constants::physics::kDeuteron,
-                                               o2::constants::physics::kTriton,
-                                               o2::constants::physics::kHelium3,
-                                               o2::constants::physics::kAlpha};
 
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
@@ -1640,7 +1628,7 @@ struct OnTheFlyTracker {
       const auto pdg = std::abs(mcParticle.pdgCode());
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), pdg) != nucleiPDGs.end();
-      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled) || (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus);
+      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled);
       if (!pdgsToBeHandled) {
         continue;
       }
@@ -1669,7 +1657,7 @@ struct OnTheFlyTracker {
         continue;
       }
 
-      if (std::fabs(mcParticle.eta() > maxEta)) {
+      if (std::fabs(mcParticle.eta()) > maxEta) {
         continue;
       }
 
@@ -1729,7 +1717,6 @@ struct OnTheFlyTracker {
       }
 
       histos.fill(HIST("hNaNBookkeeping"), 0.0f, 1.0f);
-
       if (enablePrimarySmearing) {
         getHist(TH1, histPath + "hPtReconstructed")->Fill(trackParCov.getPt());
         if (std::abs(mcParticle.pdgCode()) == kElectron)
@@ -1861,7 +1848,7 @@ struct OnTheFlyTracker {
         tableTrackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
         tableTrackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
-      tableTracksAlice3(true);
+      tableTracksAlice3(false);
     }
   }
 
