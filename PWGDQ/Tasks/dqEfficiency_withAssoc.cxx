@@ -2279,7 +2279,7 @@ struct AnalysisSameEventPairing {
         } // end loop over first mc particle
       }
     } // end loop over reconstructed events
-  //   cout << "AnalysisSameEventPairing::runMCGen() completed" << endl;
+    //   cout << "AnalysisSameEventPairing::runMCGen() completed" << endl;
   }
 
   void processAllSkimmed(MyEventsVtxCovSelected const& events,
