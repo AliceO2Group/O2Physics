@@ -2460,9 +2460,9 @@ struct HStrangeCorrelation {
       static_for<0, 7>([&](auto i) {
         constexpr int Index = i.value;
 
-        if (i == indexPion && mcParticle.pdgCode() == PdgCodes[i] && mcParticle.pdgCode() > neutral)
+        if (i == indexPion && mcParticle.pdgCode() == PdgCodes[i] && mcParticle.pdgCode() > neutral) {
           histos.fill(HIST("GeneratedWithPV/hPositive") + HIST(Particlenames[Index]), mcParticle.pt(), mcParticle.eta(), bestCollisionFT0Mpercentile);
-        else if (i == indexPion && mcParticle.pdgCode() == PdgCodes[i] && mcParticle.pdgCode() < neutral) {
+        } else if (i == indexPion && mcParticle.pdgCode() == PdgCodes[i] && mcParticle.pdgCode() < neutral) {
           histos.fill(HIST("GeneratedWithPV/hNegative") + HIST(Particlenames[Index]), mcParticle.pt(), mcParticle.eta(), bestCollisionFT0Mpercentile);
         }
 
