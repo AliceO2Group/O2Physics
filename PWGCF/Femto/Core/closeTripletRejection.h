@@ -47,6 +47,9 @@ template <const char* prefixTrack1Track2,
 class CloseTripletRejectionTrackTrackTrack
 {
  public:
+  CloseTripletRejectionTrackTrackTrack() = default;
+  ~CloseTripletRejectionTrackTrackTrack() = default;
+
   template <typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,

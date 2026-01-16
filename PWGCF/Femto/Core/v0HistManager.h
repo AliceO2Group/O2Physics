@@ -679,10 +679,11 @@ class V0HistManager
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   int mPdgCode = 0;
-  bool mPlot2d = false;
   bool mPlotOrigins = false;
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
+  bool mPlot2d = false;
+
   trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };

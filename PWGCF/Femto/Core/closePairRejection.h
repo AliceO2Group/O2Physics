@@ -214,15 +214,15 @@ class CloseTrackRejection
     mDeta = track1.eta() - track2.eta();
 
     for (size_t i = 0; i < TpcRadii.size(); i++) {
-      auto phistar1 = utils::dphistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
-      auto phistar2 = utils::dphistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
+      auto phistar1 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
+      auto phistar2 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
       if (phistar1 && phistar2) {
         mDphistar.at(i) = RecoDecay::constrainAngle(phistar1.value() - phistar2.value(), -o2::constants::math::PI); // constrain angular difference between -pi and pi
         mDphistarMask.at(i) = true;
         count++;
       }
     }
-    // for small momemeta the calculation of phistar might fail, if the particle did not reach a certain radius
+    // for small momemeta the calculation of phistar might fail, if the particle did not reach one or more of the outer radii
     if (count > 0) {
       mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
     } else {
@@ -309,6 +309,16 @@ class CloseTrackRejection
   bool isActivated() const { return mIsActivated; }
 
  private:
+  std::optional<float> phistar(float magfield, float radius, float signedPt, float phi)
+  {
+    double arg = 0.3 * (0.1 * magfield) * (0.01 * radius) / (2. * signedPt);
+    if (std::fabs(arg) <= 1.) {
+      double phistar = phi - std::asin(arg);
+      return static_cast<float>(RecoDecay::constrainAngle(phistar));
+    }
+    return std::nullopt;
+  }
+
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlotAllRadii = false;
   bool mPlotAverage = false;
