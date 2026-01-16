@@ -612,21 +612,22 @@ struct HStrangeCorrelation {
       float efficiencyTriggError = 0.0f;
       float purityTrigg = 1.0f;
       float purityTriggErr = 0.0;
-      if (!mixing) {
-        if (efficiencyFlags.applyEfficiencyForTrigger) {
-          efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+      if (efficiencyFlags.applyEfficiencyForTrigger) {
+        efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+        if (efficiencyFlags.applyPurityTrigger)
+          purityTrigg = hPurityHadron->Interpolate(trigg.pt());
+        if (efficiencyFlags.applyEfficiencyPropagation) {
+          efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiencyFlags.applyPurityTrigger)
-            purityTrigg = hPurityHadron->Interpolate(trigg.pt());
-          if (efficiencyFlags.applyEfficiencyPropagation) {
-            efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
-            if (efficiencyFlags.applyPurityTrigger)
-              purityTriggErr = hPurityHadron->Interpolate(trigg.pt());
-          }
-          if (efficiencyTrigg == 0) { // check for zero efficiency, do not apply if the case
-            efficiencyTrigg = 1;
-            efficiencyTriggError = 0;
-          }
+            purityTriggErr = hPurityHadron->Interpolate(trigg.pt());
         }
+        if (efficiencyTrigg == 0) { // check for zero efficiency, do not apply if the case
+          efficiencyTrigg = 1;
+          efficiencyTriggError = 0;
+        }
+      }
+      if (!mixing) {
+
         fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesV0")), trigg.pt(), mult, efficiencyTrigg, efficiencyTriggError, purityTrigg, purityTriggErr);
       }
 
@@ -816,36 +817,36 @@ struct HStrangeCorrelation {
       float efficiencyTriggError = 0.0f;
       float purityTrigg = 1.0f;
       float purityTriggErr = 0.0f;
-      if (!mixing) {
-        if (efficiencyFlags.applyEfficiencyForTrigger) {
-          if (efficiencyFlags.applyEffAsFunctionOfMult) {
-            efficiencyTrigg = hEfficiencyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
-          } else {
-            efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
-          }
+      if (efficiencyFlags.applyEfficiencyForTrigger) {
+        if (efficiencyFlags.applyEffAsFunctionOfMult) {
+          efficiencyTrigg = hEfficiencyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+        } else {
+          efficiencyTrigg = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+        }
+        if (efficiencyFlags.applyPurityTrigger) {
+          if (efficiencyFlags.applyEffAsFunctionOfMult)
+            purityTrigg = hPurityHadronMult->Interpolate(trigg.pt(), mult);
+          else
+            purityTrigg = hPurityHadron->Interpolate(trigg.pt());
+        }
+        if (efficiencyFlags.applyEfficiencyPropagation) {
+          if (efficiencyFlags.applyEffAsFunctionOfMult)
+            efficiencyTriggError = hEfficiencyUncertaintyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+          else
+            efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiencyFlags.applyPurityTrigger) {
             if (efficiencyFlags.applyEffAsFunctionOfMult)
-              purityTrigg = hPurityHadronMult->Interpolate(trigg.pt(), mult);
+              purityTriggErr = hPurityUncertaintyHadronMult->Interpolate(trigg.pt(), mult);
             else
-              purityTrigg = hPurityHadron->Interpolate(trigg.pt());
-          }
-          if (efficiencyFlags.applyEfficiencyPropagation) {
-            if (efficiencyFlags.applyEffAsFunctionOfMult)
-              efficiencyTriggError = hEfficiencyUncertaintyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
-            else
-              efficiencyTriggError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
-            if (efficiencyFlags.applyPurityTrigger) {
-              if (efficiencyFlags.applyEffAsFunctionOfMult)
-                purityTriggErr = hPurityUncertaintyHadronMult->Interpolate(trigg.pt(), mult);
-              else
-                purityTriggErr = hPurityUncertaintyHadron->Interpolate(trigg.pt());
-            }
-          }
-          if (efficiencyTrigg == 0) { // check for zero efficiency, do not apply if the case
-            efficiencyTrigg = 1;
-            efficiencyTriggError = 0;
+              purityTriggErr = hPurityUncertaintyHadron->Interpolate(trigg.pt());
           }
         }
+        if (efficiencyTrigg == 0) { // check for zero efficiency, do not apply if the case
+          efficiencyTrigg = 1;
+          efficiencyTriggError = 0;
+        }
+      }
+      if (!mixing) {
         fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesCascade")), trigg.pt(), mult, efficiencyTrigg, efficiencyTriggError, purityTrigg, purityTriggErr);
       }
       double triggSign = trigg.sign();
@@ -1008,36 +1009,35 @@ struct HStrangeCorrelation {
       float efficiencyTriggerError = 0.0f;
       float purityTrigger = 1.0f;
       float purityTriggerError = 0.0f;
-      if (!mixing) {
-
-        if (efficiencyFlags.applyEfficiencyForTrigger) {
+      if (efficiencyFlags.applyEfficiencyForTrigger) {
+        if (efficiencyFlags.applyEffAsFunctionOfMult)
+          efficiencyTrigger = hEfficiencyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+        else
+          efficiencyTrigger = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+        if (efficiencyFlags.applyPurityTrigger) {
           if (efficiencyFlags.applyEffAsFunctionOfMult)
-            efficiencyTrigger = hEfficiencyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+            purityTrigger = hPurityHadronMult->Interpolate(trigg.pt(), mult);
           else
-            efficiencyTrigger = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
+            purityTrigger = hPurityHadron->Interpolate(trigg.pt());
+        }
+        if (efficiencyFlags.applyEfficiencyPropagation) {
+          if (efficiencyFlags.applyEffAsFunctionOfMult)
+            efficiencyTriggerError = hEfficiencyUncertaintyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
+          else
+            efficiencyTriggerError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiencyFlags.applyPurityTrigger) {
             if (efficiencyFlags.applyEffAsFunctionOfMult)
-              purityTrigger = hPurityHadronMult->Interpolate(trigg.pt(), mult);
+              purityTriggerError = hPurityUncertaintyHadronMult->Interpolate(trigg.pt(), mult);
             else
-              purityTrigger = hPurityHadron->Interpolate(trigg.pt());
-          }
-          if (efficiencyFlags.applyEfficiencyPropagation) {
-            if (efficiencyFlags.applyEffAsFunctionOfMult)
-              efficiencyTriggerError = hEfficiencyUncertaintyTriggerMult->Interpolate(trigg.pt(), trigg.eta(), mult);
-            else
-              efficiencyTriggerError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
-            if (efficiencyFlags.applyPurityTrigger) {
-              if (efficiencyFlags.applyEffAsFunctionOfMult)
-                purityTriggerError = hPurityUncertaintyHadronMult->Interpolate(trigg.pt(), mult);
-              else
-                purityTriggerError = hPurityUncertaintyHadron->Interpolate(trigg.pt());
-            }
-          }
-          if (efficiencyTrigger == 0) { // check for zero efficiency, do not apply if the case
-            efficiencyTrigger = 1;
-            efficiencyTriggerError = 0;
+              purityTriggerError = hPurityUncertaintyHadron->Interpolate(trigg.pt());
           }
         }
+        if (efficiencyTrigger == 0) { // check for zero efficiency, do not apply if the case
+          efficiencyTrigger = 1;
+          efficiencyTriggerError = 0;
+        }
+      }
+      if (!mixing) {
         if constexpr (requires { triggerTrack.extra(); })
           fillTriggerHistogram(histos.get<TH2>(HIST("sameEvent/TriggerParticlesPion")), trigg.pt(), mult, efficiencyTrigger, efficiencyTriggerError, purityTrigger, purityTriggerError);
         else
