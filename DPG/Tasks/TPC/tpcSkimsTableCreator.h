@@ -20,11 +20,12 @@
 #ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/OccupancyTables.h"
 
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -49,6 +50,7 @@ DECLARE_SOA_COLUMN(GammaPsiPair, gammaPsiPair, float);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(TrackOcc, trackOcc, float);
 DECLARE_SOA_COLUMN(Ft0Occ, ft0Occ, float);
+DECLARE_SOA_COLUMN(OccMedianTime, occMedianTime, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(BcGlobalIndex, bcGlobalIndex, int);
 DECLARE_SOA_COLUMN(BcTimeFrameId, bcTimeFrameId, int);
@@ -72,10 +74,13 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::PidIndex,            \
     tpcskims::NSigTPC,             \
     tpcskims::NSigTOF,             \
+    tpcskims::NSigITS,             \
     tpcskims::RunNumber,           \
     tpcskims::TrackOcc,            \
     tpcskims::Ft0Occ,              \
-    tpcskims::HadronicRate
+    tpcskims::OccMedianTime,       \
+    tpcskims::HadronicRate,        \
+    o2::aod::trackqa::TPCdEdxNorm
 
 #define TPCSKIMS_COLUMNS_V0 \
   TPCSKIMS_COLUMNS_BASE,    \
@@ -87,50 +92,74 @@ DECLARE_SOA_COLUMN(BcBcInTimeFrame, bcBcInTimeFrame, int);
     tpcskims::GammaPsiPair
 
 #define TPCSKIMS_COLUMNS_TOF \
-  TPCSKIMS_COLUMNS_BASE,     \
-    tpcskims::NSigITS
+  TPCSKIMS_COLUMNS_BASE
 
-#define TPCSKIMS_COLUMNS_TRACK_QA         \
-  tpcskims::BcGlobalIndex,                \
-    tpcskims::BcTimeFrameId,              \
-    tpcskims::BcBcInTimeFrame,            \
-    o2::aod::trackqa::TPCClusterByteMask, \
-    o2::aod::trackqa::TPCdEdxMax0R,       \
-    o2::aod::trackqa::TPCdEdxMax1R,       \
-    o2::aod::trackqa::TPCdEdxMax2R,       \
-    o2::aod::trackqa::TPCdEdxMax3R,       \
-    o2::aod::trackqa::TPCdEdxTot0R,       \
-    o2::aod::trackqa::TPCdEdxTot1R,       \
-    o2::aod::trackqa::TPCdEdxTot2R,       \
-    o2::aod::trackqa::TPCdEdxTot3R
+#define TPCSKIMS_COLUMNS_TRACK_QA                   \
+  tpcskims::BcGlobalIndex,                          \
+    tpcskims::BcTimeFrameId,                        \
+    tpcskims::BcBcInTimeFrame,                      \
+    o2::aod::trackqa::TPCClusterByteMask,           \
+    o2::aod::trackqa::TPCdEdxMax0R,                 \
+    o2::aod::trackqa::TPCdEdxMax1R,                 \
+    o2::aod::trackqa::TPCdEdxMax2R,                 \
+    o2::aod::trackqa::TPCdEdxMax3R,                 \
+    o2::aod::trackqa::TPCdEdxTot0R,                 \
+    o2::aod::trackqa::TPCdEdxTot1R,                 \
+    o2::aod::trackqa::TPCdEdxTot2R,                 \
+    o2::aod::trackqa::TPCdEdxTot3R,                 \
+    o2::aod::trackmeanocc::TmoPrimUnfm80,           \
+    o2::aod::trackmeanocc::TmoFV0AUnfm80,           \
+    o2::aod::trackmeanocc::TmoFT0AUnfm80,           \
+    o2::aod::trackmeanocc::TmoFT0CUnfm80,           \
+    o2::aod::trackmeanocc::TmoRobustT0V0PrimUnfm80, \
+    o2::aod::trackmeanocc::TwmoPrimUnfm80,          \
+    o2::aod::trackmeanocc::TwmoFV0AUnfm80,          \
+    o2::aod::trackmeanocc::TwmoFT0AUnfm80,          \
+    o2::aod::trackmeanocc::TwmoFT0CUnfm80,          \
+    o2::aod::trackmeanocc::TwmoRobustT0V0PrimUnfm80
 
 DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   TPCSKIMS_COLUMNS_V0);
 
-DECLARE_SOA_TABLE(SkimmedTPCV0TreeWithdEdxTrkQA, "AOD", "TPCSKIMV0WdE",
-                  TPCSKIMS_COLUMNS_V0,
-                  o2::aod::trackqa::TPCdEdxNorm);
-
 DECLARE_SOA_TABLE(SkimmedTPCV0TreeWithTrkQA, "AOD", "TPCSKIMV0WQA",
                   TPCSKIMS_COLUMNS_V0,
-                  TPCSKIMS_COLUMNS_TRACK_QA,
-                  o2::aod::trackqa::TPCdEdxNorm);
+                  TPCSKIMS_COLUMNS_TRACK_QA);
 
 DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   TPCSKIMS_COLUMNS_TOF);
 
-DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithdEdxTrkQA, "AOD", "TPCTOFSKIMWdE",
-                  TPCSKIMS_COLUMNS_TOF,
-                  o2::aod::trackqa::TPCdEdxNorm);
-
 DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   TPCSKIMS_COLUMNS_TOF,
-                  TPCSKIMS_COLUMNS_TRACK_QA,
-                  o2::aod::trackqa::TPCdEdxNorm);
+                  TPCSKIMS_COLUMNS_TRACK_QA);
 
 #undef TPCSKIMS_COLUMNS_TRACK_QA
 #undef TPCSKIMS_COLUMNS_TOF
 #undef TPCSKIMS_COLUMNS_V0
 #undef TPCSKIMS_COLUMNS_BASE
 } // namespace o2::aod
+
+namespace o2::dpg_tpcskimstablecreator
+{
+enum {
+  ModeStandard = 0,
+  ModeWithdEdxTrkQA,
+  ModeWithTrkQA
+};
+
+constexpr o2::track::PID::ID PidElectron{o2::track::PID::Electron};
+constexpr o2::track::PID::ID PidPion{o2::track::PID::Pion};
+constexpr o2::track::PID::ID PidKaon{o2::track::PID::Kaon};
+constexpr o2::track::PID::ID PidProton{o2::track::PID::Proton};
+constexpr o2::track::PID::ID PidDeuteron{o2::track::PID::Deuteron};
+constexpr o2::track::PID::ID PidTriton{o2::track::PID::Triton};
+
+constexpr int UndefValueInt{-999};
+constexpr float UndefValueFloat{-999.f};
+constexpr double UndefValueDouble{-999.};
+
+// an arbitrary big value to convert multiplicity into a value between 0 and 1
+constexpr double MultiplicityNorm{11000.};
+
+constexpr float OneToKilo{1e-3f};
+} // namespace o2::dpg_tpcskimstablecreator
 #endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_

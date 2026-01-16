@@ -39,6 +39,35 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
 
+namespace o2::aod
+{
+namespace colspext
+{
+DECLARE_SOA_COLUMN(SelColFlag, selColFlag, bool);
+DECLARE_SOA_COLUMN(Xa, xa, float);
+DECLARE_SOA_COLUMN(Ya, ya, float);
+DECLARE_SOA_COLUMN(Xc, xc, float);
+DECLARE_SOA_COLUMN(Yc, yc, float);
+} // namespace colspext
+DECLARE_SOA_TABLE(ColSPExt, "AOD", "COLSPEXT", o2::soa::Index<>,
+                  colspext::SelColFlag,
+                  colspext::Xa,
+                  colspext::Ya,
+                  colspext::Xc,
+                  colspext::Yc);
+
+namespace trackidext
+{
+DECLARE_SOA_COLUMN(IsPion, isPion, bool);
+DECLARE_SOA_COLUMN(IsKaon, isKaon, bool);
+DECLARE_SOA_COLUMN(IsProton, isProton, bool);
+} // namespace trackidext
+DECLARE_SOA_TABLE(TrackIdExt, "AOD", "TRACKIDEXT", o2::soa::Index<>,
+                  trackidext::IsPion,
+                  trackidext::IsKaon,
+                  trackidext::IsProton);
+} // namespace o2::aod
+
 enum GainClibCorr {
   kGainCalibA = 0,
   kGainCalibC,
@@ -73,7 +102,10 @@ enum ParticleType {
   kNPart
 };
 
-struct FlowEventPlane {
+struct SpectatorPlaneTableProducer {
+  // Table producer
+  Produces<aod::ColSPExt> colSPExtTable;
+
   // Configurables
   // Collisions
   Configurable<float> cMinZVtx{"cMinZVtx", -10.0, "Min VtxZ cut"};
@@ -90,29 +122,6 @@ struct FlowEventPlane {
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
   Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
   Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
-
-  // Tracks
-  Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
-  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 10.0, "p_{T} maximum"};
-  Configurable<int> cNEtaBins{"cNEtaBins", 7, "# of eta bins"};
-  Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
-  Configurable<bool> cTrackGlobal{"cTrackGlobal", true, "Global Track"};
-  Configurable<float> cTrackDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
-  Configurable<float> cTrackDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
-  Configurable<int> cNRapBins{"cNRapBins", 5, "# of y bins"};
-  Configurable<int> cNInvMassBins{"cNInvMassBins", 500, "# of m bins"};
-
-  // Track PID
-  Configurable<float> cTpcNSigmaCut{"cTpcNSigmaCut", 2, "TPC NSigma Cut"};
-  Configurable<float> cTpcRejCut{"cTpcRejCut", 3, "TPC Rej Cut"};
-  Configurable<float> cTofNSigmaCut{"cTofNSigmaCut", 2, "TOF NSigma Cut"};
-  Configurable<float> cTofRejCut{"cTofRejCut", 3, "TOF Rej Cut"};
-  Configurable<float> cPionPtCut{"cPionPtCut", 0.6, "Pion TPC pT cutoff"};
-  Configurable<float> cKaonPtCut{"cKaonPtCut", 0.6, "Kaon TPC pT cutoff"};
-  Configurable<float> cProtonPtCut{"cProtonPtCut", 1.1, "Proton TPC pT cutoff"};
-
-  // Resonance
-  Configurable<float> cResRapCut{"cResRapCut", 0.5, "Resonance rapidity cut"};
 
   // Gain calibration
   Configurable<bool> cDoGainCalib{"cDoGainCalib", false, "Gain Calib Flag"};
@@ -163,8 +172,8 @@ struct FlowEventPlane {
   // Container for histograms
   struct CorrectionHistContainer {
     std::array<TH2F*, 2> hGainCalib;
-    std::array<std::array<THnSparseF*, 1>, 4> vCoarseCorrHist;
-    std::array<std::array<TProfile*, 4>, 4> vFineCorrHist;
+    std::array<std::array<std::array<THnSparseF*, 1>, 4>, 6> vCoarseCorrHist;
+    std::array<std::array<std::array<TProfile*, 4>, 4>, 6> vFineCorrHist;
   } CorrectionHistContainer;
 
   // Run number
@@ -200,19 +209,6 @@ struct FlowEventPlane {
     const AxisSpec axisYc{40, -1, 1, "Y^{ZNC}_{1}"};
 
     const AxisSpec axisPsi{18, -PIHalf, PIHalf, "#Psi_{SP}"};
-
-    const AxisSpec axisXYac{600, -6, 6, "Q^{t}Q^{p}"};
-    const AxisSpec axisV1{400, -4, 4, "v_{1}"};
-
-    const AxisSpec axisTrackPt{100, 0., 10., "p_{T} (GeV/#it{c})"};
-    const AxisSpec axisTrackEta{cNEtaBins, -0.8, 0.8, "#eta"};
-    const AxisSpec axisTrackRap{cNRapBins, -0.5, 0.5, "y"};
-    const AxisSpec axisInvMass{cNInvMassBins, 0.87, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
-
-    const AxisSpec axisTrackDcaXY{60, -0.15, 0.15, "DCA_{XY}"};
-    const AxisSpec axisTrackDcaZ{230, -1.15, 1.15, "DCA_{XY}"};
-    const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
-    const AxisSpec axisTrackNSigma{161, -4.025, 4.025, {"n#sigma"}};
 
     // Create histograms
     // Event
@@ -264,39 +260,6 @@ struct FlowEventPlane {
     histos.add("Checks/hYaYc", "Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
     histos.add("Checks/hXaYc", "X^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
     histos.add("Checks/hYaXc", "Y^{A}_{1}X^{C}_{1}", kTProfile, {axisCent});
-
-    // Track QA
-    histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
-    histos.add("TrackQA/hPtDcaZ", "DCA_{Z} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaZ});
-    histos.add("TrackQA/hTrackTPCdEdX", "hTrackTPCdEdX", kTH2F, {axisTrackPt, axisTrackdEdx});
-
-    // Charged particle directed flow
-    histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
-    histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
-
-    // Identified particle
-    histos.add("PartId/Pion/hdEdX", "PartId/Pion/hdEdX", kTH2F, {axisTrackPt, axisTrackdEdx});
-    histos.add("PartId/Pion/hTPCNSigma", "PartId/Pion/hTPCNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
-    histos.add("PartId/Pion/hTOFNSigma", "PartId/Pion/hTOFNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
-    histos.add("PartId/Pion/hAQuPos", "PartId/Pion/hAQuPos", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("PartId/Pion/hAQuNeg", "PartId/Pion/hAQuNeg", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("PartId/Pion/hCQuPos", "PartId/Pion/hCQuPos", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("PartId/Pion/hCQuNeg", "PartId/Pion/hCQuNeg", kTProfile2D, {axisCent, axisTrackEta});
-    histos.addClone("PartId/Pion/", "PartId/Kaon/");
-    histos.addClone("PartId/Pion/", "PartId/Proton/");
-
-    // Resonance
-    histos.add("Reso/Phi/hSigCentPtInvMass", "hUSCentPtInvMass", kTH3F, {axisCent, axisTrackPt, axisInvMass});
-    histos.add("Reso/Phi/hBkgCentPtInvMass", "hLSCentPtInvMass", kTH3F, {axisCent, axisTrackPt, axisInvMass});
-    histos.add("Reso/Phi/Sig/hPhiQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
-    histos.add("Reso/Phi/Sig/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
-    histos.add("Reso/Phi/Bkg/hPhiQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
-    histos.add("Reso/Phi/Bkg/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
   }
 
   template <typename C>
@@ -351,6 +314,360 @@ struct FlowEventPlane {
     mult = col.multNTracksHasTPC();
 
     return true;
+  }
+
+  void gainCalib(bool const& loadGainCalib, float const& vz, std::array<float, 4>& eA, std::array<float, 4>& eC)
+  {
+    // Store gain calibration histograms per run number
+    if (loadGainCalib) {
+      std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+      CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
+      CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
+    }
+
+    // Apply gain calibration
+    float vA = 0., vC = 0.;
+    for (int i = 0; i < static_cast<int>(eA.size()); ++i) {
+      vA = CorrectionHistContainer.hGainCalib[0]->GetBinContent(CorrectionHistContainer.hGainCalib[0]->FindBin(i + 0.5, vz + 0.00001));
+      vC = CorrectionHistContainer.hGainCalib[1]->GetBinContent(CorrectionHistContainer.hGainCalib[1]->FindBin(i + 0.5, vz + 0.00001));
+      eA[i] *= vA;
+      eC[i] *= vC;
+    }
+  }
+
+  std::vector<float> getAvgCorrFactors(int const& itr, CorrectionType const& corrType, std::array<float, 4> const& vCollParam)
+  {
+    std::vector<float> vAvgOutput = {0., 0., 0., 0.};
+    int binarray[4];
+    if (corrType == kCoarseCorr) {
+      int cntrx = 0;
+      for (auto const& v : CorrectionHistContainer.vCoarseCorrHist[itr]) {
+        for (auto const& h : v) {
+          binarray[kCent] = h->GetAxis(kCent)->FindBin(vCollParam[kCent] + 0.0001);
+          binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx] + 0.0001);
+          binarray[kVy] = h->GetAxis(kVy)->FindBin(vCollParam[kVy] + 0.0001);
+          binarray[kVz] = h->GetAxis(kVz)->FindBin(vCollParam[kVz] + 0.0001);
+          vAvgOutput[cntrx] += h->GetBinContent(h->GetBin(binarray));
+        }
+        ++cntrx;
+      }
+    } else {
+      int cntrx = 0;
+      for (auto const& v : CorrectionHistContainer.vFineCorrHist[itr]) {
+        int cntry = 0;
+        for (auto const& h : v) {
+          vAvgOutput[cntrx] += h->GetBinContent(h->GetXaxis()->FindBin(vCollParam[cntry] + 0.0001));
+          ++cntry;
+        }
+        ++cntrx;
+      }
+    }
+
+    return vAvgOutput;
+  }
+
+  void applyCorrection(bool const& loadShiftCorr, std::array<float, 4> const& inputParam, std::array<float, 4>& outputParam)
+  {
+    std::vector<int> vCorrFlags = static_cast<std::vector<int>>(cCorrFlagVector);
+    int nitr = vCorrFlags.size();
+    CorrectionType corrType = kFineCorr;
+    std::string ccdbPath;
+
+    // Correction iterations
+    for (int i = 0; i < nitr; ++i) {
+      // Don't correct if corrFlag != 1
+      if (vCorrFlags[i] != 1) {
+        continue;
+      }
+
+      // Set correction type
+      if (i % kNCorr == 0) {
+        corrType = kCoarseCorr;
+      } else {
+        corrType = kFineCorr;
+      }
+
+      // Check current and last run number, fetch ccdb object and store corrections in container
+      if (loadShiftCorr) {
+        // Set ccdb path
+        ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
+
+        // Get object from CCDB
+        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+
+        // Check CCDB Object
+        if (!ccdbObject) {
+          LOGF(warning, "CCDB OBJECT NOT FOUND");
+          return;
+        }
+
+        // Store histograms in Hist Container
+        std::vector<std::vector<std::string>> vHistNames = corrTypeHistNameMap.at(corrType);
+        int cntrx = 0;
+        for (auto const& x : vHistNames) {
+          int cntry = 0;
+          for (auto const& y : x) {
+            if (corrType == kFineCorr) {
+              CorrectionHistContainer.vFineCorrHist[i][cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
+            } else {
+              CorrectionHistContainer.vCoarseCorrHist[i][cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
+            }
+            ++cntry;
+          }
+          ++cntrx;
+        }
+      }
+
+      // Get averages
+      std::vector<float> vAvg = getAvgCorrFactors(i, corrType, inputParam);
+
+      // Apply correction
+      outputParam[kXa] -= vAvg[kXa];
+      outputParam[kYa] -= vAvg[kYa];
+      outputParam[kXc] -= vAvg[kXc];
+      outputParam[kYc] -= vAvg[kYc];
+    }
+  }
+
+  void fillCorrHist(std::array<float, 4> const& vCollParam, std::array<float, 4> const& vSP)
+  {
+    histos.fill(HIST("CorrHist/hWtXZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kXa]);
+    histos.fill(HIST("CorrHist/hWtYZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kYa]);
+    histos.fill(HIST("CorrHist/hWtXZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kXc]);
+    histos.fill(HIST("CorrHist/hWtYZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kYc]);
+    histos.fill(HIST("CorrHist/hUWtXZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
+    histos.fill(HIST("CorrHist/hUWtYZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
+    histos.fill(HIST("CorrHist/hUWtXZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
+    histos.fill(HIST("CorrHist/hUWtYZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
+    histos.fill(HIST("CorrHist/hXZNAVsCent"), vCollParam[kCent], vSP[kXa]);
+    histos.fill(HIST("CorrHist/hXZNAVsVx"), vCollParam[kVx], vSP[kXa]);
+    histos.fill(HIST("CorrHist/hXZNAVsVy"), vCollParam[kVy], vSP[kXa]);
+    histos.fill(HIST("CorrHist/hXZNAVsVz"), vCollParam[kVz], vSP[kXa]);
+    histos.fill(HIST("CorrHist/hYZNAVsCent"), vCollParam[kCent], vSP[kYa]);
+    histos.fill(HIST("CorrHist/hYZNAVsVx"), vCollParam[kVx], vSP[kYa]);
+    histos.fill(HIST("CorrHist/hYZNAVsVy"), vCollParam[kVy], vSP[kYa]);
+    histos.fill(HIST("CorrHist/hYZNAVsVz"), vCollParam[kVz], vSP[kYa]);
+    histos.fill(HIST("CorrHist/hXZNCVsCent"), vCollParam[kCent], vSP[kXc]);
+    histos.fill(HIST("CorrHist/hXZNCVsVx"), vCollParam[kVx], vSP[kXc]);
+    histos.fill(HIST("CorrHist/hXZNCVsVy"), vCollParam[kVy], vSP[kXc]);
+    histos.fill(HIST("CorrHist/hXZNCVsVz"), vCollParam[kVz], vSP[kXc]);
+    histos.fill(HIST("CorrHist/hYZNCVsCent"), vCollParam[kCent], vSP[kYc]);
+    histos.fill(HIST("CorrHist/hYZNCVsVx"), vCollParam[kVx], vSP[kYc]);
+    histos.fill(HIST("CorrHist/hYZNCVsVy"), vCollParam[kVy], vSP[kYc]);
+    histos.fill(HIST("CorrHist/hYZNCVsVz"), vCollParam[kVz], vSP[kYc]);
+  }
+
+  template <typename C>
+  bool analyzeCollision(C const& collision, std::array<float, 4>& vSP)
+  {
+    // Event selection
+    if (!selCollision(collision)) {
+      return false;
+    }
+    posX = collision.posX();
+    posY = collision.posY();
+    posZ = collision.posZ();
+    std::array<float, 4> vCollParam = {cent, posX, posY, posZ};
+
+    // Fill event QA
+    histos.fill(HIST("Event/hCent"), cent);
+    histos.fill(HIST("Event/hVx"), posX);
+    histos.fill(HIST("Event/hVy"), posY);
+    histos.fill(HIST("Event/hVz"), posZ);
+
+    // Get bunch crossing
+    auto bc = collision.template foundBC_as<BCsRun3>();
+    cRunNum = collision.template foundBC_as<BCsRun3>().runNumber();
+
+    // Load calibration flags
+    bool loadGainCalib = false, loadShiftCorr = false;
+    if (cRunNum != lRunNum) {
+      loadGainCalib = true;
+      loadShiftCorr = true;
+    }
+
+    // check zdc
+    if (!bc.has_zdc()) {
+      return false;
+    }
+
+    auto zdc = bc.zdc();
+    auto znaEnergy = zdc.energySectorZNA();
+    auto zncEnergy = zdc.energySectorZNC();
+    auto znaEnergyCommon = zdc.energyCommonZNA();
+    auto zncEnergyCommon = zdc.energyCommonZNC();
+
+    // check energy deposits
+    if (znaEnergyCommon <= 0 || zncEnergyCommon <= 0 || znaEnergy[0] <= 0 || znaEnergy[1] <= 0 || znaEnergy[2] <= 0 || znaEnergy[3] <= 0 || zncEnergy[0] <= 0 || zncEnergy[1] <= 0 || zncEnergy[2] <= 0 || zncEnergy[3] <= 0) {
+      return false;
+    }
+
+    // Fill gain calib histograms
+    for (int iCh = 0; iCh < kXYAC; ++iCh) {
+      histos.fill(HIST("QA/hZNASignal"), iCh + 0.5, vCollParam[kVz], znaEnergy[iCh]);
+      histos.fill(HIST("QA/hZNCSignal"), iCh + 0.5, vCollParam[kVz], zncEnergy[iCh]);
+      histos.fill(HIST("QA/hZNAEnergyCommon"), vCollParam[kVz], znaEnergyCommon);
+      histos.fill(HIST("QA/hZNCEnergyCommon"), vCollParam[kVz], zncEnergyCommon);
+    }
+
+    // Do gain calibration
+    if (cDoGainCalib) {
+      gainCalib(loadGainCalib, vCollParam[kVz], znaEnergy, zncEnergy);
+    }
+
+    // Fill zdc signal
+    for (int iCh = 0; iCh < kXYAC; ++iCh) {
+      histos.fill(HIST("QA/GainCalib/hZNASignal"), iCh + 0.5, znaEnergy[iCh]);
+      histos.fill(HIST("QA/GainCalib/hZNCSignal"), iCh + 0.5, zncEnergy[iCh]);
+    }
+
+    auto alphaZDC = 0.395;
+    const double x[4] = {-1.75, 1.75, -1.75, 1.75};
+    const double y[4] = {-1.75, -1.75, 1.75, 1.75};
+
+    // Calculate X and Y
+    float znaXNum = 0., znaYNum = 0., zncXNum = 0., zncYNum = 0.;
+    float znaDen = 0., zncDen = 0.;
+    float znaWt = 0., zncWt = 0.;
+
+    // Loop over zdc sectors
+    for (int i = 0; i < kXYAC; ++i) {
+      if (cUseAlphaZDC) {
+        znaWt = std::pow(znaEnergy[i], alphaZDC);
+        zncWt = std::pow(zncEnergy[i], alphaZDC);
+      } else {
+        znaWt = znaEnergy[i];
+        zncWt = zncEnergy[i];
+      }
+      znaXNum -= znaWt * x[i];
+      znaYNum += znaWt * y[i];
+      zncXNum += zncWt * x[i];
+      zncYNum += zncWt * y[i];
+      znaDen += znaWt;
+      zncDen += zncWt;
+    }
+
+    if (znaDen < zdcDenThrs || zncDen < zdcDenThrs) {
+      return false;
+    }
+
+    // Get X and Y for A and C side ZNA
+    vSP[kXa] = znaXNum / znaDen;
+    vSP[kYa] = znaYNum / znaDen;
+    vSP[kXc] = zncXNum / zncDen;
+    vSP[kYc] = zncYNum / zncDen;
+
+    // Do corrections
+    if (cApplyRecentCorr) {
+      applyCorrection(loadShiftCorr, vCollParam, vSP);
+    }
+
+    // Fill X and Y histograms for corrections after each iteration
+    fillCorrHist(vCollParam, vSP);
+    return true;
+  }
+
+  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra>;
+
+  void process(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
+  {
+    // Analyze collision and get Spectator Plane Vector
+    std::array<float, 4> vSP = {0., 0., 0., 0.};
+    bool colSPExtFlag = analyzeCollision(collision, vSP);
+
+    // Update run number
+    lRunNum = cRunNum;
+
+    // Fill histograms if SP flag is true
+    if (colSPExtFlag) {
+      // Evaluate spectator plane angle and [X,Y] correlations
+      float psiA = std::atan2(vSP[kYa], vSP[kXa]);
+      float psiC = std::atan2(vSP[kYc], vSP[kXc]);
+      histos.fill(HIST("Checks/hPsiSPA"), cent, psiA);
+      histos.fill(HIST("Checks/hPsiSPC"), cent, psiC);
+      histos.fill(HIST("Checks/hCosPsiSPAC"), cent, std::cos(psiA - psiC));
+      histos.fill(HIST("Checks/hSinPsiSPAC"), cent, std::sin(psiA - psiC));
+      histos.fill(HIST("Checks/hXaXc"), cent, (vSP[kXa] * vSP[kXc]));
+      histos.fill(HIST("Checks/hYaYc"), cent, (vSP[kYa] * vSP[kYc]));
+      histos.fill(HIST("Checks/hXaYc"), cent, (vSP[kXa] * vSP[kYc]));
+      histos.fill(HIST("Checks/hYaXc"), cent, (vSP[kYa] * vSP[kXc]));
+    }
+
+    // Fill table
+    colSPExtTable(colSPExtFlag, vSP[kXa], vSP[kYa], vSP[kXc], vSP[kYc]);
+  }
+};
+
+struct IdHadronFlow {
+  // Table producer
+  Produces<aod::TrackIdExt> trackIdExtTable;
+
+  // Tracks
+  Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
+  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 10.0, "p_{T} maximum"};
+  Configurable<int> cNEtaBins{"cNEtaBins", 7, "# of eta bins"};
+  Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
+  Configurable<bool> cTrackGlobal{"cTrackGlobal", true, "Global Track"};
+  Configurable<float> cTrackDcaXYCut{"cTrackDcaXYCut", 0.1, "DcaXY Cut"};
+  Configurable<float> cTrackDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
+
+  // Track PID
+  Configurable<float> cTpcNSigmaCut{"cTpcNSigmaCut", 2, "TPC NSigma Cut"};
+  Configurable<float> cTpcRejCut{"cTpcRejCut", 3, "TPC Rej Cut"};
+  Configurable<float> cTofNSigmaCut{"cTofNSigmaCut", 2, "TOF NSigma Cut"};
+  Configurable<float> cTofRejCut{"cTofRejCut", 3, "TOF Rej Cut"};
+  Configurable<float> cPionPtCut{"cPionPtCut", 0.6, "Pion TPC pT cutoff"};
+  Configurable<float> cKaonPtCut{"cKaonPtCut", 0.6, "Kaon TPC pT cutoff"};
+  Configurable<float> cProtonPtCut{"cProtonPtCut", 1.1, "Proton TPC pT cutoff"};
+
+  // Histogram registry: an object to hold your histograms
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Global objects
+  float cent = 0.;
+
+  void init(InitContext const&)
+  {
+    // Define axes
+    const AxisSpec axisCent{100, 0., 100, "FT0C%"};
+
+    const AxisSpec axisXYac{600, -6, 6, "Q^{t}Q^{p}"};
+    const AxisSpec axisV1{400, -4, 4, "v_{1}"};
+
+    const AxisSpec axisTrackPt{100, 0., 10., "p_{T} (GeV/#it{c})"};
+    const AxisSpec axisTrackEta{cNEtaBins, -0.8, 0.8, "#eta"};
+    const AxisSpec axisTrackDcaXY{60, -0.15, 0.15, "DCA_{XY}"};
+    const AxisSpec axisTrackDcaZ{230, -1.15, 1.15, "DCA_{XY}"};
+    const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
+    const AxisSpec axisTrackNSigma{161, -4.025, 4.025, {"n#sigma"}};
+
+    // Create histograms
+    // Track QA
+    histos.add("TrackQA/hPtDcaXY", "DCA_{XY} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaXY});
+    histos.add("TrackQA/hPtDcaZ", "DCA_{Z} vs p_{T}", kTH2F, {axisTrackPt, axisTrackDcaZ});
+    histos.add("TrackQA/hTrackTPCdEdX", "hTrackTPCdEdX", kTH2F, {axisTrackPt, axisTrackdEdx});
+
+    // Charged particle directed flow
+    histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
+    histos.add("DF/hAQu", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hCQu", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hAQuPos", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hCQuPos", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hAQuNeg", "u_{x}X^{A}_{1} + u_{y}Y^{A}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
+
+    // Identified particle
+    histos.add("PartId/Pion/hdEdX", "PartId/Pion/hdEdX", kTH2F, {axisTrackPt, axisTrackdEdx});
+    histos.add("PartId/Pion/hTPCNSigma", "PartId/Pion/hTPCNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
+    histos.add("PartId/Pion/hTOFNSigma", "PartId/Pion/hTOFNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
+    histos.add("PartId/Pion/hAQuPos", "PartId/Pion/hAQuPos", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("PartId/Pion/hAQuNeg", "PartId/Pion/hAQuNeg", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("PartId/Pion/hCQuPos", "PartId/Pion/hCQuPos", kTProfile2D, {axisCent, axisTrackEta});
+    histos.add("PartId/Pion/hCQuNeg", "PartId/Pion/hCQuNeg", kTProfile2D, {axisCent, axisTrackEta});
+    histos.addClone("PartId/Pion/", "PartId/Kaon/");
+    histos.addClone("PartId/Pion/", "PartId/Proton/");
   }
 
   // Track Selection
@@ -409,124 +726,156 @@ struct FlowEventPlane {
     return retFlag;
   }
 
-  void gainCalib(bool const& loadGainCalib, float const& vz, std::array<float, 4>& eA, std::array<float, 4>& eC)
+  template <ParticleType part, typename T>
+  void getIdHadronFlow(float const& cent, T const& track, float const& v1a, float const& v1c)
   {
-    // Store gain calibration histograms per run number
-    if (loadGainCalib) {
-      std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
-      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
-      CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
-      CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
-    }
-
-    // Apply gain calibration
-    float vA = 0., vC = 0.;
-    for (int i = 0; i < static_cast<int>(eA.size()); ++i) {
-      vA = CorrectionHistContainer.hGainCalib[0]->GetBinContent(CorrectionHistContainer.hGainCalib[0]->FindBin(i + 0.5, vz + 0.00001));
-      vC = CorrectionHistContainer.hGainCalib[1]->GetBinContent(CorrectionHistContainer.hGainCalib[1]->FindBin(i + 0.5, vz + 0.00001));
-      eA[i] *= vA;
-      eC[i] *= vC;
-    }
-  }
-
-  std::vector<float> getAvgCorrFactors(CorrectionType const& corrType, std::array<float, 4> const& vCollParam)
-  {
-    std::vector<float> vAvgOutput = {0., 0., 0., 0.};
-    int binarray[4];
-    if (corrType == kCoarseCorr) {
-      int cntrx = 0;
-      for (auto const& v : CorrectionHistContainer.vCoarseCorrHist) {
-        for (auto const& h : v) {
-          binarray[kCent] = h->GetAxis(kCent)->FindBin(vCollParam[kCent] + 0.0001);
-          binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx] + 0.0001);
-          binarray[kVy] = h->GetAxis(kVy)->FindBin(vCollParam[kVy] + 0.0001);
-          binarray[kVz] = h->GetAxis(kVz)->FindBin(vCollParam[kVz] + 0.0001);
-          vAvgOutput[cntrx] += h->GetBinContent(h->GetBin(binarray));
-        }
-        ++cntrx;
-      }
+    static constexpr std::string_view SubDir[] = {"Pion/", "Kaon/", "Proton/"};
+    float tpcNsigma = 0., tofNsigma = 0.;
+    if (part == kPi) {
+      tpcNsigma = track.tpcNSigmaPi();
+      tofNsigma = track.tofNSigmaPi();
+    } else if (part == kKa) {
+      tpcNsigma = track.tpcNSigmaKa();
+      tofNsigma = track.tofNSigmaKa();
+    } else if (part == kPr) {
+      tpcNsigma = track.tpcNSigmaPr();
+      tofNsigma = track.tofNSigmaPr();
     } else {
-      int cntrx = 0;
-      for (auto const& v : CorrectionHistContainer.vFineCorrHist) {
-        int cntry = 0;
-        for (auto const& h : v) {
-          vAvgOutput[cntrx] += h->GetBinContent(h->GetXaxis()->FindBin(vCollParam[cntry] + 0.0001));
-          ++cntry;
-        }
-        ++cntrx;
-      }
+      return;
     }
-
-    return vAvgOutput;
-  }
-
-  void applyCorrection(bool const& loadShiftCorr, std::array<float, 4> const& inputParam, std::array<float, 4>& outputParam)
-  {
-    std::vector<int> vCorrFlags = static_cast<std::vector<int>>(cCorrFlagVector);
-    int nitr = vCorrFlags.size();
-    CorrectionType corrType = kFineCorr;
-    std::string ccdbPath;
-
-    for (int i = 0; i < nitr; ++i) {
-      // Don't correct if corrFlag != 1
-      if (vCorrFlags[i] != 1) {
-        continue;
-      }
-
-      // Set correction type
-      if (i % kNCorr == 0) {
-        corrType = kCoarseCorr;
-      } else {
-        corrType = kFineCorr;
-      }
-
-      // Check current and last run number, fetch ccdb object and store corrections in container
-      if (loadShiftCorr) {
-        // Set ccdb path
-        ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
-
-        // Get object from CCDB
-        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
-
-        // Check CCDB Object
-        if (!ccdbObject) {
-          LOGF(warning, "CCDB OBJECT NOT FOUND");
-          return;
-        }
-
-        // Store histograms in Hist Container
-        std::vector<std::vector<std::string>> vHistNames = corrTypeHistNameMap.at(corrType);
-        int cntrx = 0;
-        for (auto const& x : vHistNames) {
-          int cntry = 0;
-          for (auto const& y : x) {
-            if (corrType == kFineCorr) {
-              CorrectionHistContainer.vFineCorrHist[cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
-            } else {
-              CorrectionHistContainer.vCoarseCorrHist[cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
-            }
-            ++cntry;
-          }
-          ++cntrx;
-        }
-      }
-
-      // Get averages
-      std::vector<float> vAvg = getAvgCorrFactors(corrType, inputParam);
-
-      // Apply correction
-      outputParam[kXa] -= vAvg[kXa];
-      outputParam[kYa] -= vAvg[kYa];
-      outputParam[kXc] -= vAvg[kXc];
-      outputParam[kYc] -= vAvg[kYc];
+    histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hdEdX"), track.pt(), track.tpcSignal());
+    histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hTPCNSigma"), track.pt(), tpcNsigma);
+    if (track.hasTOF()) {
+      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hTOFNSigma"), track.pt(), tofNsigma);
+    }
+    if (track.sign() > 0) {
+      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hAQuPos"), cent, track.eta(), v1a);
+      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hCQuPos"), cent, track.eta(), v1c);
+    } else {
+      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hAQuNeg"), cent, track.eta(), v1a);
+      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hCQuNeg"), cent, track.eta(), v1c);
     }
   }
 
   template <typename T>
-  void getResoFlow(T const& tracks, std::array<float, 4> const& vSP)
+  void fillTrackHist(T const& track)
+  {
+    histos.fill(HIST("TrackQA/hPtDcaZ"), track.pt(), track.dcaZ());
+    histos.fill(HIST("TrackQA/hPtDcaXY"), track.pt(), track.dcaXY());
+  }
+
+  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra, aod::ColSPExt>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls>;
+
+  void processDummy(CollisionsRun3::iterator const&) {}
+
+  PROCESS_SWITCH(IdHadronFlow, processDummy, "Dummy process", true);
+
+  void processIdHadronFlow(CollisionsRun3::iterator const& collision, Tracks const& tracks)
+  {
+    // Check collision
+    if (!collision.selColFlag()) {
+      return;
+    }
+
+    // Set centrality
+    cent = collision.centFT0C();
+
+    // Flow vectors
+    std::array<float, 4> vSP = {0., 0., 0., 0.};
+    vSP[kXa] = collision.xa();
+    vSP[kYa] = collision.ya();
+    vSP[kXc] = collision.xc();
+    vSP[kYc] = collision.yc();
+
+    // Directed flow QXY vector
+    float qac = (vSP[kXa] * vSP[kXc]) + (vSP[kYa] * vSP[kYc]);
+    histos.fill(HIST("DF/hQaQc"), cent, qac);
+
+    // Loop over tracks
+    float ux = 0., uy = 0., v1a = 0., v1c = 0.;
+    for (auto const& track : tracks) {
+      // Select track
+      if (!selectTrack(track)) {
+        trackIdExtTable(false, false, false);
+        continue;
+      }
+
+      // Fill track QA
+      fillTrackHist(track);
+
+      // Get directed flow
+      ux = std::cos(track.phi());
+      uy = std::sin(track.phi());
+      v1a = ux * vSP[kXa] + uy * vSP[kYa];
+      v1c = ux * vSP[kXc] + uy * vSP[kYc];
+
+      // Charged particle directed flow
+      histos.fill(HIST("DF/hAQu"), cent, track.eta(), v1a);
+      histos.fill(HIST("DF/hCQu"), cent, track.eta(), v1c);
+      if (track.sign() > 0) {
+        histos.fill(HIST("DF/hAQuPos"), cent, track.eta(), v1a);
+        histos.fill(HIST("DF/hCQuPos"), cent, track.eta(), v1c);
+      } else {
+        histos.fill(HIST("DF/hAQuNeg"), cent, track.eta(), v1a);
+        histos.fill(HIST("DF/hCQuNeg"), cent, track.eta(), v1c);
+      }
+
+      // Identified directed flow
+      if (identifyTrack<kPi>(track)) {
+        trackIdExtTable(true, false, false);
+        getIdHadronFlow<kPi>(cent, track, v1a, v1c);
+      } else if (identifyTrack<kKa>(track)) {
+        trackIdExtTable(false, true, false);
+        getIdHadronFlow<kKa>(cent, track, v1a, v1c);
+      } else if (identifyTrack<kPr>(track)) {
+        trackIdExtTable(false, false, true);
+        getIdHadronFlow<kPr>(cent, track, v1a, v1c);
+      }
+    }
+  }
+  PROCESS_SWITCH(IdHadronFlow, processIdHadronFlow, "Identified hadron flow process", false);
+};
+
+struct FlowEventPlane {
+  // Resonance
+  Configurable<int> cNRapBins{"cNRapBins", 5, "# of y bins"};
+  Configurable<int> cNInvMassBins{"cNInvMassBins", 500, "# of m bins"};
+  Configurable<float> cResRapCut{"cResRapCut", 0.5, "Resonance rapidity cut"};
+
+  // Histogram registry: an object to hold your histograms
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Global objects
+  float cent = 0.;
+
+  void init(InitContext const&)
+  {
+    // Define axes
+    const AxisSpec axisCent{100, 0., 100, "FT0C%"};
+
+    const AxisSpec axisXYac{600, -6, 6, "Q^{t}Q^{p}"};
+    const AxisSpec axisV1{400, -4, 4, "v_{1}"};
+
+    const AxisSpec axisTrackPt{100, 0., 10., "p_{T} (GeV/#it{c})"};
+    const AxisSpec axisTrackRap{cNRapBins, -0.5, 0.5, "y"};
+    const AxisSpec axisInvMass{cNInvMassBins, 0.87, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
+
+    // Create histograms
+    // Resonance
+    histos.add("Reso/Phi/hSigCentPtInvMass", "hUSCentPtInvMass", kTH3F, {axisCent, axisTrackPt, axisInvMass});
+    histos.add("Reso/Phi/hBkgCentPtInvMass", "hLSCentPtInvMass", kTH3F, {axisCent, axisTrackPt, axisInvMass});
+    histos.add("Reso/Phi/Sig/hPhiQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+    histos.add("Reso/Phi/Sig/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+    histos.add("Reso/Phi/Bkg/hPhiQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+    histos.add("Reso/Phi/Bkg/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+  }
+
+  template <typename T>
+  void getResoFlow(T const& tracks1, T const& tracks2, std::array<float, 4> const& vSP)
   {
     float ux = 0., uy = 0., v1a = 0., v1c = 0.;
-    for (auto const& [track1, track2] : soa::combinations(soa::CombinationsFullIndexPolicy(tracks, tracks))) {
+    for (auto const& [track1, track2] : soa::combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
       // Discard same track
       if (track1.index() == track2.index()) {
         continue;
@@ -537,23 +886,13 @@ struct FlowEventPlane {
         continue;
       }
 
-      // Select track
-      if (!selectTrack(track1) || !selectTrack(track2)) {
-        continue;
-      }
-
-      // Identify track
-      if (!identifyTrack<kKa>(track1) || !identifyTrack<kKa>(track2)) {
-        continue;
-      }
-
       // Apply rapidity acceptance
       std::array<float, 3> v = {track1.px() + track2.px(), track1.py() + track2.py(), track1.pz() + track2.pz()};
       if (RecoDecay::y(v, MassPhi) >= cResRapCut) {
         continue;
       }
 
-      // Reconstruct invariant mass
+      // Reconstruct phi meson
       float p = RecoDecay::p((track1.px() + track2.px()), (track1.py() + track2.py()), (track1.pz() + track2.pz()));
       float e = RecoDecay::e(track1.px(), track1.py(), track1.pz(), MassKaonCharged) + RecoDecay::e(track2.px(), track2.py(), track2.pz(), MassKaonCharged);
       float m = std::sqrt(RecoDecay::m2(p, e));
@@ -587,262 +926,46 @@ struct FlowEventPlane {
     }
   }
 
-  template <ParticleType part, typename T>
-  void getIdHadronFlow(float const& cent, T const& track, float const& v1a, float const& v1c)
+  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra, aod::ColSPExt>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls, aod::TrackIdExt>;
+
+  SliceCache cache;
+  Partition<Tracks> kaonTrackPartition = (aod::trackidext::isKaon == true);
+
+  void processDummy(CollisionsRun3::iterator const&) {}
+
+  PROCESS_SWITCH(FlowEventPlane, processDummy, "Dummy process", true);
+
+  void processResoFlow(CollisionsRun3::iterator const& collision, Tracks const&)
   {
-    static constexpr std::string_view SubDir[] = {"Pion/", "Kaon/", "Proton/"};
-    float tpcNsigma = 0., tofNsigma = 0.;
-    if (part == kPi) {
-      tpcNsigma = track.tpcNSigmaPi();
-      tofNsigma = track.tofNSigmaPi();
-    } else if (part == kKa) {
-      tpcNsigma = track.tpcNSigmaKa();
-      tofNsigma = track.tofNSigmaKa();
-    } else if (part == kPr) {
-      tpcNsigma = track.tpcNSigmaPr();
-      tofNsigma = track.tofNSigmaPr();
-    } else {
+    // Check collision
+    if (!collision.selColFlag()) {
       return;
     }
-    histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hdEdX"), track.pt(), track.tpcSignal());
-    histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hTPCNSigma"), track.pt(), tpcNsigma);
-    if (track.hasTOF()) {
-      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hTOFNSigma"), track.pt(), tofNsigma);
-    }
-    if (track.sign() > 0) {
-      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hAQuPos"), cent, track.eta(), v1a);
-      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hCQuPos"), cent, track.eta(), v1c);
-    } else {
-      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hAQuNeg"), cent, track.eta(), v1a);
-      histos.fill(HIST("PartId/") + HIST(SubDir[part]) + HIST("hCQuNeg"), cent, track.eta(), v1c);
-    }
-  }
 
-  void fillCorrHist(std::array<float, 4> const& vCollParam, std::array<float, 4> const& vSP)
-  {
-    histos.fill(HIST("CorrHist/hWtXZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kXa]);
-    histos.fill(HIST("CorrHist/hWtYZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kYa]);
-    histos.fill(HIST("CorrHist/hWtXZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kXc]);
-    histos.fill(HIST("CorrHist/hWtYZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz], vSP[kYc]);
-    histos.fill(HIST("CorrHist/hUWtXZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
-    histos.fill(HIST("CorrHist/hUWtYZNA"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
-    histos.fill(HIST("CorrHist/hUWtXZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
-    histos.fill(HIST("CorrHist/hUWtYZNC"), vCollParam[kCent], vCollParam[kVx], vCollParam[kVy], vCollParam[kVz]);
-    histos.fill(HIST("CorrHist/hXZNAVsCent"), vCollParam[kCent], vSP[kXa]);
-    histos.fill(HIST("CorrHist/hXZNAVsVx"), vCollParam[kVx], vSP[kXa]);
-    histos.fill(HIST("CorrHist/hXZNAVsVy"), vCollParam[kVy], vSP[kXa]);
-    histos.fill(HIST("CorrHist/hXZNAVsVz"), vCollParam[kVz], vSP[kXa]);
-    histos.fill(HIST("CorrHist/hYZNAVsCent"), vCollParam[kCent], vSP[kYa]);
-    histos.fill(HIST("CorrHist/hYZNAVsVx"), vCollParam[kVx], vSP[kYa]);
-    histos.fill(HIST("CorrHist/hYZNAVsVy"), vCollParam[kVy], vSP[kYa]);
-    histos.fill(HIST("CorrHist/hYZNAVsVz"), vCollParam[kVz], vSP[kYa]);
-    histos.fill(HIST("CorrHist/hXZNCVsCent"), vCollParam[kCent], vSP[kXc]);
-    histos.fill(HIST("CorrHist/hXZNCVsVx"), vCollParam[kVx], vSP[kXc]);
-    histos.fill(HIST("CorrHist/hXZNCVsVy"), vCollParam[kVy], vSP[kXc]);
-    histos.fill(HIST("CorrHist/hXZNCVsVz"), vCollParam[kVz], vSP[kXc]);
-    histos.fill(HIST("CorrHist/hYZNCVsCent"), vCollParam[kCent], vSP[kYc]);
-    histos.fill(HIST("CorrHist/hYZNCVsVx"), vCollParam[kVx], vSP[kYc]);
-    histos.fill(HIST("CorrHist/hYZNCVsVy"), vCollParam[kVy], vSP[kYc]);
-    histos.fill(HIST("CorrHist/hYZNCVsVz"), vCollParam[kVz], vSP[kYc]);
-  }
+    // Set centrality
+    cent = collision.centFT0C();
 
-  template <typename T>
-  void fillTrackHist(T const& track)
-  {
-    histos.fill(HIST("TrackQA/hPtDcaZ"), track.pt(), track.dcaZ());
-    histos.fill(HIST("TrackQA/hPtDcaXY"), track.pt(), track.dcaXY());
-  }
-
-  template <typename C>
-  bool analyzeCollision(C const& collision, std::array<float, 4>& vSP)
-  {
-    // Event selection
-    if (!selCollision(collision)) {
-      return false;
-    }
-    posX = collision.posX();
-    posY = collision.posY();
-    posZ = collision.posZ();
-    std::array<float, 4> vCollParam = {cent, posX, posY, posZ};
-
-    // Fill event QA
-    histos.fill(HIST("Event/hCent"), cent);
-    histos.fill(HIST("Event/hVx"), posX);
-    histos.fill(HIST("Event/hVy"), posY);
-    histos.fill(HIST("Event/hVz"), posZ);
-
-    // Get bunch crossing
-    auto bc = collision.template foundBC_as<BCsRun3>();
-    cRunNum = collision.template foundBC_as<BCsRun3>().runNumber();
-
-    // Load calibration flags
-    bool loadGainCalib = false, loadShiftCorr = false;
-    if (cRunNum != lRunNum) {
-      loadGainCalib = true;
-      loadShiftCorr = true;
-    }
-
-    // check zdc
-    if (!bc.has_zdc()) {
-      lRunNum = cRunNum;
-      return false;
-    }
-
-    auto zdc = bc.zdc();
-    auto znaEnergy = zdc.energySectorZNA();
-    auto zncEnergy = zdc.energySectorZNC();
-    auto znaEnergyCommon = zdc.energyCommonZNA();
-    auto zncEnergyCommon = zdc.energyCommonZNC();
-
-    // check energy deposits
-    if (znaEnergyCommon <= 0 || zncEnergyCommon <= 0 || znaEnergy[0] <= 0 || znaEnergy[1] <= 0 || znaEnergy[2] <= 0 || znaEnergy[3] <= 0 || zncEnergy[0] <= 0 || zncEnergy[1] <= 0 || zncEnergy[2] <= 0 || zncEnergy[3] <= 0) {
-      lRunNum = cRunNum;
-      return false;
-    }
-
-    // Fill gain calib histograms
-    for (int iCh = 0; iCh < kXYAC; ++iCh) {
-      histos.fill(HIST("QA/hZNASignal"), iCh + 0.5, vCollParam[kVz], znaEnergy[iCh]);
-      histos.fill(HIST("QA/hZNCSignal"), iCh + 0.5, vCollParam[kVz], zncEnergy[iCh]);
-      histos.fill(HIST("QA/hZNAEnergyCommon"), vCollParam[kVz], znaEnergyCommon);
-      histos.fill(HIST("QA/hZNCEnergyCommon"), vCollParam[kVz], zncEnergyCommon);
-    }
-
-    // Do gain calibration
-    if (cDoGainCalib) {
-      gainCalib(loadGainCalib, vCollParam[kVz], znaEnergy, zncEnergy);
-    }
-
-    // Fill zdc signal
-    for (int iCh = 0; iCh < kXYAC; ++iCh) {
-      histos.fill(HIST("QA/GainCalib/hZNASignal"), iCh + 0.5, znaEnergy[iCh]);
-      histos.fill(HIST("QA/GainCalib/hZNCSignal"), iCh + 0.5, zncEnergy[iCh]);
-    }
-
-    auto alphaZDC = 0.395;
-    const double x[4] = {-1.75, 1.75, -1.75, 1.75};
-    const double y[4] = {-1.75, -1.75, 1.75, 1.75};
-
-    // Calculate X and Y
-    float znaXNum = 0., znaYNum = 0., zncXNum = 0., zncYNum = 0.;
-    float znaDen = 0., zncDen = 0.;
-    float znaWt = 0., zncWt = 0.;
-
-    // Loop over zdc sectors
-    for (int i = 0; i < kXYAC; ++i) {
-      if (cUseAlphaZDC) {
-        znaWt = std::pow(znaEnergy[i], alphaZDC);
-        zncWt = std::pow(zncEnergy[i], alphaZDC);
-      } else {
-        znaWt = znaEnergy[i];
-        zncWt = zncEnergy[i];
-      }
-      znaXNum -= znaWt * x[i];
-      znaYNum += znaWt * y[i];
-      zncXNum += zncWt * x[i];
-      zncYNum += zncWt * y[i];
-      znaDen += znaWt;
-      zncDen += zncWt;
-    }
-
-    if (znaDen < zdcDenThrs || zncDen < zdcDenThrs) {
-      lRunNum = cRunNum;
-      return false;
-    }
-
-    // Get X and Y for A and C side ZNA
-    vSP[kXa] = znaXNum / znaDen;
-    vSP[kYa] = znaYNum / znaDen;
-    vSP[kXc] = zncXNum / zncDen;
-    vSP[kYc] = zncYNum / zncDen;
-
-    // Do corrections
-    if (cApplyRecentCorr) {
-      applyCorrection(loadShiftCorr, vCollParam, vSP);
-    }
-
-    // Fill X and Y histograms for corrections after each iteration
-    fillCorrHist(vCollParam, vSP);
-    return true;
-  }
-
-  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
-  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls>;
-
-  void process(CollisionsRun3::iterator const& collision, BCsRun3 const& /* bcs*/, aod::Zdcs const&, Tracks const& tracks)
-  {
-    // Analyze collison and get SP vector
+    // Flow vectors
     std::array<float, 4> vSP = {0., 0., 0., 0.};
-    if (!analyzeCollision(collision, vSP)) {
-      lRunNum = cRunNum;
-      return;
-    }
+    vSP[kXa] = collision.xa();
+    vSP[kYa] = collision.ya();
+    vSP[kXc] = collision.xc();
+    vSP[kYc] = collision.yc();
 
-    // Evaluate spectator plane angle and [X,Y] correlations
-    float psiA = std::atan2(vSP[kYa], vSP[kXa]);
-    float psiC = std::atan2(vSP[kYc], vSP[kXc]);
-    histos.fill(HIST("Checks/hPsiSPA"), cent, psiA);
-    histos.fill(HIST("Checks/hPsiSPC"), cent, psiC);
-    histos.fill(HIST("Checks/hCosPsiSPAC"), cent, std::cos(psiA - psiC));
-    histos.fill(HIST("Checks/hSinPsiSPAC"), cent, std::sin(psiA - psiC));
-    histos.fill(HIST("Checks/hXaXc"), cent, (vSP[kXa] * vSP[kXc]));
-    histos.fill(HIST("Checks/hYaYc"), cent, (vSP[kYa] * vSP[kYc]));
-    histos.fill(HIST("Checks/hXaYc"), cent, (vSP[kXa] * vSP[kYc]));
-    histos.fill(HIST("Checks/hYaXc"), cent, (vSP[kYa] * vSP[kXc]));
+    // Track partitions
+    auto kaonTracks = kaonTrackPartition->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    // Directed flow
-    float qac = (vSP[kXa] * vSP[kXc]) + (vSP[kYa] * vSP[kYc]);
-    histos.fill(HIST("DF/hQaQc"), cent, qac);
-
-    // Loop over tracks
-    float ux = 0., uy = 0., v1a = 0., v1c = 0.;
-    for (auto const& track : tracks) {
-      // Select track
-      if (!selectTrack(track)) {
-        continue;
-      }
-
-      // Fill track QA
-      fillTrackHist(track);
-
-      // Get directed flow
-      ux = std::cos(track.phi());
-      uy = std::sin(track.phi());
-      v1a = ux * vSP[kXa] + uy * vSP[kYa];
-      v1c = ux * vSP[kXc] + uy * vSP[kYc];
-
-      // Charged particle directed flow
-      histos.fill(HIST("DF/hAQu"), cent, track.eta(), v1a);
-      histos.fill(HIST("DF/hCQu"), cent, track.eta(), v1c);
-      if (track.sign() > 0) {
-        histos.fill(HIST("DF/hAQuPos"), cent, track.eta(), v1a);
-        histos.fill(HIST("DF/hCQuPos"), cent, track.eta(), v1c);
-      } else {
-        histos.fill(HIST("DF/hAQuNeg"), cent, track.eta(), v1a);
-        histos.fill(HIST("DF/hCQuNeg"), cent, track.eta(), v1c);
-      }
-
-      // Identified directed flow
-      if (identifyTrack<kPi>(track)) {
-        getIdHadronFlow<kPi>(cent, track, v1a, v1c);
-      } else if (identifyTrack<kKa>(track)) {
-        getIdHadronFlow<kKa>(cent, track, v1a, v1c);
-      } else if (identifyTrack<kPr>(track)) {
-        getIdHadronFlow<kPr>(cent, track, v1a, v1c);
-      }
-    }
-
-    // Get resonance flow
-    getResoFlow(tracks, vSP);
-
-    // Update runnumber
-    lRunNum = cRunNum;
+    // Resonance flow
+    getResoFlow(kaonTracks, kaonTracks, vSP);
   }
+  PROCESS_SWITCH(FlowEventPlane, processResoFlow, "Resonance flow process", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<SpectatorPlaneTableProducer>(cfgc),
+    adaptAnalysisTask<IdHadronFlow>(cfgc),
     adaptAnalysisTask<FlowEventPlane>(cfgc)};
 }

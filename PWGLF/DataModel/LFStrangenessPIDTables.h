@@ -110,10 +110,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr, //! unpacked TPC nsigma
 // ==== TOF INFORMATION ===
 DECLARE_SOA_INDEX_COLUMN(DauTrackExtra, dauTrackExtra); //! point to daughter this TOF info belongs to
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision); //! point to collision associated with this track (not the V0/Casc)
-DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! track TOF signal
-DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float); //! event time
-DECLARE_SOA_COLUMN(Length, length, float);       //! track length (to assigned PV)
-DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float); //! tof Exp Mom (to assigned PV)
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);        //! track TOF signal
+DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float);        //! event time
+DECLARE_SOA_COLUMN(Length, length, float);              //! track length (to assigned PV)
+DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);        //! tof Exp Mom (to assigned PV)
 
 // dynamics with expected times
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeEl, tofExpTimeEl, //! Expected time for the track to reach the TOF under the electron hypothesis
@@ -176,7 +176,7 @@ using DauTrackTOFPIDs = DauTrackTOFPIDs_001; // second gen: with collision Id, w
 namespace v0data
 {
 // define constants for NSigma operation
-const float kNoTOFValue = -1e+6;
+constexpr float kNoTOFValue = -1e+6;
 const float kEpsilon = 1e-4;
 
 // ==== TOF INFORMATION ===
@@ -187,8 +187,8 @@ DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float);         //! positive trac
 DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float);         //! negative track signal
 DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
 DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
-DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); //! positive track length, recalculated
-DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); //! negative track length, recalculated
+DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float);         //! positive track length, recalculated
+DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float);         //! negative track length, recalculated
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float); //! positive track TOFDeltaT from pion <- lambda expectation

@@ -9,19 +9,22 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// SFS todo: update description
+/// \file gammaConversionsTruthOnlyMc.cxx
 /// \brief extract relevant mc truth information that allows to compute efficiency, purity and more quantities for the photon conversion analysis.
-/// dependencies: none
 /// \author stephan.friedrich.stiefelmaier@cern.ch
+/// dependencies: none
+// SFS todo: update description
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
-#include "TVector3.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
+#include <TVector3.h>
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -34,7 +37,7 @@ struct gammaConversionsTruthOnlyMc {
   Configurable<float> fV0RMin{"fV0RMin", 0., "minimum conversion radius of the V0s"};
   Configurable<float> fV0RMax{"fV0RMax", 180., "maximum conversion radius of the V0s"};
   Configurable<float> LineCutZ0{"fLineCutZ0", 7.0, "The offset for the linecute used in the Z vs R plot"};
-  Configurable<float> LineCutZRSlope{"LineCutZRSlope", (float)TMath::Tan(2 * TMath::ATan(TMath::Exp(-fEtaMax))), "The slope for the line cut"};
+  Configurable<float> LineCutZRSlope{"LineCutZRSlope", std::tan(2.f * std::atan(std::exp(-fEtaMax.value))), "The slope for the line cut"};
 
   HistogramRegistry registry{
     "registry",
@@ -111,7 +114,7 @@ struct gammaConversionsTruthOnlyMc {
       return false;
     }
 
-    if (TMath::Abs(theMcGamma.conversionZ()) > LineCutZ0 + theMcGamma.v0Radius() * LineCutZRSlope) {
+    if (std::abs(theMcGamma.conversionZ()) > LineCutZ0 + theMcGamma.v0Radius() * LineCutZRSlope) {
       return false;
     }
     return true;
@@ -130,11 +133,11 @@ struct gammaConversionsTruthOnlyMc {
     }
     registry.fill(HIST("hCollisionZ_MCTrue"), theMcCollision.posZ());
 
-    for (auto& lCollision : theCollisions) {
+    for (const auto& lCollision : theCollisions) {
       registry.fill(HIST("hCollisionZ_MCRec"), lCollision.posZ());
     }
 
-    for (auto& lMcGamma : theMcGammas) {
+    for (const auto& lMcGamma : theMcGammas) {
 
       if (!photonPassesCuts(lMcGamma)) {
         continue;

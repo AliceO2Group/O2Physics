@@ -99,6 +99,10 @@ class DimuonCut : public TNamed
       return false;
     }
 
+    if (v12.Pt() < mMinPairPt || mMaxPairPt < v12.Pt()) {
+      return false;
+    }
+
     if (!dont_require_rapidity && (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity())) {
       return false;
     }

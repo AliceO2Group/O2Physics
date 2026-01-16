@@ -23,6 +23,8 @@
 #include "Framework/runDataProcessing.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 
+#include <string>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod;

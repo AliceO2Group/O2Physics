@@ -98,6 +98,7 @@ struct Alice3HfTask3Prong {
 
   void init(InitContext&)
   {
+    LOG(info) << "Initializing Alice3HfTask3Prong";
     const std::array<bool, 2> doprocess{doprocessLc, doprocessLcWMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
@@ -123,6 +124,11 @@ struct Alice3HfTask3Prong {
 
     /// Reconstructed Histograms
     addHistogramsRec("hMass", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{600, 1.98, 2.58}}});
+    addHistogramsRec("hMassVsPt", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins}}});
+    addHistogramsRec("hMassHypo0", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{600, 1.98, 2.58}}});
+    addHistogramsRec("hMassHypo0VsPt", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins}}});
+    addHistogramsRec("hMassHypo1", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{600, 1.98, 2.58}}});
+    addHistogramsRec("hMassHypo1VsPt", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins}}});
     addHistogramsRec("hPt", "#it{p}_{T}^{rec.} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
     addHistogramsRec("hPhi", "#it{#Phi}", "entries", {HistType::kTH1F, {{100, 0., 6.3}}});
     addHistogramsRec("hPtProng0", "prong 0 #it{p}_{T} (GeV/#it{c})", "entries", {HistType::kTH1F, {{360, 0., 36.}}});
@@ -137,7 +143,6 @@ struct Alice3HfTask3Prong {
     addHistogramsRec("hCPAxy", "cosine of pointing angle xy", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
     addHistogramsRec("hDca2", "prong Chi2PCA to sec. vertex (cm)", "entries", {HistType::kTH1F, {{400, 0., 20.}}});
     addHistogramsRec("hEta", "#it{#eta}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
-    addHistogramsRec("hMassVsPt", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins}}});
     addHistogramsRec("hd0VsPtProng0", "prong 0 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
     addHistogramsRec("hd0VsPtProng1", "prong 1 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
     addHistogramsRec("hd0VsPtProng2", "prong 2 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
@@ -161,9 +166,21 @@ struct Alice3HfTask3Prong {
     addHistogramsGen("hEtaVsPt", "#it{#eta}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -2., 2.}, {vbins}}});
     addHistogramsGen("hYVsPt", "#it{y}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -2., 2.}, {vbins}}});
     addHistogramsGen("hPhiVsPt", "#it{#Phi}", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 6.3}, {vbins}}});
+    addHistogramsGen("hNumberOfProngs", "number of prongs", "entries", {HistType::kTH1F, {{10, -0.5, 9.5}}});
+    addHistogramsGen("hPdgsOfProngs", "PDGs of prongs", "entries", {HistType::kTH1F, {{10, -0.5, 9.5}}});
+    addHistogramsGen("hMass", "inv. mass (p K #pi) (GeV/#it{c}^{2})", "", {HistType::kTH1F, {{600, 1.98, 2.58}}});
 
     /// selection status
-    registry.add("hSelectionStatus", "3-prong cands;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    auto h2 = registry.add<TH2>("hSelectionStatus", "3-prong cands;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    h2->GetXaxis()->SetBinLabel(1, "mass hypo 0");
+    h2->GetXaxis()->SetBinLabel(2, "mass hypo 1");
+    auto h = registry.add<TH1>("MC/rec/hCandidateCounter", "Candidate counter;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});
+    h->GetXaxis()->SetBinLabel(1, "Calls");
+    h->GetXaxis()->SetBinLabel(2, "Candidates");
+    // Number of events processed
+    h = registry.add<TH1>("hNEventsProcessed", "number of events processed;entries;", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+    h->GetXaxis()->SetBinLabel(1, "Generated");
+    h->GetXaxis()->SetBinLabel(2, "Reconstructed");
 
     if (fillThn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
@@ -184,45 +201,56 @@ struct Alice3HfTask3Prong {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    LOG(info) << "Initialized Alice3HfTask3Prong";
   }
 
   /// Helper function for filling MC reconstructed histograms for prompt, nonpromt and common (signal)
   /// \param candidate is a reconstructed candidate
   /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
   template <CharmHadAlice3 CharmHad, int SignalType, typename CandidateType>
-  void fillHistogramsRecSig(CandidateType const& candidate, float mass)
+  void fillHistogramsRecSig(CandidateType const& candidate, float mass, bool isSwapped = false)
   {
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), mass);
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[SignalType]), mass, candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng0());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng1());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPtProng2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.ptProng2());
+    static constexpr auto histoPrefix = HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/");
+    static constexpr auto histoSuffix = HIST("RecSig") + HIST(SignalSuffixes[SignalType]);
+    registry.fill(histoPrefix + HIST("hMass") + histoSuffix, mass);
+    registry.fill(histoPrefix + HIST("hMassVsPt") + histoSuffix, mass, candidate.pt());
+    if (!isSwapped) {
+      registry.fill(histoPrefix + HIST("hMassHypo0") + histoSuffix, mass);
+      registry.fill(histoPrefix + HIST("hMassHypo0VsPt") + histoSuffix, mass, candidate.pt());
+    } else {
+      registry.fill(histoPrefix + HIST("hMassHypo1") + histoSuffix, mass);
+      registry.fill(histoPrefix + HIST("hMassHypo1VsPt") + histoSuffix, mass, candidate.pt());
+    }
 
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameterY0());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameterY1());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hd0Prong2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameterY2());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng0RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameterY0(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng1RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameterY1(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hd0VsPtProng2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.impactParameterY2(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLength());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLength(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLengthxyVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.decayLengthXY(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hCPARecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpa(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAxyRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpaXY());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hCPAxyVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.cpaXY(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hDca2RecSig") + HIST(SignalSuffixes[SignalType]), candidate.chi2PCA());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hDca2VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.chi2PCA(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaRecSig") + HIST(SignalSuffixes[SignalType]), candidate.eta());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.eta(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiRecSig") + HIST(SignalSuffixes[SignalType]), candidate.phi());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.phi(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng0VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameterY0(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng1VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameterY1(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hImpParErrProng2VsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorImpactParameterY2(), candidate.pt());
-    registry.fill(HIST("MC/rec/") + HIST(SignalFolders[SignalType]) + HIST("/hDecLenErrVsPtRecSig") + HIST(SignalSuffixes[SignalType]), candidate.errorDecayLength(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hPt") + histoSuffix, candidate.pt());
+    registry.fill(histoPrefix + HIST("hPtProng0") + histoSuffix, candidate.ptProng0());
+    registry.fill(histoPrefix + HIST("hPtProng1") + histoSuffix, candidate.ptProng1());
+    registry.fill(histoPrefix + HIST("hPtProng2") + histoSuffix, candidate.ptProng2());
+
+    registry.fill(histoPrefix + HIST("hd0Prong0") + histoSuffix, candidate.impactParameterY0());
+    registry.fill(histoPrefix + HIST("hd0Prong1") + histoSuffix, candidate.impactParameterY1());
+    registry.fill(histoPrefix + HIST("hd0Prong2") + histoSuffix, candidate.impactParameterY2());
+    registry.fill(histoPrefix + HIST("hd0VsPtProng0") + histoSuffix, candidate.impactParameterY0(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hd0VsPtProng1") + histoSuffix, candidate.impactParameterY1(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hd0VsPtProng2") + histoSuffix, candidate.impactParameterY2(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hDecLength") + histoSuffix, candidate.decayLength());
+    registry.fill(histoPrefix + HIST("hDecLengthVsPt") + histoSuffix, candidate.decayLength(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hDecLengthxy") + histoSuffix, candidate.decayLengthXY());
+    registry.fill(histoPrefix + HIST("hDecLengthxyVsPt") + histoSuffix, candidate.decayLengthXY(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hCPA") + histoSuffix, candidate.cpa());
+    registry.fill(histoPrefix + HIST("hCPAVsPt") + histoSuffix, candidate.cpa(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hCPAxy") + histoSuffix, candidate.cpaXY());
+    registry.fill(histoPrefix + HIST("hCPAxyVsPt") + histoSuffix, candidate.cpaXY(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hDca2") + histoSuffix, candidate.chi2PCA());
+    registry.fill(histoPrefix + HIST("hDca2VsPt") + histoSuffix, candidate.chi2PCA(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hEta") + histoSuffix, candidate.eta());
+    registry.fill(histoPrefix + HIST("hEtaVsPt") + histoSuffix, candidate.eta(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hPhi") + histoSuffix, candidate.phi());
+    registry.fill(histoPrefix + HIST("hPhiVsPt") + histoSuffix, candidate.phi(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hImpParErrProng0VsPt") + histoSuffix, candidate.errorImpactParameterY0(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hImpParErrProng1VsPt") + histoSuffix, candidate.errorImpactParameterY1(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hImpParErrProng2VsPt") + histoSuffix, candidate.errorImpactParameterY2(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hDecLenErrVsPt") + histoSuffix, candidate.errorDecayLength(), candidate.pt());
   }
 
   /// Fill MC histograms at reconstruction level
@@ -230,13 +258,26 @@ struct Alice3HfTask3Prong {
   /// \tparam SaveMl indicates whether ML scores are saved in the THnSparse
   /// \tparam CandsRec is the type of the reconstructed candidates collection
   /// \param candidates is the collection of reconstructed candidates
-  template <CharmHadAlice3 CharmHad, bool SaveMl, typename CandsRec>
-  void fillHistosMcRec(CandsRec const& candidates)
+  template <CharmHadAlice3 CharmHad, bool SaveMl, typename CandsRec, typename AllParticles>
+  void fillHistosMcRec(CandsRec const& candidates, AllParticles const& allParticles)
   {
+    registry.fill(HIST("MC/rec/hCandidateCounter"), 0.);
     for (const auto& candidate : candidates) {
+      registry.fill(HIST("MC/rec/hCandidateCounter"), 1.);
       /// rapidity selection
       if (yCandRecoMax >= 0. && std::abs(hfHelper.getCandY<CharmHad>(candidate)) > yCandRecoMax) {
         continue;
+      }
+      auto mcParticle = allParticles.iteratorAt(candidate.particleMcRec());
+      if (candidate.particleMcRec() > 0) {
+        if (mcParticle.has_daughters()) {
+          auto daughters = mcParticle.daughtersIds();
+          LOG(info) << "Reco candidate matched to MC particle with PDG " << mcParticle.pdgCode() << " daughters: " << daughters.size();
+          for (auto dauId : daughters) {
+            auto dau = allParticles.iteratorAt(dauId);
+            LOG(info) << "  dauId: " << dauId << " PDG: " << dau.pdgCode();
+          }
+        }
       }
 
       if (candidate.flagMcRec() != 0) {
@@ -245,17 +286,17 @@ struct Alice3HfTask3Prong {
         const auto pt = candidate.pt();
         const auto originType = candidate.originMcRec();
 
-        if (fillThn) {
-          if (candidate.isSelMassHypo0()) {
-            registry.fill(HIST("hSelectionStatus"), 0., pt);
-            double mass = hfHelper.getCandMass<CharmHad, false>(candidate);
-            /// Fill histograms
-            fillHistogramsRecSig<CharmHad, Signal>(candidate, mass);
-            if (originType == RecoDecay::OriginType::Prompt) {
-              fillHistogramsRecSig<CharmHad, Prompt>(candidate, mass);
-            } else if (originType == RecoDecay::OriginType::NonPrompt) {
-              fillHistogramsRecSig<CharmHad, NonPrompt>(candidate, mass);
-            }
+        if (candidate.isSelMassHypo0()) {
+          registry.fill(HIST("hSelectionStatus"), 0., pt);
+          double mass = hfHelper.getCandMass<CharmHad, false>(candidate);
+          /// Fill histograms
+          fillHistogramsRecSig<CharmHad, Signal>(candidate, mass, false);
+          if (originType == RecoDecay::OriginType::Prompt) {
+            fillHistogramsRecSig<CharmHad, Prompt>(candidate, mass, false);
+          } else if (originType == RecoDecay::OriginType::NonPrompt) {
+            fillHistogramsRecSig<CharmHad, NonPrompt>(candidate, mass, false);
+          }
+          if (fillThn) {
             std::vector<double> valuesToFill{mass, pt};
             if constexpr (SaveMl) {
               LOGP(fatal, "Trying to access ML scores, but SaveMl is false!");
@@ -266,16 +307,18 @@ struct Alice3HfTask3Prong {
             valuesToFill.push_back(static_cast<double>(originType));
             registry.get<THnSparse>(HIST("hSparseRec"))->Fill(valuesToFill.data());
           }
-          if (candidate.isSelMassHypo1()) {
-            registry.fill(HIST("hSelectionStatus"), 1., pt);
-            double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
-            /// Fill histograms
-            fillHistogramsRecSig<CharmHad, Signal>(candidate, mass);
-            if (originType == RecoDecay::OriginType::Prompt) {
-              fillHistogramsRecSig<CharmHad, Prompt>(candidate, mass);
-            } else if (originType == RecoDecay::OriginType::NonPrompt) {
-              fillHistogramsRecSig<CharmHad, NonPrompt>(candidate, mass);
-            }
+        }
+        if (candidate.isSelMassHypo1()) {
+          registry.fill(HIST("hSelectionStatus"), 1., pt);
+          double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
+          /// Fill histograms
+          fillHistogramsRecSig<CharmHad, Signal>(candidate, mass, true);
+          if (originType == RecoDecay::OriginType::Prompt) {
+            fillHistogramsRecSig<CharmHad, Prompt>(candidate, mass, true);
+          } else if (originType == RecoDecay::OriginType::NonPrompt) {
+            fillHistogramsRecSig<CharmHad, NonPrompt>(candidate, mass, true);
+          }
+          if (fillThn) {
             std::vector<double> valuesToFill{mass, pt};
             if constexpr (SaveMl) {
               LOGP(fatal, "Trying to access ML scores, but SaveMl is false!");
@@ -295,26 +338,52 @@ struct Alice3HfTask3Prong {
   /// \tparam CharmHad is the charm hadron species
   /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
   /// \tparam ParticleType is the type of the generated particle
+  /// \tparam TableType is the type of the full table (non-Partition)
   /// \param particle is a generated particle
-  template <CharmHadAlice3 CharmHad, int SignalType, typename ParticleType>
-  void fillHistogramsGen(ParticleType const& particle)
+  /// \param allParticles is the full table of particles for iteratorAt access
+  template <CharmHadAlice3 CharmHad, int SignalType, typename ParticleType, typename TableType>
+  void fillHistogramsGen(ParticleType const& particle, TableType const& allParticles)
   {
     LOG(debug) << "Filling generated histograms for signal type " << SignalType;
-    registry.fill(HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[SignalType]), particle.pt());
-    registry.fill(HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[SignalType]), particle.eta());
-    registry.fill(HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/hYGen") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandY<CharmHad>(particle));
-    registry.fill(HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiGen") + HIST(SignalSuffixes[SignalType]), particle.phi());
-    registry.fill(HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaVsPtGen") + HIST(SignalSuffixes[SignalType]), particle.eta(), particle.pt());
-    registry.fill(HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/hYVsPtGen") + HIST(SignalSuffixes[SignalType]), hfHelper.getCandY<CharmHad>(particle), particle.pt());
-    registry.fill(HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/hPhiVsPtGen") + HIST(SignalSuffixes[SignalType]), particle.phi(), particle.pt());
+    static constexpr auto histoPrefix = HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/");
+    static constexpr auto histoSuffix = HIST("Gen") + HIST(SignalSuffixes[SignalType]);
+    registry.fill(histoPrefix + HIST("hPt") + histoSuffix, particle.pt());
+    registry.fill(histoPrefix + HIST("hEta") + histoSuffix, particle.eta());
+    registry.fill(histoPrefix + HIST("hY") + histoSuffix, hfHelper.getCandY<CharmHad>(particle));
+    registry.fill(histoPrefix + HIST("hPhi") + histoSuffix, particle.phi());
+    registry.fill(histoPrefix + HIST("hEtaVsPt") + histoSuffix, particle.eta(), particle.pt());
+    registry.fill(histoPrefix + HIST("hYVsPt") + histoSuffix, hfHelper.getCandY<CharmHad>(particle), particle.pt());
+    registry.fill(histoPrefix + HIST("hPhiVsPt") + histoSuffix, particle.phi(), particle.pt());
+    if (particle.has_daughters()) {
+      const auto firstDauIdx = particle.daughtersIds().front();
+      const auto lastDauIdx = particle.daughtersIds().back();
+      const int nprongs = lastDauIdx - firstDauIdx + 1;
+      registry.fill(histoPrefix + HIST("hNumberOfProngs") + histoSuffix, nprongs);
+      float px = 0.f;
+      float py = 0.f;
+      float pz = 0.f;
+      float e = 0.f;
+      for (int iDau = firstDauIdx; iDau <= lastDauIdx && iDau > 0; iDau++) {
+        const auto& dau = allParticles.iteratorAt(iDau);
+        e += dau.e();
+        px += dau.px();
+        py += dau.py();
+        pz += dau.pz();
+        registry.get<TH1>(histoPrefix + HIST("hPdgsOfProngs") + histoSuffix)->Fill(Form("%i", dau.pdgCode()), 1);
+      }
+      const float invariantMass = std::sqrt(e * e - px * px - py * py - pz * pz);
+      registry.fill(histoPrefix + HIST("hMass") + histoSuffix, invariantMass);
+    }
   }
 
   /// Fill MC histograms at generated level
   /// \tparam CharmHad is the charm hadron species
   /// \tparam CandsGen is the type of the generated candidates collection
-  /// \param mcParticles is the collection of generated particles
-  template <CharmHadAlice3 CharmHad, typename CandsGen>
-  void fillHistosMcGen(CandsGen const& mcParticles)
+  /// \tparam AllParticles is the type of the full particle table
+  /// \param mcParticles is the collection of generated particles (can be a Partition)
+  /// \param allParticles is the full table of particles
+  template <CharmHadAlice3 CharmHad, typename CandsGen, typename AllParticles>
+  void fillHistosMcGen(CandsGen const& mcParticles, AllParticles const& allParticles)
   {
     // MC gen.
     for (const auto& particle : mcParticles) {
@@ -326,14 +395,14 @@ struct Alice3HfTask3Prong {
         const auto ptGen = particle.pt();
         const auto originType = particle.originMcGen();
 
-        fillHistogramsGen<CharmHad, Signal>(particle);
+        fillHistogramsGen<CharmHad, Signal>(particle, allParticles);
 
         float ptGenB = -1.f;
         if (originType == RecoDecay::OriginType::Prompt) {
-          fillHistogramsGen<CharmHad, Prompt>(particle);
+          fillHistogramsGen<CharmHad, Prompt>(particle, allParticles);
         } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           ptGenB = particle.bHadMotherPtGen();
-          fillHistogramsGen<CharmHad, NonPrompt>(particle);
+          fillHistogramsGen<CharmHad, NonPrompt>(particle, allParticles);
         }
 
         if (fillThn) {
@@ -344,19 +413,29 @@ struct Alice3HfTask3Prong {
     }
   }
 
-  void processLc(Cands3PReco const& candsLc,
-                 Cands3PGen const&)
+  void processLc(aod::Collisions const& collisions,
+                 aod::McCollisions const& mcCollisions,
+                 Cands3PReco const& candsLc,
+                 Cands3PGen const& mcParticles)
   {
-    fillHistosMcRec<CharmHadAlice3::Lc, false>(candsLc);
-    fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs);
+    for (const auto& mcCollision : mcCollisions) {
+      mcCollision.posX();                           // to avoid unused variable warning
+      registry.fill(HIST("hNEventsProcessed"), 1.); // Generated
+    }
+    for (const auto& collision : collisions) {
+      collision.posX();                             // to avoid unused variable warning
+      registry.fill(HIST("hNEventsProcessed"), 2.); // Reconstructed
+    }
+    fillHistosMcRec<CharmHadAlice3::Lc, false>(candsLc, mcParticles);
+    fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs, mcParticles);
   }
   PROCESS_SWITCH(Alice3HfTask3Prong, processLc, "Process Lc w/o ML sels", true);
 
   void processLcWMl(Cands3PRecoWMl const& candsLcWMl,
-                    Cands3PGen const&)
+                    Cands3PGen const& mcParticles)
   {
-    fillHistosMcRec<CharmHadAlice3::Lc, true>(candsLcWMl);
-    fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs);
+    fillHistosMcRec<CharmHadAlice3::Lc, true>(candsLcWMl, mcParticles);
+    fillHistosMcGen<CharmHadAlice3::Lc>(candsGenLcs, mcParticles);
   }
   PROCESS_SWITCH(Alice3HfTask3Prong, processLcWMl, "Process Lc with ML sels", false);
 };

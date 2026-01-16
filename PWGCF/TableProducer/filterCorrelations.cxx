@@ -272,6 +272,8 @@ struct FilterCF {
         multiplicities.push_back(collision.multNTracksPV());
       if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
         multiplicities.push_back(collision.multNTracksGlobal());
+      if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M)
+        multiplicities.push_back(collision.centFT0M());
       outputMultSets(multiplicities);
     }
 
@@ -303,7 +305,7 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processDataPid, "Process data with PID", false);
 
-  void processDataMults(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
+  void processDataMults(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
   {
     processDataT(collision, tracks);
   }
@@ -418,6 +420,8 @@ struct FilterCF {
           multiplicities.push_back(collision.multNTracksPV());
         if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
           multiplicities.push_back(collision.multNTracksGlobal());
+        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M)
+          multiplicities.push_back(collision.centFT0M());
         outputMultSets(multiplicities);
       }
 

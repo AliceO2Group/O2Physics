@@ -11,4 +11,5 @@
 
 add_subdirectory(Resonance)
 add_subdirectory(Strangeness)
+add_subdirectory(Utils)
 

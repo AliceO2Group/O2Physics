@@ -11,11 +11,6 @@
 
 add_subdirectory(Converters)
 
-o2physics_add_dpl_workflow(cascadebuilder
-    SOURCES cascadebuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::MLCore
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(cascadefinder
     SOURCES cascadefinder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -59,11 +54,6 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
 o2physics_add_dpl_workflow(double-casc-tree-creator
     SOURCES doubleCascTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(lambdakzerobuilder
-    SOURCES lambdakzerobuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzerofinder
@@ -167,9 +157,19 @@ o2physics_add_dpl_workflow(lambdaspincorrelation
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sigmaprotoncorr
+    SOURCES sigmaProtonCorr.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 if(FastJet_FOUND)
     o2physics_add_dpl_workflow(lfinjets
         SOURCES lfinjets.cxx
         PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
         COMPONENT_NAME Analysis)
 endif()
+
+o2physics_add_dpl_workflow(phi-strange-correlator
+    SOURCES phiStrangeCorrelator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

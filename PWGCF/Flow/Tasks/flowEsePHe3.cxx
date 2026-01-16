@@ -41,7 +41,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -438,35 +438,35 @@ struct FlowEsePHe3 {
     switch (POI) {
       case ese_parameters::kProton: {
         const double bgScaling[2]{ese_parameters::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / ese_parameters::Masses[0], ese_parameters::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / ese_parameters::Masses[0]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(0u, 0u), cfgBetheBlochParams->get(0u, 1u), cfgBetheBlochParams->get(0u, 2u), cfgBetheBlochParams->get(0u, 3u), cfgBetheBlochParams->get(0u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(0u, 0u), cfgBetheBlochParams->get(0u, 1u), cfgBetheBlochParams->get(0u, 2u), cfgBetheBlochParams->get(0u, 3u), cfgBetheBlochParams->get(0u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(0u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kDeuteron: {
         const double bgScaling[2]{ese_parameters::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / ese_parameters::Masses[1], ese_parameters::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / ese_parameters::Masses[1]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(1u, 0u), cfgBetheBlochParams->get(1u, 1u), cfgBetheBlochParams->get(1u, 2u), cfgBetheBlochParams->get(1u, 3u), cfgBetheBlochParams->get(1u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(1u, 0u), cfgBetheBlochParams->get(1u, 1u), cfgBetheBlochParams->get(1u, 2u), cfgBetheBlochParams->get(1u, 3u), cfgBetheBlochParams->get(1u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(1u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kTriton: {
         const double bgScaling[2]{ese_parameters::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / ese_parameters::Masses[2], ese_parameters::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / ese_parameters::Masses[2]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(2u, 0u), cfgBetheBlochParams->get(2u, 1u), cfgBetheBlochParams->get(2u, 2u), cfgBetheBlochParams->get(2u, 3u), cfgBetheBlochParams->get(2u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(2u, 0u), cfgBetheBlochParams->get(2u, 1u), cfgBetheBlochParams->get(2u, 2u), cfgBetheBlochParams->get(2u, 3u), cfgBetheBlochParams->get(2u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(2u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kHe3: {
         const double bgScaling[2]{ese_parameters::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / ese_parameters::Masses[3], ese_parameters::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / ese_parameters::Masses[3]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(3u, 0u), cfgBetheBlochParams->get(3u, 1u), cfgBetheBlochParams->get(3u, 2u), cfgBetheBlochParams->get(3u, 3u), cfgBetheBlochParams->get(3u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(3u, 0u), cfgBetheBlochParams->get(3u, 1u), cfgBetheBlochParams->get(3u, 2u), cfgBetheBlochParams->get(3u, 3u), cfgBetheBlochParams->get(3u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(3u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kAlpha: {
         const double bgScaling[2]{ese_parameters::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 0u) / ese_parameters::Masses[4], ese_parameters::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 1u) / ese_parameters::Masses[4]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(4u, 0u), cfgBetheBlochParams->get(4u, 1u), cfgBetheBlochParams->get(4u, 2u), cfgBetheBlochParams->get(4u, 3u), cfgBetheBlochParams->get(4u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(4u, 0u), cfgBetheBlochParams->get(4u, 1u), cfgBetheBlochParams->get(4u, 2u), cfgBetheBlochParams->get(4u, 3u), cfgBetheBlochParams->get(4u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(4u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;

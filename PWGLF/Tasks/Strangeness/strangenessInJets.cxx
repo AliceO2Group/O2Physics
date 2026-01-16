@@ -302,6 +302,19 @@ struct StrangenessInJets {
         registryMC.add("Proton_generated_in_jet", "Proton_generated_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Proton_generated_in_ue", "Proton_generated_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
+
+      // Histograms to calculate probability of hyperons to be found within jets
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+        registryMC.add("K0s_generated_fullevent", "K0s_generated_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("Lambda_generated_fullevent", "Lambda_generated_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("AntiLambda_generated_fullevent", "AntiLambda_generated_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+      }
+      if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+        registryMC.add("XiPos_generated_fullevent", "XiPos_generated_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("XiNeg_generated_fullevent", "XiNeg_generated_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("OmegaPos_generated_fullevent", "OmegaPos_generated_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("OmegaNeg_generated_fullevent", "OmegaNeg_generated_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+      }
     }
 
     // Histograms for mc reconstructed
@@ -350,58 +363,21 @@ struct StrangenessInJets {
         registryMC.add("Proton_reconstructed_in_jet", "Proton_reconstructed_in_jet", HistType::kTH2F, {multBinning, ptAxisLongLived});
         registryMC.add("Proton_reconstructed_in_ue", "Proton_reconstructed_in_ue", HistType::kTH2F, {multBinning, ptAxisLongLived});
       }
+
+      // Histograms to calculate probability of hyperons to be found within jets
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+        registryMC.add("K0s_reconstructed_fullevent", "K0s_reconstructed_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("Lambda_reconstructed_fullevent", "Lambda_reconstructed_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("AntiLambda_reconstructed_fullevent", "AntiLambda_reconstructed_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+      }
+      if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+        registryMC.add("XiPos_reconstructed_fullevent", "XiPos_reconstructed_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("XiNeg_reconstructed_fullevent", "XiNeg_reconstructed_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("OmegaPos_reconstructed_fullevent", "OmegaPos_reconstructed_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+        registryMC.add("OmegaNeg_reconstructed_fullevent", "OmegaNeg_reconstructed_fullevent", HistType::kTH2F, {multBinning, ptAxis});
+      }
     }
   }
-
-  /*
-  // Calculation of perpendicular axes
-  void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
-  {
-    // initialization
-    double ux(0), uy(0), uz(0);
-
-    // components of vector p
-    const double px = p.X();
-    const double py = p.Y();
-    const double pz = p.Z();
-
-    // protection 1
-    if (px == 0 && py != 0) {
-      uy = -(pz * pz) / py;
-      ux = sign * std::sqrt(py * py - (pz * pz * pz * pz) / (py * py));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
-      return;
-    }
-
-    // protection 2
-    if (py == 0 && px != 0) {
-      ux = -(pz * pz) / px;
-      uy = sign * std::sqrt(px * px - (pz * pz * pz * pz) / (px * px));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
-      return;
-    }
-
-    // equation parameters
-    const double a = px * px + py * py;
-    const double b = 2.0 * px * pz * pz;
-    const double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
-    const double delta = b * b - 4.0 * a * c;
-
-    // protection agains delta<0
-    if (delta < 0) {
-      return;
-    }
-
-    // solutions
-    ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
-    uy = (-pz * pz - px * ux) / py;
-    uz = pz;
-    u.SetXYZ(ux, uy, uz);
-    return;
-  }
-  */
 
   // Delta phi calculation
   double getDeltaPhi(double a1, double a2)
@@ -1246,12 +1222,56 @@ struct StrangenessInJets {
           strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
         }
 
-        // Select physical primary particles or HF decay products
-        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
-          continue;
-
+        // Eta and pt selection
         double minPtParticle = 0.1;
         if (particle.eta() < etaMin || particle.eta() > etaMax || particle.pt() < minPtParticle)
+          continue;
+
+        // Fill generated histograms for full event
+        if (particle.isPhysicalPrimary()) {
+          switch (particle.pdgCode()) {
+            case kK0Short:
+              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                registryMC.fill(HIST("K0s_generated_fullevent"), genMultiplicity, particle.pt());
+              }
+              break;
+            case kLambda0:
+              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                registryMC.fill(HIST("Lambda_generated_fullevent"), genMultiplicity, particle.pt());
+              }
+              break;
+            case kLambda0Bar:
+              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                registryMC.fill(HIST("AntiLambda_generated_fullevent"), genMultiplicity, particle.pt());
+              }
+              break;
+            case kXiMinus:
+              if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                registryMC.fill(HIST("XiNeg_generated_fullevent"), genMultiplicity, particle.pt());
+              }
+              break;
+            case kXiPlusBar:
+              if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                registryMC.fill(HIST("XiPos_generated_fullevent"), genMultiplicity, particle.pt());
+              }
+              break;
+            case kOmegaMinus:
+              if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                registryMC.fill(HIST("OmegaNeg_generated_fullevent"), genMultiplicity, particle.pt());
+              }
+              break;
+            case kOmegaPlusBar:
+              if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+                registryMC.fill(HIST("OmegaPos_generated_fullevent"), genMultiplicity, particle.pt());
+              }
+              break;
+            default:
+              break;
+          }
+        }
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
           continue;
 
         // Build 4-momentum assuming charged pion mass
@@ -1472,7 +1492,7 @@ struct StrangenessInJets {
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
                               DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s,
-                              aod::CascDataExt const& Cascades, const aod::McParticles&)
+                              aod::CascDataExt const& Cascades, aod::McParticles const& mcParticles)
   {
     // Define per-event containers
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -1519,6 +1539,89 @@ struct StrangenessInJets {
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
       auto cascPerColl = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+
+      // V0 particles
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+        for (const auto& v0 : v0sPerColl) {
+          const auto& pos = v0.posTrack_as<DaughterTracksMC>();
+          const auto& neg = v0.negTrack_as<DaughterTracksMC>();
+
+          // Get MC particles
+          if (!pos.has_mcParticle() || !neg.has_mcParticle())
+            continue;
+          auto posParticle = pos.mcParticle_as<aod::McParticles>();
+          auto negParticle = neg.mcParticle_as<aod::McParticles>();
+          if (!posParticle.has_mothers() || !negParticle.has_mothers())
+            continue;
+
+          // Get Mothers
+          auto motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+          auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+          if (motherPos != motherNeg)
+            continue;
+          if (!motherPos.isPhysicalPrimary())
+            continue;
+
+          // K0s
+          if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short) {
+            registryMC.fill(HIST("K0s_reconstructed_fullevent"), multiplicity, v0.pt());
+          }
+          // Lambda
+          if (passedLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0) {
+            registryMC.fill(HIST("Lambda_reconstructed_fullevent"), multiplicity, v0.pt());
+          }
+          // AntiLambda
+          if (passedAntiLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0Bar) {
+            registryMC.fill(HIST("AntiLambda_reconstructed_fullevent"), multiplicity, v0.pt());
+          }
+        }
+      }
+
+      // Cascades
+      if (enabledSignals.value[ParticleOfInterest::kCascades]) {
+        for (const auto& casc : cascPerColl) {
+          auto bach = casc.bachelor_as<DaughterTracksMC>();
+          auto pos = casc.posTrack_as<DaughterTracksMC>();
+          auto neg = casc.negTrack_as<DaughterTracksMC>();
+
+          // Get MC particles
+          if (!bach.has_mcParticle() || !pos.has_mcParticle() || !neg.has_mcParticle())
+            continue;
+          auto posParticle = pos.mcParticle_as<aod::McParticles>();
+          auto negParticle = neg.mcParticle_as<aod::McParticles>();
+          auto bachParticle = bach.mcParticle_as<aod::McParticles>();
+          if (!posParticle.has_mothers() || !negParticle.has_mothers() || !bachParticle.has_mothers())
+            continue;
+
+          // Select particles originating from the same parent
+          auto motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+          auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+          auto motherBach = mcParticles.iteratorAt(bachParticle.mothersIds()[0]);
+          if (motherPos != motherNeg)
+            continue;
+          if (std::abs(motherPos.pdgCode()) != kLambda0)
+            continue;
+          if (!motherBach.isPhysicalPrimary())
+            continue;
+
+          // Xi+
+          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kXiPlusBar) {
+            registryMC.fill(HIST("XiPos_reconstructed_fullevent"), multiplicity, casc.pt());
+          }
+          // Xi-
+          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kXiMinus) {
+            registryMC.fill(HIST("XiNeg_reconstructed_fullevent"), multiplicity, casc.pt());
+          }
+          // Omega+
+          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kOmegaPlusBar) {
+            registryMC.fill(HIST("OmegaPos_reconstructed_fullevent"), multiplicity, casc.pt());
+          }
+          // Omega-
+          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kOmegaMinus) {
+            registryMC.fill(HIST("OmegaNeg_reconstructed_fullevent"), multiplicity, casc.pt());
+          }
+        }
+      }
 
       // Loop over reconstructed tracks
       for (auto const& track : tracksPerColl) {
@@ -1596,18 +1699,11 @@ struct StrangenessInJets {
               continue;
 
             // Select particles originating from the same parent
-            int pdgParent(0);
-            bool isPhysPrim = false;
-            for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-              for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
-                if (particleMotherOfNeg == particleMotherOfPos) {
-                  pdgParent = particleMotherOfNeg.pdgCode();
-                  isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
-                }
-              }
-            }
-            if (pdgParent == 0)
+            auto motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+            auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+            if (motherPos != motherNeg)
               continue;
+            bool isPhysPrim = motherPos.isPhysicalPrimary();
 
             // Compute distance from jet and UE axes
             double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
@@ -1621,7 +1717,7 @@ struct StrangenessInJets {
             double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
             // K0s
-            if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short && isPhysPrim) {
+            if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("K0s_reconstructed_jet"), multiplicity, v0.pt());
               }
@@ -1630,7 +1726,7 @@ struct StrangenessInJets {
               }
             }
             // Lambda
-            if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0 && isPhysPrim) {
+            if (passedLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0 && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("Lambda_reconstructed_jet"), multiplicity, v0.pt());
               }
@@ -1639,7 +1735,7 @@ struct StrangenessInJets {
               }
             }
             // AntiLambda
-            if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar && isPhysPrim) {
+            if (passedAntiLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0Bar && isPhysPrim) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_jet"), multiplicity, v0.pt());
               }
@@ -1650,7 +1746,7 @@ struct StrangenessInJets {
 
             // Fill inclusive spectra
             // K0s
-            if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short) {
+            if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("K0s_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
@@ -1659,7 +1755,7 @@ struct StrangenessInJets {
               }
             }
             // Lambda
-            if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
+            if (passedLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("Lambda_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
@@ -1668,7 +1764,7 @@ struct StrangenessInJets {
               }
             }
             // AntiLambda
-            if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
+            if (passedAntiLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0Bar) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_jet_incl"), multiplicity, v0.pt());
               }
@@ -1696,23 +1792,14 @@ struct StrangenessInJets {
               continue;
 
             // Select particles originating from the same parent
-            int pdgParent(0);
-            bool isPhysPrim = false;
-            for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-              for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
-                for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
-                  if (particleMotherOfNeg != particleMotherOfPos)
-                    continue;
-                  if (std::abs(particleMotherOfNeg.pdgCode()) != kLambda0)
-                    continue;
-                  isPhysPrim = particleMotherOfBach.isPhysicalPrimary();
-                  pdgParent = particleMotherOfBach.pdgCode();
-                }
-              }
-            }
-            if (pdgParent == 0)
+            auto motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+            auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+            auto motherBach = mcParticles.iteratorAt(bachParticle.mothersIds()[0]);
+            if (motherPos != motherNeg)
               continue;
-            if (!isPhysPrim)
+            if (std::abs(motherPos.pdgCode()) != kLambda0)
+              continue;
+            if (!motherBach.isPhysicalPrimary())
               continue;
 
             // Compute distances from jet and UE axes
@@ -1728,7 +1815,7 @@ struct StrangenessInJets {
             double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
             // Xi+
-            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar) {
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kXiPlusBar) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("XiPos_reconstructed_jet"), multiplicity, casc.pt());
               }
@@ -1737,7 +1824,7 @@ struct StrangenessInJets {
               }
             }
             // Xi-
-            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kXiMinus) {
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kXiMinus) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("XiNeg_reconstructed_jet"), multiplicity, casc.pt());
               }
@@ -1746,7 +1833,7 @@ struct StrangenessInJets {
               }
             }
             // Omega+
-            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kOmegaPlusBar) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("OmegaPos_reconstructed_jet"), multiplicity, casc.pt());
               }
@@ -1755,7 +1842,7 @@ struct StrangenessInJets {
               }
             }
             // Omega-
-            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kOmegaMinus) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("OmegaNeg_reconstructed_jet"), multiplicity, casc.pt());
               }
@@ -1775,12 +1862,15 @@ struct StrangenessInJets {
   {
     for (const auto& v0 : v0s) {
 
-      if (v0.v0negITSlayers() < minITSnCls || v0.v0posITSlayers() < minITSnCls)
+      // Track selections
+      if (requireITS && (v0.v0negITSlayers() < minITSnCls || v0.v0posITSlayers() < minITSnCls))
         continue;
       if (v0.v0negtpcCrossedRows() < minNCrossedRowsTPC || v0.v0postpcCrossedRows() < minNCrossedRowsTPC)
         continue;
       if (v0.v0negTPCChi2() > maxChi2TPC || v0.v0posTPCChi2() > maxChi2TPC)
         continue;
+
+      // Topological selections
       if (v0.v0cospa() < v0cospaMin)
         continue;
       if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
@@ -1791,54 +1881,48 @@ struct StrangenessInJets {
         continue;
       if (std::fabs(v0.v0dcanegtopv()) < dcanegtoPVmin)
         continue;
+
+      // PID selections
+      Bool_t isPIDK0s = false, isPIDLam = false, isPIDALam = false;
+
       // PID selections (TPC) -- K0s
-      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
-        continue;
-      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
-        continue;
-
-      // PID selections (TOF) -- K0s
-      if (requireTOF) {
-        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
-          continue;
-        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
-          continue;
+      if (v0.ntpcsigmapospi() >= nsigmaTPCmin && v0.ntpcsigmapospi() <= nsigmaTPCmax &&
+          v0.ntpcsigmanegpi() >= nsigmaTPCmin && v0.ntpcsigmanegpi() <= nsigmaTPCmax) {
+        isPIDK0s = true;
       }
-      // PID selections (TPC): positive track = proton, negative track = pion -- Lam
-      if (v0.ntpcsigmapospr() < nsigmaTPCmin || v0.ntpcsigmapospr() > nsigmaTPCmax)
-        continue;
-      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
-        continue;
 
-      // PID selections (TOF): positive track = proton, negative track = pion -- Lam
-      if (requireTOF) {
-        if (v0.ntofsigmapospr() < nsigmaTOFmin || v0.ntofsigmapospr() > nsigmaTOFmax)
-          continue;
-        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
-          continue;
+      // PID selections (TPC): -- Lam
+      if (v0.ntpcsigmapospr() >= nsigmaTPCmin && v0.ntpcsigmapospr() <= nsigmaTPCmax &&
+          v0.ntpcsigmanegpi() >= nsigmaTPCmin && v0.ntpcsigmanegpi() <= nsigmaTPCmax) {
+        isPIDLam = true;
       }
-      // PID selections (TPC): negative track = proton, positive track = pion --- ALam
-      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
-        continue;
-      if (v0.ntpcsigmanegpr() < nsigmaTPCmin || v0.ntpcsigmanegpr() > nsigmaTPCmax)
-        continue;
 
-      // PID selections (TOF): negative track = proton, positive track = pion --- ALam
-      if (requireTOF) {
-        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
-          continue;
-        if (v0.ntofsigmanegpr() < nsigmaTOFmin || v0.ntofsigmanegpr() > nsigmaTOFmax)
-          continue;
+      // PID selections (TPC): --- ALam
+      if (v0.ntpcsigmapospi() >= nsigmaTPCmin && v0.ntpcsigmapospi() <= nsigmaTPCmax &&
+          v0.ntpcsigmanegpr() >= nsigmaTPCmin && v0.ntpcsigmanegpr() <= nsigmaTPCmax) {
+        isPIDALam = true;
       }
 
       if (v0.isUE()) {
-        registryData.fill(HIST("K0s_in_ue"), v0.multft0m(), v0.pt(), v0.massk0short());
-        registryData.fill(HIST("Lambda_in_ue"), v0.multft0m(), v0.pt(), v0.masslambda());
-        registryData.fill(HIST("AntiLambda_in_ue"), v0.multft0m(), v0.pt(), v0.massantilambda());
+        if (isPIDK0s) {
+          registryData.fill(HIST("K0s_in_ue"), v0.multft0m(), v0.pt(), v0.massk0short());
+        }
+        if (isPIDLam) {
+          registryData.fill(HIST("Lambda_in_ue"), v0.multft0m(), v0.pt(), v0.masslambda());
+        }
+        if (isPIDALam) {
+          registryData.fill(HIST("AntiLambda_in_ue"), v0.multft0m(), v0.pt(), v0.massantilambda());
+        }
       } else if (v0.isJC()) {
-        registryData.fill(HIST("K0s_in_jet"), v0.multft0m(), v0.pt(), v0.massk0short());
-        registryData.fill(HIST("Lambda_in_jet"), v0.multft0m(), v0.pt(), v0.masslambda());
-        registryData.fill(HIST("AntiLambda_in_jet"), v0.multft0m(), v0.pt(), v0.massantilambda());
+        if (isPIDK0s) {
+          registryData.fill(HIST("K0s_in_jet"), v0.multft0m(), v0.pt(), v0.massk0short());
+        }
+        if (isPIDLam) {
+          registryData.fill(HIST("Lambda_in_jet"), v0.multft0m(), v0.pt(), v0.masslambda());
+        }
+        if (isPIDALam) {
+          registryData.fill(HIST("AntiLambda_in_jet"), v0.multft0m(), v0.pt(), v0.massantilambda());
+        }
       }
     }
 

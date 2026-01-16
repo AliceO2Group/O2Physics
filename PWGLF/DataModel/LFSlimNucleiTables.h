@@ -198,6 +198,7 @@ DECLARE_SOA_TABLE(NucleiTableRed, "AOD", "NUCLEITABLERED",
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::Flags,
+                  NucleiTableNS::gPt,
                   NucleiTableNS::McProcess,
                   NucleiTableNS::PDGcode,
                   NucleiTableNS::MotherPDGcode);

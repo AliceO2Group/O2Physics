@@ -17,7 +17,6 @@
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/DecayChannelsLegacy.h"
 
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -27,8 +26,6 @@
 #include <Framework/Logger.h>
 
 #include <TPDGCode.h>
-
-#include <Rtypes.h>
 
 #include <cmath>
 #include <cstddef>

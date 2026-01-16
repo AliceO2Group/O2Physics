@@ -546,13 +546,12 @@ struct HfTreeCreatorLcToPKPi {
   template <int ReconstructionType>
   void reserveTables(size_t candidatesSize, bool isMc)
   {
-    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidatesSize * 2);
-      } else {
-        rowCandidateFull.reserve(candidatesSize * 2);
-      }
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidatesSize * 2);
     } else {
+      rowCandidateFull.reserve(candidatesSize * 2);
+    }
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
       rowCandidateKF.reserve(candidatesSize * 2);
     }
     if (fillCollIdTable) {
