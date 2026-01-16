@@ -225,7 +225,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   template <typename T>
   void setSphericity(T tracks)
   {
-    mSphericity = utils::sphericity(tracks);
+    mSphericity = computeSphericity(tracks);
   }
 
   float getSphericity() const { return mSphericity; }
@@ -312,6 +312,39 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   };
 
  protected:
+  template <typename T>
+  float computeSphericity(T const& tracks)
+  {
+    int minNumberTracks = 2;
+    double maxSphericity = 2.f;
+    if (tracks.size() <= minNumberTracks) {
+      return maxSphericity;
+    }
+    // Initialize the transverse momentum tensor components
+    double sxx = 0.;
+    double syy = 0.;
+    double sxy = 0.;
+    double sumPt = 0.;
+    // Loop over the tracks to compute the tensor components
+    for (const auto& track : tracks) {
+      sxx += (track.px() * track.px()) / track.pt();
+      syy += (track.py() * track.py()) / track.pt();
+      sxy += (track.px() * track.py()) / track.pt();
+      sumPt += track.pt();
+    }
+    sxx /= sumPt;
+    syy /= sumPt;
+    sxy /= sumPt;
+    // Compute the eigenvalues (real values)
+    double lambda1 = ((sxx + syy) + std::sqrt((sxx + syy) * (sxx + syy) - 4. * (sxx * syy - sxy * sxy))) / 2.;
+    double lambda2 = ((sxx + syy) - std::sqrt((sxx + syy) * (sxx + syy) - 4. * (sxx * syy - sxy * sxy))) / 2.;
+    if (lambda1 <= 0. || lambda2 <= 0.) {
+      return maxSphericity;
+    }
+    // Compute sphericity
+    return static_cast<float>(2. * lambda2 / (lambda1 + lambda2));
+  }
+
   // filter cuts
   float mVtxZMin = -12.f;
   float mVtxZMax = -12.f;
