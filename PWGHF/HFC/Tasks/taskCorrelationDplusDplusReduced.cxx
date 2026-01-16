@@ -51,6 +51,7 @@ struct HfTaskCorrelationDplusDplusReduced {
     {{"hNCand", "Number of D candidates per event;N", hTH1NCand},
      {"hNMcRec", "Number of reconstructed Mc D mesons per event;N", hTH1NMcRec},
      {"hNMcGen", "Number of generated Mc D mesons per event;N", hTH1NMcGen}}};
+
   void init(InitContext const&)
   {
     registry.add("hMassDplus", "D+ candidates;inv. mass (#pi#pi K) (GeV/#it{c}^{2}))", {HistType::kTH1F, {{120, 1.5848, 2.1848}}});
