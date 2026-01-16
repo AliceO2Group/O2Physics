@@ -866,7 +866,7 @@ DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
                   reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
 DECLARE_SOA_TABLE_STAGED(DielectronsAll, "RTDIELECTRONALL", //!
-                         collision::NumContrib,
+                         mult::MultNTracksPV,
                          reducedpair::Mass,
                          reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                          reducedpair::FilterMap,
