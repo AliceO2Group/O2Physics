@@ -2561,14 +2561,11 @@ struct cascadeFlow {
       if (isV0TopoAccepted(v0) && isALambdaCandidate)
         isSelectedV0[1] = true;
 
-      int chargeIndex = -1;
       if (isSelectedV0[0] && !isSelectedV0[1]) { // Lambdas
         histos.fill(HIST("hLambdaCandidate"), 0);
-        chargeIndex = 0;
       }
       if (isSelectedV0[1] && !isSelectedV0[0]) { // AntiLambdas
         histos.fill(HIST("hLambdaCandidate"), 1);
-        chargeIndex = 1;
       }
       if (isSelectedV0[0] && isSelectedV0[1]) {
         histos.fill(HIST("hLambdaCandidate"), 2);
@@ -2576,14 +2573,8 @@ struct cascadeFlow {
           histos.fill(HIST("hLambdaCandidate"), 3);
           continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle; checked to be zero in range 1.105 - 1.125
         }
-        if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda)
-          chargeIndex = 0;
-        else if (v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda)
-          chargeIndex = 1;
-        else {
-          chargeIndex = 2; // these are bkg candidates
-          histos.fill(HIST("hLambdaCandidate"), 4);
-        }
+        if (!(v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda) && !(v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda))
+          histos.fill(HIST("hLambdaCandidate"), 4); //bkg candidates
       }
       if (!isSelectedV0[0] && !isSelectedV0[1])
         continue;
