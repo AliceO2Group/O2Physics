@@ -153,6 +153,7 @@ void runMassFitter(const std::string& configFileName)
   const bool enableRefl = readJsonField<bool>(config, "EnableRefl", false);
   const bool drawBgPrefit = readJsonField<bool>(config, "DrawBgPrefit", true);
   const bool highlightPeakRegion = readJsonField<bool>(config, "HighlightPeakRegion", true);
+  const int randomSeed = readJsonField<int>(config, "RandomSeed", -1);
 
   const int nSliceVarBins = static_cast<int>(sliceVarMin.size());
   std::vector<double> sliceVarLimits(nSliceVarBins + 1);
@@ -380,6 +381,7 @@ void runMassFitter(const std::string& configFileName)
     } else {
       massFitter->setUseChi2Fit();
     }
+    massFitter->setRandomSeed(randomSeed);
 
     auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(double)> setFunc, std::string const& var) -> void {
       if (isFix) {

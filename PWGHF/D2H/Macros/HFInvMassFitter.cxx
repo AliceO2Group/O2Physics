@@ -1016,7 +1016,7 @@ double HFInvMassFitter::randomizeInitialParameter(const ParameterRanges& paramet
     ++nIter;
     if (nIter > MaximalNumberOfIterations) {
       printf("randomizeInitialFitParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
-      throw std::runtime_error("");
+      throw;
     }
   } while (result < parameterRanges.lower || result > parameterRanges.upper);
 

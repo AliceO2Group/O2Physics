@@ -144,6 +144,7 @@ class HFInvMassFitter : public TNamed
   void drawResidual(TVirtualPad* c);
   void drawRatio(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
+  void setRandomSeed(int seed) { mRandomSeed = seed; }
 
  private:
   HFInvMassFitter(const HFInvMassFitter& source);
