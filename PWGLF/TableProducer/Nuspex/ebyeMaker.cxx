@@ -608,7 +608,7 @@ struct EbyeMaker {
       if (track.tpcNClsFound() < trackNclusTpcCut || track.tpcNClsCrossedRows() < trackNcrossedRows)
         continue;
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (track.sign() > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll))){
+      if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (track.sign() > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll))) {
         nTracksColl++;
         nTracksCollFull++;
       }
