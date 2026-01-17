@@ -72,6 +72,7 @@ using namespace o2::aod::rctsel;
 
 auto static constexpr CminCharge = 3.f;
 auto static constexpr CintZero = 0;
+auto static constexpr CintTwo = 2;
 auto static constexpr Czero = 0.f;
 auto static constexpr Cninety = 90.f;
 auto static constexpr ConeHeighty = 180.f;
@@ -3739,7 +3740,7 @@ struct DndetaMFTPbPb {
                 dcaInfo[0] = dcaInfOrig[0];
               } else if (gConf.cfgDCAtype == 1) {
                 dcaInfo[0] = dcaInfOrig[1];
-              } else if (gConf.cfgDCAtype == 2) {
+              } else if (gConf.cfgDCAtype == CintTwo) {
                 dcaInfo[0] = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
               }
               dcaInfo[1] = dcaInfOrig[2];
