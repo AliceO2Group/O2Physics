@@ -13,6 +13,8 @@
 /// \brief Flow calculation using event plane.
 /// \author Yash Patley <yash.patley@cern.ch>
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -56,16 +58,32 @@ DECLARE_SOA_TABLE(ColSPExt, "AOD", "COLSPEXT", o2::soa::Index<>,
                   colspext::Xc,
                   colspext::Yc);
 
-namespace trackidext
+namespace tracksid
 {
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);
+DECLARE_SOA_COLUMN(Px, px, float);
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsPion, isPion, bool);
 DECLARE_SOA_COLUMN(IsKaon, isKaon, bool);
 DECLARE_SOA_COLUMN(IsProton, isProton, bool);
-} // namespace trackidext
-DECLARE_SOA_TABLE(TrackIdExt, "AOD", "TRACKIDEXT", o2::soa::Index<>,
-                  trackidext::IsPion,
-                  trackidext::IsKaon,
-                  trackidext::IsProton);
+} // namespace tracksid
+DECLARE_SOA_TABLE(TracksId, "AOD", "TRACKSID", o2::soa::Index<>,
+                  aod::tracksid::CollisionId,
+                  tracksid::Sign,
+                  tracksid::Px,
+                  tracksid::Py,
+                  tracksid::Pz,
+                  tracksid::Pt,
+                  tracksid::Eta,
+                  tracksid::Phi,
+                  tracksid::IsPion,
+                  tracksid::IsKaon,
+                  tracksid::IsProton);
 } // namespace o2::aod
 
 enum GainClibCorr {
@@ -100,6 +118,11 @@ enum ParticleType {
   kKa,
   kPr,
   kNPart
+};
+
+enum V0Type {
+  kLambda = 0,
+  kAntiLambda
 };
 
 struct SpectatorPlaneTableProducer {
@@ -602,7 +625,7 @@ struct SpectatorPlaneTableProducer {
 
 struct IdHadronFlow {
   // Table producer
-  Produces<aod::TrackIdExt> trackIdExtTable;
+  Produces<aod::TracksId> tracksIdTable;
 
   // Tracks
   Configurable<float> cTrackMinPt{"cTrackMinPt", 0.1, "p_{T} minimum"};
@@ -614,6 +637,8 @@ struct IdHadronFlow {
   Configurable<float> cTrackDcaZCut{"cTrackDcaZCut", 1., "DcaXY Cut"};
 
   // Track PID
+  Configurable<float> cTpcElRejCutMin{"cTpcElRejCutMin", -3., "Electron Rejection Cut Minimum"};
+  Configurable<float> cTpcElRejCutMax{"cTpcElRejCutMax", 5., "Electron Rejection Cut Maximum"};
   Configurable<float> cTpcNSigmaCut{"cTpcNSigmaCut", 2, "TPC NSigma Cut"};
   Configurable<float> cTpcRejCut{"cTpcRejCut", 3, "TPC Rej Cut"};
   Configurable<float> cTofNSigmaCut{"cTofNSigmaCut", 2, "TOF NSigma Cut"};
@@ -621,6 +646,9 @@ struct IdHadronFlow {
   Configurable<float> cPionPtCut{"cPionPtCut", 0.6, "Pion TPC pT cutoff"};
   Configurable<float> cKaonPtCut{"cKaonPtCut", 0.6, "Kaon TPC pT cutoff"};
   Configurable<float> cProtonPtCut{"cProtonPtCut", 1.1, "Proton TPC pT cutoff"};
+
+  // Flag to fill histograms
+  Configurable<bool> cFillIdHist{"cFillIdHist", false, "Flag to fill histograms"};
 
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -659,15 +687,17 @@ struct IdHadronFlow {
     histos.add("DF/hCQuNeg", "u_{x}X^{C}_{1} + u_{y}Y^{C}_{1}", kTProfile2D, {axisCent, axisTrackEta});
 
     // Identified particle
-    histos.add("PartId/Pion/hdEdX", "PartId/Pion/hdEdX", kTH2F, {axisTrackPt, axisTrackdEdx});
-    histos.add("PartId/Pion/hTPCNSigma", "PartId/Pion/hTPCNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
-    histos.add("PartId/Pion/hTOFNSigma", "PartId/Pion/hTOFNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
-    histos.add("PartId/Pion/hAQuPos", "PartId/Pion/hAQuPos", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("PartId/Pion/hAQuNeg", "PartId/Pion/hAQuNeg", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("PartId/Pion/hCQuPos", "PartId/Pion/hCQuPos", kTProfile2D, {axisCent, axisTrackEta});
-    histos.add("PartId/Pion/hCQuNeg", "PartId/Pion/hCQuNeg", kTProfile2D, {axisCent, axisTrackEta});
-    histos.addClone("PartId/Pion/", "PartId/Kaon/");
-    histos.addClone("PartId/Pion/", "PartId/Proton/");
+    if (cFillIdHist) {
+      histos.add("PartId/Pion/hdEdX", "PartId/Pion/hdEdX", kTH2F, {axisTrackPt, axisTrackdEdx});
+      histos.add("PartId/Pion/hTPCNSigma", "PartId/Pion/hTPCNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
+      histos.add("PartId/Pion/hTOFNSigma", "PartId/Pion/hTOFNSigma", kTH2F, {axisTrackPt, axisTrackNSigma});
+      histos.add("PartId/Pion/hAQuPos", "PartId/Pion/hAQuPos", kTProfile2D, {axisCent, axisTrackEta});
+      histos.add("PartId/Pion/hAQuNeg", "PartId/Pion/hAQuNeg", kTProfile2D, {axisCent, axisTrackEta});
+      histos.add("PartId/Pion/hCQuPos", "PartId/Pion/hCQuPos", kTProfile2D, {axisCent, axisTrackEta});
+      histos.add("PartId/Pion/hCQuNeg", "PartId/Pion/hCQuNeg", kTProfile2D, {axisCent, axisTrackEta});
+      histos.addClone("PartId/Pion/", "PartId/Kaon/");
+      histos.addClone("PartId/Pion/", "PartId/Proton/");
+    }
   }
 
   // Track Selection
@@ -708,6 +738,12 @@ struct IdHadronFlow {
   template <ParticleType partType, typename T>
   bool identifyTrack(T const& track)
   {
+    // Electron rejection
+    if (track.tpcNSigmaEl() > cTpcElRejCutMin && track.tpcNSigmaEl() < cTpcElRejCutMax) {
+      return false;
+    }
+
+    // Pion, Kaon, Proton Identification
     std::vector<float> vPtCut = {cPionPtCut, cKaonPtCut, cProtonPtCut};
     std::vector<float> vTpcNsig = {std::abs(track.tpcNSigmaPi()), std::abs(track.tpcNSigmaKa()), std::abs(track.tpcNSigmaPr())};
     std::vector<float> vTofNsig = {std::abs(track.tofNSigmaPi()), std::abs(track.tofNSigmaKa()), std::abs(track.tofNSigmaPr())};
@@ -765,7 +801,7 @@ struct IdHadronFlow {
   }
 
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra, aod::ColSPExt>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls>;
 
   void processDummy(CollisionsRun3::iterator const&) {}
 
@@ -797,7 +833,7 @@ struct IdHadronFlow {
     for (auto const& track : tracks) {
       // Select track
       if (!selectTrack(track)) {
-        trackIdExtTable(false, false, false);
+        tracksIdTable(collision.index(), track.sign(), track.px(), track.py(), track.pz(), track.pt(), track.eta(), track.phi(), false, false, false);
         continue;
       }
 
@@ -821,17 +857,28 @@ struct IdHadronFlow {
         histos.fill(HIST("DF/hCQuNeg"), cent, track.eta(), v1c);
       }
 
-      // Identified directed flow
-      if (identifyTrack<kPi>(track)) {
-        trackIdExtTable(true, false, false);
-        getIdHadronFlow<kPi>(cent, track, v1a, v1c);
-      } else if (identifyTrack<kKa>(track)) {
-        trackIdExtTable(false, true, false);
-        getIdHadronFlow<kKa>(cent, track, v1a, v1c);
-      } else if (identifyTrack<kPr>(track)) {
-        trackIdExtTable(false, false, true);
-        getIdHadronFlow<kPr>(cent, track, v1a, v1c);
+      // Identify track
+      bool pionFlag = identifyTrack<kPi>(track);
+      bool kaonFlag = identifyTrack<kKa>(track);
+      bool protonFlag = identifyTrack<kPr>(track);
+
+      if (cFillIdHist) {
+        // Pion
+        if (pionFlag) {
+          getIdHadronFlow<kPi>(cent, track, v1a, v1c);
+        }
+        // Kaon
+        if (kaonFlag) {
+          getIdHadronFlow<kKa>(cent, track, v1a, v1c);
+        }
+        // Proton
+        if (protonFlag) {
+          getIdHadronFlow<kPr>(cent, track, v1a, v1c);
+        }
       }
+
+      // Fill track table
+      tracksIdTable(collision.index(), track.sign(), track.px(), track.py(), track.pz(), track.pt(), track.eta(), track.phi(), pionFlag, kaonFlag, protonFlag);
     }
   }
   PROCESS_SWITCH(IdHadronFlow, processIdHadronFlow, "Identified hadron flow process", false);
@@ -843,6 +890,28 @@ struct FlowEventPlane {
   Configurable<int> cNInvMassBins{"cNInvMassBins", 500, "# of m bins"};
   Configurable<float> cResRapCut{"cResRapCut", 0.5, "Resonance rapidity cut"};
 
+  // V0
+  // Tracks
+  Configurable<float> cTrackPtCut{"cTrackPtCut", 0.1, "p_{T} minimum"};
+  Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
+  Configurable<double> cTpcNsigmaCut{"cTpcNsigmaCut", 3.0, "TPC NSigma Selection Cut"};
+
+  // V0s
+  Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
+  Configurable<float> cMinDcaProtonToPV{"cMinDcaProtonToPV", 0.02, "Minimum Proton DCAr to PV"};
+  Configurable<float> cMinDcaPionToPV{"cMinDcaPionToPV", 0.06, "Minimum Pion DCAr to PV"};
+  Configurable<float> cDcaV0Dau{"cDcaV0Dau", 1., "DCA between V0 daughters"};
+  Configurable<float> cDcaV0ToPv{"cDcaV0ToPv", 0.1, "DCA V0 to PV"};
+  Configurable<float> cMinV0Radius{"cMinV0Radius", 0.5, "Minimum V0 radius from PV"};
+  Configurable<float> cMaxV0Radius{"cMaxV0Radius", 999.0, "Maximum V0 radius from PV"};
+  Configurable<float> cV0CTau{"cV0CTau", 30.0, "Decay length cut"};
+  Configurable<float> cV0CosPA{"cV0CosPA", 0.995, "V0 CosPA to PV"};
+  Configurable<float> cK0SMassRej{"cK0SMassRej", 0.01, "Reject K0Short Candidates"};
+  Configurable<float> cLambdaMassWin{"cLambdaMassWin", 0.007, "Lambda Mass Window"};
+  Configurable<float> cMinV0Pt{"cMinV0Pt", 0.5, "Min v0 pT"};
+  Configurable<float> cMaxV0Pt{"cMaxV0Pt", 4.5, "Max v0 pT"};
+  Configurable<float> cV0RapCut{"cV0RapCut", 0.5, "V0 rap cut"};
+
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -853,13 +922,24 @@ struct FlowEventPlane {
   {
     // Define axes
     const AxisSpec axisCent{100, 0., 100, "FT0C%"};
-
-    const AxisSpec axisXYac{600, -6, 6, "Q^{t}Q^{p}"};
-    const AxisSpec axisV1{400, -4, 4, "v_{1}"};
-
     const AxisSpec axisTrackPt{100, 0., 10., "p_{T} (GeV/#it{c})"};
     const AxisSpec axisTrackRap{cNRapBins, -0.5, 0.5, "y"};
     const AxisSpec axisInvMass{cNInvMassBins, 0.87, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
+    const AxisSpec axisMomPID(80, 0, 4, "p (GeV/#it{c})");
+    const AxisSpec axisNsigma(401, -10.025, 10.025, {"n#sigma"});
+    const AxisSpec axisdEdx(360, 20, 200, "#frac{dE}{dx}");
+    const AxisSpec axisRadius(2000, 0, 200, "r(cm)");
+    const AxisSpec axisCosPA(300, 0.97, 1.0, "cos(#theta_{PA})");
+    const AxisSpec axisDcaV0PV(1000, 0., 10., "dca (cm)");
+    const AxisSpec axisDcaProngPV(5000, -50., 50., "dca (cm)");
+    const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
+    const AxisSpec axisCTau(2000, 0, 200, "c#tau (cm)");
+    const AxisSpec axisAlpha(40, -1, 1, "#alpha");
+    const AxisSpec axisQtarm(40, 0, 0.4, "q_{T}");
+    const AxisSpec axisLambdaPt(50, 0, 10, "p_{T} (GeV/#it{c})");
+    const AxisSpec axisLambdaInvMass(140, 1.08, 1.15, "M_{p#pi} (GeV/#it{c}^{2})");
+    const AxisSpec axisXYac{600, -6, 6, "Q^{t}Q^{p}"};
+    const AxisSpec axisV1{400, -4, 4, "v_{1}"};
 
     // Create histograms
     // Resonance
@@ -869,6 +949,112 @@ struct FlowEventPlane {
     histos.add("Reso/Phi/Sig/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
     histos.add("Reso/Phi/Bkg/hPhiQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
     histos.add("Reso/Phi/Bkg/hPhiQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisInvMass});
+
+    // Lambda histograms
+    // QA Lambda
+    histos.add("Lambda/QA/hQtVsAlpha", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
+    histos.add("Lambda/QA/hDcaV0Dau", "DCA between V0 daughters", kTH1F, {axisDcaDau});
+    histos.add("Lambda/QA/hDcaPosToPv", "DCA positive prong to PV", kTH1F, {axisDcaProngPV});
+    histos.add("Lambda/QA/hDcaNegToPv", "DCA negative prong to PV", kTH1F, {axisDcaProngPV});
+    histos.add("Lambda/QA/hDcaV0ToPv", "DCA V0 to PV", kTH1F, {axisDcaV0PV});
+    histos.add("Lambda/QA/hCosPa", "cos(#theta_{PA})", kTH1F, {axisCosPA});
+    histos.add("Lambda/QA/hRxy", "V_{0} Decay Radius in XY plane", kTH1F, {axisRadius});
+    histos.add("Lambda/QA/hCTau", "V_{0} c#tau", kTH1F, {axisCTau});
+    histos.add("Lambda/QA/hPosdEdXVsP", "TPC Signal Pos-Prong", kTH2F, {axisMomPID, axisdEdx});
+    histos.add("Lambda/QA/hNegdEdXVsP", "TPC Signal Neg-Prong", kTH2F, {axisMomPID, axisdEdx});
+    histos.add("Lambda/QA/hPosNsigPrVsP", "TPC n#sigma Pos Prong", kTH2F, {axisMomPID, axisNsigma});
+    histos.add("Lambda/QA/hNegNsigPrVsP", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
+    histos.add("Lambda/QA/hPosNsigPiVsP", "TPC n#sigma Pos Prong", kTH2F, {axisMomPID, axisNsigma});
+    histos.add("Lambda/QA/hNegNsigPiVsP", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
+
+    histos.add("Lambda/hInvMassVsPt", "hInvMassVsPt", kTH3F, {axisCent, axisLambdaInvMass, axisLambdaPt});
+    histos.add("Lambda/Flow/hQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
+    histos.add("Lambda/Flow/hQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
+
+    histos.addClone("Lambda/", "AntiLambda/");
+  }
+
+  template <V0Type part, typename V, typename T>
+  bool selV0DauTracks(V const& v0, T const& postrack, T const& negtrack)
+  {
+    // Kinematic selection
+    if (postrack.pt() <= cTrackPtCut || negtrack.pt() <= cTrackPtCut || std::abs(postrack.eta()) >= cTrackEtaCut || std::abs(negtrack.eta()) >= cTrackEtaCut) {
+      return false;
+    }
+
+    // Apply DCA Selection on Daughter Tracks Based on Lambda/AntiLambda daughters
+    float dcaProton = 0., dcaPion = 0.;
+    if (part == kLambda) {
+      dcaProton = std::abs(v0.dcapostopv());
+      dcaPion = std::abs(v0.dcanegtopv());
+    } else if (part == kAntiLambda) {
+      dcaPion = std::abs(v0.dcapostopv());
+      dcaProton = std::abs(v0.dcanegtopv());
+    } else {
+      return false;
+    }
+
+    if (dcaProton <= cMinDcaProtonToPV || dcaPion <= cMinDcaPionToPV) {
+      return false;
+    }
+
+    // Daughter track PID
+    float tpcNSigmaPr = 0., tpcNSigmaPi = 0.;
+
+    switch (part) {
+      // postrack = Proton, negtrack = Pion
+      case kLambda:
+        tpcNSigmaPr = postrack.tpcNSigmaPr();
+        tpcNSigmaPi = negtrack.tpcNSigmaPi();
+        break;
+
+      // negtrack = Proton, postrack = Pion
+      case kAntiLambda:
+        tpcNSigmaPr = negtrack.tpcNSigmaPr();
+        tpcNSigmaPi = postrack.tpcNSigmaPi();
+        break;
+    }
+
+    if (std::abs(tpcNSigmaPr) >= cTpcNsigmaCut || std::abs(tpcNSigmaPi) >= cTpcNsigmaCut) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <V0Type part, typename C, typename V, typename T>
+  void fillV0QAHist(C const& col, V const& v0, T const&)
+  {
+    static constexpr std::string_view SubDir[] = {"Lambda/QA/", "AntiLambda/QA/"};
+
+    // daugthers
+    auto postrack = v0.template posTrack_as<T>();
+    auto negtrack = v0.template negTrack_as<T>();
+    float mass = 0.;
+
+    if constexpr (part == kLambda) {
+      mass = v0.mLambda();
+    } else {
+      mass = v0.mAntiLambda();
+    }
+
+    // ctau
+    float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
+
+    histos.fill(HIST(SubDir[part]) + HIST("hQtVsAlpha"), v0.alpha(), v0.qtarm());
+    histos.fill(HIST(SubDir[part]) + HIST("hDcaV0Dau"), v0.dcaV0daughters());
+    histos.fill(HIST(SubDir[part]) + HIST("hDcaPosToPv"), v0.dcapostopv());
+    histos.fill(HIST(SubDir[part]) + HIST("hDcaNegToPv"), v0.dcanegtopv());
+    histos.fill(HIST(SubDir[part]) + HIST("hDcaV0ToPv"), v0.dcav0topv());
+    histos.fill(HIST(SubDir[part]) + HIST("hCosPa"), v0.v0cosPA());
+    histos.fill(HIST(SubDir[part]) + HIST("hRxy"), v0.v0radius());
+    histos.fill(HIST(SubDir[part]) + HIST("hCTau"), ctau);
+    histos.fill(HIST(SubDir[part]) + HIST("hPosdEdXVsP"), postrack.tpcInnerParam(), postrack.tpcSignal());
+    histos.fill(HIST(SubDir[part]) + HIST("hNegdEdXVsP"), negtrack.tpcInnerParam(), negtrack.tpcSignal());
+    histos.fill(HIST(SubDir[part]) + HIST("hPosNsigPrVsP"), postrack.tpcInnerParam(), postrack.tpcNSigmaPr());
+    histos.fill(HIST(SubDir[part]) + HIST("hNegNsigPrVsP"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPr());
+    histos.fill(HIST(SubDir[part]) + HIST("hPosNsigPiVsP"), postrack.tpcInnerParam(), postrack.tpcNSigmaPi());
+    histos.fill(HIST(SubDir[part]) + HIST("hNegNsigPiVsP"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPi());
   }
 
   template <typename T>
@@ -927,10 +1113,12 @@ struct FlowEventPlane {
   }
 
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra, aod::ColSPExt>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls, aod::TrackIdExt>;
+  using Tracks = aod::TracksId;
+  using TracksV0s = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::TrackCompColls>;
 
+  // Partitions
   SliceCache cache;
-  Partition<Tracks> kaonTrackPartition = (aod::trackidext::isKaon == true);
+  Partition<Tracks> kaonTrackPartition = (aod::tracksid::isKaon == true);
 
   void processDummy(CollisionsRun3::iterator const&) {}
 
@@ -954,12 +1142,95 @@ struct FlowEventPlane {
     vSP[kYc] = collision.yc();
 
     // Track partitions
-    auto kaonTracks = kaonTrackPartition->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto kaonTracks = kaonTrackPartition->sliceByCached(aod::tracksid::collisionId, collision.globalIndex(), cache);
 
     // Resonance flow
     getResoFlow(kaonTracks, kaonTracks, vSP);
   }
   PROCESS_SWITCH(FlowEventPlane, processResoFlow, "Resonance flow process", false);
+
+  void processLambdaFlow(CollisionsRun3::iterator const& collision, aod::V0Datas const& V0s, TracksV0s const& tracks)
+  {
+    // Check collision
+    if (!collision.selColFlag()) {
+      return;
+    }
+
+    // Set centrality
+    cent = collision.centFT0C();
+
+    // Flow vectors
+    std::array<float, 4> vSP = {0., 0., 0., 0.};
+    vSP[kXa] = collision.xa();
+    vSP[kYa] = collision.ya();
+    vSP[kXc] = collision.xc();
+    vSP[kYc] = collision.yc();
+
+    // Loop over v0s
+    for (auto const& v0 : V0s) {
+      // V0 kinematic selection
+      if (v0.pt() <= cMinV0Pt || v0.pt() >= cMaxV0Pt || std::abs(v0.yLambda()) >= cV0RapCut) {
+        continue;
+      }
+
+      // Topological selections
+      float ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda0;
+      if (v0.dcaV0daughters() >= cDcaV0Dau || v0.dcav0topv() >= cDcaV0ToPv ||
+          v0.v0radius() <= cMinV0Radius || v0.v0radius() >= cMaxV0Radius ||
+          v0.v0cosPA() <= cV0CosPA || ctau >= cV0CTau || v0.v0Type() != cV0TypeSelection) {
+        continue;
+      }
+
+      // Ks Mass Rejection
+      if (std::abs(v0.mK0Short() - MassK0Short) <= cK0SMassRej) {
+        continue;
+      }
+
+      // Initialize daughter tracks
+      auto postrack = v0.template posTrack_as<TracksV0s>();
+      auto negtrack = v0.template negTrack_as<TracksV0s>();
+
+      // Initialize selection flags
+      bool lambdaFlag = false, antiLambdaFlag = false;
+
+      // Get v0 track as lambda
+      if ((std::abs(v0.mLambda() - MassLambda0) < cLambdaMassWin) && (selV0DauTracks<kLambda>(v0, postrack, negtrack))) {
+        lambdaFlag = true;
+      }
+
+      // Get v0 track as anti-lambda
+      if ((std::abs(v0.mAntiLambda() - MassLambda0) < cLambdaMassWin) && (selV0DauTracks<kAntiLambda>(v0, postrack, negtrack))) {
+        antiLambdaFlag = true;
+      }
+
+      // Lambda/Anti-Lambda selection checks
+      if (!lambdaFlag && !antiLambdaFlag) { // neither Lambda nor Anti-Lambda
+        continue;
+      } else if (lambdaFlag && antiLambdaFlag) { // check if the track is identified as lambda and anti-lambda both (DISCARD THIS TRACK)
+        continue;
+      }
+
+      // We have a Lambda/Anti-Lambda
+      // Directed flow
+      float ux = std::cos(v0.phi());
+      float uy = std::sin(v0.phi());
+      float v1a = ux * vSP[kXa] + uy * vSP[kYa];
+      float v1c = ux * vSP[kXc] + uy * vSP[kYc];
+
+      if (lambdaFlag) {
+        fillV0QAHist<kLambda>(collision, v0, tracks);
+        histos.fill(HIST("Lambda/hInvMassVsPt"), cent, v0.mLambda(), v0.pt());
+        histos.fill(HIST("Lambda/Flow/hQuA"), cent, v0.yLambda(), v0.mLambda(), v1a);
+        histos.fill(HIST("Lambda/Flow/hQuC"), cent, v0.yLambda(), v0.mLambda(), v1c);
+      } else if (antiLambdaFlag) {
+        fillV0QAHist<kAntiLambda>(collision, v0, tracks);
+        histos.fill(HIST("AntiLambda/hInvMassVsPt"), cent, v0.mAntiLambda(), v0.pt());
+        histos.fill(HIST("AntiLambda/Flow/hQuA"), cent, v0.yLambda(), v0.mAntiLambda(), v1a);
+        histos.fill(HIST("AntiLambda/Flow/hQuC"), cent, v0.yLambda(), v0.mAntiLambda(), v1c);
+      }
+    }
+  }
+  PROCESS_SWITCH(FlowEventPlane, processLambdaFlow, "Lambda flow process", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
