@@ -148,6 +148,8 @@ struct muonGlobalAlignment {
   Configurable<int> fTrackNClustMftLow{"cfgTrackNClustMftLow", 7, ""};
   Configurable<float> fTrackChi2MftUp{"cfgTrackChi2MftUp", 999.f, ""};
 
+  Configurable<uint32_t> fMftTracksMultiplicityMax{"cfgMftTracksMultiplicityMax", 0, "Maximum number of MFT tracks to be processed per event (zero means no limit)"};
+
   Configurable<float> fVertexZshift{"cfgVertexZshift", 0.0f, "Correction to the vertex z position"};
 
   ////   Variables for ccdb
@@ -669,11 +671,10 @@ struct muonGlobalAlignment {
       if (fEnableVertexShiftAnalysis || fEnableMftDcaAnalysis) {
         // loop over MFT tracks
         auto mftTrackIds = collisionInfo.mftTracks;
-        auto rng = std::default_random_engine{};
-        std::shuffle(std::begin(mftTrackIds), std::end(mftTrackIds), rng);
-        size_t nTracksMFTmax = 10;
-        if (mftTrackIds.size() > nTracksMFTmax) {
-          mftTrackIds.resize(nTracksMFTmax);
+        if (fMftTracksMultiplicityMax > 0 && mftTrackIds.size() > fMftTracksMultiplicityMax) {
+          auto rng = std::default_random_engine{};
+          std::shuffle(std::begin(mftTrackIds), std::end(mftTrackIds), rng);
+          mftTrackIds.resize(fMftTracksMultiplicityMax);
         }
 
         for (auto mftIndex : mftTrackIds) {
