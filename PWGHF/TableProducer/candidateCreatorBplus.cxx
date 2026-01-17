@@ -21,8 +21,10 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsMcGen.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
@@ -104,7 +106,6 @@ struct HfCandidateCreatorBplus {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -222,11 +223,11 @@ struct HfCandidateCreatorBplus {
         if (!TESTBIT(candD0.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           continue;
         }
-        if (yCandMax >= 0. && std::abs(hfHelper.yD0(candD0)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(HfHelper::yD0(candD0)) > yCandMax) {
           continue;
         }
 
-        hRapidityD0->Fill(hfHelper.yD0(candD0));
+        hRapidityD0->Fill(HfHelper::yD0(candD0));
 
         // track0 <-> pi, track1 <-> K
         auto prong0 = candD0.prong0_as<TracksWithSel>();

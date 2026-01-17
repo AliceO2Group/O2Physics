@@ -39,7 +39,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using FilteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
+using FilteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::JChTrigSels>>::iterator;
 using FilteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
 using FilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using JoinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
@@ -162,7 +162,7 @@ struct JetTriggerChargedQa {
   void process(FilteredColl const& collision, FilteredJTracks const& tracks, FilteredJets const& jets, JoinedTracks const&)
   {
 
-    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>("NoTimeFrameBorder")))) {
       return;
     }
 

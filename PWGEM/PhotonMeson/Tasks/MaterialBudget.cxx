@@ -30,7 +30,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -70,10 +69,10 @@ using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils;
 using o2::constants::math::TwoPI;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsMC = soa::Join<aod::EMEvents, aod::EMMCEventLabels>;
+using MyCollisionsMC = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMMCEventLabels>;
 using MyCollisionMC = MyCollisionsMC::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts, aod::MostProbableEMEventIdsInMC>;

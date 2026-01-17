@@ -341,6 +341,14 @@ struct V0QA {
       registry.add("sharing/JetPtEtaAntiLambdaPt", "JetPtEtaAntiLambdaPt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
       registry.add("sharing/JetPtEtaV0PtPt", "JetPtEtaV0PtPt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
       registry.add("sharing/JetPtEtaV0PtPtDaughterPt", "JetPtEtaV0PtPtDaughterPt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt, axisV0Pt});
+
+      registry.add("sharing/JetPtEtaV0Z", "JetPtEtaV0Z", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaK0SZ", "JetPtEtaK0SZ", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaLambdaZ", "JetPtEtaLambdaZ", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaAntiLambdaZ", "JetPtEtaAntiLambdaZ", HistType::kTH3D, {axisJetPt, axisEta, axisV0Z});
+      registry.add("sharing/JetPtEtaV0ZZ", "JetPtEtaV0ZZ", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Z, axisV0Z});
+      registry.add("sharing/JetPtEtaV0ZZDaughterPt", "JetPtEtaV0ZZDaughterPt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Z, axisV0Z, axisV0Pt});
+
       registry.add("sharing/JetK0SK0S", "JetK0SK0S", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
       registry.add("sharing/JetK0SLambda", "JetK0SLambda", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
       registry.add("sharing/JetK0SAntiLambda", "JetK0SAntiLambda", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
@@ -933,13 +941,21 @@ struct V0QA {
   template <typename T, typename U>
   void fillV0DaughterSharingJet(T const& jet, U const& v0)
   {
+    double z = v0.pt() / jet.pt();
     registry.fill(HIST("sharing/JetPtEtaV0Pt"), jet.pt(), jet.eta(), v0.pt());
-    if (v0.isK0SCandidate())
+    registry.fill(HIST("sharing/JetPtEtaV0Z"), jet.pt(), jet.eta(), z);
+    if (v0.isK0SCandidate()) {
       registry.fill(HIST("sharing/JetPtEtaK0SPt"), jet.pt(), jet.eta(), v0.pt());
-    if (v0.isLambdaCandidate())
+      registry.fill(HIST("sharing/JetPtEtaK0SZ"), jet.pt(), jet.eta(), z);
+    }
+    if (v0.isLambdaCandidate()) {
       registry.fill(HIST("sharing/JetPtEtaLambdaPt"), jet.pt(), jet.eta(), v0.pt());
-    if (v0.isAntiLambdaCandidate())
+      registry.fill(HIST("sharing/JetPtEtaLambdaZ"), jet.pt(), jet.eta(), z);
+    }
+    if (v0.isAntiLambdaCandidate()) {
       registry.fill(HIST("sharing/JetPtEtaAntiLambdaPt"), jet.pt(), jet.eta(), v0.pt());
+      registry.fill(HIST("sharing/JetPtEtaAntiLambdaZ"), jet.pt(), jet.eta(), z);
+    }
   }
 
   template <typename T, typename U, typename V, typename W>
@@ -955,7 +971,11 @@ struct V0QA {
       ptsoft = trigger.pt();
     }
 
+    double zhard = pthard / jet.pt();
+    double zsoft = ptsoft / jet.pt();
+
     registry.fill(HIST("sharing/JetPtEtaV0PtPt"), jet.pt(), jet.eta(), pthard, ptsoft, weight);
+    registry.fill(HIST("sharing/JetPtEtaV0ZZ"), jet.pt(), jet.eta(), zhard, zsoft, weight);
     auto trigNeg = trigger.template negTrack_as<T>().template track_as<U>();
     auto trigPos = trigger.template posTrack_as<T>().template track_as<U>();
     auto assocNeg = associate.template negTrack_as<T>().template track_as<U>();
@@ -965,7 +985,9 @@ struct V0QA {
       sharedDaughterPt = trigNeg.pt();
     else
       sharedDaughterPt = trigPos.pt();
+
     registry.fill(HIST("sharing/JetPtEtaV0PtPtDaughterPt"), jet.pt(), jet.eta(), pthard, ptsoft, sharedDaughterPt, weight);
+    registry.fill(HIST("sharing/JetPtEtaV0ZZDaughterPt"), jet.pt(), jet.eta(), zhard, zsoft, sharedDaughterPt, weight);
 
     if (trigger.isK0SCandidate() && associate.isK0SCandidate())
       registry.fill(HIST("sharing/JetK0SK0S"), jet.pt(), jet.eta(), pthard, ptsoft, weight);

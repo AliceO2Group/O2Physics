@@ -17,6 +17,7 @@
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
+/// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
@@ -212,7 +213,12 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
   [[nodiscard]] Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
   [[nodiscard]] Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
+  [[nodiscard]] Double_t getSecSigma() const { return mRooSecSigmaSgn->getVal(); }
+  [[nodiscard]] Double_t getSecSigmaUncertainty() const { return mRooSecSigmaSgn->getError(); }
+  [[nodiscard]] Double_t getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
+  [[nodiscard]] Double_t getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
   [[nodiscard]] Double_t getReflOverSig() const
+
   {
     if (mReflPdf != nullptr) {
       return mReflOverSgn;
@@ -224,8 +230,10 @@ class HFInvMassFitter : public TNamed
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
-  void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
+  void calculateFitToDataRatio() const;
+  void drawFit(TVirtualPad* c, const std::vector<std::string>& plotLabels, Bool_t writeParInfo = true);
   void drawResidual(TVirtualPad* c);
+  void drawRatio(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
 
  private:
@@ -282,6 +290,8 @@ class HFInvMassFitter : public TNamed
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal
+  RooRealVar* mRooSecSigmaSgn;       /// second sigma for composite gaussian of signal
+  RooRealVar* mRooFracDoubleGaus;    /// fraction of second gaussian for composite gaussian of signal
   RooAbsPdf* mSgnPdf;                /// signal fit function
   RooAbsPdf* mBkgPdf;                /// background fit function
   RooAbsPdf* mReflPdf;               /// reflection fit function
@@ -293,6 +303,7 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;           /// residual frame
+  RooPlot* mRatioFrame;              /// fit/data ratio frame
   RooPlot* mResidualFrameForCalculation;
   RooWorkspace* mWorkspace;    /// workspace
   Double_t mIntegralHisto;     /// integral of histogram to fit

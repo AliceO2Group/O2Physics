@@ -14,8 +14,10 @@
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 
+#include "PWGHF/ALICE3/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -58,7 +60,6 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::Cuts[0], hf_cuts_xicc_to_p_k_pi_pi::NBinsPt, hf_cuts_xicc_to_p_k_pi_pi::NCutVars, hf_cuts_xicc_to_p_k_pi_pi::labelsPt, hf_cuts_xicc_to_p_k_pi_pi::labelsCutVar}, "Xicc candidate selection per pT bin"};
 
-  HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
   using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi>;
@@ -91,7 +92,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
     }
 
     // check candidate mass is within a defined mass window
-    if (std::abs(hfHelper.invMassXiccToXicPi(hfCandXicc) - o2::constants::physics::MassXiCCPlusPlus) > cuts->get(pTBin, "m")) {
+    if (std::abs(HfHelper::invMassXiccToXicPi(hfCandXicc) - o2::constants::physics::MassXiCCPlusPlus) > cuts->get(pTBin, "m")) {
       return false;
     }
 

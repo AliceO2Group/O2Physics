@@ -13,6 +13,7 @@
 /// \brief Omegac0 → Omega Ka selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"

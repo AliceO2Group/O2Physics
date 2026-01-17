@@ -15,65 +15,59 @@
 ///
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>
 
-#include <TH1F.h>
-#include <TH1D.h>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/collisionCuts.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include "TVector2.h"
+#include <TDatabasePDG.h> // FIXME
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
+#include <TPDGCode.h> // FIXME
 
-#include <vector>
-#include <cmath>
 #include <array>
-#include <cstdlib>
 #include <chrono>
+#include <cmath>
+#include <cstdlib>
 #include <string>
-
-#include "TRandom3.h"
-#include "TF1.h"
-#include "TVector2.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include <TMath.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StaticFor.h"
-#include "DCAFitter/DCAFitterN.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-
-#include "ReconstructionDataFormats/Track.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/Utils/collisionCuts.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

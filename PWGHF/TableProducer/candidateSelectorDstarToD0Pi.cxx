@@ -15,11 +15,12 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
@@ -106,7 +107,6 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponse;
   std::vector<float> outputMlDstarToD0Pi;
   o2::ccdb::CcdbApi ccdbApi;

@@ -259,11 +259,36 @@ o2physics_add_dpl_workflow(phioo
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(kstar892-light-ion
+    SOURCES kstar892LightIon.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phispectrapbpbqa
     SOURCES phispectrapbpbqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(phi-1020-spherocity-analysis
     SOURCES phi1020SpherocityAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(phitutorial
+    SOURCES phitutorial.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(phitutorial-step0
+    SOURCES phitutorial_step0.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(phitutorial-step1
+    SOURCES phitutorial_step1.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(phitutorial-step2
+    SOURCES phitutorial_step2.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(phitutorial-step3
+    SOURCES phitutorial_step3.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

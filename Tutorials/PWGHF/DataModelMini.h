@@ -44,7 +44,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! prong 1
 } // namespace hf_track_index
 
 // Track index skim table
-DECLARE_SOA_TABLE(HfT2Prongs, "AOD", "HFT2PRONG", //! table with prongs indices
+DECLARE_SOA_TABLE(HfT2Prongs, "AOD", "HFT2PRONG", //! table with prong indices
+                  o2::soa::Index<>,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
@@ -53,36 +54,36 @@ namespace hf_cand_prong2
 {
 // Candidate columns
 // collision properties
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! collisions
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! collision
 // secondary vertex
-DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, float); //! x coordinate of the secondary vertex
-DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, float); //! y coordinate of the secondary vertex
-DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float); //! z coordinate of the secondary vertex
-DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //! radius of the secondary vertex
+DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, float); //! x coordinate of the secondary vertex [cm]
+DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, float); //! y coordinate of the secondary vertex [cm]
+DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float); //! z coordinate of the secondary vertex [cm]
+DECLARE_SOA_DYNAMIC_COLUMN(RSecondaryVertex, rSecondaryVertex, //! radius of the secondary vertex [cm]
                            [](float xVtxS, float yVtxS) -> float { return RecoDecay::sqrtSumOfSquares(xVtxS, yVtxS); });
 // prong properties
-DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //! px of prong 0
-DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //! py of prong 0
-DECLARE_SOA_COLUMN(PzProng0, pzProng0, float); //! pz of prong 0
-DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //! pt of prong 0
+DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //! px of prong 0 [GeV/c]
+DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //! py of prong 0 [GeV/c]
+DECLARE_SOA_COLUMN(PzProng0, pzProng0, float); //! pz of prong 0 [GeV/c]
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //! pt of prong 0 [GeV/c]
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
-DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //! px of prong 1
-DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //! py of prong 1
-DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //! pz of prong 1
-DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //! pt of prong 1
+DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //! px of prong 1 [GeV/c]
+DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //! py of prong 1 [GeV/c]
+DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //! pz of prong 1 [GeV/c]
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //! pt of prong 1 [GeV/c]
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 // candidate properties
-DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //! decay length of candidate
+DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, //! decay length of candidate [cm]
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float { return RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! pt of candidate
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! pt of candidate [GeV/c]
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
-DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! px of candidate
+DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! px of candidate [GeV/c]
                               float, 1.f * pxProng0 + 1.f * pxProng1);
-DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! py of candidate
+DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! py of candidate [GeV/c]
                               float, 1.f * pyProng0 + 1.f * pyProng1);
-DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! pz of candidate
+DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! pz of candidate [GeV/c]
                               float, 1.f * pzProng0 + 1.f * pzProng1);
-DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! invariant mass of candidate
+DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! invariant mass of candidate [GeV/c^2]
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, const std::array<double, 2>& m) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m); });
 DECLARE_SOA_DYNAMIC_COLUMN(Cpa, cpa, //! cosine of pointing angle of candidate
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
@@ -90,6 +91,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Cpa, cpa, //! cosine of pointing angle of candidate
 
 // Candidate table
 DECLARE_SOA_TABLE(HfTCand2ProngBase, "AOD", "HFTCAND2PBASE", //! 2-prong candidate table
+                  o2::soa::Index<>,
                   hf_cand_prong2::CollisionId,
                   collision::PosX, collision::PosY, collision::PosZ,
                   hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex,
@@ -116,7 +118,7 @@ namespace hf_selcandidate_d0
 {
 // Candidate selection columns
 DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);       //! selection flag for D0
-DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //! selection flag for D0 bar
+DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //! selection flag for D0bar
 } // namespace hf_selcandidate_d0
 
 // Candidate selection table

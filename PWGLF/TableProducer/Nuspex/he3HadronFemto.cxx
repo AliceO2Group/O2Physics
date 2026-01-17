@@ -23,16 +23,17 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -88,7 +89,6 @@ static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3",
 constexpr int Li4PDG = o2::constants::physics::Pdg::kLithium4;
 constexpr int H3LPDG = o2::constants::physics::Pdg::kHyperTriton;
 constexpr int ProtonPDG = PDG_t::kProton;
-constexpr int PionPDG = PDG_t::kPiPlus;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr float CommonInite = 0.0f;
 
@@ -106,12 +106,27 @@ enum Flags {
   kMixedPair = BIT(3), // a primary and one from Li4/hypertriton/material/other decays (or any other combination)
 };
 
+enum Species {
+  kHe3 = 0,
+  kHad,
+  kAllSpecies
+};
+
 enum ParticleFlags {
   kPhysicalPrimary = BIT(0), // primary particle
   kFromLi4 = BIT(1),         // from Li4 decay
   kFromHypertriton = BIT(2), // from hypertriton decay
   kFromMaterial = BIT(3),    // from material
   kFromOtherDecays = BIT(4), // from other decays
+};
+
+std::array<float, 3> kDCAxyResolutionParams[static_cast<int>(Species::kAllSpecies)] = {
+  {0.0118, 0.6889, 0.0017}, // He3
+  {0.0032, 0.5206, 0.0012}  // Pr
+};
+std::array<float, 3> kDCAzResolutionParams[static_cast<int>(Species::kAllSpecies)] = {
+  {0.1014, 1.7512, 0.0024}, // He3
+  {0.0021, 1.1122, 0.0021}  // Pr
 };
 
 } // namespace
@@ -193,30 +208,41 @@ struct he3HadronFemto {
   Produces<aod::he3HadronTable> outputDataTable;
   Produces<aod::he3HadronTableMC> outputMcTable;
   Produces<aod::he3HadronMult> outputMultiplicityTable;
+  Produces<aod::he3HadronQa> outputQaTable;
 
   // Selections
   Configurable<int> settingHadPDGCode{"settingHadPDGCode", 211, "Hadron - PDG code"};
+
   Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> settingCutRigidityMinHe3{"settingCutRigidityMinHe3", 0.8f, "Minimum rigidity for He3"};
   Configurable<float> settingCutEta{"settingCutEta", 0.9f, "Eta cut on daughter track"};
   Configurable<float> settingCutDCAxy{"settingCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> settingCutDCAz{"settingCutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.5f, "Low cut on TPC chi2"};
+  Configurable<float> settingCutNClsTPC{"settingCutNClsTPC", 90, "number of TPC clusters for a generic track"};
+  Configurable<float> settingCutNClsTPCHe3{"settingCutNClsTPCHe3", 110.0f, "number of TPC clusters for a He3 track"};
+  Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.f, "Low cut on TPC chi2"};
+  Configurable<float> settingCutChi2tpcLowHe3{"settingCutChi2tpcLowHe3", 0.5f, "Low cut on TPC chi2 for He3"};
   Configurable<float> settingCutInvMass{"settingCutInvMass", 0.0f, "Invariant mass upper limit"};
   Configurable<float> settingCutPtMinhe3Had{"settingCutPtMinhe3Had", 0.0f, "Minimum PT cut on he3Had4"};
   Configurable<float> settingCutClSizeItsHe3{"settingCutClSizeItsHe3", 4.0f, "Minimum ITS cluster size for He3"};
   Configurable<float> settingCutNCls{"settingCutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
   Configurable<float> settingCutChi2NClITS{"settingCutChi2NClITS", 36.f, "Maximum ITS Chi2 for tracks"};
+  Configurable<float> settingCutNsigmaDcaXy{"settingCutNsigmaDcaXy", 3.0f, "Value of the DCA xy Nsigma cut"};
+  Configurable<float> settingCutNsigmaDcaZ{"settingCutNsigmaDcaZ", 3.0f, "Value of the DCA z Nsigma cut"};
   Configurable<float> settingCutNsigmaTPC{"settingCutNsigmaTPC", 3.0f, "Value of the TPC Nsigma cut"};
-  Configurable<float> settingCutNsigmaITS{"settingCutNsigmaITS", -1.5f, "Value of the TPC Nsigma cut"};
+  Configurable<float> settingCutNsigmaITSHad{"settingCutNsigmaITSHad", -2.f, "Value of the ITS Nsigma cutfor Had"};
+  Configurable<float> settingCutNsigmaITSHe3{"settingCutNsigmaITSHe3", -1.5f, "Value of the ITS Nsigma cutfor He3"};
   Configurable<float> settingCutPtMinTOFHad{"settingCutPtMinTOFHad", 0.4f, "Minimum pT to apply the TOF cut on hadrons"};
   Configurable<float> settingCutNsigmaTOF{"settingCutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
+
   Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
   Configurable<bool> settingEnableDCAfitter{"settingEnableDCAfitter", false, "Enable DCA fitter"};
   Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
   Configurable<bool> settingIsMC{"settingIsMC", false, "Run MC"};
+
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
+  Configurable<bool> settingFillQa{"settingFillQa", false, "Fill QA table"};
   Configurable<bool> settingFillPrimariesAndMixedMc{"settingFillPrimariesAndMixedMc", false, "Fill primary MC tracks and mixed tracks (e.g. a primary track and one from Li4)"};
 
   // Zorro
@@ -274,24 +300,30 @@ struct he3HadronFemto {
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
-      {"hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
-      {"hDCAzHe3", "^{3}He;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hNClsHe3ITS", "^{3}He;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"hNClsHadITS", "had;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"hChi2NClHe3ITS", "^{3}He;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
-      {"hChi2NClHadITS", "had;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
       {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
-      {"hHe3Pt", "^{3}He; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hHadronPt", "had; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
-      {"h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-      {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-      {"h2NSigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-      {"h2NSigmaHe3ITS", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-      {"h2NsigmaHadronTPC", "NsigmaHadron TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaHadronTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-      {"h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+
+      {"He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
+      {"He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"He3/hNClsHe3ITS", "^{3}He;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
+      {"He3/hChi2NClHe3ITS", "^{3}He;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
+      {"He3/hHe3Pt", "^{3}He; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+      {"He3/h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+      {"He3/h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"He3/h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"He3/h2NSigmaHe3ITS", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
+      {"He3/h2NSigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
+
+      {"Had/hNClsHadITS", "had;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
+      {"Had/hChi2NClHadITS", "had;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
+      {"Had/hHadronPt", "had; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+      {"Had/h2NsigmaHadronTPC", "NsigmaHadron TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"Had/h2NsigmaHadronTPC_preselection", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"Had/h2NsigmaHadronTPC_mcBackground", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"Had/h2NsigmaHadronTPC_mcSignal", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"Had/h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"Had/h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"Had/h2NsigmaHadronTOF_mcBackground", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"Had/h2NsigmaHadronTOF_mcSignal", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -417,24 +449,57 @@ struct he3HadronFemto {
   }
 
   template <typename Ttrack>
-  bool selectTrack(const Ttrack& candidate)
+  bool selectTrack(const Ttrack& candidate, const int ispecies)
   {
     if (std::abs(candidate.eta()) > settingCutEta) {
       return false;
     }
-    const int minTPCNClsFound = 90;
+    const int minTPCNClsFound = ispecies == Species::kHe3 ? static_cast<int>(settingCutNClsTPCHe3) : static_cast<int>(settingCutNClsTPCHe3);
     const int minTPCNClsCrossedRows = 70;
     const float crossedRowsToFindableRatio = 0.8f;
+    const float minChi2NCl = ispecies == Species::kHe3 ? static_cast<int>(settingCutChi2tpcLowHe3) : static_cast<int>(settingCutChi2tpcLow);
     const float maxChi2NCl = 4.f;
     if (candidate.itsNCls() < settingCutNCls ||
         candidate.tpcNClsFound() < minTPCNClsFound ||
         candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
         candidate.tpcNClsCrossedRows() < crossedRowsToFindableRatio * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > maxChi2NCl ||
-        candidate.tpcChi2NCl() < settingCutChi2tpcLow ||
+        candidate.tpcChi2NCl() < minChi2NCl ||
         candidate.itsChi2NCl() > settingCutChi2NClITS) {
       return false;
     }
+
+    return true;
+  }
+
+  float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char* dcaType = "xy")
+  {
+
+    std::array<float, 3> parameters;
+    if (std::strcmp(dcaType, "xy") == 0) {
+      parameters = kDCAxyResolutionParams[iSpecies];
+    } else if (std::strcmp(dcaType, "z") == 0) {
+      parameters = kDCAzResolutionParams[iSpecies];
+    } else {
+      LOG(error) << "Invalid dcaType. Accepted types are 'xy' 'z'";
+      parameters = {0., 0., 0.};
+    }
+    const float sigma = parameters[0] *
+                          std::exp(-std::abs(pt) * parameters[1]) +
+                        parameters[2];
+    return dca / sigma;
+  }
+
+  template <typename Ttrack>
+  bool selectDcaNsigmaCut(const Ttrack& candidate, const int ispecies)
+  {
+    const float pt = ispecies == Species::kHe3 ? 2. * candidate.pt() : candidate.pt();
+    const float nsigmaDcaXy = computeNsigmaDCA(pt, candidate.dcaXY(), ispecies, "xy");
+    const float nsigmaDcaZ = computeNsigmaDCA(pt, candidate.dcaZ(), ispecies, "z");
+
+    if (std::abs(nsigmaDcaXy) > settingCutNsigmaDcaXy ||
+        std::abs(nsigmaDcaZ) > settingCutNsigmaDcaZ)
+      return false;
 
     return true;
   }
@@ -471,22 +536,22 @@ struct he3HadronFemto {
   bool selectionPIDHadron(const Ttrack& candidate)
   {
     auto tpcNSigmaHad = computeTPCNSigmaHadron(candidate);
-    mQaRegistry.fill(HIST("h2NsigmaHadronTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaHad);
+    mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaHad);
     if (candidate.hasTOF() && candidate.pt() > settingCutPtMinTOFHad) {
       auto tofNSigmaHad = computeTOFNSigmaHadron(candidate);
 
       if (std::abs(tpcNSigmaHad) > settingCutNsigmaTPC) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2NsigmaHadronTOF_preselection"), candidate.pt(), tofNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), candidate.pt(), tofNSigmaHad);
       if (std::abs(tofNSigmaHad) > settingCutNsigmaTOF) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2NsigmaHadronTPC"), candidate.pt(), tpcNSigmaHad);
-      mQaRegistry.fill(HIST("h2NsigmaHadronTOF"), candidate.pt(), tofNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC"), candidate.pt(), tpcNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF"), candidate.pt(), tofNSigmaHad);
       return true;
     } else if (std::abs(tpcNSigmaHad) < settingCutNsigmaTPC) {
-      mQaRegistry.fill(HIST("h2NsigmaHadronTPC"), candidate.pt(), tpcNSigmaHad);
+      mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC"), candidate.pt(), tpcNSigmaHad);
       return true;
     }
     return false;
@@ -514,7 +579,7 @@ struct he3HadronFemto {
     }
 
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
-    mQaRegistry.fill(HIST("h2NsigmaHe3TPC_preselection"), candidate.sign() * 2 * candidate.pt(), nSigmaHe3);
+    mQaRegistry.fill(HIST("He3/h2NsigmaHe3TPC_preselection"), candidate.sign() * 2 * candidate.pt(), nSigmaHe3);
     if (std::abs(nSigmaHe3) > settingCutNsigmaTPC) {
       return false;
     }
@@ -522,14 +587,14 @@ struct he3HadronFemto {
     o2::aod::ITSResponse mResponseITS;
     auto itsNsigmaHe3 = mResponseITS.nSigmaITS<o2::track::PID::Helium3>(candidate.itsClusterSizes(), 2 * candidate.p(), candidate.eta());
     //
-    mQaRegistry.fill(HIST("h2NSigmaHe3ITS_preselection"), candidate.sign() * 2 * candidate.pt(), itsNsigmaHe3);
-    if (itsNsigmaHe3 < settingCutNsigmaITS) {
+    mQaRegistry.fill(HIST("He3/h2NSigmaHe3ITS_preselection"), candidate.sign() * 2 * candidate.pt(), itsNsigmaHe3);
+    if (itsNsigmaHe3 < settingCutNsigmaITSHe3) {
       return false;
     }
 
-    mQaRegistry.fill(HIST("h2dEdxHe3candidates"), candidate.sign() * correctedTPCinnerParam, candidate.tpcSignal());
-    mQaRegistry.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * 2 * candidate.pt(), nSigmaHe3);
-    mQaRegistry.fill(HIST("h2NSigmaHe3ITS"), candidate.sign() * 2 * candidate.pt(), itsNsigmaHe3);
+    mQaRegistry.fill(HIST("He3/h2dEdxHe3candidates"), candidate.sign() * correctedTPCinnerParam, candidate.tpcSignal());
+    mQaRegistry.fill(HIST("He3/h2NsigmaHe3TPC"), candidate.sign() * 2 * candidate.pt(), nSigmaHe3);
+    mQaRegistry.fill(HIST("He3/h2NSigmaHe3ITS"), candidate.sign() * 2 * candidate.pt(), itsNsigmaHe3);
     return true;
   }
 
@@ -604,7 +669,7 @@ struct he3HadronFemto {
     } else {
       LOG(info) << "invalid PDG code for invMass";
     }
-    // float invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
+
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       return false;
     }
@@ -716,7 +781,7 @@ struct he3HadronFemto {
 
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
 
-      if (!selectTrack(track0)) {
+      if (!selectTrack(track0, Species::kHe3)) {
         continue;
       }
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
@@ -741,7 +806,7 @@ struct he3HadronFemto {
           }
         }
 
-        if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
+        if (!selectTrack(track1, Species::kHad) || !selectionPIDHadron(track1)) {
           continue;
         }
 
@@ -760,11 +825,11 @@ struct he3HadronFemto {
   void pairTracksEventMixing(T& he3Cands, T& hadronCands)
   {
     for (const auto& he3Cand : he3Cands) {
-      if (!selectTrack(he3Cand) || !selectionPIDHe3(he3Cand)) {
+      if (!selectTrack(he3Cand, Species::kHe3) || !selectionPIDHe3(he3Cand)) {
         continue;
       }
       for (const auto& hadronCand : hadronCands) {
-        if (!selectTrack(hadronCand) || !selectionPIDHadron(hadronCand)) {
+        if (!selectTrack(hadronCand, Species::kHad) || !selectionPIDHadron(hadronCand)) {
           continue;
         }
 
@@ -815,11 +880,7 @@ struct he3HadronFemto {
       he3Hadcand.itsClSizeHe3,
       he3Hadcand.itsClSizeHad,
       he3Hadcand.sharedClustersHe3,
-      he3Hadcand.sharedClustersHad,
-      he3Hadcand.isBkgUS,
-      he3Hadcand.isBkgEM,
-      he3Hadcand.trackIDHe3,
-      he3Hadcand.trackIDHad);
+      he3Hadcand.sharedClustersHad);
     if (isMC) {
       outputMcTable(
         he3Hadcand.momHe3MC,
@@ -840,19 +901,24 @@ struct he3HadronFemto {
         collision.centFT0C(),
         collision.multFT0C());
     }
+    if (settingFillQa) {
+      outputQaTable(
+        he3Hadcand.trackIDHe3,
+        he3Hadcand.trackIDHad);
+    }
   }
 
   void fillHistograms(const He3HadCandidate& he3Hadcand)
   {
-    mQaRegistry.fill(HIST("hHe3Pt"), he3Hadcand.recoPtHe3());
-    mQaRegistry.fill(HIST("hHadronPt"), he3Hadcand.recoPtHad());
+    mQaRegistry.fill(HIST("He3/hHe3Pt"), he3Hadcand.recoPtHe3());
+    mQaRegistry.fill(HIST("Had/hHadronPt"), he3Hadcand.recoPtHad());
     mQaRegistry.fill(HIST("hhe3HadtInvMass"), he3Hadcand.invMass);
-    mQaRegistry.fill(HIST("hDCAxyHe3"), he3Hadcand.dcaxyHe3);
-    mQaRegistry.fill(HIST("hDCAzHe3"), he3Hadcand.dcazHe3);
-    mQaRegistry.fill(HIST("hNClsHe3ITS"), he3Hadcand.nclsITSHe3);
-    mQaRegistry.fill(HIST("hNClsHadITS"), he3Hadcand.nclsITSHad);
-    mQaRegistry.fill(HIST("hChi2NClHe3ITS"), he3Hadcand.chi2nclITSHe3);
-    mQaRegistry.fill(HIST("hChi2NClHadITS"), he3Hadcand.chi2nclITSHad);
+    mQaRegistry.fill(HIST("He3/hDCAxyHe3"), he3Hadcand.dcaxyHe3);
+    mQaRegistry.fill(HIST("He3/hDCAzHe3"), he3Hadcand.dcazHe3);
+    mQaRegistry.fill(HIST("He3/hNClsHe3ITS"), he3Hadcand.nclsITSHe3);
+    mQaRegistry.fill(HIST("Had/hNClsHadITS"), he3Hadcand.nclsITSHad);
+    mQaRegistry.fill(HIST("He3/hChi2NClHe3ITS"), he3Hadcand.chi2nclITSHe3);
+    mQaRegistry.fill(HIST("Had/hChi2NClHadITS"), he3Hadcand.chi2nclITSHad);
   }
 
   // ==================================================================================================================
@@ -1118,61 +1184,6 @@ struct he3HadronFemto {
   }
   PROCESS_SWITCH(he3HadronFemto, processMC, "Process MC", false);
 
-  void processPiHe3MC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& /* mcParticles */)
-  {
-    mGoodCollisions.clear();
-    mGoodCollisions.resize(collisions.size(), false);
-
-    LOG(info) << "processPiHe3MC begin";
-
-    for (const auto& collision : collisions) {
-
-      mTrackPairs.clear();
-
-      if (!selectCollision</*isMC*/ true>(collision, bcs)) {
-        continue;
-      }
-
-      const uint64_t collIdx = collision.globalIndex();
-      mGoodCollisions[collIdx] = true;
-      auto trackTableThisCollision = tracks.sliceBy(mPerColMC, collIdx);
-      trackTableThisCollision.bindExternalIndices(&tracks);
-
-      pairTracksSameEvent(trackTableThisCollision);
-
-      for (const auto& trackPair : mTrackPairs) {
-
-        auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
-        auto piTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
-        auto collBracket = trackPair.collBracket;
-
-        if (!heTrack.has_mcParticle() || !piTrack.has_mcParticle()) {
-          continue;
-        }
-
-        auto mctrackHe3 = heTrack.mcParticle();
-        auto mctrackHad = piTrack.mcParticle();
-
-        if (std::abs(mctrackHe3.pdgCode()) != He3PDG || std::abs(mctrackHad.pdgCode()) != PionPDG) {
-          continue;
-        }
-        LOG(info) << "only pi-He3";
-
-        He3HadCandidate he3Hadcand;
-        if (!fillCandidateInfo(heTrack, piTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
-          continue;
-        }
-
-        fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
-        fillHistograms(he3Hadcand);
-        LOG(info) << "fillHistograms done";
-        auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
-        fillTable(he3Hadcand, collision, /*isMC*/ true);
-      }
-    }
-  }
-  PROCESS_SWITCH(he3HadronFemto, processPiHe3MC, "Process pi-He3 MC", false);
-
   void processSameEventPools(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::AmbiguousTracks& ambiguousTracks, const aod::BCsWithTimestamps& bcs)
   {
     mGoodCollisions.clear();
@@ -1190,7 +1201,7 @@ struct he3HadronFemto {
     for (const auto& track : tracks) {
 
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
-      if (!selectTrack(track))
+      if (!selectTrack(track, Species::kHad)) // specific he3 cuts skipped here, might need to refactor this
         continue;
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
 
@@ -1236,7 +1247,7 @@ struct he3HadronFemto {
     for (const auto& track : tracks) {
 
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
-      if (!selectTrack(track))
+      if (!selectTrack(track, Species::kHad)) // specific he3 cuts skipped here, might need to refactor this
         continue;
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
 
@@ -1300,6 +1311,104 @@ struct he3HadronFemto {
     fillMcParticles(collisions, mcParticles, filledMothers);
   }
   PROCESS_SWITCH(he3HadronFemto, processMcPools, "Process MC pools", false);
+
+  void processPurity(const CollisionsFull::iterator& collision, const TrackCandidates& tracks, const aod::BCsWithTimestamps& bcs)
+  {
+    if (!selectCollision</*isMC*/ false>(collision, bcs))
+      return;
+
+    for (const auto& track : tracks) {
+
+      if (!selectTrack(track, Species::kHad))
+        continue;
+
+      if (selectDcaNsigmaCut(track, Species::kHad)) {
+        mQaRegistry.fill(HIST("Had/hHadronPt"), track.pt());
+
+        const float tpcNSigmaHad = computeTPCNSigmaHadron(track);
+        mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), track.tpcInnerParam(), tpcNSigmaHad);
+
+        if (track.hasTOF()) {
+          const float tofNSigmaHad = computeTOFNSigmaHadron(track);
+          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), track.pt(), tofNSigmaHad);
+        }
+      }
+
+      if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(track, Species::kHe3))
+        continue;
+
+      mQaRegistry.fill(HIST("He3/hHe3Pt"), track.pt() * 2.f);
+      mQaRegistry.fill(HIST("He3/hDCAxyHe3"), track.dcaXY());
+      mQaRegistry.fill(HIST("He3/hDCAzHe3"), track.dcaZ());
+
+      bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
+      float correctedTPCinnerParam = (heliumPID && settingCompensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
+      if (correctedTPCinnerParam < settingCutRigidityMinHe3) {
+        continue;
+      }
+
+      const float nSigmaHe3 = computeNSigmaHe3(track);
+      mQaRegistry.fill(HIST("He3/h2NsigmaHe3TPC_preselection"), track.sign() * 2 * track.pt(), nSigmaHe3);
+    }
+  }
+  PROCESS_SWITCH(he3HadronFemto, processPurity, "Process for purity studies", false);
+
+  void processPurityMc(const CollisionsFullMC::iterator& collision, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps& bcs, const aod::McParticles& /*mcParticles*/, const aod::McTrackLabels& /*mcTrackLabels*/)
+  {
+    if (!selectCollision</*isMC*/ false>(collision, bcs))
+      return;
+
+    for (const auto& track : tracks) {
+
+      if (!track.has_mcParticle())
+        continue;
+      const auto& particle = track.mcParticle_as<aod::McParticles>();
+
+      if (!selectTrack(track, Species::kHad))
+        continue;
+
+      if (selectDcaNsigmaCut(track, Species::kHad)) {
+        mQaRegistry.fill(HIST("Had/hHadronPt"), track.pt());
+
+        const float tpcNSigmaHad = computeTPCNSigmaHadron(track);
+        mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_preselection"), track.sign() * track.tpcInnerParam(), tpcNSigmaHad);
+
+        if (std::abs(particle.pdgCode()) != settingHadPDGCode) {
+          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_mcBackground"), track.sign() * track.tpcInnerParam(), tpcNSigmaHad);
+        } else {
+          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTPC_mcSignal"), track.sign() * track.tpcInnerParam(), tpcNSigmaHad);
+        }
+
+        if (track.hasTOF()) {
+          const float tofNSigmaHad = computeTOFNSigmaHadron(track);
+          mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_preselection"), track.sign() * track.pt(), tofNSigmaHad);
+
+          if (std::abs(particle.pdgCode()) != settingHadPDGCode) {
+            mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_mcBackground"), track.sign() * track.tpcInnerParam(), tofNSigmaHad);
+          } else {
+            mQaRegistry.fill(HIST("Had/h2NsigmaHadronTOF_mcSignal"), track.sign() * track.tpcInnerParam(), tofNSigmaHad);
+          }
+        }
+      }
+
+      if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(track, Species::kHe3))
+        continue;
+
+      mQaRegistry.fill(HIST("He3/hHe3Pt"), track.pt() * 2.f);
+      mQaRegistry.fill(HIST("He3/hDCAxyHe3"), track.dcaXY());
+      mQaRegistry.fill(HIST("He3/hDCAzHe3"), track.dcaZ());
+
+      bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
+      float correctedTPCinnerParam = (heliumPID && settingCompensatePIDinTracking) ? track.tpcInnerParam() / 2.f : track.tpcInnerParam();
+      if (correctedTPCinnerParam < settingCutRigidityMinHe3) {
+        continue;
+      }
+
+      const float nSigmaHe3 = computeNSigmaHe3(track);
+      mQaRegistry.fill(HIST("He3/h2NsigmaHe3TPC_preselection"), track.sign() * 2 * track.pt(), nSigmaHe3);
+    }
+  }
+  PROCESS_SWITCH(he3HadronFemto, processPurityMc, "Process for purity studies mc", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)

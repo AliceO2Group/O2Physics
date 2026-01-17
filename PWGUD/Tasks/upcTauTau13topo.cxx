@@ -35,7 +35,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 // #include <CommonUtils/EnumFlags.h>
 #include "TPDGCode.h"
 

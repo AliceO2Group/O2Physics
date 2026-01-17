@@ -60,8 +60,9 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
 DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);     // true physical primary flag
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
 DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);              // true generated pt
+DECLARE_SOA_COLUMN(PDGCode, pdgCode, float);                        // pdg code of the MC particle
 } // namespace assocHadrons
-DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt);
+DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt, assocHadrons::PDGCode);
 /// _________________________________________
 /// Table for storing assoc track PID
 namespace assocPID

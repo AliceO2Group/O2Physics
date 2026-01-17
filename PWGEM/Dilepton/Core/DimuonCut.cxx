@@ -81,6 +81,12 @@ void DimuonCut::SetChi2(float min, float max)
   mMaxChi2 = max;
   LOG(info) << "Dimuon Cut, set chi2 range: " << mMinChi2 << " - " << mMaxChi2;
 }
+void DimuonCut::SetChi2MFT(float min, float max)
+{
+  mMinChi2MFT = min;
+  mMaxChi2MFT = max;
+  LOG(info) << "Dimuon Cut, set chi2mft range: " << mMinChi2MFT << " - " << mMaxChi2MFT;
+}
 void DimuonCut::SetMatchingChi2MCHMFT(float min, float max)
 {
   mMinMatchingChi2MCHMFT = min;

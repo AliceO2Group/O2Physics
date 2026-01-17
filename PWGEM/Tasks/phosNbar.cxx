@@ -8,30 +8,30 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <queue>
-#include "TRandom.h"
-
 #include "Common/Core/trackUtilities.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonUtils/NameConf.h"
+#include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "CommonUtils/NameConf.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
-
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/CaloClusters.h"
-
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "PHOSBase/Geometry.h"
-#include "CommonDataFormat/InteractionRecord.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "TRandom.h"
+
+#include <queue>
 
 /// \struct phosNbar
 /// \brief account Nbar who's clusters appeared within PHOS

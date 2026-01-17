@@ -15,42 +15,45 @@
 // It is meant to help with providing auxiliary information
 // when dealing with derived data.
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-#include <string>
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Framework/StaticFor.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

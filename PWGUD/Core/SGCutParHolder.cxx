@@ -11,6 +11,8 @@
 
 #include "SGCutParHolder.h"
 
+#include <vector>
+
 // setter
 void SGCutParHolder::SetNDtcoll(int ndtcoll)
 {

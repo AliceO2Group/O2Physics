@@ -22,13 +22,17 @@
 #endif
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannelsLegacy.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -134,6 +138,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   using TracksWCovExtraPidPrPi = soa::Join<aod::TracksWCovExtra, aod::TracksPidPr, aod::TracksPidPi>;
 
   HistogramRegistry registry{"registry"};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -181,7 +186,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     runNumber = 0;
 
     // initialize HF event selection helper
-    hfEvSel.init(registry);
+    hfEvSel.init(registry, zorroSummary);
 
     // initialize 3-prong vertex fitter
     df.setPropagateToPCA(propagateToPCA);
@@ -799,9 +804,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -816,9 +822,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }
@@ -833,9 +840,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float centrality{-1.f};
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
+      const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
 
     } /// end loop over collisions
   }

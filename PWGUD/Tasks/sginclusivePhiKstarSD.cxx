@@ -11,15 +11,13 @@
 //
 /// \file sginclusivePhiKstarSD.cxx
 /// \brief Single Gap Event Analyzer for phi and Kstar
-/// \author Sandeep Dudi, sandeep.dudi3@gmail.com
+/// \author Sandeep Dudi <sandeep.dudi3@gmail.com>, Subhadeep Mandal <subhadeep.mandal@cern.ch>
 /// \since  May 2024
 
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
-
-#include "Common/DataModel/PIDResponse.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
@@ -38,6 +36,8 @@
 
 #include <cstdlib>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -59,7 +59,6 @@ struct SginclusivePhiKstarSD {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rQA{"QA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
-  Configurable<int> cutRCTflag{"cutRCTflag", 0, {"0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"}};
   Configurable<float> fv0Cut{"fv0Cut", 50., "FV0A threshold"};
   Configurable<float> ft0aCut{"ft0aCut", 100., "FT0A threshold"};
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
@@ -67,17 +66,22 @@ struct SginclusivePhiKstarSD {
   Configurable<float> fddcCut{"fddcCut", 10000., "FDDC threshold"};
   Configurable<float> zdcCut{"zdcCut", 0., "ZDC threshold"};
   Configurable<float> vzCut{"vzCut", 10., "Vz position"};
-  Configurable<float> occCut{"occCut", 1000., "Occupancy cut"};
-  Configurable<float> hadronicRate{"hadronicRate", 1000., "hadronicRate cut"};
-  Configurable<int> useTrs{"useTrs", -1, "kNoCollInTimeRangeStandard cut"};
-  Configurable<int> useTrofs{"useTrofs", -1, "kNoCollInRofStandard cut"};
-  Configurable<int> useHmpr{"useHmpr", -1, "kNoHighMultCollInPrevRof cut"};
-  Configurable<int> useTfb{"useTfb", -1, "kNoTimeFrameBorder cut"};
-  Configurable<int> useItsrofb{"useItsrofb", -1, "kNoITSROFrameBorder cut"};
-  Configurable<int> useSbp{"useSbp", -1, "kNoSameBunchPileup cut"};
-  Configurable<int> useZvtxftovpv{"useZvtxftovpv", -1, "kIsGoodZvtxFT0vsPV cut"};
-  Configurable<int> useVtxItsTpc{"useVtxItsTpc", -1, "kIsVertexITSTPC cut"};
-  Configurable<int> upcflag{"upcflag", -1, "upc run selection, 0 = std, 1= upc"};
+  Configurable<bool> useOccCut{"useOccCut", false, "Turn on/off Occupancy cut"};
+  Configurable<float> confgOccCut{"confgOccCut", 1000., "Occupancy cut"};
+  Configurable<bool> useHadronicRateCut{"useHadronicRateCut", false, "Turn on/off hadronicRate cut"};
+  Configurable<float> confgHadronicRateMax{"confgHadronicRateMax", 1000., "Maximum hadronicRate cut"};
+  Configurable<float> confgHadronicRateMin{"confgHadronicRateMin", 0., "Minimum hadronicRate cut"};
+  Configurable<bool> useTrs{"useTrs", false, "kNoCollInTimeRangeStandard cut"};
+  Configurable<bool> useTrofs{"useTrofs", false, "kNoCollInRofStandard cut"};
+  Configurable<bool> useHmpr{"useHmpr", false, "kNoHighMultCollInPrevRof cut"};
+  Configurable<bool> useTfb{"useTfb", false, "kNoTimeFrameBorder cut"};
+  Configurable<bool> useItsrofb{"useItsrofb", false, "kNoITSROFrameBorder cut"};
+  Configurable<bool> useSbp{"useSbp", false, "kNoSameBunchPileup cut"};
+  Configurable<bool> useZvtxftovpv{"useZvtxftovpv", false, "kIsGoodZvtxFT0vsPV cut"};
+  Configurable<bool> useVtxItsTpc{"useVtxItsTpc", false, "kIsVertexITSTPC cut"};
+  Configurable<bool> usenumContrib{"usenumContrib", false, "numContrib cut for event selection"};
+  Configurable<int> upcflag{"upcflag", -1, "upc run selection, -1 = off, 0 = std, 1 = upc"};
+  Configurable<int> cutRCTflag{"cutRCTflag", 0, {"0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"}};
 
   // Track Selections
   Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
@@ -92,8 +96,10 @@ struct SginclusivePhiKstarSD {
   Configurable<float> pt2{"pt2", 0.4, "pid selection pt2"};
   Configurable<float> pt3{"pt3", 0.5, "pid selection pt3"};
 
-  Configurable<bool> rapiditycut{"rapiditycut", 1, "Rapidity Cut"};
-  Configurable<bool> rapiditycutvalue{"rapiditycutvalue", 1, "Rapidity Cut value"};
+  Configurable<bool> useMultCut{"useMultCut", false, "Multipicity cut on good tracks"};
+
+  Configurable<bool> rapiditycut{"rapiditycut", true, "Rapidity Cut"};
+  Configurable<float> rapiditycutvalue{"rapiditycutvalue", 0.5, "Rapidity Cut value"};
 
   Configurable<float> nsigmaTpcCut1{"nsigmaTpcCut1", 3.0, "nsigma tpc cut1"};
   Configurable<float> nsigmaTpcCut2{"nsigmaTpcCut2", 3.0, "nsigma tpc cut2"};
@@ -127,7 +133,7 @@ struct SginclusivePhiKstarSD {
   Configurable<float> confMaxRot{"confMaxRot", 7.0 * o2::constants::math::PI / 6.0, "Maximum of rotation"};
   //
   Configurable<bool> reconstruction{"reconstruction", true, ""};
-  Configurable<int> generatedId{"generatedId", 31, ""};
+  Configurable<int> generatedId{"generatedId", 40, "40 = PhiA, 44 PhiC, 41 = K*0A, 45 = K*0C"};
 
   ConfigurableAxis axisphimass{"axisphimass", {220, 0.98, 1.2}, ""};
   ConfigurableAxis axiskstarmass{"axiskstarmass", {400, 0.0, 2.0}, ""};
@@ -142,43 +148,56 @@ struct SginclusivePhiKstarSD {
   {
     registry.add("hEventCutFlow", "No. of events after event cuts", kTH1F, {{20, 0, 20}});
     std::shared_ptr<TH1> hCutFlow = registry.get<TH1>(HIST("hEventCutFlow"));
-    hCutFlow->GetXaxis()->SetBinLabel(1, "All Events");
-    hCutFlow->GetXaxis()->SetBinLabel(2, "Gapside (0 to 2)");
-    hCutFlow->GetXaxis()->SetBinLabel(3, "|Vz| < cut");
-    hCutFlow->GetXaxis()->SetBinLabel(4, "Occupancy");
-    hCutFlow->GetXaxis()->SetBinLabel(5, "Hadronic Rate");
-    hCutFlow->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStandard");
-    hCutFlow->GetXaxis()->SetBinLabel(7, "kNoCollInRofStandard");
-    hCutFlow->GetXaxis()->SetBinLabel(8, "kNoHighMultCollInPrevRof");
-    hCutFlow->GetXaxis()->SetBinLabel(9, "kNoTimeFrameBorder");
-    hCutFlow->GetXaxis()->SetBinLabel(10, "kNoITSROFrameBorder");
-    hCutFlow->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
-    hCutFlow->GetXaxis()->SetBinLabel(12, "kIsGoodZvtxFT0vsPV");
-    hCutFlow->GetXaxis()->SetBinLabel(13, "kIsVertexITSTPC");
-    hCutFlow->GetXaxis()->SetBinLabel(14, "RCTFlag");
-    hCutFlow->GetXaxis()->SetBinLabel(15, "upcFlag");
-    hCutFlow->GetXaxis()->SetBinLabel(16, "numContrib (min track < mult < max track)");
+
+    auto check = [](bool enabled) { return enabled ? "" : " #otimes"; }; // check if a cut is enabled and put #otimes if not enabled beside that label
+
+    std::vector<std::string> eveCutLabels = {
+      "All Events",
+      "Gapside (0 to 2)",
+      Form("|Vz| < %.1f", vzCut.value),
+      Form("Occupancy < %.0f%s", confgOccCut.value, check(useOccCut.value)),
+      Form("%.1e < Hadronic Rate < %.1e%s", confgHadronicRateMin.value, confgHadronicRateMax.value, check(useHadronicRateCut.value)),
+      std::string("kNoCollInTimeRangeStandard") + check(useTrs.value),
+      std::string("kNoCollInRofStandard") + check(useTrofs.value),
+      std::string("kNoHighMultCollInPrevRof") + check(useHmpr.value),
+      std::string("kNoTimeFrameBorder") + check(useTfb.value),
+      std::string("kNoITSROFrameBorder") + check(useItsrofb.value),
+      std::string("kNoSameBunchPileup") + check(useSbp.value),
+      std::string("kIsGoodZvtxFT0vsPV") + check(useZvtxftovpv.value),
+      std::string("kIsVertexITSTPC") + check(useVtxItsTpc.value),
+      Form("RCTFlag = %d%s", cutRCTflag.value, check(cutRCTflag.value > 0)),
+      Form("upcFlag = %d%s", upcflag.value, check(upcflag.value != -1)),
+      Form("%d < numContrib < %d%s", mintrack.value, maxtrack.value, check(usenumContrib.value))};
+
+    for (size_t i = 0; i < eveCutLabels.size(); ++i) {
+      hCutFlow->GetXaxis()->SetBinLabel(i + 1, eveCutLabels[i].c_str());
+    }
 
     registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("nPVContributors_data", "Multiplicity_dist_before track cut gap A", kTH1F, {{110, 0, 110}});
     registry.add("nPVContributors_data_1", "Multiplicity_dist_before track cut gap C", kTH1F, {{110, 0, 110}});
 
+    registry.add("hRotation", "hRotation", kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
+
     if (phi) {
       registry.add("os_KK_pT_0", "pt kaon pair", kTH3F, {axisphimass, axisrapdity, axispt});
       registry.add("os_KK_pT_1", "pt kaon pair", kTH3F, {axisphimass, axisrapdity, axispt});
       registry.add("os_KK_pT_2", "pt kaon pair", kTH3F, {axisphimass, axisrapdity, axispt});
-      registry.add("os_KK_ls_pT_0", "kaon pair like sign", kTH3F, {axisphimass, axisrapdity, axispt});
-      registry.add("os_KK_ls_pT_1", "kaon pair like sign", kTH3F, {axisphimass, axisrapdity, axispt});
+
+      registry.add("os_KK_lsMM_pT_0", "kaon pair Negative like sign", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_lsPP_pT_0", "kaon pair Positive like sign", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_lsMM_pT_1", "kaon pair Negative like sign", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_lsPP_pT_1", "kaon pair Positive like sign", kTH3F, {axisphimass, axisrapdity, axispt});
       registry.add("os_KK_ls_pT_2", "kaon pair like sign", kTH3F, {axisphimass, axisrapdity, axispt});
 
       registry.add("os_KK_mix_pT_0", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
       registry.add("os_KK_mix_pT_1", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
       registry.add("os_KK_mix_pT_2", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
 
-      registry.add("os_KK_rot_pT_0", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
-      registry.add("os_KK_rot_pT_1", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
-      registry.add("os_KK_rot_pT_2", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_rot_pT_0", "kaon pair rotional event", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_rot_pT_1", "kaon pair rotional event", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_rot_pT_2", "kaon pair rotional event", kTH3F, {axisphimass, axisrapdity, axispt});
     }
     if (rho) {
       registry.add("os_pp_pT_0", "pt pion pair", kTH3F, {axisrhomass, axisrapdity, axispt});
@@ -201,17 +220,17 @@ struct SginclusivePhiKstarSD {
       registry.add("os_pk_rot_pT_1", "pion-kaon rotional pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
       registry.add("os_pk_rot_pT_2", "pion-kaon rotional pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
 
-      registry.add("os_pk_ls_pT_0", "pion-kaon pair like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
-      registry.add("os_pk_ls_pT_1", "pion-kaon like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_lsMM_pT_0", "pion-kaon pair Negative like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_lsPP_pT_0", "pion-kaon pair Positive like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_lsMM_pT_1", "pion-kaon pair Negative like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_lsPP_pT_1", "pion-kaon pair Positive like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
       registry.add("os_pk_ls_pT_2", "pion-kaon like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
-
-      registry.add("hRotation", "hRotation", kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
     }
     // qa plots
     if (qa) {
       // Occupancy
-      rQA.add("hOcc_before", "Occupancy distribution before event cuts", kTH1F, {{1000, 0, 15000}});
-      rQA.add("hOcc_after", "Occupancy distribution after all event cuts", kTH1F, {{1000, 0, 15000}});
+      rQA.add("hOcc_before", "Occupancy distribution before event cuts", kTH1F, {{1000, 0, 50000}});
+      rQA.add("hOcc_after", "Occupancy distribution after all event cuts", kTH1F, {{1000, 0, 10000}});
 
       // DCA
       rQA.add("hDcaxy_all_before", "DCAxy Distribution of all tracks before track selection; DCAxy (cm); Counts", kTH1F, {{400, -0.2, 0.2}});
@@ -338,25 +357,33 @@ struct SginclusivePhiKstarSD {
         registry.add("MC/accM_k", "Generated events in acceptance; Mass (GeV/#it{c}^2)", {HistType::kTH1F, {{400, 0., 2.0}}});
       }
       if (context.mOptions.get<bool>("processReco")) {
+
         registry.add("Reco/hEventCutFlowMC", "No. of events after event cuts in MC", kTH1F, {{20, 0, 20}});
         std::shared_ptr<TH1> hCutFlowMC = registry.get<TH1>(HIST("Reco/hEventCutFlowMC"));
-        hCutFlowMC->GetXaxis()->SetBinLabel(1, "All Events");
-        hCutFlowMC->GetXaxis()->SetBinLabel(2, "has_udMcCollision");
-        hCutFlowMC->GetXaxis()->SetBinLabel(3, "generatorsID");
-        hCutFlowMC->GetXaxis()->SetBinLabel(4, "GapsideMC");
-        hCutFlowMC->GetXaxis()->SetBinLabel(5, "|Vz| < cut");
-        hCutFlowMC->GetXaxis()->SetBinLabel(6, "Occupancy");
-        hCutFlowMC->GetXaxis()->SetBinLabel(7, "Hadronic Rate");
-        hCutFlowMC->GetXaxis()->SetBinLabel(8, "kNoCollInTimeRangeStandard");
-        hCutFlowMC->GetXaxis()->SetBinLabel(9, "kNoCollInRofStandard");
-        hCutFlowMC->GetXaxis()->SetBinLabel(10, "kNoHighMultCollInPrevRof");
-        hCutFlowMC->GetXaxis()->SetBinLabel(11, "kNoTimeFrameBorder");
-        hCutFlowMC->GetXaxis()->SetBinLabel(12, "kNoITSROFrameBorder");
-        hCutFlowMC->GetXaxis()->SetBinLabel(13, "kNoSameBunchPileup");
-        hCutFlowMC->GetXaxis()->SetBinLabel(14, "kIsGoodZvtxFT0vsPV");
-        hCutFlowMC->GetXaxis()->SetBinLabel(15, "kIsVertexITSTPC");
-        hCutFlowMC->GetXaxis()->SetBinLabel(16, "RCTFlag");
-        hCutFlowMC->GetXaxis()->SetBinLabel(17, "upcFlag");
+
+        std::vector<std::string> eveCutLabelsMC = {
+          "All Events",
+          "has_udMcCollision",
+          Form("generatorsID = %d", generatedId.value),
+          Form("GapsideMC = %d", gapsideMC.value),
+          Form("|Vz| < %.1f", vzCut.value),
+          Form("Occupancy < %.0f%s", confgOccCut.value, check(useOccCut.value)),
+          Form("%.1e < Hadronic Rate < %.1e%s", confgHadronicRateMin.value, confgHadronicRateMax.value, check(useHadronicRateCut.value)),
+          std::string("kNoCollInTimeRangeStandard") + check(useTrs.value),
+          std::string("kNoCollInRofStandard") + check(useTrofs.value),
+          std::string("kNoHighMultCollInPrevRof") + check(useHmpr.value),
+          std::string("kNoTimeFrameBorder") + check(useTfb.value),
+          std::string("kNoITSROFrameBorder") + check(useItsrofb.value),
+          std::string("kNoSameBunchPileup") + check(useSbp.value),
+          std::string("kIsGoodZvtxFT0vsPV") + check(useZvtxftovpv.value),
+          std::string("kIsVertexITSTPC") + check(useVtxItsTpc.value),
+          Form("RCTFlag = %d%s", cutRCTflag.value, check(cutRCTflag.value > 0)),
+          Form("upcFlag = %d%s", upcflag.value, check(upcflag.value != -1)),
+          Form("%d < numContrib < %d%s", mintrack.value, maxtrack.value, check(usenumContrib.value))};
+
+        for (size_t i = 0; i < eveCutLabelsMC.size(); ++i) {
+          hCutFlowMC->GetXaxis()->SetBinLabel(i + 1, eveCutLabelsMC[i].c_str());
+        }
 
         registry.add("Reco/Stat", "Count reconstruted events; ; Entries", {HistType::kTH1F, {{5, -0.5, 4.5}}});
         registry.add("Reco/nPVContributors", "Number of PV contributors per collision; Number of PV contributors; Entries", {HistType::kTH1F, {{51, -0.5, 50.5}}});
@@ -403,8 +430,8 @@ struct SginclusivePhiKstarSD {
         // QA plots
         if (qaMC) {
           // Occupancy
-          rQA.add("hOcc_before_mc", "Occupancy distribution before event cuts", kTH1F, {{1000, 0, 15000}});
-          rQA.add("hOcc_after_mc", "Occupancy distribution after all event cuts", kTH1F, {{1000, 0, 15000}});
+          rQA.add("hOcc_before_mc", "Occupancy distribution before event cuts", kTH1F, {{1000, 0, 50000}});
+          rQA.add("hOcc_after_mc", "Occupancy distribution after all event cuts", kTH1F, {{1000, 0, 10000}});
 
           // DCA
           rQA.add("hDcaxy_all_before_mc", "DCAxy Distribution of all tracks before track selection; DCAxy (cm); Counts", kTH1F, {{400, -0.2, 0.2}});
@@ -529,7 +556,7 @@ struct SginclusivePhiKstarSD {
   }
 
   template <typename C>
-  bool isGoodRCTflag(C const& coll)
+  bool isGoodRCTflag(const C& coll)
   {
     switch (cutRCTflag) {
       case 1:
@@ -543,6 +570,102 @@ struct SginclusivePhiKstarSD {
       default:
         return true;
     }
+  }
+
+  template <typename C>
+  std::pair<bool, int> selectionEvent(const C& collision, bool fillHist = false)
+  {
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 0);
+
+    // Gapside logic
+    int gapSide = collision.gapSide();
+    float fitCut[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
+    int truegapSide = sgSelector.trueGap(collision, fitCut[0], fitCut[1], fitCut[2], zdcCut);
+
+    if (fillHist) {
+      registry.fill(HIST("GapSide"), gapSide);
+      registry.fill(HIST("TrueGapSide"), truegapSide);
+    }
+
+    gapSide = truegapSide;
+
+    if (gapSide < SingleGapA || gapSide > DoubleGap)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 1);
+
+    if (std::abs(collision.posZ()) > vzCut)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 2);
+
+    if (useOccCut && (std::abs(collision.occupancyInTime()) > confgOccCut))
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 3);
+
+    if (useHadronicRateCut && (std::abs(collision.hadronicRate()) > confgHadronicRateMax || std::abs(collision.hadronicRate()) < confgHadronicRateMin))
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 4);
+
+    if (useTrs && collision.trs() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 5);
+
+    if (useTrofs && collision.trofs() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 6);
+
+    if (useHmpr && collision.hmpr() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 7);
+
+    if (useTfb && collision.tfb() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 8);
+
+    if (useItsrofb && collision.itsROFb() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 9);
+
+    if (useSbp && collision.sbp() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 10);
+
+    if (useZvtxftovpv && collision.zVtxFT0vPV() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 11);
+
+    if (useVtxItsTpc && collision.vtxITSTPC() != 1)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 12);
+
+    if (!isGoodRCTflag(collision))
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 13);
+
+    if (upcflag != -1 && collision.flags() != upcflag)
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 14);
+
+    if (usenumContrib && (collision.numContrib() < mintrack || collision.numContrib() > maxtrack))
+      return {false, gapSide};
+    if (fillHist)
+      registry.fill(HIST("hEventCutFlow"), 15);
+
+    return {true, gapSide};
   }
 
   template <typename T>
@@ -612,26 +735,12 @@ struct SginclusivePhiKstarSD {
 
   void process(UDCollisionFull const& collision, UDtracksfull const& tracks)
   {
-    registry.fill(HIST("hEventCutFlow"), 0);
-
     if (qa)
       rQA.fill(HIST("hOcc_before"), collision.occupancyInTime());
 
     ROOT::Math::PxPyPzMVector v0;
     ROOT::Math::PxPyPzMVector v1;
     ROOT::Math::PxPyPzMVector v01;
-    int gapSide = collision.gapSide();
-    float fitCut[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
-    std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
-    int truegapSide = sgSelector.trueGap(collision, fitCut[0], fitCut[1], fitCut[2], zdcCut);
-
-    registry.fill(HIST("GapSide"), gapSide);
-    registry.fill(HIST("TrueGapSide"), truegapSide);
-    gapSide = truegapSide;
-
-    if (gapSide < SingleGapA || gapSide > DoubleGap)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 1);
 
     ROOT::Math::PxPyPzMVector phiv;
     ROOT::Math::PxPyPzMVector phiv1;
@@ -645,59 +754,14 @@ struct SginclusivePhiKstarSD {
     std::vector<ROOT::Math::PxPyPzMVector> onlyPionTracksn;
     std::vector<decltype(tracks.begin())> rawPionTracksn;
 
-    if (std::abs(collision.posZ()) > vzCut)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 2);
+    std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
 
-    if (std::abs(collision.occupancyInTime()) > occCut)
+    auto [eventSelected, gapSide] = selectionEvent(collision, true);
+    if (!eventSelected)
       return;
-    registry.fill(HIST("hEventCutFlow"), 3);
-
-    if (std::abs(collision.hadronicRate()) > hadronicRate)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 4);
-
-    if (useTrs != -1 && collision.trs() != useTrs)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 5);
-
-    if (useTrofs != -1 && collision.trofs() != useTrofs)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 6);
-
-    if (useHmpr != -1 && collision.hmpr() != useHmpr)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 7);
-
-    if (useTfb != -1 && collision.tfb() != useTfb)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 8);
-
-    if (useItsrofb != -1 && collision.itsROFb() != useItsrofb)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 9);
-
-    if (useSbp != -1 && collision.sbp() != useSbp)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 10);
-
-    if (useZvtxftovpv != -1 && collision.zVtxFT0vPV() != useZvtxftovpv)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 11);
-
-    if (useVtxItsTpc != -1 && collision.vtxITSTPC() != useVtxItsTpc)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 12);
-
-    if (!isGoodRCTflag(collision))
-      return;
-    registry.fill(HIST("hEventCutFlow"), 13);
-
-    if (upcflag != -1 && collision.flags() != upcflag)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 14);
 
     int mult = collision.numContrib();
+
     if (gapSide == SingleGapA) {
       registry.fill(HIST("gap_mult0"), mult);
     }
@@ -707,9 +771,6 @@ struct SginclusivePhiKstarSD {
     if (gapSide == DoubleGap) {
       registry.fill(HIST("gap_mult2"), mult);
     }
-    if (mult < mintrack || mult > maxtrack)
-      return;
-    registry.fill(HIST("hEventCutFlow"), 15);
 
     if (qa)
       rQA.fill(HIST("hOcc_after"), collision.occupancyInTime());
@@ -796,9 +857,13 @@ struct SginclusivePhiKstarSD {
       }
     }
     if (gapSide == SingleGapA) {
+      if (useMultCut && (mult0 < mintrack || mult0 > maxtrack))
+        return;
       registry.fill(HIST("mult_0"), mult0);
     }
     if (gapSide == SingleGapC) {
+      if (useMultCut && (mult1 < mintrack || mult1 > maxtrack))
+        return;
       registry.fill(HIST("mult_1"), mult1);
     }
     if (qa) {
@@ -844,10 +909,16 @@ struct SginclusivePhiKstarSD {
         // samesignpair
         if (t0.sign() == t1.sign()) {
           if (gapSide == SingleGapA) {
-            registry.fill(HIST("os_KK_ls_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+            if (t0.sign() < 0)
+              registry.fill(HIST("os_KK_lsMM_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+            else
+              registry.fill(HIST("os_KK_lsPP_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
           if (gapSide == SingleGapC) {
-            registry.fill(HIST("os_KK_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+            if (t0.sign() < 0)
+              registry.fill(HIST("os_KK_lsMM_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+            else
+              registry.fill(HIST("os_KK_lsPP_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
           if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_KK_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
@@ -945,10 +1016,16 @@ struct SginclusivePhiKstarSD {
         } // same sign pair
         if (t0.sign() == t1.sign()) {
           if (gapSide == SingleGapA) {
-            registry.fill(HIST("os_pk_ls_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+            if (t0.sign() < 0)
+              registry.fill(HIST("os_pk_lsMM_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
+            else
+              registry.fill(HIST("os_pk_lsPP_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
           if (gapSide == SingleGapC) {
-            registry.fill(HIST("os_pk_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+            if (t0.sign() < 0)
+              registry.fill(HIST("os_pk_lsMM_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
+            else
+              registry.fill(HIST("os_pk_lsPP_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
           if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_pk_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
@@ -1043,20 +1120,21 @@ struct SginclusivePhiKstarSD {
     ROOT::Math::PxPyPzMVector v0;
     ROOT::Math::PxPyPzMVector v1;
     ROOT::Math::PxPyPzMVector v01;
-    float fitCut[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
+
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
+
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
+
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
-      int truegapSide1 = sgSelector.trueGap(collision1, fitCut[0], fitCut[1], fitCut[2], zdcCut);
-      int truegapSide2 = sgSelector.trueGap(collision2, fitCut[0], fitCut[1], fitCut[2], zdcCut);
-      if (truegapSide1 != truegapSide2)
+
+      auto [eventSelected1, gapSide1] = selectionEvent(collision1, false);
+      auto [eventSelected2, gapSide2] = selectionEvent(collision2, false);
+      if (!eventSelected1 || !eventSelected2)
         continue;
-      if (truegapSide1 == -1)
+
+      if (gapSide1 != gapSide2)
         continue;
-      if (std::abs(collision1.posZ()) > vzCut || std::abs(collision2.posZ()) > vzCut)
-        continue;
-      if (std::abs(collision1.occupancyInTime()) > occCut || std::abs(collision2.occupancyInTime()) > occCut)
-        continue;
+
       auto posThisColl = posTracks->sliceByCached(aod::udtrack::udCollisionId, collision1.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::udtrack::udCollisionId, collision2.globalIndex(), cache);
       //      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
@@ -1071,10 +1149,10 @@ struct SginclusivePhiKstarSD {
             continue;
           // Opposite sign pairs
           if (track1.sign() != track2.sign()) {
-            if (truegapSide1 == SingleGapA) {
+            if (gapSide1 == SingleGapA) {
               registry.fill(HIST("os_KK_mix_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
             }
-            if (truegapSide1 == SingleGapC) {
+            if (gapSide1 == SingleGapC) {
               registry.fill(HIST("os_KK_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
             }
           }
@@ -1093,10 +1171,10 @@ struct SginclusivePhiKstarSD {
             continue;
           // Opposite sign pairs
           if (track1.sign() != track2.sign()) {
-            if (truegapSide1 == SingleGapA) {
+            if (gapSide1 == SingleGapA) {
               registry.fill(HIST("os_pk_mix_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
             }
-            if (truegapSide1 == SingleGapC) {
+            if (gapSide1 == SingleGapC) {
               registry.fill(HIST("os_pk_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
             }
           }
@@ -1273,43 +1351,43 @@ struct SginclusivePhiKstarSD {
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 4);
 
-    if (std::abs(collision.occupancyInTime()) > occCut)
+    if (useOccCut && (std::abs(collision.occupancyInTime()) > confgOccCut))
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 5);
 
-    if (std::abs(collision.hadronicRate()) > hadronicRate)
+    if (useHadronicRateCut && (std::abs(collision.hadronicRate()) > confgHadronicRateMax || std::abs(collision.hadronicRate()) < confgHadronicRateMin))
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 6);
 
-    if (useTrs != -1 && collision.trs() != useTrs)
+    if (useTrs && collision.trs() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 7);
 
-    if (useTrofs != -1 && collision.trofs() != useTrofs)
+    if (useTrofs && collision.trofs() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 8);
 
-    if (useHmpr != -1 && collision.hmpr() != useHmpr)
+    if (useHmpr && collision.hmpr() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 9);
 
-    if (useTfb != -1 && collision.tfb() != useTfb)
+    if (useTfb && collision.tfb() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 10);
 
-    if (useItsrofb != -1 && collision.itsROFb() != useItsrofb)
+    if (useItsrofb && collision.itsROFb() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 11);
 
-    if (useSbp != -1 && collision.sbp() != useSbp)
+    if (useSbp && collision.sbp() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 12);
 
-    if (useZvtxftovpv != -1 && collision.zVtxFT0vPV() != useZvtxftovpv)
+    if (useZvtxftovpv && collision.zVtxFT0vPV() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 13);
 
-    if (useVtxItsTpc != -1 && collision.vtxITSTPC() != useVtxItsTpc)
+    if (useVtxItsTpc && collision.vtxITSTPC() != 1)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 14);
 
@@ -1320,6 +1398,10 @@ struct SginclusivePhiKstarSD {
     if (upcflag != -1 && collision.flags() != upcflag)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 16);
+
+    if (usenumContrib && (collision.numContrib() < mintrack || collision.numContrib() > maxtrack))
+      return;
+    registry.fill(HIST("Reco/hEventCutFlowMC"), 17);
 
     if (qaMC)
       rQA.fill(HIST("hOcc_after_mc"), collision.occupancyInTime());
@@ -1335,7 +1417,7 @@ struct SginclusivePhiKstarSD {
     ROOT::Math::PxPyPzMVector vr1g;
     ROOT::Math::PxPyPzMVector vr01g;
     int t1 = 0;
-    if (truegapSide == 0) {
+    if (truegapSide == SingleGapA) {
       if (qaMC) {
         rQA.fill(HIST("V0A_0_mc"), collision.totalFV0AmplitudeA());
         rQA.fill(HIST("FT0A_0_mc"), collision.totalFT0AmplitudeA());
@@ -1344,7 +1426,7 @@ struct SginclusivePhiKstarSD {
         rQA.fill(HIST("ZDC_C_0_mc"), collision.energyCommonZNC());
       }
     }
-    if (truegapSide == 1) {
+    if (truegapSide == SingleGapC) {
       if (qaMC) {
         rQA.fill(HIST("V0A_1_mc"), collision.totalFV0AmplitudeA());
         rQA.fill(HIST("FT0A_1_mc"), collision.totalFT0AmplitudeA());

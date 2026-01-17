@@ -813,13 +813,17 @@ struct FlowCumulantsUpc {
     if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
       return false;
     }
-    if (track.tpcNClsFindableMinusCrossedRows() <= 70) {
+    constexpr int kMinTPCClusters = 70;
+    constexpr int kMinITSClusters = 5;
+    constexpr int kMaxTPCChi2NCl = 4;
+
+    if (track.tpcNClsFindableMinusCrossedRows() <= kMinTPCClusters) {
       return false;
     }
-    if (track.itsClusterSizes() <= 5) {
+    if (track.itsClusterSizes() <= kMinITSClusters) {
       return false;
     }
-    if (track.tpcChi2NCl() >= 4) {
+    if (track.tpcChi2NCl() >= kMaxTPCChi2NCl) {
       return false;
     }
     return true;
@@ -856,7 +860,8 @@ struct FlowCumulantsUpc {
 
     int fbSign = 1;
 
-    if (runnum >= 544868) {
+    int zzo = 544868;
+    if (runnum >= zzo) {
       fbSign = -1;
     }
 

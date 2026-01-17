@@ -14,8 +14,8 @@
 /// \brief Slim tables for he3Hadron
 ///
 
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
 #define PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
@@ -125,11 +125,7 @@ DECLARE_SOA_TABLE(he3HadronTable, "AOD", "HE3HADTABLE",
                   he3HadronTablesNS::ItsClusterSizeHe3,
                   he3HadronTablesNS::ItsClusterSizeHad,
                   he3HadronTablesNS::SharedClustersHe3,
-                  he3HadronTablesNS::SharedClustersHad,
-                  he3HadronTablesNS::IsBkgUS,
-                  he3HadronTablesNS::IsBkgEM,
-                  he3HadronTablesNS::TrackIDHe3,
-                  he3HadronTablesNS::TrackIDHad)
+                  he3HadronTablesNS::SharedClustersHad)
 DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::PtMCHe3,
                   he3HadronTablesNS::EtaMCHe3,
@@ -146,6 +142,9 @@ DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
                   he3HadronTablesNS::Multiplicity,
                   he3HadronTablesNS::CentralityFT0C,
                   he3HadronTablesNS::MultiplicityFT0C)
+DECLARE_SOA_TABLE(he3HadronQa, "AOD", "HE3HADQA",
+                  he3HadronTablesNS::TrackIDHe3,
+                  he3HadronTablesNS::TrackIDHad)
 
 } // namespace o2::aod
 

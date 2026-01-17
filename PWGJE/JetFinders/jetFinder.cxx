@@ -150,7 +150,6 @@ struct JetFinderTask {
     } else {
       jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
     }
-    std::vector<double> jetPtBins;
     int jetPtMaxInt = static_cast<int>(jetPtMax);
     int jetPtMinInt = static_cast<int>(jetPtMin);
     jetPtMinInt = (jetPtMinInt / jetPtBinWidth) * jetPtBinWidth;
@@ -163,6 +162,7 @@ struct JetFinderTask {
       registry.add("hJet", "sparse for data or mcd jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
       registry.add("hJetEWS", "sparse for data or mcd event-wise subtracted jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
       registry.add("hJetMCP", "sparse for mcp jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
+      registry.add("hJetEWSMCP", "sparse for mcp event-wise subtracted jets", {HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
     }
 
     if (applyTrackingEfficiency) {
@@ -238,7 +238,7 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<true, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<false, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJetMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
@@ -247,8 +247,8 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<true, soa::Filtered<aod::JetParticlesSub>, soa::Filtered<aod::JetParticlesSub>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJetMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
+    jetfindingutilities::analyseParticles<false, soa::Filtered<aod::JetParticlesSub>, soa::Filtered<aod::JetParticlesSub>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetEWSPtMin, jetEWSPtMax, jetRadius, jetAreaFractionMin, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, fillTHnSparse ? registry.get<THn>(HIST("hJetEWSMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedEvtWiseSubJets, "Particle level charged with event-wise constituent subtraction jet finding", false);
 
@@ -256,7 +256,7 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<true, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<false, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJetMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
@@ -265,7 +265,7 @@ struct JetFinderTask {
   {
     // TODO: MC event selection?
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<true, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<false, soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJetMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
 

@@ -17,6 +17,7 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
@@ -69,6 +70,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   Produces<o2::aod::HfDplusPars> rowCandidatePar;
   Produces<o2::aod::HfDplusParEs> rowCandidateParE;
   Produces<o2::aod::HfDplusSels> rowCandidateSel;
+  Produces<o2::aod::HfDplusDaugs> rowCandidateDaugs;
   Produces<o2::aod::HfDplusMls> rowCandidateMl;
   Produces<o2::aod::HfDplusIds> rowCandidateId;
   Produces<o2::aod::HfDplusMcs> rowCandidateMc;
@@ -78,6 +80,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
+  Configurable<bool> fillCandidateDaugs{"fillCandidateDaugs", false, "Fill candidate daughter parameters"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
@@ -85,7 +88,6 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   static constexpr double Mass{o2::constants::physics::MassDPlus};
 
@@ -191,6 +193,24 @@ struct HfDerivedDataCreatorDplusToPiKPi {
       rowCandidateSel(
         BIT(candFlag));
     }
+    if (fillCandidateDaugs) {
+      rowCandidateDaugs(
+        candidate.pt(),
+        candidate.chi2PCA(),
+        candidate.decayLength(),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.pxProng1(),
+        candidate.pyProng1(),
+        candidate.pzProng1(),
+        candidate.pxProng2(),
+        candidate.pyProng2(),
+        candidate.pzProng2(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa1(),
+        candidate.tpcTofNSigmaPi2());
+    }
     if (fillCandidateMl) {
       rowCandidateMl(
         mlScores);
@@ -282,14 +302,16 @@ struct HfDerivedDataCreatorDplusToPiKPi {
             }
           }
         }
-        double const ct = hfHelper.ctDplus(candidate);
-        double const y = hfHelper.yDplus(candidate);
-        float const massDplusToPiKPi = hfHelper.invMassDplusToPiKPi(candidate);
+        double const ct = HfHelper::ctDplus(candidate);
+        double const y = HfHelper::yDplus(candidate);
+        float const massDplusToPiKPi = HfHelper::invMassDplusToPiKPi(candidate);
         std::vector<float> mlScoresDplusToPiKPi;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
-        fillTablesCandidate(candidate, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
+        auto trackprong0 = candidate.template prong0_as<TracksWPid>();
+        int const candFlag = (trackprong0.sign() > 0) ? 0 : 1; // 0: D+, 1: D-
+        fillTablesCandidate(candidate, candFlag, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
       }
     }
   }

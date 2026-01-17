@@ -13,45 +13,50 @@
 /// \brief Hypernuclei rconstruction using KFParticle package
 /// \author Janik Ditzel <jditzel@cern.ch> and Michael Hartung <mhartung@cern.ch>
 
-#include <limits>
-#include <vector>
-#include <string>
-#include <map>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
+#include "MetadataHelper.h"
+
+#include "PWGLF/DataModel/LFHypernucleiKfTables.h"
+
+#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTPCBase.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFHypernucleiKfTables.h"
-#include "TRandom3.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/TableProducer/PID/pidTPCBase.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
-#include "MetadataHelper.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "TRandom3.h"
+
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
 
 // KFParticle
 #ifndef HomogeneousField
 #define HomogeneousField // o2-linter: disable=name/macro (Name is defined in KFParticle package)
 #endif
-#include "KFParticle.h"
 #include "KFPTrack.h"
 #include "KFPVertex.h"
+#include "KFParticle.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 

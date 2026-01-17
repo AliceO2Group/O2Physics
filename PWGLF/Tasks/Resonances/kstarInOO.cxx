@@ -15,7 +15,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
@@ -45,6 +46,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -66,7 +68,10 @@ struct kstarInOO {
 
   // Event Selection
   Configurable<float> cfgEventVtxCut{"cfgEventVtxCut", 10.0, "V_z cut selection"};
-  ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the centrality axis"};
+  Configurable<bool> cfgOccupancySel{"cfgOccupancySel", false, "Occupancy selection"};
+  Configurable<float> cfgOccupancyMax{"cfgOccupancyMax", 999999., "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<float> cfgOccupancyMin{"cfgOccupancyMin", -100., "minimum occupancy of tracks in neighbouring collisions in a given time range"};
 
   // Track Selection
   // General
@@ -90,6 +95,11 @@ struct kstarInOO {
   // PID
   Configurable<bool> cfgTrackTPCPID{"cfgTrackTPCPID", true, "Enables TPC PID"};
   Configurable<bool> cfgTrackTOFPID{"cfgTrackTOFPID", true, "Enables TOF PID"};
+  Configurable<bool> cfgTrackSquarePIDCut{"cfgTrackSqurePIDCut", true, "Enables PID cut shape square switch"};
+  Configurable<bool> cfgTrackCirclePIDCut{"cfgTrackCirclePIDCut", true, "Enables PID cut shape circle switch"};
+  Configurable<int> cfgTrackCircleValue{"cfgTrackCircleValue", 2, "Enables TOF TPC PID circle cut value"};
+  Configurable<bool> cfgTrackTOFHard{"cfgTrackTOFHard", false, "Enables TOF Hard"};
+
   Configurable<float> cfgTrackTPCPIDnSig{"cfgTrackTPCPIDnSig", 4.0, "nTPC PID sigma"};
   Configurable<float> cfgTrackTOFPIDnSig{"cfgTrackTOFPIDnSig", 4.0, "nTOF PID sigma"};
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
@@ -98,6 +108,7 @@ struct kstarInOO {
   ConfigurableAxis cfgBinsMixMult{"cfgBinsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
   ConfigurableAxis cfgBinsMixVtx{"cfgBinsMixVtx", {VARIABLE_WIDTH, -10.0f, -5.f, 0.f, 5.f, 10.f}, "Mixing bins - z-vertex"};
   Configurable<int> cfgMixNMixedEvents{"cfgMixNMixedEvents", 10, "Number of mixed events per event"};
+  Configurable<int> cfgVtxMixCut{"cfgVtxMixCut", 10, "Vertex Mix Cut"};
 
   // MCGen
   Configurable<bool> cfgForceGenReco{"cfgForceGenReco", false, "Only consider events which are reconstructed (neglect event-loss)"};
@@ -128,6 +139,7 @@ struct kstarInOO {
     const AxisSpec axisDCAxy{binsDCAxy, "DCA_{XY}"};
 
     if (cfgEventCutQA) {
+      histos.add("hEvent_Cut", "Number of event after cuts", kTH1D, {{12, 0, 12}});
       histos.add("hPosZ_BC", "hPosZ_Bc", kTH1F, {{300, -15.0, 15.0}});
       histos.add("hPosZ_AC", "hPosZ_AC", kTH1F, {{300, -15.0, 15.0}});
       histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{110, 0.0, 110.0}});
@@ -176,19 +188,13 @@ struct kstarInOO {
       histos.add("hUSS_PiK", "hUSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hLSS_KPi", "hLSS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hLSS_PiK", "hLSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hUSS_Mix_KPi", "hUSS_Mix_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hUSS_Mix_PiK", "hUSS_Mix_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_KPi_Mix", "hUSS_KPi_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hUSS_PiK_Mix", "hUSS_PiK_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     }
 
     if (cfgMcHistos) {
-      histos.add("hPion_PID_Purity", "hPion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      histos.add("hKaon_PID_Purity", "hKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      histos.add("hSimplePion_PID_Purity", "hSimplePion_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-      histos.add("hSimpleKaon_PID_Purity", "hSimpleKaon_PID_Purity", kTH1F, {{3, -1.5, 1.5}});
-
       histos.add("nEvents_MC", "nEvents_MC", kTH1F, {{4, 0.0, 4.0}});
       histos.add("nEvents_MC_True", "nEvents_MC_True", kTH1F, {{4, 0.0, 4.0}});
-
       histos.add("hMC_kstar_True", "hMC_kstar_True", kTHnSparseF, {cfgCentAxis, ptAxis});
 
       histos.add("hMC_USS_True", "hMC_USS_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
@@ -203,6 +209,24 @@ struct kstarInOO {
       histos.add("hMC_USS_KPi_True", "hMC_USS_KPi_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hMC_USS_PiK_True", "hMC_USS_PiK_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     }
+
+    std::shared_ptr<TH1> hCutFlow = histos.get<TH1>(HIST("hEvent_Cut"));
+    std::vector<std::string> eventCutLabels = {
+      "All Events",
+      "sel8",
+      Form("|Vz| < %.1f", cfgEventVtxCut.value),
+      "kIsGoodZvtxFT0vsPV",
+      "kNoSameBunchPileup",
+      "kNoTimeFrameBorder",
+      "kNoITSROFrameBorder",
+      "kNoCollInTimeRangeStandard",
+      "kIsGoodITSLayersAll",
+      Form("Occupancy < %.0f", cfgOccupancyMax.value),
+      "All passed events"};
+    for (size_t i = 0; i < eventCutLabels.size(); ++i) {
+      hCutFlow->GetXaxis()->SetBinLabel(i + 1, eventCutLabels[i].c_str());
+    }
+
   } // end of init
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Cs>; //, aod::CentFT0Ms, aod::CentFT0As
@@ -231,25 +255,57 @@ struct kstarInOO {
   bool eventSelection(const EventType event)
   {
     if (cfgEventCutQA) {
+      histos.fill(HIST("hEvent_Cut"), 0);
       histos.fill(HIST("hPosZ_BC"), event.posZ());
       histos.fill(HIST("hcentFT0C_BC"), event.centFT0C());
     }
     if (!event.sel8())
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 1);
+
     if (std::abs(event.posZ()) > cfgEventVtxCut)
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 2);
+
     if (!event.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 3);
+
     if (!event.selection_bit(aod::evsel::kNoSameBunchPileup))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 4);
+
     if (!event.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 5);
+
     if (!event.selection_bit(aod::evsel::kNoITSROFrameBorder))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 6);
+
     if (!event.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
       return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 7);
+
+    if (!event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 8);
+
+    if (cfgOccupancySel && (event.trackOccupancyInTimeRange() > cfgOccupancyMax || event.trackOccupancyInTimeRange() < cfgOccupancyMin))
+      return false;
+    if (cfgEventCutQA)
+      histos.fill(HIST("hEvent_Cut"), 9);
 
     if (cfgEventCutQA) {
+      histos.fill(HIST("hEvent_Cut"), 10);
       histos.fill(HIST("hPosZ_AC"), event.posZ());
       histos.fill(HIST("hcentFT0C_AC"), event.centFT0C());
     }
@@ -271,7 +327,6 @@ struct kstarInOO {
       histos.fill(HIST("hTPCChi2_BC"), track.tpcChi2NCl());
       histos.fill(HIST("QA_track_pT_BC"), track.pt());
     }
-
     if (cfgTrackGlobalSel && !track.isGlobalTrack())
       return false;
     if (track.pt() < cfgTrackMinPt)
@@ -322,19 +377,42 @@ struct kstarInOO {
       histos.fill(HIST("QA_nSigma_kaon_TOF_BC"), candidate.pt(), candidate.tofNSigmaKa());
       histos.fill(HIST("QA_kaon_TPC_TOF_BC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
     }
-
+    double tpcpid = 0;
+    double tofpid = 0;
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
-    if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig)
-      tpcPIDPassed = true;
-    // TOF
-    if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaKa()) < cfgTrackTOFPIDnSig) {
+    if (cfgTrackSquarePIDCut) {
+      if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig)
+        tpcPIDPassed = true;
+      if (candidate.hasTOF()) {
+        if (std::abs(candidate.tofNSigmaKa()) < cfgTrackTOFPIDnSig) {
+          tofPIDPassed = true;
+        }
+      } else {
+        if (!cfgTrackTOFHard) {
+          tofPIDPassed = true;
+        } else {
+          tofPIDPassed = false;
+        }
+      }
+    } // end of square cut
+    if (cfgTrackCirclePIDCut) {
+      if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig)
+        tpcpid = std::abs(candidate.tpcNSigmaKa());
+      tofpid = 0;
+
+      if (candidate.hasTOF()) {
+        tofpid = std::abs(candidate.tofNSigmaKa());
+      } else {
+        if (cfgTrackTOFHard) {
+          tofpid = 999;
+        }
+      }
+      if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
+        tpcPIDPassed = true;
         tofPIDPassed = true;
       }
-    } else {
-      tofPIDPassed = true;
-    }
+    } // circular cut
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
       if (cfgTrackCutQA && QA) {
@@ -355,18 +433,44 @@ struct kstarInOO {
       histos.fill(HIST("QA_nSigma_pion_TOF_BC"), candidate.pt(), candidate.tofNSigmaPi());
       histos.fill(HIST("QA_pion_TPC_TOF_BC"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
     }
+    double tpcpid = 0;
+    double tofpid = 0;
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
-    if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
-      tpcPIDPassed = true;
-    if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig) {
+    if (cfgTrackSquarePIDCut) {
+      if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
+        tpcPIDPassed = true;
+      if (candidate.hasTOF()) {
+        if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig) {
+          tofPIDPassed = true;
+        }
+      } else {
+        if (!cfgTrackTOFHard) {
+          tofPIDPassed = true;
+        } else {
+          tofPIDPassed = false;
+        }
+      }
+    } // end of square cut
+    if (cfgTrackCirclePIDCut) {
+      if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
+        tpcpid = std::abs(candidate.tpcNSigmaPi());
+      tofpid = 0;
+
+      if (candidate.hasTOF()) {
+        tofpid = std::abs(candidate.tofNSigmaPi());
+      } else {
+        if (cfgTrackTOFHard) {
+          tofpid = 999;
+        }
+      }
+      if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
+        tpcPIDPassed = true;
         tofPIDPassed = true;
       }
-    } else {
-      tofPIDPassed = true;
-    }
-    // TPC &   TOF
+    } // circular cut
+
+    // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
       if (cfgTrackCutQA && QA) {
         histos.fill(HIST("QA_nSigma_pion_TPC_AC"), candidate.pt(), candidate.tpcNSigmaPi());
@@ -421,8 +525,6 @@ struct kstarInOO {
     auto centrality = collision1.centFT0C();
 
     std::vector<int> mcMemory;
-    std::vector<int> PIDPurityKey_Kaon;
-    std::vector<int> PIDPurityKey_Pion;
 
     for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
       if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
@@ -544,9 +646,6 @@ struct kstarInOO {
     if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA))
       return {-1.0, -1.0};
 
-    // if (trk1.index() >= trk2.index())
-    //   return {-1.0, -1.0};
-    // I checked that index and globalIndex was same function
     if (trk1.globalIndex() >= trk2.globalIndex())
       return {-1.0, -1.0};
 
@@ -626,8 +725,19 @@ struct kstarInOO {
       }
       auto goodEv1 = eventSelection(collision1);
       auto goodEv2 = eventSelection(collision2);
+      bool VtxMixFlag = false;
+      bool CentMixFlag = false;
+      // bool OccupanacyMixFlag = false;
+      if (std::fabs(collision1.posZ() - collision2.posZ()) <= cfgVtxMixCut) // set default to maybe 10
+        VtxMixFlag = true;
+      if (std::fabs(collision1.centFT0C() - collision2.centFT0C()) <= cfgVtxMixCut) // set default to maybe 10
+        CentMixFlag = true;
 
       if (!goodEv1 || !goodEv2)
+        continue;
+      if (!CentMixFlag)
+        continue;
+      if (!VtxMixFlag)
         continue;
 
       TrackSlicing(collision1, tracks1, collision2, tracks2, true, false);
@@ -668,36 +778,6 @@ struct kstarInOO {
     }
     if (!INELgt0)
       return;
-
-    auto tracks1 = kaonMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    for (const auto& kaon : tracks1) {
-      if (!trackSelection(kaon, false))
-        continue;
-      if (!trackPIDKaon(kaon, false))
-        continue;
-      auto particle1 = kaon.mcParticle();
-      if (std::fabs(particle1.pdgCode()) == 321)
-        histos.fill(HIST("hSimpleKaon_PID_Purity"), 1); // histogram with two bins, -1.5, 1.5 fill 1 or -1
-      else if (std::fabs(particle1.pdgCode()) == 211)
-        histos.fill(HIST("hSimpleKaon_PID_Purity"), -1); // histogram with two bins, -1.5, 1.5 fill 1 or -1
-      else
-        histos.fill(HIST("hSimpleKaon_PID_Purity"), 0); // histogram with two bins, -1.5, 1.5 fill 1 or -1
-    }
-
-    auto tracks2 = pionMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    for (const auto& pion : tracks2) {
-      if (!trackSelection(pion, false))
-        continue;
-      if (!trackPIDPion(pion, false))
-        continue;
-      auto particle2 = pion.mcParticle();
-      if (std::fabs(particle2.pdgCode()) == 211)
-        histos.fill(HIST("hSimplePion_PID_Purity"), 1); // histogram with two bins, -1.5, 1.5 fill 1 or -1
-      else if (std::fabs(particle2.pdgCode()) == 321)
-        histos.fill(HIST("hSimplePion_PID_Purity"), -1); // histogram with two bins, -1.5, 1.5 fill 1 or -1
-      else
-        histos.fill(HIST("hSimplePion_PID_Purity"), 0); // histogram with two bins, -1.5, 1.5 fill 1 or -1
-    }
 
     if (cfgMcHistos) {
       histos.fill(HIST("nEvents_MC"), 1.5);

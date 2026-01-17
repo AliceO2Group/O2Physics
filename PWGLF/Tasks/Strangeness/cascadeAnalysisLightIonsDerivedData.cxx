@@ -25,7 +25,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/MathConstants.h"
@@ -132,7 +131,7 @@ struct CascadeAnalysisLightIonsDerivedData {
   Configurable<float> competingmassrej{"competingmassrej", 0.008, "Competing mass rejection"};
   // Axes parameters
   ConfigurableAxis centEstimatorHistBin{"centEstimatorHistBin", {101, 0.0f, 101.0f}, ""};
-  ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
+  ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, ""};
   ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
   ConfigurableAxis axisMult{"axisMult", {500, 0.0f, +100000.0f}, "Multiplicity"};
 
@@ -302,16 +301,16 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenXiMinus", "h2dGenXiMinus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
-      registryMC.add("h2dGenXiPlus", "h2dGenXiPlus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
+      registryMC.add("h2dGenXiMinus", "h2dGenXiMinus", HistType::kTH2D, {centAxis, ptAxis});
+      registryMC.add("h2dGenXiPlus", "h2dGenXiPlus", HistType::kTH2D, {centAxis, ptAxis});
 
       // Histograms for omega (mc)
       registryMC.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
       registryMC.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
-      registryMC.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
-      registryMC.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", HistType::kTH2D, {{101, 0.0f, 101.0f}, ptAxis});
+      registryMC.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", HistType::kTH2D, {centAxis, ptAxis});
+      registryMC.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", HistType::kTH2D, {centAxis, ptAxis});
 
       // Histograms for event loss/splitting
       registryMC.add("hGenEvents", "hGenEvents", HistType::kTH2D, {{axisNch}, {2, -0.5f, +1.5f}});
@@ -662,7 +661,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       bool atLeastOne = false;
       int biggestNContribs = -1;
       int nCollisions = 0;
-      float centralitydata = -1.0f;
+      float centralitydata = 100.5f;
       for (auto const& collision : groupedCollisions) {
         // event selections
         if (applySel8 && !collision.sel8())
@@ -741,8 +740,8 @@ struct CascadeAnalysisLightIonsDerivedData {
     initCCDB(collision);
 
     // Define the event centrality using different estimators
-    float centrality = -1.0f;
-    float multiplicity = -1.0f;
+    float centrality = -1;
+    float multiplicity = -1;
 
     if (centralityEstimator == Option::kFT0C) {
       centrality = collision.centFT0C();
@@ -885,8 +884,8 @@ struct CascadeAnalysisLightIonsDerivedData {
       initCCDB(RecCol);
 
       // Define the event centrality using different estimators
-      float centralityMcRec = -1.0f;
-      float multiplicityMcRec = -1.0f;
+      float centralityMcRec = -1;
+      float multiplicityMcRec = -1;
 
       if (centralityEstimator == Option::kFT0C) {
         centralityMcRec = RecCol.centFT0C();
