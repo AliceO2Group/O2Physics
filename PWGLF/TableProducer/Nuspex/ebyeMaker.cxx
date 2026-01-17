@@ -93,6 +93,20 @@ float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, fl
 {
   return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
 }
+void encode16bit(int const& n, uint8_t& low, uint8_t& up)
+{
+  if (n >= (1 << 16))
+    low = up = -1;
+  int bbyte = 8;
+  for (int b{0}; b < bbyte; ++b) {
+    int bl = (n & (1 << b)) >> b;
+    int bu = (n & (1 << (b + bbyte))) >> (b + bbyte);
+    if (bl > 0)
+      low += (1 << b);
+    if (bu > 0)
+      up += (1 << b);
+  }
+}
 } // namespace
 
 struct CandidateV0 {
@@ -184,6 +198,7 @@ struct EbyeMaker {
   uint8_t nTrackletsColl;
   uint8_t nTracksColl;
   uint8_t nChPartGen;
+  int nTracksCollFull;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
@@ -565,6 +580,7 @@ struct EbyeMaker {
     candidateV0s.clear();
     nTrackletsColl = 0u;
     nTracksColl = 0u;
+    nTracksCollFull = 0;
 
     std::array<float, 2> dcaInfo;
     for (const auto& track : tracks) {
@@ -592,9 +608,10 @@ struct EbyeMaker {
       if (track.tpcNClsFound() < trackNclusTpcCut || track.tpcNClsCrossedRows() < trackNcrossedRows)
         continue;
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (track.sign() > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll)))
+      if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (track.sign() > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll))) {
         nTracksColl++;
-
+        nTracksCollFull++;
+      }
       for (int iP{0}; iP < kNpart; ++iP) {
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
           continue;
@@ -989,6 +1006,7 @@ struct EbyeMaker {
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
       histos.fill(HIST("QA/trackletsVsV0M"), centrality, multTracklets);
 
+      encode16bit(nTracksCollFull, nTrackletsColl, nTracksColl);
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
