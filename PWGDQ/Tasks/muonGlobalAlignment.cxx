@@ -161,6 +161,8 @@ struct muonGlobalAlignment {
   Configurable<bool> fEnableMftDcaAnalysis{"cfgEnableMftDcaAnalysis", true, "Enable the analysis of DCA-based MFT alignment"};
   Configurable<bool> fEnableMftMchResidualsAnalysis{"cfgEnableMftMchResidualsAnalysis", true, "Enable the analysis of residuals between MFT tracks and MCH clusters"};
 
+  Configurable<bool> fRequireGoodRCT{"cfgRequireGoodRCT", true, "Require good detector flags in Run Condition Table"};
+
   int mRunNumber{0}; // needed to detect if the run changed and trigger update of magnetic field
 
   Service<o2::ccdb::BasicCCDBManager> ccdbManager;
@@ -203,6 +205,10 @@ struct muonGlobalAlignment {
         continue;
 
       auto collision = collisions.rawIteratorAt(muonTrack.collisionId());
+
+      if (fRequireGoodRCT && !rctChecker(collision))
+        continue;
+
       uint64_t collisionIndex = collision.globalIndex();
 
       auto bc = bcs.rawIteratorAt(collision.bcId());
