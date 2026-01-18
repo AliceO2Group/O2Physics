@@ -534,7 +534,7 @@ struct EbyeMaker {
     // event QA
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
     if (doprocessRun3) {
-      histos.add<TH2>("QA/MultChVsCent", ";Centrality FT0C (%);#it{N}_{tracks};", HistType::kTH2F, {centAxis, multAxis});
+      histos.add<TH2>("QA/PvMultVsCent", ";Centrality FT0C (%);#it{N}_{tracks};", HistType::kTH2F, {centAxis, multAxis});
     } else if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
       histos.add<TH2>("QA/trackletsVsV0M", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, multAxis});
