@@ -1030,13 +1030,6 @@ struct FlowEventPlane {
     // daugthers
     auto postrack = v0.template posTrack_as<T>();
     auto negtrack = v0.template negTrack_as<T>();
-    float mass = 0.;
-
-    if constexpr (part == kLambda) {
-      mass = v0.mLambda();
-    } else {
-      mass = v0.mAntiLambda();
-    }
 
     // ctau
     float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
