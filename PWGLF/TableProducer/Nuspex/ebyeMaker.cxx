@@ -95,8 +95,10 @@ float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, fl
 }
 void encode16bit(int const& n, uint8_t& low, uint8_t& up)
 {
-  if (n >= (1 << 16))
+  if (n >= (1 << 16)) {
     low = up = -1;
+    return;
+  }
   int bbyte = 8;
   for (int b{0}; b < bbyte; ++b) {
     int bl = (n & (1 << b)) >> b;
