@@ -73,7 +73,6 @@ struct HfTaskPtFlucCharmHadrons {
   // Mean-pT (charged hadrons) definition: subevents with eta gap
   Configurable<float> etaAMin{"etaAMin", -0.8f, "A: negative eta min"};
   Configurable<float> etaAMax{"etaAMax", 0.0f, "A: negative eta max (0)"};
-  Configurable<float> etaMinGap{"etaMinGap", 0.4f, "eta_min defining the gap"};  // new
   Configurable<float> etaBMin{"etaBMin", 0.4f, "B: positive eta min (eta_min)"}; // or set from etaMinGap in code
   Configurable<float> etaBMax{"etaBMax", 0.8f, "B: positive eta max"};
 
