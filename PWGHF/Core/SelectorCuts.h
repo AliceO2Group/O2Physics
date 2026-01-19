@@ -67,16 +67,16 @@ static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary",
 
 namespace hf_presel_pid
 {
-static constexpr int NPidRows = 7;      // number of PID channels / rows
-static constexpr int NPidCuts = 6;      // number of cuts per PID (TPC+TOF)
+static constexpr int NPidRows = 7; // number of PID channels / rows
+static constexpr int NPidCuts = 6; // number of cuts per PID (TPC+TOF)
 // default values for the PID cuts for protons in the track-index-skim-creator
 constexpr float CutsPid[NPidRows][NPidCuts] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
+                                               {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                               {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                               {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                               {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                               {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                               {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
 static const std::vector<std::string> labelsCutsPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
 static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs", "DeuteronInCdToDeKPi", "TritonInCtToTrKPi", "HeliumInChToHeKPi"};
 } // namespace hf_presel_pid
