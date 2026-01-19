@@ -2065,6 +2065,7 @@ struct AnalysisDileptonTrack {
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
     Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
     Configurable<bool> fConfigPublishTripletTable{"cfgPublishTripletTable", false, "Publish the triplet tables, BmesonCandidates"};
+    Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -2580,11 +2581,14 @@ struct AnalysisDileptonTrack {
           // compute needed quantities
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
-
           if (!track.has_mcParticle()) {
             continue;
           }
           auto trackMC = track.mcParticle();
+          // for the energy correlator analysis
+          auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
+          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fConfigOptions.fConfigApplyMassEC);
+          VarManager::FillEnergyCorrelatorsMCUnfolding<VarManager::kJpsiHadronMass>(dilepton, track, motherParticle, trackMC, fValuesHadron);
           mcDecision = 0;
           isig = 0;
           for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
@@ -2938,29 +2942,28 @@ struct AnalysisDileptonTrack {
   {
     auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.mcCollisionId());
     groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-    for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
+    for (auto& t1 : groupedMCTracks) {
       auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
       // apply kinematic cuts for signal
-      if ((t1_raw.pt() < fConfigOptions.fConfigDileptonLowpTCut || t1_raw.pt() > fConfigOptions.fConfigDileptonHighpTCut)) {
+      if ((t1_raw.pt() < fConfigOptions.fConfigDileptonLowpTCut || t1_raw.pt() > fConfigOptions.fConfigDileptonHighpTCut))
         continue;
-      }
-      if (abs(t1_raw.y()) > fConfigOptions.fConfigDileptonRapCutAbs) {
+      if (abs(t1_raw.y()) > fConfigOptions.fConfigDileptonRapCutAbs)
         continue;
-      }
-      auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-      if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22) {
-        continue;
-      }
-      if (t2_raw.pt() < fConfigMCOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCOptions.fConfigMCGenHadronEtaAbs.value) {
-        continue;
-      }
-      if (t2_raw.getGenStatusCode() <= 0) {
-        continue;
-      }
-      for (auto& sig : fGenMCSignals) {
-        if (sig->CheckSignal(true, t1_raw)) {
-          VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues);
-          fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_%s", sig->GetName()), VarManager::fgValues);
+      // for the energy correlators
+      for (auto& t2 : groupedMCTracks) {
+        auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+        if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22)
+          continue;
+        if (t2_raw.pt() < fConfigMCOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCOptions.fConfigMCGenHadronEtaAbs.value) {
+          continue;
+        }
+        if (t2_raw.getGenStatusCode() <= 0)
+          continue;
+        VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues);
+        for (auto& sig : fGenMCSignals) {
+          if (sig->CheckSignal(true, t1_raw)) {
+            fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_%s", sig->GetName()), VarManager::fgValues);
+          }
         }
       }
     }
@@ -3205,6 +3208,5 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     if (classStr.Contains("MCTruthEenergyCorrelators")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "energy-correlator-gen");
     }
-
   } // end loop over histogram classes
 }

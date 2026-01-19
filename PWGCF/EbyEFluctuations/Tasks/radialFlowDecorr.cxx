@@ -869,6 +869,19 @@ struct RadialFlowDecorr {
     std::string pathDataMean = cfgCCDBUserPath.value + "/" + sysDir + "/Job2_DataMean";
 
     declareCommonQA();
+    std::string userCcdbPath;
+    if (cfgSys == kPbPb) {
+      userCcdbPath = "/Users/s/somadutt/PbPbTest/";
+    }
+    if (cfgSys == kOO) {
+      userCcdbPath = "/Users/s/somadutt/OOTest/";
+    }
+    if (cfgSys == kpPb) {
+      userCcdbPath = "/Users/s/somadutt/pPbTest/";
+    }
+    if (cfgSys == kpp) {
+      userCcdbPath = "/Users/s/somadutt/ppTest/";
+    }
 
     if (cfgRunMCMean || cfgRunMCFluc || cfgRunGetEff) {
       declareMCCommonHists();

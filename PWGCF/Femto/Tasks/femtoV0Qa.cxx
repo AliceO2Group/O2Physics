@@ -16,6 +16,7 @@
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
@@ -69,6 +70,7 @@ struct FemtoV0Qa {
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // setup for lambdas
+  particlecleaner::ConfLambdaCleaner1 confLambdaCleaner;
   v0builder::ConfLambdaSelection1 confLambdaSelection;
 
   Partition<FemtoLambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
@@ -76,6 +78,8 @@ struct FemtoV0Qa {
 
   Partition<FemtoLambdasWithLabel> lambdaWithLabelPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
   Preslice<FemtoLambdasWithLabel> perColLambdasWithLabel = femtobase::stored::fColId;
+
+  particlecleaner::ParticleCleaner lambdaCleaner;
 
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
   v0histmanager::ConfLambdaQaBinning1 confLambdaQaBinning;
@@ -87,6 +91,7 @@ struct FemtoV0Qa {
     lambdaHistManager;
 
   // setup for k0shorts
+  particlecleaner::ConfK0shortCleaner1 confK0shortCleaner;
   v0builder::ConfK0shortSelection1 confK0shortSelection;
 
   Partition<FemtoK0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(confK0shortSelection);
@@ -94,6 +99,8 @@ struct FemtoV0Qa {
 
   Partition<FemtoK0shortsWithLabel> k0shortWithLabelPartition = MAKE_K0SHORT_PARTITION(confK0shortSelection);
   Preslice<FemtoK0shortsWithLabel> perColK0shortsWithLabel = femtobase::stored::fColId;
+
+  particlecleaner::ParticleCleaner k0shortCleaner;
 
   v0histmanager::ConfK0shortBinning1 confK0shortBinning;
   v0histmanager::ConfK0shortQaBinning1 confK0shortQaBinning;
@@ -118,9 +125,10 @@ struct FemtoV0Qa {
     if ((doprocessLambda + doprocessLambdaMc + doprocessK0short + doprocessK0shortMc) > 1) {
       LOG(fatal) << "Only one process can be activated";
     }
-
     bool processData = doprocessLambda || doprocessK0short;
 
+    lambdaCleaner.init(confLambdaCleaner);
+    k0shortCleaner.init(confK0shortCleaner);
     if (processData) {
       auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
@@ -166,10 +174,13 @@ struct FemtoV0Qa {
     colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto k0shortSlice = k0shortWithLabelPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& k0short : k0shortSlice) {
+      if (!k0shortCleaner.isClean(k0short, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       k0shortHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(k0short, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
-  PROCESS_SWITCH(FemtoV0Qa, processK0shortMc, "Process k0shorts", false);
+  PROCESS_SWITCH(FemtoV0Qa, processK0shortMc, "Process k0shorts with MC information", false);
 
   void processLambda(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
@@ -186,6 +197,9 @@ struct FemtoV0Qa {
     colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto lambdaSlice = lambdaWithLabelPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& lambda : lambdaSlice) {
+      if (!lambdaCleaner.isClean(lambda, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       lambdaHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(lambda, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }

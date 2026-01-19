@@ -19,8 +19,8 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
+#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
-#include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
 #include "PWGCF/Femto/Core/v0HistManager.h"
@@ -72,15 +72,17 @@ struct FemtoPairV0V0 {
   trackhistmanager::ConfV0NegDauBinning confNegDauBinning;
 
   // setup lambdas
-  v0builder::ConfLambdaSelection1 lambdaSelection;
+  v0builder::ConfLambdaSelection1 confLambdaSelection;
+  particlecleaner::ConfLambdaCleaner1 confLambdaCleaner;
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
-  Partition<Lambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(lambdaSelection);
+  Partition<Lambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
   Preslice<Lambdas> perColLambdas = aod::femtobase::stored::fColId;
 
   // setup k0shorts
-  v0builder::ConfK0shortSelection1 k0shortSelection;
+  v0builder::ConfK0shortSelection1 confK0shortSelection;
+  particlecleaner::ConfK0shortCleaner1 confK0shortCleaner;
   v0histmanager::ConfK0shortBinning1 confK0shortBinning;
-  Partition<K0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(k0shortSelection);
+  Partition<K0shorts> k0shortPartition = MAKE_K0SHORT_PARTITION(confK0shortSelection);
   Preslice<K0shorts> perColk0shorts = aod::femtobase::stored::fColId;
 
   // setup pairs
@@ -160,14 +162,14 @@ struct FemtoPairV0V0 {
     if (doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
       auto pairLambdaLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairLambdaLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, lambdaSelection, lambdaSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairLambdaLambdaHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairLambdaLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confLambdaSelection, confLambdaSelection, confLambdaCleaner, confLambdaCleaner, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairLambdaLambdaHistSpec, cprHistSpecPos, cprHistSpecNeg);
     }
 
     // setup for k0short
     if (doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
       auto pairK0shortK0shortHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairK0shortK0shortBuilder.init<modes::Mode::kAnalysis>(&hRegistry, k0shortSelection, k0shortSelection, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairK0shortK0shortHistSpec, cprHistSpecPos, cprHistSpecNeg);
+      pairK0shortK0shortBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confK0shortSelection, confK0shortSelection, confK0shortCleaner, confK0shortCleaner, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, k0shortHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairK0shortK0shortHistSpec, cprHistSpecPos, cprHistSpecNeg);
     }
   };
 

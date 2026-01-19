@@ -15,7 +15,9 @@
 
 // #include <TDatabasePDG.h>
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h" //
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -64,6 +66,7 @@ using namespace o2::soa;
 using namespace o2::aod::rctsel;
 // using namespace o2::constants::physics;
 using std::array;
+// FixME: Add INEL>0 selection for the derived data
 
 struct HigherMassResonances {
   SliceCache cache;
@@ -108,7 +111,7 @@ struct HigherMassResonances {
     // Configurable<bool> isSel8{"isSel8", false, "Event Selection 8"};
 
     // Configurables for event selection
-    // Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
+    Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
     Configurable<bool> isTriggerTVX{"isTriggerTVX", false, "TriggerTVX"};
     // Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", false, "IsGoodZvtxFT0vsPV"};
     // Configurable<bool> isApplyOccCut{"isApplyOccCut", true, "Apply occupancy cut"};
@@ -144,7 +147,7 @@ struct HigherMassResonances {
     Configurable<bool> isApplyEtaCutK0s{"isApplyEtaCutK0s", false, "Apply eta cut on K0s daughters"};
     Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
     Configurable<float> deltaRDaugherCut{"deltaRDaugherCut", 0.001f, "DeltaR cut on V0 daughters"};
-    Configurable<bool> deltaRK0sCut{"deltaRK0sCut", false, "Apply deltaR cut between two K0s"};
+    Configurable<float> deltaRK0sCut{"deltaRK0sCut", 0.1f, "Apply deltaR cut between two K0s"};
 
     // Configurable for track selection and multiplicity
     Configurable<float> cfgPTcut{"cfgPTcut", 0.2f, "Track PT cut"};
@@ -156,7 +159,7 @@ struct HigherMassResonances {
     Configurable<bool> isavoidsplitrackMC{"isavoidsplitrackMC", false, "avoid split track in MC"};
     Configurable<bool> isapplyRapidityMC{"isapplyRapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
     Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500), 5: f2(1270)"};
-    std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221, 225};
+    std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221, 225, 313};
 
     // output THnSparses
     Configurable<bool> activateHelicityFrame{"activateHelicityFrame", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -270,8 +273,8 @@ struct HigherMassResonances {
       hCutFlow->GetXaxis()->SetBinLabel(8, "Occupancy Cut");
       hCutFlow->GetXaxis()->SetBinLabel(9, "rctChecker");
       hCutFlow->GetXaxis()->SetBinLabel(10, "kIsTriggerTVX");
-      // hCutFlow->GetXaxis()->SetBinLabel(11, "kIsGoodZvtxFT0vsPV");
-      // hCutFlow->GetXaxis()->SetBinLabel(12, "IsINELgt0");
+      hCutFlow->GetXaxis()->SetBinLabel(11, "No selection");
+      hCutFlow->GetXaxis()->SetBinLabel(12, "IsINELgt0");
       // hCutFlow->GetXaxis()->SetBinLabel(13, "isVertexITSTPC");
       // hCutFlow->GetXaxis()->SetBinLabel(14, "isVertexTOFMatched");
 
@@ -367,9 +370,13 @@ struct HigherMassResonances {
     // For MC
     if (doprocessGen || doprocessRec) {
       hMChists.add("Genf1710", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
+      hMChists.add("Genf1710Calib", "Calibrated Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Genf17102", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
+      hMChists.add("Genf1710Calib2", "Calibrated Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Recf1710_pt1", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
+      hMChists.add("Recf1710Calib_pt1", "Calibrated Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
       hMChists.add("Recf1710_pt2", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
+      hMChists.add("Recf1710Calib_pt2", "Calibrated Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
       hMChists.add("h1Recsplit", "Rec p_{T}2", kTH1F, {ptAxis});
       hMChists.add("Genf1710_mass", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
       hMChists.add("Genf1710_mass2", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
@@ -387,6 +394,22 @@ struct HigherMassResonances {
       hMChists.add("RecRapidity2", "Rec Rapidity", kTH1F, {{100, -1.0f, 1.0f}});
       hMChists.add("Rec_Multiplicity", "Multiplicity in MC", kTH1F, {multiplicityAxis});
       hMChists.add("MC_mult_after_event_sel", "Multiplicity in MC", kTH1F, {multiplicityAxis});
+    }
+
+    if (doprocessEvtLossSigLossMC) {
+      hMChists.add("MCcorrections/hSignalLossDenominator", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hMChists.add("MCcorrections/hSignalLossNumerator", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hMChists.add("MCcorrections/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
+      hMChists.add("MCcorrections/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
+      hMChists.add("MCcorrections/hSignalLossDenominator2", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hMChists.add("MCcorrections/hSignalLossNumerator2", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hMChists.add("MCcorrections/MultiplicityRec2", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
+      hMChists.add("MCcorrections/MultiplicityGen2", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
+
+      hMChists.add("MCcorrections/hGenNo", "Generated collisions before and after event selection", kTH1F, {{5, 0.0f, 5.0f}});
+      hMChists.add("MCcorrections/hSignalLossDenominator3", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hMChists.add("MCcorrections/hSignalLossNumerator3", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hMChists.add("MCcorrections/hMultvsCent", "Kstar generated after event selection", kTH2F, {{multiplicityAxis}, {multiplicityAxis}});
     }
   }
 
@@ -447,13 +470,13 @@ struct HigherMassResonances {
     // if (config.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
     //   return false;
     // if (fillHist)
-    // rEventSelection.fill(HIST("hEventCut"), 10);
+    rEventSelection.fill(HIST("hEventCut"), 10);
 
-    // if (config.isINELgt0 && !collision.isInelGt0()) {
-    //   return false;
-    // }
-    // if (fillHist)
-    // rEventSelection.fill(HIST("hEventCut"), 11);
+    if (config.isINELgt0 && !collision.isInelGt0()) {
+      return false;
+    }
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 11);
 
     // if (config.isVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
     //   return false;
@@ -466,6 +489,63 @@ struct HigherMassResonances {
     // }
     // if (fillHist)
     //   rEventSelection.fill(HIST("hEventCut"), 13);
+
+    return true;
+  }
+
+  template <typename Coll>
+  bool selectionEventDerived(const Coll& collision, bool fillHist = true)
+  {
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 0);
+
+    if (std::abs(collision.posZ()) > config.cutzvertex)
+      return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 1);
+
+    // if (config.isSel8 && !collision.sel8())
+    //   return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 2);
+
+    if (config.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 3);
+
+    if (config.isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 4);
+
+    // if (config.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
+    //   return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 5);
+
+    if (config.isAllLayersGoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 6);
+
+    // if (config.isNoCollInTimeRangeStandard && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
+    //   return false;
+
+    // if (config.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > config.configOccCut))
+    //   return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 7);
+
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision))
+      return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 8);
+
+    if (config.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
+      return false;
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCut"), 9);
 
     return true;
   }
@@ -714,9 +794,10 @@ struct HigherMassResonances {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
   using V0TrackCandidate = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
   // For Monte Carlo
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::PVMults>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::MultZeqs, aod::FT0Mults, aod::PVMults, aod::CentFV0As>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
   using V0TrackCandidatesMC = soa::Filtered<soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::McV0Labels>>;
+  using EventMCGenerated = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
   // zBeam direction in lab frame
 
   template <typename T>
@@ -1200,18 +1281,31 @@ struct HigherMassResonances {
   std::vector<bool> passKs;
   ROOT::Math::PxPyPzMVector lResonanceGen1;
   ROOT::Math::PxPyPzEVector lResonanceGen;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
-  void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  // void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  void processGen(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     // if (config.isMC == false) {
     //   return;
     // }
     hMChists.fill(HIST("events_check"), 0.5);
 
+    bool isINELgt0true = false;
+
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+      isINELgt0true = true;
+    }
+    if (config.isINELgt0 && !isINELgt0true) {
+      return;
+    }
+
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
     multiplicityGen = -999.0;
     for (const auto& collision : collisions) {
+
+      hMChists.fill(HIST("MCcorrections/hGenNo"), 0.5);
 
       // multiplicityGen = collision.centFT0M();
       if (config.cSelectMultEstimator == kFT0M) {
@@ -1230,7 +1324,7 @@ struct HigherMassResonances {
         continue;
       }
 
-      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      selectedEvents[nevts++] = collision.mcCollision_as<EventMCGenerated>().globalIndex();
     }
     selectedEvents.resize(nevts);
     hMChists.fill(HIST("events_check"), 1.5);
@@ -1240,6 +1334,10 @@ struct HigherMassResonances {
       return;
     }
     hMChists.fill(HIST("events_check"), 2.5);
+    hMChists.fill(HIST("MCcorrections/hGenNo"), 1.5);
+
+    double genMultiplicity = mcCollision.centFT0M();
+
     for (const auto& mcParticle : mcParticles) {
 
       if (std::abs(mcParticle.pdgCode()) != config.pdgCodes[config.selectMCparticles]) // f2(1525), f0(1710)
@@ -1290,6 +1388,7 @@ struct HigherMassResonances {
         auto helicityGen1 = lResonanceGen1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(lResonanceGen1.Vect().Mag2()));
 
         hMChists.fill(HIST("Genf1710"), multiplicityGen, lResonanceGen.pt(), helicityGen);
+        hMChists.fill(HIST("Genf1710Calib"), genMultiplicity, lResonanceGen.pt(), helicityGen);
         hMChists.fill(HIST("Genf1710_mass"), lResonanceGen.M());
         hMChists.fill(HIST("GenRapidity"), mcParticle.y());
         hMChists.fill(HIST("GenEta"), mcParticle.eta());
@@ -1300,6 +1399,7 @@ struct HigherMassResonances {
         }
 
         hMChists.fill(HIST("Genf17102"), multiplicityGen, lResonanceGen1.pt(), helicityGen1);
+        hMChists.fill(HIST("Genf1710Calib2"), genMultiplicity, lResonanceGen1.pt(), helicityGen1);
         hMChists.fill(HIST("Genf1710_mass2"), lResonanceGen1.M());
         hMChists.fill(HIST("GenRapidity2"), lResonanceGen1.Rapidity());
         hMChists.fill(HIST("GenEta2"), lResonanceGen1.Eta());
@@ -1310,13 +1410,94 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processGen, "Process Generated", false);
 
+  void processEvtLossSigLossMC(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  {
+    // auto multiplicityRec = -1;
+    bool isSelectedEvent = false;
+    auto multiplicity1 = -999.;
+    const int multMC = mcCollision.multMCNParticlesEta05();
+
+    for (const auto& RecCollision : recCollisions) {
+      if (!RecCollision.has_mcCollision())
+        continue;
+      if (!selectionEvent(RecCollision, false)) // don't fill event cut histogram
+        continue;
+
+      // const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
+      // multiplicityRec = mcCollisionRec.centFT0M();
+
+      if (config.cSelectMultEstimator == kFT0M) {
+        multiplicity1 = RecCollision.centFT0M();
+      } else if (config.cSelectMultEstimator == kFT0A) {
+        multiplicity1 = RecCollision.centFT0A();
+      } else if (config.cSelectMultEstimator == kFT0C) {
+        multiplicity1 = RecCollision.centFT0C();
+      } else if (config.cSelectMultEstimator == kFV0A) {
+        multiplicity1 = RecCollision.centFV0A();
+      } else {
+        multiplicity1 = RecCollision.centFT0M(); // default
+      }
+
+      isSelectedEvent = true;
+    }
+
+    bool isINELgt0true = false;
+
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+      isINELgt0true = true;
+    }
+    if (config.isINELgt0 && !isINELgt0true) {
+      return;
+    }
+
+    if (std::abs(mcCollision.posZ()) >= config.cutzvertex) {
+      return;
+    }
+
+    auto multiplicityGen = -1;
+    multiplicityGen = mcCollision.centFT0M();
+    hMChists.fill(HIST("MCcorrections/MultiplicityGen"), multiplicityGen);
+    hMChists.fill(HIST("MCcorrections/MultiplicityGen2"), multiplicity1);
+    hMChists.fill(HIST("MCcorrections/hMultvsCent"), multiplicity1, multMC);
+
+    // Event loss
+    if (isSelectedEvent) {
+      hMChists.fill(HIST("MCcorrections/MultiplicityRec"), multiplicityGen);
+      hMChists.fill(HIST("MCcorrections/MultiplicityRec2"), multiplicity1);
+    }
+
+    // Generated MC
+    for (const auto& mcPart : mcParticles) {
+      if (std::abs(mcPart.y()) >= config.rapidityMotherData || std::abs(mcPart.pdgCode()) != config.pdgCodes[config.selectMCparticles])
+        continue;
+
+      hMChists.fill(HIST("MCcorrections/hSignalLossDenominator"), mcPart.pt(), multiplicityGen);
+      hMChists.fill(HIST("MCcorrections/hSignalLossDenominator2"), mcPart.pt(), multiplicity1);
+      hMChists.fill(HIST("MCcorrections/hSignalLossDenominator3"), mcPart.pt(), multMC);
+      if (isSelectedEvent) {
+        hMChists.fill(HIST("MCcorrections/hSignalLossNumerator"), mcPart.pt(), multiplicityGen);
+        hMChists.fill(HIST("MCcorrections/hSignalLossNumerator2"), mcPart.pt(), multiplicity1);
+        hMChists.fill(HIST("MCcorrections/hSignalLossNumerator3"), mcPart.pt(), multMC);
+      }
+    } // end loop on gen particles
+  }
+  PROCESS_SWITCH(HigherMassResonances, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
+
   int eventCounter = 0;
   std::vector<int> gindex1, gindex2;
-  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const&, V0TrackCandidatesMC const& V0s, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const&, V0TrackCandidatesMC const& V0s, aod::McParticles const&, EventMCGenerated const&)
   {
     // if (config.isMC == false) {
     //   return;
     // }
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+
+    double multiplicityRec = -1.0;
+    // multiplicityRec = collision.mcCollision_as<EventMCGenerated>().centFT0M();
+    const auto& mcCollisionRec = collision.mcCollision_as<EventMCGenerated>();
+    multiplicityRec = mcCollisionRec.centFT0M();
 
     auto multiplicity = -999.0;
     if (config.cSelectMultEstimator == kFT0M) {
@@ -1335,10 +1516,6 @@ struct HigherMassResonances {
       return;
     }
     hMChists.fill(HIST("Rec_Multiplicity"), multiplicity);
-
-    if (!collision.has_mcCollision()) {
-      return;
-    }
 
     hMChists.fill(HIST("MC_mult_after_event_sel"), multiplicity);
     eventCounter++;
@@ -1472,6 +1649,7 @@ struct HigherMassResonances {
             // }
 
             hMChists.fill(HIST("Recf1710_pt1"), multiplicity, mothertrack1.pt(), mother1.M(), helicityRec2);
+            hMChists.fill(HIST("Recf1710Calib_pt1"), multiplicityRec, mothertrack1.pt(), mother1.M(), helicityRec2);
             hMChists.fill(HIST("RecRapidity"), mothertrack1.y());
             hMChists.fill(HIST("RecPhi"), mothertrack1.phi());
             hMChists.fill(HIST("RecEta"), mothertrack1.eta());
@@ -1481,6 +1659,7 @@ struct HigherMassResonances {
             }
 
             hMChists.fill(HIST("Recf1710_pt2"), multiplicity, mother.Pt(), mother.M(), helicityRec);
+            hMChists.fill(HIST("Recf1710Calib_pt2"), multiplicityRec, mother.Pt(), mother.M(), helicityRec);
             hMChists.fill(HIST("RecRapidity2"), mother.Rapidity());
             hMChists.fill(HIST("RecPhi2"), mother.Phi());
             hMChists.fill(HIST("RecEta2"), mother.Eta());
@@ -1508,7 +1687,7 @@ struct HigherMassResonances {
       multiplicity = collision.centFT0M(); // default
     }
 
-    if (!selectionEvent(collision, true)) {
+    if (!selectionEventDerived(collision, true)) {
       return;
     }
 
@@ -1617,7 +1796,7 @@ struct HigherMassResonances {
       multiplicity = 0.0;
       multiplicity = c1.centFT0M();
 
-      if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) {
+      if (!selectionEventDerived(c1, false) || !selectionEventDerived(c2, false)) {
         continue;
       }
 

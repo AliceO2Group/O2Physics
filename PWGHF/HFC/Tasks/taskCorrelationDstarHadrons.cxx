@@ -71,14 +71,23 @@ const auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuter
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::NBinsPt;
 const std::vector<double> vecEfficiencyDstarDefault(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
 
+const int nPtBinsTrackEfficiency = o2::analysis::hf_cuts_single_track::NBinsPtTrack;
+const std::vector<double> vecEfficiencyTracksDefault(nPtBinsTrackEfficiency);
+
 // Dstar-Hadron correlation pair
 struct HfTaskCorrelationDstarHadrons {
 
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying efficiency weights"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_to_pi_k_pi (i.e. the mass pT bins), but can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecBinsPtCorrelationsDefault}, "pT bin limits for correlation plots"};
+
+  // efficiency configirables for candidate Dstar
   Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<double>> efficiencyDstar{"efficiencyDstar", std::vector<double>{vecEfficiencyDstarDefault}, "efficiency values for Dstar vs pT bin"};
+
+  // efficiency configurables for associated tracks
+  Configurable<std::vector<double>> binsPtEfficiencyTracks{"binsPtEfficiencyTracks", std::vector<double>{o2::analysis::hf_cuts_single_track::vecBinsPtTrack}, "pT bin limits for track efficiency"};
+  Configurable<std::vector<double>> efficiencyTracks{"efficiencyTracks", std::vector<double>{vecEfficiencyTracksDefault}, "efficiency values for tracks vs pT bin"};
 
   Configurable<std::vector<double>> signalRegionLefBound{"signalRegionLefBound", std::vector<double>{vecSignalRegionLefBoundDefault}, "left boundary of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionRightBound{"signalRegionRightBound", std::vector<double>{vecSignalRegionRightBoundDefault}, "right boundary of signal region vs pT"};
@@ -128,6 +137,9 @@ struct HfTaskCorrelationDstarHadrons {
       int const corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
       // LOG(info) << "correlation index " << corrBinPtDstar;
 
+      int const effBinPtTrack = o2::analysis::findBin(binsPtEfficiencyTracks, ptTrack);
+      // LOG(info) << "track efficiency index " << effBinPtTrack;
+
       // reject candidate if outside pT ranges of interst
       if (corrBinPtDstar < 0 || effBinPtDstar < 0) {
         continue;
@@ -137,11 +149,12 @@ struct HfTaskCorrelationDstarHadrons {
       //   ptTrack = 10.5;
       // }
       float netEfficiencyWeight = 1.0;
-      float const efficiencyWeightTracks = 1.0;
 
       if (applyEfficiency) {
         float const efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
         // LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
+        float const efficiencyWeightTracks = efficiencyTracks->at(effBinPtTrack);
+        // LOG(info)<<"efficiencyWeightTracks "<<efficiencyWeightTracks;
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       }
 
