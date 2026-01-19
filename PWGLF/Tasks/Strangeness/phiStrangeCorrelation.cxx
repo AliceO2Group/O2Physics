@@ -588,7 +588,7 @@ struct PhiStrangenessCorrelation {
 
   PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDeltayDeltaphiData2D, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
 
-  void processParticleEfficiency(MCCollisions::iterator const& mcCollision, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidatesData const& phiCandidates)
+  void processParticleEfficiency(MCCollisions::iterator const& mcCollision, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcReco const& phiCandidatesMcReco)
   {
     uint16_t numberAssocColls{0};
     std::vector<float> zVtxs;
@@ -602,7 +602,7 @@ struct PhiStrangenessCorrelation {
       zVtxs.push_back(collision.posZ());
 
       if (selectionType == 0) {
-        const auto phiCandidatesThisColl = phiCandidates.sliceBy(preslices.phiCandPerCollision, collision.globalIndex());
+        const auto phiCandidatesThisColl = phiCandidatesMcReco.sliceBy(preslices.phiCandPerCollision, collision.globalIndex());
         for (const auto& phiCand : phiCandidatesThisColl) {
           histos.fill(HIST("phi/h4PhiMCReco"), collision.posZ(), mcCollision.centFT0M(), phiCand.pt(), phiCand.y());
         }
