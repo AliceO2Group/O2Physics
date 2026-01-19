@@ -27,7 +27,8 @@ if(_total_analysis_jobs LESS_EQUAL 0)
   set(_total_analysis_jobs 1)
 endif()
 set(ANALYSIS_COMPILE_POOL ${_total_analysis_jobs} CACHE STRING "How many parallel analysis compilation jobs")
-set_property(GLOBAL PROPERTY JOB_POOLS analysis=${ANALYSIS_COMPILE_POOL})
+set(HIGH_MEMORY_COMPILE_POOL 1 CACHE STRING "Pool for tasks which use a lot of memory")
+set_property(GLOBAL PROPERTY JOB_POOLS analysis=${ANALYSIS_COMPILE_POOL} serial=${HIGH_MEMORY_COMPILE_POOL})
 message(STATUS "Limiting workflow compilations in parallel to: ${ANALYSIS_COMPILE_POOL}")
 
 # C++ standard
