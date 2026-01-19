@@ -315,7 +315,7 @@ struct Alice3HfSelector3Prong {
   {
     std::vector<float> outputMl{-1.f, -1.f, -1.f};
     uint32_t pidMask = 0;
-    
+
     // looping over 3-prong cands
     for (const auto& cand : cands) {
       registry.fill(HIST("hSelections"), 1, cand.pt());
