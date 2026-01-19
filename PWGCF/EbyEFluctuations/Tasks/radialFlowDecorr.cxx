@@ -133,7 +133,7 @@ struct RadialFlowDecorr {
     kCentFT0M = 3,
     kCentFV0A = 4
   };
-  enum SystemCounter {
+  enum SystemType {
     kPbPb = 1,
     kOO = 2,
     kpPb = 3,
@@ -191,7 +191,7 @@ struct RadialFlowDecorr {
   Configurable<int> cfgSys{"cfgSys", 2, "Efficiency to be used for which system? 1-->PbPb, 2-->OO, 3-->pPb, 4-->pp"};
   Configurable<bool> cfgFlat{"cfgFlat", true, "Whether to use flattening weights or not"};
 
-  Configurable<std::string> cfgCCDBurl{"cfgCCDBurl", "https://alice-ccdb.cern.ch", "ccdb url according to system used"};
+  Configurable<std::string> cfgCCDBurl{"cfgCCDBurl", "https://alice-ccdb.cern.ch", "ccdb url"};
   Configurable<std::string> cfgCCDBUserPath{"cfgCCDBUserPath", "/Users/s/somadutt", "Base CCDB path"};
 
   ConfigurableAxis cfgAxisCent{"cfgAxisCent", {0.0, 1.0, 3.0, 5.0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "centrality axis (percentile)"};
@@ -851,17 +851,23 @@ struct RadialFlowDecorr {
     ccdb->setCreatedNotAfter(now);
 
     std::string sysDir = "";
-    if (cfgSys == 1) {
-      sysDir = "PbPbTest";
-    } else if (cfgSys == 2) {
-      sysDir = "OOTest";
-    } else if (cfgSys == 3) {
-      sysDir = "pPbTest";
-    } else if (cfgSys == 4) {
-      sysDir = "ppTest";
-    } else {
-      LOGF(fatal, "Invalid cfgSys value: %d", cfgSys.value);
+    switch (cfgSys) {
+      case kPbPb:
+        sysDir = "PbPbTest";
+        break;
+      case kOO:
+        sysDir = "OOTest";
+        break;
+      case kpPb:
+        sysDir = "pPbTest";
+        break;
+      case kpp:
+        sysDir = "ppTest";
+        break;
+      default:
+        LOGF(fatal, "Invalid cfgSys value: %d", cfgSys.value);
     }
+
     std::string pathEff = cfgCCDBUserPath.value + "/" + sysDir + "/Job1_EffMaps";
     std::string pathMCFlat = cfgCCDBUserPath.value + "/" + sysDir + "/Job1_MCFlatMaps";
     std::string pathMCMean = cfgCCDBUserPath.value + "/" + sysDir + "/Job2_MCMean";
