@@ -114,7 +114,6 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
-  Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
   Configurable<bool> fillAllHist{"fillAllHist", true, "Fill additional KF histograms to check selector cuts"};
   Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
@@ -545,10 +544,6 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto vertexCharmBaryonFromFitter = df.getPCACandidate();
       std::array<float, 3> pVecCascAsD{};
       std::array<float, 3> pVecCharmBachelorAsD{};
-      df.propagateTracksToVertex();
-      if (!df.isPropagateTracksToVertexDone()) {
-        continue;
-      }
       df.getTrack(0).getPxPyPzGlo(pVecCascAsD);
       df.getTrack(1).getPxPyPzGlo(pVecCharmBachelorAsD);
       std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecCharmBachelorAsD[0], pVecCascAsD[1] + pVecCharmBachelorAsD[1], pVecCascAsD[2] + pVecCharmBachelorAsD[2]};
