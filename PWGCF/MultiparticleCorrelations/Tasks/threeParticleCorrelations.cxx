@@ -266,6 +266,8 @@ struct ThreeParticleCorrelations {
     rPhiStarRegistry.add("hSEPhiStarMean_SS", "hSEPhiStarMean_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hSEPhiStarMean_SSP", "hSEPhiStarMean_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hSEPhiStarMean_SSN", "hSEPhiStarMean_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEPhiStarRadial_OS", "hSEPhiStarRadial_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
+    rPhiStarRegistry.add("hSEPhiStarRadial_SS", "hSEPhiStarRadial_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
 
     rPhiStarRegistry.add("hMEPhiStarIR_OS", "hMEPhiStarIR_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEPhiStarIR_SS", "hMEPhiStarIR_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
@@ -275,6 +277,8 @@ struct ThreeParticleCorrelations {
     rPhiStarRegistry.add("hMEPhiStarMean_SS", "hMEPhiStarMean_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEPhiStarMean_SSP", "hMEPhiStarMean_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEPhiStarMean_SSN", "hMEPhiStarMean_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEPhiStarRadial_OS", "hMEPhiStarRadial_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
+    rPhiStarRegistry.add("hMEPhiStarRadial_SS", "hMEPhiStarRadial_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
 
     // Efficiency
     rMCRegistry.add("hGenerated", "hGenerated", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
@@ -1229,7 +1233,7 @@ struct ThreeParticleCorrelations {
       for (double r = rMin; r <= rMax; r += 0.01) {
         dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
 
-        if (r == rMin) {
+        if (r == rMin) {                              // TPC inner radius
           if (!Mix) {                                 // Same-event
             if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
               rPhiStarRegistry.fill(HIST("hSEPhiStarIR_OS"), dPhiStar, dEta);
@@ -1259,6 +1263,21 @@ struct ThreeParticleCorrelations {
             if (std::abs(dEta) < dEtaMin && std::abs(dPhiStar) < dPhiStarMinOS) {
               pass = false;
             }
+          }
+        }
+
+        if (!Mix) {                                 // Same-event
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_OS"), dPhiStar, r);
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_SS"), dPhiStar, r);
+          }
+
+        } else {                                    // Mixed-event
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_OS"), dPhiStar, r);
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_SS"), dPhiStar, r);
           }
         }
 
