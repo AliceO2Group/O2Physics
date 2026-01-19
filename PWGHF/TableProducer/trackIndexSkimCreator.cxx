@@ -140,6 +140,7 @@ constexpr int ChannelsDeuteronPid = ChannelsProtonPid::NChannelsProtonPid + 1;
 constexpr int ChannelsTritonPid = ChannelsProtonPid::NChannelsProtonPid + 2;
 constexpr int ChannelsHeliumPid = ChannelsProtonPid::NChannelsProtonPid + 3;
 constexpr int NChannelsPidFor3Prong = static_cast<int>(ChannelsProtonPid::NChannelsProtonPid) + static_cast<int>(ChannelsKaonPid::NChannelsKaonPid) + static_cast<int>(ChannelsLightNucleiPid::NChannelsLightNucleiPid);
+
 enum class ChannelsNucleiQA : int {
   Deuteron = 0,
   Triton = 1,
@@ -331,7 +332,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     Configurable<bool> useIsGlobalTrackWoDCAForSoftPion{"useIsGlobalTrackWoDCAForSoftPion", false, "check isGlobalTrackWoDCA status for soft pion tracks"};
     Configurable<bool> useIsQualityTrackITSForSoftPion{"useIsQualityTrackITSForSoftPion", true, "check qualityTracksITS status for soft pion tracks"};
     // proton PID, applied only if corresponding process function enabled
-    Configurable<LabeledArray<float>> selectionsPid{"selectionsPid", {hf_presel_pid::CutsPid[0], 7, 6, hf_presel_pid::labelsRowsPid, hf_presel_pid::labelsCutsPid}, "PID selections for proton / kaon / deuteron / triton /helium applied if proper process function enabled"};
+    Configurable<LabeledArray<float>> selectionsPid{"selectionsPid", {hf_presel_pid::CutsPid[0], hf_presel_pid::NPidRows, hf_presel_pid::NPidCuts, hf_presel_pid::labelsRowsPid, hf_presel_pid::labelsCutsPid}, "PID selections for proton / kaon / deuteron / triton /helium applied if proper process function enabled"};
     // CCDB
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
