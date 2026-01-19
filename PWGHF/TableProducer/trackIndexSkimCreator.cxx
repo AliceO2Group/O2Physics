@@ -3265,7 +3265,6 @@ struct HfTrackIndexSkimCreatorCascades {
             if (nCand2 == 0) {
               continue;
             }
-            df2.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
             df2.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
             df2.getTrack(1).getPxPyPzGlo(pVecBach);
           }
