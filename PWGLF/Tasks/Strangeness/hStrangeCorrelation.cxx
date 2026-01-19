@@ -2059,7 +2059,7 @@ struct HStrangeCorrelation {
       histos.fill(HIST("hPionEtaVsPtAllSelected"), pionTrack.pt(), pionTrack.eta(), collision.centFT0M());
       if (doAssocPhysicalPrimary && !pion.mcPhysicalPrimary())
         continue;
-      if (doMCassociation && std::abs(pion.pdgCode()) != PDG_t::kPiPlus)
+      if (doMCassociation && std::abs(pion.pdgCode()) != PdgCodes[IndexPion])
         continue;
       histos.fill(HIST("hPionEtaVsPt"), pionTrack.pt(), pionTrack.eta(), collision.centFT0M());
       if (pionTrack.sign() > 0)
