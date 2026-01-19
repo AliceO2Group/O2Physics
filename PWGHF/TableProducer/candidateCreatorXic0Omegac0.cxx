@@ -376,7 +376,6 @@ struct HfCandidateCreatorXic0Omegac0 {
     df.setMaxChi2(maxChi2);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
-    df.setRefitWithMatCorr(refitWithMatCorr);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
