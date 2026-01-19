@@ -62,7 +62,7 @@ using namespace o2::framework::expressions;
 struct PhiMesonCandProducer {
   // Produce the table with the phi candidates information
   Produces<aod::PhimesonCandidatesData> phimesonCandidatesData;
-  // Produces<aod::PhimesonCandidatesMcReco> phimesonCandidatesMcReco;
+  Produces<aod::PhimesonCandidatesMcReco> phimesonCandidatesMcReco;
   Produces<aod::PhimesonCandidatesMcGen> phimesonCandidatesMcGen;
 
   HistogramRegistry histos{"phiCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
