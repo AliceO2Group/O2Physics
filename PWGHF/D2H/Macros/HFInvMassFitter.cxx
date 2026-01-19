@@ -87,6 +87,7 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mFixedSigma(false),
                                                    mFixedSigmaDoubleGaus(false),
                                                    mBoundSigma(false),
+                                                   mFixedDscbTailParams(false),
                                                    mSigmaValue(0.012),
                                                    mParamSgn(0.1),
                                                    mFracDoubleGaus(0.2),
@@ -107,6 +108,18 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mChiSquareOverNdfTotal(0),
                                                    mChiSquareOverNdfBkg(0),
                                                    mFixReflOverSgn(false),
+                                                   mDscbAlphaLInitialValue(1.5),
+                                                   mDscbAlphaLLowLimit(0.1),
+                                                   mDscbAlphaLUpLimit(5.0),
+                                                   mDscbAlphaRInitialValue(1.5),
+                                                   mDscbAlphaRLowLimit(0.1),
+                                                   mDscbAlphaRUpLimit(5.0),
+                                                   mDscbNLInitialValue(2.0),
+                                                   mDscbNLLowLimit(0.5),
+                                                   mDscbNLUpLimit(50.),
+                                                   mDscbNRInitialValue(2.0),
+                                                   mDscbNRLowLimit(0.5),
+                                                   mDscbNRUpLimit(50.),
                                                    mRooMeanSgn(nullptr),
                                                    mRooSigmaSgn(nullptr),
                                                    mRooSecSigmaSgn(nullptr),
@@ -117,6 +130,10 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mRooNSgn(nullptr),
                                                    mRooNBkg(nullptr),
                                                    mRooNRefl(nullptr),
+                                                   mRooDscbAlphaL(nullptr),
+                                                   mRooDscbAlphaR(nullptr),
+                                                   mRooDscbNL(nullptr),
+                                                   mRooDscbNR(nullptr),
                                                    mTotalPdf(nullptr),
                                                    mInvMassFrame(nullptr),
                                                    mReflFrame(nullptr),
@@ -1015,6 +1032,39 @@ void HFInvMassFitter::setTemplateReflections(TH1* histoRefl)
   }
   mHistoTemplateRefl = histoRefl;
   mHistoTemplateRefl->SetName("mHistoTemplateRefl");
+}
+
+void HFInvMassFitter::setFixDscbAlphaL(double alphaL)
+{
+  if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+    printf("Fit type should be DSCB!\n");
+  }
+  mFixedDscbTailParams = kTRUE;
+  mDscbAlphaLInitialValue = alphaL;
+}
+void HFInvMassFitter::setFixDscbAlphaR(double alphaR)
+{
+  if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+    printf("Fit type should be DSCB!\n");
+  }
+  mFixedDscbTailParams = kTRUE;
+  mDscbAlphaRInitialValue = alphaR;
+}
+void HFInvMassFitter::setFixDscbNL(double nL)
+{
+  if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+    printf("Fit type should be DSCB!\n");
+  }
+  mFixedDscbTailParams = kTRUE;
+  mDscbNLInitialValue = nL;
+}
+void HFInvMassFitter::setFixDscbNR(double nR)
+{
+  if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+    printf("Fit type should be DSCB!\n");
+  }
+  mFixedDscbTailParams = kTRUE;
+  mDscbNRInitialValue = nR;
 }
 
 double HFInvMassFitter::randomizeInitialParameter(const ParameterRanges& parameterRanges) const
