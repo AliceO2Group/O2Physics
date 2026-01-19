@@ -18,6 +18,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
