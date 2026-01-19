@@ -2066,6 +2066,7 @@ struct AnalysisDileptonTrack {
     Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
     Configurable<bool> fConfigPublishTripletTable{"cfgPublishTripletTable", false, "Publish the triplet tables, BmesonCandidates"};
     Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
+    Configurable<bool> fConfigSavehalfevents{"cfgSavehalfevents", false, "Save half event for the energy correlator study"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -2790,6 +2791,8 @@ struct AnalysisDileptonTrack {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
+      if (fConfigOptions.fConfigSavehalfevents && event.globalIndex() % 2 == 0)
+        continue;
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       // groupedBarrelAssocs.bindInternalIndicesTo(&assocs);
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
@@ -2983,6 +2986,8 @@ struct AnalysisDileptonTrack {
       if (!event.has_mcCollision()) {
         continue;
       }
+      if (fConfigOptions.fConfigSavehalfevents && event.globalIndex() % 2 == 0)
+        continue;
       runEnergyCorrelators<VarManager::kJpsiHadronMass>(event, mcTracks);
     }
   }
