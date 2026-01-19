@@ -1005,7 +1005,7 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("QA/before/ZNC_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[3]);
     }
 
-    if(cfgNoGain){ 
+    if (cfgNoGain) {
       q = qNoEq;
     }
 
