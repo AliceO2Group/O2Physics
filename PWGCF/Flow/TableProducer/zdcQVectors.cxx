@@ -156,6 +156,7 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgFillHistRegistry, bool, true, "Fill common registry with histograms");
   O2_DEFINE_CONFIGURABLE(cfgFillCutAnalysis, bool, true, "Fill cut analysis with histograms");
   O2_DEFINE_CONFIGURABLE(cfgFillNothing, bool, false, "Disable ALL Histograms -> ONLY use to reduce memory");
+  O2_DEFINE_CONFIGURABLE(cfgNoGain, bool, false, "Do not apply gain correction to ZDC energy calibration");
 
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_Shift, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Shift", "CCDB directory for Shift ZDC");
 
@@ -992,6 +993,22 @@ struct ZdcQVectors {
       }
     }
 
+    if (cfgFillHistRegistry && !cfgFillNothing) {
+      registry.get<TProfile>(HIST("QA/before/ZNA_Qx"))->Fill(Form("%d", runnumber), q[0]);
+      registry.get<TProfile>(HIST("QA/before/ZNA_Qy"))->Fill(Form("%d", runnumber), q[1]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_Qx"))->Fill(Form("%d", runnumber), q[2]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_Qy"))->Fill(Form("%d", runnumber), q[3]);
+
+      registry.get<TProfile>(HIST("QA/before/ZNA_Qx_noEq"))->Fill(Form("%d", runnumber), qNoEq[0]);
+      registry.get<TProfile>(HIST("QA/before/ZNA_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[1]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_Qx_noEq"))->Fill(Form("%d", runnumber), qNoEq[2]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[3]);
+    }
+
+    if(cfgNoGain){ 
+      q = qNoEq;
+    }
+
     if (cal.calibfilesLoaded[1]) {
       v[0] = v[0] - getCorrection<TProfile, kMeanv>(vnames[0].Data());
       v[1] = v[1] - getCorrection<TProfile, kMeanv>(vnames[1].Data());
@@ -1007,18 +1024,6 @@ struct ZdcQVectors {
     }
 
     std::vector<double> qRec(q);
-
-    if (cfgFillHistRegistry && !cfgFillNothing) {
-      registry.get<TProfile>(HIST("QA/before/ZNA_Qx"))->Fill(Form("%d", runnumber), q[0]);
-      registry.get<TProfile>(HIST("QA/before/ZNA_Qy"))->Fill(Form("%d", runnumber), q[1]);
-      registry.get<TProfile>(HIST("QA/before/ZNC_Qx"))->Fill(Form("%d", runnumber), q[2]);
-      registry.get<TProfile>(HIST("QA/before/ZNC_Qy"))->Fill(Form("%d", runnumber), q[3]);
-
-      registry.get<TProfile>(HIST("QA/before/ZNA_Qx_noEq"))->Fill(Form("%d", runnumber), qNoEq[0]);
-      registry.get<TProfile>(HIST("QA/before/ZNA_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[1]);
-      registry.get<TProfile>(HIST("QA/before/ZNC_Qx_noEq"))->Fill(Form("%d", runnumber), qNoEq[2]);
-      registry.get<TProfile>(HIST("QA/before/ZNC_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[3]);
-    }
 
     if (cal.atIteration == 0) {
       if (isSelected && cfgFillHistRegistry)
