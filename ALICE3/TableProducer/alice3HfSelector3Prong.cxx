@@ -313,21 +313,19 @@ struct Alice3HfSelector3Prong {
   template <CharmHadAlice3 CharmHad, typename CandType>
   void runSelect3Prong(CandType const& cands)
   {
-    bool isSelMassHypo0{false};
-    bool isSelMassHypo1{false};
     std::vector<float> outputMl{-1.f, -1.f, -1.f};
     uint32_t pidMask = 0;
-
+    
     // looping over 3-prong cands
     for (const auto& cand : cands) {
       registry.fill(HIST("hSelections"), 1, cand.pt());
       outputMl = {-1.f, -1.f, -1.f};
       pidMask = 0;
 
-      auto ptCand = cand.pt();
-      int const ptBin = findBin(binsPt, ptCand);
+      const float ptCand = cand.pt();
+      const int ptBin = findBin(binsPt, ptCand);
       if (ptBin == -1) {
-        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
+        candSelFlags(false, false, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -335,10 +333,10 @@ struct Alice3HfSelector3Prong {
       }
 
       // Here all cands pass the cut on the mass selection
-      bool const selMassHypo0 = selectionCandidateMass<CharmHad, false>(ptBin, cand);
-      bool const selMassHypo1 = selectionCandidateMass<CharmHad, true>(ptBin, cand);
+      const bool selMassHypo0 = selectionCandidateMass<CharmHad, false>(ptBin, cand);
+      const bool selMassHypo1 = selectionCandidateMass<CharmHad, true>(ptBin, cand);
       if (!selMassHypo0 && !selMassHypo1) {
-        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
+        candSelFlags(false, false, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -348,7 +346,7 @@ struct Alice3HfSelector3Prong {
 
       // Topological selection (TODO: track quality selection)
       if (!selectionTopol(cand, ptCand)) {
-        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
+        candSelFlags(false, false, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -359,7 +357,7 @@ struct Alice3HfSelector3Prong {
       // PID selection
       configurePidMask<CharmHad>(cand, pidMask);
       if (pidMask == 0) {
-        candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
+        candSelFlags(false, false, pidMask);
         if (applyMl) {
           candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -375,7 +373,7 @@ struct Alice3HfSelector3Prong {
         isSelectedMl = mlResponse.isSelectedMl(inputFeaturesMassHypo0, ptCand, outputMl);
         candMlScores(outputMl[0], outputMl[1], outputMl[2]);
         if (!isSelectedMl) {
-          candSelFlags(isSelMassHypo0, isSelMassHypo1, pidMask);
+          candSelFlags(false, false, pidMask);
           continue;
         }
 
