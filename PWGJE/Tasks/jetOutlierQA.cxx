@@ -13,18 +13,18 @@
 //
 /// \author Jaime Norman <jaime.norman@cern.ch>
 
-#include "RecoDecay.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include "Common/Core/RecoDecay.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <map>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -376,7 +378,7 @@ struct JetOutlierQATask {
     //
     // jet-based outlier checks based on ambiguous tracks
     //
-    if (collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -462,8 +464,8 @@ struct JetOutlierQATask {
             registry.fill(HIST("h_DeltaZ_InBunch"), deltaZ);
             registry.fill(HIST("h_DeltaZ_Z1_InBunch"), deltaZ, ev1.posZ());
             registry.fill(HIST("h_Z1_Z2_InBunch"), ev1.posZ(), ev2.posZ());
-            if (ev1.subGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
-                ev2.subGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) { // both are non-gap events
+            if (ev1.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
+                ev2.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) { // both are non-gap events
               registry.fill(HIST("h_DeltaZ_InBunch_JJ"), deltaZ);
               registry.fill(HIST("h_DeltaZ_Z1_InBunch_JJ"), deltaZ, ev1.posZ());
               registry.fill(HIST("h_Z1_Z2_InBunch_JJ"), ev1.posZ(), ev2.posZ());
@@ -495,8 +497,8 @@ struct JetOutlierQATask {
             registry.fill(HIST("h_DeltaZ_OutOfBunch"), deltaZ);
             registry.fill(HIST("h_DeltaZ_Z1_OutOfBunch"), deltaZ, ev1.posZ());
             registry.fill(HIST("h_Z1_Z2_OutOfBunch"), ev1.posZ(), ev2.posZ());
-            if (ev1.subGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
-                ev2.subGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) { // both are non-gap events
+            if (ev1.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
+                ev2.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) { // both are non-gap events
               registry.fill(HIST("h_DeltaZ_OutOfBunch_JJ"), deltaZ);
               registry.fill(HIST("h_DeltaZ_Z1_OutOfBunch_JJ"), deltaZ, ev1.posZ());
               registry.fill(HIST("h_Z1_Z2_OutOfBunch_JJ"), ev1.posZ(), ev2.posZ());
@@ -521,14 +523,14 @@ struct JetOutlierQATask {
     // first check for collisions occuring close by in time and z in MC
     std::set<int> closeByCollisionIDs;
     for (auto const& collisionMC : collisionsMC) {
-      if (collisionMC.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      if (collisionMC.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
         continue;
       }
       float posZtrue = collisionMC.posZ();
       for (auto const& collisionCloseMC : collisionsMC) { // check for closeby collisions in MC
         int diffColl = collisionCloseMC.globalIndex() - collisionMC.globalIndex();
         if (diffColl >= mergeCollisionsDeltaMin && diffColl <= mergeCollisionsDeltaMax) { // check if n collisions prior or after
-          if (collisionCloseMC.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+          if (collisionCloseMC.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
             continue;
           }
           if (diffColl == 0) {
@@ -543,7 +545,7 @@ struct JetOutlierQATask {
     }
     // now make reconstructed-level checks
     for (auto const& collision : collisions) { // loop over reconstructed collisions
-      if (collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      if (collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
         continue;
       }
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -592,7 +594,7 @@ struct JetOutlierQATask {
         }
         int mcCollisionIDcoll = collision.mcCollisionId(); // Get the corresponding MC collision ID from the reco collision
         int mcCollisionIDOutlier = mcParticleOutlier.mcCollisionId();
-        int subGenIDOutlier = collisionMCOutlier.begin().subGeneratorId();
+        int subGenIDOutlier = collisionMCOutlier.begin().getSubGeneratorId();
         int outlierCollisionIDDifference = mcCollisionIDOutlier - mcCollisionIDcoll;
 
         int nMBdifferent = 0;
@@ -607,7 +609,7 @@ struct JetOutlierQATask {
           registry.fill(HIST("h2_pt_hat_track_pt_outlier"), pTHat, track.pt());
           for (auto const& collisionOutlier : collisions) { // find collisions closeby
             int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
-            if (abs(diffColl) < 6) {
+            if (std::abs(diffColl) < 6) {
               float eventWeightOutlier = collisionOutlier.mcCollision().weight();
               double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
               registry.fill(HIST("h2_neighbour_pt_hat_outlier"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
@@ -633,7 +635,7 @@ struct JetOutlierQATask {
               continue;
             }
             int mcCollisionIDtrack = mcParticle.mcCollisionId(); // Get the corresponding MC collision ID
-            int subGenID = collisionMC.begin().subGeneratorId();
+            int subGenID = collisionMC.begin().getSubGeneratorId();
             if (mcCollisionIDtrack == mcCollisionIDcoll) {
               nJJsame++;
               if (isTrackSelected) {
@@ -712,7 +714,7 @@ struct JetOutlierQATask {
           double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
           int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
 
-          if (abs(diffColl) < 6) {
+          if (std::abs(diffColl) < 6) {
             // LOG(info) << "pThat = " << pTHat << "pThat neighbour = "<<pTHatOutlier;
             registry.fill(HIST("h2_neighbour_pt_hat_all"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
             registry.fill(HIST("h2_neighbour_track_pt_all"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);

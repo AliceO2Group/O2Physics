@@ -13,6 +13,9 @@
 //
 #include "PWGDQ/Core/MixingLibrary.h"
 
+#include <string>
+#include <vector>
+
 void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible)
 {
   std::string nameStr = mixingVarible;

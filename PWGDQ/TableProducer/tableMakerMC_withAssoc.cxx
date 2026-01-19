@@ -207,6 +207,7 @@ struct TableMakerMC {
     Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> fGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
     Configurable<std::string> fGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   } fConfigCCDB;
@@ -1179,9 +1180,13 @@ struct TableMakerMC {
         }
       } else {
         fGrpMag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.fGrpMagPath, bcs.begin().timestamp());
+        auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
           VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
+        }
+        if (fZShift != nullptr && !fZShift->empty()) {
+          VarManager::SetZShift((*fZShift)[0]);
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();

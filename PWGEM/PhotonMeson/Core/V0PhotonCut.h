@@ -9,32 +9,149 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for v0 photon selection
-//
+/// \file V0PhotonCut.h
+/// \brief Header of class for V0 photon selection.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
-#include "Rtypes.h"
-
+#include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
-#include "TMath.h"
-#include "TNamed.h"
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/Array2D.h>
+
+#include <TMath.h>
+#include <TNamed.h>
+
+#include <fairlogger/Logger.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <functional>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
+
 using namespace o2::pwgem::photonmeson;
+
+namespace o2::analysis
+{
+
+// namespace per channel
+namespace em_cuts_ml
+{
+// direction of the cut
+enum CutDirection {
+  CutGreater = 0, // require score < cut value
+  CutSmaller,     // require score > cut value
+  CutNot          // do not cut on score
+};
+
+static constexpr int NBinsPt = 12;
+static constexpr int NCutScores = 2;
+// default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0.,
+  0.25,
+  0.5,
+  0.75,
+  1.,
+  1.5,
+  2.,
+  4.,
+  6.,
+  10.,
+  20.,
+  50.,
+  100.};
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+static constexpr int NBinsCent = 11;
+constexpr double BinsCent[NBinsCent + 1] = {
+  0.,
+  5,
+  10,
+  20,
+  30,
+  40,
+  50,
+  60,
+  70,
+  80,
+  90,
+  100.};
+const auto vecBinsCent = std::vector<double>{BinsCent, BinsCent + NBinsCent + 1};
+
+// default values for the ML model paths, one model per pT bin
+static const std::vector<std::string> modelPaths = {
+  ""};
+
+// default values for the cut directions
+constexpr int CutDir[NCutScores] = {CutGreater, CutSmaller};
+const auto vecCutDir = std::vector<int>{CutDir, CutDir + NCutScores};
+
+// default values for the cuts
+constexpr double Cuts[NBinsPt][NCutScores] = {
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5},
+  {0.5, 0.5}};
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11"};
+// labels
+static const std::vector<std::string> labelsCent = {
+  "Cent bin 0",
+  "Cent bin 1",
+  "Cent bin 2",
+  "Cent bin 3",
+  "Cent bin 4",
+  "Cent bin 5",
+  "Cent bin 6",
+  "Cent bin 7",
+  "Cent bin 8",
+  "Cent bin 9",
+  "Cent bin 10"};
+
+// column labels
+static const std::vector<std::string> labelsCutScore = {"score primary photons", "score background"};
+} // namespace em_cuts_ml
+
+} // namespace o2::analysis
 
 class V0PhotonCut : public TNamed
 {
  public:
   V0PhotonCut() = default;
   V0PhotonCut(const char* name, const char* title) : TNamed(name, title) {}
+  ~V0PhotonCut() override { delete mEmMlResponse; };
 
   enum class V0PhotonCuts : int {
     // v0 cut
@@ -74,7 +191,7 @@ class V0PhotonCut : public TNamed
     kNCuts
   };
 
-  template <class TLeg, typename TV0>
+  template <o2::soa::is_iterator TV0, typename TLeg>
   bool IsSelected(TV0 const& v0) const
   {
     if (!IsSelectedV0(v0, V0PhotonCuts::kV0PtRange)) {
@@ -196,6 +313,24 @@ class V0PhotonCut : public TNamed
         return false;
       }
     }
+    if (mApplyMlCuts) {
+      if (!mEmMlResponse) {
+        LOG(error) << "EM ML Response is not initialized!";
+        return false;
+      }
+      bool isSelectedMl = false;
+      std::vector<float> mOutputML;
+      V0PhotonCandidate v0photoncandidate(v0, pos, ele, mCent, mD_Bz);
+      std::vector<float> mlInputFeatures = mEmMlResponse->getInputFeatures(v0photoncandidate, pos, ele);
+      if (mUse2DBinning) {
+        isSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCent(), mOutputML);
+      } else {
+        isSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), mOutputML);
+      }
+      if (!isSelectedMl) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -241,7 +376,7 @@ class V0PhotonCut : public TNamed
     return true;
   }
 
-  template <typename T>
+  template <o2::soa::is_iterator T>
   bool IsSelectedV0(T const& v0, const V0PhotonCuts& cut) const
   {
     switch (cut) {
@@ -401,6 +536,26 @@ class V0PhotonCut : public TNamed
     }
   }
 
+  void initV0MlModels(o2::ccdb::CcdbApi& ccdbApi)
+  {
+    if (!mEmMlResponse) {
+      mEmMlResponse = new o2::analysis::EmMlResponsePCM<float>();
+    }
+    if (mUse2DBinning) {
+      mEmMlResponse->configure2D(mBinsPtMl, mBinsCentMl, mCutsPCMMl, mCutDirMl, mNClassesMl);
+    } else {
+      mEmMlResponse->configure(mBinsPtMl, mCutsPCMMl, mCutDirMl, mNClassesMl);
+    }
+    if (mLoadMlModelsFromCCDB) {
+      ccdbApi.init(mCcdbUrl);
+      mEmMlResponse->setModelPathsCCDB(mOnnxFileNames, ccdbApi, mModelPathsCCDB, mTimestampCCDB);
+    } else {
+      mEmMlResponse->setModelPathsLocal(mOnnxFileNames);
+    }
+    mEmMlResponse->cacheInputFeaturesIndices(mNamesInputFeatures);
+    mEmMlResponse->init();
+  }
+
   // Setters
   void SetV0PtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetV0EtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -444,6 +599,22 @@ class V0PhotonCut : public TNamed
   void SetDisableITSonly(bool flag);
   void SetDisableTPConly(bool flag);
 
+  void SetApplyMlCuts(bool flag = false);
+  void SetUse2DBinning(bool flag = true);
+  void SetLoadMlModelsFromCCDB(bool flag = true);
+  void SetNClassesMl(int nClasses);
+  void SetMlTimestampCCDB(int timestamp);
+  void SetCentrality(float cent);
+  void SetD_Bz(float d_bz);
+  void SetCcdbUrl(const std::string& url = "http://alice-ccdb.cern.ch");
+  void SetCutDirMl(const std::vector<int>& cutDirMl);
+  void SetMlModelPathsCCDB(const std::vector<std::string>& modelPaths);
+  void SetMlOnnxFileNames(const std::vector<std::string>& onnxFileNamesVec);
+  void SetBinsPtMl(const std::vector<double>& binsPt);
+  void SetBinsCentMl(const std::vector<double>& binsCent);
+  void SetCutsPCMMl(const o2::framework::LabeledArray<double>& cutsPCM);
+  void SetNamesInputFeatures(const std::vector<std::string>& namesInputFeaturesVec);
+
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement;
@@ -464,6 +635,24 @@ class V0PhotonCut : public TNamed
   bool mIsOnWwireIB{false};
   bool mIsOnWwireOB{false};
   bool mRejectITSib{false};
+
+  // ML cuts
+  bool mApplyMlCuts{false};
+  bool mUse2DBinning{true};
+  bool mLoadMlModelsFromCCDB{true};
+  int mTimestampCCDB{-1};
+  int mNClassesMl{static_cast<int>(o2::analysis::em_cuts_ml::NCutScores)};
+  float mCent{0.f};
+  float mD_Bz{0.f};
+  std::string mCcdbUrl{"http://alice-ccdb.cern.ch"};
+  std::vector<int> mCutDirMl{std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}};
+  std::vector<std::string> mModelPathsCCDB{std::vector<std::string>{"path_ccdb/BDT_PCM/"}};
+  std::vector<std::string> mOnnxFileNames{std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}};
+  std::vector<std::string> mNamesInputFeatures{std::vector<std::string>{"feature1", "feature2"}};
+  std::vector<double> mBinsPtMl{std::vector<double>{o2::analysis::em_cuts_ml::vecBinsPt}};
+  std::vector<double> mBinsCentMl{std::vector<double>{o2::analysis::em_cuts_ml::vecBinsCent}};
+  o2::framework::LabeledArray<double> mCutsPCMMl{o2::framework::LabeledArray<double>{o2::analysis::em_cuts_ml::Cuts[0], o2::analysis::em_cuts_ml::NBinsPt, o2::analysis::em_cuts_ml::NCutScores, o2::analysis::em_cuts_ml::labelsPt, o2::analysis::em_cuts_ml::labelsCutScore}};
+  o2::analysis::EmMlResponsePCM<float>* mEmMlResponse{nullptr};
 
   // pid cuts
   float mMinTPCNsigmaEl{-5}, mMaxTPCNsigmaEl{+5};
@@ -494,7 +683,7 @@ class V0PhotonCut : public TNamed
   bool mDisableITSonly{false};
   bool mDisableTPConly{false};
 
-  ClassDef(V0PhotonCut, 1);
+  ClassDef(V0PhotonCut, 3);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
