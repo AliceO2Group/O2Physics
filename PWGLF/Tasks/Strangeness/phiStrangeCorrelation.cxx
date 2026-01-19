@@ -380,6 +380,11 @@ struct PhiStrangenessCorrelation {
     return totalEfficiency <= 0.0f ? 1.0f : 1.0f / totalEfficiency;
   }
 
+  float getDeltaPhi(float phiTrigger, float phiAssociated)
+  {
+    return RecoDecay::constrainAngle(phiTrigger - phiAssociated, -o2::constants::math::PIHalf);
+  }
+
   // Single track selection for strangeness sector
   template <typename T>
   bool selectionTrackStrangeness(const T& track)
@@ -555,7 +560,7 @@ struct PhiStrangenessCorrelation {
           /*float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMapK0S, multiplicity, v0.pt(), v0.yK0Short()));*/
 
-          histos.fill(HIST("phiK0S/h5PhiK0SData2PartCorr") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), phiCand.phi() - v0.phi(), weightPhiK0S);
+          histos.fill(HIST("phiK0S/h5PhiK0SData2PartCorr") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), getDeltaPhi(phiCand.phi(), v0.phi()), weightPhiK0S);
         }
 
         // Loop over all primary pion candidates
@@ -573,7 +578,7 @@ struct PhiStrangenessCorrelation {
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMapPion, multiplicity, track.pt(), track.rapidity(massPi)));*/
 
-          histos.fill(HIST("phiPi/h5PhiPiData2PartCorr") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), phiCand.phi() - track.phi(), weightPhiPion);
+          histos.fill(HIST("phiPi/h5PhiPiData2PartCorr") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), getDeltaPhi(phiCand.phi(), track.phi()), weightPhiPion);
         }
       });
     }
