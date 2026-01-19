@@ -2128,7 +2128,7 @@ struct RadialFlowDecorr {
             float valx = KHalf * (etaLw[ietaA] + etaUp[ietaA]);
             float valy = KHalf * (etaLw[ietaC] + etaUp[ietaC]);
 
-            for (int ipt = 0; ipt < 3; ++ipt) {
+            for (int ipt = 0; ipt < KNpT; ++ipt) {
               float c2Sub = p1kBarRecoEffCor[ietaA][ipt] * p1kBarRecoEffCor[ietaC][ipt];
               if (std::isfinite(c2Sub)) {
                 switch (ipt) {
