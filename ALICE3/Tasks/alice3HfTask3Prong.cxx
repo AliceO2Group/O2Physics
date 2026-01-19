@@ -111,7 +111,7 @@ struct Alice3HfTask3Prong {
 
     auto addHistogramsRec = [&](const std::string& histoName, const std::string& xAxisTitle, const std::string& yAxisTitle, const HistogramConfigSpec& configSpec) {
       const char* basePath = "MC/rec";
-      registry.add(Form("%s/signal/%sRecSig%s",basePath, histoName.c_str(), SignalSuffixes[SignalClasses::Signal].data()), ("3-prong cands (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
+      registry.add(Form("%s/signal/%sRecSig%s", basePath, histoName.c_str(), SignalSuffixes[SignalClasses::Signal].data()), ("3-prong cands (matched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
       registry.add(Form("%s/prompt/%sRecSig%s", basePath, histoName.c_str(), SignalSuffixes[SignalClasses::Prompt].data()), ("3-prong cands (matched, prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
       registry.add(Form("%s/nonprompt/%sRecSig%s", basePath, histoName.c_str(), SignalSuffixes[SignalClasses::NonPrompt].data()), ("3-prong cands (matched, non-prompt);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
       registry.add(Form("%s/background/%sRecSig%s", basePath, histoName.c_str(), SignalSuffixes[SignalClasses::Bkg].data()), ("3-prong cands (unmatched);" + xAxisTitle + ";" + yAxisTitle).c_str(), configSpec);
