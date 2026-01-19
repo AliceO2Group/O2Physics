@@ -52,6 +52,7 @@ using CollEventAndSpecPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod
 using CollEventAndSpecPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
 using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
 using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
 using CascCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
 using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
 
@@ -92,6 +93,7 @@ const double AlphaLambda[2] = {0.747, -0.757}; // decay parameter of Lambda and 
 
 std::shared_ptr<TH2> hMassBeforeSelVsPt[nCharges];
 std::shared_ptr<TH2> hMassAfterSelVsPt[nCharges];
+std::shared_ptr<TH2> hMassAfterSelVsPtTrue[nCharges];
 } // namespace lambdav2
 
 namespace cascade_flow_cuts_ml
@@ -927,6 +929,8 @@ struct cascadeFlow {
     const AxisSpec thnAxisCosThetaOmegaAlpha{thnAxisConfigs.thnConfigAxisCosThetaOmegaAlpha, "CosThetaOmegaWithAlpha"};
     const AxisSpec thnAxisCosThetaProtonAlpha{thnAxisConfigs.thnConfigAxisCosThetaProtonAlpha, "CosThetaProtonWithAlpha"};
 
+    histos.add("hCentvsPtvsPrimaryFracLambda", "hCentvsPtvsPrimaryFracLambda", HistType::kTH3F, {{100, 0, 100}, thnAxisPtLambda, {4, -0.5, 3.5}});
+    histos.add("hCentvsPrimaryFracLambda", "hCentvsPrimaryFracLambda", HistType::kTH2F, {{100, 0, 100}, {4, -0.5, 3.5}});
     histos.add("massXi_ProtonAcc", "massXi", HistType::kTH1F, {thnAxisMassXi});
     histos.add("massOmega_ProtonAcc", "massOmega", HistType::kTH1F, {thnAxisMassOmega});
 
@@ -1025,6 +1029,7 @@ struct cascadeFlow {
     for (int iS{0}; iS < nCharges; ++iS) {
       lambdav2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", lambdav2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massLambdaAxis[iS], ptAxisLambda});
       lambdav2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", lambdav2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massLambdaAxis[iS], ptAxisLambda});
+      lambdav2::hMassAfterSelVsPtTrue[iS] = histos.add<TH2>(Form("hMassAfterSelVsPtTrue%s", lambdav2::speciesNames[iS].data()), "hMassAfterSelVsPtTrue", HistType::kTH2F, {massLambdaAxis[iS], ptAxisLambda});
     }
 
     if (isApplyML) {
@@ -2498,6 +2503,125 @@ struct cascadeFlow {
     }
   }
 
+  void processMCPrimaryLambdaFraction(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, V0MCCandidates const& V0s, DauTracks const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  {
+
+    Float_t collisionCentrality = 0;
+    if (isCollisionCentrality == 0) { // T0C
+      collisionCentrality = coll.centFT0C();
+    } else if (isCollisionCentrality == 1) { // T0M
+      collisionCentrality = coll.centFT0M();
+    }
+
+    histos.fill(HIST("hEventCentralityBefEvSel"), collisionCentrality);
+
+    if (!AcceptEvent(coll, 1)) {
+      return;
+    }
+
+    // no EP requirements as in MC we do not have EP info
+    histos.fill(HIST("hNEvents"), 9.5);
+    histos.fill(HIST("hEventCentrality"), collisionCentrality);
+    histos.fill(HIST("hEventVertexZ"), coll.posZ());
+
+    for (auto const& v0 : V0s) {
+
+      /// Add some minimal cuts for single track variables (min number of TPC clusters)
+      auto negExtra = v0.negTrackExtra_as<DauTracks>();
+      auto posExtra = v0.posTrackExtra_as<DauTracks>();
+
+      int counterLambda = 0;
+      int counterALambda = 0;
+      bool isLambdaCandidate = 0;
+      bool isALambdaCandidate = 0;
+
+      // check if v0 has MC info
+      if (!v0.has_v0MCCore())
+        continue;
+
+      //-- selections ------------------------------------------------------------
+      if (isLambdaAccepted(negExtra, posExtra, counterLambda))
+        isLambdaCandidate = 1;
+      if (isAntiLambdaAccepted(negExtra, posExtra, counterALambda))
+        isALambdaCandidate = 1;
+      histos.fill(HIST("hLambdaDauSel"), counterLambda);
+      histos.fill(HIST("hALambdaDauSel"), counterALambda);
+
+      if (v0.pt() < V0Configs.MinPtV0 || v0.pt() > V0Configs.MaxPtV0) {
+        continue;
+      }
+
+      float massV0[nCharges]{v0.mLambda(), v0.mAntiLambda()};
+      lambdav2::hMassBeforeSelVsPt[0]->Fill(massV0[0], v0.pt());
+      lambdav2::hMassBeforeSelVsPt[1]->Fill(massV0[1], v0.pt());
+
+      bool isSelectedV0[2]{false, false};
+      if (isV0TopoAccepted(v0) && isLambdaCandidate)
+        isSelectedV0[0] = true;
+      if (isV0TopoAccepted(v0) && isALambdaCandidate)
+        isSelectedV0[1] = true;
+
+      if (isSelectedV0[0] && !isSelectedV0[1]) { // Lambdas
+        histos.fill(HIST("hLambdaCandidate"), 0);
+      }
+      if (isSelectedV0[1] && !isSelectedV0[0]) { // AntiLambdas
+        histos.fill(HIST("hLambdaCandidate"), 1);
+      }
+      if (isSelectedV0[0] && isSelectedV0[1]) {
+        histos.fill(HIST("hLambdaCandidate"), 2);
+        if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda && v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda) {
+          histos.fill(HIST("hLambdaCandidate"), 3);
+          continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle; checked to be zero in range 1.105 - 1.125
+        }
+        if (!(v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda) && !(v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda))
+          histos.fill(HIST("hLambdaCandidate"), 4); // bkg candidates
+      }
+      if (!isSelectedV0[0] && !isSelectedV0[1])
+        continue;
+
+      lambdav2::hMassAfterSelVsPt[0]->Fill(massV0[0], v0.pt());
+      lambdav2::hMassAfterSelVsPt[1]->Fill(massV0[1], v0.pt());
+      //--------------------------------------------------------------
+
+      auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      int pdgCode{v0MC.pdgCode()};
+      // select true lambdas
+      bool isTrueLambda = 0;
+      bool isTrueALambda = 0;
+      if (pdgCode == PDG_t::kLambda0 && v0MC.pdgCodePositive() == PDG_t::kProton && v0MC.pdgCodeNegative() == PDG_t::kPiMinus)
+        isTrueLambda = 1;
+      else if (pdgCode == PDG_t::kLambda0Bar && v0MC.pdgCodePositive() == PDG_t::kPiPlus && v0MC.pdgCodeNegative() == PDG_t::kProtonBar)
+        isTrueALambda = 1;
+      if (!isTrueLambda && !isTrueALambda)
+        continue;
+      if (isTrueLambda)
+        lambdav2::hMassAfterSelVsPtTrue[0]->Fill(massV0[0], v0.pt());
+      if (isTrueALambda)
+        lambdav2::hMassAfterSelVsPtTrue[1]->Fill(massV0[1], v0.pt());
+
+      bool isPrimary = v0MC.isPhysicalPrimary();
+
+      // histo for primary fraction
+      if (isTrueLambda) {
+        if (isPrimary) {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 0);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 0);
+        } else {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 1);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 1);
+        }
+      } else if (isTrueALambda) {
+        if (isPrimary) {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 2);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 2);
+        } else {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 3);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 3);
+        }
+      }
+    }
+  }
+
   PROCESS_SWITCH(cascadeFlow, processTrainingBackground, "Process to create the training dataset for the background", true);
   PROCESS_SWITCH(cascadeFlow, processTrainingSignal, "Process to create the training dataset for the signal", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseData, "Process to apply ML model to the data", false);
@@ -2506,6 +2630,7 @@ struct cascadeFlow {
   PROCESS_SWITCH(cascadeFlow, processAnalyseLambdaEP2CentralFW, "Process to measure flow and polarization of Lambda - event plane calibration from central framework", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseMC, "Process to apply ML model to the MC", false);
   PROCESS_SWITCH(cascadeFlow, processMCGen, "Process to store MC generated particles", false);
+  PROCESS_SWITCH(cascadeFlow, processMCPrimaryLambdaFraction, "Process to compute primary lambda fraction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

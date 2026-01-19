@@ -16,6 +16,7 @@
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
@@ -29,8 +30,6 @@
 #include "Framework/InitContext.h"
 #include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
-
-#include <vector>
 
 using namespace o2::aod;
 using namespace o2::framework;
@@ -70,6 +69,9 @@ struct FemtoTrackQa {
   Partition<FemtoTracks> trackPartition = MAKE_TRACK_PARTITION(confTrackSelection);
   Preslice<FemtoTracks> perColReco = femtobase::stored::fColId;
 
+  particlecleaner::ConfTrackCleaner1 confTrackCleaner;
+  particlecleaner::ParticleCleaner trackCleaner;
+
   Partition<FemtoTracksWithLabel> trackWithLabelPartition = MAKE_TRACK_PARTITION(confTrackSelection);
   Preslice<FemtoTracksWithLabel> perColRecoWithLabel = femtobase::stored::fColId;
 
@@ -100,6 +102,7 @@ struct FemtoTrackQa {
       LOG(fatal) << "More than 1 process function is activated. Breaking...";
     }
     bool processData = doprocessData;
+    trackCleaner.init(confTrackCleaner);
     if (processData) {
       auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
@@ -130,6 +133,9 @@ struct FemtoTrackQa {
     auto trackSlice = trackWithLabelPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& track : trackSlice) {
+      if (!trackCleaner.isClean(track, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       trackHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(track, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
