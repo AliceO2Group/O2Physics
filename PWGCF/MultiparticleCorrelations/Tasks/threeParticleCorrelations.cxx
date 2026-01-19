@@ -1233,8 +1233,8 @@ struct ThreeParticleCorrelations {
       for (double r = rMin; r <= rMax; r += 0.01) {
         dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
 
-        if (r == rMin) { // TPC inner radius
-          if (!Mix) { // Same-event
+        if (r == rMin) {                              // TPC inner radius
+          if (!Mix) {                                 // Same-event
             if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
               rPhiStarRegistry.fill(HIST("hSEPhiStarIR_OS"), dPhiStar, dEta);
             } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
@@ -1246,7 +1246,7 @@ struct ThreeParticleCorrelations {
               }
             }
 
-          } else { // Mixed-event
+          } else {                                    // Mixed-event
             if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
               rPhiStarRegistry.fill(HIST("hMEPhiStarIR_OS"), dPhiStar, dEta);
             } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
@@ -1266,20 +1266,20 @@ struct ThreeParticleCorrelations {
           }
         }
 
-	if (!Mix) { // Same-event
-	  if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
-	    rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_OS"), dPhiStar, r);
-	  } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
-	    rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_SS"), dPhiStar, r);
-	  }
-	  
-	} else { // Mixed-event
-	  if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
-	    rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_OS"), dPhiStar, r);
-	  } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
-	    rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_SS"), dPhiStar, r);
-	  }
-	}
+        if (!Mix) {                                 // Same-event
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_OS"), dPhiStar, r);
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_SS"), dPhiStar, r);
+          }
+
+        } else {                                    // Mixed-event
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_OS"), dPhiStar, r);
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_SS"), dPhiStar, r);
+          }
+        }
 
         dPhiStarMean += (dPhiStar / 170);
       }
