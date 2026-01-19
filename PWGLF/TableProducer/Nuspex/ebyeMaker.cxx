@@ -98,7 +98,8 @@ void encode16bit(int const& n, uint8_t& low, uint8_t& up)
   if (n >= (1 << 16)) {
     low = up = -1;
     return;
-  }
+  } else
+    low = up = 0;
   int bbyte = 8;
   for (int b{0}; b < bbyte; ++b) {
     int bl = (n & (1 << b)) >> b;
