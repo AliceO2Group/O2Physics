@@ -62,6 +62,8 @@ struct FemtoUniverseEfficiencyBase {
     Configurable<float> confNsigmaTPCProton{"confNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < confMomProton"};
     Configurable<float> confNsigmaCombinedPion{"confNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > confMomPion"};
     Configurable<float> confNsigmaTPCPion{"confNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < confMomPion"};
+    Configurable<bool> confPDGCheckMCReco{"confPDGCheckMCReco", true, "Check PDG code of MC reco paricles"};
+
   } ConfBothTracks;
 
   /// Lambda cuts
@@ -158,12 +160,14 @@ struct FemtoUniverseEfficiencyBase {
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPDG{"PDGHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry registryCuts{"CutsPtHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCOrigin{"MCOriginHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   void init(InitContext&)
   {
 
     eventHisto.init(&qaRegistry);
+    registryCuts.add("part1/cutsVspT", ";#it{p}_{T} (GeV/c) ;Cut no.", {HistType::kTH2F, {{500, 0, 5}, {7, 0, 7}}});
     trackHistoPartOneGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, confIsMCGen, confPDGCodePartOne, false);
     trackHistoPartOneRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartOne, confIsDebug);
     registryMCOrigin.add("part1/hPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
@@ -180,6 +184,7 @@ struct FemtoUniverseEfficiencyBase {
     registryPDG.add("part2/PDGvspT", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
     registryPDG.add("part2/PDGvspTall", "PDG;#it{p}_{T} (GeV/c); PDG", {HistType::kTH2F, {{500, 0, 5}, {16001, -8000.5, 8000.5}}});
     if (!confIsSame) {
+      registryCuts.add("part2/cutsVspT", ";#it{p}_{T} (GeV/c) ;Cut no.", {HistType::kTH2F, {{500, 0, 5}, {7, 0, 7}}});
       trackHistoPartTwoGen.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, confIsMCGen, confPDGCodePartTwo, false);
       trackHistoPartTwoRec.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarDCABins, confIsMCReco, confPDGCodePartTwo, confIsDebug);
       registryMCOrigin.add("part2/hPt", " ;#it{p}_{T} (GeV/c); Entries", {HistType::kTH1F, {{240, 0, 6}}});
@@ -393,13 +398,30 @@ struct FemtoUniverseEfficiencyBase {
   {
     /// Histogramming same event
     for (const auto& part : grouppartsOneMCRec) {
-      if (part.partType() != confParticleTypePartOne || part.sign() != confChargePart1 || !isParticleNSigma(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+
+      // only partition
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 0);
+
+      if (part.partType() != confParticleTypePartOne) {
         continue;
       }
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 1);
+
+      if (part.sign() != confChargePart1) {
+        continue;
+      }
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 2);
+
+      if (!isParticleNSigma(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+        continue;
+      }
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 3);
 
       if (!part.has_fdMCParticle()) {
         continue;
       }
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 4);
+
       const auto mcParticle = part.fdMCParticle();
 
       registryPDG.fill(HIST("part1/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
@@ -408,10 +430,12 @@ struct FemtoUniverseEfficiencyBase {
       if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         continue;
       }
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 5);
 
-      if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartOne))) {
+      if (ConfBothTracks.confPDGCheckMCReco && !(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartOne))) {
         continue;
       }
+      registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 6);
 
       registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
       registryMCOrigin.fill(HIST("part1/hPt"), mcParticle.pt());
@@ -419,13 +443,27 @@ struct FemtoUniverseEfficiencyBase {
 
     if (!confIsSame) {
       for (const auto& part : grouppartsTwoMCRec) {
-        if (part.partType() != confParticleTypePartTwo || part.sign() != confChargePart2 || !isParticleNSigma(confPDGCodePartTwo, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 0);
+
+        if (part.partType() != confParticleTypePartTwo) {
           continue;
         }
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 1);
+
+        if (part.sign() != confChargePart2) {
+          continue;
+        }
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 2);
+
+        if (!isParticleNSigma(confPDGCodePartTwo, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+          continue;
+        }
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 3);
 
         if (!part.has_fdMCParticle()) {
           continue;
         }
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 4);
         const auto mcParticle = part.fdMCParticle();
 
         registryPDG.fill(HIST("part2/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
@@ -434,10 +472,12 @@ struct FemtoUniverseEfficiencyBase {
         if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
           continue;
         }
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 5);
 
-        if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartTwo))) {
+        if (ConfBothTracks.confPDGCheckMCReco && !(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartTwo))) {
           continue;
         }
+        registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 6);
 
         registryPDG.fill(HIST("part2/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
         registryMCOrigin.fill(HIST("part2/hPt"), mcParticle.pt());

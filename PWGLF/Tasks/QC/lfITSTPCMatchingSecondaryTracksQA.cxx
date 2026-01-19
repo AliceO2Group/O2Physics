@@ -365,27 +365,27 @@ struct LfITSTPCMatchingSecondaryTracksQA {
       // Event Selection
       if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
         continue;
-      registryData.fill(HIST("number_of_events_mc"), 1.5);
+      registryMC.fill(HIST("number_of_events_mc"), 1.5);
 
       // Reject events near the ITS Read-Out Frame border
       if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
         continue;
-      registryData.fill(HIST("number_of_events_mc"), 2.5);
+      registryMC.fill(HIST("number_of_events_mc"), 2.5);
 
       // Reject events at the Time Frame border
       if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
         continue;
-      registryData.fill(HIST("number_of_events_mc"), 3.5);
+      registryMC.fill(HIST("number_of_events_mc"), 3.5);
 
       // Reject events with same-bunch pileup
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
         continue;
-      registryData.fill(HIST("number_of_events_mc"), 4.5);
+      registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
       // Require consistent FT0 vs PV z-vertex
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
-      registryData.fill(HIST("number_of_events_mc"), 5.5);
+      registryMC.fill(HIST("number_of_events_mc"), 5.5);
 
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());

@@ -31,6 +31,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
@@ -718,8 +719,7 @@ struct HfTaskCharmPolarisation {
     }
 
     if (doprocessResolEventPlane) {
-      int dummyVariable;
-      hfEvSel.init(registry, dummyVariable);
+      hfEvSel.init(registry);
       ccdb->setURL("http://alice-ccdb.cern.ch");
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();

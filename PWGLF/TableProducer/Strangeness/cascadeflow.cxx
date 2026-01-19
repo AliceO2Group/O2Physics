@@ -52,6 +52,7 @@ using CollEventAndSpecPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod
 using CollEventAndSpecPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
 using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
 using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+using V0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels>;
 using CascCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
 using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
 
@@ -92,6 +93,7 @@ const double AlphaLambda[2] = {0.747, -0.757}; // decay parameter of Lambda and 
 
 std::shared_ptr<TH2> hMassBeforeSelVsPt[nCharges];
 std::shared_ptr<TH2> hMassAfterSelVsPt[nCharges];
+std::shared_ptr<TH2> hMassAfterSelVsPtTrue[nCharges];
 } // namespace lambdav2
 
 namespace cascade_flow_cuts_ml
@@ -277,20 +279,26 @@ struct cascadeFlow {
   Configurable<float> etaCascMCGen{"etaCascMCGen", 0.8, "etaCascMCGen"};
   Configurable<float> yCascMCGen{"yCascMCGen", 0.5, "yCascMCGen"};
 
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNamesXi{"onnxFileNamesXi", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
-  Configurable<std::string> acceptancePathsCCDBXi{"acceptancePathsCCDBXi", "Users/c/chdemart/AcceptanceXi", "Paths of Xi acceptance on CCDB"};
-  Configurable<std::string> acceptancePathsCCDBOmega{"acceptancePathsCCDBOmega", "Users/c/chdemart/AcceptanceOmega", "Paths of Omega acceptance on CCDB"};
-  Configurable<std::string> acceptancePathsCCDBLambda{"acceptancePathsCCDBLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of Lambda acceptance on CCDB"};
-  Configurable<std::string> acceptancePathsCCDBPrimaryLambda{"acceptancePathsCCDBPrimaryLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of PrimaryLambda acceptance on CCDB"};
-  Configurable<std::string> acceptanceHistoNameCasc{"acceptanceHistoNameCasc", "histoCos2ThetaNoFit2D", "Histo name of acceptance on CCDB"};
-  Configurable<std::string> acceptanceHistoNameLambda{"acceptanceHistoNameLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
-  Configurable<std::string> acceptanceHistoNamePrimaryLambda{"acceptanceHistoNamePrimaryLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> onnxFileNamesXi{"onnxFileNamesXi", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+    Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
+    Configurable<std::string> acceptancePathsCCDBXi{"acceptancePathsCCDBXi", "Users/c/chdemart/AcceptanceXi", "Paths of Xi acceptance on CCDB"};
+    Configurable<std::string> acceptancePathsCCDBOmega{"acceptancePathsCCDBOmega", "Users/c/chdemart/AcceptanceOmega", "Paths of Omega acceptance on CCDB"};
+    Configurable<std::string> acceptancePathsCCDBLambda{"acceptancePathsCCDBLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of Lambda acceptance on CCDB"};
+    Configurable<std::string> acceptancePathsCCDBPrimaryLambda{"acceptancePathsCCDBPrimaryLambda", "Users/c/chdemart/AcceptanceLambda", "Paths of PrimaryLambda acceptance on CCDB"};
+    Configurable<std::string> acceptanceHistoNameCasc{"acceptanceHistoNameCasc", "histoCos2ThetaNoFit2D", "Histo name of acceptance on CCDB"};
+    Configurable<std::string> acceptanceHistoNameLambda{"acceptanceHistoNameLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
+    Configurable<std::string> acceptanceHistoNamePrimaryLambda{"acceptanceHistoNamePrimaryLambda", "histoCos2ThetaLambdaFromCNoFit2D", "Histo name of acceptance on CCDB"};
+    Configurable<std::string> resoPaths{"resoPath", "Users/c/chdemart/Resolution/", "Paths of resolution"};
+    Configurable<std::string> resoHistoName{"resoHistoName", "hResoPerCentBinsV0A", "Histo name of resolution"};
+    Configurable<std::string> centWeightPaths{"centWeightPath", "Users/c/chdemart/CentralityWeight/", "Paths of centrality weight"};
+    Configurable<std::string> centWeightHistoName{"centWeightHistoName", "hCentWeight", "Histo name of centrality weight"};
+  } ccdbConfigs;
 
   // ML inference
   Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
@@ -301,6 +309,8 @@ struct cascadeFlow {
 
   // acceptance crrection
   Configurable<bool> applyAcceptanceCorrection{"applyAcceptanceCorrection", false, "apply acceptance correction"};
+  Configurable<bool> applyResoCorrection{"applyResoCorrection", false, "apply resolution correction"};
+  Configurable<bool> applyCentWeightCorrection{"applyCentWeightCorrection", false, "apply centrality weight correction"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -571,6 +581,12 @@ struct cascadeFlow {
   TH2F* hAcceptanceLambda;
   TH2F* hAcceptancePrimaryLambda;
 
+  // objects to use for resolution correction
+  TH1F* hReso;
+
+  // objects to use for centrality weight
+  TH1F* hCentWeight;
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -710,40 +726,69 @@ struct cascadeFlow {
   void initAcceptanceFromCCDB()
   {
     LOG(info) << "Loading acceptance from CCDB ";
-    TList* listAcceptanceXi = ccdb->get<TList>(acceptancePathsCCDBXi);
+    TList* listAcceptanceXi = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBXi);
     if (!listAcceptanceXi)
       LOG(fatal) << "Problem getting TList object with acceptance for Xi!";
-    TList* listAcceptanceOmega = ccdb->get<TList>(acceptancePathsCCDBOmega);
+    TList* listAcceptanceOmega = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBOmega);
     if (!listAcceptanceOmega)
       LOG(fatal) << "Problem getting TList object with acceptance for Omega!";
-    TList* listAcceptanceLambda = ccdb->get<TList>(acceptancePathsCCDBLambda);
+    TList* listAcceptanceLambda = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBLambda);
     if (!listAcceptanceLambda)
       LOG(fatal) << "Problem getting TList object with acceptance for Lambda!";
-    TList* listAcceptancePrimaryLambda = ccdb->get<TList>(acceptancePathsCCDBPrimaryLambda);
+    TList* listAcceptancePrimaryLambda = ccdb->get<TList>(ccdbConfigs.acceptancePathsCCDBPrimaryLambda);
     if (!listAcceptancePrimaryLambda)
       LOG(fatal) << "Problem getting TList object with acceptance for Primary Lambda!";
 
-    hAcceptanceXi = static_cast<TH2F*>(listAcceptanceXi->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
+    hAcceptanceXi = static_cast<TH2F*>(listAcceptanceXi->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNameCasc->data())));
     if (!hAcceptanceXi) {
       LOG(fatal) << "The histogram for Xi is not there!";
     }
     hAcceptanceXi->SetName("hAcceptanceXi");
-    hAcceptanceOmega = static_cast<TH2F*>(listAcceptanceOmega->FindObject(Form("%s", acceptanceHistoNameCasc->data())));
+    hAcceptanceOmega = static_cast<TH2F*>(listAcceptanceOmega->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNameCasc->data())));
     if (!hAcceptanceOmega) {
       LOG(fatal) << "The histogram for omega is not there!";
     }
     hAcceptanceOmega->SetName("hAcceptanceOmega");
-    hAcceptanceLambda = static_cast<TH2F*>(listAcceptanceLambda->FindObject(Form("%s", acceptanceHistoNameLambda->data())));
+    hAcceptanceLambda = static_cast<TH2F*>(listAcceptanceLambda->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNameLambda->data())));
     if (!hAcceptanceLambda) {
       LOG(fatal) << "The histogram for Lambda is not there!";
     }
     hAcceptanceLambda->SetName("hAcceptanceLambda");
-    hAcceptancePrimaryLambda = static_cast<TH2F*>(listAcceptancePrimaryLambda->FindObject(Form("%s", acceptanceHistoNamePrimaryLambda->data())));
+    hAcceptancePrimaryLambda = static_cast<TH2F*>(listAcceptancePrimaryLambda->FindObject(Form("%s", ccdbConfigs.acceptanceHistoNamePrimaryLambda->data())));
     if (!hAcceptancePrimaryLambda) {
       LOG(fatal) << "The histogram for Primary Lambda is not there!";
     }
     hAcceptancePrimaryLambda->SetName("hAcceptancePrimaryLambda");
     LOG(info) << "Acceptance now loaded";
+  }
+  void initResoFromCCDB()
+  {
+    LOG(info) << "Loading resolution from CCDB ";
+    TList* listReso = ccdb->get<TList>(ccdbConfigs.resoPaths);
+    if (!listReso)
+      LOG(fatal) << "Problem getting TList object with resolution!";
+
+    hReso = static_cast<TH1F*>(listReso->FindObject(Form("%s", ccdbConfigs.resoHistoName->data())));
+    if (!hReso) {
+      LOG(fatal) << "The histogram for resolution is not there";
+    }
+    hReso->SetName("hReso");
+    LOG(info) << "Resolution now loaded";
+  }
+
+  void initCentWeightFromCCDB()
+  {
+    LOG(info) << "Loading resolution from CCDB ";
+    TList* listCentWeight = ccdb->get<TList>(ccdbConfigs.centWeightPaths);
+    if (!listCentWeight)
+      LOG(fatal) << "Problem getting TList object with resolution!";
+
+    hCentWeight = static_cast<TH1F*>(listCentWeight->FindObject(Form("%s", ccdbConfigs.centWeightHistoName->data())));
+    if (!hCentWeight) {
+      LOG(fatal) << "The histogram for resolution is not there";
+    }
+    hCentWeight->SetName("hCentWeight");
+    LOG(info) << "Centrality weight now loaded";
   }
 
   void init(InitContext const&)
@@ -884,6 +929,8 @@ struct cascadeFlow {
     const AxisSpec thnAxisCosThetaOmegaAlpha{thnAxisConfigs.thnConfigAxisCosThetaOmegaAlpha, "CosThetaOmegaWithAlpha"};
     const AxisSpec thnAxisCosThetaProtonAlpha{thnAxisConfigs.thnConfigAxisCosThetaProtonAlpha, "CosThetaProtonWithAlpha"};
 
+    histos.add("hCentvsPtvsPrimaryFracLambda", "hCentvsPtvsPrimaryFracLambda", HistType::kTH3F, {{100, 0, 100}, thnAxisPtLambda, {4, -0.5, 3.5}});
+    histos.add("hCentvsPrimaryFracLambda", "hCentvsPrimaryFracLambda", HistType::kTH2F, {{100, 0, 100}, {4, -0.5, 3.5}});
     histos.add("massXi_ProtonAcc", "massXi", HistType::kTH1F, {thnAxisMassXi});
     histos.add("massOmega_ProtonAcc", "massOmega", HistType::kTH1F, {thnAxisMassOmega});
 
@@ -982,6 +1029,7 @@ struct cascadeFlow {
     for (int iS{0}; iS < nCharges; ++iS) {
       lambdav2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", lambdav2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massLambdaAxis[iS], ptAxisLambda});
       lambdav2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", lambdav2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massLambdaAxis[iS], ptAxisLambda});
+      lambdav2::hMassAfterSelVsPtTrue[iS] = histos.add<TH2>(Form("hMassAfterSelVsPtTrue%s", lambdav2::speciesNames[iS].data()), "hMassAfterSelVsPtTrue", HistType::kTH2F, {massLambdaAxis[iS], ptAxisLambda});
     }
 
     if (isApplyML) {
@@ -989,23 +1037,37 @@ struct cascadeFlow {
       mlResponseXi.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       mlResponseOmega.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        mlResponseXi.setModelPathsCCDB(onnxFileNamesXi, ccdbApi, modelPathsCCDBXi, timestampCCDB);
-        mlResponseOmega.setModelPathsCCDB(onnxFileNamesOmega, ccdbApi, modelPathsCCDBOmega, timestampCCDB); // TODO: use different model for Xi and Omega
+      if (ccdbConfigs.loadModelsFromCCDB) {
+        ccdbApi.init(ccdbConfigs.ccdbUrl);
+        mlResponseXi.setModelPathsCCDB(ccdbConfigs.onnxFileNamesXi, ccdbApi, ccdbConfigs.modelPathsCCDBXi, ccdbConfigs.timestampCCDB);
+        mlResponseOmega.setModelPathsCCDB(ccdbConfigs.onnxFileNamesOmega, ccdbApi, ccdbConfigs.modelPathsCCDBOmega, ccdbConfigs.timestampCCDB); // TODO: use different model for Xi and Omega
       } else {
-        mlResponseXi.setModelPathsLocal(onnxFileNamesXi);
-        mlResponseOmega.setModelPathsLocal(onnxFileNamesOmega);
+        mlResponseXi.setModelPathsLocal(ccdbConfigs.onnxFileNamesXi);
+        mlResponseOmega.setModelPathsLocal(ccdbConfigs.onnxFileNamesOmega);
       }
       mlResponseXi.init();
       mlResponseOmega.init();
     }
     if (applyAcceptanceCorrection) {
-      ccdb->setURL(ccdbUrl);
+      ccdb->setURL(ccdbConfigs.ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
       initAcceptanceFromCCDB();
+    }
+    if (applyResoCorrection) {
+      ccdb->setURL(ccdbConfigs.ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+      initResoFromCCDB();
+    }
+    if (applyCentWeightCorrection) {
+      ccdb->setURL(ccdbConfigs.ccdbUrl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+      initCentWeightFromCCDB();
     }
   }
 
@@ -1868,6 +1930,17 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormT0ATPCC"), eventplaneVecT0A.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0A()), collisionCentrality);
     resolution.fill(HIST("QVectorsNormT0ATPCA"), eventplaneVecT0A.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0A()), collisionCentrality);
 
+    double EPresolution = 1;
+    if (applyResoCorrection) {
+      int centBin = hReso->FindBin(collisionCentrality);
+      EPresolution = hReso->GetBinContent(centBin);
+    }
+    double centWeight = 1;
+    if (applyCentWeightCorrection) {
+      int centBin = hCentWeight->FindBin(collisionCentrality);
+      centWeight = hCentWeight->GetBinContent(centBin);
+    }
+
     std::vector<float> bdtScore[nParticles];
     for (auto const& v0 : V0s) {
 
@@ -1952,7 +2025,7 @@ struct cascadeFlow {
       // acceptance values if requested
       double meanCos2ThetaProtonFromLambda = 1;
       if (applyAcceptanceCorrection) {
-        int bin2DLambda = hAcceptanceLambda->FindBin(v0.pt(), v0.eta());
+        int bin2DLambda = hAcceptancePrimaryLambda->FindBin(v0.pt(), v0.eta());
         meanCos2ThetaProtonFromLambda = hAcceptancePrimaryLambda->GetBinContent(bin2DLambda);
       }
 
@@ -1960,17 +2033,17 @@ struct cascadeFlow {
       double cos2ThetaLambda = 0;
       double cosThetaLambda = 0;
       if (chargeIndex == 0) {
-        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
         cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
-        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
       } else if (chargeIndex == 1) {
-        pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
+        pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda / EPresolution;
         cos2ThetaLambda = cosThetaStarProton[1] * cosThetaStarProton[1];
-        cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
+        cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda / EPresolution;
       } else { // I treat these bkg candidates as Lambdas for the purpose of calculating Pz
-        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0CCorr)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
         cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
-        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda / EPresolution;
       }
 
       histos.fill(HIST("hv2CEPvsFT0C"), collisionCentrality, v2CEP);
@@ -1982,14 +2055,15 @@ struct cascadeFlow {
         if (fillingConfigs.isFillTHN_V2)
           histos.get<THn>(HIST("hLambdaV2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
         if (fillingConfigs.isFillTHN_Pz) {
-          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
+          //          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
+          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda, centWeight);
         }
         if (fillingConfigs.isFillTHN_Acc)
           histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
       }
       if (fillingConfigs.isFillTHNLambda_PzVsPsi) {
         if (fillingConfigs.isFillTHN_Pz)
-          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C);
+          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C, centWeight);
         if (fillingConfigs.isFillTHN_Acc)
           histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(collisionCentrality, chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
       }
@@ -2429,6 +2503,125 @@ struct cascadeFlow {
     }
   }
 
+  void processMCPrimaryLambdaFraction(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, V0MCCandidates const& V0s, DauTracks const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  {
+
+    Float_t collisionCentrality = 0;
+    if (isCollisionCentrality == 0) { // T0C
+      collisionCentrality = coll.centFT0C();
+    } else if (isCollisionCentrality == 1) { // T0M
+      collisionCentrality = coll.centFT0M();
+    }
+
+    histos.fill(HIST("hEventCentralityBefEvSel"), collisionCentrality);
+
+    if (!AcceptEvent(coll, 1)) {
+      return;
+    }
+
+    // no EP requirements as in MC we do not have EP info
+    histos.fill(HIST("hNEvents"), 9.5);
+    histos.fill(HIST("hEventCentrality"), collisionCentrality);
+    histos.fill(HIST("hEventVertexZ"), coll.posZ());
+
+    for (auto const& v0 : V0s) {
+
+      /// Add some minimal cuts for single track variables (min number of TPC clusters)
+      auto negExtra = v0.negTrackExtra_as<DauTracks>();
+      auto posExtra = v0.posTrackExtra_as<DauTracks>();
+
+      int counterLambda = 0;
+      int counterALambda = 0;
+      bool isLambdaCandidate = 0;
+      bool isALambdaCandidate = 0;
+
+      // check if v0 has MC info
+      if (!v0.has_v0MCCore())
+        continue;
+
+      //-- selections ------------------------------------------------------------
+      if (isLambdaAccepted(negExtra, posExtra, counterLambda))
+        isLambdaCandidate = 1;
+      if (isAntiLambdaAccepted(negExtra, posExtra, counterALambda))
+        isALambdaCandidate = 1;
+      histos.fill(HIST("hLambdaDauSel"), counterLambda);
+      histos.fill(HIST("hALambdaDauSel"), counterALambda);
+
+      if (v0.pt() < V0Configs.MinPtV0 || v0.pt() > V0Configs.MaxPtV0) {
+        continue;
+      }
+
+      float massV0[nCharges]{v0.mLambda(), v0.mAntiLambda()};
+      lambdav2::hMassBeforeSelVsPt[0]->Fill(massV0[0], v0.pt());
+      lambdav2::hMassBeforeSelVsPt[1]->Fill(massV0[1], v0.pt());
+
+      bool isSelectedV0[2]{false, false};
+      if (isV0TopoAccepted(v0) && isLambdaCandidate)
+        isSelectedV0[0] = true;
+      if (isV0TopoAccepted(v0) && isALambdaCandidate)
+        isSelectedV0[1] = true;
+
+      if (isSelectedV0[0] && !isSelectedV0[1]) { // Lambdas
+        histos.fill(HIST("hLambdaCandidate"), 0);
+      }
+      if (isSelectedV0[1] && !isSelectedV0[0]) { // AntiLambdas
+        histos.fill(HIST("hLambdaCandidate"), 1);
+      }
+      if (isSelectedV0[0] && isSelectedV0[1]) {
+        histos.fill(HIST("hLambdaCandidate"), 2);
+        if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda && v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda) {
+          histos.fill(HIST("hLambdaCandidate"), 3);
+          continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle; checked to be zero in range 1.105 - 1.125
+        }
+        if (!(v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda) && !(v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda))
+          histos.fill(HIST("hLambdaCandidate"), 4); // bkg candidates
+      }
+      if (!isSelectedV0[0] && !isSelectedV0[1])
+        continue;
+
+      lambdav2::hMassAfterSelVsPt[0]->Fill(massV0[0], v0.pt());
+      lambdav2::hMassAfterSelVsPt[1]->Fill(massV0[1], v0.pt());
+      //--------------------------------------------------------------
+
+      auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      int pdgCode{v0MC.pdgCode()};
+      // select true lambdas
+      bool isTrueLambda = 0;
+      bool isTrueALambda = 0;
+      if (pdgCode == PDG_t::kLambda0 && v0MC.pdgCodePositive() == PDG_t::kProton && v0MC.pdgCodeNegative() == PDG_t::kPiMinus)
+        isTrueLambda = 1;
+      else if (pdgCode == PDG_t::kLambda0Bar && v0MC.pdgCodePositive() == PDG_t::kPiPlus && v0MC.pdgCodeNegative() == PDG_t::kProtonBar)
+        isTrueALambda = 1;
+      if (!isTrueLambda && !isTrueALambda)
+        continue;
+      if (isTrueLambda)
+        lambdav2::hMassAfterSelVsPtTrue[0]->Fill(massV0[0], v0.pt());
+      if (isTrueALambda)
+        lambdav2::hMassAfterSelVsPtTrue[1]->Fill(massV0[1], v0.pt());
+
+      bool isPrimary = v0MC.isPhysicalPrimary();
+
+      // histo for primary fraction
+      if (isTrueLambda) {
+        if (isPrimary) {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 0);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 0);
+        } else {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 1);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 1);
+        }
+      } else if (isTrueALambda) {
+        if (isPrimary) {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 2);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 2);
+        } else {
+          histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 3);
+          histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 3);
+        }
+      }
+    }
+  }
+
   PROCESS_SWITCH(cascadeFlow, processTrainingBackground, "Process to create the training dataset for the background", true);
   PROCESS_SWITCH(cascadeFlow, processTrainingSignal, "Process to create the training dataset for the signal", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseData, "Process to apply ML model to the data", false);
@@ -2437,6 +2630,7 @@ struct cascadeFlow {
   PROCESS_SWITCH(cascadeFlow, processAnalyseLambdaEP2CentralFW, "Process to measure flow and polarization of Lambda - event plane calibration from central framework", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseMC, "Process to apply ML model to the MC", false);
   PROCESS_SWITCH(cascadeFlow, processMCGen, "Process to store MC generated particles", false);
+  PROCESS_SWITCH(cascadeFlow, processMCPrimaryLambdaFraction, "Process to compute primary lambda fraction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

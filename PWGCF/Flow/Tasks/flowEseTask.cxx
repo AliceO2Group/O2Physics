@@ -232,20 +232,23 @@ struct FlowEseTask {
     histos.add(Form("histQvecV2"), "", {HistType::kTH3F, {qvecAxis, qvecAxis, centAxis}});
     histos.add(Form("histMult_Cent"), "", {HistType::kTH2F, {multNumAxis, centAxis}});
     histos.add(Form("histQvecCent"), "", {HistType::kTH2F, {lowerQAxis, centAxis}});
-    histos.add(Form("histPrPtCent"), "", {HistType::kTHnSparseF, {ptFullAxis, ptFullAxis, ptFullAxis, centAxis}});
-    histos.add(Form("histPiPtCent"), "", {HistType::kTHnSparseF, {ptFullAxis, ptFullAxis, ptFullAxis, centAxis}});
-    histos.add(Form("histPrBoostedPtCent"), "", {HistType::kTHnSparseF, {ptFullAxis, ptFullAxis, ptFullAxis, centAxis}});
     histos.add(Form("histVertex"), "", {HistType::kTHnSparseF, {vertexAxis, vertexAxis, vertexAxis, centAxis}});
     histos.add(Form("histV2"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis}});
     histos.add(Form("histV2_lambda"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis, massAxis}});
     histos.add(Form("histV2_alambda"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis, massAxis}});
+    histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
+    histos.add("QA/PVzDist", "", {HistType::kTH1F, {pVzQaAxis}});
+
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("psi%d/h_alambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("psi%d/h_lambda_cos_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
+      histos.add(Form("psi%d/h_alambda_cos_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
+
       histos.add(Form("psi%d/h_lambda_cos2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("psi%d/h_alambda_cos2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("psi%d/h_lambda_cos2_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
-      histos.add(Form("psi%d/h_alambda_cos2_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
+      histos.add(Form("psi%d/h_lambda_cos2_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
+      histos.add(Form("psi%d/h_alambda_cos2_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
 
       if (cfgRapidityDep) {
         histos.add(Form("psi%d/h_lambda_cos2_rap", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, rapAxis}});
@@ -255,10 +258,8 @@ struct FlowEseTask {
       histos.add(Form("psi%d/h_lambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_alambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
 
-      histos.add(Form("psi%d/h_lambda_cossin_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
-      histos.add(Form("psi%d/h_alambda_cossin_q2", i), "", {HistType::kTH3F, {centAxis, qvec2Axis, cosAxis}});
-      histos.add(Form("psi%d/h_lambda_cossin_cov", i), "", {HistType::kTHnSparseF, {ptAxis, cosAxis, centAxis}});
-      histos.add(Form("psi%d/h_alambda_cossin_cov", i), "", {HistType::kTHnSparseF, {ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_lambda_cossin_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
+      histos.add(Form("psi%d/h_alambda_cossin_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
 
       if (cfgAccAzimuth) {
         histos.add(Form("psi%d/h_lambda_coscos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
@@ -267,8 +268,13 @@ struct FlowEseTask {
 
       histos.add(Form("psi%d/h_lambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_lambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_lambda_vncos_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
+      histos.add(Form("psi%d/h_lambda_vnsin_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
+
       histos.add(Form("psi%d/h_alambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_alambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_alambda_vncos_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
+      histos.add(Form("psi%d/h_alambda_vnsin_q2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, qvec2Axis}});
     }
     histos.add("QA/ptspec_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
     histos.add("QA/ptspec_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
@@ -342,8 +348,6 @@ struct FlowEseTask {
     }
 
     if (cfgQAv0) {
-      histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
-      histos.add("QA/PVzDist", "", {HistType::kTH1F, {pVzQaAxis}});
 
       histos.add("QA/nsigma_tpc_pt_ppr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA/nsigma_tpc_pt_ppi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
@@ -374,9 +378,6 @@ struct FlowEseTask {
         histos.add(Form("psi%d/QA/EPRes_FT0C_FT0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_FT0C_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_FT0A_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-
-        histos.add(Form("psi%d/QA/EPRes_RefARefB_cov", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-        histos.add(Form("psi%d/QA/EPRes_RefARefBRefC_cov", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
       }
     }
 
@@ -681,8 +682,6 @@ struct FlowEseTask {
         histos.fill(HIST("psi2/QA/EPRes_FT0C_FV0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
         histos.fill(HIST("psi2/QA/EPRes_FT0A_FV0A_shifted"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
 
-        histos.fill(HIST("psi2/QA/EPRes_RefARefB_cov"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)) * std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
-        histos.fill(HIST("psi2/QA/EPRes_RefARefBRefC_cov"), centrality, std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)) * std::cos(static_cast<float>(nmode) * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)) * std::cos(static_cast<float>(nmode) * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
       } else if (nmode == kCorrLevel[1]) {
         histos.fill(HIST("psi3/QA/EP_FT0C_shifted"), centrality, psidefFT0C + deltapsiFT0C);
         histos.fill(HIST("psi3/QA/EP_FT0A_shifted"), centrality, psidefFT0A + deltapsiFT0A);
@@ -786,10 +785,6 @@ struct FlowEseTask {
       psi = safeATan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
       relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psi));
 
-      histos.fill(HIST("histPrPtCent"), protonVec.Px(), protonVec.Py(), protonVec.Pz(), collision.centFT0C());
-      histos.fill(HIST("histPiPtCent"), pionVec.Px(), pionVec.Py(), pionVec.Pz(), collision.centFT0C());
-      histos.fill(HIST("histPrBoostedPtCent"), protonBoostedVec.Px(), protonBoostedVec.Py(), protonBoostedVec.Pz(), collision.centFT0C());
-
       if (cfgShiftCorr) {
         auto deltapsiFT0C = 0.0;
         auto deltapsiFT0A = 0.0;
@@ -849,10 +844,11 @@ struct FlowEseTask {
           histos.fill(HIST("psi2/h_lambda_vncos"), v0.mLambda(), v0.pt(), qvecMag * std::cos(relphi) * weight, centrality);
           histos.fill(HIST("psi2/h_lambda_vnsin"), v0.mLambda(), v0.pt(), std::sin(relphi), centrality);
 
-          histos.fill(HIST("psi2/h_lambda_cos2_q2"), centrality, q2, angle * angle);
-          histos.fill(HIST("psi2/h_lambda_cossin_q2"), centrality, q2, angle * std::sin(relphi) * weight);
-
-          histos.fill(HIST("psi2/h_lambda_cossin_cov"), v0.pt(), angle * angle * angle * std::sin(relphi) * weight, centrality);
+          histos.fill(HIST("psi2/h_lambda_cos_q2"), v0.mLambda(), v0.pt(), angle * weight, centrality, q2);
+          histos.fill(HIST("psi2/h_lambda_cos2_q2"), v0.mLambda(), v0.pt(), angle * angle, centrality, q2);
+          histos.fill(HIST("psi2/h_lambda_cossin_q2"), v0.mLambda(), v0.pt(), angle * std::sin(relphi) * weight, centrality, q2);
+          histos.fill(HIST("psi2/h_lambda_vncos_q2"), v0.mLambda(), v0.pt(), qvecMag * std::cos(relphi) * weight, centrality, q2);
+          histos.fill(HIST("psi2/h_lambda_vnsin_q2"), v0.mLambda(), v0.pt(), std::sin(relphi), centrality, q2);
 
           if (cfgRapidityDep) {
             histos.fill(HIST("psi2/h_lambda_cos2_rap"), v0.mLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
@@ -903,10 +899,12 @@ struct FlowEseTask {
           histos.fill(HIST("psi2/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), qvecMag * std::cos(relphi) * weight, centrality);
           histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), std::sin(relphi), centrality);
 
-          histos.fill(HIST("psi2/h_alambda_cos2_q2"), centrality, q2, angle * angle);
-          histos.fill(HIST("psi2/h_alambda_cossin_q2"), centrality, q2, angle * std::sin(relphi) * weight);
+          histos.fill(HIST("psi2/h_alambda_cos_q2"), v0.mAntiLambda(), v0.pt(), angle * weight, centrality, q2);
+          histos.fill(HIST("psi2/h_alambda_cos2_q2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, q2);
+          histos.fill(HIST("psi2/h_alambda_cossin_q2"), v0.mAntiLambda(), v0.pt(), angle * std::sin(relphi) * weight, centrality, q2);
+          histos.fill(HIST("psi2/h_alambda_vncos_q2"), v0.mAntiLambda(), v0.pt(), qvecMag * std::cos(relphi) * weight, centrality, q2);
+          histos.fill(HIST("psi2/h_alambda_vnsin_q2"), v0.mAntiLambda(), v0.pt(), std::sin(relphi), centrality, q2);
 
-          histos.fill(HIST("psi2/h_alambda_cossin_cov"), v0.pt(), angle * angle * angle * std::sin(relphi) * weight, centrality);
           if (cfgRapidityDep) {
             histos.fill(HIST("psi2/h_alambda_cos2_rap"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, v0.yLambda(), weight);
           }
@@ -1027,6 +1025,8 @@ struct FlowEseTask {
     if (!eventSelected(collision)) {
       return;
     }
+    histos.fill(HIST("QA/CentDist"), centrality, 1.0);
+    histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
 
     if (cfgShiftCorr) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();

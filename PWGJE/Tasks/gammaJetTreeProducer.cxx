@@ -963,7 +963,7 @@ struct GammaJetTreeProducer {
     mHistograms.fill(HIST("eventQA"), 6);
 
     // check if this event is not MB gap event
-    if (collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+    if (collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
     mHistograms.fill(HIST("eventQA"), 7);

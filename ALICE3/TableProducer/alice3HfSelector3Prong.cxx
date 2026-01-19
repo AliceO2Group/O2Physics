@@ -82,7 +82,6 @@ struct Alice3HfSelector3Prong {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_3prongs_alice3::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_3prongs_alice3::Cuts[0], hf_cuts_3prongs_alice3::NBinsPt, hf_cuts_3prongs_alice3::NCutVars, hf_cuts_3prongs_alice3::labelsPt, hf_cuts_3prongs_alice3::labelsCutVar}, "Lc cand selection per pT bin"};
   // QA switch
-  Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -110,20 +109,34 @@ struct Alice3HfSelector3Prong {
 
   void init(InitContext const&)
   {
-    if (activateQA) {
-      constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
-      std::string labels[kNBinsSelections];
-      labels[0] = "No selection";
-      labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
-      labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
-      labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
-      labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
-      static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
-      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-      for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
-        registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-      }
+    constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
+    std::string labels[kNBinsSelections];
+    labels[0] = "No selection";
+    labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
+    labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
+    labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
+    labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
+    static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
+    registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
+      registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
+    auto h = registry.add<TH1>("hSelectionsTopology", "hSelectionsTopology", {HistType::kTH1D, {{11, -0.5, 10.5, "Selection step"}}});
+    h->GetXaxis()->SetBinLabel(1, "All candidates");
+    h->GetXaxis()->SetBinLabel(2, "pT cand");
+    h->GetXaxis()->SetBinLabel(3, "pT prong cuts");
+    h->GetXaxis()->SetBinLabel(4, "cos pointing angle");
+    h->GetXaxis()->SetBinLabel(5, "chi2PCA");
+    h->GetXaxis()->SetBinLabel(6, "decay length");
+    h->GetXaxis()->SetBinLabel(7, "decay length XY");
+    h->GetXaxis()->SetBinLabel(8, "norm decay length XY");
+    h->GetXaxis()->SetBinLabel(9, "impPar XY");
+    h->GetXaxis()->SetBinLabel(10, "prong DCA");
+    h->GetXaxis()->SetBinLabel(11, "finally accepted");
+
+    registry.add("Tried/hChi2PCA", "Chi2PCA;Chi2PCA;entries", {HistType::kTH1F, {{100, 0., 100.}}});
+    registry.add("Tried/hDecayLength", "Decay Length;Decay Length;entries", {HistType::kTH1F, {{100, 0., 200.}}});
+    registry.addClone("Tried/", "Accepted/");
 
     if (applyMl) {
       mlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
@@ -151,11 +164,12 @@ struct Alice3HfSelector3Prong {
   bool selectionTopol(const T& cand, float candPt)
   {
     int const ptBin = findBin(binsPt, candPt);
-
+    registry.fill(HIST("hSelectionsTopology"), 0.f);
     // check that the cand pT is within the analysis range
     if (candPt < ptCandMin || candPt >= ptCandMax) {
       return false;
     }
+    registry.fill(HIST("hSelectionsTopology"), 1.f);
 
     // cut on daughter pT
     if (cand.ptProng0() < cuts->get(ptBin, "pT prong 0") ||
@@ -163,41 +177,55 @@ struct Alice3HfSelector3Prong {
         cand.ptProng2() < cuts->get(ptBin, "pT prong 2")) {
       return false;
     }
+    registry.fill(HIST("hSelectionsTopology"), 2.f);
 
     // cosine of pointing angle
     if (cand.cpa() <= cuts->get(ptBin, "cos pointing angle")) {
       return false;
     }
+    registry.fill(HIST("hSelectionsTopology"), 3.f);
 
     // cand chi2PCA
+    registry.fill(HIST("Tried/hChi2PCA"), cand.chi2PCA());
     if (cand.chi2PCA() > cuts->get(ptBin, "Chi2PCA")) {
       return false;
     }
+    registry.fill(HIST("Accepted/hChi2PCA"), cand.chi2PCA());
+    registry.fill(HIST("hSelectionsTopology"), 4.f);
 
+    // cand decay length
+    registry.fill(HIST("Tried/hDecayLength"), cand.decayLength());
     if (cand.decayLength() <= cuts->get(ptBin, "decay length")) {
       return false;
     }
+    registry.fill(HIST("Accepted/hDecayLength"), cand.decayLength());
+    registry.fill(HIST("hSelectionsTopology"), 5.f);
 
     // cand decay length XY
     if (cand.decayLengthXY() <= cuts->get(ptBin, "decLengthXY")) {
       return false;
     }
+    registry.fill(HIST("hSelectionsTopology"), 6.f);
 
     // cand normalized decay length XY
     if (cand.decayLengthXYNormalised() < cuts->get(ptBin, "normDecLXY")) {
       return false;
     }
+    registry.fill(HIST("hSelectionsTopology"), 7.f);
 
     // cand impact parameter XY
     if (std::abs(cand.impactParameterXY()) > cuts->get(ptBin, "impParXY")) {
       return false;
     }
+    registry.fill(HIST("hSelectionsTopology"), 8.f);
 
     // cand daughter prong DCA
     if (!isSelectedCandidateProngDca(cand)) {
       return false;
     }
+    registry.fill(HIST("hSelectionsTopology"), 9.f);
 
+    registry.fill(HIST("hSelectionsTopology"), 10.f);
     return true;
   }
 
@@ -211,7 +239,7 @@ struct Alice3HfSelector3Prong {
   template <CharmHadAlice3 CharmHad, bool SwapHypo, typename TCandidate>
   bool selectionCandidateMass(int const ptBin, const TCandidate& cand)
   {
-    float massCand = hfHelper.getCandMass<CharmHad, SwapHypo>(cand);
+    const float massCand = hfHelper.getCandMass<CharmHad, SwapHypo>(cand);
     // cut on mass window
     if (std::abs(massCand - MassReference) > cuts->get(ptBin, "m")) {
       return false;
@@ -292,6 +320,7 @@ struct Alice3HfSelector3Prong {
 
     // looping over 3-prong cands
     for (const auto& cand : cands) {
+      registry.fill(HIST("hSelections"), 1, cand.pt());
       outputMl = {-1.f, -1.f, -1.f};
       pidMask = 0;
 
@@ -315,9 +344,7 @@ struct Alice3HfSelector3Prong {
         }
         continue;
       }
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
-      }
+      registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
 
       // Topological selection (TODO: track quality selection)
       if (!selectionTopol(cand, ptCand)) {
@@ -327,9 +354,7 @@ struct Alice3HfSelector3Prong {
         }
         continue;
       }
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, ptCand);
-      }
+      registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, ptCand);
 
       // PID selection
       configurePidMask<CharmHad>(cand, pidMask);
@@ -340,9 +365,7 @@ struct Alice3HfSelector3Prong {
         }
         continue;
       }
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
-      }
+      registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, ptCand);
 
       bool isSelectedMl = true;
       // ML selections
@@ -356,9 +379,7 @@ struct Alice3HfSelector3Prong {
           continue;
         }
 
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, ptCand);
-        }
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, ptCand);
       }
 
       candSelFlags(selMassHypo0, selMassHypo1, pidMask);

@@ -909,6 +909,7 @@ struct McPidTof {
       if (std::find(prodPostCalib.begin(), prodPostCalib.end(), metadataInfo.get("LPMProductionTag")) == prodPostCalib.end()) {
         enableMcRecalib = false;
         LOGP(warn, "Nsigma postcalibrations turned off for {} (new MC productions have FT0 digitisation fixed)", metadataInfo.get("LPMProductionTag"));
+        return;
       }
     } else {
       LOGP(error, "Impossible to read metadata! Using default calibrations (2022 apass7)");
