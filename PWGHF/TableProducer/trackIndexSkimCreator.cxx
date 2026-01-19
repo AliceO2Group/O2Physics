@@ -3332,7 +3332,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
     Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
     Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
-    Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
 
     // Selection criteria
     // selections have been set to run2 lambda dedicated cuts
@@ -3603,7 +3602,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
       const auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
 
       df2.setBz(magneticField);
-      df2.setRefitWithMatCorr(config.refitWithMatCorr);
 
       // cascade loop
       const auto thisCollId = collision.globalIndex();
