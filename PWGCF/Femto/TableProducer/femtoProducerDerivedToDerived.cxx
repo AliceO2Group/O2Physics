@@ -27,9 +27,7 @@
 #include "Framework/InitContext.h"
 #include "Framework/runDataProcessing.h"
 
-#include <cstdint>
 #include <string>
-#include <unordered_map>
 
 using namespace o2::aod;
 using namespace o2::soa;

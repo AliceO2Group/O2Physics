@@ -18,7 +18,6 @@
 
 #include "RecoDecay.h"
 
-#include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 
 #include "Framework/Configurable.h"

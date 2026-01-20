@@ -197,6 +197,23 @@ class TrackCascadePairCleaner : public BasePairCleaner
     auto negDaughter = trackTable.rawIteratorAt(cascade.negDauId() - trackTable.offset());
     return (this->isCleanTrackPair(bachelor, track) && this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track));
   }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool isCleanPair(T1 const& track1, T2 const& cascade, T3 const& trackTable, T4 const& partonicMothers) const
+  {
+    if (!this->isCleanPair(track1, cascade, trackTable)) {
+      return false;
+    }
+    // pair is clean
+    // now check if we require common or non-common ancestry
+    if (mMixPairsWithCommonAncestor) {
+      return this->pairHasCommonAncestor(track1, cascade, partonicMothers);
+    }
+    if (mMixPairsWithNonCommonAncestor) {
+      return this->pairHasNonCommonAncestor(track1, cascade, partonicMothers);
+    }
+    return true;
+  }
 };
 } // namespace paircleaner
 } // namespace o2::analysis::femto
