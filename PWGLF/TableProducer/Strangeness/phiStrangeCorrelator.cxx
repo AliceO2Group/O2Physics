@@ -255,8 +255,8 @@ struct PhiMesonCandProducer {
         if (std::abs(recPhi.Rapidity()) > phiConfigs.cfgYAcceptance)
           continue;
 
-        const auto track1mcPartMotherIndexes = track1McParticle.motherIds();
-        const auto track2mcPartMotherIndexes = track2McParticle.motherIds();
+        const auto track1mcPartMotherIndexes = track1McParticle.mothersIds();
+        const auto track2mcPartMotherIndexes = track2McParticle.mothersIds();
 
         auto genPhiMaybe = [&]() -> std::optional<aod::McParticles::iterator> {
           for (const auto& mother1Index : track1mcPartMotherIndexes) {
