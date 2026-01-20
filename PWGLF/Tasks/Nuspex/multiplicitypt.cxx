@@ -25,10 +25,10 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h" #include "ReconstructionDataFormats/Track.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StaticFor.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
 
 #include "TDatabasePDG.h"
 #include <TF1.h>
@@ -37,16 +37,16 @@
 #include <TRandom.h>
 
 #include <cmath>
-#include <iostream>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
 
-struct multiplicitypt {
+struct MultiplicityPt {
 
   // Service
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -139,9 +139,9 @@ struct multiplicitypt {
   };
 
   // PDG codes
-  static constexpr int PDGPion = 211;
-  static constexpr int PDGKaon = 321;
-  static constexpr int PDGProton = 2212;
+  static constexpr int PDGPion = Pdg::kPiPlus;
+  static constexpr int PDGKaon = Pdg::kKPlus;
+  static constexpr int PDGProton = Pdg::kProton;
 
   // ========================================================================
   // PROCESS FUNCTION DECLARATIONS - SPECTRATOF STYLE
@@ -391,10 +391,10 @@ struct multiplicitypt {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<multiplicitypt>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<MultiplicityPt>(cfgc)};
 }
 
-void multiplicitypt::init(InitContext const&)
+void MultiplicityPt::init(InitContext const&)
 {
   // ========================================================================
   // CUSTOM TRACK CUTS INITIALIZATION - MATCHING spectraTOF
@@ -571,7 +571,7 @@ void multiplicitypt::init(InitContext const&)
 // ========================================================================
 // DATA PROCESSING - WITH EXCLUSIVE PID
 // ========================================================================
-void multiplicitypt::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
+void MultiplicityPt::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
 {
   if (!isEventSelected<true>(collision)) {
     return;
@@ -613,7 +613,7 @@ void multiplicitypt::processData(CollisionTableData::iterator const& collision, 
 // ========================================================================
 // MC PROCESSING - WITH FIXED PRIMARY FRACTION CALCULATION
 // ========================================================================
-void multiplicitypt::processMC(TrackTableMC const& tracks,
+void MultiplicityPt::processMC(TrackTableMC const& tracks,
                                aod::McParticles const& particles,
                                CollisionTableMCTrue const& mcCollisions,
                                CollisionTableMC const& collisions)
@@ -882,7 +882,7 @@ void multiplicitypt::processMC(TrackTableMC const& tracks,
 // ========================================================================
 // TRUE MC PROCESSING - WITH PARTICLE-SPECIFIC SIGNAL LOSS
 // ========================================================================
-void multiplicitypt::processTrue(CollisionTableMCTrue const& mcCollisions,
+void MultiplicityPt::processTrue(CollisionTableMCTrue const& mcCollisions,
                                  ParticleTableMC const& particles)
 {
   LOG(info) << "=== DEBUG processTrue START ===";
