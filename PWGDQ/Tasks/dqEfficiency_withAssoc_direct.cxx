@@ -2067,7 +2067,8 @@ struct AnalysisDileptonTrack {
     Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
     Configurable<bool> fConfigPublishTripletTable{"cfgPublishTripletTable", false, "Publish the triplet tables, BmesonCandidates"};
     Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
-    Configurable<float> fConfigSavelessevents{"cfgSavelessevents", -1.0, "Save less events for the energy correlator study"};
+    Configurable<std::vector<int>> fConfigSavelessevents{"cfgSavelessevents", std::vector<int>{1, 0}, "Save less events for the energy correlator study"};
+    // Configurable<int> fConfigSavelessevents{"cfgSavelessevents", 1, "Save less events for the energy correlator study"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -2792,12 +2793,8 @@ struct AnalysisDileptonTrack {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      std::hash<uint64_t> hasher;
-      size_t seed = hasher(static_cast<uint64_t>(event.globalIndex()));
-      std::mt19937 gen(seed);
-      std::uniform_real_distribution<float> dist(0.0, 1.0);
-      float randomVal = dist(gen);
-      if (randomVal < fConfigOptions.fConfigSavelessevents)
+      std::vector<int> fSavelessevents = fConfigOptions.fConfigSavelessevents;
+      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1])
         continue;
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       // groupedBarrelAssocs.bindInternalIndicesTo(&assocs);
@@ -2992,12 +2989,8 @@ struct AnalysisDileptonTrack {
       if (!event.has_mcCollision()) {
         continue;
       }
-      std::hash<uint64_t> hasher;
-      size_t seed = hasher(static_cast<uint64_t>(event.globalIndex()));
-      std::mt19937 gen(seed);
-      std::uniform_real_distribution<float> dist(0.0, 1.0);
-      float randomVal = dist(gen);
-      if (randomVal < fConfigOptions.fConfigSavelessevents)
+      std::vector<int> fSavelessevents = fConfigOptions.fConfigSavelessevents;
+      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1])
         continue;
       runEnergyCorrelators<VarManager::kJpsiHadronMass>(event, mcTracks);
     }
