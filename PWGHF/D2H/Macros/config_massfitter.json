@@ -155,7 +155,8 @@
         "0 for SingleGaus",
         "1 for DoubleGaus",
         "2 for DoubleGausSigmaRatioPar",
-        "3 for GausSec"
+        "3 for GausSec",
+        "4 for DoubleSidedCrystalBall"
     ],
     "DrawBgPrefit": true,
     "HighlightPeakRegion": true,

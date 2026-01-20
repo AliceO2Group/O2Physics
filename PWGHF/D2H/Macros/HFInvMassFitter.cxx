@@ -22,6 +22,7 @@
 #include "HFInvMassFitter.h"
 
 #include <RooAddPdf.h>
+#include <RooCrystalBall.h>
 #include <RooDataHist.h>
 #include <RooExponential.h>
 #include <RooFitResult.h>
@@ -517,6 +518,29 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooAbsPdf* reflFuncDoubleGaus = new RooAddPdf("reflFuncDoubleGaus", "reflection pdf", RooArgList(gausRefl1, gausRefl2), fracRefl);
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
+  // signal DSCB pdf
+  const ParameterRanges dscbAlphaLParamRanges{mDscbAlphaLLowLimit, mDscbAlphaLUpLimit, mDscbAlphaLInitialValue};
+  const ParameterRanges dscbNLParamRanges{mDscbNLLowLimit, mDscbNLUpLimit, mDscbNLInitialValue};
+  const ParameterRanges dscbAlphaRParamRanges{mDscbAlphaRLowLimit, mDscbAlphaRUpLimit, mDscbAlphaRInitialValue};
+  const ParameterRanges dscbNRParamRanges{mDscbNRLowLimit, mDscbNRUpLimit, mDscbNRInitialValue};
+  RooRealVar alphaL("alphaL", "left tail alpha", randomizeInitialParameter(dscbAlphaLParamRanges), dscbAlphaLParamRanges.lower, dscbAlphaLParamRanges.upper);
+  RooRealVar nL("nL", "left tail n", randomizeInitialParameter(dscbNLParamRanges), dscbNLParamRanges.lower, dscbNLParamRanges.upper);
+  RooRealVar alphaR("alphaR", "right tail alpha", randomizeInitialParameter(dscbAlphaRParamRanges), dscbAlphaRParamRanges.lower, dscbAlphaRParamRanges.upper);
+  RooRealVar nR("nR", "right tail n", randomizeInitialParameter(dscbNRParamRanges), dscbNRParamRanges.lower, dscbNRParamRanges.upper);
+  if (mFixedDscbTailParams) {
+    printf("Fixing DSCB tail parameters to initial values.\n");
+    alphaL.setVal(mDscbAlphaLInitialValue);
+    alphaL.setConstant(true);
+    alphaR.setVal(mDscbAlphaRInitialValue);
+    alphaR.setConstant(true);
+    nL.setVal(mDscbNLInitialValue);
+    nL.setConstant(true);
+    nR.setVal(mDscbNRInitialValue);
+    nR.setConstant(true);
+  }
+  RooAbsPdf* sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean, sigma, alphaL, nL, alphaR, nR);
+  workspace.import(*sgnFuncDSCB);
+  delete sgnFuncDSCB;
   // reflection poly3
   const ParameterRanges polyReflParam0ParamRanges{-1., 1., 0.5, 0.1};
   RooRealVar const polyReflParam0("polyReflParam0", "polyReflParam0", randomizeInitialParameter(polyReflParam0ParamRanges), polyReflParam0ParamRanges.lower, polyReflParam0ParamRanges.upper);
