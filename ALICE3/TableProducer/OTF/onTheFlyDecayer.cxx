@@ -51,7 +51,7 @@ using namespace o2::framework;
 static constexpr int NumDecays = 7;
 static constexpr int NumParameters = 1;
 static constexpr int DefaultParameters[NumDecays][NumParameters]{{1}, {1}, {1}, {1}, {1}, {1}, {1}};
-static constexpr float VerySmall = 1e-7f;
+static constexpr float Tolerance = 1e-7f;
 static const std::vector<std::string> parameterNames{"enable"};
 static const std::vector<std::string> particleNames{"K0s",
                                                     "Lambda",
@@ -102,6 +102,12 @@ struct OnTheFlyDecayer {
     histos.add("AntiXi/hGenAntiXi", "hGenAntiXi", kTH1D, {axisPt});
     histos.add("Omega/hGenOmega", "hGenOmega", kTH1D, {axisPt});
     histos.add("AntiOmega/hGenAntiOmega", "hGenAntiOmega", kTH1D, {axisPt});
+
+    histos.add("GeneratedElectron/hGenEl", "hGenEl", kTH1D, {axisPt});
+    histos.add("GeneratedMuon/hGenMu", "hGenMu", kTH1D, {axisPt});
+    histos.add("GeneratedPion/hGenPi", "hGenPi", kTH1D, {axisPt});
+    histos.add("GeneratedKaon/hGenKa", "hGenKa", kTH1D, {axisPt});
+    histos.add("GeneratedProton/hGenPr", "hGenPr", kTH1D, {axisPt});
   }
 
   bool canDecay(const int pdgCode)
@@ -123,10 +129,11 @@ struct OnTheFlyDecayer {
         o2::upgrade::convertMCParticleToO2Track(particle, o2track, pdgDB);
         decayDaughters = decayer.decayParticle(pdgDB, o2track, particle.pdgCode());
         for (size_t idau{0}; idau < decayDaughters.size(); ++idau) {
-          const auto& dau = decayDaughters[idau];
+          o2::upgrade::OTFParticle& dau = decayDaughters[idau];
           o2::track::TrackParCov dauTrack;
           o2::upgrade::convertOTFParticleToO2Track(dau, dauTrack, pdgDB);
           if (canDecay(dau.pdgCode())) {
+            dau.setIsAlive(false);
             std::vector<o2::upgrade::OTFParticle> cascadingDaughers = decayer.decayParticle(pdgDB, dauTrack, dau.pdgCode());
             for (const auto& daudau : cascadingDaughers) {
               decayDaughters.push_back(daudau);
@@ -134,6 +141,8 @@ struct OnTheFlyDecayer {
                 LOG(error) << "Seemingly stuck trying to perpetually decay products from pdg: " << particle.pdgCode();
               }
             }
+          } else {
+            dau.setIsAlive(true);
           }
         }
 
@@ -141,22 +150,39 @@ struct OnTheFlyDecayer {
           LOG(error) << "Attempted to decay " << particle.pdgCode() << " but resulting vector of daugthers were empty";
           continue;
         }
-      }
 
-      if (particle.pdgCode() == kK0Short) {
-        histos.fill(HIST("K0S/hGenK0S"), particle.pt());
-      } else if (particle.pdgCode() == kLambda0) {
-        histos.fill(HIST("Lambda/hGenLambda"), particle.pt());
-      } else if (particle.pdgCode() == kLambda0Bar) {
-        histos.fill(HIST("AntiLambda/hGenAntiLambda"), particle.pt());
-      } else if (particle.pdgCode() == kXiMinus) {
-        histos.fill(HIST("Xi/hGenXi"), particle.pt());
-      } else if (particle.pdgCode() == kXiPlusBar) {
-        histos.fill(HIST("AntiXi/hGenAntiXi"), particle.pt());
-      } else if (particle.pdgCode() == kOmegaMinus) {
-        histos.fill(HIST("Omega/hGenOmega"), particle.pt());
-      } else if (particle.pdgCode() == kOmegaPlusBar) {
-        histos.fill(HIST("AntiOmega/hGenAntiOmega"), particle.pt());
+        switch (particle.pdgCode()) {
+          case kK0Short:
+            histos.fill(HIST("K0S/hGenK0S"), particle.pt());
+            break;
+
+          case kLambda0:
+            histos.fill(HIST("Lambda/hGenLambda"), particle.pt());
+            break;
+
+          case kLambda0Bar:
+            histos.fill(HIST("AntiLambda/hGenAntiLambda"), particle.pt());
+            break;
+
+          case kXiMinus:
+            histos.fill(HIST("Xi/hGenXi"), particle.pt());
+            break;
+
+          case kXiPlusBar:
+            histos.fill(HIST("AntiXi/hGenAntiXi"), particle.pt());
+            break;
+
+          case kOmegaMinus:
+            histos.fill(HIST("Omega/hGenOmega"), particle.pt());
+            break;
+
+          case kOmegaPlusBar:
+            histos.fill(HIST("AntiOmega/hGenAntiOmega"), particle.pt());
+            break;
+
+          default:
+            break;
+        }
       }
 
       int daughtersIdSlice[2];
@@ -178,13 +204,13 @@ struct OnTheFlyDecayer {
       float p = std::sqrt(particle.px() * particle.px() + particle.py() * particle.py() + particle.pz() * particle.pz());
       float y; // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
 
-      if ((p - particle.pz()) < VerySmall) {
+      if ((p - particle.pz()) < Tolerance) {
         eta = (particle.pz() < 0.0f) ? -100.0f : 100.0f;
       } else {
         eta = 0.5f * std::log((p + particle.pz()) / (p - particle.pz()));
       }
 
-      if ((particle.e() - particle.pz()) < VerySmall) {
+      if ((particle.e() - particle.pz()) < Tolerance) {
         y = (particle.pz() < 0.0f) ? -100.0f : 100.0f;
       } else {
         y = 0.5f * std::log((particle.e() + particle.pz()) / (particle.e() - particle.pz()));
@@ -196,7 +222,7 @@ struct OnTheFlyDecayer {
                               particle.flags(), motherSpan, daughtersIdSlice, particle.weight(),
                               particle.px(), particle.py(), particle.pz(), particle.e(),
                               particle.vx(), particle.vy(), particle.vz(), particle.vt(),
-                              phi, eta, pt, p, y);
+                              phi, eta, pt, p, y, !canDecay(particle.pdgCode()), true);
     }
 
     int daughtersIdSlice[2] = {-1, -1};
@@ -217,16 +243,41 @@ struct OnTheFlyDecayer {
         float p = std::sqrt(dau.px() * dau.px() + dau.py() * dau.py() + dau.pz() * dau.pz());
         float y; // Conditional as https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
 
-        if ((p - dau.pz()) < VerySmall) {
+        if ((p - dau.pz()) < Tolerance) {
           eta = (dau.pz() < 0.0f) ? -100.0f : 100.0f;
         } else {
           eta = 0.5f * std::log((p + dau.pz()) / (p - dau.pz()));
         }
 
-        if ((dau.e() - dau.pz()) < VerySmall) {
+        if ((dau.e() - dau.pz()) < Tolerance) {
           y = (dau.pz() < 0.0f) ? -100.0f : 100.0f;
         } else {
           y = 0.5f * std::log((dau.e() + dau.pz()) / (dau.e() - dau.pz()));
+        }
+
+        switch (dau.pdgCode()) {
+          case kElectron:
+            histos.fill(HIST("GeneratedElectron/hGenEl"), pt);
+            break;
+
+          case kMuonMinus:
+            histos.fill(HIST("GeneratedMuon/hGenMu"), pt);
+            break;
+
+          case kPiPlus:
+            histos.fill(HIST("GeneratedPion/hGenPi"), pt);
+            break;
+
+          case kKPlus:
+            histos.fill(HIST("GeneratedKaon/hGenKa"), pt);
+            break;
+
+          case kProton:
+            histos.fill(HIST("GeneratedProton/hGenPr"), pt);
+            break;
+
+          default:
+            break;
         }
 
         // TODO: Particle status code
@@ -236,7 +287,7 @@ struct OnTheFlyDecayer {
                                 mother.flags(), motherSpan, daughtersIdSlice, mother.weight(),
                                 dau.px(), dau.py(), dau.pz(), dau.e(),
                                 dau.vx(), dau.vy(), dau.vz(), mother.vt(),
-                                phi, eta, pt, p, y);
+                                phi, eta, pt, p, y, dau.isAlive(), false);
       }
     }
   }
