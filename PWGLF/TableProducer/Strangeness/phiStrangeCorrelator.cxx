@@ -196,8 +196,9 @@ struct PhiMesonCandProducer {
     }
   }
 
-  PROCESS_SWITCH(PhiMesonCandProducer, processData, "Process function to select Phi meson candidates in Data or in ", true);
+  PROCESS_SWITCH(PhiMesonCandProducer, processData, "Process function to select Phi meson candidates in Data or in McReco (w/o McTruth) analysis", true);
 
+  /*
   void processMCRecoDataLike(SimCollisions::iterator const& collision, FullMCTracks const&)
   {
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -226,6 +227,7 @@ struct PhiMesonCandProducer {
   }
 
   PROCESS_SWITCH(PhiMesonCandProducer, processMCRecoDataLike, "Process function to select Phi meson candidates in MCReco w/o MC truth", false);
+  */
 
   void processMCReco(SimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const& mcParticles)
   {
