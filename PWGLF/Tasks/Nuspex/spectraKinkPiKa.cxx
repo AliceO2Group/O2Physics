@@ -517,28 +517,28 @@ struct SpectraKinkPiKa {
     return ptd;
   }
 
-  double maxKinkAngle(double pMother, double M, double mDaughter)
+  double maxKinkAngle(double pMother, double M, double beta)
   {
-    double pStar = (M * M - mDaughter * mDaughter) / (2 * M); // rest-frame momentum
-    double denom = std::sqrt(pMother * pMother + mDaughter * mDaughter);
-    double sinTheta = pStar / denom;
-    if (sinTheta > 1.0)
-      sinTheta = 1.0;
-    return std::asin(sinTheta) * o2::constants::math::Rad2Deg;
+    double num = M * beta; // rest-frame momentum
+    double denom = std::sqrt(pMother * pMother * (1 - beta * beta) - (M * M * beta * beta));
+    double tanTheta = num / denom;
+    return std::atan(tanTheta) * o2::constants::math::Rad2Deg;
   }
 
   double f1(double p) // K → μ ν
   {
+    double betak = 0.9127037;
     return maxKinkAngle(p,
                         o2::constants::physics::MassKaonCharged,
-                        o2::constants::physics::MassMuon);
+                        betak);
   }
 
   inline double f2(double p) // π → μ ν
   {
+    double betapi = 0.2731374;
     return maxKinkAngle(p,
                         o2::constants::physics::MassPionCharged,
-                        o2::constants::physics::MassMuon);
+                        betapi);
   }
 
   void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& KinkCands, TracksFull const&)
@@ -744,7 +744,7 @@ struct SpectraKinkPiKa {
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       rEventSelection.fill(HIST("hMultiplicity"), multiplicity);
 
-      auto kinkCandPerColl = KinkCands.sliceBy(mPerCol, collision.globalIndex());
+      auto kinkCandPerColl = KinkCands.sliceBy(mPerCol, collision.index());
       for (const auto& kinkCand : kinkCandPerColl) {
         auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
         auto mothTrack = kinkCand.trackMoth_as<TracksFull>();
@@ -754,9 +754,9 @@ struct SpectraKinkPiKa {
         if (mothTrack.collisionId() != dauTrack.collisionId()) {
           continue; // skip mismatched collision tracks
         }
-        if (mothTrack.collisionId() != collision.globalIndex()) {
-          continue; // not from this event
-        }
+        // if (mothTrack.collisionId() != collision.globalIndex()) {
+        //  continue; // not from this event
+        //  }
         if (dauTrack.sign() != mothTrack.sign()) {
           LOG(info) << "Skipping kink candidate with opposite sign daughter and mother: " << kinkCand.globalIndex();
           continue; // Skip if the daughter has the opposite sign as the mother
@@ -853,6 +853,9 @@ struct SpectraKinkPiKa {
           continue;
 
         rpiKkink.fill(HIST("h1_tracks"), 12.0);
+        if (std::abs(v0.Rapidity()) > rapCut) {
+          continue;
+        }
         if (additionalhist) {
           rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec"), v0.Pt(), v0.Eta(), multiplicity);
           rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec"), v1.Pt(), v1.Eta(), multiplicity);

@@ -45,6 +45,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -140,6 +141,19 @@ struct Pi0EtaToGammaGamma {
     o2::framework::Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
     o2::framework::Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
     o2::framework::Configurable<bool> cfg_disable_tpconly_track{"cfg_disable_tpconly_track", false, "flag to disable TPConly tracks"};
+
+    o2::framework::Configurable<bool> cfg_apply_ml_cuts{"cfg_apply_ml", false, "flag to apply ML cut"};
+    o2::framework::Configurable<bool> cfg_use_2d_binning{"cfg_use_2d_binning", true, "flag to use 2D binning (pT, cent)"};
+    o2::framework::Configurable<bool> cfg_load_ml_models_from_ccdb{"cfg_load_ml_models_from_ccdb", true, "flag to load ML models from CCDB"};
+    o2::framework::Configurable<int> cfg_timestamp_ccdb{"cfg_timestamp_ccdb", -1, "timestamp for CCDB"};
+    o2::framework::Configurable<int> cfg_nclasses_ml{"cfg_nclasses_ml", static_cast<int>(o2::analysis::em_cuts_ml::NCutScores), "number of classes for ML"};
+    o2::framework::Configurable<std::vector<int>> cfg_cut_dir_ml{"cfg_cut_dir_ml", std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}, "cut direction for ML"};
+    o2::framework::Configurable<std::vector<std::string>> cfg_input_feature_names{"cfg_input_feature_names", std::vector<std::string>{"feature1", "feature2"}, "input feature names for ML models"};
+    o2::framework::Configurable<std::vector<std::string>> cfg_model_paths_ccdb{"cfg_model_paths_ccdb", std::vector<std::string>{"path_ccdb/BDT_PCM/"}, "CCDB paths for ML models"};
+    o2::framework::Configurable<std::vector<std::string>> cfg_onnx_file_names{"cfg_onnx_file_names", std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}, "ONNX file names for ML models"};
+    o2::framework::Configurable<std::vector<double>> cfg_bins_pt_ml{"cfg_bins_pt_ml", std::vector<double>{o2::analysis::em_cuts_ml::vecBinsPt}, "pT bins for ML"};
+    o2::framework::Configurable<std::vector<double>> cfg_bins_cent_ml{"cfg_bins_cent_ml", std::vector<double>{o2::analysis::em_cuts_ml::vecBinsCent}, "centrality bins for ML"};
+    o2::framework::Configurable<o2::framework::LabeledArray<double>> cfg_cuts_pcm_ml{"cfg_cuts_pcm_ml", {o2::analysis::em_cuts_ml::Cuts[0], o2::analysis::em_cuts_ml::NBinsPt, o2::analysis::em_cuts_ml::NCutScores, o2::analysis::em_cuts_ml::labelsPt, o2::analysis::em_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   } pcmcuts;
 
   DalitzEECut fDileptonCut;
@@ -482,6 +496,25 @@ struct Pi0EtaToGammaGamma {
     fV0PhotonCut.SetRequireITSTPC(pcmcuts.cfg_require_v0_with_itstpc);
     fV0PhotonCut.SetRequireITSonly(pcmcuts.cfg_require_v0_with_itsonly);
     fV0PhotonCut.SetRequireTPConly(pcmcuts.cfg_require_v0_with_tpconly);
+
+    // for ML
+    fV0PhotonCut.SetApplyMlCuts(pcmcuts.cfg_apply_ml_cuts);
+    fV0PhotonCut.SetUse2DBinning(pcmcuts.cfg_use_2d_binning);
+    fV0PhotonCut.SetLoadMlModelsFromCCDB(pcmcuts.cfg_load_ml_models_from_ccdb);
+    fV0PhotonCut.SetNClassesMl(pcmcuts.cfg_nclasses_ml);
+    fV0PhotonCut.SetMlTimestampCCDB(pcmcuts.cfg_timestamp_ccdb);
+    fV0PhotonCut.SetCcdbUrl(ccdburl);
+    fV0PhotonCut.SetCutDirMl(pcmcuts.cfg_cut_dir_ml);
+    fV0PhotonCut.SetMlModelPathsCCDB(pcmcuts.cfg_model_paths_ccdb);
+    fV0PhotonCut.SetMlOnnxFileNames(pcmcuts.cfg_onnx_file_names);
+    fV0PhotonCut.SetBinsPtMl(pcmcuts.cfg_bins_pt_ml);
+    fV0PhotonCut.SetBinsCentMl(pcmcuts.cfg_bins_cent_ml);
+    fV0PhotonCut.SetCutsPCMMl(pcmcuts.cfg_cuts_pcm_ml);
+    fV0PhotonCut.SetNamesInputFeatures(pcmcuts.cfg_input_feature_names);
+
+    if (pcmcuts.cfg_apply_ml_cuts) {
+      fV0PhotonCut.initV0MlModels(ccdbApi);
+    }
   }
 
   void DefineDileptonCut()
@@ -662,6 +695,8 @@ struct Pi0EtaToGammaGamma {
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
+      fV0PhotonCut.SetCentrality(collision.centFT0M());
+      fV0PhotonCut.SetD_Bz(d_bz);
       int ndiphoton = 0;
       if ((pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPHOSPHOS || pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;

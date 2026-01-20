@@ -138,7 +138,10 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
         }
       }
     }
-    if (map_chi2MCHMFT.begin()->first == track.globalIndex()) { // search for minimum matching-chi2
+
+    auto it = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+
+    if (it->first == track.globalIndex()) {
       map_chi2MCHMFT.clear();
       return true;
     } else {

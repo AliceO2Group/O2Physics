@@ -100,8 +100,8 @@ struct Dilepton {
   Configurable<std::string> spresoHistName{"spresoHistName", "h1_R2_FT0M_BPos_BNeg", "histogram name of SP resolution file"};
 
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kHFll:5"};
-  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, FV0A:3, BTot:4, BPos:5, BNeg:6"};
+  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
+  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
@@ -525,7 +525,7 @@ struct Dilepton {
 
   void addhistograms()
   {
-    const std::string qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
+    const std::string qvec_det_names[7] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg", "FV0A"};
 
     std::string mass_axis_title = "m_{ll} (GeV/c^{2})";
     std::string pair_pt_axis_title = "p_{T,ll} (GeV/c)";
@@ -973,23 +973,23 @@ struct Dilepton {
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
-      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
       std::array<float, 2> q3btot = {collision.q3xbtot(), collision.q3ybtot()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
+      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
-        {q2ft0m, q2ft0a, q2ft0c, q2fv0a, q2btot, q2bpos, q2bneg},                                                         // 2nd harmonics
-        {q3ft0m, q3ft0a, q3ft0c, q3fv0a, q3btot, q3bpos, q3bneg},                                                         // 3rd harmonics
+        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg, q2fv0a},                                                         // 2nd harmonics
+        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg, q3fv0a},                                                         // 3rd harmonics
       };
 
       if constexpr (ev_id == 0) {
@@ -1169,25 +1169,25 @@ struct Dilepton {
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
-      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
       std::array<float, 2> q3btot = {collision.q3xbtot(), collision.q3ybtot()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
-      const float eventplanes_2_for_mix[6] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg()};
+      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
+      const float eventplanes_2_for_mix[7] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg(), collision.ep2fv0a()};
       float ep2 = eventplanes_2_for_mix[cfgEP2Estimator_for_Mix];
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
-        {q2ft0m, q2ft0a, q2ft0c, q2fv0a, q2btot, q2bpos, q2bneg},                                                         // 2nd harmonics
-        {q3ft0m, q3ft0a, q3ft0c, q3fv0a, q3btot, q3bpos, q3bneg},                                                         // 3rd harmonics
+        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg, q2fv0a},                                                         // 2nd harmonics
+        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg, q3fv0a},                                                         // 3rd harmonics
       };
 
       if (nmod == 2) {
@@ -1427,23 +1427,23 @@ struct Dilepton {
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
-      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
       std::array<float, 2> q3btot = {collision.q3xbtot(), collision.q3ybtot()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
+      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
         {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
-        {q2ft0m, q2ft0a, q2ft0c, q2fv0a, q2btot, q2bpos, q2bneg},                                                         // 2nd harmonics
-        {q3ft0m, q3ft0a, q3ft0c, q3fv0a, q3btot, q3bpos, q3bneg},                                                         // 3rd harmonics
+        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg, q2fv0a},                                                         // 2nd harmonics
+        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg, q3fv0a},                                                         // 3rd harmonics
       };
 
       if (!fEMEventCut.IsSelected(collision)) {

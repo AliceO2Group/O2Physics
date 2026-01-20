@@ -124,6 +124,11 @@ o2physics_add_dpl_workflow(task-omegac0-to-omega-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-pt-fluc-charm-hadrons
+                    SOURCES taskPtFlucCharmHadrons.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-sigmac
                     SOURCES taskSigmac.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

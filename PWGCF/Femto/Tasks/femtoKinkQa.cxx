@@ -19,6 +19,7 @@
 #include "PWGCF/Femto/Core/kinkBuilder.h"
 #include "PWGCF/Femto/Core/kinkHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
@@ -75,6 +76,9 @@ struct FemtoKinkQa {
   // setup for sigmas
   kinkbuilder::ConfSigmaSelection1 confSigmaSelection;
 
+  particlecleaner::ConfSigmaCleaner1 confSigmaCleaner;
+  particlecleaner::ParticleCleaner sigmaCleaner;
+
   Partition<FemtoSigmas> sigmaPartition = MAKE_SIGMA_PARTITION(confSigmaSelection);
   Preslice<FemtoSigmas> perColSigmas = femtobase::stored::fColId;
 
@@ -91,6 +95,9 @@ struct FemtoKinkQa {
 
   // setup for sigma plus
   kinkbuilder::ConfSigmaPlusSelection1 confSigmaPlusSelection;
+
+  particlecleaner::ConfSigmaPlusCleaner1 confSigmaPlusCleaner;
+  particlecleaner::ParticleCleaner sigmaPlusCleaner;
 
   Partition<FemtoSigmaPlus> sigmaPlusPartition = MAKE_SIGMAPLUS_PARTITION(confSigmaPlusSelection);
   Preslice<FemtoSigmaPlus> perColSigmaPlus = femtobase::stored::fColId;
@@ -119,7 +126,8 @@ struct FemtoKinkQa {
     }
 
     bool processData = doprocessSigma || doprocessSigmaPlus;
-
+    sigmaCleaner.init(confSigmaCleaner);
+    sigmaPlusCleaner.init(confSigmaPlusCleaner);
     if (processData) {
       auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
@@ -163,6 +171,9 @@ struct FemtoKinkQa {
     colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto sigmaSlice = sigmaWithLabelPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& sigma : sigmaSlice) {
+      if (!sigmaCleaner.isClean(sigma, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       sigmaHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(sigma, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
@@ -185,6 +196,9 @@ struct FemtoKinkQa {
     colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto sigmaPlusSlice = sigmaPlusWithLabelPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& sigmaPlus : sigmaPlusSlice) {
+      if (!sigmaPlusCleaner.isClean(sigmaPlus, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       sigmaPlusHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(sigmaPlus, tracks, mcParticles, mcMothers, mcPartonicMothers);
     }
   }

@@ -76,11 +76,15 @@ using namespace o2::constants::math;
 using std::array;
 
 // Define convenient aliases for joined AOD tables
-using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using SelCollisions = soa::Join<aod::Collisions,
+                                aod::EvSels,
+                                aod::CentFT0Cs,
+                                aod::CentFT0Ms>;
 using SimCollisions = soa::Join<aod::McCollisionLabels,
                                 aod::Collisions,
                                 aod::EvSels,
-                                aod::CentFT0Cs>;
+                                aod::CentFT0Cs,
+                                aod::CentFT0Ms>;
 using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -118,11 +122,12 @@ struct StrangenessInJetsIons {
 
   Configurable<std::vector<int>> particleOfInterest{"particleOfInterest", {0, 0, 0, 0, 0}, "Particles to study: [K0 and Lambda, Xi and Omega, Pion, Kaon, Proton]"};
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum reconstructed pt of the jet (GeV/c)"};
-  Configurable<double> rJet{"rJet", 0.3, "Jet resolution parameter (R)"};
+  Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter (R)"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum z-vertex position"};
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from detector edge"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
+  Configurable<int> centrEstimator{"centrEstimator", 0, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M"};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -178,6 +183,9 @@ struct StrangenessInJetsIons {
   Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
   Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
 
+  // Axes
+  ConfigurableAxis multBinning{"multBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Binning of the centrality axis"};
+
   struct : ConfigurableGroup {
     ConfigurableAxis longLivedBinsNsigma{"longLivedBinsNsigma", {200, -10.f, 10.f}, "Binning of nSigma axis"};
     ConfigurableAxis longLivedBinsPt{"longLivedBinsPt", {VARIABLE_WIDTH, -5.0, -4.8, -4.6, -4.4, -4.2, -4.0, -3.8, -3.6, -3.4, -3.2, -3.0, -2.8, -2.6, -2.4, -2.2, -2.0, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1.0, -0.95, -0.9, -0.85, -0.8, -0.75, -0.7, -0.65, -0.6, -0.55, -0.5, -0.45, -0.4, -0.35, -0.3, -0.25, -0.2, -0.18, -0.16, -0.14, -0.12, -0.1, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
@@ -203,8 +211,16 @@ struct StrangenessInJetsIons {
     }
 
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
-    std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-    AxisSpec multAxis = {multBinning, "FT0C percentile"};
+    std::string multAxTitle;
+    if (centrEstimator == 0) {
+      multAxTitle = "FT0C percentile";
+    } else if (centrEstimator == 1) {
+      multAxTitle = "FT0M percentile";
+    } else {
+      LOG(fatal) << "Centrality estimator " << centrEstimator << " not available. Exit." << endl;
+    }
+    AxisSpec multAxis = {multBinning, multAxTitle};
+
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
@@ -1140,7 +1156,12 @@ struct StrangenessInJetsIons {
     registryData.fill(HIST("number_of_events_data"), 7.5);
 
     // Event multiplicity
-    const float multiplicity = collision.centFT0C();
+    float multiplicity;
+    if (centrEstimator == 0) {
+      multiplicity = collision.centFT0C();
+    } else {
+      multiplicity = collision.centFT0M();
+    }
 
     // Fill event multiplicity
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
@@ -1351,7 +1372,11 @@ struct StrangenessInJetsIons {
           if (!selectRecoEvent(recoColl))
             continue;
 
-          multiplicity = recoColl.centFT0C();
+          if (centrEstimator == 0) {
+            multiplicity = recoColl.centFT0C();
+          } else {
+            multiplicity = recoColl.centFT0M();
+          }
           // LOGF(info, "  MC GEN index:  %d", collision.globalIndex());
           // LOGF(info, "  MC RECO index: %d", recoColl.mcCollisionId());
           // LOGF(info, "  multiplicity:  %f", multiplicity);
@@ -1668,7 +1693,12 @@ struct StrangenessInJetsIons {
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
 
       // Event multiplicity
-      const float multiplicity = collision.centFT0C();
+      float multiplicity;
+      if (centrEstimator == 0) {
+        multiplicity = collision.centFT0C();
+      } else {
+        multiplicity = collision.centFT0M();
+      }
 
       // Number of V0 and cascades per collision
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());

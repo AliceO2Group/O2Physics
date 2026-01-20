@@ -171,7 +171,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kKstarVsMass1VsMass2VsMult, o2::framework::kTHnSparseF, "hKstarVsMass1VsMass2VsMult", "k* vs m_{1} vs m_{2} vs multiplicity; k* (GeV/#it{c}); m_{1} (GeV/#it{c}^{2}); m_{2} (GeV/#it{c}^{2}); Multiplicity"},
       {kTrueKstarVsKstar, o2::framework::kTH2F, "hTrueKstarVsKstar", "k*_{True} vs k*; k*_{True} (GeV/#it{c});  k* (GeV/#it{c})"},
       {kTrueKtVsKt, o2::framework::kTH2F, "hTrueKtVsKt", "k_{T,True} vs k_{T}; k_{T,True} (GeV/#it{c});  k_{T} (GeV/#it{c})"},
-      {kTrueMtVsMt, o2::framework::kTH2F, "hTrueMtVsMt", "m_{T,True} vs m_{T}; m_{T,True} (GeV/#it{c}^{2}); m_{T,True} (GeV/#it{c}^{2})"},
+      {kTrueMtVsMt, o2::framework::kTH2F, "hTrueMtVsMt", "m_{T,True} vs m_{T}; m_{T,True} (GeV/#it{c}^{2}); m_{T} (GeV/#it{c}^{2})"},
       {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
       {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
     }};
@@ -319,25 +319,20 @@ class PairHistManager
   {
     // pt in track table is calculated from 1/signedPt from the original track table
     // in case of He with Z=2, we have to rescale the pt with the absolute charge
-    mParticle1 = ROOT::Math::PtEtaPhiMVector{mAbsCharge1 * particle1.pt(), particle1.eta(), particle1.phi(), mPdgMass1};
-    mParticle2 = ROOT::Math::PtEtaPhiMVector{mAbsCharge2 * particle2.pt(), particle2.eta(), particle2.phi(), mPdgMass2};
-    auto partSum = mParticle1 + mParticle2;
+    mParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * particle1.pt(), particle1.eta(), particle1.phi(), mPdgMass1);
+    mParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * particle2.pt(), particle2.eta(), particle2.phi(), mPdgMass2);
 
     // set kT
-    mKt = 0.5f * partSum.Pt();
+    mKt = getKt(mParticle1, mParticle2);
 
     // set mT
-    mMt = computeMt(partSum);
+    mMt = getMt(mParticle1, mParticle2);
 
-    // Boost particle to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
-    // make a copy of particle 1
-    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(mParticle1);
-    // get lorentz boost into pair rest frame
-    ROOT::Math::Boost boostPrf(partSum.BoostToCM());
-    // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
-    mKstar = boostPrf(particle1Prf).P();
+    // set kstar
+    mKstar = getKstar(mParticle1, mParticle2);
 
-    // if one of the particles has a mass getter, we cache the value for the filling later
+    // if one of the particles has a mass getter (like lambda), we cache the value for the filling later
+    // for the compuation of kinematic variables like kstar we use the pdg values
     if constexpr (modes::hasMass(particleType1)) {
       mMass1 = particle1.mass();
     }
@@ -374,23 +369,16 @@ class PairHistManager
     auto mcParticle1 = particle1.template fMcParticle_as<T3>();
     auto mcParticle2 = particle2.template fMcParticle_as<T3>();
 
-    mParticle1 = ROOT::Math::PtEtaPhiMVector{mAbsCharge1 * mcParticle1.pt(), mcParticle1.eta(), mcParticle1.phi(), mPdgMass1};
-    mParticle2 = ROOT::Math::PtEtaPhiMVector{mAbsCharge2 * mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2};
-    auto partSum = mParticle1 + mParticle2;
+    mTrueParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * mcParticle1.pt(), mcParticle1.eta(), mcParticle1.phi(), mPdgMass1);
+    mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2);
 
     // set kT
-    mTrueKt = partSum.Pt() / 2.f;
+    mTrueKt = getKt(mTrueParticle1, mTrueParticle2);
 
     // set mT
-    mTrueMt = computeMt(partSum);
+    mTrueMt = getMt(mTrueParticle1, mTrueParticle2);
 
-    // Boost particle to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
-    // make a copy of particle 1
-    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(mParticle1);
-    // get lorentz boost into pair rest frame
-    ROOT::Math::Boost boostPrf(partSum.BoostToCM());
-    // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
-    mTrueKstar = boostPrf(particle1Prf).P();
+    mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -606,24 +594,43 @@ class PairHistManager
     }
   }
 
-  float computeMt(ROOT::Math::PtEtaPhiMVector const& PairMomentum)
+  float getKt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
-    float mt = 0;
+    double kt = 0.5 * (part1 + part2).Pt();
+    return static_cast<float>(kt);
+  }
+
+  float getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
+  {
+    auto sum = part1 + part2;
+    double mt = 0;
     switch (mMtType) {
       case modes::TransverseMassType::kAveragePdgMass:
-        mt = std::hypot(0.5 * PairMomentum.Pt(), mAverageMass);
+        mt = std::hypot(0.5 * sum.Pt(), mAverageMass);
         break;
       case modes::TransverseMassType::kReducedPdgMass:
-        mt = std::hypot(0.5 * PairMomentum.Pt(), mReducedMass);
+        mt = std::hypot(0.5 * sum.Pt(), mReducedMass);
         break;
       case modes::TransverseMassType::kMt4Vector:
-        mt = PairMomentum.Mt() / 2.f;
+        mt = sum.Mt() / 2.f;
         break;
       default:
-        LOG(warn) << "Invalid transverse mass type, falling back to default...";
-        mt = std::hypot(0.5 * PairMomentum.Pt(), mAverageMass);
+        LOG(fatal) << "Invalid transverse mass type, breaking...";
     }
-    return mt;
+    return static_cast<float>(mt);
+  }
+
+  float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
+  {
+    // compute pair momentum
+    auto sum = part1 + part2;
+    // Boost particle 1 to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
+    // make a copy of particle 1
+    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(mParticle1);
+    // get lorentz boost into pair rest frame
+    ROOT::Math::Boost boostPrf(sum.BoostToCM());
+    // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
+    return static_cast<float>(boostPrf(particle1Prf).P());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
@@ -631,8 +638,8 @@ class PairHistManager
   float mPdgMass2 = 0.f;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  float mAverageMass = 0.f;
-  float mReducedMass = 0.f;
+  double mAverageMass = 0.f;
+  double mReducedMass = 0.f;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
@@ -647,6 +654,8 @@ class PairHistManager
   float mCent = 0.f;
 
   // mc
+  ROOT::Math::PtEtaPhiMVector mTrueParticle1{};
+  ROOT::Math::PtEtaPhiMVector mTrueParticle2{};
   float mTrueKstar = 0.f;
   float mTrueKt = 0.f;
   float mTrueMt = 0.f;

@@ -19,6 +19,7 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairBuilder.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
+#include "PWGCF/Femto/Core/particleCleaner.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
@@ -35,7 +36,6 @@
 #include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
-#include <string>
 #include <vector>
 
 using namespace o2;
@@ -69,8 +69,11 @@ struct FemtoPairTrackTrack {
 
   // setup tracks
   trackbuilder::ConfTrackSelection1 confTrackSelections1;
+  particlecleaner::ConfTrackCleaner1 confTrackCleaner1;
   trackhistmanager::ConfTrackBinning1 confTrackBinning1;
+
   trackbuilder::ConfTrackSelection2 confTrackSelections2;
+  particlecleaner::ConfTrackCleaner2 confTrackCleaner2;
   trackhistmanager::ConfTrackBinning2 confTrackBinning2;
 
   Partition<FemtoTracks> trackPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
@@ -132,13 +135,13 @@ struct FemtoPairTrackTrack {
       auto trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       auto trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     } else {
       auto colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       auto trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       auto trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
       auto pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     }
     hRegistry.print();
   };
@@ -161,9 +164,9 @@ struct FemtoPairTrackTrack {
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
 
-  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FMcParticles const& mcParticles)
+  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FMcParticles const& mcParticles, FMcMothers const& mcMothers, FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventMc, "Enable processing mixed event processing", false);
 };

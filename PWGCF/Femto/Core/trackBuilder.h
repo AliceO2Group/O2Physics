@@ -97,8 +97,8 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> itsProton{"itsProton", {}, "Maximum |nsigma| for Proton PID"};
   o2::framework::Configurable<std::vector<float>> tpcProton{"tpcProton", {}, "Maximum |nsigma| for Proton PID"};
   o2::framework::Configurable<std::vector<float>> tofProton{"tofProton", {}, "Maximum |nsigma| for Proton PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsProton{"tpcitsProton", {3.f}, "Maximum |nsigma| for Proton PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofProton{"tpctofProton", {3.f}, "Maximum |nsigma| for Proton PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsProton{"tpcitsProton", {}, "Maximum |nsigma| for Proton PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofProton{"tpctofProton", {}, "Maximum |nsigma| for Proton PID"};
 
   // Deuteron PID cuts
   o2::framework::Configurable<bool> requirePidDeuteron{"requirePidDeuteron", false, "Make election PID optional"};
@@ -592,10 +592,6 @@ class TrackBuilder
     if (!mFillAnyTable) {
       return;
     }
-
-    // clear index map before processing next batch of tracks
-    indexMap.clear();
-
     for (const auto& track : tracks) {
       if (!mTrackSelection.checkFilters(track)) {
         continue;
@@ -673,8 +669,6 @@ class TrackBuilder
     if (!mFillAnyTable) {
       return;
     }
-    // clear index map before processing next batch of tracks
-    indexMap.clear();
     for (const auto& trackWithItsPid : tracksWithItsPid) {
       if (!mTrackSelection.checkFilters(trackWithItsPid)) {
         continue;
@@ -683,7 +677,6 @@ class TrackBuilder
       if (!mTrackSelection.passesAllRequiredSelections()) {
         continue;
       }
-
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
       // get track from the track table so we can dereference mc particle properly
       auto track = tracks.iteratorAt(trackWithItsPid.index());
@@ -727,6 +720,13 @@ class TrackBuilder
       return trackProducts.producedTracks.lastIndex();
     }
   }
+
+  template <typename T>
+  void reset(T const& tracks)
+  {
+    indexMap.clear();
+    indexMap.reserve(tracks.size());
+  };
 
  private:
   TrackSelection<HistName> mTrackSelection;

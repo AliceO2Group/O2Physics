@@ -50,7 +50,7 @@ struct NucleiAntineutronCex {
 
   // === Cut values ===
   static constexpr double kIts2MinR = 4.5;    // ITS2 min radius (exluding IB) [cm]
-  static constexpr double kIts2MaxR = 45.0;   // ITS2 max radius [cm]
+  static constexpr double kIts2MaxR = 48.0;   // ITS2 max radius [cm]
   static constexpr double kIts2MaxVz = 39.0;  // ITS2 max |vz| [cm]
   static constexpr double kAccMaxEta = 1.2;   // acceptance |eta|
   static constexpr double kAccMaxVz = 5.3;    // acceptance |vz| [cm]
@@ -715,7 +715,7 @@ struct NucleiAntineutronCex {
               const float dOpenAngle = trkangleDeg - mcangleDeg;
 
               // Closest ITS layer: Radius need to be checked
-              static const std::array<double, 7> rLayers = {2.2, 2.8, 3.6, 19.6, 24.0, 29.0, 35.0};
+              static const std::array<double, 7> rLayers = {2.3, 3.1, 3.9, 24.0, 30.0, 42.0, 48.0};
               int16_t svNearestLayerId = -1;
               float svDeltaRToLayer = 1e9f;
               for (int i = 0; i < static_cast<int>(rLayers.size()); ++i) {
