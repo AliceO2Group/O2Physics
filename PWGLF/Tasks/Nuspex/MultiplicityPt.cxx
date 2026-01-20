@@ -842,15 +842,15 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
 
   // Calculate and log primary fractions
   if (particleTracksIdentified[kPion] > 0) {
-    float pionPrimFrac = (float)particleTracksPrimary[kPion] / particleTracksIdentified[kPion];
+    float pionPrimFrac = static_cast<float> particleTracksPrimary[kPion] / particleTracksIdentified[kPion];
     LOG(info) << "Pion primary fraction: " << pionPrimFrac * 100.0 << "%";
   }
   if (particleTracksIdentified[kKaon] > 0) {
-    float kaonPrimFrac = (float)particleTracksPrimary[kKaon] / particleTracksIdentified[kKaon];
+    float kaonPrimFrac = static_cast<float> particleTracksPrimary[kKaon] / particleTracksIdentified[kKaon];
     LOG(info) << "Kaon primary fraction: " << kaonPrimFrac * 100.0 << "%";
   }
   if (particleTracksIdentified[kProton] > 0) {
-    float protonPrimFrac = (float)particleTracksPrimary[kProton] / particleTracksIdentified[kProton];
+    float protonPrimFrac = static_cast<float> particleTracksPrimary[kProton] / particleTracksIdentified[kProton];
     LOG(info) << "Proton primary fraction: " << protonPrimFrac * 100.0 << "%";
   }
 
