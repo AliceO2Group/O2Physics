@@ -215,7 +215,7 @@ struct HfCandidateCreatorLb {
         auto chi2PCA = df2.getChi2AtPCACandidate();
         auto covMatrixPCA = df2.calcPCACovMatrixFlat();
 
-        df2.propagateTracksToVertex();
+        // get Lc and Pi tracks (propagated to the Lb vertex if propagateToPCA==true)
         df2.getTrack(0).getPxPyPzGlo(pvecLc);
         df2.getTrack(1).getPxPyPzGlo(pvecPion);
 
