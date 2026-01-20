@@ -56,7 +56,6 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -2068,7 +2067,6 @@ struct AnalysisDileptonTrack {
     Configurable<bool> fConfigPublishTripletTable{"cfgPublishTripletTable", false, "Publish the triplet tables, BmesonCandidates"};
     Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
     Configurable<std::vector<int>> fConfigSavelessevents{"cfgSavelessevents", std::vector<int>{1, 0}, "Save less events for the energy correlator study"};
-    // Configurable<int> fConfigSavelessevents{"cfgSavelessevents", 1, "Save less events for the energy correlator study"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
