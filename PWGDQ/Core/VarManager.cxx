@@ -1838,6 +1838,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCdeltaphi_randomPhi_toward"] = kMCdeltaphi_randomPhi_toward;
   fgVarNamesMap["kMCdeltaphi_randomPhi_away"] = kMCdeltaphi_randomPhi_away;
   fgVarNamesMap["kMCdeltaphi_randomPhi_trans"] = kMCdeltaphi_randomPhi_trans;
+  fgVarNamesMap["kMCCosChi_randomPhi_trans_rec"] = kMCCosChi_randomPhi_trans_rec;
+  fgVarNamesMap["kMCWeight_randomPhi_trans_rec"] = kMCWeight_randomPhi_trans_rec;
+  fgVarNamesMap["kMCCosChi_randomPhi_trans_gen"] = kMCCosChi_randomPhi_trans_gen;
+  fgVarNamesMap["kMCWeight_randomPhi_trans_gen"] = kMCWeight_randomPhi_trans_gen;
   fgVarNamesMap["kMCCosChi_gen"] = kMCCosChi_gen;
   fgVarNamesMap["kMCWeight_gen"] = kMCWeight_gen;
   fgVarNamesMap["kMCdeltaeta_gen"] = kMCdeltaeta_gen;
@@ -1846,6 +1850,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCdeltaeta_rec"] = kMCdeltaeta_rec;
   fgVarNamesMap["kMCParticleWeight"] = kMCParticleWeight;
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
+  fgVarNamesMap["kMCdeltaphi"] = kMCdeltaphi;
   fgVarNamesMap["kMCJpsiPt"] = kMCJpsiPt;
   fgVarNamesMap["kMCPx"] = kMCPx;
   fgVarNamesMap["kMCPy"] = kMCPy;
