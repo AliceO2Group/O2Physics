@@ -280,10 +280,10 @@ struct PhiStrangenessCorrelation {
 
   // Preslice for manual slicing
   struct : PresliceGroup {
+    Preslice<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
     Preslice<FullMCV0s> v0PerCollision = aod::v0::collisionId;
     Preslice<FullMCTracks> trackPerCollision = aod::track::collisionId;
     // Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    PresliceUnsorted<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
     PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
 
     // Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
