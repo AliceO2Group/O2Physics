@@ -20,15 +20,15 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "MathUtils/detail/TypeTruncation.h"
 #include <Framework/Output.h>
-#include "Framework/HistogramRegistry.h"
 
-#include <TH3F.h>
-#include <TH2F.h>
 #include <TH1F.h>
+#include <TH2F.h>
+#include <TH3F.h>
 
 #include <cstdint>
 #include <experimental/type_traits> // required for is_detected
@@ -134,7 +134,7 @@ struct FilterCF {
 
   void init(InitContext&)
   {
-    if(doprocessTrackQA){
+    if (doprocessTrackQA) {
       registrytrackQA.add("zvtx", "Z Vertex position;  posz (cm); Events", HistType::kTH1F, {{100, -12, 12}});
       registrytrackQA.add("eta", "eta distribution;  eta; arb. units", HistType::kTH1F, {{100, -2, 2}});
       registrytrackQA.add("pT", "pT distribution;  #it{p}_{T} (GeV/#it{c}); arb. units", HistType::kTH1F, {{1000, 0, 30}});
@@ -334,12 +334,12 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processDataMults, "Process data with multiplicity sets", false);
 
-  void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision,soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
+  void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
   {
     registrytrackQA.fill(HIST("zvtx"), collision.posZ());
     for (auto& track : tracks) {
-      if(!track.isGlobalTrack()) {
-        return; //trackQA for global tracks only
+      if (!track.isGlobalTrack()) {
+        return; // trackQA for global tracks only
       }
       registrytrackQA.fill(HIST("eta"), track.eta());
       registrytrackQA.fill(HIST("pT"), track.pt());
@@ -355,7 +355,7 @@ struct FilterCF {
     }
   }
   PROCESS_SWITCH(FilterCF, processTrackQA, "Process track QA", false);
-  
+
   /// \brief Process MC data for a given set of MC collisions and associated particles and tracks
   /// \param mcCollisions The collection of MC collisions
   /// \param allParticles The collection of all MC particles
