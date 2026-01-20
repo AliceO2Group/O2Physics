@@ -135,7 +135,7 @@ struct strangeness_derived_tutorial {
   using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackMCIds>;
 
   void processRecMC(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-                    soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFNSigmas, aod::CascCoreMCLabels>> const& Cascades,
+                    soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFNSigmas, aod::CascTOFPIDs, aod::CascCoreMCLabels>> const& Cascades,
                     dauTracks const&,
                     aod::CascMCCores const& /*cascmccores*/)
   {
@@ -186,7 +186,7 @@ struct strangeness_derived_tutorial {
       bool xiPassTOFSelection = true;
       bool omegaPassTOFSelection = true;
       if (casc.sign() < 0) {
-        if (posDaughterTrackCasc.hasTOF()) {
+        if (casc.positiveHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
             xiPassTOFSelection &= false;
           }
@@ -194,7 +194,7 @@ struct strangeness_derived_tutorial {
             omegaPassTOFSelection &= false;
           }
         }
-        if (negDaughterTrackCasc.hasTOF()) {
+        if (casc.negativeHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
             xiPassTOFSelection &= false;
           }
@@ -203,7 +203,7 @@ struct strangeness_derived_tutorial {
           }
         }
       } else {
-        if (posDaughterTrackCasc.hasTOF()) {
+        if (casc.positiveHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
             xiPassTOFSelection &= false;
           }
@@ -211,7 +211,7 @@ struct strangeness_derived_tutorial {
             omegaPassTOFSelection &= false;
           }
         }
-        if (negDaughterTrackCasc.hasTOF()) {
+        if (casc.negativeHasTOF()) {
           if (std::abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
             xiPassTOFSelection &= false;
           }
@@ -221,16 +221,7 @@ struct strangeness_derived_tutorial {
         }
       }
 
-      if (bachDaughterTrackCasc.hasTOF()) {
-        if (std::abs(casc.tofNSigmaXiPi()) > NSigmaTOFPion) {
-          xiPassTOFSelection &= false;
-        }
-        if (std::abs(casc.tofNSigmaOmKa()) > NSigmaTOFKaon) {
-          omegaPassTOFSelection &= false;
-        }
-      }
-
-      if (bachDaughterTrackCasc.hasTOF()) {
+      if (casc.bachelorHasTOF()) {
         if (std::abs(casc.tofNSigmaXiPi()) > NSigmaTOFPion) {
           xiPassTOFSelection &= false;
         }

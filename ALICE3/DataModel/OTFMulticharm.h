@@ -36,6 +36,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(XiCCPion, xiCCPion, int, Tracks, "_PiXiCC");
 
 DECLARE_SOA_COLUMN(XicMass, xicMass, float);
 DECLARE_SOA_COLUMN(XiccMass, xiccMass, float);
+DECLARE_SOA_COLUMN(LUTConfigId, lutConfigId, int); //! Index for LUT configuration
 
 // kine vars
 DECLARE_SOA_COLUMN(XiccPt, xiccPt, float);
@@ -155,7 +156,8 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::XiccProperLength,
                   otfmulticharm::Pi1cPt,
                   otfmulticharm::Pi2cPt,
-                  otfmulticharm::PiccPt);
+                  otfmulticharm::PiccPt,
+                  otfmulticharm::LUTConfigId);
 
 DECLARE_SOA_TABLE(MCharmPID, "AOD", "MCharmPID",
                   otfmulticharm::Pi1cTofDeltaInner,

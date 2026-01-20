@@ -496,7 +496,7 @@ struct mcJetTrackCollisionQa {
       for (const auto& genJet : mcPartJets) {
         if (genJet.mcCollisionId() == collision.globalIndex()) {
           fillMcPartJets(genJet);
-          for (auto& mcParticle : genJet.tracks_as<aod::JetParticles>()) {
+          for (const auto& mcParticle : genJet.tracks_as<aod::JetParticles>()) {
             fillMcPartJetConstituents(mcParticle);
           }
         }
@@ -506,7 +506,7 @@ struct mcJetTrackCollisionQa {
     for (const auto& detJet : mcDetJets) {
       if (detJet.collisionId() == collision.globalIndex()) {
         fillMcDetJets(detJet);
-        for (auto& detConst : detJet.tracks_as<MCTracksJE>()) {
+        for (const auto& detConst : detJet.tracks_as<MCTracksJE>()) {
           fillMcDetJetConstituents(detConst);
         }
       }
@@ -530,7 +530,7 @@ struct mcJetTrackCollisionQa {
       for (const auto& genJet : mcPartJets) {
         if (genJet.mcCollisionId() == collision.globalIndex()) {
           fillMcPartJets(genJet);
-          for (auto& mcParticle : genJet.tracks_as<aod::JetParticles>()) {
+          for (const auto& mcParticle : genJet.tracks_as<aod::JetParticles>()) {
             fillMcPartJetConstituents(mcParticle);
           }
         }
@@ -540,7 +540,7 @@ struct mcJetTrackCollisionQa {
     for (const auto& detJet : mcDetJets) {
       if (detJet.collisionId() == collision.globalIndex()) {
         fillMcDetJets(detJet);
-        for (auto& detConst : detJet.tracks_as<MCTracksJE>()) {
+        for (const auto& detConst : detJet.tracks_as<MCTracksJE>()) {
           fillMcDetJetConstituents(detConst);
         }
       }

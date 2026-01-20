@@ -243,7 +243,7 @@ struct JetPlanarFlowTask {
       }
 
       uint8_t isInJet = 0;
-      for (auto& jetConstituentId : jet.tracksIds()) {
+      for (const auto& jetConstituentId : jet.tracksIds()) {
         if (track.globalIndex() == jetConstituentId) {
           isInJet = 1;
           break;

@@ -14,7 +14,13 @@
 /// \brief this task produces photon data table with KFParticle.
 /// \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
 
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#ifndef HomogeneousField
+#define HomogeneousField // needed for KFParticle::SetField(magneticField);
+#endif
+
+#include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
@@ -22,11 +28,13 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -37,6 +45,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -56,7 +65,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <map>
 #include <set>
 #include <string>
@@ -72,7 +80,7 @@ using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 using std::array;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
@@ -151,6 +159,24 @@ struct PhotonConversionBuilder {
   Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
   Configurable<bool> reject_v0_on_itsib{"reject_v0_on_itsib", true, "flag to reject v0s on ITSib"};
 
+  // PCM ML inference
+  Configurable<bool> applyPCMMl{"applyPCMMl", false, "Flag to apply ML selections"};
+  Configurable<bool> use2DBinning{"use2DBinning", true, "Flag to enable/disable 2D binning for ML application"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<int> nClassesPCMMl{"nClassesPCMMl", static_cast<int>(o2::analysis::em_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<int> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<std::vector<int>> cutDirPCMMl{"cutDirPCMMl", std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_PCM/"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<double>> binsPtPCMMl{"binsPtPCMMl", std::vector<double>{o2::analysis::em_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<double>> binsCentPCMMl{"binsCentPCMMl", std::vector<double>{0.0, 100.0}, "Centrality bin limits for ML application"};
+  Configurable<LabeledArray<double>> cutsPCMMl{"cutsPCMMl", {o2::analysis::em_cuts_ml::Cuts[0], o2::analysis::em_cuts_ml::NBinsPt, o2::analysis::em_cuts_ml::NCutScores, o2::analysis::em_cuts_ml::labelsPt, o2::analysis::em_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+
+  o2::analysis::EmMlResponsePCM<float> emMlResponse;
+  std::vector<float> outputML;
+  o2::ccdb::CcdbApi ccdbApi;
+
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -184,7 +210,9 @@ struct PhotonConversionBuilder {
       {"V0/hRxy_minX_ITSTPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hRxy_minX_TPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hPCA_diffX", "PCA vs. trackiu X - R_{xy};distance btween 2 legs (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{500, 0.0f, 5.f}, {100, -50.0, 50.0f}}}},
-      {"V0/hPhiV", "#phi_{V}; #phi_{V} (rad.)", {HistType::kTH1F, {{500, 0.0f, 2 * M_PI}}}},
+      {"V0/hPhiV", "#phi_{V}; #phi_{V} (rad.)", {HistType::kTH1F, {{500, 0.0f, o2::constants::math::TwoPI}}}},
+      {"V0/hBDTvalueBeforeCutVsPt", "BDT response before cut vs pT; pT (GeV/c); BDT response", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}}},
+      {"V0/hBDTvalueAfterCutVsPt", "BDT response after cut vs pT; pT (GeV/c); BDT response", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, o2::constants::math::TwoPI}, {200, -1, +1}}}},
       {"V0Leg/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, 0, 1}}}},
@@ -222,6 +250,22 @@ struct PhotonConversionBuilder {
     }
     if (useMatCorrType == MatCorrType::LUT) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
+
+    if (applyPCMMl) {
+      if (use2DBinning) {
+        emMlResponse.configure2D(binsPtPCMMl, binsCentPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
+      } else {
+        emMlResponse.configure(binsPtPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
+      }
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        emMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        emMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      emMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      emMlResponse.init();
     }
   }
 
@@ -591,81 +635,85 @@ struct PhotonConversionBuilder {
     kfp_pos_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
-    float pca_kf = kfp_pos_DecayVtx.GetDistanceFromParticle(kfp_ele_DecayVtx);
+    V0PhotonCandidate v0photoncandidate(gammaKF_DecayVtx, kfp_pos_DecayVtx, kfp_ele_DecayVtx, collision, cospa_kf, d_bz);
+
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
-        if (pca_kf > max_dcav0dau_tpc_inner_fc) {
+        if (v0photoncandidate.GetPCA() > max_dcav0dau_tpc_inner_fc) {
           return;
         }
       } else {
-        if (pca_kf > max_dcav0dau_tpconly) {
+        if (v0photoncandidate.GetPCA() > max_dcav0dau_tpconly) {
           return;
         }
       }
     } else { // V0s with ITS hits
       if (rxy < max_r_req_its) {
-        if (pca_kf > max_dcav0dau_itsibss) {
+        if (v0photoncandidate.GetPCA() > max_dcav0dau_itsibss) {
           return;
         }
       } else {
-        if (pca_kf > max_dcav0dau_its) {
+        if (v0photoncandidate.GetPCA() > max_dcav0dau_its) {
           return;
         }
       }
     }
 
-    float pos_pt = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy());
-    float ele_pt = RecoDecay::sqrtSumOfSquares(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy());
-
-    if (isITSonlyTrack(pos) && pos_pt > maxpt_itsonly) {
+    if (isITSonlyTrack(pos) && v0photoncandidate.GetPosPt() > maxpt_itsonly) {
       return;
     }
 
-    if (isITSonlyTrack(ele) && ele_pt > maxpt_itsonly) {
+    if (isITSonlyTrack(ele) && v0photoncandidate.GetElePt() > maxpt_itsonly) {
       return;
     }
 
-    float chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
-    if (chi2kf > 6e+3) { // protection for uint16.
+    if (v0photoncandidate.GetChi2NDF() > 6e+3) { // protection for uint16.
       return;
     }
 
-    // calculate DCAxy,z to PV
-    float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
-    float length = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX() - collision.posX(), gammaKF_DecayVtx.GetY() - collision.posY(), gammaKF_DecayVtx.GetZ() - collision.posZ());
-    float dca_x_v0_to_pv = (gammaKF_DecayVtx.GetX() - gammaKF_DecayVtx.GetPx() * cospa_kf * length / v0mom) - collision.posX();
-    float dca_y_v0_to_pv = (gammaKF_DecayVtx.GetY() - gammaKF_DecayVtx.GetPy() * cospa_kf * length / v0mom) - collision.posY();
-    float dca_z_v0_to_pv = (gammaKF_DecayVtx.GetZ() - gammaKF_DecayVtx.GetPz() * cospa_kf * length / v0mom) - collision.posZ();
-    float sign_tmp = dca_x_v0_to_pv * dca_y_v0_to_pv > 0 ? +1.f : -1.f;
-    float dca_xy_v0_to_pv = RecoDecay::sqrtSumOfSquares(dca_x_v0_to_pv, dca_y_v0_to_pv) * sign_tmp;
-    if (std::fabs(dca_xy_v0_to_pv) > max_dcatopv_xy_v0 || std::fabs(dca_z_v0_to_pv) > max_dcatopv_z_v0) {
+    if (std::fabs(v0photoncandidate.GetDcaXYToPV()) > max_dcatopv_xy_v0 || std::fabs(v0photoncandidate.GetDcaZToPV()) > max_dcatopv_z_v0) {
       return;
     }
 
-    float alpha = v0_alpha(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
-    float qt = v0_qt(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
-    if (!checkAP(alpha, qt, max_alpha_ap, max_qt_ap)) { // store only photon conversions
+    if (!checkAP(v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt(), max_alpha_ap, max_qt_ap)) { // store only photon conversions
       return;
     }
-    pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = pca_kf;
-    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = cospa_kf;
+    pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.GetPCA();
+    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.GetCosPA();
 
-    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+    if (applyPCMMl) {
+      bool isSelectedML = false;
+      std::vector<float> mlInputFeatures = emMlResponse.getInputFeatures(v0photoncandidate, pos, ele);
+      if (use2DBinning) {
+        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCent(), outputML);
+      } else {
+        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), outputML);
+      }
+      if (filltable) {
+        registry.fill(HIST("V0/hBDTvalueBeforeCutVsPt"), v0photoncandidate.GetPt(), outputML[0]);
+      }
+      if (!isSelectedML) {
+        return;
+      }
+      if (filltable) {
+        registry.fill(HIST("V0/hBDTvalueAfterCutVsPt"), v0photoncandidate.GetPt(), outputML[0]);
+      }
+    }
 
     if (filltable) {
-      registry.fill(HIST("V0/hAP"), alpha, qt);
+      registry.fill(HIST("V0/hAP"), v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt());
       registry.fill(HIST("V0/hConversionPointXY"), gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
       registry.fill(HIST("V0/hConversionPointRZ"), gammaKF_DecayVtx.GetZ(), rxy);
-      registry.fill(HIST("V0/hPt"), v0pt);
+      registry.fill(HIST("V0/hPt"), v0photoncandidate.GetPt());
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
-      registry.fill(HIST("V0/hCosPA"), cospa_kf);
-      registry.fill(HIST("V0/hCosPA_Rxy"), rxy, cospa_kf);
-      registry.fill(HIST("V0/hPCA"), pca_kf);
-      registry.fill(HIST("V0/hPCA_CosPA"), cospa_kf, pca_kf);
-      registry.fill(HIST("V0/hPCA_Rxy"), rxy, pca_kf);
-      registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
-      registry.fill(HIST("V0/hPCA_diffX"), pca_kf, std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
-      registry.fill(HIST("V0/hPhiV"), phiv);
+      registry.fill(HIST("V0/hCosPA"), v0photoncandidate.GetCosPA());
+      registry.fill(HIST("V0/hCosPA_Rxy"), rxy, v0photoncandidate.GetCosPA());
+      registry.fill(HIST("V0/hPCA"), v0photoncandidate.GetPCA());
+      registry.fill(HIST("V0/hPCA_CosPA"), v0photoncandidate.GetCosPA(), v0photoncandidate.GetPCA());
+      registry.fill(HIST("V0/hPCA_Rxy"), rxy, v0photoncandidate.GetPCA());
+      registry.fill(HIST("V0/hDCAxyz"), v0photoncandidate.GetDcaXYToPV(), v0photoncandidate.GetDcaZToPV());
+      registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.GetPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
+      registry.fill(HIST("V0/hPhiV"), v0photoncandidate.GetPhiV());
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -699,10 +747,10 @@ struct PhotonConversionBuilder {
       v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
-                  v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
+                  v0_sv.M(), v0photoncandidate.GetDcaXYToPV(), v0photoncandidate.GetDcaZToPV(),
                   cospa_kf, cospaXY_kf, cospaRZ_kf,
-                  pca_kf, alpha, qt, chi2kf);
-      v0photonsphiv(phiv);
+                  v0photoncandidate.GetPCA(), v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt(), v0photoncandidate.GetChi2NDF());
+      v0photonsphiv(v0photoncandidate.GetPhiV());
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 

@@ -27,14 +27,20 @@
 #include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
 
-#include "TF1.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TList.h"
-#include "TMath.h"
-#include "TProfile.h"
-#include "TProfile2D.h"
-#include "TRandom3.h"
+#include <TDirectory.h>
+#include <TF1.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <THn.h>
+#include <TList.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TRandom3.h>
 
 #include <algorithm>
 #include <array>
@@ -44,27 +50,16 @@
 #include <string>
 #include <vector>
 
-namespace o2::aod
-{
-namespace pt_qn
-{
-DECLARE_SOA_COLUMN(Q1, q1, float);                 //! sum of pT of tracks in an event
-DECLARE_SOA_COLUMN(Q2, q2, float);                 //! sum of (pT)^2 of tracks in an event
-DECLARE_SOA_COLUMN(Q3, q3, float);                 //! sum of (pT)^3 of tracks in an event
-DECLARE_SOA_COLUMN(Q4, q4, float);                 //! sum of (pT)^4 of tracks in an event
-DECLARE_SOA_COLUMN(Nch, nch, float);               //! no of charged particles/multiplicity in an event
-DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Centrality of event
-} // namespace pt_qn
-DECLARE_SOA_TABLE(MultPtQn, "AOD", "PTQN", pt_qn::Q1, pt_qn::Q2, pt_qn::Q3, pt_qn::Q4, pt_qn::Nch, pt_qn::Centrality); //! table to store e-by-e sum of pT, (pT)^2, (pT)^3, (pT)^4 of tracks, multiplicity and centrality
-} // namespace o2::aod
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct MeanptFluctuationsQAQnTable {
+struct MeanptFluctuationsAnalysis {
+
+  // MC
+  Configurable<bool> cfgIsMC{"cfgIsMC", true, "Run MC"};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutPreSelEta{"cfgCutPreSelEta", 0.8f, "|eta|<x; choose x value"};
@@ -81,6 +76,10 @@ struct MeanptFluctuationsQAQnTable {
   ConfigurableAxis nchAxis2{"nchAxis2", {1000, 0.5, 30000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
   ConfigurableAxis nchAxis3{"nchAxis3", {1000, 0.5, 100000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
   ConfigurableAxis centAxis{"centAxis", {90, 0., 90.0}, ""};
+  Configurable<float> cfgMinNch{"cfgMinNch", 3.0f, "Min. no of Nch in each event for correlators"};
+  Configurable<int> cfgNsubSample{"cfgNsubSample", 10, "Number of subsamples"};
+  ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5}, ""};
+  ConfigurableAxis meanpTAxis{"meanpTAxis", {500, 0, 5.0}, ""};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
@@ -137,12 +136,20 @@ struct MeanptFluctuationsQAQnTable {
   Configurable<int64_t> ccdbnolaterthan{"ccdbnolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdburl{"ccdburl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
+  // Define Output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleMcGen;
+  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSample;
+  TRandom3* fRndm = new TRandom3(0);
 
   // filtering collisions and tracks***********
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::Mults>>;
-  // using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+
+  // filtering collisions and tracks for MC rec data***********
+  using MyMCRecCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>>;
+  using MyMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -188,6 +195,61 @@ struct MeanptFluctuationsQAQnTable {
       histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis3, nchAxis}});
       histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis}});
       histos.add("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis3}});
+    }
+
+    // Analysis Profiles for central val (reconstructed data)
+    histos.add("AnalysisProfiles/Prof_mean_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+    histos.add("AnalysisProfiles/Prof_var_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+    histos.add("AnalysisProfiles/Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+    histos.add("AnalysisProfiles/Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+    histos.add("AnalysisProfiles/Hist2D_Nch_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
+    histos.add("AnalysisProfiles/Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
+
+    // Analysis Profiles for error (reconstructed data)
+    subSample.resize(cfgNsubSample);
+    for (int i = 0; i < cfgNsubSample; i++) {
+      subSample[i].resize(4);
+    }
+    for (int i = 0; i < cfgNsubSample; i++) {
+      subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("AnalysisProfiles/subSample_%d/Prof_mean_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      subSample[i][1] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("AnalysisProfiles/subSample_%d/Prof_var_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      subSample[i][2] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("AnalysisProfiles/subSample_%d/Prof_skew_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      subSample[i][3] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("AnalysisProfiles/subSample_%d/Prof_kurt_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+    }
+
+    if (cfgIsMC) {
+      // MC event counts
+      histos.add("MCGenerated/hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
+      histos.add("MCGenerated/hCentgen", "MCGen Multiplicity percentile from FT0M (%)", kTH1F, {{100, 0.0, 100.0}});
+      // tracks Gen level histograms
+      histos.add("MCGenerated/hP", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.2, 4.}});
+      histos.add("MCGenerated/hPt", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
+      histos.add("MCGenerated/hPhi", ";#phi", kTH1F, {{100, 0., o2::constants::math::TwoPI}});
+      histos.add("MCGenerated/hEta", ";#eta", kTH1F, {{100, -2.01, 2.01}});
+      histos.add("MCGenerated/hMeanPt", "", kTH2F, {centAxis, meanpTAxis});
+      histos.add("MCGenerated/hPtParticleVsTrack", "", kTH2F, {ptAxis, ptAxis});
+      histos.add("MCGenerated/hEtaParticleVsTrack", "", kTH2F, {{100, -2.01, 2.01}, {100, -2.01, 2.01}});
+      histos.add("MCGenerated/hPhiParticleVsTrack", "", kTH2F, {{100, 0., o2::constants::math::TwoPI}, {100, 0., o2::constants::math::TwoPI}});
+
+      // Analysis Profiles for central val
+      histos.add("MCGenerated/AnalysisProfiles/Prof_mean_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+      histos.add("MCGenerated/AnalysisProfiles/Prof_var_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+      histos.add("MCGenerated/AnalysisProfiles/Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+      histos.add("MCGenerated/AnalysisProfiles/Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+      histos.add("MCGenerated/AnalysisProfiles/Hist2D_Nch_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
+      histos.add("MCGenerated/AnalysisProfiles/Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
+
+      // Analysis Profiles for error
+      subSampleMcGen.resize(cfgNsubSample);
+      for (int i = 0; i < cfgNsubSample; i++) {
+        subSampleMcGen[i].resize(4);
+      }
+      for (int i = 0; i < cfgNsubSample; i++) {
+        subSampleMcGen[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("MCGenerated/AnalysisProfiles/subSample_%d/Prof_mean_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+        subSampleMcGen[i][1] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("MCGenerated/AnalysisProfiles/subSample_%d/Prof_var_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+        subSampleMcGen[i][2] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("MCGenerated/AnalysisProfiles/subSample_%d/Prof_skew_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+        subSampleMcGen[i][3] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("MCGenerated/AnalysisProfiles/subSample_%d/Prof_kurt_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      }
     }
 
     // Event selection - Alex
@@ -310,10 +372,8 @@ struct MeanptFluctuationsQAQnTable {
     return 1;
   }
 
-  Produces<aod::MultPtQn> multPtQn;
-
-  // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
-  void process(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
+  template <typename TCollision>
+  void eventSelectionDefaultCuts(TCollision coll)
   {
     if (!coll.sel8()) {
       return;
@@ -333,13 +393,298 @@ struct MeanptFluctuationsQAQnTable {
     if (cfgEvSelUseGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
+  }
 
+  template <typename C, typename T>
+  void fillMultCorrPlotsBeforeSel(C const& coll, T const& inputTracks)
+  {
     histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel"), coll.multNTracksPV(), inputTracks.size());
     histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel"), coll.centFT0C(), inputTracks.size());
     histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_PVTracks_centFT0C_beforeSel"), coll.centFT0C(), coll.multNTracksPV());
     histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_V0ATracks_beforeSel"), coll.multFV0A(), inputTracks.size());
     histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_T0ATracks_beforeSel"), coll.multFT0A(), inputTracks.size());
     histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_V0ATracks_T0CTracks_beforeSel"), coll.multFT0C(), coll.multFV0A());
+  }
+
+  template <typename C, typename T>
+  void fillMultCorrPlotsAfterSel(C const& coll, T const& inputTracks)
+  {
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel"), coll.multNTracksPV(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel"), coll.centFT0C(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel"), coll.centFT0C(), coll.multNTracksPV());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel"), coll.multFV0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel"), coll.multFT0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel"), coll.multFT0C(), coll.multFV0A());
+  }
+
+  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  {
+    histos.fill(HIST("MCGenerated/hMC"), 0.5);
+    if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
+      histos.fill(HIST("MCGenerated/hMC"), 1.5);
+    }
+    auto cent = 0;
+
+    int nchInel = 0;
+    for (const auto& mcParticle : mcParticles) {
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (mcParticle.isPhysicalPrimary() && (pdgcode == PDG_t::kPiPlus || pdgcode == PDG_t::kKPlus || pdgcode == PDG_t::kProton || pdgcode == PDG_t::kElectron || pdgcode == PDG_t::kMuonMinus)) {
+        if (std::abs(mcParticle.eta()) < 1.0) {
+          nchInel = nchInel + 1;
+        }
+      }
+    }
+    if (nchInel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
+      histos.fill(HIST("MCGenerated/hMC"), 2.5);
+    std::vector<int64_t> selectedEvents(collisions.size());
+    int nevts = 0;
+
+    for (const auto& collision : collisions) {
+      if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+        continue;
+      }
+      if (cfgUseGoodITSLayerAllCut && !(collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+      if (cfgEvSelkNoITSROFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelkNoTimeFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelUseGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(collision, mcParticles.size(), cent)) {
+        continue;
+      }
+
+      cent = collision.centFT0C();
+
+      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    selectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
+    histos.fill(HIST("MCGenerated/hMC"), 3.5);
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
+    histos.fill(HIST("MCGenerated/hMC"), 4.5);
+    histos.fill(HIST("MCGenerated/hCentgen"), cent);
+
+    // creating phi, pt, eta dstribution of generted MC particles
+
+    // Generated track variables
+
+    // initialized variable to be calculated event-by-event
+    double pTsumgen = 0.0;
+    double nNgen = 0.0;
+    float q1gen = 0.0;
+    float q2gen = 0.0;
+    float q3gen = 0.0;
+    float q4gen = 0.0;
+    float nChgen = 0.0;
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.has_mcCollision())
+        continue;
+
+      int pdgCode = std::abs(mcParticle.pdgCode());
+      bool extraPDGType = (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0);
+      if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        continue;
+
+      if (mcParticle.isPhysicalPrimary()) {
+        if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPreSelPt) && (std::abs(mcParticle.eta()) < cfgCutPreSelEta)) {
+          histos.fill(HIST("MCGenerated/hP"), mcParticle.p());
+          histos.fill(HIST("MCGenerated/hPt"), mcParticle.pt());
+          histos.fill(HIST("MCGenerated/hEta"), mcParticle.eta());
+          histos.fill(HIST("MCGenerated/hPhi"), mcParticle.phi());
+
+          pTsumgen += mcParticle.pt();
+          nNgen += 1.0;
+
+          if (mcParticle.pt() > cfgCutPtLower && mcParticle.pt() < cfgCutPtUpper) {
+            q1gen = q1gen + std::pow(mcParticle.pt(), 1.0);
+            q2gen = q2gen + std::pow(mcParticle.pt(), 2.0);
+            q3gen = q3gen + std::pow(mcParticle.pt(), 3.0);
+            q4gen = q4gen + std::pow(mcParticle.pt(), 4.0);
+            nChgen = nChgen + 1.0;
+          }
+        }
+      }
+    } //! end particle loop
+
+    // Generated MeanPt distribution
+    if (nNgen > 0.0f)
+      histos.fill(HIST("MCGenerated/hMeanPt"), cent, pTsumgen / nNgen);
+
+    // calculating observables
+    if (nChgen > cfgMinNch) {
+      float meanTerm1gen = q1gen / nChgen;
+      float varianceTerm1gen = (std::pow(q1gen, 2.0f) - q2gen) / (nChgen * (nChgen - 1.0f));
+      float skewnessTerm1gen = (std::pow(q1gen, 3.0f) - 3.0f * q2gen * q1gen + 2.0f * q3gen) / (nChgen * (nChgen - 1.0f) * (nChgen - 2.0f));
+      float kurtosisTerm1gen = (std::pow(q1gen, 4.0f) - (6.0f * q4gen) + (8.0f * q1gen * q3gen) - (6.0f * std::pow(q1gen, 2.0f) * q2gen) + (3.0f * std::pow(q2gen, 2.0f))) / (nChgen * (nChgen - 1.0f) * (nChgen - 2.0f) * (nChgen - 3.0f));
+
+      // filling profiles and histograms for central values
+      histos.get<TProfile2D>(HIST("MCGenerated/AnalysisProfiles/Prof_mean_t1"))->Fill(cent, nChgen, meanTerm1gen);
+      histos.get<TProfile2D>(HIST("MCGenerated/AnalysisProfiles/Prof_var_t1"))->Fill(cent, nChgen, varianceTerm1gen);
+      histos.get<TProfile2D>(HIST("MCGenerated/AnalysisProfiles/Prof_skew_t1"))->Fill(cent, nChgen, skewnessTerm1gen);
+      histos.get<TProfile2D>(HIST("MCGenerated/AnalysisProfiles/Prof_kurt_t1"))->Fill(cent, nChgen, kurtosisTerm1gen);
+      histos.fill(HIST("MCGenerated/AnalysisProfiles/Hist2D_Nch_centrality"), cent, nChgen);
+      histos.fill(HIST("MCGenerated/AnalysisProfiles/Hist2D_meanpt_centrality"), cent, meanTerm1gen);
+
+      // selecting subsample and filling profiles
+      float lRandomMc = fRndm->Rndm();
+      int sampleIndexMc = static_cast<int>(cfgNsubSample * lRandomMc);
+      subSampleMcGen[sampleIndexMc][0]->Fill(cent, nChgen, meanTerm1gen);
+      subSampleMcGen[sampleIndexMc][1]->Fill(cent, nChgen, varianceTerm1gen);
+      subSampleMcGen[sampleIndexMc][2]->Fill(cent, nChgen, skewnessTerm1gen);
+      subSampleMcGen[sampleIndexMc][3]->Fill(cent, nChgen, kurtosisTerm1gen);
+    }
+    //-------------------------------------------------------------------------------------------
+  }
+  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processMCGen, "Process Generated MC data", true);
+
+  void processMCRec(MyMCRecCollisions::iterator const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
+  {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    eventSelectionDefaultCuts(collision);
+
+    fillMultCorrPlotsBeforeSel(collision, tracks);
+
+    const auto centralityFT0C = collision.centFT0C();
+    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centralityFT0C))
+      return;
+    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(collision, tracks.size(), centralityFT0C))
+      return;
+
+    if (cfgUseSmallIonAdditionalEventCut) {
+      fillMultCorrPlotsAfterSel(collision, tracks);
+    }
+
+    histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
+
+    double cent = 0.0;
+    int centChoiceFT0C = 1;
+    int centChoiceFT0A = 2;
+    int centChoiceFT0M = 3;
+    int centChoiceFV0A = 4;
+    if (cfgCentralityEstimator == centChoiceFT0C)
+      cent = collision.centFT0C();
+    else if (cfgCentralityEstimator == centChoiceFT0A)
+      cent = collision.centFT0A();
+    else if (cfgCentralityEstimator == centChoiceFT0M)
+      cent = collision.centFT0M();
+    else if (cfgCentralityEstimator == centChoiceFV0A)
+      cent = collision.centFV0A();
+
+    histos.fill(HIST("hCentrality"), cent);
+
+    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    histos.fill(HIST("Hist2D_cent_nch"), tracks.size(), centralityFT0C);
+
+    // variables
+    double pTsum = 0.0;
+    double nN = 0.0;
+
+    float q1 = 0.0;
+    float q2 = 0.0;
+    float q3 = 0.0;
+    float q4 = 0.0;
+    float nCh = 0.0;
+
+    for (const auto& track : tracks) { // Loop over tracks
+
+      if (!track.has_collision()) {
+        continue;
+      }
+      if (!track.has_mcParticle()) { //! check if track has corresponding MC particle
+        continue;
+      }
+
+      auto particle = track.mcParticle();
+      if (!particle.has_mcCollision()) {
+        continue;
+      }
+
+      if (!track.isPVContributor()) {
+        continue;
+      }
+      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
+        continue;
+      }
+
+      if (particle.isPhysicalPrimary()) {
+        if ((particle.pt() > cfgCutPtLower) && (particle.pt() < cfgCutPreSelPt) && (std::abs(particle.eta()) < cfgCutPreSelEta)) {
+          histos.fill(HIST("hP"), track.p());
+          histos.fill(HIST("hPt"), track.pt());
+          histos.fill(HIST("hEta"), track.eta());
+          histos.fill(HIST("hPhi"), track.phi());
+          histos.fill(HIST("hDcaXY"), track.dcaXY());
+          histos.fill(HIST("hDcaZ"), track.dcaZ());
+          histos.fill(HIST("MCGenerated/hPtParticleVsTrack"), particle.pt(), track.pt());
+          histos.fill(HIST("MCGenerated/hEtaParticleVsTrack"), particle.eta(), track.eta());
+          histos.fill(HIST("MCGenerated/hPhiParticleVsTrack"), particle.phi(), track.phi());
+
+          pTsum += particle.pt();
+          nN += 1.0;
+
+          float pT = particle.pt();
+          // calculating Q1, Q2, Q3, Q4. Nch
+          if (particle.pt() > cfgCutPtLower && particle.pt() < cfgCutPtUpper && track.sign() != 0) {
+            q1 = q1 + std::pow(pT, 1.0);
+            q2 = q2 + std::pow(pT, 2.0);
+            q3 = q3 + std::pow(pT, 3.0);
+            q4 = q4 + std::pow(pT, 4.0);
+            nCh = nCh + 1;
+          }
+        }
+      }
+    } // end track loop
+
+    // MeanPt
+    if (nN > 0.0f)
+      histos.fill(HIST("hMeanPt"), cent, pTsum / nN);
+
+    // calculating observables
+    if (nCh > cfgMinNch) {
+      float meanTerm1 = q1 / nCh;
+      float varianceTerm1 = (std::pow(q1, 2.0f) - q2) / (nCh * (nCh - 1.0f));
+      float skewnessTerm1 = (std::pow(q1, 3.0f) - 3.0f * q2 * q1 + 2.0f * q3) / (nCh * (nCh - 1.0f) * (nCh - 2.0f));
+      float kurtosisTerm1 = (std::pow(q1, 4.0f) - (6.0f * q4) + (8.0f * q1 * q3) - (6.0f * std::pow(q1, 2.0f) * q2) + (3.0f * std::pow(q2, 2.0f))) / (nCh * (nCh - 1.0f) * (nCh - 2.0f) * (nCh - 3.0f));
+
+      // filling profiles and histograms for central values
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_mean_t1"))->Fill(cent, nCh, meanTerm1);
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_var_t1"))->Fill(cent, nCh, varianceTerm1);
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_skew_t1"))->Fill(cent, nCh, skewnessTerm1);
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_kurt_t1"))->Fill(cent, nCh, kurtosisTerm1);
+      histos.fill(HIST("AnalysisProfiles/Hist2D_Nch_centrality"), cent, nCh);
+      histos.fill(HIST("AnalysisProfiles/Hist2D_meanpt_centrality"), cent, meanTerm1);
+
+      // selecting subsample and filling profiles
+      float lRandom = fRndm->Rndm();
+      int sampleIndex = static_cast<int>(cfgNsubSample * lRandom);
+      subSample[sampleIndex][0]->Fill(cent, nCh, meanTerm1);
+      subSample[sampleIndex][1]->Fill(cent, nCh, varianceTerm1);
+      subSample[sampleIndex][2]->Fill(cent, nCh, skewnessTerm1);
+      subSample[sampleIndex][3]->Fill(cent, nCh, kurtosisTerm1);
+    }
+    //-------------------------------------------------------------------------------------------
+  }
+  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processMCRec, "Process MC Reconstructed Data", true);
+
+  // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
+  void processData(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
+  {
+    eventSelectionDefaultCuts(coll);
+
+    fillMultCorrPlotsBeforeSel(coll, inputTracks);
 
     const auto centralityFT0C = coll.centFT0C();
     if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), centralityFT0C))
@@ -348,12 +693,7 @@ struct MeanptFluctuationsQAQnTable {
       return;
 
     if (cfgUseSmallIonAdditionalEventCut) {
-      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel"), coll.multNTracksPV(), inputTracks.size());
-      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel"), coll.centFT0C(), inputTracks.size());
-      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel"), coll.centFT0C(), coll.multNTracksPV());
-      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel"), coll.multFV0A(), inputTracks.size());
-      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel"), coll.multFT0A(), inputTracks.size());
-      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel"), coll.multFT0C(), coll.multFV0A());
+      fillMultCorrPlotsAfterSel(coll, inputTracks);
     }
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
@@ -421,98 +761,41 @@ struct MeanptFluctuationsQAQnTable {
         nCh = nCh + 1;
       }
     }
-    multPtQn(q1, q2, q3, q4, nCh, cent);
     // MeanPt
     if (nN > 0.0f)
       histos.fill(HIST("hMeanPt"), cent, pTsum / nN);
-  }
-};
-
-struct MeanptFluctuationsAnalysis {
-
-  Configurable<int> cfgNsubSample{"cfgNsubSample", 10, "Number of subsamples"};
-  ConfigurableAxis centAxis{"centAxis", {90, 0, 90}, ""};
-  ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5}, ""};
-  ConfigurableAxis meanpTAxis{"meanpTAxis", {500, 0, 5.0}, ""};
-
-  float minNch = 3.0f;
-  expressions::Filter nchFilter = aod::pt_qn::nch > minNch;
-  using FilteredMultPtQn = soa::Filtered<aod::MultPtQn>;
-
-  // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> ccdbnolaterthan{"ccdbnolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdburl{"ccdburl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
-
-  // Define output
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
-  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSample;
-  TRandom3* fRndm = new TRandom3(0);
-
-  void init(o2::framework::InitContext&)
-  {
-    // AxisSpec centAxis = {90, 0, 90, "centrality (%)"};
-    // AxisSpec multAxis = {5000, 0.5, 5000.5, "#it{N}_{ch,acc}"};
-
-    registry.add("Prof_mean_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_var_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
-    registry.add("Hist2D_Nch_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
-    registry.add("Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
-
-    // initial array
-    subSample.resize(cfgNsubSample);
-    for (int i = 0; i < cfgNsubSample; i++) {
-      subSample[i].resize(4);
-    }
-    for (int i = 0; i < cfgNsubSample; i++) {
-      subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_mean_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      subSample[i][1] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_var_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      subSample[i][2] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_skew_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      subSample[i][3] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_kurt_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-    }
-  }
-
-  float meanTerm1;
-  float varianceTerm1;
-  float skewnessTerm1;
-  float kurtosisTerm1;
-
-  // void process(aod::MultPtQn::iterator const& event_ptqn)
-  void process(FilteredMultPtQn::iterator const& event_ptqn)
-  {
-    // LOGF(info, "Centrality= %f Nch= %f Q1= %f Q2= %f", event_ptqn.centrality(), event_ptqn.nch(), event_ptqn.q1(), event_ptqn.q2());
 
     // calculating observables
-    meanTerm1 = event_ptqn.q1() / event_ptqn.nch();
-    varianceTerm1 = (std::pow(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.nch() * (event_ptqn.nch() - 1.0f));
-    skewnessTerm1 = (std::pow(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.nch() * (event_ptqn.nch() - 1.0f) * (event_ptqn.nch() - 2.0f));
-    kurtosisTerm1 = (std::pow(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * std::pow(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * std::pow(event_ptqn.q2(), 2.0f))) / (event_ptqn.nch() * (event_ptqn.nch() - 1.0f) * (event_ptqn.nch() - 2.0f) * (event_ptqn.nch() - 3.0f));
+    if (nCh > cfgMinNch) {
+      float meanTerm1 = q1 / nCh;
+      float varianceTerm1 = (std::pow(q1, 2.0f) - q2) / (nCh * (nCh - 1.0f));
+      float skewnessTerm1 = (std::pow(q1, 3.0f) - 3.0f * q2 * q1 + 2.0f * q3) / (nCh * (nCh - 1.0f) * (nCh - 2.0f));
+      float kurtosisTerm1 = (std::pow(q1, 4.0f) - (6.0f * q4) + (8.0f * q1 * q3) - (6.0f * std::pow(q1, 2.0f) * q2) + (3.0f * std::pow(q2, 2.0f))) / (nCh * (nCh - 1.0f) * (nCh - 2.0f) * (nCh - 3.0f));
 
-    // filling profiles and histograms for central values
-    registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), meanTerm1);
-    registry.get<TProfile2D>(HIST("Prof_var_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), varianceTerm1);
-    registry.get<TProfile2D>(HIST("Prof_skew_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), skewnessTerm1);
-    registry.get<TProfile2D>(HIST("Prof_kurt_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), kurtosisTerm1);
-    registry.fill(HIST("Hist2D_Nch_centrality"), event_ptqn.centrality(), event_ptqn.nch());
-    registry.fill(HIST("Hist2D_meanpt_centrality"), event_ptqn.centrality(), meanTerm1);
+      // filling profiles and histograms for central values
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_mean_t1"))->Fill(cent, nCh, meanTerm1);
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_var_t1"))->Fill(cent, nCh, varianceTerm1);
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_skew_t1"))->Fill(cent, nCh, skewnessTerm1);
+      histos.get<TProfile2D>(HIST("AnalysisProfiles/Prof_kurt_t1"))->Fill(cent, nCh, kurtosisTerm1);
+      histos.fill(HIST("AnalysisProfiles/Hist2D_Nch_centrality"), cent, nCh);
+      histos.fill(HIST("AnalysisProfiles/Hist2D_meanpt_centrality"), cent, meanTerm1);
 
-    // selecting subsample and filling profiles
-    float lRandom = fRndm->Rndm();
-    int sampleIndex = static_cast<int>(cfgNsubSample * lRandom);
-    subSample[sampleIndex][0]->Fill(event_ptqn.centrality(), event_ptqn.nch(), meanTerm1);
-    subSample[sampleIndex][1]->Fill(event_ptqn.centrality(), event_ptqn.nch(), varianceTerm1);
-    subSample[sampleIndex][2]->Fill(event_ptqn.centrality(), event_ptqn.nch(), skewnessTerm1);
-    subSample[sampleIndex][3]->Fill(event_ptqn.centrality(), event_ptqn.nch(), kurtosisTerm1);
+      // selecting subsample and filling profiles
+      float lRandom = fRndm->Rndm();
+      int sampleIndex = static_cast<int>(cfgNsubSample * lRandom);
+      subSample[sampleIndex][0]->Fill(cent, nCh, meanTerm1);
+      subSample[sampleIndex][1]->Fill(cent, nCh, varianceTerm1);
+      subSample[sampleIndex][2]->Fill(cent, nCh, skewnessTerm1);
+      subSample[sampleIndex][3]->Fill(cent, nCh, kurtosisTerm1);
+    }
+    //-------------------------------------------------------------------------------------------
   }
+  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processData, "Process Real Data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Equivalent to the AddTask in AliPhysics
   return WorkflowSpec{
-    adaptAnalysisTask<MeanptFluctuationsQAQnTable>(cfgc),
-    adaptAnalysisTask<MeanptFluctuationsAnalysis>(cfgc),
-  };
+    adaptAnalysisTask<MeanptFluctuationsAnalysis>(cfgc)};
 }

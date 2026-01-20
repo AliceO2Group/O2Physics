@@ -8,37 +8,44 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
-// This code loops over v0 photons for studying material budget.
-//    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
+/// \file MaterialBudgetMC.cxx
+/// \brief Task to analyse and calculate the material budget weights in MC
+/// \author D. Sekihata: daiki.sekihata@cern, S. Mrozinski: smrozins@cern.ch
+
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/PairCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+//
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector4D.h"
-#include "TString.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+#include <THashList.h>
+#include <TMath.h>
+#include <TString.h>
 
-#include <cstring>
-#include <iterator>
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -50,7 +57,7 @@ using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -109,8 +116,8 @@ struct MaterialBudgetMC {
   template <typename TCuts1, typename TCuts2, typename TCuts3>
   void add_pair_histograms(THashList* list_pair, const std::string pairname, TCuts1 const& tagcuts, TCuts2 const& probecuts, TCuts3 const& cuts3)
   {
-    for (auto& tagcut : tagcuts) {
-      for (auto& probecut : probecuts) {
+    for (const auto& tagcut : tagcuts) {
+      for (const auto& probecut : probecuts) {
         std::string cutname1 = tagcut.GetName();
         std::string cutname2 = probecut.GetName();
 
@@ -123,7 +130,7 @@ struct MaterialBudgetMC {
         o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys, photon_cut_name.data());
         THashList* list_pair_subsys_photoncut = reinterpret_cast<THashList*>(list_pair_subsys->FindObject(photon_cut_name.data()));
 
-        for (auto& cut3 : cuts3) {
+        for (const auto& cut3 : cuts3) {
           std::string pair_cut_name = cut3.GetName();
           o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
           THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
@@ -156,7 +163,7 @@ struct MaterialBudgetMC {
       o2::aod::pwgem::photon::histogram::DefineHistograms(list_v0_cut, "material_budget_study", "V0");
     }
 
-    for (auto& pairname : fPairNames) {
+    for (const auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
       THashList* list_ev_pair = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data()));
@@ -235,7 +242,7 @@ struct MaterialBudgetMC {
     THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
     double value[4] = {0.f};
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -250,10 +257,10 @@ struct MaterialBudgetMC {
       reinterpret_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
       auto photons_coll = photons.sliceBy(perCollision, collision.globalIndex());
-      for (auto& cut : cuts) {
-        for (auto& photon : photons_coll) {
+      for (const auto& cut : cuts) {
+        for (const auto& photon : photons_coll) {
 
-          if (!cut.template IsSelected<TLegs>(photon)) {
+          if (!cut.template IsSelected<decltype(photon), TLegs>(photon)) {
             continue;
           }
 
@@ -273,11 +280,11 @@ struct MaterialBudgetMC {
             continue;
           }
 
-          float phi_cp = atan2(photon.vy(), photon.vx());
-          float eta_cp = std::atanh(photon.vz() / sqrt(pow(photon.vx(), 2) + pow(photon.vy(), 2) + pow(photon.vz(), 2)));
+          float phi_cp = std::atan2(photon.vy(), photon.vx());
+          float eta_cp = std::atanh(photon.vz() / std::sqrt(std::pow(photon.vx(), 2) + std::pow(photon.vy(), 2) + std::pow(photon.vz(), 2)));
           value[0] = photon.pt();
           value[1] = photon.v0radius();
-          value[2] = phi_cp > 0 ? phi_cp : phi_cp + TMath::TwoPi();
+          value[2] = RecoDecay::constrainAngle(phi_cp);
           value[3] = eta_cp;
           reinterpret_cast<THnSparseF*>(list_v0->FindObject(cut.GetName())->FindObject("hs_conv_point"))->Fill(value);
 
@@ -292,7 +299,7 @@ struct MaterialBudgetMC {
   {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -306,10 +313,10 @@ struct MaterialBudgetMC {
 
       double value[6] = {0.f};
       float phi_cp2 = 0.f, eta_cp2 = 0.f;
-      for (auto& tagcut : tagcuts) {
-        for (auto& probecut : probecuts) {
-          for (auto& g1 : photons1_coll) {
-            for (auto& g2 : photons2_coll) {
+      for (const auto& tagcut : tagcuts) {
+        for (const auto& probecut : probecuts) {
+          for (const auto& g1 : photons1_coll) {
+            for (const auto& g2 : photons2_coll) {
               if (g1.globalIndex() == g2.globalIndex()) {
                 continue;
               }
@@ -317,7 +324,7 @@ struct MaterialBudgetMC {
                 continue;
               }
 
-              for (auto& paircut : paircuts) {
+              for (const auto& paircut : paircuts) {
                 if (!paircut.IsSelected(g1, g2)) {
                   continue;
                 }
@@ -364,13 +371,13 @@ struct MaterialBudgetMC {
                 ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.); // tag
                 ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.); // probe
                 ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-                phi_cp2 = atan2(g2.vy(), g2.vx());
-                eta_cp2 = std::atanh(g2.vz() / sqrt(pow(g2.vx(), 2) + pow(g2.vy(), 2) + pow(g2.vz(), 2)));
+                phi_cp2 = std::atan2(g2.vy(), g2.vx());
+                eta_cp2 = std::atanh(g2.vz() / std::sqrt(std::pow(g2.vx(), 2) + std::pow(g2.vy(), 2) + std::pow(g2.vz(), 2)));
                 value[0] = v12.M();
                 value[1] = g1.pt();
                 value[2] = g2.pt();
                 value[3] = g2.v0radius();
-                value[4] = phi_cp2 > 0.f ? phi_cp2 : phi_cp2 + TMath::TwoPi();
+                value[4] = RecoDecay::constrainAngle(phi_cp2);
                 value[5] = eta_cp2;
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_same"))->Fill(value);
               } // end of pair cut loop
@@ -382,7 +389,7 @@ struct MaterialBudgetMC {
   }
 
   Partition<MyCollisions> grouped_collisions = cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax; // this goes to same event.
-  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > static_cast<uint16_t>(0) && o2::aod::evsel::sel8 == true;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to same event pairing.
 
@@ -398,7 +405,7 @@ struct MaterialBudgetMC {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
-    for (auto& collision : grouped_collisions) {
+    for (const auto& collision : grouped_collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -418,7 +425,7 @@ struct MaterialBudgetMC {
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(3.0);
 
-      if (abs(collision.posZ()) > 10.0) {
+      if (std::abs(collision.posZ()) > 10.0) {
         continue;
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);

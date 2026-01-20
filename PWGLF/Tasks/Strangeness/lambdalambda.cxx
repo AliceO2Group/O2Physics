@@ -14,14 +14,14 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -119,15 +119,17 @@ struct lambdalambda {
 
   Configurable<bool> cfgV0V0Sel{"cfgV0V0Sel", false, "application of V0V0 selections"};
 
-  Configurable<float> cfgV0V0RadiusMin{"cfgV0V0RadiusMin", 1.0, "maximum radius of v0v0"};
+  Configurable<float> cfgV0V0RadiusMin{"cfgV0V0RadiusMin", 1.0, "minimum radius of v0v0"};
   Configurable<float> cfgV0V0CPAMin{"cfgV0V0CPAMin", 0.6, "minimum CPA of v0v0"};
   Configurable<float> cfgV0V0DistanceMin{"cfgV0V0DistanceMin", 1, "minimum distance of v0v0"};
-  Configurable<float> cfgV0V0DCAMin{"cfgV0V0DCAMin", 1.0, "maximum DCA of v0v0 R"};
+  Configurable<float> cfgV0V0DCAMin{"cfgV0V0DCAMin", 1.0, "minimum DCA of v0v0 R"};
+  Configurable<float> cfgV0V0PVPAMin{"cfgV0V0PVPAMin", 0.9, "minimum PV PA of v0v0"};
 
   Configurable<float> cfgV0V0RadiusMax{"cfgV0V0RadiusMax", 1.0, "maximum radius of v0v0"};
   Configurable<float> cfgV0V0CPAMax{"cfgV0V0CPAMax", 0.6, "maximum CPA of v0v0"};
   Configurable<float> cfgV0V0DistanceMax{"cfgV0V0DistanceMax", 1, "maximum distance of v0v0"};
   Configurable<float> cfgV0V0DCAMax{"cfgV0V0DCAMax", 1.0, "maximum DCA of v0v0 R"};
+  Configurable<float> cfgV0V0PVPAMax{"cfgV0V0PVPAMax", 1.0, "maximum PV PA of v0v0"};
 
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
   Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
@@ -184,11 +186,13 @@ struct lambdalambda {
     histos.add("CPA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
     histos.add("Distance_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
     histos.add("DCA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
+    histos.add("PVPA_V0V0_full", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
 
     histos.add("Radius_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, RadiusAxis, combAxis}});
     histos.add("CPA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
     histos.add("Distance_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DistanceAxis, combAxis}});
     histos.add("DCA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, DCAAxis, combAxis}});
+    histos.add("PVPA_V0V0_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, CPAAxis, combAxis}});
 
     histos.add("h_InvMass_same", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
     histos.add("h_InvMass_mixed", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
@@ -303,8 +307,8 @@ struct lambdalambda {
     return true;
   }
 
-  template <typename V01, typename V02>
-  bool isSelectedV0V0(V01 const& v01, V02 const& v02)
+  template <typename V01, typename V02, typename Coll>
+  bool isSelectedV0V0(V01 const& v01, V02 const& v02, Coll const& coll)
   {
     if (getDCAofV0V0(v01, v02) > cfgV0V0DCAMax)
       return false;
@@ -318,9 +322,13 @@ struct lambdalambda {
       return false;
     if (getDistance(v01, v02) < cfgV0V0DistanceMin)
       return false;
-    if (getRadius(v01, v02) > cfgV0V0RadiusMax)
+    if (getRadius(v01, v02, coll) > cfgV0V0RadiusMax)
       return false;
-    if (getRadius(v01, v02) < cfgV0V0RadiusMin)
+    if (getRadius(v01, v02, coll) < cfgV0V0RadiusMin)
+      return false;
+    if (getPVPA(v01, v02, coll) > cfgV0V0PVPAMax)
+      return false;
+    if (getPVPA(v01, v02, coll) < cfgV0V0PVPAMin)
       return false;
 
     return true;
@@ -360,8 +368,8 @@ struct lambdalambda {
     return std::sqrt(posdiff.Mag2());
   }
 
-  template <typename V01, typename V02>
-  float getRadius(V01 const& v01, V02 const& v02)
+  template <typename V01, typename V02, typename Coll>
+  float getRadius(V01 const& v01, V02 const& v02, Coll const& coll)
   {
     ROOT::Math::XYZVector v01pos, v02pos, v01mom, v02mom;
     v01pos.SetXYZ(v01.x(), v01.y(), v01.z());
@@ -377,7 +385,37 @@ struct lambdalambda {
     float s = -posdiff.Dot(v02mom - v01mom.Dot(v02mom) * v01mom) / d;
     ROOT::Math::XYZVector dca = v01pos + v02pos + t * v01mom + s * v02mom;
     dca /= 2.;
-    return std::sqrt(dca.Mag2());
+    ROOT::Math::XYZVector pv;
+    pv.SetXYZ(coll.posX(), coll.posY(), coll.posZ());
+    ROOT::Math::XYZVector reldca = dca - pv;
+    return std::sqrt(reldca.Mag2());
+  }
+
+  template <typename V01, typename V02, typename Coll>
+  float getPVPA(V01 const& v01, V02 const& v02, Coll const& coll)
+  {
+    ROOT::Math::XYZVector v0v0mom;
+    v0v0mom.SetXYZ(v01.px() + v02.px(), v01.py() + v02.py(), v01.pz() + v02.pz());
+
+    ROOT::Math::XYZVector v01pos, v02pos, v01mom, v02mom;
+    v01pos.SetXYZ(v01.x(), v01.y(), v01.z());
+    v02pos.SetXYZ(v02.x(), v02.y(), v02.z());
+    v01mom.SetXYZ(v01.px() / v01.p(), v01.py() / v01.p(), v01.pz() / v01.p());
+    v02mom.SetXYZ(v02.px() / v02.p(), v02.py() / v02.p(), v02.pz() / v02.p());
+    ROOT::Math::XYZVector posdiff = v02pos - v01pos;
+
+    float d = 1. - TMath::Power(v01mom.Dot(v02mom), 2);
+    if (d < 1e-5)
+      return -2;
+    float t = posdiff.Dot(v01mom - v01mom.Dot(v02mom) * v02mom) / d;
+    float s = -posdiff.Dot(v02mom - v01mom.Dot(v02mom) * v01mom) / d;
+    ROOT::Math::XYZVector dca = v01pos + v02pos + t * v01mom + s * v02mom;
+    dca /= 2.;
+    ROOT::Math::XYZVector pv;
+    pv.SetXYZ(coll.posX(), coll.posY(), coll.posZ());
+    ROOT::Math::XYZVector reldca = dca - pv;
+
+    return v0v0mom.Dot(reldca) / sqrt(v0v0mom.Mag2() * reldca.Mag2());
   }
 
   template <typename C1, typename C2, typename V01, typename V02>
@@ -465,22 +503,23 @@ struct lambdalambda {
           continue;
         IsTriggered = true;
 
-        histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
+        histos.fill(HIST("Radius_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02, c1), V01Tag + V02Tag);
         histos.fill(HIST("CPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("Distance_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
         histos.fill(HIST("DCA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
-
-        if (isSelectedV0V0(v01, v02)) {
-          histos.fill(HIST("Radius_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02), V01Tag + V02Tag);
+        histos.fill(HIST("PVPA_V0V0_full"), RecoV0V0.M(), RecoV0V0.Pt(), getPVPA(v01, v02, c1), V01Tag + V02Tag);
+        if (isSelectedV0V0(v01, v02, c1)) {
+          histos.fill(HIST("Radius_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getRadius(v01, v02, c1), V01Tag + V02Tag);
           histos.fill(HIST("CPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getCPA(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("Distance_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDistance(v01, v02), V01Tag + V02Tag);
           histos.fill(HIST("DCA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getDCAofV0V0(v01, v02), V01Tag + V02Tag);
+          histos.fill(HIST("PVPA_V0V0_sel"), RecoV0V0.M(), RecoV0V0.Pt(), getPVPA(v01, v02, c1), V01Tag + V02Tag);
           IsSelected = true;
         }
 
         if (doprocessDataSame) {
           histos.fill(HIST("h_InvMass_same"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
-          if (cfgV0V0Sel && isSelectedV0V0(v01, v02)) {
+          if (cfgV0V0Sel && isSelectedV0V0(v01, v02, c1)) {
             histos.fill(HIST("h_InvMass_same_sel"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
             if (cfgRotBkg) {
               for (int nr = 0; nr < cfgNRotBkg; nr++) {
@@ -495,7 +534,7 @@ struct lambdalambda {
         }
         if (doprocessDataMixed) {
           histos.fill(HIST("h_InvMass_mixed"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
-          if (cfgV0V0Sel && isSelectedV0V0(v01, v02)) {
+          if (cfgV0V0Sel && isSelectedV0V0(v01, v02, c1)) {
             histos.fill(HIST("h_InvMass_mixed_sel"), RecoV0V0.M(), RecoV0V0.Pt(), centrality, V01Tag + V02Tag);
           }
         }

@@ -31,6 +31,8 @@ using namespace o2::soa;
 using namespace o2::framework::expressions;
 using namespace o2::analysis;
 
+#include <string>
+
 namespace o2::analysis::cfskim
 {
 #define LOGTRACKCOLLISIONS debug
@@ -100,7 +102,7 @@ struct TwoParticleCorrelationsCollisionSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   int nReportedTracks;
   int runNumber = 0;
@@ -232,7 +234,7 @@ struct TwoParticleCorrelationsTrackSkimming {
   Produces<aod::CFTrackPIDs> skimmtrackpid;
   Produces<aod::CFMCPartMask> particlemask;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   void init(InitContext const&)
   {

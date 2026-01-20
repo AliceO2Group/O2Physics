@@ -63,8 +63,10 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
-  o2::framework::Configurable<float> kstarMin{"kstarMin", -1.f, "Minimum kstar of pair for plotting (Set to negative value to turn off the cut)"};
-  o2::framework::Configurable<float> kstarMax{"kstarMax", -1.f, "Maximum kstar of pair for plotting (Set to negative value to turn off the cut)"};
+  o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
+  o2::framework::Configurable<float> dphistarCenter{"dphistarCenter", 0.f, "Center of dphistar cut"};
+  o2::framework::Configurable<float> kinematicMin{"kinematicMin", -1.f, "Minimum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
+  o2::framework::Configurable<float> kinematicMax{"kinematicMax", -1.f, "Maximum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
   o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{250, -0.5, 0.5}}, "deta"};
   o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{250, -0.5, 0.5}}, "dphi"};
 };
@@ -77,6 +79,7 @@ constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0Daught
 constexpr const char PrefixCprV0DaughterV0DaughterNeg[] = "CprV0DaughterV0DaughterNeg";
 constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor";
 
+// pairs
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
 using ConfCprTrackV0Daughter = ConfCpr<PrefixCprTrackV0Daughter>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
@@ -157,14 +160,17 @@ class CloseTrackRejection
       LOG(fatal) << "Limits for Close Pair Rejection are invalid (0 or negative). Breaking...";
     }
 
+    mDetaCenter = confCpr.detaCenter.value;
+    mDphistarCenter = confCpr.dphistarCenter.value;
+
     mChargeAbsTrack1 = std::abs(chargeAbsTrack1);
     mChargeAbsTrack2 = std::abs(chargeAbsTrack2);
 
     mCutAverage = confCpr.cutAverage.value;
     mCutAnyRadius = confCpr.cutAnyRadius.value;
 
-    mKstarMin = confCpr.kstarMin.value;
-    mKstarMax = confCpr.kstarMax.value;
+    mKinematicMin = confCpr.kinematicMin.value;
+    mKinematicMax = confCpr.kinematicMax.value;
 
     mPlotAverage = confCpr.plotAverage.value;
     mPlotAllRadii = confCpr.plotAllRadii.value;
@@ -208,29 +214,33 @@ class CloseTrackRejection
     mDeta = track1.eta() - track2.eta();
 
     for (size_t i = 0; i < TpcRadii.size(); i++) {
-      auto phistar1 = utils::dphistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
-      auto phistar2 = utils::dphistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
+      auto phistar1 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
+      auto phistar2 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
       if (phistar1 && phistar2) {
         mDphistar.at(i) = RecoDecay::constrainAngle(phistar1.value() - phistar2.value(), -o2::constants::math::PI); // constrain angular difference between -pi and pi
         mDphistarMask.at(i) = true;
         count++;
       }
     }
-    // for small momemeta the calculation of phistar might fail, if the particle did not reach a certain radius
-    mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
+    // for small momemeta the calculation of phistar might fail, if the particle did not reach one or more of the outer radii
+    if (count > 0) {
+      mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
+    } else {
+      mAverageDphistar = 0.f; // if computation at all radii fail, set it 0
+    }
   }
 
-  void fill(float kstar)
+  void fill(float kinematic)
   {
     if (!mIsActivated) {
       return;
     }
 
-    if (mKstarMin > 0.f && kstar < mKstarMin) {
+    if (mKinematicMin > 0.f && kinematic < mKinematicMin) {
       return;
     }
 
-    if (mKstarMax > 0.f && kstar > mKstarMax) {
+    if (mKinematicMax > 0.f && kinematic > mKinematicMax) {
       return;
     }
 
@@ -280,7 +290,7 @@ class CloseTrackRejection
     bool isCloseAnyRadius = false;
 
     if (mCutAverage) {
-      isCloseAverage = std::hypot(mAverageDphistar / mDphistarMax, mDeta / mDetaMax) < 1.f;
+      isCloseAverage = std::hypot((mAverageDphistar - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
     }
 
     if (mCutAnyRadius) {
@@ -289,7 +299,7 @@ class CloseTrackRejection
           break;
         }
         if (mDphistarMask.at(i)) {
-          isCloseAnyRadius = std::hypot(mDphistar.at(i) / mDphistarMax, mDeta / mDetaMax) < 1.f;
+          isCloseAnyRadius = std::hypot((mDphistar.at(i) - mDphistarCenter) / mDphistarMax, (mDeta - mDetaCenter) / mDetaMax) < 1.f;
         }
       }
     }
@@ -299,12 +309,22 @@ class CloseTrackRejection
   bool isActivated() const { return mIsActivated; }
 
  private:
+  std::optional<float> phistar(float magfield, float radius, float signedPt, float phi)
+  {
+    double arg = 0.3 * (0.1 * magfield) * (0.01 * radius) / (2. * signedPt);
+    if (std::fabs(arg) <= 1.) {
+      double phistar = phi - std::asin(arg);
+      return static_cast<float>(RecoDecay::constrainAngle(phistar));
+    }
+    return std::nullopt;
+  }
+
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlotAllRadii = false;
   bool mPlotAverage = false;
 
-  float mKstarMin = -1.f;
-  float mKstarMax = -1.f;
+  float mKinematicMin = -1.f;
+  float mKinematicMax = -1.f;
 
   bool mCutAverage = false;
   bool mCutAnyRadius = false;
@@ -316,6 +336,8 @@ class CloseTrackRejection
   float mMagField = 0.f;
   float mDetaMax = 0.f;
   float mDphistarMax = 0.f;
+  float mDetaCenter = 0.f;
+  float mDphistarCenter = 0.f;
 
   float mAverageDphistar = 0.f;
   float mDeta = 0.f;

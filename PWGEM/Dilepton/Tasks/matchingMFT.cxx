@@ -77,12 +77,13 @@ struct matchingMFT {
   Configurable<float> maxChi2MFT{"maxChi2MFT", 1e+6f, "max. chi2/ndf for MFT track in global muon"};
   Configurable<int> minNclustersMFT{"minNclustersMFT", 5, "min nclusters MFT"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
+
   Configurable<bool> requireTrueAssociation{"requireTrueAssociation", false, "flag to require true mc collision association"};
   Configurable<float> maxRelDPt{"maxRelDPt", 1e+10f, "max. relative dpt between MFT-MCH-MID and MCH-MID"};
   Configurable<float> maxDEta{"maxDEta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
   Configurable<float> maxDPhi{"maxDPhi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
-  Configurable<float> maxDEtaMP{"maxDEtaMP", 1e+10f, "max. deta between MFT and MCH-MID at matching plane Z"};
-  Configurable<float> maxDPhiMP{"maxDPhiMP", 1e+10f, "max. dphi between MFT and MCH-MID at matching plane Z"};
+  Configurable<float> maxDXMP{"maxDXMP", 1e+10f, "max. dx between MFT and MCH-MID at matching plane Z"};
+  Configurable<float> maxDYMP{"maxDYMP", 1e+10f, "max. dy between MFT and MCH-MID at matching plane Z"};
   Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to require MFT hit map"};
   Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
@@ -178,7 +179,7 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -5.f, -1.f}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi_MatchedMCHMID", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -5.f, -1.f}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hsDelta", "diff. between GL and associated SA;p_{T}^{gl} (GeV/c);(p_{T}^{sa} - p_{T}^{gl})/p_{T}^{gl};#eta^{sa} - #eta^{gl};#varphi^{sa} - #varphi^{gl} (rad.);", kTHnSparseF, {axis_pt, {200, -0.5, +0.5}, {200, -1, +1}, {90, -M_PI / 4, M_PI / 4}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hsDeltaAtMP", "diff. between MFT and MCH-MID;p_{T}^{gl} (GeV/c);#varphi^{MCH-MID} - #varphi^{MFT} (rad.);#eta^{MCH-MID} - #eta^{MFT};", kTHnSparseF, {axis_pt, {90, -M_PI / 4, M_PI / 4}, {200, -1, +1}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hsDeltaAtMP", "diff. XY between MFT and MCH-MID at MP;p_{T}^{gl} (GeV/c);X^{MCH-MID} - X^{MFT};Y^{MCH-MID} - Y^{MFT};", kTHnSparseF, {axis_pt, {100, -50, 50}, {100, -50, 50}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDiffCollId", "difference in collision index;collisionId_{TTCA} - collisionId_{MP}", kTH1F, {{41, -20.5, +20.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hSign", "sign;sign", kTH1F, {{3, -1.5, +1.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hNclusters", "Nclusters;Nclusters", kTH1F, {{21, -0.5f, 20.5}}, false);
@@ -197,6 +198,8 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxResolutionvsPt", "DCA_{x} resolution vs. p_{T};p_{T} (GeV/c);DCA_{x} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAyResolutionvsPt", "DCA_{y} resolution vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt", "DCA_{xy} resolution vs. p_{T};p_{T} (GeV/c);DCA_{xy} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hDCAz", "DCAz;DCA_{z} (cm);", kTH1F, {{200, -0.1, 0.1}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm);", kTH2F, {{100, 0, 1}, {200, -0.1, 0.1}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hMCHBitMap", "MCH bit map;MCH bit map", kTH1F, {{1024, -0.5, 1023.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hMIDBitMap", "MID bit map;MID bit map", kTH1F, {{256, -0.5, 255.5}}, false);
 
@@ -208,7 +211,6 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hDeltaPhi_Neg", "#varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 10}, {400, -0.2, +0.2}}, false);
     fRegistry.addClone("MFTMCHMID/primary/correct/", "MFTMCHMID/primary/wrong/");
     fRegistry.addClone("MFTMCHMID/primary/", "MFTMCHMID/secondary/");
-    fRegistry.addClone("MFTMCHMID/", "MCHMID/");
   }
 
   bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2_per_ndf, const uint8_t trackType, const float dcaXY)
@@ -296,42 +298,61 @@ struct matchingMFT {
   //   }
   // }
 
+  // template <typename TCollision, typename TTrackParCovFwd>
+  // float cpaRZ(TCollision const& collision, TTrackParCovFwd const& fwdtrack)
+  // {
+  //   float lx = fwdtrack.getX() - collision.posX();  // flight length X
+  //   float ly = fwdtrack.getY() - collision.posY();  // flight length Y
+  //   float lz = fwdtrack.getZ() - collision.posZ();  // flight length Z
+  //   float lt = RecoDecay::sqrtSumOfSquares(lx, ly); // flight length R, i.e. transverse plane.
+
+  //   float pt = fwdtrack.getPt();
+  //   float pz = fwdtrack.getPz();
+
+  //   float cpaRZ = RecoDecay::dotProd(std::array{lt, lz}, std::array{pt, pz}) / (RecoDecay::sqrtSumOfSquares(lt, lz) * RecoDecay::sqrtSumOfSquares(pt, pz));
+  //   if (cpaRZ < -1.f) {
+  //     return -1.f;
+  //   } else if (cpaRZ > 1.f) {
+  //     return 1.f;
+  //   }
+  //   return cpaRZ;
+  // }
+
   template <typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack, typename TMFTrackCov>
-  void getDeltaEtaDeltaPhiAtMatchingPlane(TCollision const& collision, TFwdTrack const& fwdtrack, TMFTrackCov const& mftCovs, float& deta, float& dphi)
+  void getDxDyAtMatchingPlane(TCollision const& collision, TFwdTrack const& fwdtrack, TMFTrackCov const& mftCovs, float& dx, float& dy)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-      deta = 999.f;
-      dphi = 999.f;
+      dx = 999.f;
+      dy = 999.f;
       return; // do nothing
     }
 
     auto mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
-    auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>();
+    auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
 
     if (mchtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
-      deta = 999.f;
-      dphi = 999.f;
+      dx = 999.f;
+      dy = 999.f;
       return; // do nothing
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, matchingZ, mBz);
-    auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-
     auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, matchingZ, mBz); // propagated to matching plane
-    o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwd(mfttrack, mfttrackcov);                                   // values at innermost update
-    mftsaAtMP.propagateToZhelix(matchingZ, mBz);                                                                      // propagated to matching plane
-    deta = muonAtMP.getEta() - mftsaAtMP.getEta();
-    dphi = muonAtMP.getPhi() - mftsaAtMP.getPhi();
-    o2::math_utils::bringToPMPi(dphi);
-    // reldpt = (muonAtMP.getPt() - mftsaAtMP.getPt()) / muonAtMP.getPt();
 
-    // o2::track::TrackParCovFwd mftsa = getTrackParCovFwd(mfttrack, mfttrackcov); // values at innermost update
-    // o2::dataformats::GlobalFwdTrack globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuonAtPV, mftsa); // this is track at IU.
-    // auto globalMuonAtDCA = o2::aod::fwdtrackutils::propagateTrackParCovFwd(globalMuonRefit, fwdtrack.trackType(), collision, propagationPoint::kToMatchingPlane, matchingZ);
-    // deta = propmuonAtPV.getEta() - globalMuonAtDCA.getEta();
-    // dphi = propmuonAtPV.getPhi() - globalMuonAtDCA.getPhi();
+    auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+    o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwd(mfttrack, mfttrackcov); // values at innermost update
+    mftsaAtMP.propagateToZhelix(matchingZ, mBz);                                    // propagated to matching plane
+    dx = muonAtMP.getX() - mftsaAtMP.getX();
+    dy = muonAtMP.getY() - mftsaAtMP.getY();
     // o2::math_utils::bringToPMPi(dphi);
-    // reldpt = (globalMuonAtDCA.getPt() - propmuonAtPV.getPt()) / propmuonAtPV.getPt();
+
+    // float sigmaX = std::sqrt(muonAtMP.getSigma2X() + mftsaAtMP.getSigma2X());
+    // float sigmaY = std::sqrt(muonAtMP.getSigma2Y() + mftsaAtMP.getSigma2Y());
+    // dx /= sigmaX;
+    // dy /= sigmaY;
+
+    // LOGF(info, "dx/sigmaX = %f, dy/sigmaY = %f", dx/sigmaX, dy/sigmaY);
+    // LOGF(info, "muonAtMP.getX() = %f, muonAtMP.getSigma2X() = %f, muonAtMP.getY() = %f, muonAtMP.getSigma2Y() = %f", muonAtMP.getX(), muonAtMP.getSigma2X() , muonAtMP.getY(), muonAtMP.getSigma2Y());
+    // LOGF(info, "mftsaAtMP.getX() = %f, mftsaAtMP.getSigma2X() = %f, mftsaAtMP.getY() = %f, mftsaAtMP.getSigma2Y() = %f", mftsaAtMP.getX(), mftsaAtMP.getSigma2X() , mftsaAtMP.getY(), mftsaAtMP.getSigma2Y());
   }
 
   template <bool withMFTCov = false, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
@@ -388,30 +409,30 @@ struct matchingMFT {
     bool isMatched = (mcParticle_MFT.globalIndex() == mcParticle_MCHMID.globalIndex()) && (mcParticle_MFT.mcCollisionId() == mcParticle_MCHMID.mcCollisionId());
 
     o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(fwdtrack, fwdtrack, collision, propagationPoint::kToVertex, matchingZ, mBz);
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(fwdtrack, fwdtrack, collision, propagationPoint::kToDCA, matchingZ, mBz);
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, matchingZ, mBz);
     o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToVertex, matchingZ, mBz);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, matchingZ, mBz);
 
     float pt = propmuonAtPV.getPt();
     float eta = propmuonAtPV.getEta();
     float phi = propmuonAtPV.getPhi();
     o2::math_utils::bringTo02Pi(phi);
 
-    float cXXatDCA = propmuonAtDCA.getSigma2X();
-    float cYYatDCA = propmuonAtDCA.getSigma2Y();
-    float cXYatDCA = propmuonAtDCA.getSigmaXY();
+    float cXX = propmuonAtPV.getSigma2X();
+    float cYY = propmuonAtPV.getSigma2Y();
+    float cXY = propmuonAtPV.getSigmaXY();
 
-    float dcaX = propmuonAtDCA.getX() - collision.posX();
-    float dcaY = propmuonAtDCA.getY() - collision.posY();
-    float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
+    float dcaX = propmuonAtPV.getX() - collision.posX();
+    float dcaY = propmuonAtPV.getY() - collision.posY();
+    float dcaZ = propmuonAtPV.getZ() - collision.posZ(); // 0 at this point.
+    float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd();    // this works only for GlobalMuonTrack
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-    float det = cXXatDCA * cYYatDCA - cXYatDCA * cXYatDCA; // determinanat
+    float det = cXX * cYY - cXY * cXY; // determinanat
 
     float dcaXYinSigma = 999.f;
     if (det < 0) {
       dcaXYinSigma = 999.f;
     } else {
-      dcaXYinSigma = std::sqrt(std::fabs((dcaX * dcaX * cYYatDCA + dcaY * dcaY * cXXatDCA - 2. * dcaX * dcaY * cXYatDCA) / det / 2.)); // dca xy in sigma
+      dcaXYinSigma = std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
     }
     float sigma_dcaXY = dcaXY / dcaXYinSigma;
 
@@ -419,66 +440,46 @@ struct matchingMFT {
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     float pDCA = mchtrack.p() * dcaXY_Matched;
-    float dphiMP = 999.f, detaMP = 999.f;
+    // float pDCA = propmuonAtPV.getP() * dcaXY;
+    float dxMP = 999.f, dyMP = 999.f;
+
+    pt = propmuonAtPV.getPt();
+    eta = propmuonAtPV.getEta();
+    phi = propmuonAtPV.getPhi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    if constexpr (withMFTCov) {
+      auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+      o2::track::TrackParCovFwd mftsa = getTrackParCovFwd(mfttrack, mfttrackcov);                                                // values at innermost update
+      o2::dataformats::GlobalFwdTrack globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuonAtPV_Matched, mftsa); // this is track at IU.
+      auto globalMuonAtPV = o2::aod::fwdtrackutils::propagateTrackParCovFwd(globalMuonRefit, fwdtrack.trackType(), collision, propagationPoint::kToVertex, matchingZ, mBz);
+
+      pt = globalMuonAtPV.getPt();
+      eta = globalMuonAtPV.getEta();
+      phi = globalMuonAtPV.getPhi();
+      o2::math_utils::bringTo02Pi(phi);
+
+      cXX = globalMuonAtPV.getSigma2X();
+      cYY = globalMuonAtPV.getSigma2Y();
+      cXY = globalMuonAtPV.getSigmaXY();
+      dcaX = globalMuonAtPV.getX() - collision.posX();
+      dcaY = globalMuonAtPV.getY() - collision.posY();
+      dcaZ = globalMuonAtPV.getZ() - collision.posZ();
+      dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+      det = cXX * cYY - cXY * cXY; // determinanat
+      if (det < 0) {
+        dcaXYinSigma = 999.f;
+      } else {
+        dcaXYinSigma = std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
+      }
+      sigma_dcaXY = dcaXY / dcaXYinSigma;
+
+      getDxDyAtMatchingPlane<TFwdTracks, TMFTTracks>(collision, fwdtrack, mftCovs, dxMP, dyMP);
+      // o2::math_utils::bringToPMPi(dphiMP);
+    }
 
     if (refitGlobalMuon) {
-      // eta = mfttrack.eta();
-      // phi = mfttrack.phi();
-      // o2::math_utils::bringTo02Pi(phi);
-      eta = propmuonAtDCA.getEta();
-      phi = propmuonAtDCA.getPhi();
-      o2::math_utils::bringTo02Pi(phi);
       pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
-
-      if constexpr (withMFTCov) {
-        // auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-        // o2::track::TrackParCovFwd mftsa = getTrackParCovFwd(mfttrack, mfttrackcov);                                                // values at innermost update
-        // o2::dataformats::GlobalFwdTrack globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuonAtPV_Matched, mftsa); // this is track at IU.
-        // auto globalMuonAtDCA = o2::aod::fwdtrackutils::propagateTrackParCovFwd(globalMuonRefit, fwdtrack.trackType(), collision, propagationPoint::kToDCA, matchingZ, mBz);
-
-        // eta = globalMuonAtDCA.getEta();
-        // phi = globalMuonAtDCA.getPhi();
-        // o2::math_utils::bringTo02Pi(phi);
-        // pt = globalMuonAtDCA.getPt();
-        // p = globalMuonAtDCA.getP();
-
-        // eta = globalMuonRefit.getEta();
-        // phi = globalMuonRefit.getPhi();
-        // o2::math_utils::bringTo02Pi(phi);
-        // pt = globalMuonRefit.getPt();
-        // p = globalMuonRefit.getP();
-
-        // cXXatDCA = globalMuonAtDCA.getSigma2X();
-        // cYYatDCA = globalMuonAtDCA.getSigma2Y();
-        // cXYatDCA = globalMuonAtDCA.getSigmaXY();
-        // dcaX = globalMuonAtDCA.getX() - collision.posX();
-        // dcaY = globalMuonAtDCA.getY() - collision.posY();
-        // dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-        // det = cXXatDCA * cYYatDCA - cXYatDCA * cXYatDCA; // determinanat
-        // if (det < 0) {
-        //   dcaXYinSigma = 999.f;
-        // } else {
-        //   dcaXYinSigma = std::sqrt(std::fabs((dcaX * dcaX * cYYatDCA + dcaY * dcaY * cXXatDCA - 2. * dcaX * dcaY * cXYatDCA) / det / 2.)); // dca xy in sigma
-        // }
-        // sigma_dcaXY = dcaXY / dcaXYinSigma;
-
-        // cXXatDCA = mftsaAtDCA.getSigma2X();
-        // cYYatDCA = mftsaAtDCA.getSigma2Y();
-        // cXYatDCA = mftsaAtDCA.getSigmaXY();
-        // dcaX = mftsaAtDCA.getX() - collision.posX();
-        // dcaY = mftsaAtDCA.getY() - collision.posY();
-        // dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-        // det = cXXatDCA * cYYatDCA - cXYatDCA * cXYatDCA; // determinanat
-        // if (det < 0) {
-        //   dcaXYinSigma = 999.f;
-        // } else {
-        //   dcaXYinSigma = std::sqrt(std::fabs((dcaX * dcaX * cYYatDCA + dcaY * dcaY * cXXatDCA - 2. * dcaX * dcaY * cXYatDCA) / det / 2.)); // dca xy in sigma
-        // }
-        // sigma_dcaXY = dcaXY / dcaXYinSigma;
-
-        getDeltaEtaDeltaPhiAtMatchingPlane<TFwdTracks, TMFTTracks>(collision, fwdtrack, mftCovs, detaMP, dphiMP);
-        o2::math_utils::bringToPMPi(dphiMP);
-      }
     }
 
     float ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
@@ -492,7 +493,7 @@ struct matchingMFT {
     if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
       return;
     }
-    if (std::sqrt(std::pow(detaMP / maxDEtaMP, 2) + std::pow(dphiMP / maxDPhiMP, 2)) > 1.f) {
+    if (std::sqrt(std::pow(dxMP / maxDXMP, 2) + std::pow(dyMP / maxDYMP, 2)) > 1.f) {
       return;
     }
     if (std::fabs(dpt) > maxRelDPt) {
@@ -519,7 +520,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hsDelta"), pt, dpt, deta, dphi);
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hsDeltaAtMP"), pt, dphiMP, detaMP);
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hsDeltaAtMP"), pt, dxMP, dyMP);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hNclusters"), fwdtrack.nClusters());
@@ -532,14 +533,16 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxy2D"), dcaX, dcaY);
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxy2DinSigma"), dcaX / std::sqrt(cXX), dcaY / std::sqrt(cYY));
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxy"), dcaXY);
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAz"), dcaZ);
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyz"), dcaXY, dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
 
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
@@ -555,7 +558,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hsDelta"), pt, dpt, deta, dphi);
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hsDeltaAtMP"), pt, dphiMP, detaMP);
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hsDeltaAtMP"), pt, dxMP, dyMP);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hNclusters"), fwdtrack.nClusters());
@@ -568,14 +571,16 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxy2D"), dcaX, dcaY);
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxy2DinSigma"), dcaX / std::sqrt(cXX), dcaY / std::sqrt(cYY));
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxy"), dcaXY);
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAz"), dcaZ);
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyz"), dcaXY, dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
 
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
@@ -593,7 +598,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hsDelta"), pt, dpt, deta, dphi);
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hsDeltaAtMP"), pt, dphiMP, detaMP);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hsDeltaAtMP"), pt, dxMP, dyMP);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hNclusters"), fwdtrack.nClusters());
@@ -606,14 +611,16 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxy2D"), dcaX, dcaY);
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxy2DinSigma"), dcaX / std::sqrt(cXX), dcaY / std::sqrt(cYY));
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxy"), dcaXY);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAz"), dcaZ);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyz"), dcaXY, dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
 
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
@@ -629,7 +636,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hsDelta"), pt, dpt, deta, dphi);
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hsDeltaAtMP"), pt, dphiMP, detaMP);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hsDeltaAtMP"), pt, dxMP, dyMP);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hNclusters"), fwdtrack.nClusters());
@@ -642,14 +649,16 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxy2D"), dcaX, dcaY);
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxy2DinSigma"), dcaX / std::sqrt(cXX), dcaY / std::sqrt(cYY));
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxy"), dcaXY);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAz"), dcaZ);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyz"), dcaXY, dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyinSigma"), dcaXYinSigma);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hMIDBitMap"), fwdtrack.midBitMap());
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
 
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
@@ -710,9 +719,11 @@ struct matchingMFT {
           continue;
         }
 
-        float deta = 999.f, dphi = 999.f;
-        getDeltaEtaDeltaPhiAtMatchingPlane<TFwdTracks, TMFTTracks>(collision, muon_tmp, mftCovs, deta, dphi);
-        float dr = std::sqrt(deta * deta + dphi * dphi);
+        float dx = 999.f, dy = 999.f;
+        if constexpr (withMFTCov) {
+          getDxDyAtMatchingPlane<TFwdTracks, TMFTTracks>(collision, muon_tmp, mftCovs, dx, dy);
+        }
+        float dr = std::sqrt(dx * dx + dy * dy);
 
         // auto mcParticle_MFTMCHMID = muon_tmp.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MCHMID
         auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
@@ -769,6 +780,17 @@ struct matchingMFT {
 
   void processWithoutFTTCA(FilteredMyCollisions const& collisions, MyFwdTracks const& fwdtracks, MyMFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
+    vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
+    vec_min_dr.reserve(fwdtracks.size());
+    for (const auto& collision : collisions) {
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& fwdtrack : fwdtracks_per_coll) {
+        findBestMatchPerMCHMID<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
+      } // end of fwdtrack loop
+    } // end of collision loop
+
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -792,6 +814,17 @@ struct matchingMFT {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
           continue;
         }
+
+        if (cfgBestMatchFinder == 0) { // chi2
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+            continue;
+          }
+        } else if (cfgBestMatchFinder == 1) { // dr
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
+            continue;
+          }
+        }
+
         fillHistograms<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
       } // end of fwdtrack loop
     } // end of collision loop
@@ -805,6 +838,18 @@ struct matchingMFT {
 
   void processWithFTTCA(FilteredMyCollisions const& collisions, MyFwdTracks const& fwdtracks, MyMFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::McParticles const&)
   {
+    vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
+    vec_min_dr.reserve(fwdtracks.size());
+    for (const auto& collision : collisions) {
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
+        auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
+        findBestMatchPerMCHMID<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
+      } // end of fwdtrack loop
+    } // end of collision loop
+
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -828,6 +873,17 @@ struct matchingMFT {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
           continue;
         }
+
+        if (cfgBestMatchFinder == 0) { // chi2
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+            continue;
+          }
+        } else if (cfgBestMatchFinder == 1) { // dr
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
+            continue;
+          }
+        }
+
         fillHistograms<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
       } // end of fwdtrack loop
     } // end of collision loop
@@ -880,6 +936,9 @@ struct matchingMFT {
       auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
+        if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
 
         if (cfgBestMatchFinder == 0) { // chi2
           if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
@@ -887,10 +946,6 @@ struct matchingMFT {
           }
         } else if (cfgBestMatchFinder == 1) { // dr
           if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
-            continue;
-          }
-        } else { // best match is not selected. Histograms are filled with all global muons.
-          if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
             continue;
           }
         }

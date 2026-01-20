@@ -18,14 +18,14 @@
 #include "PWGLF/DataModel/ReducedHeptaQuarkTables.h"
 
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -38,6 +38,7 @@
 #include <Framework/Configurable.h>
 
 #include <Math/GenVector/Boost.h>
+#include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
 #include <TMath.h>
 
@@ -223,6 +224,7 @@ struct heptaquarktable {
   }
 
   ROOT::Math::PxPyPzMVector DauVec1, DauVec2, HQMesonMother, HQVectorDummy, HQd1dummy, HQd2dummy;
+  ROOT::Math::XYZVector HQPosVectorDummy;
 
   void processHQReducedTable(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
@@ -252,6 +254,7 @@ struct heptaquarktable {
     std::vector<float> HQd2TOF = {};
 
     std::vector<ROOT::Math::PtEtaPhiMVector> hqresonance, hqresonanced1, hqresonanced2;
+    std::vector<ROOT::Math::XYZVector> hqresonancePosition;
 
     histos.fill(HIST("hEventstat"), 0.5);
     if (!(collision.sel8() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)))
@@ -308,6 +311,9 @@ struct heptaquarktable {
         hqresonanced1.push_back(temp1);
         hqresonanced2.push_back(temp2);
         hqresonance.push_back(temp3);
+
+        ROOT::Math::XYZVector temppos(0, 0, 0);
+        hqresonancePosition.push_back(temppos);
 
         HQId.push_back(333);
 
@@ -388,6 +394,9 @@ struct heptaquarktable {
       hqresonanced2.push_back(temp2);
       hqresonance.push_back(temp3);
 
+      ROOT::Math::XYZVector temppos(v0.x(), v0.y(), v0.z());
+      hqresonancePosition.push_back(temppos);
+
       HQd1Index.push_back(postrack_v0.globalIndex());
       HQd2Index.push_back(negtrack_v0.globalIndex());
 
@@ -434,12 +443,13 @@ struct heptaquarktable {
       //// Fill track table for HQ//////////////////
       for (auto if1 = hqresonance.begin(); if1 != hqresonance.end(); ++if1) {
         auto i5 = std::distance(hqresonance.begin(), if1);
+        HQPosVectorDummy = hqresonancePosition.at(i5);
         HQVectorDummy = hqresonance.at(i5);
         HQd1dummy = hqresonanced1.at(i5);
         HQd2dummy = hqresonanced2.at(i5);
         hqTrack(indexEvent, HQId.at(i5), HQVectorDummy.Px(), HQVectorDummy.Py(), HQVectorDummy.Pz(),
                 HQd1dummy.Px(), HQd1dummy.Py(), HQd1dummy.Pz(), HQd2dummy.Px(), HQd2dummy.Py(), HQd2dummy.Pz(),
-                HQVectorDummy.M(),
+                HQPosVectorDummy.X(), HQPosVectorDummy.Y(), HQPosVectorDummy.Z(), HQVectorDummy.M(),
                 HQd1Index.at(i5), HQd2Index.at(i5),
                 HQd1Charge.at(i5), HQd2Charge.at(i5), HQd1TPC.at(i5), HQd2TPC.at(i5),
                 HQd1TOFHit.at(i5), HQd2TOFHit.at(i5), HQd1TOF.at(i5), HQd2TOF.at(i5));

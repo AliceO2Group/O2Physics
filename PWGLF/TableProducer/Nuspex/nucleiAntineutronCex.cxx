@@ -15,21 +15,23 @@
 /// \author Fabiola Lugo
 ///
 
-#include "PWGLF/DataModel/LFAntinCexTables.h"
+#include <PWGLF/DataModel/LFAntinCexTables.h>
 
-#include "CommonConstants/MathConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Logger.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/TrackParametrization.h"
+#include <Common/DataModel/PIDResponseITS.h>
 
-#include "TMCProcess.h"
-#include "TMath.h"
-#include "TPDGCode.h"
-#include "TVector3.h"
+#include <CommonConstants/MathConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+
+#include <TMCProcess.h>
+#include <TMath.h>
+#include <TPDGCode.h>
+#include <TVector3.h>
 
 #include <algorithm>
 #include <array>
@@ -47,8 +49,8 @@ struct NucleiAntineutronCex {
   using TracksWCovMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels, o2::aod::TracksCovIU>;
 
   // === Cut values ===
-  static constexpr double kIts2MinR = 2.2;    // ITS2 min radius [cm]
-  static constexpr double kIts2MaxR = 39.0;   // ITS2 max radius [cm]
+  static constexpr double kIts2MinR = 4.5;    // ITS2 min radius (exluding IB) [cm]
+  static constexpr double kIts2MaxR = 48.0;   // ITS2 max radius [cm]
   static constexpr double kIts2MaxVz = 39.0;  // ITS2 max |vz| [cm]
   static constexpr double kAccMaxEta = 1.2;   // acceptance |eta|
   static constexpr double kAccMaxVz = 5.3;    // acceptance |vz| [cm]
@@ -157,6 +159,20 @@ struct NucleiAntineutronCex {
     histos.add("vtxfit_mc_dY", "SV residual Y (fit - MC);#Delta Y (cm);Entries", kTH1F, {{400, -20., 20.}});
     histos.add("vtxfit_mc_dZ", "SV residual Z (fit - MC);#Delta Z (cm);Entries", kTH1F, {{400, -20., 20.}});
     histos.add("vtxfit_mc_d3D", "SV distance |fit - MC|;#Delta r (cm);Entries", kTH1F, {{300, 0., 30.}});
+
+    // ITS PID (protons / antiprotons, reconstructed tracks)
+    histos.add("pItsNsigmaPr", "ITS n#sigma (p hyp., proton);n#sigma_{ITS}(p);Entries", kTH1F, {{100, -10., 10.}});
+    histos.add("apItsNsigmaPr", "ITS n#sigma (p hyp., antiproton);n#sigma_{ITS}(p);Entries", kTH1F, {{100, -10., 10.}});
+    histos.add("pItsPidValid", "ITS PID valid flag (proton);PidValid;Entries", kTH1F, {{2, 0., 2.}});
+    histos.add("apItsPidValid", "ITS PID valid flag (antiproton);PidValid;Entries", kTH1F, {{2, 0., 2.}});
+    histos.add("pTgl", "tgl (proton track);tgl;Entries", kTH1F, {{100, -2., 2.}});
+    histos.add("apTgl", "tgl (antiproton track);tgl;Entries", kTH1F, {{100, -2., 2.}});
+    histos.add("pItsNsigmaPr_bg", "ITS n#sigma (p hyp., proton);n#sigma_{ITS}(p);Entries", kTH1F, {{100, -10., 10.}});
+    histos.add("apItsNsigmaPr_bg", "ITS n#sigma (p hyp., antiproton);n#sigma_{ITS}(p);Entries", kTH1F, {{100, -10., 10.}});
+    histos.add("pItsPidValid_bg", "ITS PID valid flag (proton);PidValid;Entries", kTH1F, {{2, 0., 2.}});
+    histos.add("apItsPidValid_bg", "ITS PID valid flag (antiproton);PidValid;Entries", kTH1F, {{2, 0., 2.}});
+    histos.add("pTgl_bg", "tgl (proton track);tgl;Entries", kTH1F, {{100, -2., 2.}});
+    histos.add("apTgl_bg", "tgl (antiproton track);tgl;Entries", kTH1F, {{100, -2., 2.}});
   }
 
   static o2::track::TrackParCov makeTPCovFromAOD(const TracksWCovMc::iterator& tr)
@@ -495,6 +511,9 @@ struct NucleiAntineutronCex {
           // int antip_trk_nClsTPC = 0;
           int antipTrkNClsIts = 0;
           uint16_t apItsMap = 0;
+          float pTrkItsNSigmaPr = -999.f;
+          int8_t pTrkItsPidValid = 0;
+          float pTrkTgl = 0.f;
 
           bool pLayers = false;
           bool pHasTrack = false;
@@ -507,6 +526,11 @@ struct NucleiAntineutronCex {
           // int p_trk_nClsTPC = 0;
           int pTrkNClsIts = 0;
           uint16_t pItsMap = 0;
+          float antipTrkItsNSigmaPr = -999.f;
+          int8_t antipTrkItsPidValid = 0;
+          float antipTrkTgl = 0.f;
+
+          o2::aod::ITSResponse itsResponse;
 
           for (const auto& track : tracks) {
             if (!track.has_mcParticle())
@@ -542,11 +566,25 @@ struct NucleiAntineutronCex {
               antipTrkTpcSignal = track.tpcSignal();
               // antip_trk_nClsTPC = track.tpcNCls();
               antipTrkNClsIts = track.itsNCls();
+              antipTrkTgl = track.tgl();
+              const auto nsigmaITSantip = itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
+              antipTrkItsNSigmaPr = static_cast<float>(nsigmaITSantip);
+              antipTrkItsPidValid = std::isfinite(nsigmaITSantip) ? 1 : 0;
               antipHasTrack = true;
               apItsMap = static_cast<uint16_t>(track.itsClusterMap());
               antipLayers = (apItsMap != 0);
               if (layerCondition)
                 antipLayers = true;
+              if (motherPdg == -kNeutron) {
+                histos.fill(HIST("apItsNsigmaPr"), antipTrkItsNSigmaPr);
+                histos.fill(HIST("apItsPidValid"), antipTrkItsPidValid);
+                histos.fill(HIST("apTgl"), antipTrkTgl);
+              }
+              if (motherPdg != -kNeutron) {
+                histos.fill(HIST("apItsNsigmaPr_bg"), antipTrkItsNSigmaPr);
+                histos.fill(HIST("apItsPidValid_bg"), antipTrkItsPidValid);
+                histos.fill(HIST("apTgl_bg"), antipTrkTgl);
+              }
             } else if (mc.globalIndex() == pId) {
               pTrkP = track.p();
               pTrkPx = track.px();
@@ -556,11 +594,26 @@ struct NucleiAntineutronCex {
               pTrkTpcSignal = track.tpcSignal();
               // p_trk_nClsTPC = track.tpcNCls();
               pTrkNClsIts = track.itsNCls();
+              pTrkTgl = track.tgl();
+              const auto nsigmaITSp =
+                itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
+              pTrkItsNSigmaPr = static_cast<float>(nsigmaITSp);
+              pTrkItsPidValid = std::isfinite(nsigmaITSp) ? 1 : 0;
               pHasTrack = true;
               pItsMap = static_cast<uint16_t>(track.itsClusterMap());
               pLayers = (pItsMap != 0);
               if (layerCondition)
                 pLayers = true;
+              if (motherPdg == -kNeutron) {
+                histos.fill(HIST("pItsNsigmaPr"), pTrkItsNSigmaPr);
+                histos.fill(HIST("pItsPidValid"), pTrkItsPidValid);
+                histos.fill(HIST("pTgl"), pTrkTgl);
+              }
+              if (motherPdg != -kNeutron) {
+                histos.fill(HIST("pItsNsigmaPr_bg"), pTrkItsNSigmaPr);
+                histos.fill(HIST("pItsPidValid_bg"), pTrkItsPidValid);
+                histos.fill(HIST("pTgl_bg"), pTrkTgl);
+              }
             }
           }
           if (!(pHasTrack && antipHasTrack))
@@ -662,7 +715,7 @@ struct NucleiAntineutronCex {
               const float dOpenAngle = trkangleDeg - mcangleDeg;
 
               // Closest ITS layer: Radius need to be checked
-              static const std::array<double, 7> rLayers = {2.2, 2.8, 3.6, 19.6, 24.0, 29.0, 35.0};
+              static const std::array<double, 7> rLayers = {2.3, 3.1, 3.9, 24.0, 30.0, 42.0, 48.0};
               int16_t svNearestLayerId = -1;
               float svDeltaRToLayer = 1e9f;
               for (int i = 0; i < static_cast<int>(rLayers.size()); ++i) {
@@ -782,7 +835,15 @@ struct NucleiAntineutronCex {
                 static_cast<int8_t>(pLayers ? 1 : 0),
                 static_cast<int8_t>(antipLayers ? 1 : 0),
 
-                pvtxZ);
+                pvtxZ,
+
+                pTrkItsNSigmaPr,
+                pTrkItsPidValid,
+                pTrkTgl,
+
+                antipTrkItsNSigmaPr,
+                antipTrkItsPidValid,
+                antipTrkTgl);
             }
           }
           // ==== end DCAFitter2 ====

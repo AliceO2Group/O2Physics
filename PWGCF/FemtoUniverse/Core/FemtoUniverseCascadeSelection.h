@@ -317,11 +317,11 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
                     "container - quitting!";
     }
 
-    posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
+    posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kCascadeV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild,
                        aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
-    negDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
+    negDaughTrack.init<aod::femtouniverseparticle::ParticleType::kCascadeV0Child,
                        aod::femtouniverseparticle::TrackType::kNegChild,
                        aod::femtouniverseparticle::CutContainerType>(
       mHistogramRegistry);
@@ -580,9 +580,9 @@ void FemtoUniverseCascadeSelection::fillCascadeQA(Col const& col, Casc const& ca
 template <typename Col, typename Casc, typename Track>
 void FemtoUniverseCascadeSelection::fillQA(Col const& /*col*/, Casc const& /*cascade*/, Track const& posTrack, Track const& negTrack, Track const& bachTrack)
 {
-  posDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kV0Child,
+  posDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kCascadeV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild>(posTrack);
-  negDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kV0Child,
+  negDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kCascadeV0Child,
                        aod::femtouniverseparticle::TrackType::kNegChild>(negTrack);
   bachTrackSel.fillQA<aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
                       aod::femtouniverseparticle::TrackType::kBachelor>(bachTrack);

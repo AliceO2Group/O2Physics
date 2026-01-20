@@ -26,11 +26,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
+using MyEMCClusters = soa::Join<aod::EmEmcClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGammaMC<PairType::kEMCEMC, MyEMCClusters>>(cfgc, TaskName{"pi0eta-to-gammagamma-mc-emcemc"}),
+    adaptAnalysisTask<Pi0EtaToGammaGammaMC<PairType::kEMCEMC, MyEMCClusters, EmEmcMTracks, EmEmcMSTracks>>(cfgc, TaskName{"pi0eta-to-gammagamma-mc-emcemc"}),
   };
 }

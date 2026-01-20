@@ -54,7 +54,7 @@ struct FemtoDreamDebugReso {
     ConfigurableAxis confBinmult{"confBinmult", {1, 0, 1}, "multiplicity Binning"};
     ConfigurableAxis confDummy{"confDummy", {1, 0, 1}, "Dummy axis for inv mass"};
 
-    Configurable<int> confResoTempFitVarMomentum{"confResoTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
+    Configurable<int> confTempFitVarMomentum{"confTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
     ConfigurableAxis confResoInvMassBins{"confResoInvMassBins", {200, 1, 1.2}, "Reso: InvMass binning"};
 
     ConfigurableAxis confResoChildTempFitVarMomentumBins{"confResoChildTempFitVarMomentumBins", {600, 0, 6}, "p binning for the p vs Nsigma TPC/TOF plot"};
@@ -63,10 +63,10 @@ struct FemtoDreamDebugReso {
     ConfigurableAxis confResoChildNsigmaTPCTOFBins{"confResoChildNsigmaTPCTOFBins", {1000, 0, 10}, "binning of the Nsigma TPC+TOF plot"};
     ConfigurableAxis confResoChildNsigmaITSBins{"confResoChildNsigmaITSBins", {600, -3, 3}, "binning of the Nsigma ITS plot"};
 
-    Configurable<aod::femtodreamparticle::cutContainerType> confResoChildPosCutBit{"confResoChildPosCutBit", 4860458, "Positive Child of Reso - Selection bit from cutCulator"};
+    Configurable<aod::femtodreamparticle::cutContainerType> confChildPosCutBit{"confChildPosCutBit", 4860458, "Positive Child of Reso - Selection bit from cutCulator"};
     Configurable<aod::femtodreamparticle::cutContainerType> confResoChildPosTPCBit{"confResoChildPosTPCBit", 64, "Positive Child of Reso - PID bit from cutCulator"};
     Configurable<aod::femtodreamparticle::cutContainerType> confResoChildPosTPCTOFBit{"confResoChildPosTPCTOFBit", 32, "Positive Child of Reso - PID bit from cutCulator"};
-    Configurable<aod::femtodreamparticle::cutContainerType> confResoChildNegCutBit{"confResoChildNegCutBit", 4860457, "Negative Child of Reso - PID bit from cutCulator"};
+    Configurable<aod::femtodreamparticle::cutContainerType> confChildNegCutBit{"confChildNegCutBit", 4860457, "Negative Child of Reso - PID bit from cutCulator"};
     Configurable<aod::femtodreamparticle::cutContainerType> confResoChildNegMergedTPCBit{"confResoChildNegMergedTPCBit", 258, "Negative Child of Reso - PID bit from cutCulator"};       // change
     Configurable<aod::femtodreamparticle::cutContainerType> confResoChildNegMergedTPCTOFBit{"confResoChildNegMergedTPCTOFBit", 130, "Negative Child of Reso - PID bit from cutCulator"}; // change
     ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
@@ -75,18 +75,22 @@ struct FemtoDreamDebugReso {
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
-  Partition<FemtoFullParticles> partsTwo = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
+  Partition<FemtoFullParticles> partsPhi = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
                                             ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false) ||
                                             ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
                                             ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false));
 
   Preslice<FemtoFullParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
+  Partition<FemtoFullParticles> partsKstar = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
+                                              ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false) ||
+                                              ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCBit), false) ||
+                                              ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, resonance.confResoChildPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, resonance.confResoChildNegMergedTPCTOFBit), false));
   /// Histogramming
   FemtoDreamEventHisto eventHisto;
-  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kResoChild, 3> posResoChildHistos;
-  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kResoChild, 4> negResoChildHistos;
-  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kReso> resoHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kResoChild, 3> posChildHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kResoChild, 4> negChildHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kReso> motherHistos;
 
   /// Histogram output
   HistogramRegistry eventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -94,20 +98,21 @@ struct FemtoDreamDebugReso {
 
   void init(InitContext&)
   {
-    posResoChildHistos.init(&resoRegistry, resonance.confBinmult, resonance.confDummy, resonance.confResoChildTempFitVarMomentumBins, resonance.confDummy, resonance.confDummy, resonance.confChildTempFitVarBins, resonance.confResoChildNsigmaTPCBins, resonance.confResoChildNsigmaTOFBins, resonance.confResoChildNsigmaTPCTOFBins, resonance.confResoChildNsigmaITSBins, resonance.confResoInvMassBins, resonance.confDummy, false, resonance.confResoChildPosPDGCode.value, true); // isDebug == TRUE
-    negResoChildHistos.init(&resoRegistry, resonance.confBinmult, resonance.confDummy, resonance.confResoChildTempFitVarMomentumBins, resonance.confDummy, resonance.confDummy, resonance.confChildTempFitVarBins, resonance.confResoChildNsigmaTPCBins, resonance.confResoChildNsigmaTOFBins, resonance.confResoChildNsigmaTPCTOFBins, resonance.confResoChildNsigmaITSBins, resonance.confResoInvMassBins, resonance.confDummy, false, resonance.confResoChildNegPDGCode, true);       // isDebug == TRUE
-    resoHistos.init(&resoRegistry, resonance.confBinmult, resonance.confDummy, resonance.confResoTempFitVarMomentumBins, resonance.confDummy, resonance.confDummy, resonance.confResoTempFitVarBins, resonance.confResoChildNsigmaTPCBins, resonance.confResoChildNsigmaTOFBins, resonance.confResoChildNsigmaTPCTOFBins, resonance.confResoChildNsigmaITSBins, resonance.confResoInvMassBins, resonance.confDummy, false, resonance.confResoPDGCode.value, true);                       // isDebug == TRUE, isMc ==FALSE for all
+    posChildHistos.init(&resoRegistry, resonance.confBinmult, resonance.confDummy, resonance.confResoChildTempFitVarMomentumBins, resonance.confDummy, resonance.confDummy, resonance.confChildTempFitVarBins, resonance.confResoChildNsigmaTPCBins, resonance.confResoChildNsigmaTOFBins, resonance.confResoChildNsigmaTPCTOFBins, resonance.confResoChildNsigmaITSBins, resonance.confResoInvMassBins, resonance.confDummy, false, resonance.confResoChildPosPDGCode.value, true); // isDebug == TRUE
+    negChildHistos.init(&resoRegistry, resonance.confBinmult, resonance.confDummy, resonance.confResoChildTempFitVarMomentumBins, resonance.confDummy, resonance.confDummy, resonance.confChildTempFitVarBins, resonance.confResoChildNsigmaTPCBins, resonance.confResoChildNsigmaTOFBins, resonance.confResoChildNsigmaTPCTOFBins, resonance.confResoChildNsigmaITSBins, resonance.confResoInvMassBins, resonance.confDummy, false, resonance.confResoChildNegPDGCode.value, true); // isDebug == TRUE
+    motherHistos.init(&resoRegistry, resonance.confBinmult, resonance.confDummy, resonance.confResoTempFitVarMomentumBins, resonance.confDummy, resonance.confDummy, resonance.confResoTempFitVarBins, resonance.confResoChildNsigmaTPCBins, resonance.confResoChildNsigmaTOFBins, resonance.confResoChildNsigmaTPCTOFBins, resonance.confResoChildNsigmaITSBins, resonance.confResoInvMassBins, resonance.confDummy, false, resonance.confResoPDGCode.value, true);                 // isDebug == TRUE, isMc ==FALSE for all
     resoRegistry.add("hArmenterosPodolanski/hArmenterosPodolanskiPlot", "; #alpha; p_{T} (MeV/#it{c})", kTH2F, {{100, -1, 1}, {500, -0.3, 2}});
   }
 
   /// Porduce QA plots for V0 & Reso selection in FemtoDream framework
-  void process(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
+  template <typename CollisionType, typename PartType, typename PartitionType>
+  void processDebug(CollisionType const& col, PartType const& parts, PartitionType const& PartsTwo)
   {
 
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache); // maybe . instead of -> ??
+    auto groupPartsTwo = PartsTwo.sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache); // maybe . instead of -> ??
     for (const auto& part : groupPartsTwo) {
       if (!part.has_children()) {
-        LOG(warn) << " Reso has no children";
+        LOG(warn) << " Particle has no children";
         continue;
       }
 
@@ -117,9 +122,9 @@ struct FemtoDreamDebugReso {
         continue;
       }
       if (posresoChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kResoChild) &&
-          (posresoChild.cut() & resonance.confResoChildPosCutBit) == resonance.confResoChildPosCutBit &&
+          (posresoChild.cut() & resonance.confChildPosCutBit.value) == resonance.confChildPosCutBit.value &&
           negresoChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kResoChild) &&
-          (negresoChild.cut() & resonance.confResoChildNegCutBit) == resonance.confResoChildNegCutBit) {
+          (negresoChild.cut() & resonance.confChildNegCutBit.value) == resonance.confChildNegCutBit.value) {
 
         TVector3 pparent(part.px(), part.py(), part.pz());                        // Parent momentum (px, py, pz)
         TVector3 pplus(posresoChild.px(), posresoChild.py(), posresoChild.pz());  // Daughter 1 momentum (px, py, pz)
@@ -134,12 +139,26 @@ struct FemtoDreamDebugReso {
 
         resoRegistry.fill(HIST("hArmenterosPodolanski/hArmenterosPodolanskiPlot"), alpha, qtarm);
 
-        resoHistos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(resonance.confResoTempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        posResoChildHistos.fillQA<false, true>(posresoChild, static_cast<aod::femtodreamparticle::MomentumType>(resonance.confResoTempFitVarMomentum.value), col.multNtr(), col.multV0M());
-        negResoChildHistos.fillQA<false, true>(negresoChild, static_cast<aod::femtodreamparticle::MomentumType>(resonance.confResoTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        motherHistos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(resonance.confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        posChildHistos.fillQA<false, true>(posresoChild, static_cast<aod::femtodreamparticle::MomentumType>(resonance.confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        negChildHistos.fillQA<false, true>(negresoChild, static_cast<aod::femtodreamparticle::MomentumType>(resonance.confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
       }
     }
   }
+
+  void processPhi(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
+  {
+    processDebug(col, parts, partsPhi);
+  }
+
+  PROCESS_SWITCH(FemtoDreamDebugReso, processPhi, "Enable processing Phi", true);
+
+  void processKStar(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
+  {
+    processDebug(col, parts, partsKstar);
+  }
+
+  PROCESS_SWITCH(FemtoDreamDebugReso, processKStar, "Enable processing KStar", false);
 };
 
 WorkflowSpec

@@ -182,6 +182,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
   static constexpr std::size_t NDaughters{3u};
+  static constexpr float EtaDaughtersMax = 0.8f; // Eta cut on daughters of D+ meson as Run2
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -424,12 +425,16 @@ struct HfCorrelatorDplusHadrons {
       float const multiplicityFT0M = collision.multFT0M();
 
       // MC reco level
-      bool isDplusPrompt = false;
-      bool isDplusNonPrompt = false;
-      bool isDplusSignal = false;
       for (const auto& candidate : candidates) {
         // rapidity and pT selections
         if (std::abs(HfHelper::yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptCandMax) {
+          continue;
+        }
+        // Remove D+ candidates for which at least one daughter has |eta| > 0.8
+        double etaDaugh1 = RecoDecay::eta(std::array{candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()});
+        double etaDaugh2 = RecoDecay::eta(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()});
+        double etaDaugh3 = RecoDecay::eta(std::array{candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()});
+        if (std::abs(etaDaugh1) >= EtaDaughtersMax || std::abs(etaDaugh2) >= EtaDaughtersMax || std::abs(etaDaugh3) >= EtaDaughtersMax) {
           continue;
         }
         // efficiency weight determination
@@ -439,10 +444,10 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
         }
         // Dplus flag
-        isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
+        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
         // prompt and non-prompt division
-        isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
-        isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
+        bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+        bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
 
         std::vector<float> outputMl = {-1., -1., -1.};
 
@@ -540,8 +545,6 @@ struct HfCorrelatorDplusHadrons {
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
-    bool isDplusPrompt = false;
-    bool isDplusNonPrompt = false;
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
@@ -555,6 +558,28 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
+      std::vector<int> listDaughters{};
+      std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
+      std::array<int, NDaughters> prongsId{};
+      listDaughters.clear();
+      RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
+      int counterDaughters = 0;
+      if (listDaughters.size() != NDaughters)
+        continue;
+      bool isDaughtersOk = true;
+      for (const auto& dauIdx : listDaughters) {
+        auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
+        if (std::abs(daughI.eta()) >= EtaDaughtersMax) {
+          isDaughtersOk = false;
+          break;
+        }
+        counterDaughters += 1;
+        prongsId[counterDaughters - 1] = daughI.globalIndex();
+      }
+      if (!isDaughtersOk)
+        continue; // Skip this D+ candidate if any daughter fails eta cut
+      counterDplusHadron++;
+
       registry.fill(HIST("hDplusBin"), poolBin);
       registry.fill(HIST("hPtCandMCGen"), particle1.pt());
       registry.fill(HIST("hEtaMcGen"), particle1.eta());
@@ -562,29 +587,14 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hYMCGen"), yD);
 
       // prompt and non-prompt division
-      isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
-      isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
+      bool isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
+      bool isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
       if (isDplusPrompt) {
         registry.fill(HIST("hPtCandMcGenPrompt"), particle1.pt());
       } else if (isDplusNonPrompt) {
         registry.fill(HIST("hPtCandMcGenNonPrompt"), particle1.pt());
       }
 
-      // prompt and non-prompt division
-      std::vector<int> listDaughters{};
-      std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
-      std::array<int, NDaughters> prongsId{};
-      listDaughters.clear();
-      RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
-      int counterDaughters = 0;
-      if (listDaughters.size() == NDaughters) {
-        for (const auto& dauIdx : listDaughters) {
-          auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
-          counterDaughters += 1;
-          prongsId[counterDaughters - 1] = daughI.globalIndex();
-        }
-      }
-      counterDplusHadron++;
       // Dplus Hadron correlation dedicated section
       // if it's a Dplus particle, search for Hadron and evaluate correlations
       registry.fill(HIST("hcountDplustriggersMCGen"), 0, particle1.pt()); // to count trigger Dplus for normalisation)

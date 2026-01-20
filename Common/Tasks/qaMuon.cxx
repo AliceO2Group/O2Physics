@@ -161,6 +161,7 @@ struct VarTrack {
   // Propagation related infos
   float dcaX = 0.f;
   float dcaY = 0.f;
+  float dcaXY = 0.f;
   float pDca = 0.f;
   float rabs = 0.f;
   float chi2 = 0.f;
@@ -207,6 +208,7 @@ struct muonQa {
 
   ////   Variables for selecting global tracks
   Configurable<float> fMatchingChi2MftMchUp{"cfgMatchingChi2MftMchUp", 50.f, ""};
+  Configurable<float> fMchPUpForGlobalDCA{"cfgMchPUpForGlobalDCA", 20.f, ""};
 
   ////   Variables for selecting dimuon DCA candidates
   Configurable<float> fDimuonDCAMassLow{"cfgDimuonDCAMassLow", 2.8f, ""};
@@ -240,6 +242,22 @@ struct muonQa {
     Configurable<int64_t> nolaterthan{"ccdb-no-later-than-ref", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object of reference basis"};
     Configurable<int64_t> nolaterthanRealign{"ccdb-no-later-than-new", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object of new basis"};
   } configCCDB;
+
+  // Derived version of mch::Track class that handles the associated clusters as internal objects and deletes them in the destructor
+  class TrackRealigned : public mch::Track
+  {
+   public:
+    TrackRealigned() = default;
+    ~TrackRealigned()
+    {
+      // delete the clusters associated to this track
+      for (const auto& par : *this) {
+        if (par.getClusterPtr()) {
+          delete par.getClusterPtr();
+        }
+      }
+    }
+  };
 
   ////    Variables for histograms configuration
   Configurable<int> fNCandidatesMax{"nCandidatesMax", 5, ""};
@@ -276,6 +294,9 @@ struct muonQa {
 
   std::array<std::array<std::array<std::unordered_map<std::string, o2::framework::HistPtr>, 3>, 4>, 2> dcaHistos;
   std::array<std::array<std::array<std::unordered_map<std::string, o2::framework::HistPtr>, 3>, 4>, 2> dcaHistosMixedEvents;
+  std::array<std::array<std::array<std::unordered_map<std::string, o2::framework::HistPtr>, 3>, 4>, 2> dcaHistosGlobal;
+  std::array<std::array<std::unordered_map<std::string, o2::framework::HistPtr>, 3>, 4> dcaHistosGlobalSubtracted;
+  std::array<std::array<std::unordered_map<std::string, o2::framework::HistPtr>, 3>, 4> dcaHistosGlobalSubtractedMCHpCut;
 
   std::array<std::array<std::unordered_map<std::string, o2::framework::HistPtr>, 4>, 6> trackResidualsHistos;
   std::array<std::array<std::unordered_map<std::string, o2::framework::HistPtr>, 4>, 6> trackResidualsHistosMixedEvents;
@@ -435,8 +456,10 @@ struct muonQa {
   {
     AxisSpec dcaxMFTAxis = {400, -0.5, 0.5, "DCA_{x} (cm)"};
     AxisSpec dcayMFTAxis = {400, -0.5, 0.5, "DCA_{y} (cm)"};
+    AxisSpec dcaxyMFTAxis = {400, 0.0, 0.75, "DCA_{xy} (cm)"};
     AxisSpec dcaxMCHAxis = {400, -10.0, 10.0, "DCA_{x} (cm)"};
     AxisSpec dcayMCHAxis = {400, -10.0, 10.0, "DCA_{y} (cm)"};
+    AxisSpec dcaxyMCHAxis = {400, 0.0, 15.0, "DCA_{xy} (cm)"};
     AxisSpec dcazAxis = {20, -10.0, 10.0, "DCA_{z} (cm)"};
     AxisSpec dxAxis = {600, -30.0, 30.0, "#Delta x (cm)"};
     AxisSpec dyAxis = {600, -30.0, 30.0, "#Delta y (cm)"};
@@ -444,7 +467,7 @@ struct muonQa {
     AxisSpec dThetaxAxis = {500, -5.0, 5.0, "#Delta#theta_{x} (degrees)"};
     AxisSpec thetayAxis = {10, 0.0, 20.0, "#theta_{y} (degrees)"};
     AxisSpec dThetayAxis = {500, -5.0, 5.0, "#Delta#theta_{y} (degrees)"};
-    AxisSpec phiAxis = {360, -180.0, 180.0, "#phi (degrees)"};
+    AxisSpec phiAxis = {36, -180.0, 180.0, "#phi (degrees)"};
     AxisSpec dPhiAxis = {200, -20.0, 20.0, "#Delta#phi (degrees)"};
 
     if (configQAs.fEnableQAResidual) {
@@ -510,7 +533,7 @@ struct muonQa {
       for (size_t i = 0; i < 2; i++) {
         std::string topBottom = (i == 0) ? "top" : "bottom";
         AxisSpec deAxis = {26, 0, 26, "DE index"};
-        AxisSpec phiAxis = {16, -180, 180, "#phi (degrees)"};
+        AxisSpec phiAxisInner = {16, -180, 180, "#phi (degrees)"};
         for (size_t j = 0; j < 2; j++) {
           std::string sign = (j == 0) ? "positive" : "negative";
           for (int chamber = 0; chamber < 10; chamber++) {
@@ -519,8 +542,8 @@ struct muonQa {
             residualsHistosPerDE[i][j][chamber]["dx_vs_de"] = registryResidualsMFT.add((histPath + "dx_vs_de").c_str(), "Cluster x residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
             residualsHistosPerDE[i][j][chamber]["dy_vs_de"] = registryResidualsMFT.add((histPath + "dy_vs_de").c_str(), "Cluster y residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
 
-            residualsHistosPerDE[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
-            residualsHistosPerDE[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
+            residualsHistosPerDE[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
+            residualsHistosPerDE[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
 
             // mixed events
             histPath = std::string("Alignment/mixed-event/Residuals/MFT/MFT_") + topBottom + "/" + sign + "/CH" + std::to_string(chamber + 1) + "/";
@@ -528,8 +551,8 @@ struct muonQa {
             residualsHistosPerDEMixedEvents[i][j][chamber]["dx_vs_de"] = registryResidualsMFT.add((histPath + "dx_vs_de").c_str(), "Cluster x residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
             residualsHistosPerDEMixedEvents[i][j][chamber]["dy_vs_de"] = registryResidualsMFT.add((histPath + "dy_vs_de").c_str(), "Cluster y residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
 
-            residualsHistosPerDEMixedEvents[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
-            residualsHistosPerDEMixedEvents[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
+            residualsHistosPerDEMixedEvents[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
+            residualsHistosPerDEMixedEvents[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
           }
         }
       }
@@ -558,23 +581,135 @@ struct muonQa {
     if (configQAs.fEnableQADCA) {
       for (size_t j = 0; j < quadrants.size(); j++) {
         const auto& quadrant = quadrants[j];
-        std::string histPath = std::string("Alignment/same-event/DCA/MFT/") + quadrant + "/";
+        std::string histBasePath = std::string("Alignment/same-event/DCA/MFT/");
+        std::string histPath = histBasePath + quadrant + "/";
         dcaHistos[0][j][0]["DCA_x"] = registryDCA.add((histPath + "DCA_x").c_str(), std::format("DCA(x) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxMFTAxis}});
         dcaHistos[0][j][1]["DCA_x"] = registryDCA.add((histPath + "DCA_x_pos").c_str(), std::format("DCA(x) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMFTAxis}});
         dcaHistos[0][j][2]["DCA_x"] = registryDCA.add((histPath + "DCA_x_neg").c_str(), std::format("DCA(x) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMFTAxis}});
         dcaHistos[0][j][0]["DCA_y"] = registryDCA.add((histPath + "DCA_y").c_str(), std::format("DCA(y) - {}", quadrant).c_str(), {HistType::kTH1F, {dcayMFTAxis}});
         dcaHistos[0][j][1]["DCA_y"] = registryDCA.add((histPath + "DCA_y_pos").c_str(), std::format("DCA(y) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcayMFTAxis}});
         dcaHistos[0][j][2]["DCA_y"] = registryDCA.add((histPath + "DCA_y_neg").c_str(), std::format("DCA(y) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcayMFTAxis}});
+        dcaHistos[0][j][0]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy").c_str(), std::format("DCA(xy) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxyMFTAxis}});
+        dcaHistos[0][j][1]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_pos").c_str(), std::format("DCA(xy) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMFTAxis}});
+        dcaHistos[0][j][2]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_neg").c_str(), std::format("DCA(xy) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMFTAxis}});
+        dcaHistos[0][j][0]["DCA_y_vs_DCA_x"] = registryDCA.add((histPath + "DCA_y_vs_DCA_x").c_str(), std::format("DCA(x) vs. DCA(y) - {}", quadrant).c_str(), {HistType::kTH2F, {dcaxMFTAxis, dcayMFTAxis}});
         dcaHistos[0][j][0]["DCA_x_vs_z"] = registryDCA.add((histPath + "DCA_x_vs_z").c_str(), std::format("DCA(x) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxMFTAxis}});
         dcaHistos[0][j][0]["DCA_y_vs_z"] = registryDCA.add((histPath + "DCA_y_vs_z").c_str(), std::format("DCA(y) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcayMFTAxis}});
+        dcaHistos[0][j][0]["DCA_xy_vs_z"] = registryDCA.add((histPath + "DCA_xy_vs_z").c_str(), std::format("DCA(xy) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxyMFTAxis}});
+        // phi dependent histograms do not need to be split into quadrants
+        if (j == 0) {
+          dcaHistos[0][0][0]["DCA_x_vs_phi"] = registryDCA.add((histBasePath + "DCA_x_vs_phi").c_str(), "DCA(x) vs. phi", {HistType::kTH2F, {phiAxis, dcaxMFTAxis}});
+          dcaHistos[0][0][0]["DCA_y_vs_phi"] = registryDCA.add((histBasePath + "DCA_y_vs_phi").c_str(), "DCA(y) vs. phi", {HistType::kTH2F, {phiAxis, dcayMFTAxis}});
+          dcaHistos[0][0][0]["DCA_xy_vs_phi"] = registryDCA.add((histBasePath + "DCA_xy_vs_phi").c_str(), "DCA(xy) vs. phi", {HistType::kTH2F, {phiAxis, dcaxyMFTAxis}});
+        }
 
-        histPath = std::string("Alignment/same-event/DCA/MCH/") + quadrant + "/";
+        histBasePath = std::string("Alignment/same-event/DCA/MCH/");
+        histPath = histBasePath + quadrant + "/";
         dcaHistos[1][j][0]["DCA_x"] = registryDCA.add((histPath + "DCA_x").c_str(), std::format("DCA(x) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
         dcaHistos[1][j][1]["DCA_x"] = registryDCA.add((histPath + "DCA_x_pos").c_str(), std::format("DCA(x) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
         dcaHistos[1][j][2]["DCA_x"] = registryDCA.add((histPath + "DCA_x_neg").c_str(), std::format("DCA(x) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
         dcaHistos[1][j][0]["DCA_y"] = registryDCA.add((histPath + "DCA_y").c_str(), std::format("DCA(y) - {}", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
         dcaHistos[1][j][1]["DCA_y"] = registryDCA.add((histPath + "DCA_y_pos").c_str(), std::format("DCA(y) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
         dcaHistos[1][j][2]["DCA_y"] = registryDCA.add((histPath + "DCA_y_neg").c_str(), std::format("DCA(y) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistos[1][j][0]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy").c_str(), std::format("DCA(xy) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistos[1][j][1]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_pos").c_str(), std::format("DCA(xy) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistos[1][j][2]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_neg").c_str(), std::format("DCA(xy) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistos[1][j][0]["DCA_y_vs_DCA_x"] = registryDCA.add((histPath + "DCA_y_vs_DCA_x").c_str(), std::format("DCA(x) vs. DCA(y) - {}", quadrant).c_str(), {HistType::kTH2F, {dcaxMCHAxis, dcayMCHAxis}});
+        // dcaHistos[1][j][0]["DCA_x_vs_z"] = registryDCA.add((histPath + "DCA_x_vs_z").c_str(), std::format("DCA(x) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxMCHAxis}});
+        // dcaHistos[1][j][0]["DCA_y_vs_z"] = registryDCA.add((histPath + "DCA_y_vs_z").c_str(), std::format("DCA(y) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcayMCHAxis}});
+        // phi dependent histograms do not need to be split into quadrants
+        if (j == 0) {
+          dcaHistos[1][0][0]["DCA_x_vs_phi"] = registryDCA.add((histBasePath + "DCA_x_vs_phi").c_str(), std::format("DCA(x) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxMCHAxis}});
+          dcaHistos[1][0][0]["DCA_y_vs_phi"] = registryDCA.add((histBasePath + "DCA_y_vs_phi").c_str(), std::format("DCA(y) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcayMCHAxis}});
+          dcaHistos[1][0][0]["DCA_xy_vs_phi"] = registryDCA.add((histBasePath + "DCA_xy_vs_phi").c_str(), std::format("DCA(xy) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxyMCHAxis}});
+        }
+
+        histBasePath = std::string("Alignment/same-event/DCA/GlobalMuons/MFT/");
+        histPath = histBasePath + quadrant + "/";
+        dcaHistosGlobal[0][j][0]["DCA_x"] = registryDCA.add((histPath + "DCA_x").c_str(), std::format("DCA(x) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxMFTAxis}});
+        dcaHistosGlobal[0][j][1]["DCA_x"] = registryDCA.add((histPath + "DCA_x_pos").c_str(), std::format("DCA(x) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMFTAxis}});
+        dcaHistosGlobal[0][j][2]["DCA_x"] = registryDCA.add((histPath + "DCA_x_neg").c_str(), std::format("DCA(x) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMFTAxis}});
+        dcaHistosGlobal[0][j][0]["DCA_y"] = registryDCA.add((histPath + "DCA_y").c_str(), std::format("DCA(y) - {}", quadrant).c_str(), {HistType::kTH1F, {dcayMFTAxis}});
+        dcaHistosGlobal[0][j][1]["DCA_y"] = registryDCA.add((histPath + "DCA_y_pos").c_str(), std::format("DCA(y) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcayMFTAxis}});
+        dcaHistosGlobal[0][j][2]["DCA_y"] = registryDCA.add((histPath + "DCA_y_neg").c_str(), std::format("DCA(y) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcayMFTAxis}});
+        dcaHistosGlobal[0][j][0]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy").c_str(), std::format("DCA(xy) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxyMFTAxis}});
+        dcaHistosGlobal[0][j][1]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_pos").c_str(), std::format("DCA(xy) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMFTAxis}});
+        dcaHistosGlobal[0][j][2]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_neg").c_str(), std::format("DCA(xy) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMFTAxis}});
+        dcaHistosGlobal[0][j][0]["DCA_y_vs_DCA_x"] = registryDCA.add((histPath + "DCA_y_vs_DCA_x").c_str(), std::format("DCA(x) vs. DCA(y) - {}", quadrant).c_str(), {HistType::kTH2F, {dcaxMFTAxis, dcayMFTAxis}});
+        dcaHistosGlobal[0][j][0]["DCA_x_vs_z"] = registryDCA.add((histPath + "DCA_x_vs_z").c_str(), std::format("DCA(x) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxMFTAxis}});
+        dcaHistosGlobal[0][j][0]["DCA_y_vs_z"] = registryDCA.add((histPath + "DCA_y_vs_z").c_str(), std::format("DCA(y) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcayMFTAxis}});
+        dcaHistosGlobal[0][j][0]["DCA_xy_vs_z"] = registryDCA.add((histPath + "DCA_xy_vs_z").c_str(), std::format("DCA(xy) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxyMFTAxis}});
+        // phi dependent histograms do not need to be split into quadrants
+        if (j == 0) {
+          dcaHistosGlobal[0][0][0]["DCA_x_vs_phi"] = registryDCA.add((histBasePath + "DCA_x_vs_phi").c_str(), std::format("DCA(x) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxMFTAxis}});
+          dcaHistosGlobal[0][0][0]["DCA_y_vs_phi"] = registryDCA.add((histBasePath + "DCA_y_vs_phi").c_str(), std::format("DCA(y) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcayMFTAxis}});
+          dcaHistosGlobal[0][0][0]["DCA_xy_vs_phi"] = registryDCA.add((histBasePath + "DCA_xy_vs_phi").c_str(), std::format("DCA(xy) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxyMFTAxis}});
+        }
+
+        histBasePath = std::string("Alignment/same-event/DCA/GlobalMuons/MCH/");
+        histPath = histBasePath + quadrant + "/";
+        dcaHistosGlobal[1][j][0]["DCA_x"] = registryDCA.add((histPath + "DCA_x").c_str(), std::format("DCA(x) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobal[1][j][1]["DCA_x"] = registryDCA.add((histPath + "DCA_x_pos").c_str(), std::format("DCA(x) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobal[1][j][2]["DCA_x"] = registryDCA.add((histPath + "DCA_x_neg").c_str(), std::format("DCA(x) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobal[1][j][0]["DCA_y"] = registryDCA.add((histPath + "DCA_y").c_str(), std::format("DCA(y) - {}", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobal[1][j][1]["DCA_y"] = registryDCA.add((histPath + "DCA_y_pos").c_str(), std::format("DCA(y) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobal[1][j][2]["DCA_y"] = registryDCA.add((histPath + "DCA_y_neg").c_str(), std::format("DCA(y) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobal[1][j][0]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy").c_str(), std::format("DCA(xy) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobal[1][j][1]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_pos").c_str(), std::format("DCA(xy) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobal[1][j][2]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_neg").c_str(), std::format("DCA(xy) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobal[1][j][0]["DCA_y_vs_DCA_x"] = registryDCA.add((histPath + "DCA_y_vs_DCA_x").c_str(), std::format("DCA(x) vs. DCA(y) - {}", quadrant).c_str(), {HistType::kTH2F, {dcaxMCHAxis, dcayMCHAxis}});
+        dcaHistosGlobal[1][j][0]["DCA_x_vs_z"] = registryDCA.add((histPath + "DCA_x_vs_z").c_str(), std::format("DCA(x) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxMCHAxis}});
+        dcaHistosGlobal[1][j][0]["DCA_y_vs_z"] = registryDCA.add((histPath + "DCA_y_vs_z").c_str(), std::format("DCA(y) vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcayMCHAxis}});
+        // phi dependent histograms do not need to be split into quadrants
+        if (j == 0) {
+          dcaHistosGlobal[1][0][0]["DCA_x_vs_phi"] = registryDCA.add((histBasePath + "DCA_x_vs_phi").c_str(), std::format("DCA(x) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxMCHAxis}});
+          dcaHistosGlobal[1][0][0]["DCA_y_vs_phi"] = registryDCA.add((histBasePath + "DCA_y_vs_phi").c_str(), std::format("DCA(y) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcayMCHAxis}});
+          dcaHistosGlobal[1][0][0]["DCA_xy_vs_phi"] = registryDCA.add((histBasePath + "DCA_xy_vs_phi").c_str(), std::format("DCA(xy) vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxyMCHAxis}});
+        }
+
+        histBasePath = std::string("Alignment/same-event/DCA/GlobalMuons/MFT-MCH/");
+        histPath = histBasePath + quadrant + "/";
+        dcaHistosGlobalSubtracted[j][0]["DCA_x"] = registryDCA.add((histPath + "DCA_x").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobalSubtracted[j][1]["DCA_x"] = registryDCA.add((histPath + "DCA_x_pos").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobalSubtracted[j][2]["DCA_x"] = registryDCA.add((histPath + "DCA_x_neg").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobalSubtracted[j][0]["DCA_y"] = registryDCA.add((histPath + "DCA_y").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - {}", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobalSubtracted[j][1]["DCA_y"] = registryDCA.add((histPath + "DCA_y_pos").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobalSubtracted[j][2]["DCA_y"] = registryDCA.add((histPath + "DCA_y_neg").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobalSubtracted[j][0]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobalSubtracted[j][1]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_pos").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - {} charge > 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobalSubtracted[j][2]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_neg").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - {} charge < 0", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobalSubtracted[j][0]["DCA_y_vs_DCA_x"] = registryDCA.add((histPath + "DCA_y_vs_DCA_x").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - vs. scaled MFT DCA(y) - MCH DCA(y) - {}", quadrant).c_str(), {HistType::kTH2F, {dcaxMCHAxis, dcayMCHAxis}});
+        dcaHistosGlobalSubtracted[j][0]["DCA_x_vs_z"] = registryDCA.add((histPath + "DCA_x_vs_z").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxMCHAxis}});
+        dcaHistosGlobalSubtracted[j][0]["DCA_y_vs_z"] = registryDCA.add((histPath + "DCA_y_vs_z").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcayMCHAxis}});
+        dcaHistosGlobalSubtracted[j][0]["DCA_xy_vs_z"] = registryDCA.add((histPath + "DCA_xy_vs_z").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - vs. z - {}", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxyMCHAxis}});
+        // phi dependent histograms do not need to be split into quadrants
+        if (j == 0) {
+          dcaHistosGlobalSubtracted[0][0]["DCA_x_vs_phi"] = registryDCA.add((histBasePath + "DCA_x_vs_phi").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxMCHAxis}});
+          dcaHistosGlobalSubtracted[0][0]["DCA_y_vs_phi"] = registryDCA.add((histBasePath + "DCA_y_vs_phi").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcayMCHAxis}});
+          dcaHistosGlobalSubtracted[0][0]["DCA_xy_vs_phi"] = registryDCA.add((histBasePath + "DCA_xy_vs_phi").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - vs. phi - {}", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxyMCHAxis}});
+        }
+
+        histBasePath = std::string("Alignment/same-event/DCA/GlobalMuons/MCHpCut/");
+        histPath = histBasePath + quadrant + "/";
+        dcaHistosGlobalSubtractedMCHpCut[j][0]["DCA_x"] = registryDCA.add((histPath + "DCA_x").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][1]["DCA_x"] = registryDCA.add((histPath + "DCA_x_pos").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - {} charge > 0 for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][2]["DCA_x"] = registryDCA.add((histPath + "DCA_x_neg").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - {} charge < 0 for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcaxMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][0]["DCA_y"] = registryDCA.add((histPath + "DCA_y").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][1]["DCA_y"] = registryDCA.add((histPath + "DCA_y_pos").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - {} charge > 0 for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][2]["DCA_y"] = registryDCA.add((histPath + "DCA_y_neg").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - {} charge < 0 for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcayMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][0]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][1]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_pos").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - {} charge > 0 for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][2]["DCA_xy"] = registryDCA.add((histPath + "DCA_xy_neg").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - {} charge < 0 for MCH p > cut", quadrant).c_str(), {HistType::kTH1F, {dcaxyMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][0]["DCA_y_vs_DCA_x"] = registryDCA.add((histPath + "DCA_y_vs_DCA_x").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - vs. scaled MFT DCA(y) - MCH DCA(y) - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH2F, {dcaxMCHAxis, dcayMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][0]["DCA_x_vs_z"] = registryDCA.add((histPath + "DCA_x_vs_z").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - vs. z - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][0]["DCA_y_vs_z"] = registryDCA.add((histPath + "DCA_y_vs_z").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - vs. z - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcayMCHAxis}});
+        dcaHistosGlobalSubtractedMCHpCut[j][0]["DCA_xy_vs_z"] = registryDCA.add((histPath + "DCA_xy_vs_z").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - vs. z - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH2F, {dcazAxis, dcaxyMCHAxis}});
+        // phi dependent histograms do not need to be split into quadrants
+        if (j == 0) {
+          dcaHistosGlobalSubtractedMCHpCut[0][0]["DCA_x_vs_phi"] = registryDCA.add((histBasePath + "DCA_x_vs_phi").c_str(), std::format("scaled MFT DCA(x) - MCH DCA(x) - vs. phi - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxMCHAxis}});
+          dcaHistosGlobalSubtractedMCHpCut[0][0]["DCA_y_vs_phi"] = registryDCA.add((histBasePath + "DCA_y_vs_phi").c_str(), std::format("scaled MFT DCA(y) - MCH DCA(y) - vs. phi - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcayMCHAxis}});
+          dcaHistosGlobalSubtractedMCHpCut[0][0]["DCA_xy_vs_phi"] = registryDCA.add((histBasePath + "DCA_xy_vs_phi").c_str(), std::format("scaled MFT DCA(xy) - MCH DCA(xy) - vs. phi - {} for MCH p > cut", quadrant).c_str(), {HistType::kTH2F, {phiAxis, dcaxyMCHAxis}});
+        }
 
         histPath = std::string("Alignment/mixed-event/DCA/MFT/") + quadrant + "/";
         dcaHistosMixedEvents[0][j][0]["DCA_x"] = registryDCA.add((histPath + "DCA_x").c_str(), std::format("DCA(x) - {}", quadrant).c_str(), {HistType::kTH1F, {dcaxMFTAxis}});
@@ -603,7 +738,7 @@ struct muonQa {
       AxisSpec rAbsAxis = {10, 0., 100.0, "R_{abs} (cm)"};
       AxisSpec dcaAxis = {400, -10.0, 10.0, "DCA"};
       AxisSpec dcaAxisReduced = {40, -10.0, 10.0, "DCA"};
-      AxisSpec phiAxis = {36, -180.0, 180.0, "#phi (degrees)"};
+      AxisSpec phiAxisInner = {36, -180.0, 180.0, "#phi (degrees)"};
       // dimuons
       AxisSpec invMassAxis = {400, 1, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
       AxisSpec invMassCorrelationAxis = {80, 0, 8, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
@@ -666,8 +801,8 @@ struct muonQa {
         registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxisReduced}});
         registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxisReduced}});
         //
-        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
-        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxisInner}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxisInner}});
       }
       // MCH-MID tracks with MCH acceptance cuts
       registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_MuonCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
@@ -815,75 +950,87 @@ struct muonQa {
       registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMassFull_MuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxisFull}});
       registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/mixed-event/invariantMassFull_MuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxisFull}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH1F, {invMassAxis}});
       // -- Mass and pT
       registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       registryDimuon.add("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       // Good MFT-MCH-MID tracks with global parameters MFT acceptance cuts
       registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top-top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top-bottom", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom-top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom-bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom-top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMassFull_GlobalMuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxisFull}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top-top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top-bottom", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom-top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom-bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/mixed-event/invariantMassFull_GlobalMuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxisFull}});
       // -- Mass and pT
       registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BT", "#mu^{+}#mu^{-} invariant mass, bottom-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TT", "#mu^{+}#mu^{-} invariant mass, top - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TB", "#mu^{+}#mu^{-} invariant mass, top - bottom or bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} invariant mass, #mu^{+} top and #mu^{-} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} invariant mass, #mu^{-} top and #mu^{+} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BB", "#mu^{+}#mu^{-} invariant mass, bottom - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       // Good MFT-MCH-MID tracks with re-scaled MFT kinematics and MFT acceptance cuts
       registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMassFull_ScaledMftKine_GlobalMatchesCuts", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum", {HistType::kTH1F, {invMassAxisFull}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/mixed-event/invariantMassFull_ScaledMftKine_GlobalMatchesCuts", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum", {HistType::kTH1F, {invMassAxisFull}});
       // combinations of tracks from top and bottom halfs of MFT
-      registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-bottom", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_BT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - bottom or bottom - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{+} top and #mu^{-} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{-} top and #mu^{+} bottom", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_BB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-bottom", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-bottom", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_BT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-top", {HistType::kTH1F, {invMassAxis}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_BB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - bottom or bottom - top", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{+} top and #mu^{-} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{-} top and #mu^{+} bottom", {HistType::kTH1F, {invMassAxis}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_BB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom - bottom", {HistType::kTH1F, {invMassAxis}});
       // -- Mass and pT
       registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - bottom or bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{+} top and #mu^{-} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{-} top and #mu^{+} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
-      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom-bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TT", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, top - bottom or bottom - top", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TPBN", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{+} top and #mu^{-} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TNBP", "#mu^{+}#mu^{-} - rescaled MFT momentum, #mu^{-} top and #mu^{+} bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BB", "M_{#mu^{+}#mu^{-}} - rescaled MFT momentum, bottom - bottom", {HistType::kTH2F, {invMassAxis2D, pTAxis2D}});
       // combinations with sub-leading matches
       registryDimuon.add("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_leading_subleading", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMassFull_GlobalMuonKine_GlobalMatchesCuts_leading_subleading", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxisFull}});
@@ -1465,7 +1612,7 @@ struct muonQa {
   }
 
   template <typename TMCHTrack, typename TFwdCls, typename Var>
-  bool FillClusters(TMCHTrack const& muon, TFwdCls const& mchcls, Var& fgValues, mch::Track& convertedTrack)
+  bool FillClusters(TMCHTrack const& muon, TFwdCls const& mchcls, Var& fgValues, TrackRealigned& convertedTrack)
   {
     int removable = 0;
     auto clustersSliced = mchcls.sliceBy(perMuon, muon.globalIndex()); // Slice clusters by muon id
@@ -1590,9 +1737,10 @@ struct muonQa {
       fgValues.dcaX = (propmuon.getX() - collision.x);
       fgValues.dcaY = (propmuon.getY() - collision.y);
       float dcaXY = std::sqrt(fgValues.dcaX * fgValues.dcaX + fgValues.dcaY * fgValues.dcaY);
+      fgValues.dcaXY = dcaXY;
 
-      mch::TrackParam trackParam = mch::TrackParam(muon.first());
-      float p = trackParam.p();
+      mch::TrackParam trackParamInner = mch::TrackParam(muon.first());
+      float p = trackParamInner.p();
       fgValues.pDca = p * dcaXY;
     }
 
@@ -1658,14 +1806,14 @@ struct muonQa {
         // double pz = pMCH * cos(M_PI / 2 - atan(mft.tgl()));
         double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
 
-        double chi2 = muon.chi2();
+        double chi2Inner = muon.chi2();
         double signed1Pt = endPoint == kToDCA ? muon.signed1Pt() : sign / pt;
         SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), signed1Pt);
         std::vector<double> v1{0, 0, 0, 0, 0,
                                0, 0, 0, 0, 0,
                                0, 0, 0, 0, 0};
         SMatrix55 tcovs(v1.begin(), v1.end());
-        o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+        o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2Inner};
         track.setParameters(tpars);
         track.setZ(fwdtrack.getZ());
         track.setCovariances(tcovs);
@@ -1710,6 +1858,8 @@ struct muonQa {
       if (endPoint == kToDCA) {
         fgValues.dcaX = (propmuon.getX() - collision.x);
         fgValues.dcaY = (propmuon.getY() - collision.y);
+        float dcaXY = std::sqrt(fgValues.dcaX * fgValues.dcaX + fgValues.dcaY * fgValues.dcaY);
+        fgValues.dcaXY = dcaXY;
       }
     }
 
@@ -1733,6 +1883,7 @@ struct muonQa {
       fgValues.dcaX = (propmuon.getX() - collision.x);
       fgValues.dcaY = (propmuon.getY() - collision.y);
       float dcaXY = std::sqrt(fgValues.dcaX * fgValues.dcaX + fgValues.dcaY * fgValues.dcaY);
+      fgValues.dcaXY = dcaXY;
 
       if constexpr (static_cast<bool>(MuonFillMap)) {
         float p = muon.p();
@@ -1989,41 +2140,133 @@ struct muonQa {
     }
   }
 
-  template <bool MuonFillMap, bool GlobalMuonFillMap, typename VarT, typename VarC>
-  void FillDCAHistograms(VarT const& fgValues, VarC const& fgValuesColl, int sign, int quadrant, bool same, bool mixed)
+  template <bool MuonFillMap, bool GlobalMuonFillMap, bool GlobalMatchingFillMap, typename VarT, typename VarC>
+  void FillDCAHistograms(VarT const& fgValuesMCH, VarT const& fgValuesMCHpv, VarT const& fgValuesMFT, VarC const& fgValuesColl, int sign, int quadrant, bool same, bool mixed)
   {
     if constexpr (static_cast<bool>(MuonFillMap)) {
+      auto phiDeg = fgValuesMCH.phi * 180.f / TMath::Pi();
       if (same) {
-        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][0]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][0]["DCA_y"])->Fill(fgValues.dcaY);
-        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][sign]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][sign]["DCA_y"])->Fill(fgValues.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][0]["DCA_x"])->Fill(fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][0]["DCA_y"])->Fill(fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][0]["DCA_xy"])->Fill(fgValuesMCH.dcaXY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][sign]["DCA_x"])->Fill(fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][sign]["DCA_y"])->Fill(fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[1][quadrant][sign]["DCA_xy"])->Fill(fgValuesMCH.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[1][quadrant][0]["DCA_y_vs_DCA_x"])->Fill(fgValuesMCH.dcaX, fgValuesMCH.dcaY);
+        // TODO: doesn't work, could check, but not very important
+        // std::get<std::shared_ptr<TH2>>(dcaHistos[1][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMCH.dcaX);
+        // std::get<std::shared_ptr<TH2>>(dcaHistos[1][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[1][0][0]["DCA_x_vs_phi"])->Fill(phiDeg, fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[1][0][0]["DCA_y_vs_phi"])->Fill(phiDeg, fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[1][0][0]["DCA_xy_vs_phi"])->Fill(phiDeg, fgValuesMCH.dcaXY);
       }
+
       if (mixed) {
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][0]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][0]["DCA_y"])->Fill(fgValues.dcaY);
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][sign]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][sign]["DCA_y"])->Fill(fgValues.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][0]["DCA_x"])->Fill(fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][0]["DCA_y"])->Fill(fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][sign]["DCA_x"])->Fill(fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[1][quadrant][sign]["DCA_y"])->Fill(fgValuesMCH.dcaY);
+        // TODO: doesn't work, could check, but not very important
+        // std::get<std::shared_ptr<TH2>>(dcaHistosMixedEvents[1][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMCH.dcaX);
+        // std::get<std::shared_ptr<TH2>>(dcaHistosMixedEvents[1][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMCH.dcaY);
       }
     }
 
     if constexpr (static_cast<bool>(GlobalMuonFillMap)) {
+      auto phiDeg = fgValuesMFT.phi * 180.f / TMath::Pi();
       if (same) {
-        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][0]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][0]["DCA_y"])->Fill(fgValues.dcaY);
-        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][sign]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][sign]["DCA_y"])->Fill(fgValues.dcaY);
-        std::get<std::shared_ptr<TH2>>(dcaHistos[0][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValues.dcaX);
-        std::get<std::shared_ptr<TH2>>(dcaHistos[0][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValues.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][0]["DCA_x"])->Fill(fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][0]["DCA_y"])->Fill(fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][0]["DCA_xy"])->Fill(fgValuesMFT.dcaXY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][sign]["DCA_x"])->Fill(fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][sign]["DCA_y"])->Fill(fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistos[0][quadrant][sign]["DCA_xy"])->Fill(fgValuesMFT.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[0][quadrant][0]["DCA_y_vs_DCA_x"])->Fill(fgValuesMFT.dcaX, fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[0][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[0][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[0][quadrant][0]["DCA_xy_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[0][0][0]["DCA_x_vs_phi"])->Fill(phiDeg, fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[0][0][0]["DCA_y_vs_phi"])->Fill(phiDeg, fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistos[0][0][0]["DCA_xy_vs_phi"])->Fill(phiDeg, fgValuesMFT.dcaXY);
       }
 
       if (mixed) {
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_y"])->Fill(fgValues.dcaY);
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][sign]["DCA_x"])->Fill(fgValues.dcaX);
-        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][sign]["DCA_y"])->Fill(fgValues.dcaY);
-        std::get<std::shared_ptr<TH2>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValues.dcaX);
-        std::get<std::shared_ptr<TH2>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValues.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_x"])->Fill(fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_y"])->Fill(fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][sign]["DCA_x"])->Fill(fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosMixedEvents[0][quadrant][sign]["DCA_y"])->Fill(fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistosMixedEvents[0][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaY);
+      }
+    }
+
+    if constexpr (static_cast<bool>(GlobalMatchingFillMap)) {
+      auto phiDegMCH = fgValuesMCH.phi * 180.f / TMath::Pi();
+      auto phiDegMFT = fgValuesMFT.phi * 180.f / TMath::Pi();
+      if (same) {
+        // In prinicple the MCH DCAs are the same for global and single
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[1][quadrant][0]["DCA_x"])->Fill(fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[1][quadrant][0]["DCA_y"])->Fill(fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[1][quadrant][0]["DCA_xy"])->Fill(fgValuesMCH.dcaXY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[1][quadrant][sign]["DCA_x"])->Fill(fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[1][quadrant][sign]["DCA_y"])->Fill(fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[1][quadrant][sign]["DCA_xy"])->Fill(fgValuesMCH.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[1][quadrant][0]["DCA_y_vs_DCA_x"])->Fill(fgValuesMCH.dcaX, fgValuesMCH.dcaY);
+        // TODO: doesn't work, could check, but not very important
+        // std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[1][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMCH.dcaX);
+        // std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[1][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMCH.dcaY);
+        // std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[1][quadrant][0]["DCA_xy_vs_z"])->Fill(fgValuesColl.z, fgValuesMCH.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[1][0][0]["DCA_x_vs_phi"])->Fill(phiDegMCH, fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[1][0][0]["DCA_y_vs_phi"])->Fill(phiDegMCH, fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[1][0][0]["DCA_xy_vs_phi"])->Fill(phiDegMCH, fgValuesMCH.dcaXY);
+
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[0][quadrant][0]["DCA_x"])->Fill(fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[0][quadrant][0]["DCA_y"])->Fill(fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[0][quadrant][0]["DCA_xy"])->Fill(fgValuesMFT.dcaXY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[0][quadrant][sign]["DCA_x"])->Fill(fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[0][quadrant][sign]["DCA_y"])->Fill(fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobal[0][quadrant][sign]["DCA_xy"])->Fill(fgValuesMFT.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[0][quadrant][0]["DCA_y_vs_DCA_x"])->Fill(fgValuesMFT.dcaX, fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[0][quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[0][quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[0][quadrant][0]["DCA_xy_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[0][0][0]["DCA_x_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[0][0][0]["DCA_y_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobal[0][0][0]["DCA_xy_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaXY);
+
+        // Calculate the difference (scaled) DCA_MFT - DCA_MCH
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtracted[quadrant][0]["DCA_x"])->Fill(fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtracted[quadrant][0]["DCA_y"])->Fill(fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtracted[quadrant][0]["DCA_xy"])->Fill(fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtracted[quadrant][sign]["DCA_x"])->Fill(fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtracted[quadrant][sign]["DCA_y"])->Fill(fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtracted[quadrant][sign]["DCA_xy"])->Fill(fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtracted[quadrant][0]["DCA_y_vs_DCA_x"])->Fill(fgValuesMFT.dcaX, fgValuesMFT.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtracted[quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtracted[quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtracted[quadrant][0]["DCA_xy_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+        // Which phi to use for the subtracted histos (from MCH or from MFT? - I guess MFT has better resolution)
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtracted[0][0]["DCA_x_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtracted[0][0]["DCA_y_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+        std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtracted[0][0]["DCA_xy_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+
+        // Fill only when MCH momentum is larger than cut
+        if (fgValuesMCHpv.p > fMchPUpForGlobalDCA) {
+          std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][0]["DCA_x"])->Fill(fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+          std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][0]["DCA_y"])->Fill(fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+          std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][0]["DCA_xy"])->Fill(fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+          std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][sign]["DCA_x"])->Fill(fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+          std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][sign]["DCA_y"])->Fill(fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+          std::get<std::shared_ptr<TH1>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][sign]["DCA_xy"])->Fill(fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+          std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][0]["DCA_y_vs_DCA_x"])->Fill(fgValuesMFT.dcaX, fgValuesMFT.dcaY);
+          std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][0]["DCA_x_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+          std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][0]["DCA_y_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+          std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtractedMCHpCut[quadrant][0]["DCA_xy_vs_z"])->Fill(fgValuesColl.z, fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+          // Which phi to use for the subtracted histos (from MCH or from MFT? - I guess MFT has better resolution)
+          std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtractedMCHpCut[0][0]["DCA_x_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaX - fgValuesMCH.dcaX);
+          std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtractedMCHpCut[0][0]["DCA_y_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaY - fgValuesMCH.dcaY);
+          std::get<std::shared_ptr<TH2>>(dcaHistosGlobalSubtractedMCHpCut[0][0]["DCA_xy_vs_phi"])->Fill(phiDegMFT, fgValuesMFT.dcaXY - fgValuesMCH.dcaXY);
+        }
       }
     }
   }
@@ -2164,8 +2407,10 @@ struct muonQa {
     CreateDetailedHistograms();
   }
 
-  template <bool MuonFillMap, bool GlobalMuonFillMap, typename TEventMap, typename TMFTTracks, typename TTrack, typename VarC, typename VarT>
-  void runDCA(TEventMap const& collisions, TMFTTracks const& mfts, TTrack const& muon, mch::Track const& mchrealigned, VarC& fgValuesColl, VarT& fgValuesMCH, VarT& fgValuesMCHpv, VarT& fgValuesMFT)
+  template <bool MuonFillMap, bool GlobalMuonFillMap, bool GlobalMatchingFillMap,
+            typename TEventMap, typename TMFTTracks, typename TMFTTrack, typename TTrack,
+            typename TMCHTrack, typename VarC, typename VarT>
+  void runDCA(TEventMap const& collisions, TMFTTracks const& mfts, TMFTTrack const& mfttrack, TTrack const& muon, TMCHTrack const& mchtrack, mch::Track const& mchrealigned, VarC& fgValuesColl, VarT& fgValuesMCH, VarT& fgValuesMCHpv, VarT& fgValuesMFT)
   {
     if constexpr (static_cast<bool>(MuonFillMap)) {
 
@@ -2179,7 +2424,6 @@ struct muonQa {
 
         bool sameEvent = (fgValuesColltmp.bc == fgValuesColl.bc);
         bool mixedEvent = IsMixedEvent(fgValuesColltmp, fgValuesColl);
-
         if (!sameEvent && !mixedEvent) {
           continue;
         }
@@ -2196,11 +2440,12 @@ struct muonQa {
         int sign = (fgValuesMCH.sign > 0) ? 1 : 2;
 
         // Fill DCA QA histograms
-        FillDCAHistograms<1, 0>(fgValuesMCH, fgValuesColltmp, sign, quadrant, sameEvent, mixedEvent);
+        FillDCAHistograms<1, 0, 0>(fgValuesMCH, fgValuesMCHpv, VarTrack{}, fgValuesColltmp, sign, quadrant, sameEvent, mixedEvent);
       }
     }
 
     if constexpr (static_cast<bool>(GlobalMuonFillMap)) {
+
       auto mftsThisCollision = mfts.sliceBy(mftPerCollision, fgValuesColl.globalIndex);
       for (auto const& mft : mftsThisCollision) {
 
@@ -2236,9 +2481,61 @@ struct muonQa {
           FillPropagation<0, 1>(mft, fgValuesColltmp, VarTrack{}, fgValuesMFTtmp, kToDCA);
 
           // Fill DCA QA histograms
-          FillDCAHistograms<0, 1>(fgValuesMFTtmp, fgValuesColltmp, sign, quadrant, sameEvent, mixedEvent);
+          FillDCAHistograms<0, 1, 0>(VarTrack{}, VarTrack{}, fgValuesMFTtmp, fgValuesColltmp, sign, quadrant, sameEvent, mixedEvent);
         }
         resetVar(fgValuesMFTtmp);
+      }
+    }
+
+    if constexpr (static_cast<bool>(GlobalMatchingFillMap)) {
+
+      // track selection
+      if (!IsGoodMuon(fgValuesMCH, fgValuesMCHpv, configMuons.fTrackChi2MchUp, 30., 4., configMFTs.fEtaMftLow, configMFTs.fEtaMftUp, configMuons.fRabsLow, configMuons.fRabsUp, configMuons.fSigmaPdcaUp)) {
+        return;
+      }
+      if (!IsGoodMFT(fgValuesMFT, configMFTs.fTrackChi2MftUp, configMFTs.fTrackNClustMftLow)) {
+        return;
+      }
+
+      bool goodGlobalMuonTracks = IsGoodGlobalMuon(fgValuesMCH, fgValuesMCHpv);
+      bool goodGlobalMuonMatches = IsGoodGlobalMatching(fgValuesMFT);
+
+      if (!goodGlobalMuonTracks || !goodGlobalMuonMatches) {
+        return;
+      }
+
+      // do collision loop and (again) propagation?
+      // propagation in principle already done in runMuonQA?
+      for (auto& [collisionId, fgValuesCollGlo] : collisions) {
+
+        bool sameEvent = (fgValuesCollGlo.bc == fgValuesColl.bc);
+        bool mixedEvent = IsMixedEvent(fgValuesCollGlo, fgValuesColl);
+
+        if (!sameEvent && !mixedEvent) {
+          continue;
+        }
+
+        if (mixedEvent) {
+          // TODO: possible to implement mixed events in global DCAs, but not foreseen to be useful in the (near) future
+          continue;
+        }
+
+        // Fill propagation of MCH track to DCA
+        if (configRealign.fDoRealign) {
+          FillPropagation(mchrealigned, fgValuesCollGlo, fgValuesMCH, kToDCA);
+        } else {
+          FillPropagation<1>(mchtrack, fgValuesCollGlo, VarTrack{}, fgValuesMCH, kToDCA);
+        }
+
+        // Propagate MFT track to DCA
+        FillPropagation<0, 1>(mfttrack, fgValuesCollGlo, VarTrack{}, fgValuesMFT, kToDCA);
+
+        double phi = fgValuesMCH.phi * 180 / TMath::Pi();
+        int quadrant = GetQuadrantPhi(phi);
+        int sign = (fgValuesMCH.sign > 0) ? 1 : 2;
+
+        // Fill DCA QA histograms
+        FillDCAHistograms<0, 0, 1>(fgValuesMCH, fgValuesMCHpv, fgValuesMFT, fgValuesCollGlo, sign, quadrant, true, false);
       }
     }
   }
@@ -2325,7 +2622,7 @@ struct muonQa {
       }
 
       //// Fill MCH clusters: do re-alignment if asked
-      mch::Track mchrealignedTmp;
+      TrackRealigned mchrealignedTmp;
       VarClusters fgValuesClsTmp;
       if (!FillClusters(muon, clusters, fgValuesClsTmp, mchrealignedTmp)) {
         continue; // Refit is not valid
@@ -2424,7 +2721,7 @@ struct muonQa {
         FillPropagation<1>(muon, fgValuesColl, fgValuesMCH, fgValuesMCHpv); // copied in a separate variable
 
         //// Fill MCH clusters: re-align clusters if required
-        mch::Track mchrealigned;
+        TrackRealigned mchrealigned;
         VarClusters fgValuesCls;
         if (!FillClusters(muon, clusters, fgValuesCls, mchrealigned)) {
           continue; // if refit was not passed
@@ -2449,7 +2746,9 @@ struct muonQa {
 
         //// Fill muon DCA QA checks
         if (configQAs.fEnableQADCA) {
-          runDCA<1, 0>(collisions, mfts, muon, mchrealigned, fgValuesColl, fgValuesMCH, fgValuesMCHpv, fgValuesMFT);
+          // mchrealigned is a dummy variable in the first argument (but not the second!)
+          auto const& dummyMFT = *mfts.begin();
+          runDCA<1, 0, 0>(collisions, mfts, dummyMFT, muon, mch::Track(), mchrealigned, fgValuesColl, fgValuesMCH, fgValuesMCHpv, fgValuesMFT);
         }
       }
 
@@ -2500,8 +2799,11 @@ struct muonQa {
       //// Propagate MCH to PV
       FillPropagation<1>(mchtrack, fgValuesCollMCH, VarTrack{}, fgValuesMCHpv); // saved in separate variable fgValuesMCHpv
 
+      //// Propagate MFT to PV?
+      FillPropagation<0, 1>(mfttrack, fgValuesCollGlo, VarTrack{}, fgValuesMFT, kToDCA);
+
       //// Fill MCH clusters: re-align clusters if required
-      mch::Track mchrealigned;
+      TrackRealigned mchrealigned;
       VarClusters fgValuesCls;
       if (!FillClusters(mchtrack, clusters, fgValuesCls, mchrealigned)) {
         continue; // if refit was not passed
@@ -2532,7 +2834,8 @@ struct muonQa {
       if (configQAs.fEnableQAMatching) {
 
         // Propagate global muon tracks to DCA: treat it as MFT using p from MCH?
-        FillPropagation<0, 1>(muontrack, fgValuesCollGlo, fgValuesMCH, fgValuesGlobal, kToDCA);
+        // Use here fgValuesMCHpv or fgValuesMCH?
+        FillPropagation<0, 1>(muontrack, fgValuesCollGlo, fgValuesMCHpv, fgValuesGlobal, kToDCA);
 
         // Fill bc difference of matched MCH and MFT
         if (muontrack.has_collision() && mfttrack.has_collision()) {
@@ -2555,9 +2858,13 @@ struct muonQa {
         runResidual(collisions, muons, mfts, clusters, mchtrack, mchrealigned, mfttrack, fgValuesCollGlo, fgValuesMCH, fgValuesMCHpv, fgValuesMFT);
       }
 
-      //// Fill MFT DCA QA checks if required
+      //// Fill MFT and global muon DCA QA checks if required
       if (configQAs.fEnableQADCA) {
-        runDCA<0, 1>(collisions, mfts, nullptr, mch::Track(), fgValuesCollGlo, fgValuesMCH, fgValuesMCHpv, fgValuesMFT);
+        auto const& dummyMuon = *muons.begin();
+        // mchrealigned is a dummy variable in the first call
+        runDCA<0, 1, 0>(collisions, mfts, mfttrack, dummyMuon, mchrealigned, mchrealigned, fgValuesCollGlo, fgValuesMCH, fgValuesMCHpv, fgValuesMFT);
+        // Now fill global DCAs and compare (scaled) MFT and MCH
+        runDCA<0, 0, 1>(collisions, mfts, mfttrack, dummyMuon, mchtrack, mchrealigned, fgValuesCollGlo, fgValuesMCH, fgValuesMCHpv, fgValuesMFT);
       }
 
       fgValuesCandidates.clear();
@@ -2589,7 +2896,7 @@ struct muonQa {
 
       VarTrack fgValuesMuon1, fgValuesMuonPV1;
       VarTrack fgValuesMuon2, fgValuesMuonPV2;
-      mch::Track mchrealigned1, mchrealigned2;
+      TrackRealigned mchrealigned1, mchrealigned2;
       VarClusters fgValuesCls1, fgValuesCls2;
       if (!FillClusters(muonTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(muonTrack2, clusters, fgValuesCls2, mchrealigned2)) {
         continue; // Refit is not valid
@@ -2690,14 +2997,13 @@ struct muonQa {
             //
             registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPhi);
             registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPhi);
-            // dimuons
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts"))->Fill(mass);
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts"))->Fill(yPair);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts"))->Fill(mass, yPair);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts"))->Fill(pT, yPair);
           }
+          registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts"))->Fill(mass);
+          registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
+          registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);
+          registryDimuon.get<TH1>(HIST("dimuon/same-event/rapPair_MuonKine_MuonCuts"))->Fill(yPair);
+          registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_rapPair_MuonKine_MuonCuts"))->Fill(mass, yPair);
+          registryDimuon.get<TH2>(HIST("dimuon/same-event/pT_rapPair_MuonKine_MuonCuts"))->Fill(pT, yPair);
 
           // dimuon DCA
           if (mass >= fDimuonDCAMassLow && mass <= fDimuonDCAMassHigh) {
@@ -3048,7 +3354,7 @@ struct muonQa {
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMuonCuts_LR"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_GlobalMuonCuts_LR"))->Fill(mass);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMuonCuts_LR"))->Fill(mass, pT);
-            if (TopBottom1 == 0 && TopBottom2 == 1) {
+            if (LeftRight1 == 0 && LeftRight2 == 1) {
               if (sign1 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMuonCuts_LPRN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_GlobalMuonCuts_LPRN"))->Fill(mass);
@@ -3058,7 +3364,7 @@ struct muonQa {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_GlobalMuonCuts_LNRP"))->Fill(mass);
                 registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMuonCuts_LNRP"))->Fill(mass, pT);
               }
-            } else if (TopBottom1 == 1 && TopBottom2 == 0) {
+            } else if (LeftRight1 == 1 && LeftRight2 == 0) {
               if (sign2 > 0) {
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMuonCuts_LPRN"))->Fill(mass);
                 registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMassFull_MuonKine_GlobalMuonCuts_LPRN"))->Fill(mass);
@@ -3092,7 +3398,7 @@ struct muonQa {
 
         VarTrack fgValuesMuon1, fgValuesMuonPV1;
         VarTrack fgValuesMuon2, fgValuesMuonPV2;
-        mch::Track mchrealigned1, mchrealigned2;
+        TrackRealigned mchrealigned1, mchrealigned2;
         VarClusters fgValuesCls1, fgValuesCls2;
         if (!FillClusters(muonTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(muonTrack2, clusters, fgValuesCls2, mchrealigned2)) {
           continue; // Refit is not valid
@@ -3249,7 +3555,7 @@ struct muonQa {
       FillMatching(muonTrack1, fgValuesMCH1, fgValuesMFT1);
       FillMatching(muonTrack2, fgValuesMCH2, fgValuesMFT2);
 
-      mch::Track mchrealigned1, mchrealigned2;
+      TrackRealigned mchrealigned1, mchrealigned2;
       VarClusters fgValuesCls1, fgValuesCls2;
       if (!FillClusters(mchTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(mchTrack2, clusters, fgValuesCls2, mchrealigned2)) {
         continue; // Refit is not valid
@@ -3295,6 +3601,7 @@ struct muonQa {
         continue;
 
       // OLD definition using MFT halves
+      // indexes indicating whether the positive and negative tracks come from the top or bottom halves of MFT
       // int posTopBottom = (sign1 > 0) ? ((muonTrack1.y() >= 0) ? 0 : 1) : ((muonTrack2.y() >= 0) ? 0 : 1);
       // int negTopBottom = (sign1 < 0) ? ((muonTrack1.y() >= 0) ? 0 : 1) : ((muonTrack2.y() >= 0) ? 0 : 1);
 
@@ -3339,20 +3646,46 @@ struct muonQa {
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TT"))->Fill(massMCH, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TT"))->Fill(mass, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TT"))->Fill(massScaled, pTmch);
-          } else if (TopBottom1 == 0 && TopBottom2 == 1) {
+          } else if ((TopBottom1 == 0 && TopBottom2 == 1) || (TopBottom1 == 1 && TopBottom2 == 0)) {
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TB"))->Fill(massMCH);
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TB"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TB"))->Fill(massScaled);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TB"))->Fill(massMCH, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TB"))->Fill(mass, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TB"))->Fill(massScaled, pTmch);
-          } else if (TopBottom1 == 1 && TopBottom2 == 0) {
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_BT"))->Fill(massMCH);
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BT"))->Fill(mass);
-            registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_BT"))->Fill(massScaled);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_BT"))->Fill(massMCH, pTmch);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BT"))->Fill(mass, pTmch);
-            registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BT"))->Fill(massScaled, pTmch);
+            if (TopBottom1 == 0 && TopBottom2 == 1) {
+              if (sign1 > 0) {
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled, pTmch);
+              } else {
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled, pTmch);
+              }
+            } else if (TopBottom1 == 0 && TopBottom2 == 1) {
+              if (sign2 > 0) {
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled, pTmch);
+              } else {
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled, pTmch);
+              }
+            }
           } else if (TopBottom1 == 1 && TopBottom2 == 1) {
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_GlobalMatchesCuts_BB"))->Fill(massMCH);
             registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BB"))->Fill(mass);
@@ -3384,20 +3717,46 @@ struct muonQa {
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TT"))->Fill(massMCH, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TT"))->Fill(mass, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TT"))->Fill(massScaled, pTmch);
-          } else if (TopBottom1 == 0 && TopBottom2 == 1) {
+          } else if ((TopBottom1 == 0 && TopBottom2 == 1) || (TopBottom1 == 1 && TopBottom2 == 0)) {
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TB"))->Fill(massMCH);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TB"))->Fill(mass);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TB"))->Fill(massScaled);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TB"))->Fill(massMCH, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TB"))->Fill(mass, pTmch);
             registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TB"))->Fill(massScaled, pTmch);
-          } else if (TopBottom1 == 1 && TopBottom2 == 0) {
-            registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_BT"))->Fill(massMCH);
-            registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BT"))->Fill(mass);
-            registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_BT"))->Fill(massScaled);
-            registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_BT"))->Fill(massMCH, pTmch);
-            registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_BT"))->Fill(mass, pTmch);
-            registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_BT"))->Fill(massScaled, pTmch);
+            if (TopBottom1 == 0 && TopBottom2 == 1) {
+              if (sign1 > 0) {
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled, pTmch);
+              } else {
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled, pTmch);
+              }
+            } else if (TopBottom1 == 0 && TopBottom2 == 1) {
+              if (sign2 > 0) {
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TPBN"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TPBN"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TPBN"))->Fill(massScaled, pTmch);
+              } else {
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass);
+                registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_MuonKine_GlobalMatchesCuts_TNBP"))->Fill(massMCH, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_GlobalMuonKine_GlobalMatchesCuts_TNBP"))->Fill(mass, pTmch);
+                registryDimuon.get<TH2>(HIST("dimuon/mixed-event/invariantMass_pT_ScaledMftKine_GlobalMatchesCuts_TNBP"))->Fill(massScaled, pTmch);
+              }
+            }
           } else if (TopBottom1 == 1 && TopBottom2 == 1) {
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_MuonKine_GlobalMatchesCuts_BB"))->Fill(massMCH);
             registryDimuon.get<TH1>(HIST("dimuon/mixed-event/invariantMass_GlobalMuonKine_GlobalMatchesCuts_BB"))->Fill(mass);

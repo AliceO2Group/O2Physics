@@ -21,14 +21,14 @@
 #include "PWGLF/DataModel/LFHStrangeCorrelationTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"
@@ -65,6 +65,7 @@ struct HStrangeCorrelationFilter {
   Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 4, "Nsigmas for strange decay daughters"};
   Configurable<float> strangedEdxNSigmaTight{"strangedEdxNSigmaTight", 3, "Nsigmas for strange decay daughters"};
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
+  Configurable<float> nSigmaNearXiMassCenter{"nSigmaNearXiMassCenter", 0, "for Oemga analysis only, to check if candidate mass is around Xi"};
 
   // used for event selections in Pb-Pb
   Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
@@ -515,9 +516,6 @@ struct HStrangeCorrelationFilter {
   // for real data processing
   void processTriggers(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
-    // Load parameters for sideband subtraction
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initParametersFromCCDB(bc);
     if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
     }
@@ -539,9 +537,6 @@ struct HStrangeCorrelationFilter {
   // for MC processing
   void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
-    // Load parameters for sideband subtraction
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initParametersFromCCDB(bc);
     if (((doPPAnalysis && !isCollisionSelected(collision))) || (!doPPAnalysis && !isCollisionSelectedPbPb(collision))) {
       return;
     }
@@ -571,7 +566,6 @@ struct HStrangeCorrelationFilter {
   {
     // Load parameters for sideband subtraction
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -600,7 +594,6 @@ struct HStrangeCorrelationFilter {
   {
     // Load parameters for sideband subtraction
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -629,7 +622,6 @@ struct HStrangeCorrelationFilter {
   {
     // Load parameters for sideband subtraction
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -657,7 +649,6 @@ struct HStrangeCorrelationFilter {
   {
     // Load parameters for sideband subtraction
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initParametersFromCCDB(bc);
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -1127,15 +1118,15 @@ struct HStrangeCorrelationFilter {
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), cent);
       if (compatibleXiPlus)
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), cent);
-      if (compatibleOmegaMinus)
+      if (compatibleOmegaMinus && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), cent);
-      if (compatibleOmegaPlus)
+      if (compatibleOmegaPlus && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), cent);
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
             ((compatibleXiMinus > 0 || compatibleXiPlus > 0) && std::abs(massNSigmaXi) < maxMassNSigma) ||
-            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && std::abs(massNSigmaOmega) < maxMassNSigma)) // end major condition check
+            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && std::abs(massNSigmaOmega) < maxMassNSigma && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)) // end major condition check
       ) {
         assocCascades(casc.collisionId(), casc.globalIndex(),
                       compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,
@@ -1315,15 +1306,15 @@ struct HStrangeCorrelationFilter {
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), cent);
       if (compatibleXiPlus && (!doTrueSelectionInMass || (trueXiPlus && cascPhysicalPrimary)))
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), cent);
-      if (compatibleOmegaMinus && (!doTrueSelectionInMass || (trueOmegaMinus && cascPhysicalPrimary)))
+      if (compatibleOmegaMinus && (!doTrueSelectionInMass || (trueOmegaMinus && cascPhysicalPrimary)) && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), cent);
-      if (compatibleOmegaPlus && (!doTrueSelectionInMass || (trueOmegaPlus && cascPhysicalPrimary)))
+      if (compatibleOmegaPlus && (!doTrueSelectionInMass || (trueOmegaPlus && cascPhysicalPrimary)) && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), cent);
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
             ((compatibleXiMinus > 0 || compatibleXiPlus > 0) && std::abs(massNSigmaXi) < maxMassNSigma) ||
-            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && std::abs(massNSigmaOmega) < maxMassNSigma)) // end major condition check
+            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && std::abs(massNSigmaOmega) < maxMassNSigma && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)) // end major condition check
       ) {
         assocCascades(casc.collisionId(), casc.globalIndex(),
                       compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,

@@ -14,6 +14,7 @@
 /// \author marvin.hemmer@cern.ch
 /// dependencies: emcal-correction-task
 
+#include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
@@ -37,20 +38,31 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::emcdownscaling;
 
 struct SkimmerGammaCalo {
 
   Preslice<o2::aod::EMCALClusterCells> psCellperCluster = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<o2::aod::EMCALMatchedTracks> psMTperCluster = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCMatchSecs> psMSperCluster = o2::aod::emcalclustercell::emcalclusterId;
 
-  Produces<aod::SkimEMCClusters> tableGammaEMCReco;
+  Produces<aod::SkimEMCClusters_001> tableGammaEMCReco;
   Produces<aod::EMCClusterMCLabels> tableEMCClusterMCLabels;
   Produces<aod::SkimEMCCells> tableCellEMCReco;
+
+  Produces<aod::EmEmcClusters_000> tableEmEmcClusters;
+  Produces<aod::EmEmcMTracks> tableEmEmcMTracks;
+  Produces<aod::EmEmcMSTracks> tableEmEmcMSTracks;
+
+  Produces<aod::MinClusters> tableMinClusters;
+  Produces<aod::MinMTracks> tableMinMTracks;
+  Produces<aod::MinMSTracks> tableMinMSTracks;
 
   // Configurable for filter/cuts
   Configurable<float> minTime{"minTime", -200., "Minimum cluster time for time cut"};
@@ -58,11 +70,14 @@ struct SkimmerGammaCalo {
   Configurable<float> minM02{"minM02", 0.0, "Minimum M02 for M02 cut"};
   Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"};
   Configurable<float> minE{"minE", 0.5, "Minimum energy for energy cut"};
+  Configurable<float> maxE{"maxE", std::numeric_limits<uint16_t>::max(), "Maximum energy for energy cut"};
   Configurable<bool> removeExotic{"removeExotic", false, "Flag to enable the removal of exotic clusters."};
   Configurable<std::vector<int>> clusterDefinitions{"clusterDefinitions", {0, 1, 2, 10, 11, 12, 13, 20, 21, 22, 30, 40, 41, 42, 43, 44, 45}, "Cluster definitions to be accepted (e.g. 13 for kV3MostSplitLowSeed)"};
   Configurable<float> maxdEta{"maxdEta", 0.1, "Set a maximum difference in eta for tracks and cluster to still count as matched"};
   Configurable<float> maxdPhi{"maxdPhi", 0.1, "Set a maximum difference in phi for tracks and cluster to still count as matched"};
   Configurable<float> maxEoverP{"maxEoverP", 1.5, "Set a maximum for cluster E / track p for track matching."};
+  Configurable<float> maxdEtaSec{"maxdEtaSec", 0.1, "Set a maximum difference in eta for secondary tracks and cluster to still count as matched"};
+  Configurable<float> maxdPhiSec{"maxdPhiSec", 0.1, "Set a maximum difference in phi for secondary tracks and cluster to still count as matched"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
 
   HistogramRegistry historeg{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -75,6 +90,8 @@ struct SkimmerGammaCalo {
     historeg.add("EOut", "Energy of clusters after cuts", gHistoSpecClusterE);
     historeg.add("MTEtaPhiBeforeTM", "Eta phi of matched tracks before TM cuts", gHistoSpecClusterTMdEtadPhi);
     historeg.add("MTEtaPhiAfterTM", "Eta phi of matched tracks after TM cuts", gHistoSpecClusterTMdEtadPhi);
+    historeg.add("MSTEtaPhiBeforeTM", "Eta phi of matched secondary tracks before TM cuts", gHistoSpecClusterTMdEtadPhi);
+    historeg.add("MSTEtaPhiAfterTM", "Eta phi of matched secondary tracks after TM cuts", gHistoSpecClusterTMdEtadPhi);
     historeg.add("Eoverp", "E/p for cluster E and track p", gHistoSpecTMEoverP);
     historeg.add("M02In", "Shape of cluster before cuts;#bf{#it{M}_{02}};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, 0, 2}});
     historeg.add("M02Out", "Shape of cluster after cuts;#bf{#it{M}_{02}};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, 0, 2}});
@@ -96,6 +113,12 @@ struct SkimmerGammaCalo {
     hCaloTrackFilter->GetXaxis()->SetBinLabel(3, "E/p cut");
     hCaloTrackFilter->GetXaxis()->SetBinLabel(4, "out");
 
+    auto hCaloSecondaryTrackFilter = historeg.add<TH1>("hCaloSecondaryTrackFilter", "hCaloSecondaryTrackFilter", kTH1I, {{4, 0, 4}});
+    hCaloSecondaryTrackFilter->GetXaxis()->SetBinLabel(1, "in");
+    hCaloSecondaryTrackFilter->GetXaxis()->SetBinLabel(2, "#Delta#eta #Delta#varphi");
+    hCaloSecondaryTrackFilter->GetXaxis()->SetBinLabel(3, "E/p cut");
+    hCaloSecondaryTrackFilter->GetXaxis()->SetBinLabel(4, "out");
+
     LOG(info) << "| EMCal cluster cuts for skimming:";
     LOG(info) << "| Timing cut: " << minTime << " < t < " << maxTime;
     LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02;
@@ -105,8 +128,32 @@ struct SkimmerGammaCalo {
     LOG(info) << "| TM - E/p cut: E/p < " << maxEoverP;
   }
 
-  void processRec(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const&)
+  template <typename TSecondaries>
+  static constexpr bool HasSecondaries = !std::is_same_v<TSecondaries, std::nullptr_t>;
+
+  template <typename TCollision, typename TClusters, typename TClusterCells, typename TTracks, typename TMatchedTracks, typename TMatchedSecondaries = std::nullptr_t>
+  void runAnalysis(TCollision const& collision, TClusters const& emcclusters, TClusterCells const& emcclustercells, TMatchedTracks const& emcmatchedtracks, TTracks const& /*tracks*/, TMatchedSecondaries const& secondaries = nullptr)
   {
+    const size_t NMaxMatchedTracks = 10;
+    // Skimmed matched tracks table
+    std::vector<float> vEta;
+    std::vector<float> vPhi;
+    std::vector<float> vP;
+    std::vector<float> vPt;
+    vEta.reserve(NMaxMatchedTracks);
+    vPhi.reserve(NMaxMatchedTracks);
+    vP.reserve(NMaxMatchedTracks);
+    vPt.reserve(NMaxMatchedTracks);
+
+    std::vector<float> vEtaSecondaries = {};
+    std::vector<float> vPhiSecondaries = {};
+    std::vector<float> vPSecondaries = {};
+    std::vector<float> vPtSecondaries = {};
+    vEtaSecondaries.reserve(NMaxMatchedTracks);
+    vPhiSecondaries.reserve(NMaxMatchedTracks);
+    vPSecondaries.reserve(NMaxMatchedTracks);
+    vPtSecondaries.reserve(NMaxMatchedTracks);
+
     if (!collision.isSelected()) {
       return;
     }
@@ -128,7 +175,7 @@ struct SkimmerGammaCalo {
         continue;
       }
       // Energy cut
-      if (emccluster.energy() < minE) {
+      if (emccluster.energy() < minE || emccluster.energy() > maxE) {
         historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
       }
@@ -153,19 +200,7 @@ struct SkimmerGammaCalo {
       for (const auto& emcclustercell : groupedCells) {
         tableCellEMCReco(emcclustercell.emcalclusterId(), emcclustercell.caloId());
       }
-
-      // Skimmed matched tracks table
-      std::vector<int32_t> vTrackIds;
-      std::vector<float> vEta;
-      std::vector<float> vPhi;
-      std::vector<float> vP;
-      std::vector<float> vPt;
       auto groupedMTs = emcmatchedtracks.sliceBy(psMTperCluster, emccluster.globalIndex());
-      vTrackIds.reserve(groupedMTs.size());
-      vEta.reserve(groupedMTs.size());
-      vPhi.reserve(groupedMTs.size());
-      vP.reserve(groupedMTs.size());
-      vPt.reserve(groupedMTs.size());
       for (const auto& emcmatchedtrack : groupedMTs) {
         historeg.fill(HIST("hCaloTrackFilter"), 0);
         historeg.fill(HIST("MTEtaPhiBeforeTM"), emcmatchedtrack.deltaEta(), emcmatchedtrack.deltaPhi());
@@ -173,18 +208,35 @@ struct SkimmerGammaCalo {
           historeg.fill(HIST("hCaloTrackFilter"), 1);
           continue;
         }
-        historeg.fill(HIST("Eoverp"), emccluster.energy(), emccluster.energy() / emcmatchedtrack.track_as<aod::FullTracks>().p());
-        if (emccluster.energy() / emcmatchedtrack.track_as<aod::FullTracks>().p() > maxEoverP) {
+        historeg.fill(HIST("Eoverp"), emccluster.energy(), emccluster.energy() / emcmatchedtrack.template track_as<aod::FullTracks>().p());
+        if (emccluster.energy() / emcmatchedtrack.template track_as<aod::FullTracks>().p() > maxEoverP) {
           historeg.fill(HIST("hCaloTrackFilter"), 2);
           continue;
         }
         historeg.fill(HIST("hCaloTrackFilter"), 3);
         historeg.fill(HIST("MTEtaPhiAfterTM"), emcmatchedtrack.deltaEta(), emcmatchedtrack.deltaPhi());
-        vTrackIds.emplace_back(emcmatchedtrack.trackId());
         vEta.emplace_back(emcmatchedtrack.deltaEta());
         vPhi.emplace_back(emcmatchedtrack.deltaPhi());
-        vP.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().p());
-        vPt.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().pt());
+        vP.emplace_back(emcmatchedtrack.template track_as<aod::FullTracks>().p());
+        vPt.emplace_back(emcmatchedtrack.template track_as<aod::FullTracks>().pt());
+      }
+
+      if constexpr (HasSecondaries<TMatchedSecondaries>) {
+        auto groupedMatchedSecondaries = secondaries.sliceBy(psMSperCluster, emccluster.globalIndex());
+        for (const auto& emcMatchedSecondary : groupedMatchedSecondaries) {
+          historeg.fill(HIST("hCaloSecondaryTrackFilter"), 0);
+          historeg.fill(HIST("MSTEtaPhiBeforeTM"), emcMatchedSecondary.deltaEta(), emcMatchedSecondary.deltaPhi());
+          if (std::abs(emcMatchedSecondary.deltaEta()) >= maxdEtaSec || std::abs(emcMatchedSecondary.deltaPhi()) >= maxdPhiSec) {
+            historeg.fill(HIST("hCaloSecondaryTrackFilter"), 1);
+            continue;
+          }
+          historeg.fill(HIST("hCaloSecondaryTrackFilter"), 3);
+          historeg.fill(HIST("MSTEtaPhiAfterTM"), emcMatchedSecondary.deltaEta(), emcMatchedSecondary.deltaPhi());
+          vEtaSecondaries.emplace_back(emcMatchedSecondary.deltaEta());
+          vPhiSecondaries.emplace_back(emcMatchedSecondary.deltaPhi());
+          vPSecondaries.emplace_back(emcMatchedSecondary.template track_as<aod::FullTracks>().p());
+          vPtSecondaries.emplace_back(emcMatchedSecondary.template track_as<aod::FullTracks>().pt());
+        }
       }
 
       historeg.fill(HIST("DefinitionOut"), emccluster.definition());
@@ -193,9 +245,63 @@ struct SkimmerGammaCalo {
       historeg.fill(HIST("TimeOut"), emccluster.time());
 
       tableGammaEMCReco(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
-                        emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vPhi, vEta, vP, vPt);
+                        emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vPhi, vEta, vP, vPt, vPhiSecondaries, vEtaSecondaries, vPSecondaries, vPtSecondaries);
+
+      tableEmEmcClusters(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
+                         emccluster.nCells(), emccluster.time(), emccluster.isExotic());
+
+      tableMinClusters(emccluster.collisionId(), convertForStorage<int8_t>(emccluster.definition(), Observable::kDefinition),
+                       convertForStorage<uint16_t>(emccluster.energy(), Observable::kEnergy),
+                       convertForStorage<int16_t>(emccluster.eta(), Observable::kEta),
+                       convertForStorage<uint16_t>(emccluster.phi(), Observable::kPhi),
+                       convertForStorage<uint8_t>((emccluster.nCells() & 0x7F) | (emccluster.isExotic() << 7), Observable::kNCellsExo),
+                       convertForStorage<int16_t>(emccluster.m02(), Observable::kM02),
+                       convertForStorage<int16_t>(emccluster.time(), Observable::kTime));
+
+      if (vEta.size() > 0) {
+        for (size_t iPart = 0; iPart < vEta.size(); ++iPart) {
+          tableEmEmcMTracks(tableEmEmcClusters.lastIndex(), vEta[iPart], vPhi[iPart], vP[iPart], vPt[iPart]);
+          tableMinMTracks(tableMinClusters.lastIndex(),
+                          convertForStorage<int16_t>(vPhi[iPart], Observable::kDeltaPhi),
+                          convertForStorage<int16_t>(vEta[iPart], Observable::kDeltaEta),
+                          convertForStorage<uint16_t>(vP[iPart], Observable::kEnergy),
+                          convertForStorage<uint16_t>(vPt[iPart], Observable::kEnergy));
+        }
+      }
+      if (vEtaSecondaries.size() > 0) {
+        for (size_t iPart = 0; iPart < vEtaSecondaries.size(); ++iPart) {
+          tableEmEmcMSTracks(tableEmEmcClusters.lastIndex(), vEtaSecondaries[iPart], vPhiSecondaries[iPart], vPSecondaries[iPart], vPtSecondaries[iPart]);
+          tableMinMSTracks(tableMinClusters.lastIndex(),
+                           convertForStorage<int16_t>(vPhiSecondaries[iPart], Observable::kDeltaPhi),
+                           convertForStorage<int16_t>(vEtaSecondaries[iPart], Observable::kDeltaEta),
+                           convertForStorage<uint16_t>(vPSecondaries[iPart], Observable::kEnergy),
+                           convertForStorage<uint16_t>(vPtSecondaries[iPart], Observable::kEnergy));
+        }
+      }
+
+      vEta.clear();
+      vPhi.clear();
+      vP.clear();
+      vPt.clear();
+      vPhiSecondaries.clear();
+      vEtaSecondaries.clear();
+      vPSecondaries.clear();
+      vPtSecondaries.clear();
     }
   }
+
+  void processRec(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
+  {
+    runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks);
+  }
+  PROCESS_SWITCH(SkimmerGammaCalo, processRec, "process only reconstructed info", true);
+
+  void processRecWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)
+  {
+    runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks, emcmatchedsecondaries);
+  }
+  PROCESS_SWITCH(SkimmerGammaCalo, processRecWithSecondaries, "process reconstructed info with secondary track matching.", false);
+
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const&)
   {
     if (!collision.isSelected()) {
@@ -236,7 +342,6 @@ struct SkimmerGammaCalo {
       mcLabels.clear();
     }
   }
-  PROCESS_SWITCH(SkimmerGammaCalo, processRec, "process only reconstructed info", true);
   PROCESS_SWITCH(SkimmerGammaCalo, processMC, "process MC info", false); // Run this in addition to processRec for MCs to copy the cluster mc labels from the EMCALMCClusters to the skimmed EMCClusterMCLabels table
 
   void processDummy(aod::Collision const&)

@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include "PWGDQ/Core/VarManager.h"
+
+#include "Tools/KFparticle/KFUtilities.h"
+
 #include <cmath>
 #include <iostream>
-#include <vector>
 #include <map>
-#include "PWGDQ/Core/VarManager.h"
-#include "Tools/KFparticle/KFUtilities.h"
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -28,8 +30,9 @@ bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgzMatching = -77.5;
+float VarManager::fgzShiftFwd = 0.0;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
-float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+float VarManager::fgTPCInterSectorBoundary = 1.0; // cm
 int VarManager::fgITSROFbias = 0;
 int VarManager::fgITSROFlength = 100;
 int VarManager::fgITSROFBorderMarginLow = 0;
@@ -367,6 +370,18 @@ void VarManager::SetDefaultVarNames()
 
   fgVariableNames[kRunNo] = "Run number";
   fgVariableUnits[kRunNo] = "";
+  fgVariableNames[kTFNBCs] = "Number of bunch crossings per TF";
+  fgVariableUnits[kTFNBCs] = "";
+  fgVariableNames[kTFNCollisions] = "Number of collisions per TF";
+  fgVariableUnits[kTFNCollisions] = "";
+  fgVariableNames[kTFNMCCollisions] = "Number of MC collisions per TF";
+  fgVariableUnits[kTFNMCCollisions] = "";
+  fgVariableNames[kTFNTracks] = "Number of tracks per TF";
+  fgVariableUnits[kTFNTracks] = "";
+  fgVariableNames[kTFNMuons] = "Number of muons per TF";
+  fgVariableUnits[kTFNMuons] = "";
+  fgVariableNames[kTFNMFTs] = "Number of MFT tracks per TF";
+  fgVariableUnits[kTFNMFTs] = "";
   fgVariableNames[kBC] = "Bunch crossing";
   fgVariableUnits[kBC] = "";
   fgVariableNames[kTimeFromSOR] = "time since SOR";
@@ -734,6 +749,22 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMuonTimeRes] = "ns";
   fgVariableNames[kMCPdgCode] = "MC PDG code";
   fgVariableUnits[kMCPdgCode] = "";
+  fgVariableNames[kMCCosTheta] = "Cos#theta";
+  fgVariableUnits[kMCCosTheta] = "";
+  fgVariableNames[kMCHadronPdgCode] = "HadronPdgCode";
+  fgVariableUnits[kMCHadronPdgCode] = "";
+  fgVariableNames[kMCCosChi] = "Cos#chi";
+  fgVariableUnits[kMCCosChi] = "";
+  fgVariableNames[kMCJpsiPt] = "Jpsi p_{T}";
+  fgVariableUnits[kMCJpsiPt] = "GeV/c";
+  fgVariableNames[kMCHadronPt] = "Hadron p_{T}";
+  fgVariableUnits[kMCHadronPt] = "GeV/c";
+  fgVariableNames[kMCHadronEta] = "Hadron #eta";
+  fgVariableUnits[kMCHadronEta] = "";
+  fgVariableNames[kMCdeltaphi] = "#Delta#phi";
+  fgVariableUnits[kMCdeltaphi] = "";
+  fgVariableNames[kMCdeltaeta] = "#Delta#eta";
+  fgVariableUnits[kMCdeltaeta] = "";
   fgVariableNames[kMCParticleWeight] = "MC particle weight";
   fgVariableUnits[kMCParticleWeight] = "";
   fgVariableNames[kMCPx] = "MC px";
@@ -786,10 +817,20 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairType] = "";
   fgVariableNames[kVertexingLxy] = "Pair Lxy";
   fgVariableUnits[kVertexingLxy] = "cm";
+  fgVariableNames[kMCVertexingLxy] = "MC Lxy";
+  fgVariableUnits[kMCVertexingLxy] = "cm";
   fgVariableNames[kVertexingLz] = "Pair Lz";
   fgVariableUnits[kVertexingLz] = "cm";
+  fgVariableNames[kMCVertexingLz] = "MC Lz";
+  fgVariableUnits[kMCVertexingLz] = "cm";
   fgVariableNames[kVertexingLxyz] = "Pair Lxyz";
   fgVariableUnits[kVertexingLxyz] = "cm";
+  fgVariableNames[kMCVertexingLxyz] = "MC Lxyz";
+  fgVariableUnits[kMCVertexingLxyz] = "cm";
+  fgVariableNames[kMCLxyExpected] = "MC Expected Lxy";
+  fgVariableUnits[kMCLxyExpected] = "cm";
+  fgVariableNames[kMCLxyzExpected] = "MC Expected Lxyz";
+  fgVariableUnits[kMCLxyzExpected] = "cm";
   fgVariableNames[kVertexingLxyErr] = "Pair Lxy err.";
   fgVariableUnits[kVertexingLxyErr] = "cm";
   fgVariableNames[kVertexingLzErr] = "Pair Lz err.";
@@ -800,6 +841,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauz] = "ns";
   fgVariableNames[kVertexingTauxy] = "Pair pseudo-proper Tauxy";
   fgVariableUnits[kVertexingTauxy] = "ns";
+  fgVariableNames[kMCVertexingTauz] = "MC pseudo-proper Tauz";
+  fgVariableUnits[kMCVertexingTauz] = "ns";
+  fgVariableNames[kMCVertexingTauxy] = "MC pseudo-proper Tauxy";
+  fgVariableUnits[kMCVertexingTauxy] = "ns";
   fgVariableNames[kVertexingTauzErr] = "Pair pseudo-proper Tauz err.";
   fgVariableUnits[kVertexingTauzErr] = "ns";
   fgVariableNames[kVertexingLxyProjected] = "Pair Lxy";
@@ -816,8 +861,22 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauxyProjectedPoleJPsiMass] = "ns";
   fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
   fgVariableUnits[kVertexingTauxyzProjected] = "ns";
+  fgVariableNames[kMCVertexingLxyProjected] = "MC Lxy_{proj}";
+  fgVariableUnits[kMCVertexingLxyProjected] = "cm";
+  fgVariableNames[kMCVertexingLzProjected] = "MC Lz_{proj}";
+  fgVariableUnits[kMCVertexingLzProjected] = "cm";
+  fgVariableNames[kMCVertexingLxyzProjected] = "MC Lxyz_{proj}";
+  fgVariableUnits[kMCVertexingLxyzProjected] = "cm";
+  fgVariableNames[kMCVertexingTauzProjected] = "MC Tauz_{proj}";
+  fgVariableUnits[kMCVertexingTauzProjected] = "ns";
+  fgVariableNames[kMCVertexingTauxyProjected] = "MC Tauxy_{proj}";
+  fgVariableUnits[kMCVertexingTauxyProjected] = "ns";
+  fgVariableNames[kMCVertexingTauxyzProjected] = "MC Tauxyz_{proj}";
+  fgVariableUnits[kMCVertexingTauxyzProjected] = "ns";
   fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
   fgVariableUnits[kCosPointingAngle] = "";
+  fgVariableNames[kMCCosPointingAngle] = "MC cos(#theta_{pointing})";
+  fgVariableUnits[kMCCosPointingAngle] = "";
   fgVariableNames[kVertexingPz] = "Pz Pair";
   fgVariableUnits[kVertexingPz] = "GeV/c";
   fgVariableNames[kVertexingSV] = "Secondary Vertexing z";
@@ -834,8 +893,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingLzOverErr] = "";
   fgVariableNames[kVertexingLxyzOverErr] = "Pair Lxyz/DLxyz";
   fgVariableUnits[kVertexingLxyzOverErr] = "";
-  fgVariableNames[kCosPointingAngle] = "Cos #theta_{pointing}";
-  fgVariableUnits[kCosPointingAngle] = "";
   fgVariableNames[kKFTrack0DCAxyz] = "Daughter0 DCAxyz";
   fgVariableUnits[kKFTrack0DCAxyz] = "cm";
   fgVariableNames[kKFTrack1DCAxyz] = "Daughter1 DCAxyz";
@@ -1162,6 +1219,16 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhi] = "rad.";
   fgVariableNames[kDeltaPhiSym] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiSym] = "rad.";
+  fgVariableNames[kCosChi] = "Cos#chi";
+  fgVariableUnits[kCosChi] = "";
+  fgVariableNames[kCosTheta] = "Cos#theta";
+  fgVariableUnits[kCosTheta] = "";
+  fgVariableNames[kPtDau] = "hadron P_{T}";
+  fgVariableUnits[kPtDau] = "GeV/c";
+  fgVariableNames[kEtaDau] = "hadron #eta";
+  fgVariableUnits[kEtaDau] = "";
+  fgVariableNames[kPhiDau] = "hadron #phi";
+  fgVariableUnits[kPhiDau] = "";
   fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
   fgVariableUnits[kCosThetaHE] = "";
   fgVariableNames[kPhiHE] = "#varphi_{HE}";
@@ -1242,6 +1309,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsSingleGapC] = "";
   fgVariableNames[kIsSingleGap] = "is single gap event";
   fgVariableUnits[kIsSingleGap] = "";
+  fgVariableNames[kIsNoGap] = "is no gap event";
+  fgVariableUnits[kIsNoGap] = "";
   fgVariableNames[kIsITSUPCMode] = "UPC settings used";
   fgVariableUnits[kIsITSUPCMode] = "";
   fgVariableNames[kQuadMass] = "mass quadruplet";
@@ -1292,10 +1361,68 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kBdtPrompt] = " ";
   fgVariableNames[kBdtNonprompt] = "kBdtNonprompt";
   fgVariableUnits[kBdtNonprompt] = " ";
+  fgVariableNames[kAmplitudeFT0A] = "FT0A amplitude";
+  fgVariableUnits[kAmplitudeFT0A] = "a.u.";
+  fgVariableNames[kAmplitudeFT0C] = "FT0C amplitude";
+  fgVariableUnits[kAmplitudeFT0C] = "a.u.";
+  fgVariableNames[kTimeFT0A] = "FT0A time";
+  fgVariableUnits[kTimeFT0A] = "ns";
+  fgVariableNames[kTimeFT0C] = "FT0C time";
+  fgVariableUnits[kTimeFT0C] = "ns";
+  fgVariableNames[kTriggerMaskFT0] = "FT0 trigger mask";
+  fgVariableUnits[kTriggerMaskFT0] = "";
+  fgVariableNames[kNFiredChannelsFT0A] = "FT0A fired channels";
+  fgVariableUnits[kNFiredChannelsFT0A] = "";
+  fgVariableNames[kNFiredChannelsFT0C] = "FT0C fired channels";
+  fgVariableUnits[kNFiredChannelsFT0C] = "";
+  fgVariableNames[kAmplitudeFDDA] = "FDDA amplitude";
+  fgVariableUnits[kAmplitudeFDDA] = "a.u.";
+  fgVariableNames[kAmplitudeFDDC] = "FDDC amplitude";
+  fgVariableUnits[kAmplitudeFDDC] = "a.u.";
+  fgVariableNames[kTimeFDDA] = "FDDA time";
+  fgVariableUnits[kTimeFDDA] = "ns";
+  fgVariableNames[kTimeFDDC] = "FDDC time";
+  fgVariableUnits[kTimeFDDC] = "ns";
+  fgVariableNames[kTriggerMaskFDD] = "FDD trigger mask";
+  fgVariableUnits[kTriggerMaskFDD] = "";
+  fgVariableNames[kAmplitudeFV0A] = "FV0A amplitude";
+  fgVariableUnits[kAmplitudeFV0A] = "a.u.";
+  fgVariableNames[kTimeFV0A] = "FV0A time";
+  fgVariableUnits[kTimeFV0A] = "ns";
+  fgVariableNames[kTriggerMaskFV0A] = "FV0A trigger mask";
+  fgVariableUnits[kTriggerMaskFV0A] = "";
+  fgVariableNames[kNFiredChannelsFV0A] = "FV0A fired channels";
+  fgVariableUnits[kNFiredChannelsFV0A] = "";
+  fgVariableNames[kBBFT0Apf] = "FT0A BB pileup flag";
+  fgVariableUnits[kBBFT0Apf] = "";
+  fgVariableNames[kBGFT0Apf] = "FT0A BG pileup flag";
+  fgVariableUnits[kBGFT0Apf] = "";
+  fgVariableNames[kBBFT0Cpf] = "FT0C BB pileup flag";
+  fgVariableUnits[kBBFT0Cpf] = "";
+  fgVariableNames[kBGFT0Cpf] = "FT0C BG pileup flag";
+  fgVariableUnits[kBGFT0Cpf] = "";
+  fgVariableNames[kBBFV0Apf] = "FV0A BB pileup flag";
+  fgVariableUnits[kBBFV0Apf] = "";
+  fgVariableNames[kBGFV0Apf] = "FV0A BG pileup flag";
+  fgVariableUnits[kBGFV0Apf] = "";
+  fgVariableNames[kBBFDDApf] = "FDDA BB pileup flag";
+  fgVariableUnits[kBBFDDApf] = "";
+  fgVariableNames[kBGFDDApf] = "FDDA BG pileup flag";
+  fgVariableUnits[kBGFDDApf] = "";
+  fgVariableNames[kBBFDDCpf] = "FDDC BB pileup flag";
+  fgVariableUnits[kBBFDDCpf] = "";
+  fgVariableNames[kBGFDDCpf] = "FDDC BG pileup flag";
+  fgVariableUnits[kBGFDDCpf] = "";
 
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
   fgVarNamesMap["kRunNo"] = kRunNo;
+  fgVarNamesMap["kTFNBCs"] = kTFNBCs;
+  fgVarNamesMap["kTFNCollisions"] = kTFNCollisions;
+  fgVarNamesMap["kTFNMCCollisions"] = kTFNMCCollisions;
+  fgVarNamesMap["kTFNTracks"] = kTFNTracks;
+  fgVarNamesMap["kTFNMuons"] = kTFNMuons;
+  fgVarNamesMap["kTFNMFTs"] = kTFNMFTs;
   fgVarNamesMap["kNRunWiseVariables"] = kNRunWiseVariables;
   fgVarNamesMap["kTimestamp"] = kTimestamp;
   fgVarNamesMap["kTimeFromSOR"] = kTimeFromSOR;
@@ -1495,6 +1622,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsSingleGapA"] = kIsSingleGapA;
   fgVarNamesMap["kIsSingleGapC"] = kIsSingleGapC;
   fgVarNamesMap["kIsSingleGap"] = kIsSingleGap;
+  fgVarNamesMap["kIsNoGap"] = kIsNoGap;
   fgVarNamesMap["kIsITSUPCMode"] = kIsITSUPCMode;
   fgVarNamesMap["kTwoEvPosZ1"] = kTwoEvPosZ1;
   fgVarNamesMap["kTwoEvPosZ2"] = kTwoEvPosZ2;
@@ -1691,7 +1819,34 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMuonNAssocsOutOfBunch"] = kMuonNAssocsOutOfBunch;
   fgVarNamesMap["kNMuonTrackVariables"] = kNMuonTrackVariables;
   fgVarNamesMap["kMCPdgCode"] = kMCPdgCode;
+  fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
+  fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
+  fgVarNamesMap["kMCCosChi"] = kMCCosChi;
+  fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
+  fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
+  fgVarNamesMap["kMCdeltaeta"] = kMCdeltaeta;
+  fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
+  fgVarNamesMap["kMCHadronEta"] = kMCHadronEta;
+  fgVarNamesMap["kMCHadronPhi"] = kMCHadronPhi;
+  fgVarNamesMap["kMCWeight"] = kMCWeight;
+  fgVarNamesMap["kMCCosChi_randomPhi_toward"] = kMCCosChi_randomPhi_toward;
+  fgVarNamesMap["kMCWeight_randomPhi_toward"] = kMCWeight_randomPhi_toward;
+  fgVarNamesMap["kMCCosChi_randomPhi_away"] = kMCCosChi_randomPhi_away;
+  fgVarNamesMap["kMCWeight_randomPhi_away"] = kMCWeight_randomPhi_away;
+  fgVarNamesMap["kMCCosChi_randomPhi_trans"] = kMCCosChi_randomPhi_trans;
+  fgVarNamesMap["kMCWeight_randomPhi_trans"] = kMCWeight_randomPhi_trans;
+  fgVarNamesMap["kMCdeltaphi_randomPhi_toward"] = kMCdeltaphi_randomPhi_toward;
+  fgVarNamesMap["kMCdeltaphi_randomPhi_away"] = kMCdeltaphi_randomPhi_away;
+  fgVarNamesMap["kMCdeltaphi_randomPhi_trans"] = kMCdeltaphi_randomPhi_trans;
+  fgVarNamesMap["kMCCosChi_gen"] = kMCCosChi_gen;
+  fgVarNamesMap["kMCWeight_gen"] = kMCWeight_gen;
+  fgVarNamesMap["kMCdeltaeta_gen"] = kMCdeltaeta_gen;
+  fgVarNamesMap["kMCCosChi_rec"] = kMCCosChi_rec;
+  fgVarNamesMap["kMCWeight_rec"] = kMCWeight_rec;
+  fgVarNamesMap["kMCdeltaeta_rec"] = kMCdeltaeta_rec;
   fgVarNamesMap["kMCParticleWeight"] = kMCParticleWeight;
+  fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
+  fgVarNamesMap["kMCJpsiPt"] = kMCJpsiPt;
   fgVarNamesMap["kMCPx"] = kMCPx;
   fgVarNamesMap["kMCPy"] = kMCPy;
   fgVarNamesMap["kMCPz"] = kMCPz;
@@ -1720,13 +1875,17 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPairType"] = kPairType;
   fgVarNamesMap["kVertexingLxy"] = kVertexingLxy;
   fgVarNamesMap["kVertexingLxyErr"] = kVertexingLxyErr;
+  fgVarNamesMap["kMCVertexingLxy"] = kMCVertexingLxy;
   fgVarNamesMap["kVertexingPseudoCTau"] = kVertexingPseudoCTau;
   fgVarNamesMap["kVertexingLxyz"] = kVertexingLxyz;
   fgVarNamesMap["kVertexingLxyzErr"] = kVertexingLxyzErr;
+  fgVarNamesMap["kMCVertexingLxyz"] = kMCVertexingLxyz;
   fgVarNamesMap["kVertexingLz"] = kVertexingLz;
   fgVarNamesMap["kVertexingLzErr"] = kVertexingLzErr;
+  fgVarNamesMap["kMCVertexingLz"] = kMCVertexingLz;
   fgVarNamesMap["kVertexingTauxy"] = kVertexingTauxy;
   fgVarNamesMap["kVertexingTauxyErr"] = kVertexingTauxyErr;
+  fgVarNamesMap["kMCVertexingTauxy"] = kMCVertexingTauxy;
   fgVarNamesMap["kVertexingLzProjected"] = kVertexingLzProjected;
   fgVarNamesMap["kVertexingLxyProjected"] = kVertexingLxyProjected;
   fgVarNamesMap["kVertexingLxyzProjected"] = kVertexingLxyzProjected;
@@ -1735,8 +1894,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVertexingTauxyProjectedPoleJPsiMass"] = kVertexingTauxyProjectedPoleJPsiMass;
   fgVarNamesMap["kVertexingTauxyProjectedNs"] = kVertexingTauxyProjectedNs;
   fgVarNamesMap["kVertexingTauxyzProjected"] = kVertexingTauxyzProjected;
+  fgVarNamesMap["kMCVertexingTauzProjected"] = kVertexingTauzProjected;
+  fgVarNamesMap["kMCVertexingTauxyProjected"] = kVertexingTauxyProjected;
+  fgVarNamesMap["kMCVertexingTauxyzProjected"] = kVertexingTauxyzProjected;
   fgVarNamesMap["kVertexingTauz"] = kVertexingTauz;
   fgVarNamesMap["kVertexingTauzErr"] = kVertexingTauzErr;
+  fgVarNamesMap["kMCVertexingTauz"] = kMCVertexingTauz;
   fgVarNamesMap["kVertexingPz"] = kVertexingPz;
   fgVarNamesMap["kVertexingSV"] = kVertexingSV;
   fgVarNamesMap["kVertexingProcCode"] = kVertexingProcCode;
@@ -1768,6 +1931,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kQuadDCAsigXYZ"] = kQuadDCAsigXYZ;
   fgVarNamesMap["kSignQuadDCAsigXY"] = kSignQuadDCAsigXY;
   fgVarNamesMap["kCosPointingAngle"] = kCosPointingAngle;
+  fgVarNamesMap["kMCCosPointingAngle"] = kMCCosPointingAngle;
   fgVarNamesMap["kImpParXYJpsi"] = kImpParXYJpsi;
   fgVarNamesMap["kImpParXYK"] = kImpParXYK;
   fgVarNamesMap["kDCATrackProd"] = kDCATrackProd;
@@ -1896,6 +2060,23 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDeltaEta"] = kDeltaEta;
   fgVarNamesMap["kDeltaPhi"] = kDeltaPhi;
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;
+  fgVarNamesMap["kCosTheta"] = kCosTheta;
+  fgVarNamesMap["kCosChi"] = kCosChi;
+  fgVarNamesMap["kECWeight"] = kECWeight;
+  fgVarNamesMap["kEWeight_before"] = kEWeight_before;
+  fgVarNamesMap["kPtDau"] = kPtDau;
+  fgVarNamesMap["kEtaDau"] = kEtaDau;
+  fgVarNamesMap["kPhiDau"] = kPhiDau;
+  fgVarNamesMap["kCosChi_randomPhi_trans"] = kCosChi_randomPhi_trans;
+  fgVarNamesMap["kCosChi_randomPhi_toward"] = kCosChi_randomPhi_toward;
+  fgVarNamesMap["kCosChi_randomPhi_away"] = kCosChi_randomPhi_away;
+  fgVarNamesMap["kWeight_randomPhi_trans"] = kWeight_randomPhi_trans;
+  fgVarNamesMap["kWeight_randomPhi_toward"] = kWeight_randomPhi_toward;
+  fgVarNamesMap["kWeight_randomPhi_away"] = kWeight_randomPhi_away;
+  fgVarNamesMap["kdeltaphi_randomPhi_trans"] = kdeltaphi_randomPhi_trans;
+  fgVarNamesMap["kdeltaphi_randomPhi_toward"] = kdeltaphi_randomPhi_toward;
+  fgVarNamesMap["kdeltaphi_randomPhi_away"] = kdeltaphi_randomPhi_away;
+  fgVarNamesMap["kdileptonmass"] = kdileptonmass;
   fgVarNamesMap["kNCorrelationVariables"] = kNCorrelationVariables;
   fgVarNamesMap["kQuadMass"] = kQuadMass;
   fgVarNamesMap["kQuadDefaultDileptonMass"] = kQuadDefaultDileptonMass;
@@ -1927,4 +2108,30 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBdtBackground"] = kBdtBackground;
   fgVarNamesMap["kBdtPrompt"] = kBdtPrompt;
   fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
+  fgVarNamesMap["kAmplitudeFT0A"] = kAmplitudeFT0A;
+  fgVarNamesMap["kAmplitudeFT0C"] = kAmplitudeFT0C;
+  fgVarNamesMap["kTimeFT0A"] = kTimeFT0A;
+  fgVarNamesMap["kTimeFT0C"] = kTimeFT0C;
+  fgVarNamesMap["kTriggerMaskFT0"] = kTriggerMaskFT0;
+  fgVarNamesMap["kNFiredChannelsFT0A"] = kNFiredChannelsFT0A;
+  fgVarNamesMap["kNFiredChannelsFT0C"] = kNFiredChannelsFT0C;
+  fgVarNamesMap["kAmplitudeFDDA"] = kAmplitudeFDDA;
+  fgVarNamesMap["kAmplitudeFDDC"] = kAmplitudeFDDC;
+  fgVarNamesMap["kTimeFDDA"] = kTimeFDDA;
+  fgVarNamesMap["kTimeFDDC"] = kTimeFDDC;
+  fgVarNamesMap["kTriggerMaskFDD"] = kTriggerMaskFDD;
+  fgVarNamesMap["kAmplitudeFV0A"] = kAmplitudeFV0A;
+  fgVarNamesMap["kTimeFV0A"] = kTimeFV0A;
+  fgVarNamesMap["kTriggerMaskFV0A"] = kTriggerMaskFV0A;
+  fgVarNamesMap["kNFiredChannelsFV0A"] = kNFiredChannelsFV0A;
+  fgVarNamesMap["kBBFT0Apf"] = kBBFT0Apf;
+  fgVarNamesMap["kBGFT0Apf"] = kBGFT0Apf;
+  fgVarNamesMap["kBBFT0Cpf"] = kBBFT0Cpf;
+  fgVarNamesMap["kBGFT0Cpf"] = kBGFT0Cpf;
+  fgVarNamesMap["kBBFV0Apf"] = kBBFV0Apf;
+  fgVarNamesMap["kBGFV0Apf"] = kBGFV0Apf;
+  fgVarNamesMap["kBBFDDApf"] = kBBFDDApf;
+  fgVarNamesMap["kBGFDDApf"] = kBGFDDApf;
+  fgVarNamesMap["kBBFDDCpf"] = kBBFDDCpf;
+  fgVarNamesMap["kBGFDDCpf"] = kBGFDDCpf;
 }

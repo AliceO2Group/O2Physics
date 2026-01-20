@@ -17,7 +17,7 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 #include "Common/Core/TableHelper.h"
-#include "EventFiltering/Zorro.h"
+#include "Common/Core/Zorro.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"
@@ -33,11 +33,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+using MyCollisions = soa::Join<aod::Collisions, aod::EMEvSels>;
+
 struct skimmerOTS {
-  Produces<o2::aod::EMSWTriggerInfosTMP> swtinfo_tmp; // Join aod::Collision later.
   Produces<o2::aod::EMSWTriggerBitsTMP> swtbit_tmp;
-  Produces<o2::aod::EMSWTriggerATCountersTMP> swtcounterAT_tmp;
-  Produces<o2::aod::EMSWTriggerTOICountersTMP> swtcounterTOI_tmp;
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -126,11 +125,10 @@ struct skimmerOTS {
       mSelections[emswtId] = zorro.getSelections()->GetBinContent(mTOIidx[idx] + 2);
       LOGF(info, "Trigger of Interest : index = %d in Zorro, %d in EM, scaler = %llu, selection = %llu", mTOIidx[idx], emswtId, mScalers[emswtId], mSelections[emswtId]);
     }
-    swtinfo_tmp(bc.runNumber(), mNinspectedTVX, mScalers, mSelections);
     mRunNumber = bc.runNumber();
   }
 
-  void process(aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
+  void process(MyCollisions const& collisions, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>(); // don't use foundBC.
@@ -141,35 +139,38 @@ struct skimmerOTS {
       // uint16_t analyzedToI_bitmap = 0;
       registry.fill(HIST("hCollisionCounter"), 1); // all
 
-      if (zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) { // triggered event
-        auto swt_bitset = zorro.getLastResult();                         // this has to be called after zorro::isSelected, or simply call zorro.fetch
-        auto TOIcounters = zorro.getTOIcounters();                       // this has to be called after zorro::isSelected, or simply call zorro.fetch
-        auto ATcounters = zorro.getATcounters();                         // this has to be called after zorro::isSelected, or simply call zorro.fetch
+      if (collision.isSelected()) {
 
-        // LOGF(info, "swt_bitset.to_string().c_str() = %s", swt_bitset.to_string().c_str());
-        for (size_t idx = 0; idx < mTOIidx.size(); idx++) {
-          if (swt_bitset.test(mTOIidx[idx])) {
-            auto swtname = swt_names[idx];
-            int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname);
-            trigger_bitmap |= BIT(emswtId);
-            // LOGF(info, "swtname = %s is fired. swt index in original swt table = %d, swt index for EM table = %d", swtname.data(), mTOIidx[idx], o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
-            registry.fill(HIST("hCollisionCounter"), idx + 2); // fired trigger
+        if (zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) { // triggered event
+          // auto swt_bitset = zorro.getLastResult();                         // this has to be called after zorro::isSelected, or simply call zorro.fetch
+          // auto TOIcounters = zorro.getTOIcounters();                       // this has to be called after zorro::isSelected, or simply call zorro.fetch
+          // auto ATcounters = zorro.getATcounters();                         // this has to be called after zorro::isSelected, or simply call zorro.fetch
+          trigger_bitmap = 1;
 
-            // LOGF(info, "ATcounters[mTOIidx[idx]] = %d, TOIcounters[idx] = %d", ATcounters[mTOIidx[idx]], TOIcounters[idx]);
+          // // LOGF(info, "swt_bitset.to_string().c_str() = %s", swt_bitset.to_string().c_str());
+          // for (size_t idx = 0; idx < mTOIidx.size(); idx++) {
+          //   if (swt_bitset.test(mTOIidx[idx])) {
+          //     auto swtname = swt_names[idx];
+          //     int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname);
+          //     trigger_bitmap |= BIT(emswtId);
+          //     // LOGF(info, "swtname = %s is fired. swt index in original swt table = %d, swt index for EM table = %d", swtname.data(), mTOIidx[idx], o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname));
+          //     registry.fill(HIST("hCollisionCounter"), idx + 2); // fired trigger
 
-            while (ATcounters[mTOIidx[idx]] > mATCounters[emswtId]) {
-              mATCounters[emswtId]++;
-              swtcounterAT_tmp(BIT(emswtId));
-            }
+          //     // LOGF(info, "ATcounters[mTOIidx[idx]] = %d, TOIcounters[idx] = %d", ATcounters[mTOIidx[idx]], TOIcounters[idx]);
 
-            while (TOIcounters[idx] > mTOICounters[emswtId]) {
-              mTOICounters[emswtId]++; // always incremented by 1 in zorro!!
-              swtcounterTOI_tmp(BIT(emswtId));
-            }
+          //     while (ATcounters[mTOIidx[idx]] > mATCounters[emswtId]) {
+          //       mATCounters[emswtId]++;
+          //       swtcounterAT_tmp(BIT(emswtId));
+          //     }
 
-            // LOGF(info, "collision.globalIndex() = %d, bc.globalBC() = %llu, mTOICounters[%d] = %d, mATcounters[%d] = %d", collision.globalIndex(), bc.globalBC(), emswtId, mTOICounters[emswtId], emswtId, mATCounters[emswtId]);
-          }
-        } // end of TOI loop
+          //     while (TOIcounters[idx] > mTOICounters[emswtId]) {
+          //       mTOICounters[emswtId]++; // always incremented by 1 in zorro!!
+          //       swtcounterTOI_tmp(BIT(emswtId));
+          //     }
+          //     // LOGF(info, "collision.globalIndex() = %d, bc.globalBC() = %llu, mTOICounters[%d] = %d, mATcounters[%d] = %d", collision.globalIndex(), bc.globalBC(), emswtId, mTOICounters[emswtId], emswtId, mATCounters[emswtId]);
+          //   }
+          // } // end of TOI loop
+        }
       }
       swtbit_tmp(trigger_bitmap);
     } // end of collision loop

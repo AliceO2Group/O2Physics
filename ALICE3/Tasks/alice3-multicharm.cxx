@@ -66,11 +66,11 @@ using namespace o2::framework::expressions;
 
 using multiCharmTracksPID = soa::Join<aod::MCharmCores, aod::MCharmPID>;
 using multiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MCharmExtra>;
-#define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
 struct alice3multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::map<std::string, HistPtr> histPointers;
+  std::vector<int> savedConfigs;
   std::string histPath;
 
   std::map<int, int> pdgToBin;
@@ -89,7 +89,6 @@ struct alice3multicharm {
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
     Configurable<bool> enableML{"enableML", false, "Enables bdt model"};
-    Configurable<std::vector<float>> requiredScores{"requiredScores", {0.5, 0.75, 0.85, 0.9, 0.95, 0.99}, "Vector of different scores to try"};
   } bdt;
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
@@ -131,6 +130,8 @@ struct alice3multicharm {
   Configurable<float> xiccMinRadius{"xiccMinRadius", -1, "Minimum R2D for Xicc decay (cm)"};
   Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
   Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 1e+4, "Minimum proper length for Xicc decay (cm)"};
+  Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
+  Filter configFilter = (aod::otfmulticharm::lutConfigId == otfConfig);
 
   void init(InitContext&)
   {
@@ -233,6 +234,7 @@ struct alice3multicharm {
     histos.add("hXiccPt", "hXiccPt", kTH1D, {axisPt});
     histos.add("hXicPt", "hXicPt", kTH1D, {axisPt});
     histos.add("h3dXicc", "h3dXicc; Xicc pT (GeV/#it(c)); Xicc #eta; Xicc mass (GeV/#it(c)^{2})", kTH3D, {axisPt, axisEta, axisXiccMass});
+    histos.add("hConfigId", "hConfigId", kTH1D, {{11, -0.5, 10.5}});
 
     if (bdt.enableML) {
       ccdb->setURL(bdt.ccdbUrl.value);
@@ -254,36 +256,32 @@ struct alice3multicharm {
       histos.add("hBDTScoreVsXiccMass", "hBDTScoreVsXiccMass", kTH2D, {axisXiccMass, axisBDTScore});
       histos.add("hBDTScoreVsXiccPt", "hBDTScoreVsXiccPt", kTH2D, {axisPt, axisBDTScore});
       histos.add("h3dBDTScore", "h3dBDTScore", kTH3D, {axisPt, axisXiccMass, axisBDTScore});
-      for (const auto& score : bdt.requiredScores.value) {
-        histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(score * 10000));
-        histPointers.insert({histPath + "hDCAXicDaughters", histos.add((histPath + "hDCAXicDaughters").c_str(), "hDCAXicDaughters", {kTH1D, {{axisDcaDaughters}}})});
-        histPointers.insert({histPath + "hDCAXiccDaughters", histos.add((histPath + "hDCAXiccDaughters").c_str(), "hDCAXiccDaughters", {kTH1D, {{axisDcaDaughters}}})});
-        histPointers.insert({histPath + "hDCAxyXi", histos.add((histPath + "hDCAxyXi").c_str(), "hDCAxyXi", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hDCAzXi", histos.add((histPath + "hDCAzXi").c_str(), "hDCAzXi", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hDCAxyXic", histos.add((histPath + "hDCAxyXic").c_str(), "hDCAxyXic", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hDCAzXic", histos.add((histPath + "hDCAzXic").c_str(), "hDCAzXic", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hDCAxyXicc", histos.add((histPath + "hDCAxyXicc").c_str(), "hDCAxyXicc", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hDCAzXicc", histos.add((histPath + "hDCAzXicc").c_str(), "hDCAzXicc", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hDecayRadiusXic", histos.add((histPath + "hDecayRadiusXic").c_str(), "hDecayRadiusXic", {kTH1D, {{axisRadius}}})});
-        histPointers.insert({histPath + "hDecayRadiusXicc", histos.add((histPath + "hDecayRadiusXicc").c_str(), "hDecayRadiusXicc", {kTH1D, {{axisRadius}}})});
-        histPointers.insert({histPath + "hDecayDistanceFromPVXic", histos.add((histPath + "hDecayDistanceFromPVXic").c_str(), "hDecayDistanceFromPVXic", {kTH1D, {{axisDecayLength}}})});
-        histPointers.insert({histPath + "hProperLengthXic", histos.add((histPath + "hProperLengthXic").c_str(), "hProperLengthXic", {kTH1D, {{axisDecayLength}}})});
-        histPointers.insert({histPath + "hProperLengthXicc", histos.add((histPath + "hProperLengthXicc").c_str(), "hProperLengthXicc", {kTH1D, {{axisDecayLength}}})});
-        histPointers.insert({histPath + "hPi1cDCAxy", histos.add((histPath + "hPi1cDCAxy").c_str(), "hPi1cDCAxy", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hPi1cDCAz", histos.add((histPath + "hPi1cDCAz").c_str(), "hPi1cDCAxy", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hPi2cDCAxy", histos.add((histPath + "hPi2cDCAxy").c_str(), "hPi2cDCAxy", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hPi2cDCAz", histos.add((histPath + "hPi2cDCAz").c_str(), "hPi2cDCAz", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hPiccDCAxy", histos.add((histPath + "hPiccDCAxy").c_str(), "hPiccDCAxy", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hPiccDCAz", histos.add((histPath + "hPiccDCAz").c_str(), "hPiccDCAz", {kTH1D, {{axisDCA}}})});
-        histPointers.insert({histPath + "hPi1cPt", histos.add((histPath + "hPi1cPt").c_str(), "hPi1cPt", {kTH1D, {{axisPt}}})});
-        histPointers.insert({histPath + "hPi2cPt", histos.add((histPath + "hPi2cPt").c_str(), "hPi2cPt", {kTH1D, {{axisPt}}})});
-        histPointers.insert({histPath + "hPiccPt", histos.add((histPath + "hPiccPt").c_str(), "hPiccPt", {kTH1D, {{axisPt}}})});
-        histPointers.insert({histPath + "h3dXicc", histos.add((histPath + "h3dXicc").c_str(), "h3dXicc", {kTH3D, {{axisPt, axisEta, axisXiccMass}}})});
-        histPointers.insert({histPath + "hXiccMass", histos.add((histPath + "hXiccMass").c_str(), "hXiccMass", {kTH1D, {{axisXiccMass}}})});
-        histPointers.insert({histPath + "hXicMass", histos.add((histPath + "hXicMass").c_str(), "hXicMass", {kTH1D, {{axisXicMass}}})});
-        histPointers.insert({histPath + "hXiccPt", histos.add((histPath + "hXiccPt").c_str(), "hXiccPt", {kTH1D, {{axisPt}}})});
-        histPointers.insert({histPath + "hXicPt", histos.add((histPath + "hXicPt").c_str(), "hXicPt", {kTH1D, {{axisPt}}})});
-      }
+      histos.add("hDCAXicDaughters", "hDCAXicDaughters", kTH2D, {{axisBDTScore, axisDcaDaughters}});
+      histos.add("hDCAXiccDaughters", "hDCAXiccDaughters", kTH2D, {{axisBDTScore, axisDcaDaughters}});
+      histos.add("hDCAxyXi", "hDCAxyXi", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hDCAzXi", "hDCAzXi", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hDCAxyXic", "hDCAxyXic", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hDCAzXic", "hDCAzXic", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hDCAxyXicc", "hDCAxyXicc", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hDCAzXicc", "hDCAzXicc", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hDecayRadiusXic", "hDecayRadiusXic", kTH2D, {{axisBDTScore, axisRadius}});
+      histos.add("hDecayRadiusXicc", "hDecayRadiusXicc", kTH2D, {{axisBDTScore, axisRadius}});
+      histos.add("hDecayDistanceFromPVXic", "hDecayDistanceFromPVXic", kTH2D, {{axisBDTScore, axisDecayLength}});
+      histos.add("hProperLengthXic", "hProperLengthXic", kTH2D, {{axisBDTScore, axisDecayLength}});
+      histos.add("hProperLengthXicc", "hProperLengthXicc", kTH2D, {{axisBDTScore, axisDecayLength}});
+      histos.add("hPi1cDCAxy", "hPi1cDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hPi1cDCAz", "hPi1cDCAz", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hPi2cDCAxy", "hPi2cDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hPi2cDCAz", "hPi2cDCAz", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hPiccDCAxy", "hPiccDCAxy", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hPiccDCAz", "hPiccDCAz", kTH2D, {{axisBDTScore, axisDCA}});
+      histos.add("hPi1cPt", "hPi1cPt", kTH2D, {{axisBDTScore, axisPt}});
+      histos.add("hPi2cPt", "hPi2cPt", kTH2D, {{axisBDTScore, axisPt}});
+      histos.add("hPiccPt", "hPiccPt", kTH2D, {{axisBDTScore, axisPt}});
+      histos.add("hXiccMass", "hXiccMass", kTH2D, {{axisBDTScore, axisXiccMass}});
+      histos.add("hXicMass", "hXicMass", kTH2D, {{axisBDTScore, axisXicMass}});
+      histos.add("hXiccPt", "hXiccPt", kTH2D, {{axisBDTScore, axisPt}});
+      histos.add("hXicPt", "hXicPt", kTH2D, {{axisBDTScore, axisPt}});
     }
   }
 
@@ -297,6 +295,8 @@ struct alice3multicharm {
   void genericProcessXicc(TMCharmCands const& xiccCands)
   {
     for (const auto& xiccCand : xiccCands) {
+      int icfg = xiccCand.lutConfigId();
+      histos.fill(HIST("hConfigId"), icfg);
       if (bdt.enableML) {
         std::vector<float> inputFeatures{
           xiccCand.xicDauDCA(),
@@ -326,39 +326,33 @@ struct alice3multicharm {
         histos.fill(HIST("hBDTScoreVsXiccMass"), xiccCand.xiccMass(), bdtScore);
         histos.fill(HIST("hBDTScoreVsXiccPt"), xiccCand.xiccPt(), bdtScore);
         histos.fill(HIST("h3dBDTScore"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtScore);
-
-        for (const auto& requiredScore : bdt.requiredScores.value) {
-          if (bdtScore > requiredScore) {
-            histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(requiredScore * 10000));
-            getHist(TH1, histPath + "hDCAXicDaughters")->Fill(xiccCand.xicDauDCA() * 1e+4);
-            getHist(TH1, histPath + "hDCAXiccDaughters")->Fill(xiccCand.xiccDauDCA() * 1e+4);
-            getHist(TH1, histPath + "hDCAxyXi")->Fill(std::fabs(xiccCand.xiDCAxy() * 1e+4));
-            getHist(TH1, histPath + "hDCAzXi")->Fill(std::fabs(xiccCand.xiDCAz() * 1e+4));
-            getHist(TH1, histPath + "hDCAxyXic")->Fill(std::fabs(xiccCand.xicDCAxy() * 1e+4));
-            getHist(TH1, histPath + "hDCAzXic")->Fill(std::fabs(xiccCand.xicDCAz() * 1e+4));
-            getHist(TH1, histPath + "hDCAxyXicc")->Fill(std::fabs(xiccCand.xiccDCAxy() * 1e+4));
-            getHist(TH1, histPath + "hDCAzXicc")->Fill(std::fabs(xiccCand.xiccDCAz() * 1e+4));
-            getHist(TH1, histPath + "hDecayRadiusXic")->Fill(xiccCand.xicDecayRadius2D() * 1e+4);
-            getHist(TH1, histPath + "hDecayRadiusXicc")->Fill(xiccCand.xiccDecayRadius2D() * 1e+4);
-            getHist(TH1, histPath + "hDecayDistanceFromPVXic")->Fill(xiccCand.xicDistanceFromPV() * 1e+4);
-            getHist(TH1, histPath + "hProperLengthXic")->Fill(xiccCand.xicProperLength() * 1e+4);
-            getHist(TH1, histPath + "hProperLengthXicc")->Fill(xiccCand.xiccProperLength() * 1e+4);
-            getHist(TH1, histPath + "hPi1cDCAxy")->Fill(xiccCand.pi1cDCAxy() * 1e+4);
-            getHist(TH1, histPath + "hPi1cDCAz")->Fill(xiccCand.pi1cDCAz() * 1e+4);
-            getHist(TH1, histPath + "hPi2cDCAxy")->Fill(xiccCand.pi2cDCAxy() * 1e+4);
-            getHist(TH1, histPath + "hPi2cDCAz")->Fill(xiccCand.pi2cDCAz() * 1e+4);
-            getHist(TH1, histPath + "hPiccDCAxy")->Fill(xiccCand.piccDCAxy() * 1e+4);
-            getHist(TH1, histPath + "hPiccDCAz")->Fill(xiccCand.piccDCAz() * 1e+4);
-            getHist(TH1, histPath + "hPi1cPt")->Fill(xiccCand.pi1cPt());
-            getHist(TH1, histPath + "hPi2cPt")->Fill(xiccCand.pi2cPt());
-            getHist(TH1, histPath + "hPiccPt")->Fill(xiccCand.piccPt());
-            getHist(TH1, histPath + "hXiccMass")->Fill(xiccCand.xiccMass());
-            getHist(TH1, histPath + "hXicMass")->Fill(xiccCand.xicMass());
-            getHist(TH1, histPath + "hXicPt")->Fill(xiccCand.xicPt());
-            getHist(TH1, histPath + "hXiccPt")->Fill(xiccCand.xiccPt());
-            getHist(TH3, histPath + "h3dXicc")->Fill(xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
-          }
-        }
+        histos.fill(HIST("hDCAXicDaughters"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDCAXiccDaughters"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDCAxyXi"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDCAzXi"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDCAxyXic"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDCAzXic"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDCAxyXicc"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDCAzXicc"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDecayRadiusXic"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDecayRadiusXicc"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hDecayDistanceFromPVXic"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hProperLengthXic"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hProperLengthXicc"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPi1cDCAxy"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPi1cDCAz"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPi2cDCAxy"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPi2cDCAz"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPiccDCAxy"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPiccDCAz"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPi1cPt"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPi2cPt"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hPiccPt"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hXiccMass"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hXicMass"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hXicPt"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("hXiccPt"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("h3dXicc"), xiccCand.xiccPt(), bdtScore);
       }
 
       histos.fill(HIST("hMCharmBuilding"), 0);
@@ -556,17 +550,17 @@ struct alice3multicharm {
     }
   }
 
-  void processXicc(aod::MCharmCores const& multiCharmTracks)
+  void processXicc(soa::Filtered<aod::MCharmCores> const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }
 
-  void processXiccPID(multiCharmTracksPID const& multiCharmTracks)
+  void processXiccPID(soa::Filtered<multiCharmTracksPID> const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }
 
-  void processXiccExtra(multiCharmTracksFull const& multiCharmTracks)
+  void processXiccExtra(soa::Filtered<multiCharmTracksFull> const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }

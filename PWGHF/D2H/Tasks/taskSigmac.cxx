@@ -16,7 +16,6 @@
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/Utils/utilsSigmac.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -65,6 +64,7 @@ struct HfTaskSigmac {
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
   Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
   Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of sof-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
+  Configurable<float> deltaMassSigmacRecoMax{"deltaMassSigmacRecoMax", 1000, "Maximum allowed value for Sigmac deltaMass. Conceived to reduce the output size (i.e. reject background above a certain threshold)"};
 
   bool isMc{};
   static constexpr std::size_t NDaughters{2u};
@@ -376,6 +376,12 @@ struct HfTaskSigmac {
         massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
         massLc = HfHelper::invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLc;
+
+        if (deltaMass > deltaMassSigmacRecoMax) {
+          /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+          continue;
+        }
+
         /// fill the histograms
         if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
@@ -459,6 +465,12 @@ struct HfTaskSigmac {
         massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
         massLc = HfHelper::invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLc;
+
+        if (deltaMass > deltaMassSigmacRecoMax) {
+          /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+          continue;
+        }
+
         /// fill the histograms
         if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
@@ -586,6 +598,24 @@ struct HfTaskSigmac {
     } /// end THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
   }; /// end fillHistosData
 
+  /// @brief function to remap the value of the resonant decay channel to fit the binning of the thnAxisChannel axis
+  /// @param channel the value obtained from candidateLc.flagMcDecayChanGen() or particleLc.flagMcDecayChanGen()
+  int remapResoChannelLc(int channel)
+  {
+    switch (channel) {
+      case 0:
+        // direct channel
+        return 0;
+      case o2::hf_decay::hf_cand_3prong::DecayChannelResonant::LcToPKstar0:
+        return 1;
+      case o2::hf_decay::hf_cand_3prong::DecayChannelResonant::LcToDeltaplusplusK:
+        return 2;
+      case o2::hf_decay::hf_cand_3prong::DecayChannelResonant::LcToL1520Pi:
+        return 3;
+    }
+    return -1;
+  }
+
   /// @brief function to fill the histograms needed in analysis (MC)
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
   /// @param mcParticles are the generated particles with flags wheter they are Σc0,++ or not
@@ -603,10 +633,10 @@ struct HfTaskSigmac {
     for (const auto& particle : mcParticlesSc) {
 
       /// reject immediately particles different from Σc0,++
-      bool const isSc0Gen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
-      bool const isScStar0Gen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi));
-      bool const isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi));
-      bool const isScStarPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi));
+      bool const isSc0Gen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi);
+      bool const isScStar0Gen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi);
+      bool const isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi);
+      bool const isScStarPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi);
       if (!isSc0Gen && !isScPlusPlusGen && !isScStar0Gen && !isScStarPlusPlusGen) {
         continue;
       }
@@ -680,6 +710,7 @@ struct HfTaskSigmac {
         etaGenSoftPi = daugSoftPi.eta();
         phiGenSoftPi = daugSoftPi.phi();
       }
+      channel = remapResoChannelLc(channel);
 
       /// Fill histograms
       int sigmacSpecies = -1;
@@ -771,7 +802,8 @@ struct HfTaskSigmac {
       }
       double ptGenLc(particle.pt()), ptGenLcBMother(-1.);
       int const origin = particle.originMcGen();
-      int const channel = particle.flagMcDecayChanGen();
+      int channel = particle.flagMcDecayChanGen();
+      channel = remapResoChannelLc(channel);
       if (origin == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("MC/generated/hnLambdaCGen"), ptGenLc, ptGenLcBMother, origin, channel);
       } else {
@@ -799,11 +831,25 @@ struct HfTaskSigmac {
 
       // candidateLc.flagMcDecayChanRec();
 
-      bool const isTrueSc0Reco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
-      bool const isTrueScStar0Reco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
-      bool const isTrueScPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
-      bool const isTrueScStarPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
+      bool const isTrueSc0Reco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi;
+      bool const isTrueScStar0Reco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi;
+      bool const isTrueScPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi;
+      bool const isTrueScStarPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi;
+      if (!isTrueSc0Reco && !isTrueScStar0Reco && !isTrueScPlusPlusReco && !isTrueScStarPlusPlusReco) {
+        continue;
+      }
       int sigmacSpecies = -1;
+
+      /// debug
+      if ((isTrueSc0Reco || isTrueScStar0Reco) && chargeSc != o2::aod::hf_cand_sigmac::ChargeNull) {
+        /// this should never happen
+        LOG(fatal) << "isTrueSc0Reco=" << isTrueSc0Reco << ", isTrueScStar0Reco=" << isTrueScStar0Reco << ", but chargeSc = " << static_cast<int>(chargeSc) << "! Not possible, abort...";
+      }
+      if ((isTrueScPlusPlusReco || isTrueScStarPlusPlusReco) && std::abs(chargeSc) != o2::aod::hf_cand_sigmac::ChargePlusPlus) {
+        /// this should never happen
+        LOG(fatal) << "isTrueScPlusPlusReco=" << isTrueScPlusPlusReco << ", isTrueScStarPlusPlusReco=" << isTrueScStarPlusPlusReco << ", but chargeSc = " << static_cast<int>(chargeSc) << "! Not possible, abort...";
+      }
+
       if ((isTrueSc0Reco || isTrueScStar0Reco) && (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull)) {
         /// Reconstructed Σc0 signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
@@ -821,7 +867,7 @@ struct HfTaskSigmac {
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = std::array{candidateLc.template prong0_as<aod::TracksWMc>(), candidateLc.template prong1_as<aod::TracksWMc>(), candidateLc.template prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int const indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        int const indexMcLcRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
@@ -838,12 +884,18 @@ struct HfTaskSigmac {
         double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int const origin = candSc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
+        channel = remapResoChannelLc(channel);
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
+
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
 
           /// Fill the histograms for reconstructed Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSc0Sig"), ptSc, origin, channel);
@@ -929,6 +981,11 @@ struct HfTaskSigmac {
           massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
+
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
 
           /// Fill the histograms for reconstructed Σc0 signal
           registry.fill(HIST("MC/reconstructed/hPtSc0Sig"), ptSc, origin, channel);
@@ -1027,7 +1084,7 @@ struct HfTaskSigmac {
         // Get the corresponding MC particle for Lc
         auto arrayDaughtersLc = std::array{candidateLc.template prong0_as<aod::TracksWMc>(), candidateLc.template prong1_as<aod::TracksWMc>(), candidateLc.template prong2_as<aod::TracksWMc>()};
         int8_t sign = 0;
-        int const indexMcLcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
+        int const indexMcLcRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughtersLc, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         auto particleLc = mcParticles.rawIteratorAt(indexMcLcRec);
         // Get the corresponding MC particle for soft pion
         auto particleSoftPi = candSc.prong1_as<aod::TracksWMc>().mcParticle();
@@ -1044,12 +1101,18 @@ struct HfTaskSigmac {
         double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int const origin = candSc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±; FIXME: DecayChannelResonant
+        channel = remapResoChannelLc(channel);
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = HfHelper::invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
+
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
 
           /// Fill the histograms for reconstructed Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtScPlusPlusSig"), ptSc, origin, channel);
@@ -1135,6 +1198,11 @@ struct HfTaskSigmac {
           massSc = HfHelper::invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = HfHelper::invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
+
+          if (deltaMass > deltaMassSigmacRecoMax) {
+            /// the reconstructed deltaMass is too large, let's ignore this candidate for TH1 / THnSparse filling
+            continue;
+          }
 
           /// Fill the histograms for reconstructed Σc++ signal
           registry.fill(HIST("MC/reconstructed/hPtScPlusPlusSig"), ptSc, origin, channel);
@@ -1230,6 +1298,7 @@ struct HfTaskSigmac {
         double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int const origin = candidateLc.originMcRec();
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
+        channel = remapResoChannelLc(channel);
         int pdgAbs = -1;
         if (candidateLc.template prong0_as<aod::TracksWMc>().has_mcParticle()) {
           pdgAbs = std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode());
