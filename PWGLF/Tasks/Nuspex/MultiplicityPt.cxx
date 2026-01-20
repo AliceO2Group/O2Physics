@@ -25,10 +25,11 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h" #include "ReconstructionDataFormats/Track.h"
+#include "Framework/Logger.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StaticFor.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include <TF1.h>
 #include <TH1F.h>
@@ -149,19 +150,19 @@ struct MultiplicityPt {
   // Data processing
   void processData(CollisionTableData::iterator const& collision,
                    TrackTableData const& tracks);
-  PROCESS_SWITCH(multiplicitypt, processData, "process data", false);
+  PROCESS_SWITCH(MultiplicityPt, processData, "process data", false);
 
   // MC processing - EXACT spectraTOF approach
   void processMC(TrackTableMC const& tracks,
                  aod::McParticles const& particles,
                  CollisionTableMCTrue const& mcCollisions,
                  CollisionTableMC const& collisions);
-  PROCESS_SWITCH(multiplicitypt, processMC, "process MC", true);
+  PROCESS_SWITCH(MultiplicityPt, processMC, "process MC", true);
 
   // True MC processing - EXACT spectraTOF approach
   void processTrue(CollisionTableMCTrue const& mcCollisions,
                    ParticleTableMC const& particles);
-  PROCESS_SWITCH(multiplicitypt, processTrue, "process true MC", true);
+  PROCESS_SWITCH(MultiplicityPt, processTrue, "process true MC", true);
 
   // ========================================================================
   // TRACK SELECTION FUNCTIONS - MATCHING spectraTOF
@@ -564,7 +565,7 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("hvtxZ", "Vertex Z (data);Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
   ue.add("hvtxZmc", "MC vertex Z;Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
 
-  LOG(info) << "Initialized multiplicitypt task with EXCLUSIVE PID for INCLUSIVE + PARTICLE-SPECIFIC (Pi, K, p) analysis";
+  LOG(info) << "Initialized MultiplicityPt task with EXCLUSIVE PID for INCLUSIVE + PARTICLE-SPECIFIC (Pi, K, p) analysis";
 }
 
 // ========================================================================
