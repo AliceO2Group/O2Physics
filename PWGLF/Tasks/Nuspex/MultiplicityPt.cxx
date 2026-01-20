@@ -793,7 +793,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         }
       }
     }
-
     // ========================================================================
     // KAON CHANNEL
     // ========================================================================
@@ -820,7 +819,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         }
       }
     }
-
     // ========================================================================
     // PROTON CHANNEL
     // ========================================================================
@@ -847,7 +845,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       }
     }
   }
-
   LOG(info) << "=== DEBUG TRACK COUNTING ===";
   LOG(info) << "Total tracks processed: " << totalTracksProcessed;
   LOG(info) << "Tracks from selected events: " << tracksFromSelectedEvents;
