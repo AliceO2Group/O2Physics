@@ -238,6 +238,8 @@ struct PhiMesonCandProducer {
       if (!track1.has_mcParticle())
         continue;
       const auto track1McParticle = mcParticles.rawIteratorAt(track1.mcParticleId());
+      if (track1McParticle.pdgCode() != PDG_t::kKPlus || !track1McParticle.isPhysicalPrimary())
+        continue;
 
       for (const auto& track2 : negThisColl) {
         if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
@@ -245,6 +247,8 @@ struct PhiMesonCandProducer {
         if (!track2.has_mcParticle())
           continue;
         const auto track2McParticle = mcParticles.rawIteratorAt(track2.mcParticleId());
+        if (track2McParticle.pdgCode() != PDG_t::kKMinus || !track2McParticle.isPhysicalPrimary())
+          continue;
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
 
