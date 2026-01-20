@@ -56,6 +56,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -2791,7 +2792,12 @@ struct AnalysisDileptonTrack {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (fConfigOptions.fConfigSavelessevents.value > 0 && event.globalIndex() % fConfigOptions.fConfigSavelessevents == 0)
+      std::hash<uint64_t> hasher;
+      size_t seed = hasher(static_cast<uint64_t>(event.globalIndex()));
+      std::mt19937 gen(seed);
+      std::uniform_real_distribution<float> dist(0.0, 1.0);
+      float randomVal = dist(gen);
+      if (randomVal < fConfigOptions.fConfigSavelessevents)
         continue;
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       // groupedBarrelAssocs.bindInternalIndicesTo(&assocs);
@@ -2986,7 +2992,12 @@ struct AnalysisDileptonTrack {
       if (!event.has_mcCollision()) {
         continue;
       }
-      if (fConfigOptions.fConfigSavelessevents.value > 0 && event.globalIndex() % fConfigOptions.fConfigSavelessevents == 0)
+      std::hash<uint64_t> hasher;
+      size_t seed = hasher(static_cast<uint64_t>(event.globalIndex()));
+      std::mt19937 gen(seed);
+      std::uniform_real_distribution<float> dist(0.0, 1.0);
+      float randomVal = dist(gen);
+      if (randomVal < fConfigOptions.fConfigSavelessevents)
         continue;
       runEnergyCorrelators<VarManager::kJpsiHadronMass>(event, mcTracks);
     }
