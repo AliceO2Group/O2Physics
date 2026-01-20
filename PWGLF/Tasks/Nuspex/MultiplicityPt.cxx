@@ -760,15 +760,8 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       }
     }
 
-    // ========================================================================
-    // EXCLUSIVE PID - FIXED PRIMARY FRACTION LOGIC
-    // ========================================================================
-
     int bestSpecies = getBestPIDHypothesis(track);
 
-    // ========================================================================
-    // PION CHANNEL
-    // ========================================================================
     if (bestSpecies == kPion) {
       ue.fill(HIST("Pion/hPtMeasured"), track.pt());
       ue.fill(HIST("Pion/hPtAllReco"), track.pt());
@@ -780,10 +773,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
 
       if (track.has_mcParticle()) {
         const auto& particle = track.mcParticle();
-
-        // KEY FIX: Primary fraction = fraction of identified pions that are primary
-        // This includes correctly identified pions AND misidentified kaons/protons
-        // that happen to be primary particles
         if (particle.isPhysicalPrimary()) {
           ue.fill(HIST("Pion/hPtPrimReco"), track.pt());
           particleTracksPrimary[kPion]++;
@@ -792,11 +781,7 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           particleTracksSecondary[kPion]++;
         }
       }
-    }
-    // ========================================================================
-    // KAON CHANNEL
-    // ========================================================================
-    else if (bestSpecies == kKaon) {
+    } else if (bestSpecies == kKaon) {
       ue.fill(HIST("Kaon/hPtMeasured"), track.pt());
       ue.fill(HIST("Kaon/hPtAllReco"), track.pt());
       particleTracksIdentified[kKaon]++;
@@ -818,11 +803,7 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           particleTracksSecondary[kKaon]++;
         }
       }
-    }
-    // ========================================================================
-    // PROTON CHANNEL
-    // ========================================================================
-    else if (bestSpecies == kProton) {
+    } else if (bestSpecies == kProton) {
       ue.fill(HIST("Proton/hPtMeasured"), track.pt());
       ue.fill(HIST("Proton/hPtAllReco"), track.pt());
       particleTracksIdentified[kProton]++;
