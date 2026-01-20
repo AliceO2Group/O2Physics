@@ -9,14 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \file lnnRecoTask.cxx
-// \brief Reconstruction task for the \f$\Lambda nn\f$ candidate
-// \autor Maria Paula Palhares
+/// \file lnnRecoTask.cxx
+/// \brief Reconstruction task for the \Lambda nn candidate
+/// \author Maria Paula Palhares
 // ==============================================================================
 #include "PWGLF/DataModel/LFLnnTables.h"
 
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
+#include "PID/PIDTOF.h"
+#include "PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
@@ -210,7 +210,7 @@ struct lnnRecoTask {
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
 
   // CCDB options
-  Configurable<double> d_bz_input{"d_bz_input", -999, "bz field, -999 is automatic"};
+  Configurable<double> d_bz_input{"d_bz_input", -999., "bz field, -999 is automatic"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -367,11 +367,13 @@ struct lnnRecoTask {
     }
     auto run3grp_timestamp = bc.timestamp();
 
+    static const double kBzAutoThreshold = -990.;
+
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-      if (d_bz_input < -990) {
+      if (d_bz_input < kBzAutoThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = grpo->getNominalL3Field();
         LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -384,7 +386,7 @@ struct lnnRecoTask {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (d_bz_input < -990) {
+      if (d_bz_input < kBzAutoThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
         LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -550,7 +552,8 @@ struct lnnRecoTask {
       float h3lE = h3E + piE;
 
       // Building the mother particle: lnn
-      std::array<float, 3> lnnMom;
+      constexpr std::size_t kMomDim = 3;
+      std::array<float, kMomDim> lnnMom;
 
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
@@ -582,7 +585,8 @@ struct lnnRecoTask {
         continue;
       }
 
-      std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+      constexpr std::size_t kprimVtxDim = 3;
+      std::array<float, kprimVtxDim> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
       double cosPA = RecoDecay::cpa(primVtx, lnnCand.decVtx, lnnMom);
       if (cosPA < v0cospa) {
@@ -660,9 +664,11 @@ struct lnnRecoTask {
                 continue;
 
               // Checking primary and second vertex with MC simulations
-              std::array<float, 3> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
-
-              std::array<float, 3> secVtx = {mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
+              
+              constexpr std::size_t kposVtxDim = 3;
+              std::array<float, kposVtxDim> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
+              constexpr std::size_t ksecVtxDim = 3;
+              std::array<float, ksecVtxDim> secVtx = {mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
 
               lnnCand.gMom = posMother.pVector();
 
@@ -806,13 +812,15 @@ struct lnnRecoTask {
         continue;
       }
       float cent = collisionFT0Ccent[mcPart.mcCollisionId()];
-      std::array<float, 3> secVtx;
-      std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
+      constexpr std::size_t kVtxDim = 3;
+      std::array<float, kVtxDim> secVtx;
+      std::array<float, kVtxDim> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
 
-      std::array<float, 3> momMother = mcPart.pVector();
+      constexpr std::size_t kArrayDim = 3;
+      std::array<float, kArrayDim> momMother = mcPart.pVector();
 
-      std::array<float, 3> mom3H;
-      std::array<float, 3> momPi;
+      std::array<float, kArrayDim> mom3H;
+      std::array<float, kArrayDim> momPi;
       bool is3HFound = false;
       bool isPiFound = false;
 
