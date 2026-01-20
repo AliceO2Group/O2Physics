@@ -2169,6 +2169,13 @@ struct LFNucleiBATask {
     spectraGen.add("helium/histPtShiftantiHeVsGen", "PtReco-PtGen vs PtGen; #it{p}_{T}(gen); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
     spectraGen.add("helium/histPtShiftVsEtaantiHe", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
+    if (outFlagOptions.doTOFplots) {
+      spectraGen.add("helium/TOF/histPtShiftHe", "PtReco-PtGen vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+      spectraGen.add("helium/TOF/histPtShiftHeVsGen", "PtReco-PtGen vs PtGen;#it{p}_{T}(gen); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+      spectraGen.add("helium/TOF/histPtShiftantiHe", "PtReco-PtGen vs PtReco; #it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+      spectraGen.add("helium/TOF/histPtShiftantiHeVsGen", "PtReco-PtGen vs PtGen; #it{p}_{T}(gen); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    }
+
     spectraGen.add("helium/histPGenantiHe", "PGenantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
     spectraGen.add("helium/histPRecantiHe", "PRecantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
     spectraGen.add("helium/histPShiftantiHe", "PReco-PGen vs PReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
@@ -3716,7 +3723,10 @@ struct LFNucleiBATask {
                     spectraGen.fill(HIST("helium/histPtShiftHe"), 2.f * hePt, 2.f * hePt - track.mcParticle().pt());
                     spectraGen.fill(HIST("helium/histPtShiftHeVsGen"), track.mcParticle().pt(), 2.f * hePt - track.mcParticle().pt());
                     spectraGen.fill(HIST("helium/histPtShiftVsEtaHe"), track.eta(), 2.f * hePt - track.mcParticle().pt());
-
+                    if (track.hasTOF() && outFlagOptions.doTOFplots) {
+                      spectraGen.fill(HIST("helium/TOF/histPtShiftHe"), 2.f * hePt, 2.f * hePt - track.mcParticle().pt());
+                      spectraGen.fill(HIST("helium/TOF/histPtShiftHeVsGen"), track.mcParticle().pt(), 2.f * hePt - track.mcParticle().pt());
+                    }
                     spectraGen.fill(HIST("helium/histPGenHe"), std::abs(track.mcParticle().p()));
                     spectraGen.fill(HIST("helium/histPRecHe"), 2.f * heP);
                     spectraGen.fill(HIST("helium/histPShiftHe"), 2.f * heP, 2.f * heP - track.mcParticle().p());
@@ -3790,13 +3800,14 @@ struct LFNucleiBATask {
                     spectraGen.fill(HIST("helium/histPtShiftantiHe"), 2.f * antihePt, 2.f * antihePt - track.mcParticle().pt());
                     spectraGen.fill(HIST("helium/histPtShiftantiHeVsGen"), track.mcParticle().pt(), 2.f * antihePt - track.mcParticle().pt());
                     spectraGen.fill(HIST("helium/histPtShiftVsEtaantiHe"), track.eta(), 2.f * antihePt - track.mcParticle().pt());
-
+                    if (track.hasTOF() && outFlagOptions.doTOFplots) {
+                      spectraGen.fill(HIST("helium/TOF/histPtShiftantiHe"), 2.f * antihePt, 2.f * antihePt - track.mcParticle().pt());
+                      spectraGen.fill(HIST("helium/TOF/histPtShiftantiHeVsGen"), track.mcParticle().pt(), 2.f * antihePt - track.mcParticle().pt());
+                    }
                     spectraGen.fill(HIST("helium/histPGenantiHe"), std::abs(track.mcParticle().p()));
                     spectraGen.fill(HIST("helium/histPRecantiHe"), 2.f * antiheP);
                     spectraGen.fill(HIST("helium/histPShiftantiHe"), 2.f * antiheP, 2.f * antiheP - track.mcParticle().p());
                     spectraGen.fill(HIST("helium/histPShiftVsEtaantiHe"), track.eta(), 2.f * antiheP - track.mcParticle().p());
-                  }
-                  if (outFlagOptions.makeDCABeforeCutPlots) {
                   }
                 }
               }
