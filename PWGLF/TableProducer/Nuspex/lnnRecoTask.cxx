@@ -15,8 +15,6 @@
 // ==============================================================================
 #include "PWGLF/DataModel/LFLnnTables.h"
 
-#include "PID/PIDTOF.h"
-#include "PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
@@ -30,13 +28,15 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "MathUtils/BetheBlochAleph.h"
+#include "PID/PIDTOF.h"
+#include "PID/TPCPIDResponse.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include <algorithm>
@@ -59,7 +59,7 @@ namespace
 constexpr double BetheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> nucleiName{"3H"};
-// Histograms for QA lnn-task 
+// Histograms for QA lnn-task
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
 std::shared_ptr<TH1> hCentFT0A;
@@ -135,7 +135,6 @@ struct LnnCandidate {
   float genPtPi() const { return std::hypot(gMomPi[0], gMomPi[1]); }
   float genPhiPi() const { return std::atan2(gMomPi[1], gMomPi[0]); }
   float genEtaPi() const { return std::asinh(gMomPi[2] / genPtPi()); }
-
 
   int posTrackID;
   int negTrackID;
@@ -220,10 +219,10 @@ struct lnnRecoTask {
 
   // PDG codes
   Configurable<int> h3DauPdg{"h3DauPdg", 1000010030, "PDG Triton"}; // PDG Triton
-  Configurable<int> piDauPdg{"piDauPdg", 211, "PDG Pi"};  // PDG Pi
-  Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"}; // PDG Lnn
+  Configurable<int> piDauPdg{"piDauPdg", 211, "PDG Pi"};            // PDG Pi
+  Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
 
-  // Histogram configuration QA lnn-task 
+  // Histogram configuration QA lnn-task
   ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity"};
   ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n#sigma_{TPC}"};
@@ -312,7 +311,7 @@ struct lnnRecoTask {
     h2FT0CnClusTPCtoPiBfSel = qaRegistry.add<TH2>("QATracks/h2FT0CnClusTPCtoPiBfSel", ";FT0C (%);N_{clus}^{TPC}", HistType::kTH2F, {centAxis, tpcNClusAxis});
     h2FT0Cchi2NClTPCtoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0Cchi2NClTPCtoTrBfSel", ";FT0C (%);{#Chi}^{2}/N_{clus}^{TPC} ", HistType::kTH2F, {centAxis, tpcChi2NClusAxis});
     h2FT0Cchi2NClITStoTrBfSel = qaRegistry.add<TH2>("QATracks/h2FT0Cchi2NClITStoTrBfSel", ";FT0C (%);{#Chi}^{2}/N_{clus}^{ITS}", HistType::kTH2F, {centAxis, itsChi2NClusAxis});
-    // QA its-tpc and its-tpc-tof studies 
+    // QA its-tpc and its-tpc-tof studies
     h2FT0CptTrBfSelItsTpc = qaRegistry.add<TH2>("QATracks/itstpc/h2FT0CptTrBfSelItsTpc", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, tPtAxis});
     h2FT0CptTrBfSelItsTpcTof = qaRegistry.add<TH2>("QATracks/itstpctof/h2FT0CptTrBfSelItsTpcTof", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, tPtAxis});
     h2FT0CptPiBfSelItsTpc = qaRegistry.add<TH2>("QATracks/itstpc/h2FT0CptPiBfSelItsTpc", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, tPtAxis});
@@ -337,20 +336,20 @@ struct lnnRecoTask {
       hIsMatterGen = qaRegistry.add<TH1>("MC/hIsMatterGen", ";; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hIsMatterGen->GetXaxis()->SetBinLabel(1, "Matter");
       hIsMatterGen->GetXaxis()->SetBinLabel(2, "Antimatter");
-      // QA for generated mother candidate and daughter particles 
-      h2FT0CptGenCandMC  = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CptGenCandMC",";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
-      h2FT0CetaGenCandMC = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CetaGenCandMC",";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
-      h2FT0CPtGenTrStrMC  = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CPtGenTrStrMC",";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
-      h2FT0CetaGenTrStrMC  = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CetaGenTrStrMC",";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
-      h2FT0CPtGenPiStrMC  = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CPtGenPiStrMC",";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
-      h2FT0CetaGenPiStrMC   = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CetaGenPiStrMC",";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
-      // QA for generated mother candidate and daughter particles which were reconstructed 
-      h2FT0CptRecCandMC=qaRegistry.add<TH2>("MC/QARecSV/h2FT0CptRecCandMC",";FT0C (%);#it{p}_{T} (GeV/#it{c})",HistType::kTH2F,{centAxis,candPtAxis});
-      h2FT0CetaRecCandMC=qaRegistry.add<TH2>("MC/QARecSV/h2FT0CetaRecCandMC",";FT0C (%);#eta",HistType::kTH2F,{centAxis,candEtaAxis});
-      h2FT0CPtRecTrStrMC=qaRegistry.add<TH2>("MC/QARecSV/h2FT0CPtRecTrStrMC",";FT0C (%);#it{p}_{T} (GeV/#it{c})",HistType::kTH2F,{centAxis,candPtAxis});
-      h2FT0CetaRecTrStrMC=qaRegistry.add<TH2>("MC/QARecSV/h2FT0CetaRecTrStrMC",";FT0C (%);#eta",HistType::kTH2F,{centAxis,candEtaAxis});
-      h2FT0CPtRecPiStrMC=qaRegistry.add<TH2>("MC/QARecSV/h2FT0CPtRecPiStrMC",";FT0C (%);#it{p}_{T} (GeV/#it{c})",HistType::kTH2F,{centAxis,candPtAxis});
-      h2FT0CetaRecPiStrMC=qaRegistry.add<TH2>("MC/QARecSV/h2FT0CetaRecPiStrMC",";FT0C (%);#eta",HistType::kTH2F,{centAxis,candEtaAxis});
+      // QA for generated mother candidate and daughter particles
+      h2FT0CptGenCandMC = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CptGenCandMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
+      h2FT0CetaGenCandMC = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CetaGenCandMC", ";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
+      h2FT0CPtGenTrStrMC = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CPtGenTrStrMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
+      h2FT0CetaGenTrStrMC = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CetaGenTrStrMC", ";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
+      h2FT0CPtGenPiStrMC = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CPtGenPiStrMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
+      h2FT0CetaGenPiStrMC = qaRegistry.add<TH2>("MC/QAGenSV/h2FT0CetaGenPiStrMC", ";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
+      // QA for generated mother candidate and daughter particles which were reconstructed
+      h2FT0CptRecCandMC = qaRegistry.add<TH2>("MC/QARecSV/h2FT0CptRecCandMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
+      h2FT0CetaRecCandMC = qaRegistry.add<TH2>("MC/QARecSV/h2FT0CetaRecCandMC", ";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
+      h2FT0CPtRecTrStrMC = qaRegistry.add<TH2>("MC/QARecSV/h2FT0CPtRecTrStrMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
+      h2FT0CetaRecTrStrMC = qaRegistry.add<TH2>("MC/QARecSV/h2FT0CetaRecTrStrMC", ";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
+      h2FT0CPtRecPiStrMC = qaRegistry.add<TH2>("MC/QARecSV/h2FT0CPtRecPiStrMC", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {centAxis, candPtAxis});
+      h2FT0CetaRecPiStrMC = qaRegistry.add<TH2>("MC/QARecSV/h2FT0CetaRecPiStrMC", ";FT0C (%);#eta", HistType::kTH2F, {centAxis, candEtaAxis});
     }
     hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
     hCentFT0A = qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
@@ -466,7 +465,7 @@ struct lnnRecoTask {
       auto& pitrack = lnnCand.isMatter ? negTrack : posTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
-      //fill QA track histogram studies before selection
+      // fill QA track histogram studies before selection
       h2FT0CnClusTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcNClsFound());
       h2FT0CnClusTPCtoPiBfSel->Fill(collision.centFT0C(), pitrack.tpcNClsFound());
       h2FT0Cchi2NClTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcChi2NCl());
@@ -477,13 +476,13 @@ struct lnnRecoTask {
         bool passedTrTrackTOF = h3track.hasTOF();
         bool passedPiTrackITS = pitrack.hasITS();
 
-        if (passedTrTrackITS) { 
+        if (passedTrTrackITS) {
           h2FT0CptTrBfSelItsTpc->Fill(collision.centFT0C(), h3track.pt());
         }
         if (passedTrTrackITS && passedTrTrackTOF) {
           h2FT0CptTrBfSelItsTpcTof->Fill(collision.centFT0C(), h3track.pt());
         }
-        if (passedPiTrackITS) { 
+        if (passedPiTrackITS) {
           h2FT0CptPiBfSelItsTpc->Fill(collision.centFT0C(), pitrack.pt());
         }
       }
@@ -623,18 +622,18 @@ struct lnnRecoTask {
         hNsigma3HSelTOF->Fill(chargeFactor * h3track.p(), h3track.tofNSigmaTr());
         h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
       }
-      if (doTrackQA &&  lnnCand.isReco) {
+      if (doTrackQA && lnnCand.isReco) {
         bool passedTrTrackITS = h3track.hasITS();
         bool passedTrTrackTOF = h3track.hasTOF();
         bool passedPiTrackITS = pitrack.hasITS();
 
-        if (passedTrTrackITS) { 
+        if (passedTrTrackITS) {
           h2FT0CptTrSelItsTpc->Fill(collision.centFT0C(), h3track.pt());
         }
         if (passedTrTrackITS && passedTrTrackTOF) {
           h2FT0CptTrSelItsTpcTof->Fill(collision.centFT0C(), h3track.pt());
         }
-        if (passedPiTrackITS) { 
+        if (passedPiTrackITS) {
           h2FT0CptPiSelItsTpc->Fill(collision.centFT0C(), pitrack.pt());
         }
       }
@@ -664,7 +663,7 @@ struct lnnRecoTask {
                 continue;
 
               // Checking primary and second vertex with MC simulations
-              
+
               constexpr std::size_t kposVtxDim = 3;
               std::array<float, kposVtxDim> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
               constexpr std::size_t ksecVtxDim = 3;
@@ -674,9 +673,9 @@ struct lnnRecoTask {
 
               bool isTrTrack = (mcTrackPos.pdgCode() == h3DauPdg);
 
-              lnnCand.gMom3H = isTrTrack? mcTrackPos.pVector() : mcTrackNeg.pVector();
+              lnnCand.gMom3H = isTrTrack ? mcTrackPos.pVector() : mcTrackNeg.pVector();
 
-              lnnCand.gMomPi = isTrTrack? mcTrackNeg.pVector() : mcTrackPos.pVector();
+              lnnCand.gMomPi = isTrTrack ? mcTrackNeg.pVector() : mcTrackPos.pVector();
 
               for (int i = 0; i < 3; i++) {
                 lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
@@ -886,7 +885,7 @@ struct lnnRecoTask {
       lnnCand.posTrackID = -1;
       lnnCand.negTrackID = -1;
       lnnCand.isSignal = true;
-      // // Fill 2D map for generated daughter particles which the mother candidate has only signal 
+      // // Fill 2D map for generated daughter particles which the mother candidate has only signal
       h2FT0CptGenCandMC->Fill(cent, lnnCand.genPt());
       h2FT0CetaGenCandMC->Fill(cent, lnnCand.genEta());
       outputMCTable(-1, collisionFT0Ccent[mcPart.mcCollisionId()], -1,
@@ -913,3 +912,4 @@ WorkflowSpec
   return WorkflowSpec{
     adaptAnalysisTask<lnnRecoTask>(cfgc)};
 }
+ 
