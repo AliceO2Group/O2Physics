@@ -2792,8 +2792,9 @@ struct AnalysisDileptonTrack {
         continue;
       }
       std::vector<int> fSavelessevents = fConfigOptions.fConfigSavelessevents;
-      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1])
+      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
+      }
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       // groupedBarrelAssocs.bindInternalIndicesTo(&assocs);
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
@@ -2988,8 +2989,9 @@ struct AnalysisDileptonTrack {
         continue;
       }
       std::vector<int> fSavelessevents = fConfigOptions.fConfigSavelessevents;
-      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1])
+      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
+      }
       runEnergyCorrelators<VarManager::kJpsiHadronMass>(event, mcTracks);
     }
   }
