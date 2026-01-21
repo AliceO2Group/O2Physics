@@ -744,9 +744,8 @@ struct PhiStrangenessCorrelation {
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
-          if (selectionType == 0 && mcParticle.pt() >= phiConfigs.minPhiPt) {
+          if (selectionType == 0 && mcParticle.pt() >= phiConfigs.minPhiPt)
             fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"), mcParticle);
-          }
           break;
         case PDG_t::kK0Short:
           if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
