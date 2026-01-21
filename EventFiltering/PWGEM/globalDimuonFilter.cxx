@@ -528,7 +528,7 @@ struct globalDimuonFilter {
 
       if (isSelectedCollision(collision)) {
         fRegistry.fill(HIST("hCollisionCounter"), 7);
-        
+
         int nGlobalMuon = 0;
         // LOGF(info, "collision.globalIndex() = %d, fwdtrackIdsThisCollision = %d", collision.globalIndex(), fwdtrackIdsThisCollision.size());
         auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
