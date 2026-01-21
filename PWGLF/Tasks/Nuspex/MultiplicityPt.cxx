@@ -11,6 +11,7 @@
 
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Constants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -37,6 +38,8 @@
 #include <TRandom.h>
 
 #include <cmath>
+#include <set>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -139,15 +142,10 @@ struct MultiplicityPt {
   };
 
   // PDG codes
-  static constexpr int PDGPion = Pdg::kPiPlus;
-  static constexpr int PDGKaon = Pdg::kKPlus;
-  static constexpr int PDGProton = Pdg::kProton;
+  static constexpr int PDGPion = o2::constants::physics::PionPlus;
+  static constexpr int PDGKaon = o2::constants::physics::KaonPlus;
+  static constexpr int PDGProton = o2::constants::physics::Proton;
 
-  // ========================================================================
-  // PROCESS FUNCTION DECLARATIONS - SPECTRATOF STYLE
-  // ========================================================================
-
-  // Data processing
   void processData(CollisionTableData::iterator const& collision,
                    TrackTableData const& tracks);
   PROCESS_SWITCH(MultiplicityPt, processData, "process data", false);
@@ -842,15 +840,15 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
 
   // Calculate and log primary fractions
   if (particleTracksIdentified[kPion] > 0) {
-    float pionPrimFrac = static_cast<float> particleTracksPrimary[kPion] / particleTracksIdentified[kPion];
+    float pionPrimFrac = static_cast<float>(particleTracksPrimary[kPion]) / particleTracksIdentified[kPion];
     LOG(info) << "Pion primary fraction: " << pionPrimFrac * 100.0 << "%";
   }
   if (particleTracksIdentified[kKaon] > 0) {
-    float kaonPrimFrac = static_cast<float> particleTracksPrimary[kKaon] / particleTracksIdentified[kKaon];
+    float kaonPrimFrac = static_cast<float>(particleTracksPrimary[kKaon]) / particleTracksIdentified[kKaon];
     LOG(info) << "Kaon primary fraction: " << kaonPrimFrac * 100.0 << "%";
   }
   if (particleTracksIdentified[kProton] > 0) {
-    float protonPrimFrac = static_cast<float> particleTracksPrimary[kProton] / particleTracksIdentified[kProton];
+    float protonPrimFrac = static_cast<float>(particleTracksPrimary[kProton]) / particleTracksIdentified[kProton];
     LOG(info) << "Proton primary fraction: " << protonPrimFrac * 100.0 << "%";
   }
 
