@@ -89,6 +89,7 @@ struct FlowZdcTask {
   Configurable<bool> isOccupancyCut{"isOccupancyCut", false, "Occupancy cut?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
+  Configurable<bool> isApplyRadialCut{"isApplyRadialCut", false, "Use cut on X and Y?"};
   Configurable<bool> useMidRapNchSel{"useMidRapNchSel", false, "Use mid-rapidity Nch selection"};
 
   Configurable<float> nSigmaNchCut{"nSigmaNchCut", 1., "nSigma Nch selection"};
@@ -106,6 +107,8 @@ struct FlowZdcTask {
   ConfigurableAxis axisCent{"axisCent", {10, 0, 100}, "axisCent"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
+  Configurable<float> posYcut{"posYcut", +10.0, "y-vertex position cut"};
+  Configurable<float> posXcut{"posXcut", +10.0, "x-vertex position cut"};
   Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
   Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
   Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
@@ -399,6 +402,10 @@ struct FlowZdcTask {
       return false;
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::VtxZ);
+    if (isApplyRadialCut) {
+      if (std::fabs(col.posX()) > posXcut && (std::fabs(col.posY()) > posYcut))
+        return false;
+    }
 
     return true;
   }
