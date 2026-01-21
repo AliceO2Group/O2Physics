@@ -38,6 +38,7 @@
 #include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
+#include <map>
 #include <vector>
 
 using namespace o2::analysis::femto;

@@ -213,14 +213,14 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
 template <typename T>
 auto makePairHistSpecMap(const T& confPairBinning)
 {
-  return std::map<PairHist, std::vector<framework::AxisSpec>>{
+  return std::map<PairHist, std::vector<o2::framework::AxisSpec>>{
     PAIR_HIST_ANALYSIS_MAP(confPairBinning)};
 };
 
 template <typename T>
 auto makePairMcHistSpecMap(const T& confPairBinning)
 {
-  return std::map<PairHist, std::vector<framework::AxisSpec>>{
+  return std::map<PairHist, std::vector<o2::framework::AxisSpec>>{
     PAIR_HIST_ANALYSIS_MAP(confPairBinning)
       PAIR_HIST_MC_MAP(confPairBinning)};
 };

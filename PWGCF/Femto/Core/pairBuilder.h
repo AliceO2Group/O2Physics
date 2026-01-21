@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.pairb
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -76,11 +76,11 @@ class PairTrackTrackBuilder
             T6 const& confMixing,
             T7 const& confPairBinning,
             T8 const& confPairCuts,
-            std::map<T9, std::vector<framework::AxisSpec>> const& colHistSpec,
-            std::map<T10, std::vector<framework::AxisSpec>> const& trackHistSpec1,
-            std::map<T11, std::vector<framework::AxisSpec>> const& trackHistSpec2,
-            std::map<T12, std::vector<framework::AxisSpec>> const& pairHistSpec,
-            std::map<T13, std::vector<framework::AxisSpec>> const& cprHistSpec)
+            std::map<T9, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
   {
 
     // check if correlate the same tracks or not
@@ -328,14 +328,14 @@ class PairV0V0Builder
             T7 const& confMixing,
             T8 const& confPairBinning,
             T9 const& confPairCuts,
-            std::map<T10, std::vector<framework::AxisSpec>> const& colHistSpec,
-            std::map<T11, std::vector<framework::AxisSpec>> const& V0HistSpec1,
-            std::map<T12, std::vector<framework::AxisSpec>> const& V0HistSpec2,
-            std::map<T13, std::vector<framework::AxisSpec>> const& PosDauHistSpec,
-            std::map<T14, std::vector<framework::AxisSpec>> const& NegDauHistSpec,
-            std::map<T15, std::vector<framework::AxisSpec>> const& pairHistSpec,
-            std::map<T16, std::vector<framework::AxisSpec>> const& cprHistSpecPos,
-            std::map<T17, std::vector<framework::AxisSpec>> const& cprHistSpecNeg)
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& V0HistSpec1,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& V0HistSpec2,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& PosDauHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& NegDauHistSpec,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& cprHistSpecPos,
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg)
   {
 
     // check if correlate the same tracks or not
@@ -389,7 +389,7 @@ class PairV0V0Builder
   }
 
   template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processSameEvent(T1 const& col, T2& trackTable, T3& /*lambdaTable*/, T4& partition1, T5& partition2, T6& cache)
+  void processSameEvent(T1 const& col, T2 const& trackTable, T3& /*v0table*/, T4& partition1, T5& partition2, T6& cache)
   {
     if (mSameSpecies) {
       auto v0Slice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -415,8 +415,36 @@ class PairV0V0Builder
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processMixedEvent(T1 const& cols, T2& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  // mc
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void processSameEvent(T1 const& col, T2 const& mcCols, T3 const& trackTable, T4 const& /*v0table*/, T5& partition1, T6& partition2, T7 const& mcParticles, T8 const& mcMothers, T9 const& mcPartonicMothers, T10& cache)
+  {
+    if (mSameSpecies) {
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      if (trackSlice1.size() == 0) {
+        return;
+      }
+      mColHistManager.template fill<mode>(col, mcCols);
+      mCprSe.setMagField(col.magField());
+      pairprocesshelpers::PairOrder pairOrder = pairprocesshelpers::kOrder12;
+      if (mMixIdenticalParticles) {
+        pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
+      }
+      pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mPairHistManagerSe, mV0Cleaner1, mCprSe, mPc, pairOrder);
+    } else {
+      auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      if (trackSlice1.size() == 0 || trackSlice2.size() == 0) {
+        return;
+      }
+      mColHistManager.template fill<mode>(col, mcCols);
+      mCprSe.setMagField(col.magField());
+      pairprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mV0HistManager1, mV0HistManager2, mPairHistManagerSe, mV0Cleaner1, mV0Cleaner2, mCprSe, mPc);
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processMixedEvent(T1 const& cols, T2 const& trackTable, T3 const& /*v0table*/, T4& partition1, T5& partition2, T6& cache, T7& binsVtxMult, T8& binsVtxCent, T9& binsVtxMultCent)
   {
 
     if (mSameSpecies) {
@@ -443,6 +471,40 @@ class PairV0V0Builder
           break;
         case static_cast<int>(pairhistmanager::kVtxMultCent):
           pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+  void processMixedEvent(T1 const& cols, T2 const& mcCols, T3& trackTable, T4& partition1, T5& partition2, T6 const& mcParticles, T7 const& mcMothers, T8 const& mcPartonicMothers, T9& cache, T10& binsVtxMult, T11& binsVtxCent, T12& binsVtxMultCent)
+  {
+    if (mSameSpecies) {
+      switch (mMixingPolicy) {
+        case static_cast<int>(pairhistmanager::kVtxMult):
+          pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mV0Cleaner1, mV0Cleaner1, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mV0Cleaner1, mV0Cleaner1, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxMultCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition1, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mV0Cleaner1, mV0Cleaner1, mCprMe, mPc);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
+    } else {
+      switch (mMixingPolicy) {
+        case static_cast<int>(pairhistmanager::kVtxMult):
+          pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mV0Cleaner1, mV0Cleaner2, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mV0Cleaner1, mV0Cleaner2, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxMultCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, mcCols, partition1, partition2, trackTable, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mV0Cleaner1, mV0Cleaner2, mCprMe, mPc);
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -509,13 +571,13 @@ class PairTrackV0Builder
             T6 const& confMixing,
             T7 const& confPairBinning,
             T8 const& confPairCuts,
-            std::map<T9, std::vector<framework::AxisSpec>>& colHistSpec,
-            std::map<T10, std::vector<framework::AxisSpec>>& trackHistSpec,
-            std::map<T11, std::vector<framework::AxisSpec>>& v0HistSpec,
-            std::map<T12, std::vector<framework::AxisSpec>>& posDauHistSpec,
-            std::map<T13, std::vector<framework::AxisSpec>>& negDauHistSpec,
-            std::map<T14, std::vector<framework::AxisSpec>>& pairHistSpec,
-            std::map<T15, std::vector<framework::AxisSpec>>& cprHistSpec)
+            std::map<T9, std::vector<o2::framework::AxisSpec>>& colHistSpec,
+            std::map<T10, std::vector<o2::framework::AxisSpec>>& trackHistSpec,
+            std::map<T11, std::vector<o2::framework::AxisSpec>>& v0HistSpec,
+            std::map<T12, std::vector<o2::framework::AxisSpec>>& posDauHistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>>& negDauHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>>& pairHistSpec,
+            std::map<T15, std::vector<o2::framework::AxisSpec>>& cprHistSpec)
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 
@@ -654,13 +716,13 @@ class PairTrackTwoTrackResonanceBuilder
             T4 const& confMixing,
             T5 const& confPairBinning,
             T6 const& confPairCuts,
-            std::map<T7, std::vector<framework::AxisSpec>> const& colHistSpec,
-            std::map<T8, std::vector<framework::AxisSpec>> const& trackHistSpec,
-            std::map<T9, std::vector<framework::AxisSpec>> const& resonanceHistSpec,
-            std::map<T10, std::vector<framework::AxisSpec>> const& posDauHistSpec,
-            std::map<T11, std::vector<framework::AxisSpec>> const& negDauHistSpec,
-            std::map<T12, std::vector<framework::AxisSpec>> const& pairHistSpec,
-            std::map<T13, std::vector<framework::AxisSpec>> const& cprHistSpec)
+            std::map<T7, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T8, std::vector<o2::framework::AxisSpec>> const& trackHistSpec,
+            std::map<T9, std::vector<o2::framework::AxisSpec>> const& resonanceHistSpec,
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& posDauHistSpec,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& negDauHistSpec,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 
@@ -764,12 +826,12 @@ class PairTrackKinkBuilder
             T6 const& confMixing,
             T7 const& confPairBinning,
             T8 const& confPairCuts,
-            std::map<T9, std::vector<framework::AxisSpec>> const& colHistSpec,
-            std::map<T10, std::vector<framework::AxisSpec>> const& trackHistSpec,
-            std::map<T11, std::vector<framework::AxisSpec>> const& kinkHistSpec,
-            std::map<T12, std::vector<framework::AxisSpec>> const& chaDauHistSpec,
-            std::map<T13, std::vector<framework::AxisSpec>> const& pairHistSpec,
-            std::map<T14, std::vector<framework::AxisSpec>> const& cprHistSpec)
+            std::map<T9, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& trackHistSpec,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& kinkHistSpec,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& chaDauHistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 
@@ -919,15 +981,15 @@ class PairTrackCascadeBuilder
             T7 const& confMixing,
             T8 const& confPairBinning,
             T9 const& confPairCuts,
-            std::map<T10, std::vector<framework::AxisSpec>> const& colHistSpec,
-            std::map<T11, std::vector<framework::AxisSpec>> const& trackHistSpec,
-            std::map<T12, std::vector<framework::AxisSpec>> const& cascadeHistSpec,
-            std::map<T13, std::vector<framework::AxisSpec>> const& bachelorHistSpec,
-            std::map<T14, std::vector<framework::AxisSpec>> const& posDauHistSpec,
-            std::map<T15, std::vector<framework::AxisSpec>> const& negDauHistSpec,
-            std::map<T16, std::vector<framework::AxisSpec>> const& pairHistSpec,
-            std::map<T17, std::vector<framework::AxisSpec>> const& cprHistSpecBachelor,
-            std::map<T18, std::vector<framework::AxisSpec>> const& cprHistSpecV0Daughter)
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& trackHistSpec,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& cascadeHistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& bachelorHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& posDauHistSpec,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& negDauHistSpec,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& cprHistSpecBachelor,
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& cprHistSpecV0Daughter)
   {
     mColHistManager.template init<mode>(registry, colHistSpec);
 

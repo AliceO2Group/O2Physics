@@ -94,9 +94,9 @@ class TrackTrackPairCleaner : public BasePairCleaner
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
-  bool isCleanPair(T1 const& track1, T2 const& track2, T3 const& /*trackTable*/, T4 const& partonicMothers) const
+  bool isCleanPair(T1 const& track1, T2 const& track2, T3 const& trackTable, T4 const& partonicMothers) const
   {
-    if (!this->isCleanTrackPair(track1, track2)) {
+    if (!this->isCleanPair(track1, track2, trackTable)) {
       return false;
     }
     // pair is clean
@@ -123,6 +123,23 @@ class V0V0PairCleaner : public BasePairCleaner
     auto posDaughter2 = trackTable.rawIteratorAt(v02.posDauId() - trackTable.offset());
     auto negDaughter2 = trackTable.rawIteratorAt(v02.negDauId() - trackTable.offset());
     return this->isCleanTrackPair(posDaughter1, posDaughter2) && this->isCleanTrackPair(negDaughter1, negDaughter2);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool isCleanPair(T1 const& v01, T2 const& v02, T3 const& trackTable, T4 const& partonicMothers) const
+  {
+    if (!this->isCleanPair(v01, v02, trackTable)) {
+      return false;
+    }
+    // pair is clean
+    // no check if we require common or non-common ancestry
+    if (mMixPairsWithCommonAncestor) {
+      return this->pairHasCommonAncestor(v01, v02, partonicMothers);
+    }
+    if (mMixPairsWithNonCommonAncestor) {
+      return this->pairHasNonCommonAncestor(v01, v02, partonicMothers);
+    }
+    return true;
   }
 };
 

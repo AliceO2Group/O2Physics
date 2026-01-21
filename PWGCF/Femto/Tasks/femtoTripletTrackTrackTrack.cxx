@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoTripletTrackTrackTrack.cxx
-/// \brief Tasks that computes correlation between two tracks
+/// \brief Tasks that computes correlation between three tracks
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
@@ -35,6 +35,7 @@
 #include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 
+#include <map>
 #include <vector>
 
 using namespace o2::analysis::femto;
