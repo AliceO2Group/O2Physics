@@ -51,7 +51,7 @@ class PairSHCentMultKt
   /// \param maxl Maximum valie of L component of the spherical harmonics
   template <typename t1>
   void init(HistogramRegistry* registry, t1& kstarbins, t1& centmultbins,
-            t1& ktbins, int /*maxl*/)
+            t1& ktbins, bool isqinvfill, int /*maxl*/)
   {
     pairSHCentMultKtRegistry = registry;
     AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
@@ -154,6 +154,21 @@ class PairSHCentMultKt
                                                               {(kMaxJM * 2), -0.5,
                                                                ((static_cast<float>(kMaxJM) * 2.0 - 0.5))}});
         }
+        if (isqinvfill) {
+          if (FolderSuffix[EventType] == FolderSuffix[0]) {
+            std::string bufnameNum = "h1DNum";
+            fnums1D[i][j] = pairSHCentMultKtRegistry->add<TH1>(
+              (histFolderMult + "/" + histFolderkT + "/" + bufnameNum).c_str(),
+              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+            fnums1D[i][j]->Sumw2();
+          } else if (FolderSuffix[EventType] == FolderSuffix[1]) {
+            std::string bufnameNum = "h1DDen";
+            fdens1D[i][j] = pairSHCentMultKtRegistry->add<TH1>(
+              (histFolderMult + "/" + histFolderkT + "/" + bufnameNum).c_str(),
+              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+            fdens1D[i][j]->Sumw2();
+          }
+        }
       }
     }
   }
@@ -165,7 +180,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fillMultNumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                      int maxl, int multval, float ktval, bool isiden)
+                      int maxl, int multval, float ktval, bool isiden, bool isqinvfill)
   {
     int multbinval;
     int absmultval = multval;
@@ -182,7 +197,7 @@ class PairSHCentMultKt
       return;
     }
     // std::cout<<"multbinval "<<multbinval<<std::endl;
-    fillkTNumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isiden);
+    fillkTNumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isiden, isqinvfill);
   }
 
   /// Templated function to access different kT directory and call addEventPair
@@ -194,7 +209,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fillkTNumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int maxl, int multval, float ktval, bool isiden)
+                    int maxl, int multval, float ktval, bool isiden, bool isqinvfill)
   {
     int ktbinval = -1;
     if (ktval >= ktBins[0] && ktval < ktBins[1]) {
@@ -214,7 +229,7 @@ class PairSHCentMultKt
     } else {
       return;
     }
-    addEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isiden);
+    addEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isiden, isqinvfill);
   }
 
   /// Set the PDG codes of the two particles involved
@@ -247,7 +262,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void addEventPair(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int /*maxl*/, int multval, int ktval, bool isiden)
+                    int /*maxl*/, int multval, int ktval, bool isiden, bool isqinvfill)
   {
     int fMultBin = multval;
     int fKtBin = ktval;
@@ -275,6 +290,9 @@ class PairSHCentMultKt
         fnumsimag[fMultBin][fKtBin][ihist]->Fill(kv, -imag(fYlmBuffer[ihist]));
         fbinctn[fMultBin][fKtBin]->Fill(kv, 1.0);
       }
+      if (isqinvfill) {
+        fnums1D[fMultBin][fKtBin]->Fill(f3d[0]);
+      }
       for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
         for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
           if ((ilmzero % 2) == 0 && (ilmprim % 2) == 0) {
@@ -293,6 +311,9 @@ class PairSHCentMultKt
         fdensreal[fMultBin][fKtBin][ihist]->Fill(kv, real(fYlmBuffer[ihist]));
         fdensimag[fMultBin][fKtBin][ihist]->Fill(kv, -imag(fYlmBuffer[ihist]));
         fbinctd[fMultBin][fKtBin]->Fill(kv, 1.0);
+      }
+      if (isqinvfill) {
+        fdens1D[fMultBin][fKtBin]->Fill(f3d[0]);
       }
       for (int ilmzero = 0; ilmzero < kMaxJM * 2; ilmzero++) {
         for (int ilmprim = 0; ilmprim < kMaxJM * 2; ilmprim++) {
@@ -362,6 +383,8 @@ class PairSHCentMultKt
   std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fnumsimag{};
   std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fdensreal{};
   std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 7>, 4> fdensimag{};
+  std::array<std::array<std::shared_ptr<TH1>, 7>, 4> fnums1D{};
+  std::array<std::array<std::shared_ptr<TH1>, 7>, 4> fdens1D{};
 
   TH1D* fbinctn[10][10];
   TH1D* fbinctd[10][10];

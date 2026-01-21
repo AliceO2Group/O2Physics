@@ -109,14 +109,14 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
 template <typename T>
 auto makeColMcHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_MC_MAP(confBinningAnalysis)};
 }
@@ -124,7 +124,7 @@ auto makeColMcHistSpecMap(const T& confBinningAnalysis)
 template <typename T1, typename T2>
 auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
@@ -132,7 +132,7 @@ auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa
 template <typename T1, typename T2>
 auto makeColMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
         COL_HIST_MC_MAP(confBinningAnalysis)};

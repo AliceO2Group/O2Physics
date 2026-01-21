@@ -33,7 +33,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
-#include <cstdio>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -50,7 +50,7 @@ class HFInvMassFitter : public TNamed
     NoBkg = 6,
     NTypesOfBkgPdf
   };
-  std::vector<std::string> namesOfBkgPdf{"bkgFuncExpo", "bkgFuncPoly1", "bkgFuncPoly2", "bkgFuncPow", "bkgFuncPowExpo", "bkgFuncPoly3"};
+  std::array<std::string, NTypesOfBkgPdf> namesOfBkgPdf{"bkgFuncExpo", "bkgFuncPoly1", "bkgFuncPoly2", "bkgFuncPow", "bkgFuncPowExpo", "bkgFuncPoly3"};
   enum TypeOfSgnPdf {
     SingleGaus = 0,
     DoubleGaus = 1,
@@ -65,173 +65,73 @@ class HFInvMassFitter : public TNamed
     Poly6Refl = 3,
     NTypesOfReflPdf
   };
-  std::vector<std::string> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
-  HFInvMassFitter();
-  HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
+  std::array<std::string, NTypesOfReflPdf> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
+  HFInvMassFitter() = delete;
+  HFInvMassFitter(TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg = Expo, int fitTypeSgn = SingleGaus);
   ~HFInvMassFitter() override;
-  void setHistogramForFit(const TH1* histoToFit)
-  {
-
-    delete mHistoInvMass;
-
-    mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
-    mHistoInvMass->SetDirectory(nullptr);
-  }
+  void setHistogramForFit(TH1* histoToFit);
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
-  void setFitOption(TString opt) { mFitOption = opt.Data(); }
+  void setFitOption(const std::string& opt) { mFitOption = opt; }
   RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1) const;
   RooAbsPdf* createSignalFitFunction(RooWorkspace* w1);
   RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1) const;
 
-  void setFitRange(Double_t minValue, Double_t maxValue)
-  {
-    mMinMass = minValue;
-    mMaxMass = maxValue;
-  }
-  void setFitFunctions(Int_t fitTypeBkg, Int_t fitTypeSgn)
-  {
-    mTypeOfBkgPdf = fitTypeBkg;
-    mTypeOfSgnPdf = fitTypeSgn;
-  }
-  void setSigmaLimit(Double_t sigmaValue, Double_t sigmaLimit)
-  {
-    mSigmaValue = sigmaValue;
-    mParamSgn = sigmaLimit;
-  }
-  void setParticlePdgMass(Double_t mass) { mMassParticle = mass; }
-  [[nodiscard]] Double_t getParticlePdgMass() const { return mMassParticle; }
-  void setInitialGaussianMean(Double_t mean)
-  {
-    mMass = mean;
-    mSecMass = mean;
-  }
-  void setInitialGaussianSigma(Double_t sigma)
-  {
-    mSigmaSgn = sigma;
-    mSecSigma = sigma;
-  }
-  void setInitialSecondGaussianSigma(Double_t sigma) { mSigmaSgnDoubleGaus = sigma; }
-  void setInitialFracDoubleGaus(Double_t frac) { mFracDoubleGaus = frac; }
-  void setInitialRatioDoubleGausSigma(Double_t fracSigma) { mRatioDoubleGausSigma = fracSigma; }
-  void setFixGaussianMean(Double_t mean)
-  {
-    setInitialGaussianMean(mean);
-    mFixedMean = kTRUE;
-  }
-  void setBoundGaussianMean(Double_t mean, Double_t meanLowLimit, Double_t meanUpLimit)
-  {
-    if (mean < meanLowLimit ||
-        mean > meanUpLimit) {
-      printf("Invalid Gaussian mean limit!\n");
-    }
-    setInitialGaussianMean(mean);
-    mMassLowLimit = meanLowLimit;
-    mMassUpLimit = meanUpLimit;
-    mBoundMean = kTRUE;
-  }
-  void setBoundReflGausMean(Double_t mean, Double_t meanLowLimit, Double_t meanUpLimit)
-  {
-    if (mean < meanLowLimit ||
-        mean > meanUpLimit) {
-      printf("Invalid Gaussian mean limit for reflection!\n");
-    }
-    setInitialGaussianMean(mean);
-    mMassReflLowLimit = meanLowLimit;
-    mMassReflUpLimit = meanUpLimit;
-    mBoundReflMean = kTRUE;
-  }
-  void setFixGaussianSigma(Double_t sigma)
-  {
-    setInitialGaussianSigma(sigma);
-    mFixedSigma = kTRUE;
-  }
-  void setBoundGausSigma(Double_t sigma, Double_t sigmaLimit)
-  {
-    setInitialGaussianSigma(sigma);
-    setSigmaLimit(sigma, sigmaLimit);
-    mBoundSigma = kTRUE;
-  }
-  void setFixSecondGaussianSigma(Double_t sigma)
-  {
-    if (mTypeOfSgnPdf != DoubleGaus) {
-      printf("Fit type should be 2Gaus!\n");
-    }
-    setInitialSecondGaussianSigma(sigma);
-    mFixedSigmaDoubleGaus = kTRUE;
-  }
-  void setFixFrac2Gaus(Double_t frac)
-  {
-    if (mTypeOfSgnPdf != DoubleGaus &&
-        mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      printf("Fit type should be 2Gaus or 2GausSigmaRatio!\n");
-    }
-    setInitialFracDoubleGaus(frac);
-    mFixedFracDoubleGaus = kTRUE;
-  }
-  void setFixRatioToGausSigma(Double_t sigmaFrac)
-  {
-    if (mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      printf("Fit type should be set to k2GausSigmaRatioPar!\n");
-    }
-    setInitialRatioDoubleGausSigma(sigmaFrac);
-    mFixedRatioDoubleGausSigma = kTRUE;
-  }
-  void setFixSignalYield(Double_t yield) { mFixedRawYield = yield; }
-  void setNumberOfSigmaForSidebands(Double_t numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
+  void setFitRange(double minValue, double maxValue);
+  void setFitFunctions(int fitTypeBkg, int fitTypeSgn);
+  void setSigmaLimit(double sigmaValue, double sigmaLimit);
+  void setParticlePdgMass(double mass) { mMassParticle = mass; }
+  [[nodiscard]] double getParticlePdgMass() const { return mMassParticle; }
+  void setInitialGaussianMean(double mean);
+  void setInitialGaussianSigma(double sigma);
+  void setInitialSecondGaussianSigma(double sigma) { mSigmaSgnDoubleGaus = sigma; }
+  void setInitialFracDoubleGaus(double frac) { mFracDoubleGaus = frac; }
+  void setInitialRatioDoubleGausSigma(double fracSigma) { mRatioDoubleGausSigma = fracSigma; }
+  void setFixGaussianMean(double mean);
+  void setBoundGaussianMean(double mean, double meanLowLimit, double meanUpLimit);
+  void setBoundReflGausMean(double mean, double meanLowLimit, double meanUpLimit);
+  void setFixGaussianSigma(double sigma);
+  void setBoundGausSigma(double sigma, double sigmaLimit);
+  void setFixSecondGaussianSigma(double sigma);
+  void setFixFrac2Gaus(double frac);
+  void setFixRatioToGausSigma(double sigmaFrac);
+  void setFixSignalYield(double yield) { mFixedRawYield = yield; }
+  void setNumberOfSigmaForSidebands(double numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
   void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
   void plotRefl(RooAbsPdf* mFunc);
   void setReflFuncFixed();
   void doFit();
-  void setInitialReflOverSgn(Double_t reflOverSgn) { mReflOverSgn = reflOverSgn; }
-  void setFixReflOverSgn(Double_t reflOverSgn)
-  {
-    setInitialReflOverSgn(reflOverSgn);
-    mFixReflOverSgn = kTRUE;
-  }
-  void setTemplateReflections(const TH1* histoRefl)
-  {
-    if (histoRefl == nullptr) {
-      mEnableReflections = kFALSE;
-      return;
-    }
-    mHistoTemplateRefl = dynamic_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
-  }
-  void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
-  void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
-  [[nodiscard]] Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
-  [[nodiscard]] Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
-  [[nodiscard]] Double_t getRawYield() const { return mRawYield; }
-  [[nodiscard]] Double_t getRawYieldError() const { return mRawYieldErr; }
-  [[nodiscard]] Double_t getRawYieldCounted() const { return mRawYieldCounted; }
-  [[nodiscard]] Double_t getRawYieldCountedError() const { return mRawYieldCountedErr; }
-  [[nodiscard]] Double_t getBkgYield() const { return mBkgYield; }
-  [[nodiscard]] Double_t getBkgYieldError() const { return mBkgYieldErr; }
-  [[nodiscard]] Double_t getSignificance() const { return mSignificance; }
-  [[nodiscard]] Double_t getSignificanceError() const { return mSignificanceErr; }
-  [[nodiscard]] Double_t getMean() const { return mRooMeanSgn->getVal(); }
-  [[nodiscard]] Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
-  [[nodiscard]] Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
-  [[nodiscard]] Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
-  [[nodiscard]] Double_t getSecSigma() const { return mRooSecSigmaSgn->getVal(); }
-  [[nodiscard]] Double_t getSecSigmaUncertainty() const { return mRooSecSigmaSgn->getError(); }
-  [[nodiscard]] Double_t getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
-  [[nodiscard]] Double_t getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
-  [[nodiscard]] Double_t getReflOverSig() const
-
-  {
-    if (mReflPdf != nullptr) {
-      return mReflOverSgn;
-    }
-    return 0;
-  }
-  void calculateSignal(Double_t& signal, Double_t& signalErr) const;
-  void countSignal(Double_t& signal, Double_t& signalErr) const;
-  void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
-  void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
-  void checkForSignal(Double_t& estimatedSignal);
+  void setInitialReflOverSgn(double reflOverSgn) { mReflOverSgn = reflOverSgn; }
+  void setFixReflOverSgn(double reflOverSgn);
+  void setTemplateReflections(TH1* histoRefl);
+  void setDrawBgPrefit(bool value = true) { mDrawBgPrefit = value; }
+  void setHighlightPeakRegion(bool value = true) { mHighlightPeakRegion = value; }
+  [[nodiscard]] double getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
+  [[nodiscard]] double getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
+  [[nodiscard]] double getRawYield() const { return mRawYield; }
+  [[nodiscard]] double getRawYieldError() const { return mRawYieldErr; }
+  [[nodiscard]] double getRawYieldCounted() const { return mRawYieldCounted; }
+  [[nodiscard]] double getRawYieldCountedError() const { return mRawYieldCountedErr; }
+  [[nodiscard]] double getBkgYield() const { return mBkgYield; }
+  [[nodiscard]] double getBkgYieldError() const { return mBkgYieldErr; }
+  [[nodiscard]] double getSignificance() const { return mSignificance; }
+  [[nodiscard]] double getSignificanceError() const { return mSignificanceErr; }
+  [[nodiscard]] double getMean() const { return mRooMeanSgn->getVal(); }
+  [[nodiscard]] double getMeanUncertainty() const { return mRooMeanSgn->getError(); }
+  [[nodiscard]] double getSigma() const { return mRooSigmaSgn->getVal(); }
+  [[nodiscard]] double getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
+  [[nodiscard]] double getSecSigma() const { return mRooSecSigmaSgn->getVal(); }
+  [[nodiscard]] double getSecSigmaUncertainty() const { return mRooSecSigmaSgn->getError(); }
+  [[nodiscard]] double getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
+  [[nodiscard]] double getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
+  [[nodiscard]] double getReflOverSig() const { return mReflPdf != nullptr ? mReflOverSgn : 0.; }
+  void calculateSignal(double& signal, double& signalErr) const;
+  void countSignal(double& signal, double& signalErr) const;
+  void calculateBackground(double& bkg, double& bkgErr) const;
+  void calculateSignificance(double& significance, double& significanceErr) const;
+  void checkForSignal(double& estimatedSignal);
   void calculateFitToDataRatio() const;
-  void drawFit(TVirtualPad* c, const std::vector<std::string>& plotLabels, Bool_t writeParInfo = true);
+  void drawFit(TVirtualPad* c, const std::vector<std::string>& plotLabels, bool writeParInfo = true);
   void drawResidual(TVirtualPad* c);
   void drawRatio(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
@@ -243,77 +143,77 @@ class HFInvMassFitter : public TNamed
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
 
   TH1* mHistoInvMass; // histogram to fit
-  TString mFitOption;
-  Double_t mMinMass;                 // lower mass limit
-  Double_t mMaxMass;                 // upper mass limit
-  Int_t mTypeOfBkgPdf;               // background fit function
-  Int_t mTypeOfSgnPdf;               // signal fit function
-  Int_t mTypeOfReflPdf;              // reflection fit function
-  Double_t mMassParticle;            // pdg value of particle mass
-  Double_t mMass;                    /// signal gaussian mean value
-  Double_t mMassLowLimit;            /// lower limit of the allowed mass range
-  Double_t mMassUpLimit;             /// upper limit of the allowed mass range
-  Double_t mMassReflLowLimit;        /// lower limit of the allowed mass range for reflection
-  Double_t mMassReflUpLimit;         /// upper limit of the allowed mass range for reflection
-  Double_t mSecMass;                 /// Second peak mean value
-  Double_t mSigmaSgn;                /// signal gaussian sigma
-  Double_t mSecSigma;                /// Second peak gaussian sigma
-  Int_t mNSigmaForSidebands;         /// number of sigmas to veto the signal peak
-  Int_t mNSigmaForSgn;               /// number of sigmas to veto the signal peak
-  Double_t mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
-  Double_t mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
-  Bool_t mFixedMean;                 /// switch for fix mean of gaussian
-  Bool_t mBoundMean;                 /// switch for bound mean of guassian
-  Bool_t mBoundReflMean;             /// switch for bound mean of guassian for reflection
-  Bool_t mFixedSigma;                /// fix sigma or not
-  Bool_t mFixedSigmaDoubleGaus;      /// fix sigma of 2gaussian or not
-  Bool_t mBoundSigma;                /// set bound sigma or not
-  Double_t mSigmaValue;              /// value of sigma
-  Double_t mParamSgn;                /// +/- range variation of bound Sigma of gaussian in %
-  Double_t mFracDoubleGaus;          /// initialization for fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
-  Double_t mFixedRawYield;           /// initialization for raw yield
-  Bool_t mFixedFracDoubleGaus;       /// switch for fixed fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
-  Double_t mRatioDoubleGausSigma;    /// initialization for ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
-  Bool_t mFixedRatioDoubleGausSigma; /// switch for fixed ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
-  Double_t mReflOverSgn;             /// reflection/signal
-  Bool_t mEnableReflections;         /// flag use/not use reflections
-  Double_t mRawYield;                /// signal gaussian integral
-  Double_t mRawYieldErr;             /// err on signal gaussian integral
-  Double_t mRawYieldCounted;         /// signal gaussian integral evaluated via bin counting
-  Double_t mRawYieldCountedErr;      /// err on signal gaussian integral evaluated via bin counting
-  Double_t mBkgYield;                /// background
-  Double_t mBkgYieldErr;             /// err on background
-  Double_t mSignificance;            /// significance
-  Double_t mSignificanceErr;         /// err on significance
-  Double_t mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
-  Double_t mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
-  Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
-  RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
-  RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal
-  RooRealVar* mRooSecSigmaSgn;       /// second sigma for composite gaussian of signal
-  RooRealVar* mRooFracDoubleGaus;    /// fraction of second gaussian for composite gaussian of signal
-  RooAbsPdf* mSgnPdf;                /// signal fit function
-  RooAbsPdf* mBkgPdf;                /// background fit function
-  RooAbsPdf* mReflPdf;               /// reflection fit function
-  RooRealVar* mRooNSgn;              /// total Signal fit function integral
-  RooRealVar* mRooNBkg;              /// total background fit function integral
-  RooRealVar* mRooNRefl;             /// total reflection fit function integral
-  RooAbsPdf* mTotalPdf;              /// total fit function
-  RooPlot* mInvMassFrame;            /// frame of mass
-  RooPlot* mReflFrame;               /// reflection frame
-  RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
-  RooPlot* mResidualFrame;           /// residual frame
-  RooPlot* mRatioFrame;              /// fit/data ratio frame
+  std::string mFitOption;
+  double mMinMass;                 // lower mass limit
+  double mMaxMass;                 // upper mass limit
+  int mTypeOfBkgPdf;               // background fit function
+  int mTypeOfSgnPdf;               // signal fit function
+  int mTypeOfReflPdf;              // reflection fit function
+  double mMassParticle;            // pdg value of particle mass
+  double mMass;                    /// signal gaussian mean value
+  double mMassLowLimit;            /// lower limit of the allowed mass range
+  double mMassUpLimit;             /// upper limit of the allowed mass range
+  double mMassReflLowLimit;        /// lower limit of the allowed mass range for reflection
+  double mMassReflUpLimit;         /// upper limit of the allowed mass range for reflection
+  double mSecMass;                 /// Second peak mean value
+  double mSigmaSgn;                /// signal gaussian sigma
+  double mSecSigma;                /// Second peak gaussian sigma
+  double mNSigmaForSidebands;      /// number of sigmas to veto the signal peak
+  double mNSigmaForSgn;            /// number of sigmas to veto the signal peak
+  double mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
+  double mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
+  bool mFixedMean;                 /// switch for fix mean of gaussian
+  bool mBoundMean;                 /// switch for bound mean of guassian
+  bool mBoundReflMean;             /// switch for bound mean of guassian for reflection
+  bool mFixedSigma;                /// fix sigma or not
+  bool mFixedSigmaDoubleGaus;      /// fix sigma of 2gaussian or not
+  bool mBoundSigma;                /// set bound sigma or not
+  double mSigmaValue;              /// value of sigma
+  double mParamSgn;                /// +/- range variation of bound Sigma of gaussian in %
+  double mFracDoubleGaus;          /// initialization for fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
+  double mFixedRawYield;           /// initialization for raw yield
+  bool mFixedFracDoubleGaus;       /// switch for fixed fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
+  double mRatioDoubleGausSigma;    /// initialization for ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
+  bool mFixedRatioDoubleGausSigma; /// switch for fixed ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
+  double mReflOverSgn;             /// reflection/signal
+  bool mEnableReflections;         /// flag use/not use reflections
+  double mRawYield;                /// signal gaussian integral
+  double mRawYieldErr;             /// err on signal gaussian integral
+  double mRawYieldCounted;         /// signal gaussian integral evaluated via bin counting
+  double mRawYieldCountedErr;      /// err on signal gaussian integral evaluated via bin counting
+  double mBkgYield;                /// background
+  double mBkgYieldErr;             /// err on background
+  double mSignificance;            /// significance
+  double mSignificanceErr;         /// err on significance
+  double mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
+  double mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
+  bool mFixReflOverSgn;            /// switch for fix refl/signal
+  RooRealVar* mRooMeanSgn;         /// mean for gaussian of signal
+  RooRealVar* mRooSigmaSgn;        /// sigma for gaussian of signal
+  RooRealVar* mRooSecSigmaSgn;     /// second sigma for composite gaussian of signal
+  RooRealVar* mRooFracDoubleGaus;  /// fraction of second gaussian for composite gaussian of signal
+  RooAbsPdf* mSgnPdf;              /// signal fit function
+  RooAbsPdf* mBkgPdf;              /// background fit function
+  RooAbsPdf* mReflPdf;             /// reflection fit function
+  RooRealVar* mRooNSgn;            /// total Signal fit function integral
+  RooRealVar* mRooNBkg;            /// total background fit function integral
+  RooRealVar* mRooNRefl;           /// total reflection fit function integral
+  RooAbsPdf* mTotalPdf;            /// total fit function
+  RooPlot* mInvMassFrame;          /// frame of mass
+  RooPlot* mReflFrame;             /// reflection frame
+  RooPlot* mReflOnlyFrame;         /// reflection frame plot on reflection only
+  RooPlot* mResidualFrame;         /// residual frame
+  RooPlot* mRatioFrame;            /// fit/data ratio frame
   RooPlot* mResidualFrameForCalculation;
-  RooWorkspace* mWorkspace;    /// workspace
-  Double_t mIntegralHisto;     /// integral of histogram to fit
-  Double_t mIntegralBkg;       /// integral of background fit function
-  Double_t mIntegralSgn;       /// integral of signal fit function
-  TH1* mHistoTemplateRefl;     /// reflection histogram
-  Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
-  Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
+  RooWorkspace* mWorkspace;  /// workspace
+  double mIntegralHisto;     /// integral of histogram to fit
+  double mIntegralBkg;       /// integral of background fit function
+  double mIntegralSgn;       /// integral of signal fit function
+  TH1* mHistoTemplateRefl;   /// reflection histogram
+  bool mDrawBgPrefit;        /// draw background after fitting the sidebands
+  bool mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
 
-  ClassDef(HFInvMassFitter, 1);
+  ClassDefOverride(HFInvMassFitter, 1);
 };
 
 #endif // PWGHF_D2H_MACROS_HFINVMASSFITTER_H_

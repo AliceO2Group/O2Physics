@@ -18,6 +18,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -37,6 +38,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <Framework/StaticFor.h>
 
@@ -59,6 +61,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -76,21 +79,31 @@ static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "
 enum ParticleOfInterest {
   Phi = 0,
   K0S,
-  PionTPC,
-  PionTPCTOF
+  Pion,
+  /*PionTPC,
+  PionTPCTOF*/
+  ParticleOfInterestSize
 };
 
-static constexpr std::array<std::string_view, 4> particleOfInterestLabels{"Phi", "K0S", "PionTPC", "PionTPCTOF"};
+static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
 
 /*
 #define LIST_OF_PARTICLES_OF_INTEREST \
   X(Phi)                          \
   X(K0S)                          \
-  X(PionTPC)                      \
-  X(PionTPCTOF)
+  X(Pion)                         \
+  //X(PionTPC)                      \
+  //X(PionTPCTOF)
 
 enum ParticleOfInterest {
 #define X(name) name,
+  LIST_OF_PARTICLES_OF_INTEREST
+#undef X
+  ParticleOfInterestSize
+};
+
+static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{
+#define X(name) #name,
   LIST_OF_PARTICLES_OF_INTEREST
 #undef X
 };
@@ -132,14 +145,6 @@ struct BoundEfficiencyMap {
   }
 };
 
-/*
-struct AnalysisRegion {
-  std::string suffix;
-  float minMass;
-  float maxMass;
-};
-*/
-
 struct PhiStrangenessCorrelation {
   HistogramRegistry histos{"phiStrangenessCorrelation", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -161,7 +166,6 @@ struct PhiStrangenessCorrelation {
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
     Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
     Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
-    Configurable<float> pTToUseTOF{"pTToUseTOF", 0.5f, "pT above which use TOF"};
     Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
     Configurable<std::vector<float>> cMaxDCArToPVPhi{"cMaxDCArToPVPhi", {0.004f, 0.013f, 1.0f}, "Track DCAr cut to PV for Phi"};
 
@@ -183,6 +187,12 @@ struct PhiStrangenessCorrelation {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
     Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
+
+    Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
+    Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
+    Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID, proton, pion, kaon"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TOF"};
   } trackConfigs;
 
   // Configurables on phi selection
@@ -250,9 +260,9 @@ struct PhiStrangenessCorrelation {
   Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
   // Defining the type of the collisions for data and MC
-  using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults, aod::PhimesonSelection>>;
+  using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults, aod::PhimesonSelectionData>>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
-  using MCCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::PhimesonSelection>>;
+  using MCCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::PhimesonSelectionMcGen>>;
 
   // Defining the type of the V0s and corresponding daughter tracks for data and MC
   using FullV0s = soa::Filtered<aod::V0Datas>;
@@ -262,7 +272,7 @@ struct PhiStrangenessCorrelation {
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
   // Defining the type of the tracks for data and MC
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FullMCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
 
   // using FilteredTracks = soa::Filtered<FullTracks>;
@@ -270,10 +280,12 @@ struct PhiStrangenessCorrelation {
 
   // Preslice for manual slicing
   struct : PresliceGroup {
-    PresliceUnsorted<aod::McCollisionLabels> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
-    Preslice<aod::PhimesonCandidates> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    Preslice<aod::V0Datas> v0PerCollision = aod::v0::collisionId;
-    Preslice<aod::Tracks> trackPerCollision = aod::track::collisionId;
+    Preslice<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
+    Preslice<FullMCV0s> v0PerCollision = aod::v0::collisionId;
+    Preslice<FullMCTracks> trackPerCollision = aod::track::collisionId;
+    // Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
+    PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
+
     // Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
   } preslices;
 
@@ -286,7 +298,7 @@ struct PhiStrangenessCorrelation {
   std::shared_ptr<TH3> effMapPionTPC = nullptr;
   std::shared_ptr<TH3> effMapPionTPCTOF = nullptr;*/
 
-  std::array<std::shared_ptr<TH3>, 4> effMaps{};
+  std::array<std::shared_ptr<TH3>, ParticleOfInterestSize> effMaps{};
 
   void init(InitContext&)
   {
@@ -306,8 +318,11 @@ struct PhiStrangenessCorrelation {
 
     histos.add("phi/h3PhiData", "Invariant mass of Phi in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
     for (const auto& label : phiMassRegionLabels) {
-      histos.add(fmt::format("phiK0S/h5PhiK0SData2PartCorr{}", label).c_str(), "Deltay vs deltaphi for Phi and K0Short in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
-      histos.add(fmt::format("phiPi/h5PhiPiData2PartCorr{}", label).c_str(), "Deltay vs deltaphi for Phi and Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
+      histos.add(fmt::format("phiK0S/h5PhiK0SData{}", label).c_str(), "Deltay vs deltaphi for Phi and K0Short in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
+      histos.add(fmt::format("phiPi/h5PhiPiData{}", label).c_str(), "Deltay vs deltaphi for Phi and Pion in Data", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
+
+      histos.add(fmt::format("phiK0S/h5PhiK0SDataME{}", label).c_str(), "Deltay vs deltaphi for Phi and K0Short in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
+      histos.add(fmt::format("phiPi/h5PhiPiDataME{}", label).c_str(), "Deltay vs deltaphi for Phi and Pion in Data ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
     }
 
     // histos.add("phiK0S/h5PhiK0SDataNewProc", "2D Invariant mass of Phi and K0Short in Data", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, massPhiAxis});
@@ -344,9 +359,7 @@ struct PhiStrangenessCorrelation {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
-      // getEfficiencyMapsFromCCDB();
-
-      for (int i = 0; i < 4; ++i) {
+      for (int i = 0; i < ParticleOfInterestSize; ++i) {
         loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
       }
     }
@@ -360,12 +373,6 @@ struct PhiStrangenessCorrelation {
     LOG(info) << "Efficiency map for " << particleOfInterestLabels[poi] << " loaded from CCDB";
   }
 
-  /*
-  void getEfficiencyMapsFromCCDB()
-  {
-  }
-  */
-
   // Compute weight based on efficiencies
   template <typename... BoundEffMaps>
   float computeWeight(const BoundEffMaps&... boundEffMaps)
@@ -376,6 +383,11 @@ struct PhiStrangenessCorrelation {
     float totalEfficiency = ((useEffInterpolation ? boundEffMaps.interpolateEfficiency() : boundEffMaps.getBinEfficiency()) * ...);
 
     return totalEfficiency <= 0.0f ? 1.0f : 1.0f / totalEfficiency;
+  }
+
+  float getDeltaPhi(float phiTrigger, float phiAssociated)
+  {
+    return RecoDecay::constrainAngle(phiTrigger - phiAssociated, -o2::constants::math::PIHalf);
   }
 
   // Single track selection for strangeness sector
@@ -435,7 +447,46 @@ struct PhiStrangenessCorrelation {
     return true;
   }
 
-  // Topological selection for pions
+  // PID selection for Pions
+  template <typename T>
+  bool pidSelectionPion(const T& track)
+  {
+    for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
+      auto const& pid = trackConfigs.trkPIDspecies->at(speciesIndex);
+      auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
+
+      if (trackConfigs.forceTOF && !track.hasTOF()) {
+        return false;
+      }
+
+      if (speciesIndex == 0) { // First species logic
+        if (std::abs(nSigmaTPC) >= trackConfigs.pidTPCMax->at(speciesIndex)) {
+          return false; // TPC check failed
+        }
+        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF())) {
+          auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+          if (std::abs(nSigmaTOF) >= trackConfigs.pidTOFMax->at(speciesIndex)) {
+            return false; // TOF check failed
+          }
+        }
+      } else {                                                                // Other species logic
+        if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMax->at(speciesIndex)) { // Check TPC nSigma  first
+          if (track.hasTOF()) {
+            auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+            if (std::abs(nSigmaTOF) < trackConfigs.pidTOFMax->at(speciesIndex)) {
+              return false; // Reject if both TPC and TOF are within thresholds
+            }
+          } else {
+            return false; // Reject if only TPC is within threshold and TOF is unavailable
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // Track selection for Pions
   template <typename T>
   bool selectionPion(const T& track)
   {
@@ -460,15 +511,20 @@ struct PhiStrangenessCorrelation {
         return false;
     }
 
-    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
+    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && !track.hasTOF())
       return false;
 
+    if (analysisMode == 1 && !pidSelectionPion(track))
+      return false;
+
+    /*
     if (analysisMode == 1) {
-      if (track.pt() < trackConfigs.pTToUseTOF && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
+      if (track.pt() < trackConfigs.tofPIDThreshold && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
         return false;
-      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.pTToUseTOF && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
+      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
         return false;
     }
+    */
 
     if (std::abs(track.rapidity(massPi)) > yConfigs.cfgYAcceptance)
       return false;
@@ -476,55 +532,7 @@ struct PhiStrangenessCorrelation {
     return true;
   }
 
-  /*
-  void processPhiK0SPionDeltayDeltaphiData2D(SelCollisions::iterator const& collision, aod::PhimesonCandidates const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
-  {
-    float multiplicity = collision.centFT0M();
-
-    std::vector<AnalysisRegion> analysisRegions = {
-      {"Signal", phiConfigs.rangeMPhiSignal.first, phiConfigs.rangeMPhiSignal.second},
-      {"Sideband", phiConfigs.rangeMPhiSideband.first, phiConfigs.rangeMPhiSideband.second}};
-
-    // Loop over all positive tracks
-    for (const auto& phiCand : phiCandidates) {
-      float weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
-
-      histos.fill(HIST("phi/h3PhiData"), multiplicity, phiCand.pt(), phiCand.m(), weightPhi);
-
-      for (const auto& region : analysisRegions) {
-        if (!phiCand.inMassRegion(region.minMass, region.maxMass))
-          continue;
-
-        // V0 already reconstructed by the builder
-        for (const auto& v0 : V0s) {
-          // Cut on V0 dynamic columns
-          if (!selectionV0<false>(v0, collision))
-            continue;
-
-          float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
-                                             BoundEfficiencyMap(effMapK0S, multiplicity, v0.pt(), v0.yK0Short()));
-
-          histos.fill(HIST("phiK0S/h5PhiK0SData2PartCorr"), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), phiCand.phi() - v0.phi(), weightPhiK0S);
-        }
-
-        // Loop over all primary pion candidates
-        for (const auto& track : fullTracks) {
-          if (!selectionPion(track))
-            continue;
-
-          float weightPhiPion = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
-                                              track.pt() < trackConfigs.pTToUseTOF ? BoundEfficiencyMap(effMapPionTPC, multiplicity, track.pt(), track.rapidity(massPi)) : BoundEfficiencyMap(effMapPionTPCTOF, multiplicity, track.pt(), track.rapidity(massPi)));
-
-          histos.fill(HIST("phiPi/h5PhiPiData2PartCorr"), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), phiCand.phi() - track.phi(), weightPhiPion);
-        }
-      }
-    }
-  }
-
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDeltayDeltaphiData2D, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
-  */
-
-  void processPhiK0SPionDeltayDeltaphiData2D(SelCollisions::iterator const& collision, aod::PhimesonCandidates const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiK0SPionData(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
     float multiplicity = collision.centFT0M();
 
@@ -557,7 +565,7 @@ struct PhiStrangenessCorrelation {
           /*float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMapK0S, multiplicity, v0.pt(), v0.yK0Short()));*/
 
-          histos.fill(HIST("phiK0S/h5PhiK0SData2PartCorr") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), phiCand.phi() - v0.phi(), weightPhiK0S);
+          histos.fill(HIST("phiK0S/h5PhiK0SData") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), getDeltaPhi(phiCand.phi(), v0.phi()), weightPhiK0S);
         }
 
         // Loop over all primary pion candidates
@@ -565,25 +573,72 @@ struct PhiStrangenessCorrelation {
           if (!selectionPion(track))
             continue;
 
-          auto Pion = track.pt() < trackConfigs.pTToUseTOF ? PionTPC : PionTPCTOF;
+          // auto Pion = track.pt() < trackConfigs.tofPIDThreshold ? PionTPC : PionTPCTOF;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
 
-          /*auto effMapPion = track.pt() < trackConfigs.pTToUseTOF ? effMapPionTPC : effMapPionTPCTOF;
+          /*auto effMapPion = track.pt() < trackConfigs.tofPIDThreshold ? effMapPionTPC : effMapPionTPCTOF;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMapPion, multiplicity, track.pt(), track.rapidity(massPi)));*/
 
-          histos.fill(HIST("phiPi/h5PhiPiData2PartCorr") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), phiCand.phi() - track.phi(), weightPhiPion);
+          histos.fill(HIST("phiPi/h5PhiPiData") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), getDeltaPhi(phiCand.phi(), track.phi()), weightPhiPion);
         }
       });
     }
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDeltayDeltaphiData2D, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionData, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
 
-  void processParticleEfficiency(MCCollisions::iterator const& mcCollision, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidates const& phiCandidates)
+  /*
+  void processPhiK0SPionDataME(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  {
+    Pair<SelCollisions, FullTracks, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache};
+    Triple<aod::Collisions, aod::Tracks, aod::V0s, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1, &cache};
+    float multiplicity = collision.centFT0M();
+
+    const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
+
+    // Loop over all positive tracks
+    for (const auto& phiCand : phiCandidates) {
+      static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
+        constexpr unsigned int i = i_idx.value;
+
+        const auto& [minMass, maxMass] = phiMassRegions[i];
+        if (!phiCand.inMassRegion(minMass, maxMass))
+          return;
+
+        // V0 already reconstructed by the builder
+        for (const auto& v0 : V0s) {
+          // Cut on V0 dynamic columns
+          if (!selectionV0<false>(v0, collision))
+            continue;
+
+          float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
+                                             BoundEfficiencyMap(effMaps[K0S], multiplicity, v0.pt(), v0.yK0Short()));
+
+          histos.fill(HIST("phiK0S/h5PhiK0SDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), getDeltaPhi(phiCand.phi(), v0.phi()), weightPhiK0S);
+        }
+
+        // Loop over all primary pion candidates
+        for (const auto& track : fullTracks) {
+          if (!selectionPion(track))
+            continue;
+
+          float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
+                                              BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
+
+          histos.fill(HIST("phiPi/h5PhiPiDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), getDeltaPhi(phiCand.phi(), track.phi()), weightPhiPion);
+        }
+      });
+    }
+  }
+
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDataME, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data ME", true);
+  */
+
+  void processParticleEfficiency(MCCollisions::iterator const& mcCollision, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcReco const& phiCandidatesMcReco)
   {
     uint16_t numberAssocColls{0};
     std::vector<float> zVtxs;
@@ -597,7 +652,7 @@ struct PhiStrangenessCorrelation {
       zVtxs.push_back(collision.posZ());
 
       if (selectionType == 0) {
-        const auto phiCandidatesThisColl = phiCandidates.sliceBy(preslices.phiCandPerCollision, collision.globalIndex());
+        const auto phiCandidatesThisColl = phiCandidatesMcReco.sliceBy(preslices.phiCandPerCollision, collision.globalIndex());
         for (const auto& phiCand : phiCandidatesThisColl) {
           histos.fill(HIST("phi/h4PhiMCReco"), collision.posZ(), mcCollision.centFT0M(), phiCand.pt(), phiCand.y());
         }
