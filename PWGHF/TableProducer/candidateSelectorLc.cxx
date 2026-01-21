@@ -62,18 +62,18 @@ struct HfCandidateSelectorLc {
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   Configurable<bool> usePid{"usePid", true, "Bool to use or not the PID based on nSigma cut at filtering level"};
   // TPC PID
-  Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.1, "Lower bound of track pT for TPC PID"};
-  Configurable<float> ptPidTpcMax{"ptPidTpcMax", 1., "Upper bound of track pT for TPC PID"};
-  Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
-  Configurable<float> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.1, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 1., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
   // TOF PID
-  Configurable<float> ptPidTofMin{"ptPidTofMin", 0.5, "Lower bound of track pT for TOF PID"};
-  Configurable<float> ptPidTofMax{"ptPidTofMax", 2.5, "Upper bound of track pT for TOF PID"};
-  Configurable<float> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
-  Configurable<float> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.5, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 2.5, "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // Bayesian PID
-  Configurable<float> ptPidBayesMin{"ptPidBayesMin", 0., "Lower bound of track pT for Bayesian PID"};
-  Configurable<float> ptPidBayesMax{"ptPidBayesMax", 100, "Upper bound of track pT for Bayesian PID"};
+  Configurable<double> ptPidBayesMin{"ptPidBayesMin", 0., "Lower bound of track pT for Bayesian PID"};
+  Configurable<double> ptPidBayesMax{"ptPidBayesMax", 100, "Upper bound of track pT for Bayesian PID"};
   // Combined PID options
   Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Bool to decide how to combine TPC and TOF PID: true = both (if present, only one otherwise); false = one is enough"};
   // TPC quality track cuts
@@ -133,13 +133,13 @@ struct HfCandidateSelectorLc {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
+    selectorPion.setRangePtTpc(static_cast<float>(ptPidTpcMin), static_cast<float>(ptPidTpcMax));
+    selectorPion.setRangeNSigmaTpc(-static_cast<float>(nSigmaTpcMax), static_cast<float>(nSigmaTpcMax));
+    selectorPion.setRangeNSigmaTpcCondTof(-static_cast<float>(nSigmaTpcCombinedMax), static_cast<float>(nSigmaTpcCombinedMax));
+    selectorPion.setRangePtTof(static_cast<float>(ptPidTofMin), static_cast<float>(ptPidTofMax));
+    selectorPion.setRangeNSigmaTof(-static_cast<float>(nSigmaTofMax), static_cast<float>(nSigmaTofMax));
+    selectorPion.setRangeNSigmaTofCondTpc(-static_cast<float>(nSigmaTofCombinedMax), static_cast<float>(nSigmaTofCombinedMax));
+    selectorPion.setRangePtBayes(static_cast<float>(ptPidBayesMin), static_cast<float>(ptPidBayesMax));
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
 
