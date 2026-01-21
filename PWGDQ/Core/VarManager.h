@@ -661,6 +661,10 @@ class VarManager : public TObject
     kMCCosChi_rec,
     kMCWeight_rec,
     kMCdeltaeta_rec,
+    kMCCosChi_randomPhi_trans_rec,
+    kMCWeight_randomPhi_trans_rec,
+    kMCCosChi_randomPhi_trans_gen,
+    kMCWeight_randomPhi_trans_gen,
 
     // MC mother particle variables
     kMCMotherPdgCode,
@@ -2998,15 +3002,15 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
 
-    ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, o2::constants::physics::MassPionCharged);
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans(v2.pt(), v2.eta(), randomPhi_trans, MassHadron);
     values[kMCCosChi_randomPhi_trans] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_trans);
     values[kMCWeight_randomPhi_trans] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_trans) / v1.M();
 
-    ROOT::Math::PtEtaPhiMVector v2_randomPhi_toward(v2.pt(), v2.eta(), randomPhi_toward, o2::constants::physics::MassPionCharged);
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_toward(v2.pt(), v2.eta(), randomPhi_toward, MassHadron);
     values[kMCCosChi_randomPhi_toward] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_toward);
     values[kMCWeight_randomPhi_toward] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_toward) / v1.M();
 
-    ROOT::Math::PtEtaPhiMVector v2_randomPhi_away(v2.pt(), v2.eta(), randomPhi_away, o2::constants::physics::MassPionCharged);
+    ROOT::Math::PtEtaPhiMVector v2_randomPhi_away(v2.pt(), v2.eta(), randomPhi_away, MassHadron);
     values[kMCCosChi_randomPhi_away] = LorentzTransformJpsihadroncosChi("coschi", v1, v2_randomPhi_away);
     values[kMCWeight_randomPhi_away] = LorentzTransformJpsihadroncosChi("weight_boost", v1, v2_randomPhi_away) / v1.M();
 
@@ -3019,7 +3023,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
 template <int pairType, typename T1, typename T2, typename T, typename T3>
 void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values)
 {
-  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
+  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec] || fgUsedVars[kMCCosChi_randomPhi_trans_rec] || fgUsedVars[kMCWeight_randomPhi_trans_rec] || fgUsedVars[kMCCosChi_randomPhi_trans_gen] || fgUsedVars[kMCWeight_randomPhi_trans_gen]) {
     // energy correlators
     float MassHadron;
     if constexpr (pairType == kJpsiHadronMass) {
@@ -3042,6 +3046,31 @@ void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& 
     float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
     values[kMCWeight_rec] = E_boost_rec / v1_rec.M();
     values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
+
+    values[kMCCosChi_randomPhi_trans_rec] = -999.9f;
+    values[kMCCosChi_randomPhi_trans_gen] = -999.9f;
+
+    float randomPhi_trans_rec = -o2::constants::math::PIHalf;
+    float randomPhi_trans_gen = -o2::constants::math::PIHalf;
+
+    float deltaphi_rec = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
+    float deltaphi_gen = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PIHalf);
+
+    if ((deltaphi_rec > -0.5 * TMath::Pi() && deltaphi_rec < -1. / 3 * TMath::Pi()) || (deltaphi_rec > 4. / 3 * TMath::Pi() && deltaphi_rec < 1.5 * TMath::Pi()) || (deltaphi_rec > 1. / 3 * TMath::Pi() && deltaphi_rec < 2. / 3 * TMath::Pi())) {
+      randomPhi_trans_rec = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_rec(v2_rec.pt(), v2_rec.eta(), randomPhi_trans_rec, o2::constants::physics::MassPionCharged);
+      values[kMCCosChi_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_randomPhi_trans_rec);
+      values[kMCWeight_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_randomPhi_trans_rec) / v1_rec.M();
+    }
+
+    if ((deltaphi_gen > -0.5 * TMath::Pi() && deltaphi_gen < -1. / 3 * TMath::Pi()) || (deltaphi_gen > 4. / 3 * TMath::Pi() && deltaphi_gen < 1.5 * TMath::Pi()) || (deltaphi_gen > 1. / 3 * TMath::Pi() && deltaphi_gen < 2. / 3 * TMath::Pi())) {
+      randomPhi_trans_gen = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
+
+      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_gen(v2_gen.pt(), v2_gen.eta(), randomPhi_trans_gen, MassHadron);
+      values[kMCCosChi_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_randomPhi_trans_gen);
+      values[kMCWeight_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_randomPhi_trans_gen) / v1_gen.M();
+    }
   }
 }
 

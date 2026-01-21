@@ -2116,14 +2116,14 @@ struct Kstarqa {
                 // if (selectionMID(track1, 2)) // Pion misidentified as proton
                 //   continue;
               }
-              rEventSelection.fill(HIST("recMCparticles"), 13.5);
 
               if (selectionConfig.isApplyParticleMIDPtDep) {
-                if (selectionMIDPtDep(track1, 0)) // Kaon misidentified as pion
+                if (selectionMIDPtDep(track1, 1)) // Kaon misidentified as pion
                   continue;
-                if (selectionMIDPtDep(track2, 1)) // Pion misidentified as kaon
+                if (selectionMIDPtDep(track2, 0)) // Pion misidentified as kaon
                   continue;
               }
+              rEventSelection.fill(HIST("recMCparticles"), 13.5);
 
               if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > selectionConfig.ctrackRapidity)
                 continue;
@@ -2140,14 +2140,32 @@ struct Kstarqa {
               }
 
             } else if (selectionConfig.isPDGCheckMC && (track1PDG == PDG_t::kKPlus)) {
-              if (!selectionConfig.isapplypTdepPID && !selectionConfig.isapplypTdepPIDTOF && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
+              if (!selectionConfig.isapplypTdepPID && !selectionConfig.isapplypTdepPIDTOF && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // pion and kaon
                 continue;
-              } else if (selectionConfig.isapplypTdepPID && !selectionConfig.isapplypTdepPIDTOF && !(selectionPIDPtDep(track1, 0) && selectionPIDPtDep(track2, 1))) { // pion and kaon
+              } else if (selectionConfig.isapplypTdepPID && !selectionConfig.isapplypTdepPIDTOF && !(selectionPIDPtDep(track1, 1) && selectionPIDPtDep(track2, 0))) { // pion and kaon
                 continue;
-              } else if (!selectionConfig.isapplypTdepPID && selectionConfig.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 0) && selectionPIDptDepTOF(track2, 1))) { // pion and kaon
+              } else if (!selectionConfig.isapplypTdepPID && selectionConfig.isapplypTdepPIDTOF && !(selectionPIDptDepTOF(track1, 1) && selectionPIDptDepTOF(track2, 0))) { // pion and kaon
                 continue;
               }
               rEventSelection.fill(HIST("recMCparticles"), 12.5);
+
+              if (selectionConfig.isApplyParticleMID) {
+                if (selectionMID(track2, 1)) // Pion misidentified as kaon
+                  continue;
+                // if (selectionMID(track2, 2)) // Kaon misidentified as proton
+                //   continue;
+                if (selectionMID(track1, 0)) // Kaon misidentified as pion
+                  continue;
+                // if (selectionMID(track1, 2)) // Pion misidentified as proton
+                //   continue;
+              }
+
+              if (selectionConfig.isApplyParticleMIDPtDep) {
+                if (selectionMIDPtDep(track1, 0)) // Kaon misidentified as pion
+                  continue;
+                if (selectionMIDPtDep(track2, 1)) // Pion misidentified as kaon
+                  continue;
+              }
 
               if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > selectionConfig.ctrackRapidity)
                 continue;
@@ -2360,11 +2378,11 @@ struct Kstarqa {
             rEventSelection.fill(HIST("recMCparticles"), 11.5);
 
             if (selectionConfig.isApplyParticleMID) {
-              if (selectionMID(track1, 0)) // Kaon misidentified as pion
+              if (selectionMID(track1, 1)) // Pion misidentified as kaon
                 continue;
               // if (selectionMID(track1, 2)) // Kaon misidentified as proton
               //   continue;
-              if (selectionMID(track2, 1)) // Pion misidentified as kaon
+              if (selectionMID(track2, 0)) // Kaon misidentified as pion
                 continue;
               // if (selectionMID(track2, 2)) // Pion misidentified as proton
               //   continue;
@@ -2372,9 +2390,9 @@ struct Kstarqa {
             rEventSelection.fill(HIST("recMCparticles"), 12.5);
 
             if (selectionConfig.isApplyParticleMIDPtDep) {
-              if (selectionMIDPtDep(track1, 0)) // Kaon misidentified as pion
+              if (selectionMIDPtDep(track1, 1)) // Pion misidentified as kaon
                 continue;
-              if (selectionMIDPtDep(track2, 1)) // Pion misidentified as kaon
+              if (selectionMIDPtDep(track2, 0)) // Kaon misidentified as pion
                 continue;
             }
 

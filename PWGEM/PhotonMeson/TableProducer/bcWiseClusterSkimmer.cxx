@@ -77,6 +77,7 @@ struct bcWiseClusterSkimmer {
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
   Configurable<bool> cfgStoreMu{"cfgStoreMu", false, "Calculate and store mu (probablity of a TVX collision in the BC) per BC. Otherwise fill with 0"};
   Configurable<bool> cfgStoreTime{"cfgStoreTime", false, "Calculate and store time since the start of fill. Otherwise fill with 0"};
+  Configurable<bool> cfgOnlyCheckFirstTrueContributor{"cfgOnlyCheckFirstTrueContributor", false, "When storing MC cluster info only count as true if the leading contributor is from pi0/eta"};
   ConfigurableAxis cfgMultiplicityBinning{"cfgMultiplicityBinning", {1000, 0, 10000}, "Binning used for the binning of the number of particles in the event"};
 
   aod::rctsel::RCTFlagsChecker isFT0EMCGoodRCTChecker{aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad};
@@ -166,8 +167,8 @@ struct bcWiseClusterSkimmer {
     for (const auto& cluster : clusters) {
       float clusterInducerEnergy = 0.;
       int32_t mesonMCIndex = -1;
-      if (cluster.amplitudeA().size() > 0) {
-        int clusterInducerId = cluster.mcParticleIds()[0];
+      for (size_t i = 0; i < cluster.amplitudeA().size(); i++) {
+        int clusterInducerId = cluster.mcParticleIds()[i];
         auto clusterInducer = mcParticles.iteratorAt(clusterInducerId);
         clusterInducerEnergy = clusterInducer.e();
         int daughterId = aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(clusterInducer, mcParticles, std::vector<int>{111, 221});
@@ -176,6 +177,10 @@ struct bcWiseClusterSkimmer {
           if (mcParticles.iteratorAt(mesonMCIndex).pt() < cfgMinPtGen)
             mesonMCIndex = -1;
         }
+        if (mesonMCIndex != -1)
+          break;
+        if (cfgOnlyCheckFirstTrueContributor)
+          break;
       }
       bool isEta = false;
       if (mesonMCIndex >= 0) {

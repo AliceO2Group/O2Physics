@@ -297,7 +297,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
     registryMCtruth.add("minus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCtruth.add("minus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
-    registryMCtruth.add("mothersTruth/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+    if (doprocessPairFractionsMCTruthV0 || doprocessPairFractionsMCTruth) {
+      registryMCtruth.add("mothersTruth/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+    }
 
     // MC reco
     registryMCreco.add("plus/MCrecoLambda", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -321,9 +323,10 @@ struct FemtoUniversePairTaskTrackV0Extended {
     registryMCreco.add("minus/MCrecoPiPt", "MC reco pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCreco.add("minus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
-    registryMCreco.add("mothersReco/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
-    registryMCreco.add("mothersReco/motherParticlePDGCheck", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
-
+    if (doprocessPairFractions || doprocessPairFractionsV0) {
+      registryMCreco.add("mothersReco/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+      registryMCreco.add("mothersReco/motherParticlePDGCheck", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+    }
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     sameEventCont.setPDGCodes(ConfTrkSelection.confTrkPDGCodePartOne, ConfV0Selection.confV0PDGCodePartTwo);
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);

@@ -596,14 +596,14 @@ class PairHistManager
 
   float getKt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
-    auto sum = part1 + part2;
-    return 0.5 * sum.Pt();
+    double kt = 0.5 * (part1 + part2).Pt();
+    return static_cast<float>(kt);
   }
 
   float getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
     auto sum = part1 + part2;
-    float mt = 0;
+    double mt = 0;
     switch (mMtType) {
       case modes::TransverseMassType::kAveragePdgMass:
         mt = std::hypot(0.5 * sum.Pt(), mAverageMass);
@@ -617,7 +617,7 @@ class PairHistManager
       default:
         LOG(fatal) << "Invalid transverse mass type, breaking...";
     }
-    return mt;
+    return static_cast<float>(mt);
   }
 
   float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
@@ -630,7 +630,7 @@ class PairHistManager
     // get lorentz boost into pair rest frame
     ROOT::Math::Boost boostPrf(sum.BoostToCM());
     // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
-    return boostPrf(particle1Prf).P();
+    return static_cast<float>(boostPrf(particle1Prf).P());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
@@ -638,8 +638,8 @@ class PairHistManager
   float mPdgMass2 = 0.f;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  float mAverageMass = 0.f;
-  float mReducedMass = 0.f;
+  double mAverageMass = 0.f;
+  double mReducedMass = 0.f;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
