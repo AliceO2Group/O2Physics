@@ -1189,15 +1189,15 @@ struct V0PtInvMassPlots {
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
                 auto v0mother = v0.motherMCPart(); // Get mothers
-                rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                rFeeddownMatrices.fill(HIST("hLambdaFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 if (v0mother.pdgCode() == kXiMinus) { // Xi Minus Mother Matched
-                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                  rFeeddownMatrices.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 }
                 if (v0mother.pdgCode() == kXi0) { // Xi Zero Mother Matched
-                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                  rFeeddownMatrices.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 }
                 if (v0mother.pdgCode() == kOmegaMinus) { // Omega Mother Matched
-                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                  rFeeddownMatrices.fill(HIST("hLambdaOmegaFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 }
               }
             }
@@ -1226,15 +1226,15 @@ struct V0PtInvMassPlots {
               }
               if (!v0mcParticle.isPhysicalPrimary()) {
                 auto v0mother = v0.motherMCPart(); // Get mothers
-                rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                rFeeddownMatrices.fill(HIST("hAntiLambdaFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 if (v0mother.pdgCode() == kXiPlusBar) { // Xi Plus Mother Matched
-                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                  rFeeddownMatrices.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 }
                 if (v0mother.pdgCode() == -kXi0) { // Anti-Xi Zero Mother Matched
-                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                  rFeeddownMatrices.fill(HIST("hAntiLambdaAntiXiZeroFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 }
                 if (v0mother.pdgCode() == kOmegaPlusBar) { // Anti-Omega (minus) Mother Matched
-                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
+                  rFeeddownMatrices.fill(HIST("hAntiLambdaAntiOmegaFeeddownMatrix"), v0mcParticle.ptMC(), std::hypot(v0mother.px(), v0mother.py()), collision.centFT0M());
                 }
               }
             }
