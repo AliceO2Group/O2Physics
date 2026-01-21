@@ -64,6 +64,9 @@ struct globalDimuonFilter {
     std::string prefix = "eventCutGroup";
     Configurable<float> minZvtx{"minZvtx", -10.f, "min. Zvtx of collision"};
     Configurable<float> maxZvtx{"maxZvtx", +10.f, "max. Zvtx of collision"};
+    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border"};
   } eventCutGroup;
 
   struct : ConfigurableGroup {
@@ -75,7 +78,7 @@ struct globalDimuonFilter {
     Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end for global muon (min. eta = -3.6)"}; // std::tan(2.f * std::atan(std::exp(- -3.6)) ) * -505. = 27.6
     // Configurable<float> midRabs{"midRabs", 26.5, "middle R at absorber end for pDCA cut"};
     Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
-    Configurable<float> maxDCAxy{"maxDCAxy", 1.0, "max. DCAxy for global muons"};
+    Configurable<float> maxDCAxy{"maxDCAxy", 0.5, "max. DCAxy for global muons"};
     // Configurable<float> maxPDCAforLargeR{"maxPDCAforLargeR", 324.f, "max. pDCA for large R at absorber end"};
     // Configurable<float> maxPDCAforSmallR{"maxPDCAforSmallR", 594.f, "max. pDCA for small R at absorber end"};
     Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 100.f, "max. chi2 for MCH-MFT matching"};
@@ -83,8 +86,8 @@ struct globalDimuonFilter {
     Configurable<float> maxChi2MFT{"maxChi2MFT", 1e+10, "max. chi2/ndf for MFTsa"};
     Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
     Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
-    Configurable<float> maxDEta{"maxDEta", 0.2, "max. deta between MFT-MCH-MID and MCH-MID"};
-    Configurable<float> maxDPhi{"maxDPhi", 0.2, "max. dphi between MFT-MCH-MID and MCH-MID"};
+    Configurable<float> maxDEta{"maxDEta", 0.15, "max. deta between MFT-MCH-MID and MCH-MID"};
+    Configurable<float> maxDPhi{"maxDPhi", 0.15, "max. dphi between MFT-MCH-MID and MCH-MID"};
   } glMuonCutGroup;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -138,9 +141,9 @@ struct globalDimuonFilter {
     hCollisionCounter->GetXaxis()->SetBinLabel(4, "No ITS ROFB");
     hCollisionCounter->GetXaxis()->SetBinLabel(5, "|Z_{vtx}| < 10 cm");
     hCollisionCounter->GetXaxis()->SetBinLabel(6, "sel8");
-    hCollisionCounter->GetXaxis()->SetBinLabel(7, "sel8 && |Z_{vtx}| < 10 cm");
-    hCollisionCounter->GetXaxis()->SetBinLabel(8, "sel8 && |Z_{vtx}| < 10 cm && global dimuon");
-    hCollisionCounter->GetXaxis()->SetBinLabel(9, "sel8 && |Z_{vtx}| < 10 cm && global dimuon for QA");
+    hCollisionCounter->GetXaxis()->SetBinLabel(7, "MB");
+    hCollisionCounter->GetXaxis()->SetBinLabel(8, "MB && global dimuon");
+    hCollisionCounter->GetXaxis()->SetBinLabel(9, "MB && global dimuon for QA");
 
     fRegistry.add("hNmu", "#mu multiplicity;N_{#mu} per collision", kTH1D, {{11, -0.5, 10.5}}, false);
 
@@ -166,6 +169,10 @@ struct globalDimuonFilter {
       fRegistry.add("MFTMCHMID/hDCAxResolutionvsPt", "DCA_{x} resolution vs. p_{T};p_{T} (GeV/c);DCA_{x} resolution (#mum);", kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
       fRegistry.add("MFTMCHMID/hDCAyResolutionvsPt", "DCA_{y} resolution vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
       fRegistry.add("MFTMCHMID/hDCAxyResolutionvsPt", "DCA_{xy} resolution vs. p_{T};p_{T} (GeV/c);DCA_{xy} resolution (#mum);", kTH2D, {{100, 0, 10.f}, {500, 0, 500}}, false);
+      fRegistry.add("MFTMCHMID/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("MFTMCHMID/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("MFTMCHMID/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("MFTMCHMID/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
 
       // const AxisSpec axisMass{{0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.05, 2.10, 2.15, 2.20, 2.25, 2.30, 2.35, 2.40, 2.45, 2.50, 2.55, 2.60, 2.65, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "m_{#mu#mu} (GeV/c^{2})"};
       const AxisSpec axisPt{{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "p_{T,#mu#mu} (GeV/c)"};
@@ -366,6 +373,10 @@ struct globalDimuonFilter {
       fRegistry.fill(HIST("MFTMCHMID/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("MFTMCHMID/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("MFTMCHMID/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
+      fRegistry.fill(HIST("MFTMCHMID/hDCAx_PosZ"), collision.posZ(), dcaX);
+      fRegistry.fill(HIST("MFTMCHMID/hDCAy_PosZ"), collision.posZ(), dcaY);
+      fRegistry.fill(HIST("MFTMCHMID/hDCAx_Phi"), phi, dcaX);
+      fRegistry.fill(HIST("MFTMCHMID/hDCAy_Phi"), phi, dcaY);
     }
 
     return true;
@@ -445,6 +456,24 @@ struct globalDimuonFilter {
     } // end end of negative muon loop
   }
 
+  template <typename TCollision>
+  bool isSelectedCollision(TCollision const& collision)
+  {
+    if (!(eventCutGroup.minZvtx < collision.posZ() && collision.posZ() < eventCutGroup.maxZvtx)) {
+      return false;
+    }
+    if (eventCutGroup.cfgRequireFT0AND && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    if (eventCutGroup.cfgRequireNoTFB && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if (eventCutGroup.cfgRequireNoITSROFB && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    return true;
+  }
+
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using MyCollision = MyCollisions::iterator;
 
@@ -500,7 +529,7 @@ struct globalDimuonFilter {
         fRegistry.fill(HIST("hCollisionCounter"), 7);
       }
 
-      if (collision.sel8() && eventCutGroup.minZvtx < collision.posZ() && collision.posZ() < eventCutGroup.maxZvtx) {
+      if (isSelectedCollision(collision)) {
         int nGlobalMuon = 0;
         // LOGF(info, "collision.globalIndex() = %d, fwdtrackIdsThisCollision = %d", collision.globalIndex(), fwdtrackIdsThisCollision.size());
         auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
@@ -601,7 +630,7 @@ struct globalDimuonFilter {
         fRegistry.fill(HIST("hCollisionCounter"), 6);
       }
 
-      if (collision.sel8() && eventCutGroup.minZvtx < collision.posZ() && collision.posZ() < eventCutGroup.maxZvtx) {
+      if (isSelectedCollision(collision)) {
         fRegistry.fill(HIST("hCollisionCounter"), 7);
 
         int nGlobalMuon = 0;
