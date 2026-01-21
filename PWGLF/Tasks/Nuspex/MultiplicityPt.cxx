@@ -11,6 +11,7 @@
 
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Constants/MathConstants.h"
 #include "Common/Constants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -46,6 +47,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+using namespace o2::constants::math;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
 
@@ -191,7 +193,10 @@ struct MultiplicityPt {
       if (!passesCutWoDCA(track)) {
         return false;
       }
-      const float maxDcaXY = maxDcaXYFactor.value * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f));
+      constexpr float dcaXYConst = 0.0105f;
+      constexpr float dcaXYPtScale = 0.0350f;
+      constexpr float dcaXYPtPower = 1.1f;
+      const float maxDcaXY = maxDcaXYFactor.value * (dcaXYConst + dcaXYPtScale / std::pow(track.pt(), dcaXYPtPower));
       if (std::abs(track.dcaXY()) > maxDcaXY) {
         return false;
       }
@@ -249,8 +254,8 @@ struct MultiplicityPt {
     float nsigmaKa = std::abs(track.tpcNSigmaKa());
     float nsigmaPr = std::abs(track.tpcNSigmaPr());
 
-    // Find the hypothesis with smallest |nσ| that passes the cut
-    float minNSigma = 999.0f;
+    constexpr float largeNSigmaValue = 999.0f;
+    float minNSigma = largeNSigmaValue;
     int bestSpecies = -1;
 
     if (nsigmaPi < cfgCutNsigma.value && nsigmaPi < minNSigma) {
@@ -540,10 +545,10 @@ void MultiplicityPt::init(InitContext const&)
     }
   }
 
-  // ========================================================================
-  // MONITORING HISTOGRAMS
-  // ========================================================================
-  ue.add("evsel", "Event selection", HistType::kTH1D, {{20, 0.5, 20.5}});
+  constexpr int nEvSelBins = 20;
+  constexpr float evSelMin = 0.5f;
+  constexpr float evSelMax = 20.5f;
+  ue.add("evsel", "Event selection", HistType::kTH1D, {{nEvSelBins, evSelMin, evSelMax}});
   auto h = ue.get<TH1>(HIST("evsel"));
   h->GetXaxis()->SetBinLabel(1, "Events read");
   h->GetXaxis()->SetBinLabel(2, "INEL>0");
@@ -559,7 +564,7 @@ void MultiplicityPt::init(InitContext const&)
   h->GetXaxis()->SetBinLabel(15, "INEL>1 (final)");
 
   ue.add("hEta", "Track eta;#eta;Counts", HistType::kTH1D, {{20, -0.8, 0.8}});
-  ue.add("hPhi", "Track phi;#varphi (rad);Counts", HistType::kTH1D, {{64, 0, 2.0 * o2::constants::math::PI}});
+  ue.add("hPhi", "Track phi;#varphi (rad);Counts", HistType::kTH1D, {{64, 0, TwoPI}});
   ue.add("hvtxZ", "Vertex Z (data);Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
   ue.add("hvtxZmc", "MC vertex Z;Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
 
