@@ -324,6 +324,7 @@ struct PhiMesonCandProducer {
 struct PhiMesonSelCollision {
   // Produce the table with the event selection information
   Produces<aod::PhimesonSelectionData> phimesonSelectionData;
+  // Produces<aod::PhimesonSelectionMcReco> phimesonSelectionMcReco;
   Produces<aod::PhimesonSelectionMcGen> phimesonSelectionMcGen;
 
   HistogramRegistry histos{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -508,6 +509,7 @@ struct PhiMesonSelCollision {
 
   void processMCReco(SimCollisions::iterator const& collision, MCCollisions const&, aod::PhimesonCandidatesData const& phiCandidatesData)
   {
+    // phimesonSelectionMcReco(defaultEventSelection<true, MCCollisions>(collision) && selectionType == 1 ? eventHasPhi<true, MCCollisions>(collision, phiCandidatesData) : true);
     phimesonSelectionData(defaultEventSelection<true, MCCollisions>(collision) && selectionType == 1 ? eventHasPhi<true, MCCollisions>(collision, phiCandidatesData) : true);
   }
 
