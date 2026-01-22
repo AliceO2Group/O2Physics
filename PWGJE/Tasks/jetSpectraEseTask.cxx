@@ -468,7 +468,8 @@ struct JetSpectraEseTask {
     if ((fRequireDijetEvent) && (dijetEv.sub < subleadJetPtMin))
       return;
     registry.fill(HIST("eventQA/hEventCounter"), kSubLeadJetPtCut);
-    const auto leaddPhi = RecoDecay::constrainAngle(leadingJet.phi() - psi.psi2, -o2::constants::math::PI);
+    const auto& leadJet = *leadingJet;
+    const auto leaddPhi = RecoDecay::constrainAngle(leadJet.phi() - psi.psi2, -o2::constants::math::PI);
 
     registry.fill(HIST("hNtrig"), centrality, dijetEv.lead, leaddPhi, qPerc[0]);
     for (auto const& track : tracks) {
@@ -480,8 +481,8 @@ struct JetSpectraEseTask {
       registry.fill(HIST("trackQA/after/hTrackPt"), centrality, track.pt());
       registry.fill(HIST("trackQA/after/hTrackEta"), centrality, track.eta());
       registry.fill(HIST("trackQA/after/hTrackPhi"), centrality, track.phi());
-      auto deta = track.eta() - leadingJet.eta();
-      auto dphi = RecoDecay::constrainAngle(track.phi() - leadingJet.phi(), -o2::constants::math::PIHalf);
+      auto deta = track.eta() - leadJet.eta();
+      auto dphi = RecoDecay::constrainAngle(track.phi() - leadJet.phi(), -o2::constants::math::PIHalf);
       registry.fill(HIST("thn_jethad_corr_same"), centrality, dijetEv.lead, dijetEv.sub, track.pt(), deta, dphi, leaddPhi, qPerc[0]);
     }
   }
@@ -574,14 +575,15 @@ struct JetSpectraEseTask {
       if ((fRequireDijetEvent) && (dijetEv.sub < subleadJetPtMin))
         continue;
       registry.fill(HIST("eventQA/hEventCounterMixed"), kSubLeadJetPtCut);
-      const auto leaddPhi = RecoDecay::constrainAngle(leadingJet.phi() - psi.psi2, -o2::constants::math::PI);
+      const auto& leadJet = *leadingJet;
+      const auto leaddPhi = RecoDecay::constrainAngle(leadJet.phi() - psi.psi2, -o2::constants::math::PI);
 
       registry.fill(HIST("hNtrigMixed"), centrality, dijetEv.lead, leaddPhi, qPerc[0]);
       for (auto const& track : tracks2) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
-        auto deta = track.eta() - leadingJet.eta();
-        auto dphi = RecoDecay::constrainAngle(track.phi() - leadingJet.phi(), -o2::constants::math::PIHalf);
+        auto deta = track.eta() - leadJet.eta();
+        auto dphi = RecoDecay::constrainAngle(track.phi() - leadJet.phi(), -o2::constants::math::PIHalf);
         registry.fill(HIST("thn_jethad_corr_mixed"), centrality, dijetEv.lead, dijetEv.sub, track.pt(), deta, dphi, leaddPhi, qPerc[0]);
       }
     }
