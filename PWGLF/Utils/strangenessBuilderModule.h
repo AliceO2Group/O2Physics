@@ -1384,7 +1384,8 @@ class BuilderModule
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
+          // if track cannot be uniquely identified with a collision or cannot be assigned to a collision at all (collisionId = -1), do not attempt to move the TPC track and move on
+          if (!posTrack.has_collision() || !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -1397,7 +1398,8 @@ class BuilderModule
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
+          // if track cannot be uniquely identified with a collision or cannot be assigned to a collision at all (collisionId = -1), do not attempt to move the TPC track and move on
+          if (!negTrack.has_collision() || !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
             products.v0dataLink(-1, -1);
             continue;
           }

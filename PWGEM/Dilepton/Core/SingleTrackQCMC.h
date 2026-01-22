@@ -351,8 +351,10 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCAx_PosZ", "DCA_{x} vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, 10}, {200, -1, +1}}, false);
-        fRegistry.add("Track/PromptLF/positive/hDCAy_PosZ", "DCA_{y} vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, 10}, {200, -1, +1}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAx_PosZ", "DCA_{x} vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, 10}, {400, -0.2, +0.2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAy_PosZ", "DCA_{y} vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, 10}, {400, -0.2, +0.2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
         fRegistry.add("Track/PromptLF/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
         fRegistry.add("Track/PromptLF/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
         fRegistry.add("Track/PromptLF/positive/hPDCA", "pDCA;R at absorber (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
@@ -769,6 +771,8 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAy_Phi"), track.phi(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsMCH"), track.nClusters());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
@@ -799,6 +803,8 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAy_Phi"), track.phi(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsMCH"), track.nClusters());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());

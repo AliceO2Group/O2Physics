@@ -2066,6 +2066,7 @@ struct AnalysisDileptonTrack {
     Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
     Configurable<bool> fConfigPublishTripletTable{"cfgPublishTripletTable", false, "Publish the triplet tables, BmesonCandidates"};
     Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
+    Configurable<std::vector<int>> fConfigSavelessevents{"cfgSavelessevents", std::vector<int>{1, 0}, "Save less events for the energy correlator study"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -2790,6 +2791,10 @@ struct AnalysisDileptonTrack {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
+      std::vector<int> fSavelessevents = fConfigOptions.fConfigSavelessevents;
+      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
+        continue;
+      }
       auto groupedBarrelAssocs = assocs.sliceBy(trackAssocsPerCollision, event.globalIndex());
       // groupedBarrelAssocs.bindInternalIndicesTo(&assocs);
       auto groupedDielectrons = dileptons.sliceBy(dielectronsPerCollision, event.globalIndex());
@@ -2981,6 +2986,10 @@ struct AnalysisDileptonTrack {
         continue;
       }
       if (!event.has_mcCollision()) {
+        continue;
+      }
+      std::vector<int> fSavelessevents = fConfigOptions.fConfigSavelessevents;
+      if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
       runEnergyCorrelators<VarManager::kJpsiHadronMass>(event, mcTracks);

@@ -33,8 +33,10 @@ struct OTFParticle {
   float mE;
   float mVx, mVy, mVz;
   float mPx, mPy, mPz;
+  bool mIsAlive;
 
   // Setters
+  void setIsAlive(bool isAlive) { mIsAlive = isAlive; }
   void setPDG(int pdg) { mPdgCode = pdg; }
   void setVxVyVz(float vx, float vy, float vz)
   {
@@ -52,6 +54,7 @@ struct OTFParticle {
 
   // Getters
   int pdgCode() const { return mPdgCode; }
+  int isAlive() const { return mIsAlive; }
   float vx() const { return mVx; }
   float vy() const { return mVy; }
   float vz() const { return mVz; }
@@ -97,7 +100,9 @@ void convertTLorentzVectorToO2Track(int pdgCode,
 /// \param o2track the address of the resulting TrackParCov
 /// \param pdg the pdg service
 template <typename PdgService>
-void convertOTFParticleToO2Track(const OTFParticle& particle, o2::track::TrackParCov& o2track, const PdgService& pdg)
+void convertOTFParticleToO2Track(const OTFParticle& particle,
+                                 o2::track::TrackParCov& o2track,
+                                 const PdgService& pdg)
 {
   static TLorentzVector tlv;
   tlv.SetPxPyPzE(particle.px(), particle.py(), particle.pz(), particle.e());

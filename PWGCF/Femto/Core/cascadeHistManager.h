@@ -215,30 +215,30 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
 template <typename T>
 auto makeCascadeHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<CascadeHist, std::vector<framework::AxisSpec>>{
+  return std::map<CascadeHist, std::vector<o2::framework::AxisSpec>>{
     CASCADE_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
 template <typename T>
 auto makeCascadeMcHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<CascadeHist, std::vector<framework::AxisSpec>>{
+  return std::map<CascadeHist, std::vector<o2::framework::AxisSpec>>{
     CASCADE_HIST_ANALYSIS_MAP(confBinningAnalysis)
       CASCADE_HIST_MC_MAP(confBinningAnalysis)};
 }
 
 template <typename T1, typename T2>
-std::map<CascadeHist, std::vector<framework::AxisSpec>> makeCascadeQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
+std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> makeCascadeQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
-  return std::map<CascadeHist, std::vector<framework::AxisSpec>>{
+  return std::map<CascadeHist, std::vector<o2::framework::AxisSpec>>{
     CASCADE_HIST_ANALYSIS_MAP(confBinningAnalysis)
       CASCADE_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
 
 template <typename T1, typename T2>
-std::map<CascadeHist, std::vector<framework::AxisSpec>> makeCascadeMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
+std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> makeCascadeMcQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
-  return std::map<CascadeHist, std::vector<framework::AxisSpec>>{
+  return std::map<CascadeHist, std::vector<o2::framework::AxisSpec>>{
     CASCADE_HIST_ANALYSIS_MAP(confBinningAnalysis)
       CASCADE_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
         CASCADE_HIST_MC_MAP(confBinningAnalysis)
@@ -494,7 +494,7 @@ class CascadeHistManager
     mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhiVsPhi, HistTable), getHistDesc(kTruePhiVsPhi, HistTable), getHistType(kTruePhiVsPhi, HistTable), {V0Specs.at(kTruePhiVsPhi)});
 
     // mc origin can be configured here
-    const framework::AxisSpec axisOrigin = {static_cast<int>(modes::McOrigin::kMcOriginLast), -0.5, static_cast<double>(modes::McOrigin::kMcOriginLast) - 0.5};
+    const o2::framework::AxisSpec axisOrigin = {static_cast<int>(modes::McOrigin::kMcOriginLast), -0.5, static_cast<double>(modes::McOrigin::kMcOriginLast) - 0.5};
     mHistogramRegistry->add(mcDir + getHistNameV2(kOrigin, HistTable), getHistDesc(kOrigin, HistTable), getHistType(kOrigin, HistTable), {axisOrigin});
     mHistogramRegistry->get<TH1>(HIST(cascadePrefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kNoMcParticle), modes::mcOriginToString(modes::McOrigin::kNoMcParticle));
     mHistogramRegistry->get<TH1>(HIST(cascadePrefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kFromWrongCollision), modes::mcOriginToString(modes::McOrigin::kFromWrongCollision));

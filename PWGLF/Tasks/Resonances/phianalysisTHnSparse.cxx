@@ -108,9 +108,10 @@ struct PhianalysisTHnSparse {
   // other axes
   ConfigurableAxis axisNch{"axisNch", {1000, 0.0f, +1000.0f}, "Number of charged particles."};
   ConfigurableAxis axisResolutionPt{"axisResolutionPt", {1001, -1.0f, +1.0f}, "Resolution of Pt."};
-  ConfigurableAxis axisResolutionPtPhi{"axisResolutionPtPhi", {1001, -0.0001f, +0.0001f}, "Resolution of Pt and Phi."};
-  ConfigurableAxis axisResolutionMass{"axisResolutionMass", {1001, -0.05f, +0.05f}, "Resolution of Mass."};
+  ConfigurableAxis axisResolutionPtPhi{"axisResolutionPtPhi", {1001, -0.01f, +0.01f}, "Resolution of Pt and Phi."};
+  ConfigurableAxis axisResolutionMass{"axisResolutionMass", {1001, -0.01f, +0.01f}, "Resolution of Mass."};
   ConfigurableAxis axisResolutionVz{"axisResolutionVz", {1001, -3.0f, +3.0f}, "Resolution of Vz."};
+  ConfigurableAxis massShiftAxis{"massShiftAxis", {1001, -0.02f, 0.02f}, "Mass correction axis."};
 
   // Axes specifications
   AxisSpec posZaxis = {400, -20., 20., "V_{z} (cm)"};
@@ -118,6 +119,7 @@ struct PhianalysisTHnSparse {
   AxisSpec dcaZaxis = {1000, -1.0, 1.0, "DCA_{z} (cm)"};
   AxisSpec etaQAaxis = {1000, -1.0, 1.0, "#eta"};
   AxisSpec tpcNClsFoundQAaxis = {110, 50., 160., "tpcNClsFound"};
+  AxisSpec massShiftRelAxis = {101, -0.03f, 0.03f, ""};
 
   HistogramRegistry registry{"registry"};
   o2::analysis::rsn::Output* rsnOutput = nullptr;
@@ -127,9 +129,12 @@ struct PhianalysisTHnSparse {
   int n = 0;
   float massPos = o2::track::PID::getMass(3);
   float massNeg = o2::track::PID::getMass(3);
+  int pion = 2;
+  int kaon = 3;
+  int proton = 4;
   double* pointPair = nullptr;
   double* pointSys = nullptr;
-  ROOT::Math::PxPyPzMVector d1, d2, mother;
+  ROOT::Math::PxPyPzMVector d1, d2, mother, motherGen;
   bool produceTrue, produceLikesign, produceQA, produceStats, produceRotational, dataQA, MCTruthQA, globalTrack, inelGrater0, tpcPidOnly = false;
   float tpcnSigmaPos = 100.0f;
   float tpcnSigmaNeg = 100.0f;
@@ -145,7 +150,7 @@ struct PhianalysisTHnSparse {
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Ms>;
   using EventCandidate = EventCandidates::iterator;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
   using EventCandidatesMC = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using TrackCandidatesMC = soa::Join<TrackCandidates, aod::McTrackLabels>;
@@ -417,17 +422,28 @@ struct PhianalysisTHnSparse {
         hResVz->GetYaxis()->SetTitle("#DeltaV_{z} = V_{z}^{rec} - V_{z}^{gen} (cm)");
         registry.add("Factors/h2ResolutionPt", "Resolution of charged particles p_{T}", kTH2F, {ptaxis, axisResolutionPt});
         auto hResPt = registry.get<TH2>(HIST("Factors/h2ResolutionPt"));
-        ;
+
         hResPt->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
         hResPt->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
-        registry.add("Factors/h2ResolutionPtPhi", "Resolution of Phi p_{T}", kTH2F, {ptaxis, axisResolutionPtPhi});
+        registry.add("Factors/h2ResolutionPtPhi", "p_{T} resolution vs p_{T}^{rec}", kTH2F, {ptaxis, axisResolutionPtPhi});
         auto hResPtPhi = registry.get<TH2>(HIST("Factors/h2ResolutionPtPhi"));
         hResPtPhi->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
         hResPtPhi->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
-        registry.add("Factors/h2ResolutionMass", "Resolution of mass vs p_{T}^{rec}", kTH2F, {ptaxis, axisResolutionMass});
-        auto hResMass = registry.get<TH2>(HIST("Factors/h2ResolutionMass"));
+
+        registry.add("Factors/h2MassResolution", "Mass resolution vs p_{T}^{rec}", kTH2F, {ptaxis, axisResolutionMass});
+        auto hResMass = registry.get<TH2>(HIST("Factors/h2MassResolution"));
         hResMass->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
-        hResMass->GetYaxis()->SetTitle("#Deltam = m^{rec} - m^{gen} (GeV/c^{2})");
+        hResMass->GetYaxis()->SetTitle("#Deltam = m^{gen}_{KK} - m^{rec}_{KK} (GeV/c^{2})");
+
+        registry.add("Factors/h2MassShift", "Mass shift vs p_{T}^{rec}", kTH2F, {ptaxis, massShiftAxis});
+        auto hResMassGen = registry.get<TH2>(HIST("Factors/h2MassShift"));
+        hResMassGen->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+        hResMassGen->GetYaxis()->SetTitle("#Deltam = m^{gen}_{#phi} - m^{gen}_{KK} (GeV/c^{2})");
+
+        registry.add("Factors/h2MassShiftRel", "Relative mass shift vs p_{T}^{rec}", kTH2F, {ptaxis, massShiftRelAxis});
+        auto hMassCorr = registry.get<TH2>(HIST("Factors/h2MassShiftRel"));
+        hMassCorr->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+        hMassCorr->GetYaxis()->SetTitle("m^{gen}_{#phi} - m^{gen}_{KK}/m^{gen}_{#phi}");
       }
     }
     // Factors
@@ -445,6 +461,34 @@ struct PhianalysisTHnSparse {
     registry.add("Factors/h3dGenPhiVsMultMCVsCentrality", "MC multiplicity vs centrality vs p_{T}", kTH3D, {axisNch, {101, 0.0f, 101.0f}, ptaxis});
   }
 
+  template <typename T>
+  float tpcNsigma(const T& track)
+  {
+    float tpcNsigma = 0.0f;
+    int particleType = (track.sign() > 0) ? static_cast<int>(daughterPos) : static_cast<int>(daughterNeg);
+
+    if (particleType == pion)
+      tpcNsigma = track.tpcNSigmaPi();
+    else if (particleType == kaon)
+      tpcNsigma = track.tpcNSigmaKa();
+    else if (particleType == proton)
+      tpcNsigma = track.tpcNSigmaPr();
+    return tpcNsigma;
+  }
+  template <typename T>
+  float tofNsigma(const T& track)
+  {
+    float tofNsigma = 0.0f;
+    int particleType = (track.sign() > 0) ? static_cast<int>(daughterPos) : static_cast<int>(daughterNeg);
+
+    if (particleType == pion)
+      tofNsigma = track.tofNSigmaPi();
+    else if (particleType == kaon)
+      tofNsigma = track.tofNSigmaKa();
+    else if (particleType == proton)
+      tofNsigma = track.tofNSigmaPr();
+    return tofNsigma;
+  }
   template <typename T>
   bool selectedTrack(const T& track, bool isPositive)
   {
@@ -473,10 +517,10 @@ struct PhianalysisTHnSparse {
     // PID selection: TPC-only for pt < threshold value, TPC+TOF for pt >= threshold value and have TOF, else TPC-only
     float nSigmaCut = isPositive ? tpcnSigmaPos : tpcnSigmaNeg;
     if (track.pt() < ptTOFThreshold || !track.hasTOF() || tpcPidOnly) {
-      if (std::abs(track.tpcNSigmaKa()) >= nSigmaCut)
+      if (std::abs(tpcNsigma(track)) >= nSigmaCut)
         return false;
     } else {
-      if (std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa()) >= combinedNSigma)
+      if (std::sqrt(tpcNsigma(track) * tpcNsigma(track) + tofNsigma(track) * tofNsigma(track)) >= combinedNSigma)
         return false;
     }
     if (produceQA && dataQA)
@@ -512,15 +556,16 @@ struct PhianalysisTHnSparse {
     return true;
   }
   template <typename T>
-  bool selectedPair(ROOT::Math::PxPyPzMVector& mother, const T& track1, const T& track2)
+  ROOT::Math::PxPyPzMVector calculateMother(const T& track1, const T& track2)
   {
     d1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPos);
     d2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massNeg);
-    mother = d1 + d2;
-
+    return d1 + d2;
+  }
+  bool seletectedMother(const ROOT::Math::PxPyPzMVector& mother)
+  {
     if (std::abs(mother.Rapidity()) > static_cast<float>(cut.rapidity))
       return false;
-
     return true;
   }
   template <typename T>
@@ -613,24 +658,25 @@ struct PhianalysisTHnSparse {
       if (!selectedTrack(track2, false)) // track2 is negative
         continue;
 
-      if (!selectedPair(mother, track1, track2))
+      mother = calculateMother(track1, track2);
+      if (!seletectedMother(mother))
         continue;
 
       if (produceQA) {
-        registry.fill(HIST("QAPID/h2TPCnSigma"), track1.tpcNSigmaKa(), track2.tpcNSigmaKa());
-        registry.fill(HIST("QAPID/h2TPCnSigmaPt"), track1.pt(), track1.tpcNSigmaKa());
-        registry.fill(HIST("QAPID/h2TPCnSigmaPt"), track2.pt(), track2.tpcNSigmaKa());
+        registry.fill(HIST("QAPID/h2TPCnSigma"), tpcNsigma(track1), tpcNsigma(track2));
+        registry.fill(HIST("QAPID/h2TPCnSigmaPt"), track1.pt(), tpcNsigma(track1));
+        registry.fill(HIST("QAPID/h2TPCnSigmaPt"), track2.pt(), tpcNsigma(track2));
 
-        registry.fill(HIST("QAPID/h2TOFnSigma"), track1.tofNSigmaKa(), track2.tofNSigmaKa());
-        registry.fill(HIST("QAPID/h2TOFnSigmaPt"), track1.pt(), track1.tofNSigmaKa());
-        registry.fill(HIST("QAPID/h2TOFnSigmaPt"), track2.pt(), track2.tofNSigmaKa());
+        registry.fill(HIST("QAPID/h2TOFnSigma"), tofNsigma(track1), tofNsigma(track2));
+        registry.fill(HIST("QAPID/h2TOFnSigmaPt"), track1.pt(), tofNsigma(track1));
+        registry.fill(HIST("QAPID/h2TOFnSigmaPt"), track2.pt(), tofNsigma(track2));
 
-        registry.fill(HIST("QAPID/hTPCnSigma"), track1.tpcNSigmaKa());
-        registry.fill(HIST("QAPID/hTPCnSigma"), track2.tpcNSigmaKa());
+        registry.fill(HIST("QAPID/hTPCnSigma"), tpcNsigma(track1));
+        registry.fill(HIST("QAPID/hTPCnSigma"), tpcNsigma(track2));
         if (track1.hasTOF())
-          registry.fill(HIST("QAPID/hTOFnSigma"), track1.tofNSigmaKa());
+          registry.fill(HIST("QAPID/hTOFnSigma"), tofNsigma(track1));
         if (track2.hasTOF())
-          registry.fill(HIST("QAPID/hTOFnSigma"), track2.tofNSigmaKa());
+          registry.fill(HIST("QAPID/hTOFnSigma"), tofNsigma(track2));
 
         registry.fill(HIST("QATrack/hEta"), track1.eta());
         registry.fill(HIST("QATrack/hEta"), track2.eta());
@@ -657,8 +703,8 @@ struct PhianalysisTHnSparse {
                                 mother.Pt(),
                                 getMultiplicity(collision),
                                 getCentrality(collision),
-                                track1.tpcNSigmaKa(),
-                                track2.tpcNSigmaKa(),
+                                tpcNsigma(track1),
+                                tpcNsigma(track2),
                                 mother.Eta(),
                                 mother.Rapidity(),
                                 collision.posZ(),
@@ -688,8 +734,8 @@ struct PhianalysisTHnSparse {
                                     mother.Pt(),
                                     getMultiplicity(collision),
                                     getCentrality(collision),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     collision.posZ(),
@@ -710,7 +756,8 @@ struct PhianalysisTHnSparse {
         if (!selectedTrack(track2, true)) // both positive
           continue;
 
-        if (!selectedPair(mother, track1, track2))
+        mother = calculateMother(track1, track2);
+        if (!seletectedMother(mother))
           continue;
 
         if (static_cast<int>(verbose.verboselevel) > 1)
@@ -720,8 +767,8 @@ struct PhianalysisTHnSparse {
                                   mother.Pt(),
                                   getMultiplicity(collision),
                                   getCentrality(collision),
-                                  track1.tpcNSigmaKa(),
-                                  track2.tpcNSigmaKa(),
+                                  tpcNsigma(track1),
+                                  tpcNsigma(track2),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   collision.posZ(),
@@ -738,7 +785,8 @@ struct PhianalysisTHnSparse {
         if (!selectedTrack(track2, false)) // both negative
           continue;
 
-        if (!selectedPair(mother, track1, track2))
+        mother = calculateMother(track1, track2);
+        if (!seletectedMother(mother))
           continue;
 
         if (static_cast<int>(verbose.verboselevel) > 1)
@@ -748,8 +796,8 @@ struct PhianalysisTHnSparse {
                                   mother.Pt(),
                                   getMultiplicity(collision),
                                   getCentrality(collision),
-                                  track1.tpcNSigmaKa(),
-                                  track2.tpcNSigmaKa(),
+                                  tpcNsigma(track1),
+                                  tpcNsigma(track2),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   collision.posZ(),
@@ -849,12 +897,9 @@ struct PhianalysisTHnSparse {
           if (std::abs(mothertrack1.pdgCode()) != motherPDG)
             continue;
 
-          if (static_cast<int>(verbose.verboselevel) > 1) {
-            LOGF(info, "True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
-            LOGF(info, "%d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, mctrack1.px(), mctrack1.py(), mctrack1.pz(), mctrack2.px(), mctrack2.py(), mctrack2.pz());
-          }
-
-          if (!selectedPair(mother, mctrack1, mctrack2))
+          mother = calculateMother(track1, track2);
+          motherGen = calculateMother(mctrack1, mctrack2);
+          if (!seletectedMother(mother))
             continue;
 
           if (n > 0) {
@@ -863,12 +908,18 @@ struct PhianalysisTHnSparse {
             continue;
           }
 
+          if (static_cast<int>(verbose.verboselevel) > 1) {
+            LOGF(info, "Collision: %ld True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", collision.globalIndex(), n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
+            LOGF(info, "Track %d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, track1.px(), track1.py(), track1.pz(), track2.px(), track2.py(), track2.pz());
+            LOGF(info, "mcTrack %d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, mctrack1.px(), mctrack1.py(), mctrack1.pz(), mctrack2.px(), mctrack2.py(), mctrack2.pz());
+          }
+
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(collision),
                                     getCentrality(collision),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     collision.posZ(),
@@ -881,12 +932,33 @@ struct PhianalysisTHnSparse {
 
           auto phiP = mothertrack1.p();
           auto phiE = mothertrack1.e();
-          auto phiMass = std::sqrt(phiE * phiE - phiP * phiP);
+          auto massGen = std::sqrt(phiE * phiE - phiP * phiP);
 
-          registry.fill(HIST("Factors/h2ResolutionPtPhi"), mother.pt(), (mother.pt() - mothertrack1.pt()));
-          registry.fill(HIST("Factors/h2ResolutionMass"), mother.Pt(), (mother.M() - phiMass));
+          registry.fill(HIST("Factors/h2ResolutionPtPhi"), mother.Pt(), (mother.Pt() - mothertrack1.pt()));
+          registry.fill(HIST("Factors/h2MassResolution"), mother.Pt(), (motherGen.M() - mother.M()));
+          registry.fill(HIST("Factors/h2MassShift"), mother.Pt(), (massGen - motherGen.M()));
+          registry.fill(HIST("Factors/h2MassShiftRel"), mother.Pt(), (massGen - motherGen.M()) / massGen);
+
+          if (static_cast<int>(verbose.verboselevel) > 1)
+            LOGF(info, "mother.M()=%f, motherGen.M()=%f, massGen =%f", mother.M(), motherGen.M(), massGen);
 
           rsnOutput->fillUnliketrue(pointPair);
+
+          pointPair = fillPointPair(motherGen.M(),
+                                    motherGen.Pt(),
+                                    getMultiplicity(collision),
+                                    getCentrality(collision),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
+                                    motherGen.Eta(),
+                                    motherGen.Rapidity(),
+                                    collision.posZ(),
+                                    0,
+                                    0,
+                                    0);
+
+          rsnOutput->fillUnlikegenOld(pointPair);
+
           n++;
         }
       }
@@ -1007,15 +1079,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false)) // track2 is negative
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
@@ -1033,15 +1106,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false)) // track2 is negative
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
@@ -1077,15 +1151,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false)) // track2 is negative
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
@@ -1104,15 +1179,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false))
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),

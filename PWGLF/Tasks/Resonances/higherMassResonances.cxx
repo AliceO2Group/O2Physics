@@ -408,6 +408,7 @@ struct HigherMassResonances {
 
       hMChists.add("MCcorrections/hGenNo", "Generated collisions before and after event selection", kTH1F, {{5, 0.0f, 5.0f}});
       hMChists.add("MCcorrections/hSignalLossDenominator3", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
+      hMChists.add("MCcorrections/hSignalLossDenominator4", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hMChists.add("MCcorrections/hSignalLossNumerator3", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hMChists.add("MCcorrections/hMultvsCent", "Kstar generated after event selection", kTH2F, {{multiplicityAxis}, {multiplicityAxis}});
     }
@@ -1134,7 +1135,8 @@ struct HigherMassResonances {
 
           motherRot = daughterRot + daughter2;
 
-          double pTcorrRot = std::abs(daughterRot.Pt() + daughter2.Pt()) / motherRot.Pt();
+          // double pTcorrRot = std::abs(daughterRot.Pt() + daughter2.Pt()) / motherRot.Pt();
+          double pTcorrRot = (motherRot.Pt() - daughterRot.Pt() != 0.) ? daughterRot.Pt() / (motherRot.Pt() - daughterRot.Pt()) : 0.;
 
           if (motherRot.Rapidity() < config.rapidityMotherData)
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), deltaMass, deltaRvalue, pTcorrRot);
@@ -1255,7 +1257,8 @@ struct HigherMassResonances {
           if (config.qAOptimisation) {
             double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) * TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) + (daughter1.eta() - daughter2.eta()) * (daughter1.eta() - daughter2.eta()));
             const double deltaMass = deltaM(t1.mK0Short(), t2.mK0Short());
-            const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
+            // const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
+            const double ptCorr = (mother.Pt() - daughter1.Pt() != 0.) ? daughter1.Pt() / (mother.Pt() - daughter1.Pt()) : 0.;
             if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), deltaMass, deltaRvalue, ptCorr);
             }
@@ -1479,6 +1482,32 @@ struct HigherMassResonances {
         hMChists.fill(HIST("MCcorrections/hSignalLossNumerator2"), mcPart.pt(), multiplicity1);
         hMChists.fill(HIST("MCcorrections/hSignalLossNumerator3"), mcPart.pt(), multMC);
       }
+
+      auto kDaughters = mcPart.daughters_as<aod::McParticles>();
+      if (kDaughters.size() != config.noOfDaughters) {
+        continue;
+      }
+
+      for (const auto& kCurrentDaughter : kDaughters) {
+        // int daupdg = std::abs(kCurrentDaughter.pdgCode());
+
+        if (!kCurrentDaughter.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kK0Short) {
+          passKs.push_back(true);
+          if (passKs.size() == 1) {
+            daughter1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
+          } else if (static_cast<int>(passKs.size()) == config.noOfDaughters) {
+            daughter2 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
+          }
+        }
+      }
+      if (static_cast<int>(passKs.size()) == config.noOfDaughters) {
+        lResonanceGen1 = daughter1 + daughter2;
+        hMChists.fill(HIST("MCcorrections/hSignalLossDenominator4"), lResonanceGen1.pt(), multiplicity1);
+      }
+      passKs.clear();
     } // end loop on gen particles
   }
   PROCESS_SWITCH(HigherMassResonances, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
@@ -1772,7 +1801,8 @@ struct HigherMassResonances {
           daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
           motherRot = daughterRot + daughter2;
-          double pTcorrRot = std::abs(daughterRot.Pt() + daughter2.Pt()) / motherRot.Pt();
+          // double pTcorrRot = std::abs(daughterRot.Pt() + daughter2.Pt()) / motherRot.Pt();
+          double pTcorrRot = (motherRot.Pt() - daughterRot.Pt() != 0.) ? daughterRot.Pt() / (motherRot.Pt() - daughterRot.Pt()) : 0.;
           if (motherRot.Rapidity() < config.rapidityMotherData)
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), deltaMass, deltaRvalue, pTcorrRot);
         }
@@ -1840,7 +1870,8 @@ struct HigherMassResonances {
         if (config.qAOptimisation) {
           double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) * TVector2::Phi_mpi_pi(daughter1.phi() - daughter2.phi()) + (daughter1.eta() - daughter2.eta()) * (daughter1.eta() - daughter2.eta()));
           const double deltaMass = deltaM(t1.mK0Short(), t2.mK0Short());
-          const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
+          // const double ptCorr = std::abs(daughter1.Pt() + daughter2.Pt()) / mother.Pt();
+          const double ptCorr = (mother.Pt() - daughter1.Pt() != 0.) ? daughter1.Pt() / (mother.Pt() - daughter1.Pt()) : 0.;
           if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
             hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), deltaMass, deltaRvalue, ptCorr);
           }

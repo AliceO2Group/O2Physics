@@ -27,6 +27,7 @@
 #include "ALICE3/Core/DetLayer.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFMCParticle.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/OTFTracks.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
@@ -265,6 +266,17 @@ struct OnTheFlyTracker {
   static constexpr std::array<int, 3> v0PDGs = {kK0Short,
                                                 kLambda0,
                                                 kLambda0Bar};
+
+  static constexpr std::array<int, 5> longLivedHandledPDGs = {kElectron,
+                                                              kMuonMinus,
+                                                              kPiPlus,
+                                                              kKPlus,
+                                                              kProton};
+
+  static constexpr std::array<int, 4> nucleiPDGs = {o2::constants::physics::kDeuteron,
+                                                    o2::constants::physics::kTriton,
+                                                    o2::constants::physics::kHelium3,
+                                                    o2::constants::physics::kAlpha};
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -689,17 +701,6 @@ struct OnTheFlyTracker {
     // generate collision time
     auto ir = irSampler.generateCollisionTime();
     const float eventCollisionTimeNS = ir.timeInBCNS;
-
-    constexpr std::array<int, 5> longLivedHandledPDGs = {kElectron,
-                                                         kMuonMinus,
-                                                         kPiPlus,
-                                                         kKPlus,
-                                                         kProton};
-
-    constexpr std::array<int, 4> nucleiPDGs = {o2::constants::physics::kDeuteron,
-                                               o2::constants::physics::kTriton,
-                                               o2::constants::physics::kHelium3,
-                                               o2::constants::physics::kAlpha};
 
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
@@ -1588,13 +1589,278 @@ struct OnTheFlyTracker {
     LOG(debug) << " <- Finished processing OTF tracking with LUT configuration ID " << icfg;
   } // end process
 
-  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void processOnTheFly(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       LOG(debug) << "  -> Processing OTF tracking with LUT configuration ID " << icfg;
       processWithLUTs(mcCollision, mcParticles, static_cast<int>(icfg));
     }
   }
+
+  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McParticlesWithDau const& mcParticles, int const& icfg)
+  {
+    // const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
+    const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+    tracksAlice3.clear();
+    ghostTracksAlice3.clear();
+    bcData.clear();
+    cascadesAlice3.clear();
+    v0sAlice3.clear();
+
+    o2::dataformats::DCA dcaInfo;
+    o2::dataformats::VertexBase vtx;
+
+    // generate collision time
+    auto ir = irSampler.generateCollisionTime();
+    const float eventCollisionTimeNS = ir.timeInBCNS;
+
+    // First we compute the number of charged particles in the event
+    dNdEta = 0.f;
+    for (const auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.eta()) > multEtaRange) {
+        continue;
+      }
+
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+
+      const auto pdg = std::abs(mcParticle.pdgCode());
+      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
+      const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), pdg) != nucleiPDGs.end();
+      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled);
+      if (!pdgsToBeHandled) {
+        continue;
+      }
+
+      const auto& pdgInfo = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (!pdgInfo) {
+        LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
+        continue;
+      }
+      if (pdgInfo->Charge() == 0) {
+        continue;
+      }
+      dNdEta += 1.f;
+    }
+
+    dNdEta /= (multEtaRange * 2.0f);
+    uint32_t multiplicityCounter = 0;
+    getHist(TH1, histPath + "hLUTMultiplicity")->Fill(dNdEta);
+
+    // Now that the multiplicity is known, we can process the particles to smear them
+    for (const auto& mcParticle : mcParticles) {
+      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
+      const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
+      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled);
+      if (!pdgsToBeHandled) {
+        continue;
+      }
+
+      if (std::fabs(mcParticle.eta()) > maxEta) {
+        continue;
+      }
+
+      if (mcParticle.pt() < minPt) {
+        continue;
+      }
+
+      if (enablePrimarySmearing) {
+        getHist(TH1, histPath + "hPtGenerated")->Fill(mcParticle.pt());
+        getHist(TH1, histPath + "hPhiGenerated")->Fill(mcParticle.phi());
+        switch (std::abs(mcParticle.pdgCode())) {
+          case kElectron:
+            getHist(TH1, histPath + "hPtGeneratedEl")->Fill(mcParticle.pt());
+            break;
+          case kPiPlus:
+            getHist(TH1, histPath + "hPtGeneratedPi")->Fill(mcParticle.pt());
+            break;
+          case kKPlus:
+            getHist(TH1, histPath + "hPtGeneratedKa")->Fill(mcParticle.pt());
+            break;
+          case kProton:
+            getHist(TH1, histPath + "hPtGeneratedPr")->Fill(mcParticle.pt());
+            break;
+        }
+      }
+
+      multiplicityCounter++;
+      o2::track::TrackParCov trackParCov;
+      const bool isDecayDaughter = (mcParticle.getProcess() == TMCProcess::kPDecay);
+      const float timeResolutionNs = 100.f; // ns
+      const float nsToMus = 1e-3f;
+      const float timeResolutionUs = timeResolutionNs * nsToMus; // us
+      const float time = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
+
+      bool reconstructed = false;
+      if (enablePrimarySmearing && mcParticle.isPrimary()) {
+        o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
+        reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      } else if (enableSecondarySmearing) {
+        o2::track::TrackParCov perfectTrackParCov;
+        o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        const int nHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        if (nHits < fastTrackerSettings.minSiliconHits) {
+          reconstructed = false;
+        } else {
+          reconstructed = true;
+        }
+      }
+
+      if (!reconstructed && processUnreconstructedTracks) {
+        continue; // failed to reconstruct track
+      }
+
+      if (std::isnan(trackParCov.getZ())) {
+        histos.fill(HIST("hNaNBookkeeping"), 0.0f, 0.0f);
+        continue; // capture smearing mistakes
+      }
+
+      histos.fill(HIST("hNaNBookkeeping"), 0.0f, 1.0f);
+      if (enablePrimarySmearing) {
+        getHist(TH1, histPath + "hPtReconstructed")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kElectron)
+          getHist(TH1, histPath + "hPtReconstructedEl")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
+          getHist(TH1, histPath + "hPtReconstructedPi")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kKPlus)
+          getHist(TH1, histPath + "hPtReconstructedKa")->Fill(trackParCov.getPt());
+        if (std::abs(mcParticle.pdgCode()) == kProton)
+          getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
+      }
+
+      if (reconstructed) {
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
+      } else {
+        ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
+      }
+    }
+
+    o2::vertexing::PVertex primaryVertex;
+    if (enablePrimaryVertexing) { // disabled for now
+      primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+    } else {
+      primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+    }
+
+    getHist(TH1, histPath + "hSimMultiplicity")->Fill(multiplicityCounter);
+    getHist(TH1, histPath + "hRecoMultiplicity")->Fill(tracksAlice3.size());
+    getHist(TH1, histPath + "hPVz")->Fill(primaryVertex.getZ());
+
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+    // populate collisions
+    tableCollisions(-1, // BC is irrelevant in synthetic MC tests for now, could be adjusted in future
+                    primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                    primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(),
+                    primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2(),
+                    0, primaryVertex.getChi2(), primaryVertex.getNContributors(),
+                    eventCollisionTimeNS, 0.f); // For the moment the event collision time is taken as the "GEANT" time, the computation of the event time is done a posteriori from the tracks in the OTF TOF PID task
+    tableMcCollisionLabels(mcCollision.globalIndex(), 0);
+    tableCollisionsAlice3(dNdEta);
+    tableOTFLUTConfigId(icfg); // Populate OTF LUT configuration ID
+
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+    // populate tracks
+    for (const auto& trackParCov : tracksAlice3) {
+      aod::track::TrackTypeEnum trackType = aod::track::Track;
+
+      if (populateTracksDCA) {
+        float dcaXY = 1e+10, dcaZ = 1e+10;
+        o2::track::TrackParCov trackParametrization(trackParCov);
+        if (trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
+          dcaXY = dcaInfo.getY();
+          dcaZ = dcaInfo.getZ();
+        }
+
+        tableTracksDCA(dcaXY, dcaZ);
+        if (populateTracksDCACov) {
+          tableTracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
+        }
+      }
+
+      tableStoredTracks(tableCollisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
+      tableTracksExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
+
+      // TODO do we keep the rho as 0? Also the sigma's are duplicated information
+      tableStoredTracksCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
+                           std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      tableTracksCovExtension(trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
+                              trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
+                              trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
+                              trackParCov.getSigma1Pt2());
+      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
+
+      // populate extra tables if required to do so
+      if (populateTracksExtra) {
+        tableStoredTracksExtra(0.0f, static_cast<uint32_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
+                               static_cast<int8_t>(0), static_cast<int8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
+                               0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                               0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      }
+      if (populateTrackSelection) {
+        tableTrackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
+        tableTrackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
+      }
+      tableTracksAlice3(true);
+    }
+
+    // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
+    // populate ghost tracks
+    for (const auto& trackParCov : ghostTracksAlice3) {
+      aod::track::TrackTypeEnum trackType = aod::track::Track;
+
+      if (populateTracksDCA) {
+        float dcaXY = 1e+10, dcaZ = 1e+10;
+        o2::track::TrackParCov trackParametrization(trackParCov);
+        if (trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
+          dcaXY = dcaInfo.getY();
+          dcaZ = dcaInfo.getZ();
+        }
+
+        tableTracksDCA(dcaXY, dcaZ);
+        if (populateTracksDCACov) {
+          tableTracksDCACov(dcaInfo.getSigmaY2(), dcaInfo.getSigmaZ2());
+        }
+      }
+
+      tableStoredTracks(tableCollisions.lastIndex(), trackType, trackParCov.getX(), trackParCov.getAlpha(), trackParCov.getY(), trackParCov.getZ(), trackParCov.getSnp(), trackParCov.getTgl(), trackParCov.getQ2Pt());
+      tableTracksExtension(trackParCov.getPt(), trackParCov.getP(), trackParCov.getEta(), trackParCov.getPhi());
+
+      // TODO do we keep the rho as 0? Also the sigma's are duplicated information
+      tableStoredTracksCov(std::sqrt(trackParCov.getSigmaY2()), std::sqrt(trackParCov.getSigmaZ2()), std::sqrt(trackParCov.getSigmaSnp2()),
+                           std::sqrt(trackParCov.getSigmaTgl2()), std::sqrt(trackParCov.getSigma1Pt2()), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      tableTracksCovExtension(trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(), trackParCov.getSigmaSnpY(),
+                              trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
+                              trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
+                              trackParCov.getSigma1Pt2());
+      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
+
+      // populate extra tables if required to do so
+      if (populateTracksExtra) {
+        tableStoredTracksExtra(0.0f, static_cast<uint32_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
+                               static_cast<int8_t>(0), static_cast<int8_t>(0), static_cast<uint8_t>(0), static_cast<uint8_t>(0),
+                               0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                               0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      }
+      if (populateTrackSelection) {
+        tableTrackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
+        tableTrackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
+      }
+      tableTracksAlice3(false);
+    }
+  }
+
+  void processDecayer(aod::McCollision const& mcCollision, aod::McParticlesWithDau const& mcParticles)
+  {
+    for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
+      processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));
+    }
+  }
+
+  PROCESS_SWITCH(OnTheFlyTracker, processOnTheFly, "Enable default workflow", true);
+  PROCESS_SWITCH(OnTheFlyTracker, processDecayer, "Enable experimental decayer workflow", false);
 };
 
 /// Extends TracksExtra if necessary

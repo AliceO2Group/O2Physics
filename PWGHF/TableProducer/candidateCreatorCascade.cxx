@@ -277,7 +277,6 @@ struct HfCandidateCreatorCascade {
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
       registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
-      // do I have to call "df.propagateTracksToVertex();"?
       auto trackParVarV0 = df.getTrack(0);
       auto trackParVarBach = df.getTrack(1);
 

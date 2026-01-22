@@ -18,7 +18,6 @@
 
 #include "RecoDecay.h"
 
-#include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 
 #include "Framework/Configurable.h"
@@ -125,7 +124,7 @@ constexpr std::array<histmanager::HistInfo<CprHist>, kCprHistogramLast> HistTabl
 template <typename T>
 auto makeCprHistSpecMap(const T& confCpr)
 {
-  return std::map<CprHist, std::vector<framework::AxisSpec>>{
+  return std::map<CprHist, std::vector<o2::framework::AxisSpec>>{
     {kAverage, {confCpr.binningDeta, confCpr.binningDphistar}},
     {kRadius0, {confCpr.binningDeta, confCpr.binningDphistar}},
     {kRadius1, {confCpr.binningDeta, confCpr.binningDphistar}},
