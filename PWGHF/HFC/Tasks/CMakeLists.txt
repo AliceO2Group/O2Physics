@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(task-charm-hadrons-track-femto-dream
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-charm-hadrons-v0-femto-dream
+                    SOURCES taskCharmHadronsV0FemtoDream.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-correlation-d0-hadrons
                     SOURCES taskCorrelationD0Hadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -26,6 +31,11 @@ o2physics_add_dpl_workflow(task-correlation-d-dbar
 
 o2physics_add_dpl_workflow(task-correlation-d-meson-pairs
                     SOURCES taskCorrelationDMesonPairs.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-correlation-dplus-dplus-reduced
+                    SOURCES taskCorrelationDplusDplusReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

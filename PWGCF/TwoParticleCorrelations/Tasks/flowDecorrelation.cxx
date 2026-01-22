@@ -704,21 +704,21 @@ struct FlowDecorrelation {
         if (system == SameEvent) {
           if (corType == kFT0A) {
             registry.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
-            sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track1.eta(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), eta, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == kFT0C) {
             registry.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
-            sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track1.eta(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), eta, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           }
         } else if (system == MixedEvent) {
           if (corType == kFT0A) {
             registry.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
-            mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track1.eta(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), eta, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == kFT0C) {
             registry.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
-            mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track1.eta(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), eta, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           }
         }

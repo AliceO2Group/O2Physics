@@ -12,6 +12,8 @@
 #include "PWGDQ/Core/AnalysisCut.h"
 
 #include <iostream>
+#include <vector>
+
 using std::cout;
 using std::endl;
 

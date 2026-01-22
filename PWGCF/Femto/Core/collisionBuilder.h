@@ -59,6 +59,7 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> sphericityMax{"sphericityMax", 1.f, "Maximum sphericity"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
+  o2::framework::Configurable<int> subGeneratorId{"subGeneratorId", 0, "MC ONLY: If positive, keep 0 = MB, <0 triggered on something"};
 };
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
@@ -86,8 +87,9 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
 struct ConfCcdb : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("ConfCcdb");
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL to ccdb"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField/Run2 -> GLO/GRP/GRP"};
+  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/Config/GRPMagField", "Path to GRP object (Run3 -> GLO/Config/GRPMagField, Run2 -> GLO/GRP/GRP"};
   o2::framework::Configurable<std::string> triggerPath{"triggerPath", "EventFiltering/Zorro/", "CCDB path for trigger information"};
+  o2::framework::Configurable<int> magFieldForced{"magFieldForced", 0, "Force value for magnetic field (kG). This will skip calls to the ccdb. Deactivate by setting value to 0"};
 };
 
 struct ConfCollisionRctFlags : o2::framework::ConfigurableGroup {
@@ -223,7 +225,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   template <typename T>
   void setSphericity(T tracks)
   {
-    mSphericity = utils::sphericity(tracks);
+    mSphericity = computeSphericity(tracks);
   }
 
   float getSphericity() const { return mSphericity; }
@@ -310,6 +312,39 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   };
 
  protected:
+  template <typename T>
+  float computeSphericity(T const& tracks)
+  {
+    int minNumberTracks = 2;
+    double maxSphericity = 2.f;
+    if (tracks.size() <= minNumberTracks) {
+      return maxSphericity;
+    }
+    // Initialize the transverse momentum tensor components
+    double sxx = 0.;
+    double syy = 0.;
+    double sxy = 0.;
+    double sumPt = 0.;
+    // Loop over the tracks to compute the tensor components
+    for (const auto& track : tracks) {
+      sxx += (track.px() * track.px()) / track.pt();
+      syy += (track.py() * track.py()) / track.pt();
+      sxy += (track.px() * track.py()) / track.pt();
+      sumPt += track.pt();
+    }
+    sxx /= sumPt;
+    syy /= sumPt;
+    sxy /= sumPt;
+    // Compute the eigenvalues (real values)
+    double lambda1 = ((sxx + syy) + std::sqrt((sxx + syy) * (sxx + syy) - 4. * (sxx * syy - sxy * sxy))) / 2.;
+    double lambda2 = ((sxx + syy) - std::sqrt((sxx + syy) * (sxx + syy) - 4. * (sxx * syy - sxy * sxy))) / 2.;
+    if (lambda1 <= 0. || lambda2 <= 0.) {
+      return maxSphericity;
+    }
+    // Compute sphericity
+    return static_cast<float>(2. * lambda2 / (lambda1 + lambda2));
+  }
+
   // filter cuts
   float mVtxZMin = -12.f;
   float mVtxZMax = -12.f;
@@ -389,7 +424,9 @@ class CollisionBuilder
       mUseRctFlags = true;
       mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
     }
+    mMagFieldForced = confCcdb.magFieldForced.value;
     mGrpPath = confCcdb.grpPath.value;
+    mSubGeneratorId = confFilter.subGeneratorId.value;
 
     mCollisionSelection.configure(registry, confFilter, confBits);
     mCollisionSelection.printSelections(colSelsName);
@@ -401,12 +438,16 @@ class CollisionBuilder
   {
     if (mRunNumber != bc.runNumber()) {
       mRunNumber = bc.runNumber();
-      static o2::parameters::GRPMagField* grpo = nullptr;
-      grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
-      if (grpo == nullptr) {
-        LOG(fatal) << "GRP object not found for Run " << mRunNumber;
+      if (mMagFieldForced == 0) {
+        static o2::parameters::GRPMagField* grpo = nullptr;
+        grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+        if (grpo == nullptr) {
+          LOG(fatal) << "GRP object not found for Run " << mRunNumber;
+        }
+        mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
+      } else {
+        mMagField = mMagFieldForced;
       }
-      mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
 
       if (mUseTrigger) {
         mZorro.initCCDB(ccdb.service, mRunNumber, bc.timestamp(), mTriggerNames);
@@ -439,6 +480,28 @@ class CollisionBuilder
            mCollisionSelection.passesAllRequiredSelections();
   }
 
+  template <typename T1, typename T2>
+  bool checkCollision(T1 const& col, T2 const& /*mcCols*/)
+  {
+    // check sub generator id of associated generated collision
+    if (mSubGeneratorId >= 0) {
+      if (col.has_mcCollision()) {
+        auto mcCol = col.template mcCollision_as<T2>();
+        if (mcCol.getSubGeneratorId() != mSubGeneratorId) {
+          return false;
+        }
+      }
+    }
+
+    // check RCT flags first
+    if (mUseRctFlags && !mRctFlagsChecker(col)) {
+      return false;
+    }
+    // make other checks
+    return mCollisionSelection.checkFilters(col) &&
+           mCollisionSelection.passesAllRequiredSelections();
+  }
+
   template <modes::System system, typename T1, typename T2>
   void fillCollision(T1& collisionProducts, T2 const& col)
   {
@@ -446,7 +509,7 @@ class CollisionBuilder
       return;
     }
 
-    if (mCollisionAleadyFilled) {
+    if (mCollisionAlreadyFilled) {
       return;
     }
 
@@ -488,25 +551,34 @@ class CollisionBuilder
       }
     }
 
-    mCollisionAleadyFilled = true;
+    mCollisionAlreadyFilled = true;
   }
 
-  void reset()
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcCollision(T1& collisionProducts, T2 const& col, T3 const& mcCols, T4& mcProducts, T5& mcBuilder)
   {
-    mCollisionAleadyFilled = false;
+    if (mCollisionAlreadyFilled) {
+      return;
+    }
+    this->template fillCollision<system>(collisionProducts, col);
+    mcBuilder.template fillMcCollisionWithLabel<system>(mcProducts, col, mcCols);
   }
+
+  void reset() { mCollisionAlreadyFilled = false; }
 
  private:
   CollisionSelection<HistName> mCollisionSelection;
-  bool mCollisionAleadyFilled = false;
+  bool mCollisionAlreadyFilled = false;
   Zorro mZorro;
   bool mUseTrigger = false;
   int mRunNumber = -1;
   std::string mGrpPath = std::string("");
+  int mMagFieldForced = 0;
   int mMagField = 0;
   aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
   bool mUseRctFlags = false;
   std::string mTriggerNames = std::string("");
+  int mSubGeneratorId = -1;
   bool mFillAnyTable = false;
   bool mProducedCollisions = false;
   bool mProducedCollisionMasks = false;

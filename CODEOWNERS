@@ -11,7 +11,7 @@
 
 # @alibuild has to be in each line to allow self approval of PRs
 
-* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk @dsekihat
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @hscheid
@@ -22,13 +22,14 @@
 /DPG/Tasks/FT0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
 /DPG/Tasks/FV0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
 /DPG/Tasks/FDD @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
-/EventFiltering @alibuild @mpuccio @lietava
-/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava
-/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava
-/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @lietava
-/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava
-/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava
-/EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava
+/EventFiltering @alibuild @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava @ariedel-cern
+/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGEM @alibuild @dsekihat @nstrangm @mpuccio @lietava @fgrosa @ariedel-cern
 
 /PWGCF               @alibuild @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGCF/Core          @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
@@ -39,27 +40,27 @@
 /PWGEM @alibuild @feisenhu @dsekihat @ivorobye @jokonig
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid @jokonig
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat @jokonig
-/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng @singhra1994
 # PWG-LF
-/PWGLF @alibuild @sustripathy @skundu692 @mpuccio
-/PWGLF/DataModel @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Tasks/GlobalEventProperties @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @omvazque
-/PWGLF/TableProducer/GlobalEventProperties @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @omvazque
-/PWGLF/Tasks/Nuspex @alibuild @sustripathy @skundu692 @mpuccio @fmazzasc @maciacco
-/PWGLF/TableProducer/Nuspex @alibuild @sustripathy @skundu692 @mpuccio @fmazzasc @maciacco
-/PWGLF/Tasks/Resonances @alibuild @sustripathy @skundu692 @mpuccio @dmallick2 @smaff92
-/PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @mpuccio @dmallick2 @smaff92
-/PWGLF/Tasks/Strangeness @alibuild @sustripathy @skundu692 @mpuccio @ercolessi @romainschotter
-/PWGLF/TableProducer/Strangeness @alibuild @sustripathy @mpuccio @skundu692 @ercolessi @romainschotter
-/PWGLF/TableProducer/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Tasks/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Utils @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF @alibuild @omvazque @skundu692 @mpuccio
+/PWGLF/DataModel @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
+/PWGLF/TableProducer/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
+/PWGLF/Tasks/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
+/PWGLF/TableProducer/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
+/PWGLF/Tasks/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92
+/PWGLF/Tasks/Strangeness @alibuild @omvazque @skundu692 @mpuccio @ercolessi @romainschotter
+/PWGLF/TableProducer/Strangeness @alibuild @omvazque @mpuccio @skundu692 @ercolessi @romainschotter
+/PWGLF/TableProducer/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Utils @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
 
 # PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
-/PWGMM      @alibuild @mpuccio @skundu692 @aalkin @jgcn
-/PWGMM/Mult @alibuild @mpuccio @skundu692 @aalkin @aortizve @ddobrigk @gbencedi @jgcn
-/PWGMM/Lumi @alibuild @mpuccio @skundu692 @aalkin @jgcn @gbencedi @abmodak
-/PWGMM/UE   @alibuild @mpuccio @skundu692 @aalkin @aortizve @jgcn
+/PWGMM      @alibuild @omvazque @mpuccio @skundu692 @aalkin @jgcn
+/PWGMM/Mult @alibuild @omvazque @mpuccio @skundu692 @aalkin @aortizve @ddobrigk @gbencedi @jgcn
+/PWGMM/Lumi @alibuild @omvazque @mpuccio @skundu692 @aalkin @jgcn @gbencedi @abmodak
+/PWGMM/UE   @alibuild @omvazque @mpuccio @skundu692 @aalkin @aortizve @jgcn
 
 /PWGUD @alibuild @amatyja @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern

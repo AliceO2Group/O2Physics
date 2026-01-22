@@ -41,6 +41,7 @@
 #include "TList.h"
 #include <TF1.h>
 #include <TObjArray.h>
+#include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
 
@@ -57,12 +58,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+static constexpr double LongArrayDouble[4][2] = {{-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}};
 
 struct FlowTask {
 
   // Basic event&track selections
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT")
   O2_DEFINE_CONFIGURABLE(cfgCentFT0CMin, float, 0.0f, "Minimum centrality (FT0C) to cut events in filter")
   O2_DEFINE_CONFIGURABLE(cfgCentFT0CMax, float, 100.0f, "Maximum centrality (FT0C) to cut events in filter")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -72,9 +74,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta range for pt-pt correlations")
-  O2_DEFINE_CONFIGURABLE(cfgEtaSubPtPt, float, 0.8, "eta range for subevent pt-pt correlations")
-  O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPt, float, 0.2, "eta gap for pt-pt correlations, cfgEtaGapPtPt<|eta|<cfgEtaSubPtPt")
+  O2_DEFINE_CONFIGURABLE(cfgEtaVnPt, float, 0.4, "eta range for pt in vn-pt correlations")
+  Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
@@ -184,7 +185,7 @@ struct FlowTask {
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   // Filter for MCcollisions
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
@@ -193,7 +194,7 @@ struct FlowTask {
   Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
-  using FilteredSmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using FilteredSmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -219,6 +220,7 @@ struct FlowTask {
   std::vector<GFW::CorrConfig> corrconfigsPtVn;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
+  std::vector<std::pair<double, double>> etagapsPtPt;
   std::vector<std::vector<std::shared_ptr<TProfile>>> bootstrapArray;
   int lastRunNumber = -1;
   std::vector<int> runNumbers;
@@ -228,6 +230,9 @@ struct FlowTask {
     kCentFT0CVariant1,
     kCentFT0M,
     kCentFV0A,
+    kCentNTPV,
+    kCentNGlobal,
+    kCentMFT,
     // Count the total number of enum
     kCount_CentEstimators
   };
@@ -299,6 +304,7 @@ struct FlowTask {
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
     registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
     if (doprocessMCGen) {
+      registry.add("MCGen/hMCEventCount", "Number of Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
       registry.add("MCGen/MChVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
       registry.add("MCGen/MChMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
       registry.add("MCGen/MChCent", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
@@ -359,7 +365,7 @@ struct FlowTask {
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
-      registry.add("MCGen/MChPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+      registry.add("MCGen/MChPt", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
       registry.add("hMeanPtWithinGap08_MC", "mean p_{T}", {HistType::kTProfile, {axisIndependent}});
       for (auto i = 0; i < cfgNbootstrap; i++) {
         bootstrapArray[i][kMeanPtWithinGap08_MC] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08_MC", i), "", {HistType::kTProfile, {axisIndependent}});
@@ -553,8 +559,17 @@ struct FlowTask {
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
     fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
-    if (cfgEtaGapPtPtEnabled)
-      fFCpt->initialiseSubevent(axisIndependent, cfgMpar, cfgNbootstrap);
+    if (cfgEtaGapPtPtEnabled) {
+      for (int i = 0; i < 4; ++i) { // o2-linter: disable=magic-number (maximum of 4 subevents)
+        if (cfgPtPtGaps->getData()[i][0] < -1. || cfgPtPtGaps->getData()[i][1] < -1.)
+          continue;
+        etagapsPtPt.push_back(std::make_pair(cfgPtPtGaps->getData()[i][0], cfgPtPtGaps->getData()[i][1]));
+      }
+      for (const auto& [etamin, etamax] : etagapsPtPt) {
+        LOGF(info, "pt-pt subevent: {%.1f,%.1f}", etamin, etamax);
+      }
+      fFCpt->initialiseSubevent(axisIndependent, cfgMpar, etagapsPtPt.size(), cfgNbootstrap);
+    }
     for (auto i = 0; i < gfwConfigs.GetSize(); ++i) {
       corrconfigsPtVn.push_back(fGFW->GetCorrelatorConfig(gfwConfigs.GetCorrs()[i], gfwConfigs.GetHeads()[i], gfwConfigs.GetpTDifs()[i]));
     }
@@ -563,7 +578,7 @@ struct FlowTask {
       fFCptgen->setUseGapMethod(true);
       fFCptgen->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
       if (cfgEtaGapPtPtEnabled)
-        fFCptgen->initialiseSubevent(axisIndependent, cfgMpar, cfgNbootstrap);
+        fFCptgen->initialiseSubevent(axisIndependent, cfgMpar, etagapsPtPt.size(), cfgNbootstrap);
     }
     fGFW->CreateRegions();
 
@@ -700,17 +715,16 @@ struct FlowTask {
   template <DataType dt, typename TTrack>
   inline void fillPtSums(TTrack track, float weff)
   {
-    if (std::abs(track.eta()) < cfgEtaPtPt) {
+    if (std::abs(track.eta()) < cfgEtaVnPt) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
     }
-    if (std::abs(track.eta()) < cfgEtaSubPtPt) {
-      if (cfgEtaGapPtPtEnabled) {
-        if (track.eta() < -1. * cfgEtaGapPtPt) {
-          (dt == kGen) ? fFCptgen->fillSub1(1., track.pt()) : fFCpt->fillSub1(weff, track.pt());
+    std::size_t index = 0;
+    if (cfgEtaGapPtPtEnabled) {
+      for (const auto& [etamin, etamax] : etagapsPtPt) {
+        if (etamin < track.eta() && track.eta() < etamax) {
+          (dt == kGen) ? fFCptgen->fillSub(1., track.pt(), index) : fFCpt->fillSub(weff, track.pt(), index);
         }
-        if (track.eta() > cfgEtaGapPtPt) {
-          (dt == kGen) ? fFCptgen->fillSub2(1., track.pt()) : fFCpt->fillSub2(weff, track.pt());
-        }
+        ++index;
       }
     }
   }
@@ -981,6 +995,15 @@ struct FlowTask {
       case kCentFV0A:
         cent = collision.centFV0A();
         break;
+      case kCentNTPV:
+        cent = collision.centNTPV();
+        break;
+      case kCentNGlobal:
+        cent = collision.centNGlobal();
+        break;
+      case kCentMFT:
+        cent = collision.centMFT();
+        break;
       default:
         cent = collision.centFT0C();
     }
@@ -1117,7 +1140,7 @@ struct FlowTask {
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
-      bool withinEtaGap08 = (std::abs(track.eta()) < cfgEtaPtPt);
+      bool withinEtaGap08 = (std::abs(track.eta()) < cfgCutEta);
       if (cfgOutputNUAWeights) {
         if (cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
@@ -1233,13 +1256,25 @@ struct FlowTask {
 
   void processMCGen(FilteredMcCollisions::iterator const& mcCollision, FilteredSmallGroupMcCollisions const& collisions, FilteredMcParticles const& mcParticles)
   {
+    registry.fill(HIST("MCGen/hMCEventCount"), 0.5);
     if (collisions.size() != 1)
       return;
+    registry.fill(HIST("MCGen/hMCEventCount"), 1.5);
 
     float cent = -1.;
     for (const auto& collision : collisions) {
       cent = getCentrality(collision);
     }
+
+    if (cfgUseAdditionalEventCut) {
+      for (auto const& collision : collisions) {
+        if (!collision.sel8())
+          return;
+        if (!eventSelected(collision, mcParticles.size(), cent))
+          return;
+      }
+    }
+    registry.fill(HIST("MCGen/hMCEventCount"), 2.5);
 
     float lRandom = fRndm->Rndm();
     float vtxz = mcCollision.posZ();
@@ -1253,26 +1288,25 @@ struct FlowTask {
     fGFW->Clear();
     fFCptgen->clearVector();
 
-    if (cfgUseAdditionalEventCut) {
-      for (auto const& collision : collisions) {
-        if (!eventSelected(collision, mcParticles.size(), cent))
-          return;
-      }
-    }
-
     double ptSum_Gap08 = 0.;
     double count_Gap08 = 0.;
     for (const auto& mcParticle : mcParticles) {
+      int pdgCode = std::abs(mcParticle.pdgCode());
+      bool extraPDGType = (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0);
+      if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        continue;
       if (!mcParticle.isPhysicalPrimary())
+        continue;
+      if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
-      bool withinEtaGap08 = (std::abs(mcParticle.eta()) < cfgEtaPtPt);
+      bool withinEtaGap08 = (std::abs(mcParticle.eta()) < cfgCutEta);
 
+      registry.fill(HIST("MCGen/MChPt"), mcParticle.pt());
       if (withinPtRef) {
         registry.fill(HIST("MCGen/MChPhi"), mcParticle.phi());
         registry.fill(HIST("MCGen/MChEta"), mcParticle.eta());
-        registry.fill(HIST("MCGen/MChPtRef"), mcParticle.pt());
         if (withinEtaGap08) {
           ptSum_Gap08 += mcParticle.pt();
           count_Gap08 += 1.;

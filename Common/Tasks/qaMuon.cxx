@@ -533,7 +533,7 @@ struct muonQa {
       for (size_t i = 0; i < 2; i++) {
         std::string topBottom = (i == 0) ? "top" : "bottom";
         AxisSpec deAxis = {26, 0, 26, "DE index"};
-        AxisSpec phiAxis = {16, -180, 180, "#phi (degrees)"};
+        AxisSpec phiAxisInner = {16, -180, 180, "#phi (degrees)"};
         for (size_t j = 0; j < 2; j++) {
           std::string sign = (j == 0) ? "positive" : "negative";
           for (int chamber = 0; chamber < 10; chamber++) {
@@ -542,8 +542,8 @@ struct muonQa {
             residualsHistosPerDE[i][j][chamber]["dx_vs_de"] = registryResidualsMFT.add((histPath + "dx_vs_de").c_str(), "Cluster x residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
             residualsHistosPerDE[i][j][chamber]["dy_vs_de"] = registryResidualsMFT.add((histPath + "dy_vs_de").c_str(), "Cluster y residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
 
-            residualsHistosPerDE[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
-            residualsHistosPerDE[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
+            residualsHistosPerDE[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
+            residualsHistosPerDE[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
 
             // mixed events
             histPath = std::string("Alignment/mixed-event/Residuals/MFT/MFT_") + topBottom + "/" + sign + "/CH" + std::to_string(chamber + 1) + "/";
@@ -551,8 +551,8 @@ struct muonQa {
             residualsHistosPerDEMixedEvents[i][j][chamber]["dx_vs_de"] = registryResidualsMFT.add((histPath + "dx_vs_de").c_str(), "Cluster x residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
             residualsHistosPerDEMixedEvents[i][j][chamber]["dy_vs_de"] = registryResidualsMFT.add((histPath + "dy_vs_de").c_str(), "Cluster y residual vs. DE index", {HistType::kTH2F, {deAxis, dxAxis}});
 
-            residualsHistosPerDEMixedEvents[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
-            residualsHistosPerDEMixedEvents[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxis, dxAxis}});
+            residualsHistosPerDEMixedEvents[i][j][chamber]["dx_vs_phi"] = registryResidualsMFT.add((histPath + "dx_vs_phi").c_str(), "Cluster x residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
+            residualsHistosPerDEMixedEvents[i][j][chamber]["dy_vs_phi"] = registryResidualsMFT.add((histPath + "dy_vs_phi").c_str(), "Cluster y residual vs. cluster #phi", {HistType::kTH2F, {phiAxisInner, dxAxis}});
           }
         }
       }
@@ -738,7 +738,7 @@ struct muonQa {
       AxisSpec rAbsAxis = {10, 0., 100.0, "R_{abs} (cm)"};
       AxisSpec dcaAxis = {400, -10.0, 10.0, "DCA"};
       AxisSpec dcaAxisReduced = {40, -10.0, 10.0, "DCA"};
-      AxisSpec phiAxis = {36, -180.0, 180.0, "#phi (degrees)"};
+      AxisSpec phiAxisInner = {36, -180.0, 180.0, "#phi (degrees)"};
       // dimuons
       AxisSpec invMassAxis = {400, 1, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
       AxisSpec invMassCorrelationAxis = {80, 0, 8, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
@@ -801,8 +801,8 @@ struct muonQa {
         registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxisReduced}});
         registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxisReduced}});
         //
-        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
-        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxisInner}});
+        registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxisInner}});
       }
       // MCH-MID tracks with MCH acceptance cuts
       registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_MuonCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
@@ -1739,8 +1739,8 @@ struct muonQa {
       float dcaXY = std::sqrt(fgValues.dcaX * fgValues.dcaX + fgValues.dcaY * fgValues.dcaY);
       fgValues.dcaXY = dcaXY;
 
-      mch::TrackParam trackParam = mch::TrackParam(muon.first());
-      float p = trackParam.p();
+      mch::TrackParam trackParamInner = mch::TrackParam(muon.first());
+      float p = trackParamInner.p();
       fgValues.pDca = p * dcaXY;
     }
 
@@ -1806,14 +1806,14 @@ struct muonQa {
         // double pz = pMCH * cos(M_PI / 2 - atan(mft.tgl()));
         double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
 
-        double chi2 = muon.chi2();
+        double chi2Inner = muon.chi2();
         double signed1Pt = endPoint == kToDCA ? muon.signed1Pt() : sign / pt;
         SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), signed1Pt);
         std::vector<double> v1{0, 0, 0, 0, 0,
                                0, 0, 0, 0, 0,
                                0, 0, 0, 0, 0};
         SMatrix55 tcovs(v1.begin(), v1.end());
-        o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+        o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2Inner};
         track.setParameters(tpars);
         track.setZ(fwdtrack.getZ());
         track.setCovariances(tcovs);

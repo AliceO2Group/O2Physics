@@ -235,7 +235,7 @@ class FlowJHistManager
     mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histPt"), track.pt());
     mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histEta"), track.eta());
     mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histPhi"), track.phi());
-    mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histCharge"), track.sign());
+    // mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histCharge"), track.sign());
 
     if (mode == 1) { // 'Weight' distributions are defined only for After/.
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histPtCorrected"),
@@ -257,6 +257,7 @@ class FlowJHistManager
 
     if (mSaveAllQA) {
       // TPC information.
+      /*
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCNClsFound"),
                             track.tpcNClsFound());
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCNClsCrossedRows"),
@@ -283,6 +284,7 @@ class FlowJHistManager
                             track.pt(), track.dcaXY());
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histDCAz"),
                             track.dcaZ());
+                            */
     }
 
     if (mDebugLog) {

@@ -63,7 +63,7 @@ struct skimmerPrimaryMuon {
   using MFTTracksMC = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
   using MFTTrackMC = MFTTracksMC::iterator;
 
-  Produces<aod::EMPrimaryMuons_001> emprimarymuons;
+  Produces<aod::EMPrimaryMuons> emprimarymuons;
   Produces<aod::EMPrimaryMuonsCov> emprimarymuonscov;
 
   // Configurables
@@ -90,6 +90,8 @@ struct skimmerPrimaryMuon {
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   Configurable<int> minNmuon{"minNmuon", 0, "min number of muon candidates per collision"};
+  Configurable<float> maxDEta{"maxDEta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
+  Configurable<float> maxDPhi{"maxDPhi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -167,6 +169,11 @@ struct skimmerPrimaryMuon {
     fRegistry.add("MFTMCHMID/hDCAxy", "DCAxy;DCA_{xy} (cm);", kTH1F, {{100, 0, 1}}, false);
     fRegistry.add("MFTMCHMID/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{100, 0, 1}, {200, -0.1, 0.1}}, false);
     fRegistry.add("MFTMCHMID/hDCAxyinSigma", "DCAxy in sigma;DCA_{xy} (#sigma);", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("MFTMCHMID/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+
     fRegistry.add("MFTMCHMID/hNmu", "#mu multiplicity;N_{#mu} per collision", kTH1F, {{21, -0.5, 20.5}}, false);
     fRegistry.addClone("MFTMCHMID/", "MCHMID/");
     fRegistry.add("MFTMCHMID/hDCAxResolutionvsPt", "DCA_{x} vs. p_{T};p_{T} (GeV/c);DCA_{x} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
@@ -391,11 +398,16 @@ struct skimmerPrimaryMuon {
       return false;
     }
 
+    float deta = etaMatchedMCHMID - eta;
+    float dphi = phiMatchedMCHMID - phi;
+    o2::math_utils::bringToPMPi(dphi);
+
+    if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
+      return false;
+    }
+
     if constexpr (fillTable) {
       float dpt = (ptMatchedMCHMID - pt) / pt;
-      float deta = etaMatchedMCHMID - eta;
-      float dphi = phiMatchedMCHMID - phi;
-      o2::math_utils::bringToPMPi(dphi);
 
       float detaMP = etaMatchedMCHMIDatMP - etaMatchedMFTatMP;
       float dphiMP = phiMatchedMCHMIDatMP - phiMatchedMFTatMP;
@@ -454,6 +466,10 @@ struct skimmerPrimaryMuon {
           fRegistry.fill(HIST("MFTMCHMID/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
           fRegistry.fill(HIST("MFTMCHMID/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
           fRegistry.fill(HIST("MFTMCHMID/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
+          fRegistry.fill(HIST("MFTMCHMID/hDCAx_PosZ"), collision.posZ(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/hDCAy_PosZ"), collision.posZ(), dcaY);
+          fRegistry.fill(HIST("MFTMCHMID/hDCAx_Phi"), phi, dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/hDCAy_Phi"), phi, dcaY);
         } else if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           fRegistry.fill(HIST("MCHMID/hPt"), pt);
           fRegistry.fill(HIST("MCHMID/hEtaPhi"), phi, eta);
@@ -1248,9 +1264,11 @@ struct associateSameMFT {
           if (global_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
             continue;
           }
-          if (global_muon.collisionId() == muon.collisionId()) {
-            self_Ids.emplace_back(global_muon.globalIndex());
-          }
+          self_Ids.emplace_back(global_muon.globalIndex());
+
+          // if (global_muon.collisionId() == muon.collisionId()) {
+          //   self_Ids.emplace_back(global_muon.globalIndex());
+          // }
         }
         em_same_mft_ids(self_Ids);
         self_Ids.clear();

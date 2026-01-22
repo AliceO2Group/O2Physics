@@ -18,7 +18,7 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/HistogramRegistry.h"
@@ -533,7 +533,7 @@ class PidManager
 
     float pScaled = p * mMomScaling[0] + mMomScaling[1];
     float betaGamma = pScaled / masses[mSpecies];
-    return o2::tpc::BetheBlochAleph(betaGamma,
+    return o2::common::BetheBlochAleph(betaGamma,
                                     mTpcBetheBlochParams[0],
                                     mTpcBetheBlochParams[1],
                                     mTpcBetheBlochParams[2],

@@ -49,6 +49,8 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <memory>
+#include <string>
 #include <vector>
 
 using std::cout;
