@@ -30,7 +30,8 @@ template <const char* Prefix>
 struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> activate{"activate", false, "Activate particle cleaner"};
-  o2::framework::Configurable<int> pdgCode{"pdgCode", 0, "Only consider particles with this exact pdg code (including the sign!). If set to 0, this is cut is ignored"};
+  o2::framework::Configurable<std::vector<int>> requiredPdgCodes{"requiredPdgCodes", {}, "Only consider particles with this exact pdg code (including the sign!)"};
+  o2::framework::Configurable<std::vector<int>> rejectedPdgCodes{"rejectedPdgCodes", {}, "Reject particles with this exact pdg code (including the sign!)"};
   o2::framework::Configurable<bool> rejectedParticleWithoutMcInformation{"rejectedParticleWithoutMcInformation", true, "If true, all particles which have no associated MC information, are rejected by default"};
   o2::framework::Configurable<std::vector<int>> requiredMotherPdgCodes{"requiredMotherPdgCodes", {}, "Only consider particles whose mothers have one of the supplied pdg codes (inclduing the sign!)"};
   o2::framework::Configurable<std::vector<int>> rejectMotherPdgCodes{"rejectMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (inclduing the sign!)"};
@@ -85,10 +86,15 @@ class ParticleCleaner
   void init(T const& confMpc)
   {
     mActivate = confMpc.activate.value;
+
     mRejectParticleWithoutMcInformation = confMpc.rejectedParticleWithoutMcInformation.value;
-    mPdgCode = confMpc.pdgCode.value;
+
+    mRequiredPdgCodes = confMpc.requiredPdgCodes.value;
+    mRejectedPdgCodes = confMpc.rejectedPdgCodes.value;
+
     mRequiredMotherPdgCodes = confMpc.requiredMotherPdgCodes.value;
     mRejectMotherPdgCodes = confMpc.rejectMotherPdgCodes.value;
+
     mRequiredPartonicMotherPdgCodes = confMpc.requiredPartonicMotherPdgCodes.value;
     mRejectPartonicMotherPdgCodes = confMpc.rejectPartonicMotherPdgCodes.value;
   }
@@ -110,9 +116,26 @@ class ParticleCleaner
     }
     // perfrom cuts based on mc information of the particle itself
     auto mcParticle = particle.template fMcParticle_as<T2>();
-    if (mPdgCode != 0) {
-      if (mPdgCode != mcParticle.pdgCode()) {
-        return false;
+
+    // if list is empty, set it to true and skip the looop
+    bool hasRequiredPdgCode = true;
+    if (!mRequiredPdgCodes.empty()) {
+      hasRequiredPdgCode = false;
+      for (int const& pdgCode : mRequiredPdgCodes) {
+        if (pdgCode == mcParticle.pdgCode()) {
+          hasRequiredPdgCode = true;
+          break;
+        }
+      }
+    }
+
+    bool hasRejectedPdgCode = false;
+    if (!mRejectedPdgCodes.empty()) {
+      for (int const& pdgCode : mRejectedPdgCodes) {
+        if (pdgCode == mcParticle.pdgCode()) {
+          hasRejectedPdgCode = true;
+          break;
+        }
       }
     }
 
@@ -166,14 +189,16 @@ class ParticleCleaner
       }
     }
 
-    return hasMotherWithRequiredPdgCode && !hasMotherWithRejectedPdgCode &&
+    return hasRequiredPdgCode && !hasRejectedPdgCode &&
+           hasMotherWithRequiredPdgCode && !hasMotherWithRejectedPdgCode &&
            hasPartonicMotherWithRequiredPdgCode && !hasPartonicMotherWithRejectedPdgCode;
   }
 
  private:
   bool mActivate = false;
   bool mRejectParticleWithoutMcInformation = true;
-  int mPdgCode = 0;
+  std::vector<int> mRequiredPdgCodes = {};
+  std::vector<int> mRejectedPdgCodes = {};
   std::vector<int> mRequiredMotherPdgCodes{};
   std::vector<int> mRejectMotherPdgCodes{};
   std::vector<int> mRequiredPartonicMotherPdgCodes{};
