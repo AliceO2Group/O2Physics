@@ -48,7 +48,9 @@ struct V0PhotonCandidate {
   float psipair;
   float cospa;
   float chi2ndf;
-  float centrality;
+  float centFT0A;
+  float centFT0C;
+  float centFT0M;
   float pca;
 
  public:
@@ -89,11 +91,13 @@ struct V0PhotonCandidate {
     phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(posPx, posPy, posPz, elePx, elePy, elePz, posSign, eleSign, d_bz);
     psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(posPx, posPy, posPz, elePx, elePy, elePz);
 
-    centrality = collision.centFT0M();
+    centFT0M = collision.centFT0M();
+    centFT0C = collision.centFT0C();
+    centFT0A = collision.centFT0A();
   }
 
   // Constructor for V0PhotonCut
-  V0PhotonCandidate(const auto& v0, const auto& pos, const auto& ele, float cent, float d_bz) : centrality(cent)
+  V0PhotonCandidate(const auto& v0, const auto& pos, const auto& ele, float centFT0A, float centFT0C, float centFT0M, float d_bz) : centFT0A(centFT0A), centFT0C(centFT0C), centFT0M(centFT0M)
   {
     px = v0.px();
     py = v0.py();
@@ -144,7 +148,9 @@ struct V0PhotonCandidate {
   float GetElePx() const { return elePx; }
   float GetElePy() const { return elePy; }
   float GetElePz() const { return elePz; }
-  float GetCent() const { return centrality; }
+  float GetCentFT0M() const { return centFT0M; }
+  float GetCentFT0C() const { return centFT0C; }
+  float GetCentFT0A() const { return centFT0A; }
   float GetPCA() const { return pca; }
 };
 
