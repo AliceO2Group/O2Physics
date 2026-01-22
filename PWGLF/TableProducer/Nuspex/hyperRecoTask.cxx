@@ -380,7 +380,7 @@ struct hyperRecoTask {
           continue;
         }
         hEvents->Fill(2.);
-      } 
+      }
 
       if (cfgEvSelkIsGoodZvtxFT0vsPV) {
         if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
@@ -409,15 +409,15 @@ struct hyperRecoTask {
       }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > 10)
         continue;
-      
+
       hEvents->Fill(1.);
-      
+
       if (cfgEvSelkNoSameBunchPileup) {
         if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
           continue;
         }
         hEvents->Fill(2.);
-      } 
+      }
 
       if (cfgEvSelkIsGoodZvtxFT0vsPV) {
         if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
@@ -425,7 +425,7 @@ struct hyperRecoTask {
         }
         hEvents->Fill(3.);
       }
-      
+
       if (collision.has_mcCollision()) {
         isSurvEvSelCollision[collision.mcCollisionId()] = true;
       }
