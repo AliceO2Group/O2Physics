@@ -270,7 +270,9 @@ class FemtoUniverseMath
       const double mRL = (z1_lcms - z2_lcms) / 0.197327;
       const double mDT = (t1_lcms - t2_lcms) / 0.197327;
 
-      const double quantumweight = 1.0 + std::cos(-fDKOutLCMS * mRO - fDKSideLCMS * mRS - fDKLongLCMS * mRL + mDE * mDT);
+      const double phase_inv = fDKOutPRF * mROutSmeared + fDKSidePRF * mRSideSmeared + fDKLongPRF * mRLongSmeared;
+      double quantumweight = 1.0 + TMath::Cos(2.0*phase_inv);
+        
       vect.push_back(quantumweight);
     } else {
       vect.push_back(1.0);
