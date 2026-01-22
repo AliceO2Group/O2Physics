@@ -66,7 +66,7 @@ using namespace o2::framework::expressions;
 // #define biton(var, nbit) ((var) |= (static_cast<uint32_t>(1) << (nbit)))
 // #define bitoff(var, nbit) ((var) &= ~(static_cast<uint32_t>(1) << (nbit))) //((a) &= ~(1ULL<<(b)))
 #define BIT_CHECK(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
-#define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
+#define GET_HIST(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
 using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes, aod::UpgradeRichs, aod::UpgradeRichSignals, aod::OTFLUTConfigId>;
 
@@ -794,7 +794,7 @@ struct Alice3MulticharmFinder {
 
             histos.fill(HIST("hCharmBuilding"), 3.0f);
             histos.fill(HIST("hMassXiCC"), thisXiCCcandidate.mass);
-            getHist(TH1, histPath + "hMassXiCC")->Fill(thisXiCCcandidate.mass);
+            GET_HIST(TH1, histPath + "hMassXiCC")->Fill(thisXiCCcandidate.mass);
 
             histos.fill(HIST("hPtXiCC"), thisXiCCcandidate.pt);
             histos.fill(HIST("hEtaXiCC"), thisXiCCcandidate.eta);
