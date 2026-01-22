@@ -34,7 +34,6 @@
 #include <TH2F.h>
 #include <THn.h>
 #include <TList.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
@@ -72,6 +71,7 @@ struct MeanptFluctuationsAnalysis {
   Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Minimum Number of TPC cluster"};
   Configurable<int> cfgTPCnCrossedRows{"cfgTPCnCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
+  Configurable<float> cfgTPCnCrossedRowsOverFindableCls{"cfgTPCnCrossedRowsOverFindableCls", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
   ConfigurableAxis nchAxis{"nchAxis", {500, 0.5, 500.5}, "Axis for multiplicity of GlobalTracks/PVTracks"};
   ConfigurableAxis nchAxis2{"nchAxis2", {1000, 0.5, 30000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
   ConfigurableAxis nchAxis3{"nchAxis3", {1000, 0.5, 100000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
@@ -126,6 +126,7 @@ struct MeanptFluctuationsAnalysis {
 
   O2_DEFINE_CONFIGURABLE(cfgUse22sEventCut, bool, true, "Use 22s event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallIonAdditionalEventCut, bool, true, "Use additional event cut on mult correlations for small ions")
+  O2_DEFINE_CONFIGURABLE(cfgUseSmallIonAdditionalEventCutInMC, bool, false, "Use additional event cut on mult correlations for small ions while using MC generated")
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -177,6 +178,8 @@ struct MeanptFluctuationsAnalysis {
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{90, 0, 90}});
     histos.add("hDcaXY", ";#it{dca}_{XY}", kTH1F, {{1000, -5, 5}});
     histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -5, 5}});
+    histos.add("his2DdcaXYvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
+    histos.add("his2DdcaZvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
     histos.add("hMeanPt", "", kTProfile, {centAxis});
     histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
@@ -417,7 +420,7 @@ struct MeanptFluctuationsAnalysis {
     histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel"), coll.multFT0C(), coll.multFV0A());
   }
 
-  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions, MyMCTracks const& tracks)
   {
     histos.fill(HIST("MCGenerated/hMC"), 0.5);
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
@@ -458,7 +461,7 @@ struct MeanptFluctuationsAnalysis {
       if (cfgEvSelUseGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(collision, mcParticles.size(), cent)) {
+      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, tracks.size(), cent)) {
         continue;
       }
 
@@ -568,6 +571,7 @@ struct MeanptFluctuationsAnalysis {
       fillMultCorrPlotsAfterSel(collision, tracks);
     }
 
+    histos.fill(HIST("MCGenerated/hMC"), 5.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
 
     double cent = 0.0;
@@ -616,7 +620,7 @@ struct MeanptFluctuationsAnalysis {
       if (!track.isPVContributor()) {
         continue;
       }
-      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
+      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows) || !(track.tpcCrossedRowsOverFindableCls() >= cfgTPCnCrossedRowsOverFindableCls)) {
         continue;
       }
 
@@ -628,6 +632,8 @@ struct MeanptFluctuationsAnalysis {
           histos.fill(HIST("hPhi"), track.phi());
           histos.fill(HIST("hDcaXY"), track.dcaXY());
           histos.fill(HIST("hDcaZ"), track.dcaZ());
+          histos.fill(HIST("his2DdcaXYvsPt"), track.pt(), track.dcaXY());
+          histos.fill(HIST("his2DdcaZvsPt"), track.pt(), track.dcaZ());
           histos.fill(HIST("MCGenerated/hPtParticleVsTrack"), particle.pt(), track.pt());
           histos.fill(HIST("MCGenerated/hEtaParticleVsTrack"), particle.eta(), track.eta());
           histos.fill(HIST("MCGenerated/hPhiParticleVsTrack"), particle.phi(), track.phi());
@@ -737,7 +743,7 @@ struct MeanptFluctuationsAnalysis {
         continue;
       }
 
-      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
+      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows) || !(track.tpcCrossedRowsOverFindableCls() >= cfgTPCnCrossedRowsOverFindableCls)) {
         continue;
       }
 
@@ -747,6 +753,8 @@ struct MeanptFluctuationsAnalysis {
       histos.fill(HIST("hPhi"), track.phi());
       histos.fill(HIST("hDcaXY"), track.dcaXY());
       histos.fill(HIST("hDcaZ"), track.dcaZ());
+      histos.fill(HIST("his2DdcaXYvsPt"), track.pt(), track.dcaXY());
+      histos.fill(HIST("his2DdcaZvsPt"), track.pt(), track.dcaZ());
 
       pTsum += track.pt();
       nN += 1.0;
