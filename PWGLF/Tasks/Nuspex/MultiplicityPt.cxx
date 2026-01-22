@@ -11,8 +11,6 @@
 
 #include "PWGLF/Utils/inelGt.h"
 
-#include "Common/Constants/MathConstants.h"
-#include "Common/Constants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -46,8 +44,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::constants::physics;
-using namespace o2::constants::math;
+
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
 
