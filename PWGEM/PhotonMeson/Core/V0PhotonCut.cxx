@@ -297,10 +297,10 @@ void V0PhotonCut::SetBinsCentMl(const std::vector<double>& binsCent)
   LOG(info) << "V0 Photon Cut, set bins centrality ML with size:" << mBinsCentMl.size();
 }
 
-void V0PhotonCut::SetCutsPCMMl(const o2::framework::LabeledArray<double>& cuts)
+void V0PhotonCut::SetCutsMl(const std::vector<double>& cuts)
 {
-  mCutsPCMMl = cuts;
-  LOG(info) << "V0 Photon Cut, set cuts PCM ML";
+  mCutsMlFlat = cuts;
+  LOG(info) << "V0 Photon Cut, set cuts ML with size:" << mCutsMlFlat.size();
 }
 
 void V0PhotonCut::SetNClassesMl(int nClasses)
@@ -315,9 +315,11 @@ void V0PhotonCut::SetNamesInputFeatures(const std::vector<std::string>& featureN
   LOG(info) << "V0 Photon Cut, set ML input feature names with size:" << mNamesInputFeatures.size();
 }
 
-void V0PhotonCut::SetCentrality(float cent)
+void V0PhotonCut::SetCentrality(float centFT0A, float centFT0C, float centFT0M)
 {
-  mCent = cent;
+  mCentFT0A = centFT0A;
+  mCentFT0C = centFT0C;
+  mCentFT0M = centFT0M;
 }
 void V0PhotonCut::SetD_Bz(float d_bz)
 {
@@ -328,4 +330,22 @@ void V0PhotonCut::SetCutDirMl(const std::vector<int>& cutDirMl)
 {
   mCutDirMl = cutDirMl;
   LOG(info) << "V0 Photon Cut, set ML cut directions with size:" << mCutDirMl.size();
+}
+
+void V0PhotonCut::SetCentralityTypeMl(const std::string& centType)
+{
+  mCentralityTypeMl = centType;
+  LOG(info) << "V0 Photon Cut, set centrality type ML: " << mCentralityTypeMl;
+}
+
+void V0PhotonCut::SetLabelsBinsMl(const std::vector<std::string>& labelsBins)
+{
+  mLabelsBinsMl = labelsBins;
+  LOG(info) << "V0 Photon Cut, set ML labels bins with size:" << mLabelsBinsMl.size();
+}
+
+void V0PhotonCut::SetLabelsCutScoresMl(const std::vector<std::string>& labelsCutScores)
+{
+  mLabelsCutScoresMl = labelsCutScores;
+  LOG(info) << "V0 Photon Cut, set ML labels cut scores with size:" << mLabelsCutScoresMl.size();
 }
