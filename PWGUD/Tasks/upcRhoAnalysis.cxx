@@ -286,6 +286,7 @@ struct UpcRhoAnalysis {
     rSystem.add("system/all/unlike-sign/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     rSystem.add("system/all/unlike-sign/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     rSystem.add("system/all/unlike-sign/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    rSystem.add("system/all/unlike-sign/hPt2VsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH2D, {mAxis, pt2Axis});
     rSystem.add("system/all/unlike-sign/hY", ";#it{y};counts", kTH1D, {yAxis});
     rSystem.add("system/all/unlike-sign/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
     rSystem.add("system/all/unlike-sign/hPhiRandom", ";#Delta#it{#phi}_{random} (rad);counts", kTH1D, {deltaPhiAxis});
@@ -333,6 +334,7 @@ struct UpcRhoAnalysis {
       rMC.add("MC/system/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
       rMC.add("MC/system/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
       rMC.add("MC/system/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+      rMC.add("MC/system/hPt2VsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH2D, {mAxis, pt2Axis});
       rMC.add("MC/system/hY", ";#it{y};counts", kTH1D, {yAxis});
       rMC.add("MC/system/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
       rMC.add("MC/system/hPhiRandom", ";#Delta#it{#phi}_{random} (rad);counts", kTH1D, {deltaPhiAxis});
@@ -403,6 +405,7 @@ struct UpcRhoAnalysis {
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt"), pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt2"), pt * pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPtVsM"), mass, pt);
+      rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPt2VsM"), mass, pt * pt);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hY"), rapidity);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPhi"), phi);
       rSystem.fill(HIST("system/") + HIST(AppliedSelections[cuts]) + HIST(ChargeLabel[charge]) + HIST("hPhiRandom"), phiRandom);
@@ -414,6 +417,7 @@ struct UpcRhoAnalysis {
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt"), pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt2"), pt * pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPtVsM"), mass, pt);
+      rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPt2VsM"), mass, pt * pt);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hY"), rapidity);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPhi"), phi);
       rSystem.fill(HIST("system/") + HIST("selected/") + HIST(NeutronClass[neutronClass]) + HIST(ChargeLabel[charge]) + HIST("hPhiRandom"), phiRandom);
@@ -965,6 +969,7 @@ struct UpcRhoAnalysis {
     rMC.fill(HIST("MC/system/hM"), mass);
     rMC.fill(HIST("MC/system/hPt"), pT);
     rMC.fill(HIST("MC/system/hPtVsM"), mass, pT);
+    rMC.fill(HIST("MC/system/hPt2VsM"), mass, pT * pT);
     rMC.fill(HIST("MC/system/hPt2"), pT * pT);
     rMC.fill(HIST("MC/system/hY"), rapidity);
     rMC.fill(HIST("MC/system/hPhi"), systemPhi);
