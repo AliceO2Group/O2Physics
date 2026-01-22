@@ -150,7 +150,7 @@ struct FlowSP {
   Configurable<std::vector<double>> cfgEvSelsMult{"cfgEvSelsMult", std::vector<double>{1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgEvSelsVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy && nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
   Filter trackFilterMC = nabs(aod::mcparticle::eta) < cfgTrackSelsEta && aod::mcparticle::pt > cfgTrackSelsPtmin&& aod::mcparticle::pt < cfgTrackSelsPtmax;
   using GeneralCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
   using UnfilteredTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -523,7 +523,7 @@ struct FlowSP {
           registry.add<TProfile3D>("incl/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
           registry.add<TProfile3D>("incl/vnA", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
         }
-        if(cfgFillMeanPT) {
+        if (cfgFillMeanPT) {
           registry.add<TProfile2D>("incl/meanPT/meanRelPtA", "", kTProfile2D, {axisEtaVn, axisCentrality});
           registry.add<TProfile2D>("incl/meanPT/meanRelPtC", "", kTProfile2D, {axisEtaVn, axisCentrality});
         }
@@ -791,9 +791,9 @@ struct FlowSP {
     int sizeEff = cfg.mEfficiency.size();
     if (sizeEff > pID) {
       if (cfgUseNUE2D) {
-        int binx; 
-        int biny; 
-        if(cfgUseNUE2Deta) {
+        int binx;
+        int biny;
+        if (cfgUseNUE2Deta) {
           biny = cfg.mEfficiency2D[pID]->GetYaxis()->FindBin(pt);
           binx = cfg.mEfficiency2D[pID]->GetXaxis()->FindBin(eta);
         } else {
@@ -1220,8 +1220,6 @@ struct FlowSP {
       return;
     histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
 
-
-
     spm.qxA = collision.qxA();
     spm.qyA = collision.qyA();
     spm.qxC = collision.qxC();
@@ -1308,14 +1306,12 @@ struct FlowSP {
     float trackPx = 0;
     int trackSize = 0;
 
-    TProfile2D* hRelEtaPt = new TProfile2D("hRelEtaPt", "hRelEtaPt", 8,-.8,.8, 3,0,3);
-    TProfile2D* ptV1A = new TProfile2D("ptV1A", "ptV1A", 8,-.8,.8, 3,0,3);
-    TProfile2D* ptV1C = new TProfile2D("ptV1C", "ptV1C", 8,-.8,.8, 3,0,3);
+    TProfile2D* hRelEtaPt = new TProfile2D("hRelEtaPt", "hRelEtaPt", 8, -.8, .8, 3, 0, 3);
+    TProfile2D* ptV1A = new TProfile2D("ptV1A", "ptV1A", 8, -.8, .8, 3, 0, 3);
+    TProfile2D* ptV1C = new TProfile2D("ptV1C", "ptV1C", 8, -.8, .8, 3, 0, 3);
 
-    double sumPt = 0; 
+    double sumPt = 0;
     int ptCounter = 0;
-
-
 
     for (const auto& track : tracks) {
 
@@ -1390,7 +1386,6 @@ struct FlowSP {
 
       ptV1C->Fill(track.eta(), kInclusive, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weight);
       ptV1C->Fill(track.eta(), spm.charge, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weight_charged);
-
 
       fillAllQA<kAfter, kUnidentified>(track);
       if (cfgFillPIDQA) {
@@ -1490,10 +1485,9 @@ struct FlowSP {
 
     } // end of track loop
 
-
-    // Now we want to fill the final relPt histogram 
+    // Now we want to fill the final relPt histogram
     // Loop over all eta and fill bins
-    if(cfgFillMeanPT) {
+    if (cfgFillMeanPT) {
       for (int i = 0; i < hRelEtaPt->GetNbinsX(); i++) {
         double eta = hRelEtaPt->GetXaxis()->GetBinCenter(i);
         int nEntries = hRelEtaPt->GetEntries();
@@ -1503,32 +1497,34 @@ struct FlowSP {
         double drelPt = hRelEtaPt->GetBinContent(bin);
         double dptV1A = ptV1A->GetBinContent(bin);
         double dptV1C = ptV1C->GetBinContent(bin);
-        if(drelPt) registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A / drelPt,1);
-        if(drelPt) registry.fill(HIST("incl/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C / drelPt,1);
+        if (drelPt)
+          registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A / drelPt, 1);
+        if (drelPt)
+          registry.fill(HIST("incl/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C / drelPt, 1);
 
         bin = hRelEtaPt->FindBin(eta, kPositive);
         double drelPt_pos = hRelEtaPt->GetBinContent(bin);
         double dptV1A_pos = ptV1A->GetBinContent(bin);
         double dptV1C_pos = ptV1C->GetBinContent(bin);
-        if(drelPt_pos) registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A_pos / drelPt_pos,1);
-        if(drelPt_pos) registry.fill(HIST("pos/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C_pos / drelPt_pos,1);
+        if (drelPt_pos)
+          registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A_pos / drelPt_pos, 1);
+        if (drelPt_pos)
+          registry.fill(HIST("pos/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C_pos / drelPt_pos, 1);
 
         bin = hRelEtaPt->FindBin(eta, kNegative);
         double drelPt_neg = hRelEtaPt->GetBinContent(bin);
         double dptV1A_neg = ptV1A->GetBinContent(bin);
         double dptV1C_neg = ptV1C->GetBinContent(bin);
-        if(drelPt_neg) registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A_neg / drelPt_neg,1);
-        if(drelPt_neg) registry.fill(HIST("neg/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C_neg / drelPt_neg,1);
+        if (drelPt_neg)
+          registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A_neg / drelPt_neg, 1);
+        if (drelPt_neg)
+          registry.fill(HIST("neg/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C_neg / drelPt_neg, 1);
       }
     }
 
-
-
-    delete hRelEtaPt; 
-    delete ptV1A; 
-    delete ptV1C; 
-
-
+    delete hRelEtaPt;
+    delete ptV1A;
+    delete ptV1C;
   }
 
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
