@@ -134,54 +134,60 @@ struct StrangenessInJetsIons {
   Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection"};
 
   // Track analysis parameters
-  Configurable<int> minITSnCls{"minITSnCls", 4, "Minimum number of ITS clusters"};
-  Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "Minimum number of TPC crossed rows"};
-  Configurable<double> maxChi2TPC{"maxChi2TPC", 4.0f, "Maximum chi2 per cluster TPC"};
-  Configurable<double> etaMin{"etaMin", -0.8f, "Minimum eta"};
-  Configurable<double> etaMax{"etaMax", +0.8f, "Maximum eta"};
-  Configurable<double> ptMinV0Proton{"ptMinV0Proton", 0.0f, "Minimum pt of protons from V0"};
-  Configurable<double> ptMaxV0Proton{"ptMaxV0Proton", 100.0f, "Maximum pt of protons from V0"};
-  Configurable<double> ptMinV0Pion{"ptMinV0Pion", 0.0f, "Minimum pt of pions from V0"};
-  Configurable<double> ptMaxV0Pion{"ptMaxV0Pion", 100.0f, "Maximum pt of pions from V0"};
-  Configurable<double> ptMinK0Pion{"ptMinK0Pion", 0.0f, "Minimum pt of pions from K0"};
-  Configurable<double> ptMaxK0Pion{"ptMaxK0Pion", 100.0f, "Maximum pt of pions from K0"};
-  Configurable<double> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
-  Configurable<double> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
-  Configurable<double> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
-  Configurable<double> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
-  Configurable<bool> requireITS{"requireITS", false, "Require ITS hit"};
-  Configurable<bool> requireTOF{"requireTOF", false, "Require TOF hit"};
+  struct: ConfigurableGroup {
+    Configurable<int> minITSnCls{"minITSnCls", 4, "Minimum number of ITS clusters"};
+    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "Minimum number of TPC crossed rows"};
+    Configurable<double> maxChi2TPC{"maxChi2TPC", 4.0f, "Maximum chi2 per cluster TPC"};
+    Configurable<double> etaMin{"etaMin", -0.8f, "Minimum eta"};
+    Configurable<double> etaMax{"etaMax", +0.8f, "Maximum eta"};
+    Configurable<double> ptMinV0Proton{"ptMinV0Proton", 0.0f, "Minimum pt of protons from V0"};
+    Configurable<double> ptMaxV0Proton{"ptMaxV0Proton", 100.0f, "Maximum pt of protons from V0"};
+    Configurable<double> ptMinV0Pion{"ptMinV0Pion", 0.0f, "Minimum pt of pions from V0"};
+    Configurable<double> ptMaxV0Pion{"ptMaxV0Pion", 100.0f, "Maximum pt of pions from V0"};
+    Configurable<double> ptMinK0Pion{"ptMinK0Pion", 0.0f, "Minimum pt of pions from K0"};
+    Configurable<double> ptMaxK0Pion{"ptMaxK0Pion", 100.0f, "Maximum pt of pions from K0"};
+    Configurable<double> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
+    Configurable<double> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
+    Configurable<double> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
+    Configurable<double> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
+    Configurable<bool> requireITS{"requireITS", false, "Require ITS hit"};
+    Configurable<bool> requireTOF{"requireTOF", false, "Require TOF hit"};
+  } configTracks;
 
   // V0 analysis parameters
-  Configurable<double> minimumV0Radius{"minimumV0Radius", 1.2f, "Minimum V0 Radius (cm)"};
-  Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius (cm)"};
-  Configurable<double> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 cosine of pointing angle"};
-  Configurable<double> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA between V0 daughters"};
-  Configurable<bool> requireV0type{"requireV0type", true, "Require V0 type Cut"};
-  Configurable<int> v0type{"v0type", 1, "0: solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1"};
-  // K0S parameters
-  Configurable<double> dcaNegToPVminK0s{"dcaNegToPVminK0s", 0.1f, "Minimum DCA of negative track to primary vertex in K0S decays (cm)"};
-  Configurable<double> dcaPosToPVminK0s{"dcaPosToPVminK0s", 0.1f, "Minimum DCA of positive track to primary vertex in K0S decays (cm)"};
-  Configurable<bool> requireArmenterosCut{"requireArmenterosCut", true, "Require Armenteros Cut"};
-  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter Armenteros Cut (K0S only). This parameters multiplies alphaArm (Check if: qtarm >= this * |alphaArm|)"};
-  Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0S (cm)"};
-  // Lambda/anti-Lambda paramaters
-  Configurable<double> dcaProtonToPVmin{"dcaProtonToPVmin", 0.05f, "Minimum DCA of proton/anti-proton track to primary vertex in Lambda/anti-Lambda decays (cm)"};
-  Configurable<double> dcaPionToPVmin{"dcaPionToPVmin", 0.2f, "Minimum DCA of pion-/pion+ track to primary vertex in Lambda/anti-Lambda decays (cm)"};
-  Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda (cm)"};
+  struct: ConfigurableGroup {
+    Configurable<double> minimumV0Radius{"minimumV0Radius", 1.2f, "Minimum V0 Radius (cm)"};
+    Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius (cm)"};
+    Configurable<double> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 cosine of pointing angle"};
+    Configurable<double> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA between V0 daughters"};
+    Configurable<bool> requireV0type{"requireV0type", true, "Require V0 type Cut"};
+    Configurable<int> v0type{"v0type", 1, "0: solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1"};
+    // K0S parameters
+    Configurable<double> dcaNegToPVminK0s{"dcaNegToPVminK0s", 0.1f, "Minimum DCA of negative track to primary vertex in K0S decays (cm)"};
+    Configurable<double> dcaPosToPVminK0s{"dcaPosToPVminK0s", 0.1f, "Minimum DCA of positive track to primary vertex in K0S decays (cm)"};
+    Configurable<bool> requireArmenterosCut{"requireArmenterosCut", true, "Require Armenteros Cut"};
+    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter Armenteros Cut (K0S only). This parameters multiplies alphaArm (Check if: qtarm >= this * |alphaArm|)"};
+    Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0S (cm)"};
+    // Lambda/anti-Lambda paramaters
+    Configurable<double> dcaProtonToPVmin{"dcaProtonToPVmin", 0.05f, "Minimum DCA of proton/anti-proton track to primary vertex in Lambda/anti-Lambda decays (cm)"};
+    Configurable<double> dcaPionToPVmin{"dcaPionToPVmin", 0.2f, "Minimum DCA of pion-/pion+ track to primary vertex in Lambda/anti-Lambda decays (cm)"};
+    Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda (cm)"};
+  } configV0;
 
   // Cascade analysis parameters
-  Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
-  Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
-  Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
-  Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
-  Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
-  Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA between daughters"};
-  Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades"};
-  Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades"};
-  Configurable<float> deltaMassXi{"deltaMassXi", 0.02f, "Mass window for Xi rejection"};
-  Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
-  Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
+  struct: ConfigurableGroup {
+    Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
+    Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
+    Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
+    Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
+    Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
+    Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA between daughters"};
+    Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades"};
+    Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades"};
+    Configurable<float> deltaMassXi{"deltaMassXi", 0.02f, "Mass window for Xi rejection"};
+    Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
+    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
+  } configCasc;
 
   // Axes
   ConfigurableAxis multBinning{"multBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Binning of the centrality axis"};
@@ -625,40 +631,40 @@ struct StrangenessInJetsIons {
     TVector3 pion(v0.pxneg(), v0.pyneg(), v0.pzneg());
 
     // Selection on pt of Lambda daughters
-    if (proton.Pt() < ptMinV0Proton || proton.Pt() > ptMaxV0Proton)
+    if (proton.Pt() < configTracks.ptMinV0Proton || proton.Pt() > configTracks.ptMaxV0Proton)
       return false;
-    if (pion.Pt() < ptMinV0Pion || pion.Pt() > ptMaxV0Pion)
+    if (pion.Pt() < configTracks.ptMinV0Pion || pion.Pt() > configTracks.ptMaxV0Pion)
       return false;
 
     // V0 selections
-    if (v0.v0cosPA() < v0cospaMin)
+    if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
       return false;
-    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > ctauLambda)
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > configV0.ctauLambda)
       return false;
-    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcaProtonToPVmin)
+    if (std::fabs(v0.dcapostopv()) < configV0.dcaProtonToPVmin)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcaPionToPVmin)
+    if (std::fabs(v0.dcanegtopv()) < configV0.dcaPionToPVmin)
       return false;
-    if (v0.v0Type() != v0type && requireV0type) {
+    if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
       registryQC.fill(HIST("V0_type"), v0.v0Type());
       return false;
     }
 
     // PID selections (TPC): positive track = proton, negative track = pion
-    if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+    if (ptrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
       return false;
-    if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
 
     // PID selections (TOF): positive track = proton, negative track = pion
-    if (requireTOF) {
-      if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (ptrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
         return false;
-      if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+      if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
     }
     return true;
@@ -677,40 +683,40 @@ struct StrangenessInJetsIons {
     TVector3 proton(v0.pxneg(), v0.pyneg(), v0.pzneg());
 
     // Selections on pt of Antilambda daughters
-    if (proton.Pt() < ptMinV0Proton || proton.Pt() > ptMaxV0Proton)
+    if (proton.Pt() < configTracks.ptMinV0Proton || proton.Pt() > configTracks.ptMaxV0Proton)
       return false;
-    if (pion.Pt() < ptMinV0Pion || pion.Pt() > ptMaxV0Pion)
+    if (pion.Pt() < configTracks.ptMinV0Pion || pion.Pt() > configTracks.ptMaxV0Pion)
       return false;
 
     // V0 selections
-    if (v0.v0cosPA() < v0cospaMin)
+    if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
       return false;
-    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > ctauLambda)
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > configV0.ctauLambda)
       return false;
-    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcaPionToPVmin)
+    if (std::fabs(v0.dcapostopv()) < configV0.dcaPionToPVmin)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcaProtonToPVmin)
+    if (std::fabs(v0.dcanegtopv()) < configV0.dcaProtonToPVmin)
       return false;
-    if (v0.v0Type() != v0type && requireV0type) {
+    if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
       registryQC.fill(HIST("V0_type"), v0.v0Type());
       return false;
     }
 
     // PID selections (TPC): negative track = proton, positive track = pion
-    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
-    if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+    if (ntrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
       return false;
 
     // PID selections (TOF): negative track = proton, positive track = pion
-    if (requireTOF) {
-      if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
-      if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (ntrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
         return false;
     }
     return true;
@@ -729,45 +735,45 @@ struct StrangenessInJetsIons {
     TVector3 pionNeg(v0.pxneg(), v0.pyneg(), v0.pzneg());
 
     // Selections on pt of K0s daughters
-    if (pionPos.Pt() < ptMinK0Pion || pionPos.Pt() > ptMaxK0Pion)
+    if (pionPos.Pt() < configTracks.ptMinK0Pion || pionPos.Pt() > configTracks.ptMaxK0Pion)
       return false;
-    if (pionNeg.Pt() < ptMinK0Pion || pionNeg.Pt() > ptMaxK0Pion)
+    if (pionNeg.Pt() < configTracks.ptMinK0Pion || pionNeg.Pt() > configTracks.ptMaxK0Pion)
       return false;
 
     // V0 selections
-    if (v0.v0cosPA() < v0cospaMin)
+    if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
       return false;
-    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassK0Short > ctauK0s)
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassK0Short > configV0.ctauK0s)
       return false;
-    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcaPosToPVminK0s)
+    if (std::fabs(v0.dcapostopv()) < configV0.dcaPosToPVminK0s)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcaNegToPVminK0s)
+    if (std::fabs(v0.dcanegtopv()) < configV0.dcaNegToPVminK0s)
       return false;
 
     // Armenteros-Podolanski cut
-    if (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())) && (requireArmenterosCut))
+    if (v0.qtarm() < (configV0.paramArmenterosCut * std::abs(v0.alpha())) && (configV0.requireArmenterosCut))
       return false;
 
-    if (v0.v0Type() != v0type && requireV0type) {
+    if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
       registryQC.fill(HIST("V0_type"), v0.v0Type());
       return false;
     }
 
     // PID selections (TPC)
-    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
-    if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
 
     // PID selections (TOF)
-    if (requireTOF) {
-      if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
-      if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+      if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
     }
     return true;
@@ -787,22 +793,22 @@ struct StrangenessInJetsIons {
 
     // Xi+ selection (Xi+ -> antiL + pi+)
     if (btrack.sign() > 0) {
-      if (ntrack.pt() < ptMinV0Proton || ntrack.pt() > ptMaxV0Proton)
+      if (ntrack.pt() < configTracks.ptMinV0Proton || ntrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ptrack.pt() < ptMinV0Pion || ptrack.pt() > ptMaxV0Pion)
+      if (ptrack.pt() < configTracks.ptMinV0Pion || ptrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ntrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -812,28 +818,28 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // Xi- selection (Xi- -> L + pi-)
     if (btrack.sign() < 0) {
-      if (ptrack.pt() < ptMinV0Proton || ptrack.pt() > ptMaxV0Proton)
+      if (ptrack.pt() < configTracks.ptMinV0Proton || ptrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ntrack.pt() < ptMinV0Pion || ntrack.pt() > ptMaxV0Pion)
+      if (ntrack.pt() < configTracks.ptMinV0Pion || ntrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ptrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -843,46 +849,46 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassPionCharged);
       const double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
       return false;
-    if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+    if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(casc.dcapostopv()) < dcaPosToPVminV0)
+    if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
-    if (std::fabs(casc.dcanegtopv()) < dcaNegToPVminV0)
+    if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
       return false;
 
     // Cascade selections
-    if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+    if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
       return false;
-    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.casccospaMin)
       return false;
-    if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
+    if (std::fabs(casc.dcabachtopv()) < configCasc.dcabachtopvMin)
       return false;
-    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < dcaV0topvMin)
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < configCasc.dcaV0topvMin)
       return false;
-    if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
+    if (std::fabs(casc.dcacascdaughters()) > configCasc.dcaCascDaughtersMax)
       return false;
 
     // PID selection on bachelor
-    if (btrack.tpcNSigmaPi() < nsigmaTPCmin || btrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (btrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || btrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
 
     // PID selections (TOF)
-    if (requireTOF) {
-      if (btrack.tofNSigmaPi() < nsigmaTOFmin || btrack.tofNSigmaPi() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (btrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || btrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
     }
 
     // Reject candidates compatible with Omega
-    if (std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega)
+    if (std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < configCasc.deltaMassOmega)
       return false;
     return true;
   }
@@ -901,22 +907,22 @@ struct StrangenessInJetsIons {
 
     // Omega+ selection (Omega+ -> antiL + K+)
     if (btrack.sign() > 0) {
-      if (ntrack.pt() < ptMinV0Proton || ntrack.pt() > ptMaxV0Proton)
+      if (ntrack.pt() < configTracks.ptMinV0Proton || ntrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ptrack.pt() < ptMinV0Pion || ptrack.pt() > ptMaxV0Pion)
+      if (ptrack.pt() < configTracks.ptMinV0Pion || ptrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ntrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -926,28 +932,28 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // Omega- selection (Omega- -> L + K-)
     if (btrack.sign() < 0) {
-      if (ptrack.pt() < ptMinV0Proton || ptrack.pt() > ptMaxV0Proton)
+      if (ptrack.pt() < configTracks.ptMinV0Proton || ptrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ntrack.pt() < ptMinV0Pion || ntrack.pt() > ptMaxV0Pion)
+      if (ntrack.pt() < configTracks.ptMinV0Pion || ntrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ptrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -957,46 +963,46 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
       return false;
-    if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+    if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(casc.dcapostopv()) < dcaPosToPVminV0)
+    if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
-    if (std::fabs(casc.dcanegtopv()) < dcaNegToPVminV0)
+    if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
       return false;
 
     // Cascade selections
-    if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+    if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
       return false;
-    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.casccospaMin)
       return false;
-    if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
+    if (std::fabs(casc.dcabachtopv()) < configCasc.dcabachtopvMin)
       return false;
-    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < dcaV0topvMin)
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < configCasc.dcaV0topvMin)
       return false;
-    if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
+    if (std::fabs(casc.dcacascdaughters()) > configCasc.dcaCascDaughtersMax)
       return false;
 
     // PID selection on bachelor
-    if (btrack.tpcNSigmaKa() < nsigmaTPCmin || btrack.tpcNSigmaKa() > nsigmaTPCmax)
+    if (btrack.tpcNSigmaKa() < configTracks.nsigmaTPCmin || btrack.tpcNSigmaKa() > configTracks.nsigmaTPCmax)
       return false;
 
     // PID selections (TOF)
-    if (requireTOF) {
-      if (btrack.tofNSigmaKa() < nsigmaTOFmin || btrack.tofNSigmaKa() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (btrack.tofNSigmaKa() < configTracks.nsigmaTOFmin || btrack.tofNSigmaKa() > configTracks.nsigmaTOFmax)
         return false;
     }
 
     // Reject candidates compatible with Xi
-    if (std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < deltaMassXi)
+    if (std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < configCasc.deltaMassXi)
       return false;
     return true;
   }
@@ -1005,19 +1011,19 @@ struct StrangenessInJetsIons {
   template <typename Track>
   bool passedSingleTrackSelection(const Track& track)
   {
-    if (requireITS && (!track.hasITS()))
+    if (configTracks.requireITS && (!track.hasITS()))
       return false;
-    if (requireITS && track.itsNCls() < minITSnCls)
+    if (configTracks.requireITS && track.itsNCls() < configTracks.minITSnCls)
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+    if (track.tpcNClsCrossedRows() < configTracks.minNCrossedRowsTPC)
       return false;
-    if (track.tpcChi2NCl() > maxChi2TPC)
+    if (track.tpcChi2NCl() > configTracks.maxChi2TPC)
       return false;
-    if (track.eta() < etaMin || track.eta() > etaMax)
+    if (track.eta() < configTracks.etaMin || track.eta() > configTracks.etaMax)
       return false;
-    if (requireTOF && (!track.hasTOF()))
+    if (configTracks.requireTOF && (!track.hasTOF()))
       return false;
     return true;
   }
@@ -1126,7 +1132,7 @@ struct StrangenessInJetsIons {
     for (const auto& jet : jets) {
 
       // Jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
+      if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
         continue;
 
       // Jet pt must be larger than threshold
@@ -1421,7 +1427,7 @@ struct StrangenessInJetsIons {
           continue;
 
         double minPtParticle = 0.1;
-        if (particle.eta() < etaMin || particle.eta() > etaMax || particle.pt() < minPtParticle)
+        if (particle.eta() < configTracks.etaMin || particle.eta() > configTracks.etaMax || particle.pt() < minPtParticle)
           continue;
 
         // Build 4-momentum assuming charged pion mass
@@ -1448,7 +1454,7 @@ struct StrangenessInJetsIons {
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
+        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
           continue;
 
         // Subtract background energy from jet
@@ -1732,7 +1738,7 @@ struct StrangenessInJetsIons {
       for (const auto& jet : jets) {
 
         // jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
+        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
           continue;
 
         // jet pt must be larger than threshold
