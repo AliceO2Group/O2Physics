@@ -225,7 +225,6 @@ class FemtoUniverseMath
     const double fDKOutLCMS = px1LCMS - px2LCMS;
     const double fDKSideLCMS = py1LCMS - py2LCMS;
     const double fDKLongLCMS = pz1LCMS - pz2LCMS;
-    const double mDE = pE1LCMS - pE2LCMS;
 
     // Boost to PRF
 
