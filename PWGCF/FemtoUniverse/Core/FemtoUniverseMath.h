@@ -225,7 +225,6 @@ class FemtoUniverseMath
     const double fDKOutLCMS = px1LCMS - px2LCMS;
     const double fDKSideLCMS = py1LCMS - py2LCMS;
     const double fDKLongLCMS = pz1LCMS - pz2LCMS;
-    const double mDE = pE1LCMS - pE2LCMS;
 
     // Boost to PRF
 
@@ -269,8 +268,11 @@ class FemtoUniverseMath
       const double mRS = (y1_lcms - y2_lcms) / 0.197327;
       const double mRL = (z1_lcms - z2_lcms) / 0.197327;
       const double mDT = (t1_lcms - t2_lcms) / 0.197327;
+      const double rOutPRF = gammaOut * (mRO - betaOut * mDT);
 
-      const double quantumweight = 1.0 + std::cos(-fDKOutLCMS * mRO - fDKSideLCMS * mRS - fDKLongLCMS * mRL + mDE * mDT);
+      const double phase_inv = fDKOutPRF * rOutPRF + fDKSidePRF * mRS + fDKLongPRF * mRL;
+      double quantumweight = 1.0 + TMath::Cos(2.0 * phase_inv);
+
       vect.push_back(quantumweight);
     } else {
       vect.push_back(1.0);
