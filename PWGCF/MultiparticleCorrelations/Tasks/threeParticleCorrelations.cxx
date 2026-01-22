@@ -186,7 +186,7 @@ struct ThreeParticleCorrelations {
   {
 
     TH1::SetDefaultSumw2(true);
-    
+
     // Bins of variable width
     std::vector<double> fineCentBins = {0.0, 2.0, 4.0, 7.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 60.0, 70.0, 80.0, 90.0};
 
