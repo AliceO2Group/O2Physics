@@ -79,6 +79,7 @@ struct Kstar892LightIon {
   struct : ConfigurableGroup {
     // Configurables for event selections
     Configurable<float> cfgVrtxZCut{"cfgVrtxZCut", 10.0f, "Accepted z-vertex range (cm)"};
+    Configurable<bool> isApplysel8{"isApplysel8", true, "Apply sel8 event selection"};
     Configurable<bool> isTriggerTVX{"isTriggerTVX", true, "TriggerTVX"};
     Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", true, "IsGoodZvtxFT0vsPV"};
     Configurable<bool> isApplyOccCut{"isApplyOccCut", false, "Apply occupancy cut"};
@@ -222,7 +223,7 @@ struct Kstar892LightIon {
     std::vector<std::string> eveCutLabels = {
       "All Events",
       Form("|Vz| < %.1f", selectionConfig.cfgVrtxZCut.value),
-      "sel8",
+      std::string("sel8") + check(selectionConfig.isApplysel8.value),
       std::string("kNoTimeFrameBorder") + check(selectionConfig.isNoTimeFrameBorder.value),
       std::string("kNoITSROFrameBorder") + check(selectionConfig.isNoITSROFrameBorder.value),
       std::string("kIsTriggerTVX") + check(selectionConfig.isTriggerTVX.value),
@@ -371,7 +372,7 @@ struct Kstar892LightIon {
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 1);
 
-    if (!collision.sel8())
+    if (selectionConfig.isApplysel8 && !collision.sel8())
       return false;
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 2);
