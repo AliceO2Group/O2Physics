@@ -48,9 +48,9 @@ struct V0PhotonCandidate {
   float psipair;
   float cospa;
   float chi2ndf;
-  float centFT0M;
-  float centFT0C;
   float centFT0A;
+  float centFT0C;
+  float centFT0M;
   float pca;
 
  public:
