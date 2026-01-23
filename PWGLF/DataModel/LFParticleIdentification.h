@@ -19,12 +19,7 @@
 #ifndef PWGLF_DATAMODEL_LFPARTICLEIDENTIFICATION_H_
 #define PWGLF_DATAMODEL_LFPARTICLEIDENTIFICATION_H_
 
-// O2 includes
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/Logger.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 namespace o2::aod
 {
