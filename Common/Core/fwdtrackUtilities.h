@@ -48,33 +48,6 @@ using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double
 using SMatrix55Std = ROOT::Math::SMatrix<double, 5>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
-template <typename TFwdTrack, typename TFwdTrackCov>
-o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov const& cov)
-{
-  // This function works for (glMuon, glMuon), (saMuon, saMuon) and (MFTTrack, MFTTrackCov).
-
-  double chi2 = track.chi2();
-  if constexpr (std::is_same_v<std::decay_t<TFwdTrackCov>, aod::MFTTracksCov::iterator>) {
-    chi2 = track.chi2();
-  } else {
-    if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-      chi2 = track.chi2();
-    } else if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
-      chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
-    }
-  }
-
-  SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
-  std::vector<double> v1{cov.cXX(), cov.cXY(), cov.cYY(), cov.cPhiX(), cov.cPhiY(),
-                         cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
-                         cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
-  SMatrix55 tcovs(v1.begin(), v1.end());
-  o2::track::TrackParCovFwd trackparCov{track.z(), tpars, tcovs, chi2}; // this is chi2! Not chi2/ndf.
-  v1.clear();
-  v1.shrink_to_fit();
-  return trackparCov;
-}
-
 /// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift
 template <typename TFwdTrack, typename... TCovariance>
 o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float zshift, TCovariance const&... covOpt)
@@ -107,6 +80,8 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
       cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
       cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
     tcovs = SMatrix55(v1.begin(), v1.end());
+    v1.clear();
+    v1.shrink_to_fit();
   } else {
     tcovs = SMatrix55{};
   }
@@ -114,17 +89,46 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
   return o2::track::TrackParCovFwd(track.z() + zshift, tpars, tcovs, chi2);
 }
 
+template <typename TFwdTrack, typename TFwdTrackCov>
+o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov const& cov)
+{
+  return getTrackParCovFwdShift(track, 0, cov);
+
+  // // This function works for (glMuon, glMuon), (saMuon, saMuon) and (MFTTrack, MFTTrackCov).
+
+  // double chi2 = track.chi2();
+  // if constexpr (std::is_same_v<std::decay_t<TFwdTrackCov>, aod::MFTTracksCov::iterator>) {
+  //   chi2 = track.chi2();
+  // } else {
+  //   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+  //     chi2 = track.chi2();
+  //   } else if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+  //     chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
+  //   }
+  // }
+
+  // SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+  // std::vector<double> v1{cov.cXX(), cov.cXY(), cov.cYY(), cov.cPhiX(), cov.cPhiY(),
+  //                        cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
+  //                        cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
+  // SMatrix55 tcovs(v1.begin(), v1.end());
+  // o2::track::TrackParCovFwd trackparCov{track.z(), tpars, tcovs, chi2}; // this is chi2! Not chi2/ndf.
+  // v1.clear();
+  // v1.shrink_to_fit();
+  // return trackparCov;
+}
+
 /// propagate fwdtrack to a certain point.
 template <typename TFwdTrack, typename TFwdTrackCov, typename TCollision>
-o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TFwdTrackCov const& cov, TCollision const& collision, const propagationPoint endPoint, const float matchingZ, const float bzkG)
+o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TFwdTrackCov const& cov, TCollision const& collision, const propagationPoint endPoint, const float matchingZ, const float bzkG, const float zshift = 0.f)
 {
   o2::track::TrackParCovFwd trackParCovFwd;
   if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-    trackParCovFwd = getTrackParCovFwd(muon, cov);
+    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, cov);
   } else if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
-    trackParCovFwd = getTrackParCovFwd(muon, muon);
+    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, muon);
   } else {
-    trackParCovFwd = getTrackParCovFwd(muon, muon);
+    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, muon);
   }
 
   o2::dataformats::GlobalFwdTrack propmuon = propagateTrackParCovFwd(trackParCovFwd, muon.trackType(), collision, endPoint, matchingZ, bzkG);
