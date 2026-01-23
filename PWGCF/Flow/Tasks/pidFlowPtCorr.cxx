@@ -1055,19 +1055,19 @@ struct PidFlowPtCorr {
   void fillEventCountHelper(MyFunctionName funcName, double position)
   {
     switch (funcName) {
-      case this->MyFunctionName::funcProcessData:
+      case MyFunctionName::funcProcessData:
         this->registry.fill(HIST("hEventCount/processData"), position);
         break;
-      case this->MyFunctionName::funcDetectorPidQA:
+      case MyFunctionName::funcDetectorPidQA:
         this->registry.fill(HIST("hEventCount/detectorPidQA"), position);
         break;
-      case this->MyFunctionName::funcFillCorrectionGraph:
+      case MyFunctionName::funcFillCorrectionGraph:
         this->registry.fill(HIST("hEventCount/fillCorrectionGraph"), position);
         break;
-      case this->MyFunctionName::funcProcessReco:
+      case MyFunctionName::funcProcessReco:
         this->registry.fill(HIST("hEventCount/processReco"), position);
         break;
-      case this->MyFunctionName::funcProcessSim:
+      case MyFunctionName::funcProcessSim:
         this->registry.fill(HIST("hEventCount/processSim"), position);
         break;
 
