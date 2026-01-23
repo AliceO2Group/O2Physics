@@ -141,9 +141,9 @@ struct MultiplicityPt {
   };
 
   // PDG codes
-  static constexpr int PDGPion = o2::constants::physics::PionPlus;
-  static constexpr int PDGKaon = o2::constants::physics::KaonPlus;
-  static constexpr int PDGProton = o2::constants::physics::Proton;
+  static constexpr int PDGPion = 211;    // π⁺ PDG code
+  static constexpr int PDGKaon = 321;    // K⁺ PDG code
+  static constexpr int PDGProton = 2212; // p PDG code
 
   void processData(CollisionTableData::iterator const& collision,
                    TrackTableData const& tracks);
@@ -561,7 +561,7 @@ void MultiplicityPt::init(InitContext const&)
   h->GetXaxis()->SetBinLabel(15, "INEL>1 (final)");
 
   ue.add("hEta", "Track eta;#eta;Counts", HistType::kTH1D, {{20, -0.8, 0.8}});
-  ue.add("hPhi", "Track phi;#varphi (rad);Counts", HistType::kTH1D, {{64, 0, TwoPI}});
+  ue.add("hPhi", "Track phi;#varphi (rad);Counts", HistType::kTH1D, {{64, 0, 2.0 * M_PI}});
   ue.add("hvtxZ", "Vertex Z (data);Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
   ue.add("hvtxZmc", "MC vertex Z;Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
 
