@@ -806,7 +806,6 @@ struct doublephimeson {
       const double dR_k1p_k2m = deltaR(kplusA.Phi(), kplusA.Eta(), kminusB.Phi(), kminusB.Eta());
       const double dR_k2p_k1m = deltaR(kplusB.Phi(), kplusB.Eta(), kminusA.Phi(), kminusA.Eta());
       const double dR_k2p_k2m = deltaR(kplusB.Phi(), kplusB.Eta(), kminusB.Phi(), kminusB.Eta());
-      
       double minDR = dRkplus;
       minDR = std::min(minDR, dRkminus);
       minDR = std::min(minDR, dR_k1p_k1m);
