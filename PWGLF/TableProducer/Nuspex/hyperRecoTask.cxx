@@ -179,6 +179,8 @@ struct hyperRecoTask {
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", true, "If true, divide tpcInnerParam by the electric charge"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
+  Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", false, "Rejects collisions which are associated with the same found-by-T0 bunch crossing"};
+  Configurable<bool> cfgEvSelkIsGoodZvtxFT0vsPV{"cfgEvSelkIsGoodZvtxFT0vsPV", false, "Verifies the consistency between the primary vertex z position from tracking and the z position of the PV from FT0 timing"};
 
   // CCDB options
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -256,9 +258,11 @@ struct hyperRecoTask {
     hH4LMassBefSel = qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
     hH4LMassTracked = qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
 
-    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{4, -0.5, 3.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
-    hEvents->GetXaxis()->SetBinLabel(2, "Selected");
+    hEvents->GetXaxis()->SetBinLabel(2, "sel8");
+    hEvents->GetXaxis()->SetBinLabel(3, "kNoSameBunchPileup");
+    hEvents->GetXaxis()->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");
 
     hEventsZorro = qaRegistry.add<TH1>("hEventsZorro", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hEventsZorro->GetXaxis()->SetBinLabel(1, "Zorro before evsel");
@@ -365,12 +369,27 @@ struct hyperRecoTask {
         continue;
       }
 
+      hEvents->Fill(1.);
+
       if (zorroSelected) {
         hEventsZorro->Fill(1.);
       }
 
+      if (cfgEvSelkNoSameBunchPileup) {
+        if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
+        hEvents->Fill(2.);
+      }
+
+      if (cfgEvSelkIsGoodZvtxFT0vsPV) {
+        if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          continue;
+        }
+        hEvents->Fill(3.);
+      }
+
       goodCollision[collision.globalIndex()] = true;
-      hEvents->Fill(1.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
@@ -391,11 +410,26 @@ struct hyperRecoTask {
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > 10)
         continue;
 
+      hEvents->Fill(1.);
+
+      if (cfgEvSelkNoSameBunchPileup) {
+        if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
+        hEvents->Fill(2.);
+      }
+
+      if (cfgEvSelkIsGoodZvtxFT0vsPV) {
+        if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          continue;
+        }
+        hEvents->Fill(3.);
+      }
+
       if (collision.has_mcCollision()) {
         isSurvEvSelCollision[collision.mcCollisionId()] = true;
       }
       goodCollision[collision.globalIndex()] = true;
-      hEvents->Fill(1.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());

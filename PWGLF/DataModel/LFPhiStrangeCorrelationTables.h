@@ -69,6 +69,9 @@ DECLARE_SOA_COLUMN(PhimesonSel, phimesonSel, bool);
 DECLARE_SOA_TABLE(PhimesonSelectionData, "AOD", "PHIINCOLLDATA",
                   lf_selection_phi_collision::PhimesonSel);
 
+/*DECLARE_SOA_TABLE(PhimesonSelectionMcReco, "AOD", "PHIINCOLLMCRECO",
+                  lf_selection_phi_collision::PhimesonSel);*/
+
 DECLARE_SOA_TABLE(PhimesonSelectionMcGen, "AOD", "PHIINCOLLMCGEN",
                   lf_selection_phi_collision::PhimesonSel);
 } // namespace o2::aod

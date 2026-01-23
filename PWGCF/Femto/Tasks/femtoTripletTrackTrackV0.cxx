@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoTripletTrackTrackTrack.cxx
-/// \brief Tasks that computes correlation between three tracks
+/// \file femtoTripletTrackTrackV0.cxx
+/// \brief Tasks that computes correlation between two tracks
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
@@ -22,6 +22,8 @@
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletBuilder.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
+#include "PWGCF/Femto/Core/v0Builder.h"
+#include "PWGCF/Femto/Core/v0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoA.h"
@@ -40,7 +42,7 @@
 
 using namespace o2::analysis::femto;
 
-struct FemtoTripletTrackTrackTrack {
+struct FemtoTripletTrackTrackV0 {
 
   // setup tables
   using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
@@ -51,9 +53,14 @@ struct FemtoTripletTrackTrackTrack {
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
   using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
 
+  // TODO also implement K0shorts
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMasks>;
+  using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks>;
+  // using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks>;
 
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
+  using FemtoLambdasWithLabel = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaLabels>;
+  // using FemtoK0shortsWithLabel = o2::soa::Join<FemtoK0shorts, o2::aod::FK0shortLabels>;
 
   o2::framework::SliceCache cache;
 
@@ -67,18 +74,29 @@ struct FemtoTripletTrackTrackTrack {
   trackhistmanager::ConfTrackBinning1 confTrackBinning1;
   trackbuilder::ConfTrackSelection2 confTrackSelections2;
   trackhistmanager::ConfTrackBinning2 confTrackBinning2;
-  trackbuilder::ConfTrackSelection3 confTrackSelections3;
-  trackhistmanager::ConfTrackBinning3 confTrackBinning3;
 
   o2::framework::Partition<FemtoTracks> trackPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
   o2::framework::Partition<FemtoTracks> trackPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
-  o2::framework::Partition<FemtoTracks> trackPartition3 = MAKE_TRACK_PARTITION(confTrackSelections3);
   o2::framework::Preslice<FemtoTracks> perColtracks = o2::aod::femtobase::stored::fColId;
 
   o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
   o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
-  o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition3 = MAKE_TRACK_PARTITION(confTrackSelections3);
   o2::framework::Preslice<FemtoTracksWithLabel> perColtracksWithLabel = o2::aod::femtobase::stored::fColId;
+
+  // setup for daughters
+  trackhistmanager::ConfV0PosDauBinning confPosDauBinning;
+  trackhistmanager::ConfV0NegDauBinning confNegDauBinning;
+
+  // setup lambdas
+  v0builder::ConfLambdaSelection1 confLambdaSelection;
+  v0histmanager::ConfLambdaBinning1 confLambdaBinning;
+  particlecleaner::ConfLambdaCleaner1 confLambdaCleaner;
+
+  o2::framework::Partition<FemtoLambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
+  o2::framework::Preslice<FemtoLambdas> perColLambdas = o2::aod::femtobase::stored::fColId;
+
+  o2::framework::Partition<FemtoLambdasWithLabel> lambdaWithLabelPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
+  o2::framework::Preslice<FemtoLambdasWithLabel> perColLambdasWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup triplets
   triplethistmanager::ConfTripletBinning confTripletBinning;
@@ -86,19 +104,22 @@ struct FemtoTripletTrackTrackTrack {
 
   closetripletrejection::ConfCtrTrackTrackTrack confCtr;
 
-  tripletbuilder::TripletTrackTrackTrackBuilder<
+  tripletbuilder::TripletTrackTrackV0Builder<
+    modes::V0::kLambda,
     trackhistmanager::PrefixTrack1,
     trackhistmanager::PrefixTrack2,
-    trackhistmanager::PrefixTrack3,
-    triplethistmanager::PrefixTrackTrackTrackSe,
-    triplethistmanager::PrefixTrackTrackTrackMe,
+    v0histmanager::PrefixLambda1,
+    trackhistmanager::PrefixV01PosDaughter,
+    trackhistmanager::PrefixV02NegDaughter,
+    triplethistmanager::PrefixTrackTrackLambdaSe,
+    triplethistmanager::PrefixTrackTrackLambdaMe,
     closetripletrejection::PrefixTrack1Track2Se,
-    closetripletrejection::PrefixTrack2Track3Se,
-    closetripletrejection::PrefixTrack1Track3Se,
+    closetripletrejection::PrefixTrack1V0Se,
+    closetripletrejection::PrefixTrack2V0Se,
     closetripletrejection::PrefixTrack1Track2Me,
-    closetripletrejection::PrefixTrack2Track3Me,
-    closetripletrejection::PrefixTrack1Track3Me>
-    tripletTrackTrackTrackBuilder;
+    closetripletrejection::PrefixTrack1V0Me,
+    closetripletrejection::PrefixTrack2V0Me>
+    tripletTrackTrackLambdaBuilder;
 
   // setup mixing
   std::vector<double> defaultVtxBins{10, -10, 10};
@@ -129,11 +150,13 @@ struct FemtoTripletTrackTrackTrack {
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 
     // setup histogram specs
-
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec1;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec2;
-    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec3;
+
+    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> posDauSpec;
+    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> negDauSpec;
+    std::map<v0histmanager::V0Hist, std::vector<o2::framework::AxisSpec>> lambdaHistSpec;
     std::map<triplethistmanager::TripletHist, std::vector<o2::framework::AxisSpec>> tripletHistSpec;
     std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> ctrHistSpec = closepairrejection::makeCprHistSpecMap(confCtr);
 
@@ -141,49 +164,53 @@ struct FemtoTripletTrackTrackTrack {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
-      trackHistSpec3 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning3);
+      lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
+      posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
+      negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
       tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning);
-      tripletTrackTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confTrackSelections3, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, trackHistSpec3, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
-      trackHistSpec3 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning3);
+      lambdaHistSpec = v0histmanager::makeV0McHistSpecMap(confLambdaBinning);
+      posDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
+      negDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
       tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning);
-      tripletTrackTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confTrackSelections3, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, trackHistSpec3, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
     }
     hRegistry.print();
   };
 
-  void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks)
+  void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, trackPartition3, cache);
+    tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, lambdaPartition, cache);
   }
-  PROCESS_SWITCH(FemtoTripletTrackTrackTrack, processSameEvent, "Enable processing same event processing", true);
+  PROCESS_SWITCH(FemtoTripletTrackTrackV0, processSameEvent, "Enable processing same event processing", true);
 
-  void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdas const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    tripletTrackTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, trackWithLabelPartition3, mcParticles, mcMothers, mcPartonicMothers, cache);
+    tripletTrackTrackLambdaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
-  PROCESS_SWITCH(FemtoTripletTrackTrackTrack, processSameEventMc, "Enable processing same event processing", false);
+  PROCESS_SWITCH(FemtoTripletTrackTrackV0, processSameEventMc, "Enable processing same event processing", false);
 
-  void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks)
+  void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    tripletTrackTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition1, trackPartition2, trackPartition3, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    tripletTrackTrackLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition1, trackPartition2, lambdaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
-  PROCESS_SWITCH(FemtoTripletTrackTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
+  PROCESS_SWITCH(FemtoTripletTrackTrackV0, processMixedEvent, "Enable processing mixed event processing", true);
 
-  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, o2::aod::FMcParticles const& mcParticles)
+  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdas const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles)
   {
-    tripletTrackTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, trackWithLabelPartition3, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    tripletTrackTrackLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, lambdaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
-  PROCESS_SWITCH(FemtoTripletTrackTrackTrack, processMixedEventMc, "Enable processing mixed event processing", false);
+  PROCESS_SWITCH(FemtoTripletTrackTrackV0, processMixedEventMc, "Enable processing mixed event processing", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoTripletTrackTrackTrack>(cfgc),
+    adaptAnalysisTask<FemtoTripletTrackTrackV0>(cfgc),
   };
   return workflow;
 }

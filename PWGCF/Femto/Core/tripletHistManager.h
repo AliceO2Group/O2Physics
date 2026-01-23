@@ -177,14 +177,14 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
 template <typename T>
 auto makeTripletHistSpecMap(const T& confPairBinning)
 {
-  return std::map<TripletHist, std::vector<framework::AxisSpec>>{
+  return std::map<TripletHist, std::vector<o2::framework::AxisSpec>>{
     TRIPLET_HIST_ANALYSIS_MAP(confPairBinning)};
 };
 
 template <typename T>
 auto makeTripletMcHistSpecMap(const T& confPairBinning)
 {
-  return std::map<TripletHist, std::vector<framework::AxisSpec>>{
+  return std::map<TripletHist, std::vector<o2::framework::AxisSpec>>{
     TRIPLET_HIST_ANALYSIS_MAP(confPairBinning)
       TRIPLET_HIST_MC_MAP(confPairBinning)};
 };
@@ -194,6 +194,9 @@ auto makeTripletMcHistSpecMap(const T& confPairBinning)
 
 constexpr char PrefixTrackTrackTrackSe[] = "TrackTrackTrack/SE/";
 constexpr char PrefixTrackTrackTrackMe[] = "TrackTrackTrack/ME/";
+
+constexpr char PrefixTrackTrackLambdaSe[] = "TrackTrackLambda/SE/";
+constexpr char PrefixTrackTrackLambdaMe[] = "TrackTrackLambda/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
@@ -282,7 +285,7 @@ class TripletHistManager
       mMass2 = particle2.mass();
     }
     if constexpr (modes::hasMass(particleType3)) {
-      mMass3 = particle2.mass();
+      mMass3 = particle3.mass();
     }
   }
 
