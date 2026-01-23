@@ -484,15 +484,21 @@ struct cascadeFlow {
       return false;
     if (std::abs(v0.eta()) > V0Configs.etaLambda)
       return false;
-    if (V0Configs.isPositiveEta){ //v0 and daughter tracks required to have positive eta
-      if (v0.pzpos() <= 0) return false;
-      if (v0.pzneg() <= 0) return false;
-      if (v0.eta() <= 0) return false;
-    } 
-    if (V0Configs.isNegativeEta){
-      if (v0.pzpos() >= 0) return false;
-      if (v0.pzneg() >= 0) return false;
-      if (v0.eta() >= 0) return false;
+    if (V0Configs.isPositiveEta) { // v0 and daughter tracks required to have positive eta
+      if (v0.pzpos() <= 0)
+        return false;
+      if (v0.pzneg() <= 0)
+        return false;
+      if (v0.eta() <= 0)
+        return false;
+    }
+    if (V0Configs.isNegativeEta) {
+      if (v0.pzpos() >= 0)
+        return false;
+      if (v0.pzneg() >= 0)
+        return false;
+      if (v0.eta() >= 0)
+        return false;
     }
 
     return true;
