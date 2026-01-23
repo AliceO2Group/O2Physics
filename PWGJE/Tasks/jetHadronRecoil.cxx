@@ -923,6 +923,36 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCPWeighted, "process MC particle level with event weights", false);
 
+  void processMCPOnTheFly(aod::JetMcCollision const& mccollision,
+                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
+                  soa::Filtered<aod::JetParticles> const& particles)
+  {
+    if (std::abs(mccollision.posZ()) > vertexZCut) {
+      return;
+    }
+    if (mccollision.ptHard() < pTHatMinEvent) {
+      return;
+    }
+    registry.fill(HIST("hZvtxSelected"), mccollision.posZ());
+    fillMCPHistograms(jets, particles, 1.0, mccollision.ptHard());
+  }
+  PROCESS_SWITCH(JetHadronRecoil, processMCPOnTheFly, "process MC particle level for on-the-fly simulations", false);
+
+  void processMCPOnTheFlyWeighted(aod::JetMcCollision const& mccollision,
+                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
+                          soa::Filtered<aod::JetParticles> const& particles)
+  {
+    if (std::abs(mccollision.posZ()) > vertexZCut) {
+      return;
+    }
+    if (mccollision.ptHard() < pTHatMinEvent) {
+      return;
+    }
+    registry.fill(HIST("hZvtxSelected"), mccollision.posZ(), mccollision.weight());
+    fillMCPHistograms(jets, particles, mccollision.weight(), mccollision.ptHard());
+  }
+  PROCESS_SWITCH(JetHadronRecoil, processMCPOnTheFlyWeighted, "process MC particle level for on-the-fly simulations with event weights", false);
+
   void processJetsMCPMCDMatched(aod::JetMcCollisions::iterator const& mccollision,
                                 soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
                                 soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
