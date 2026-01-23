@@ -924,8 +924,8 @@ struct JetHadronRecoil {
   PROCESS_SWITCH(JetHadronRecoil, processMCPWeighted, "process MC particle level with event weights", false);
 
   void processMCPOnTheFly(aod::JetMcCollision const& mccollision,
-                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
-                  soa::Filtered<aod::JetParticles> const& particles)
+                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
+                          soa::Filtered<aod::JetParticles> const& particles)
   {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
@@ -939,8 +939,8 @@ struct JetHadronRecoil {
   PROCESS_SWITCH(JetHadronRecoil, processMCPOnTheFly, "process MC particle level for on-the-fly simulations", false);
 
   void processMCPOnTheFlyWeighted(aod::JetMcCollision const& mccollision,
-                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
-                          soa::Filtered<aod::JetParticles> const& particles)
+                                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
+                                  soa::Filtered<aod::JetParticles> const& particles)
   {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
