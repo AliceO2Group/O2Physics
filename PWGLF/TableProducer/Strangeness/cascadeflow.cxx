@@ -264,7 +264,8 @@ struct cascadeFlow {
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
     Configurable<float> rapidityLambda{"rapidityLambda", 0.5, "rapidityLambda"};
     Configurable<float> etaLambda{"etaLambda", 0.8, "etaLambda"};
-    Configurable<float> dauTrackV0Eta{"dauTrackV0Eta", 0.8, "dauTrackV0Eta"};
+    Configurable<bool> isPositiveEta{"isPositiveEta", 0, "isPositiveEta"};
+    Configurable<bool> isNegativeEta{"isNegativeEta", 0, "isNegativeEta"};
   } V0Configs;
 
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
@@ -443,10 +444,6 @@ struct cascadeFlow {
       return false;
 
     counter++;
-
-    // eta daughters)
-    //     if (abs(posExtra.eta()) > V0Configs.dauTrackV0Eta || abs(negExtra.y()) > V0Configs.dauTrackV0Eta) return false;
-
     return true;
   }
   template <typename TDaughter>
@@ -487,6 +484,16 @@ struct cascadeFlow {
       return false;
     if (std::abs(v0.eta()) > V0Configs.etaLambda)
       return false;
+    if (V0Configs.isPositiveEta){ //v0 and daughter tracks required to have positive eta
+      if (v0.pzpos() <= 0) return false;
+      if (v0.pzneg() <= 0) return false;
+      if (v0.eta() <= 0) return false;
+    } 
+    if (V0Configs.isNegativeEta){
+      if (v0.pzpos() >= 0) return false;
+      if (v0.pzneg() >= 0) return false;
+      if (v0.eta() >= 0) return false;
+    }
 
     return true;
   }
@@ -908,6 +915,9 @@ struct cascadeFlow {
     histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1EPvsv1SP", "hV1EPvsV1SP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1SP_ZDCA_vs_ZDCC", "hv1SP_ZDCA_vs_ZDCC", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
+    histos.add("hEtaV0", "hEtaV0", HistType::kTH1F, {{100, -1, 1}});
+    histos.add("hEtaV0posDau", "hEtaV0posDau", HistType::kTH1F, {{100, -1, 1}});
+    histos.add("hEtaV0negDau", "hEtaV0negDau", HistType::kTH1F, {{100, -1, 1}});
 
     const AxisSpec thnAxisFT0C{thnAxisConfigs.thnConfigAxisFT0C, "FT0C (%)"};
     const AxisSpec thnAxisEta{thnAxisConfigs.thnConfigAxisEta, "#eta"};
@@ -2001,6 +2011,11 @@ struct cascadeFlow {
       if (!isSelectedV0[0] && !isSelectedV0[1])
         continue;
 
+      histos.fill(HIST("hEtaV0"), v0.eta());
+      Float_t posDauEta = RecoDecay::eta(std::array{v0.pxpos(), v0.pypos(), v0.pzpos()});
+      histos.fill(HIST("hEtaV0posDau"), posDauEta);
+      Float_t negDauEta = RecoDecay::eta(std::array{v0.pxneg(), v0.pyneg(), v0.pzneg()});
+      histos.fill(HIST("hEtaV0negDau"), negDauEta);
       ROOT::Math::XYZVector lambdaQvec{std::cos(2 * v0.phi()), std::sin(2 * v0.phi()), 0};
       auto v2CSP = lambdaQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto lambdaminuspsiT0C = GetPhiInRange(v0.phi() - psiT0CCorr);
