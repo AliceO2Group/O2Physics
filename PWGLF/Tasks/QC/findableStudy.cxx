@@ -261,7 +261,7 @@ struct findableStudy {
     bool hasBeenFound = false;
     int nCandidatesWithTPC = 0;
 
-    for (auto& recv0 : recv0s) {
+    for (const auto& recv0 : recv0s) {
       if (recv0.v0Type() != 1)
         continue; // skip anything other than a standard V0
 
