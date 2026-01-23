@@ -143,7 +143,7 @@ struct JetHadronRecoil {
 
     registry.add("hZvtxSelected", "Z vertex position;Z_{vtx};entries", {HistType::kTH1F, {{80, -20, 20}}}, doSumw);
 
-    if (doprocessData || doprocessDataWithRhoSubtraction || doprocessMCD || doprocessMCDWithRhoSubtraction || doprocessMCDWeighted || doprocessMCDWeightedWithRhoSubtraction || doprocessMCP || doprocessMCPWeighted) {
+    if (doprocessData || doprocessDataWithRhoSubtraction || doprocessMCD || doprocessMCDWithRhoSubtraction || doprocessMCDWeighted || doprocessMCDWeightedWithRhoSubtraction || doprocessMCP || doprocessMCPWeighted || doprocessMCPOnTheFly || doprocessMCPOnTheFlyWeighted) {
       registry.add("hNtrig", "number of triggers;trigger type;entries", {HistType::kTH1F, {{2, 0, 2}}}, doSumw);
       registry.add("hSignalTriggersPtHard", "Signal triggers vs PtHard", {HistType::kTH1F, {pThatAxis}}, doSumw);
       registry.add("hReferenceTriggersPtHard", "Reference triggers vs PtHard", {HistType::kTH1F, {pThatAxis}}, doSumw);
@@ -186,7 +186,7 @@ struct JetHadronRecoil {
       registry.add("hPtTrackMatchedToCollisions", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}, doSumw);
     }
 
-    if (doprocessMCP || doprocessMCPWeighted) {
+    if (doprocessMCP || doprocessMCPWeighted || doprocessMCPOnTheFly || doprocessMCPOnTheFlyWeighted) {
       registry.add("hPartvsJets", "comparing leading particles and jets;p_{T,part};p_{T,jet};#hat{p}", {HistType::kTH3F, {{200, 0, 200}, {500, -100, 400}, {195, 5, 200}}}, doSumw);
       registry.add("hPtPart", "Particle p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}, doSumw);
       registry.add("hEtaPart", "Particle #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}, doSumw);
