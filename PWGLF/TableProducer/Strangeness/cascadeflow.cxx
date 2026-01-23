@@ -264,6 +264,7 @@ struct cascadeFlow {
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
     Configurable<float> rapidityLambda{"rapidityLambda", 0.5, "rapidityLambda"};
     Configurable<float> etaLambda{"etaLambda", 0.8, "etaLambda"};
+    Configurable<float> dauTrackV0Eta{"dauTrackV0Eta", 0.8, "dauTrackV0Eta"};
     Configurable<bool> isPositiveEta{"isPositiveEta", 0, "isPositiveEta"};
     Configurable<bool> isNegativeEta{"isNegativeEta", 0, "isNegativeEta"};
   } V0Configs;
@@ -483,6 +484,12 @@ struct cascadeFlow {
     if (std::abs(v0.yLambda()) > V0Configs.rapidityLambda)
       return false;
     if (std::abs(v0.eta()) > V0Configs.etaLambda)
+      return false;
+    Float_t posDauEta = RecoDecay::eta(std::array{v0.pxpos(), v0.pypos(), v0.pzpos()});
+    Float_t negDauEta = RecoDecay::eta(std::array{v0.pxneg(), v0.pyneg(), v0.pzneg()});
+    if (std::abs(posDauEta) > V0Configs.dauTrackV0Eta)
+      return false;
+    if (std::abs(negDauEta) > V0Configs.dauTrackV0Eta)
       return false;
     if (V0Configs.isPositiveEta) { // v0 and daughter tracks required to have positive eta
       if (v0.pzpos() <= 0)
