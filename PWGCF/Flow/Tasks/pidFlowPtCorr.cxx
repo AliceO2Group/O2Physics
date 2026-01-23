@@ -175,7 +175,7 @@ struct PidFlowPtCorr {
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (aod::track::pt > trkQualityOpts.cfgCutPtMin.value) && (aod::track::pt < trkQualityOpts.cfgCutPtMax.value);
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (aod::track::pt > trkQualityOpts.cfgCutPtMin.value) && (aod::track::pt < trkQualityOpts.cfgCutPtMax.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   // data tracks filter
