@@ -56,7 +56,7 @@ o2physics_add_dpl_workflow(task-cd
 
 o2physics_add_dpl_workflow(task-charm-polarisation
                     SOURCES taskCharmPolarisation.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-charm-reso-to-d-v0-reduced
@@ -122,6 +122,11 @@ o2physics_add_dpl_workflow(task-lc-to-k0s-p
 o2physics_add_dpl_workflow(task-omegac0-to-omega-pi
                     SOURCES taskOmegac0ToOmegaPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-pt-fluc-charm-hadrons
+                    SOURCES taskPtFlucCharmHadrons.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-sigmac

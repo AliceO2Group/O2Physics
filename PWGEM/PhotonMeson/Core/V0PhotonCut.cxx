@@ -9,15 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for v0 photon selection
-//
+/// \file V0PhotonCut.cxx
+/// \brief Source of class for V0 photon selection.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include <set>
-#include <utility>
-
-#include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+
+#include <Framework/Array2D.h>
+#include <Framework/Logger.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <functional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 ClassImp(V0PhotonCut);
 
@@ -233,4 +241,111 @@ void V0PhotonCut::SetDisableTPConly(bool flag)
 {
   mDisableTPConly = flag;
   LOG(info) << "V0 Photon Cut, disable TPC only track: " << mDisableTPConly;
+}
+
+void V0PhotonCut::SetApplyMlCuts(bool flag)
+{
+  mApplyMlCuts = flag;
+  LOG(info) << "V0 Photon Cut, set apply ML: " << mApplyMlCuts;
+}
+
+void V0PhotonCut::SetUse2DBinning(bool flag)
+{
+  mUse2DBinning = flag;
+  LOG(info) << "V0 Photon Cut, set use 2D binning for ML: " << mUse2DBinning;
+}
+
+void V0PhotonCut::SetCcdbUrl(const std::string& url)
+{
+  mCcdbUrl = url;
+  LOG(info) << "V0 Photon Cut, set CCDB URL: " << mCcdbUrl;
+}
+
+void V0PhotonCut::SetMlModelPathsCCDB(const std::vector<std::string>& modelPaths)
+{
+  mModelPathsCCDB = modelPaths;
+  LOG(info) << "V0 Photon Cut, set ML model paths CCDB with size:" << mModelPathsCCDB.size();
+}
+
+void V0PhotonCut::SetMlOnnxFileNames(const std::vector<std::string>& onnxFileNamesVec)
+{
+  mOnnxFileNames = onnxFileNamesVec;
+  LOG(info) << "V0 Photon Cut, set ML ONNX file names with size:" << mOnnxFileNames.size();
+}
+
+void V0PhotonCut::SetMlTimestampCCDB(int timestamp)
+{
+  mTimestampCCDB = timestamp;
+  LOG(info) << "V0 Photon Cut, set ML timestamp CCDB: " << mTimestampCCDB;
+}
+
+void V0PhotonCut::SetLoadMlModelsFromCCDB(bool flag)
+{
+  mLoadMlModelsFromCCDB = flag;
+  LOG(info) << "V0 Photon Cut, set load ML models from CCDB: " << mLoadMlModelsFromCCDB;
+}
+
+void V0PhotonCut::SetBinsPtMl(const std::vector<double>& binsPt)
+{
+  mBinsPtMl = binsPt;
+  LOG(info) << "V0 Photon Cut, set bins pT ML with size:" << mBinsPtMl.size();
+}
+
+void V0PhotonCut::SetBinsCentMl(const std::vector<double>& binsCent)
+{
+  mBinsCentMl = binsCent;
+  LOG(info) << "V0 Photon Cut, set bins centrality ML with size:" << mBinsCentMl.size();
+}
+
+void V0PhotonCut::SetCutsMl(const std::vector<double>& cuts)
+{
+  mCutsMlFlat = cuts;
+  LOG(info) << "V0 Photon Cut, set cuts ML with size:" << mCutsMlFlat.size();
+}
+
+void V0PhotonCut::SetNClassesMl(int nClasses)
+{
+  mNClassesMl = nClasses;
+  LOG(info) << "V0 Photon Cut, set number of classes ML: " << mNClassesMl;
+}
+
+void V0PhotonCut::SetNamesInputFeatures(const std::vector<std::string>& featureNames)
+{
+  mNamesInputFeatures = featureNames;
+  LOG(info) << "V0 Photon Cut, set ML input feature names with size:" << mNamesInputFeatures.size();
+}
+
+void V0PhotonCut::SetCentrality(float centFT0A, float centFT0C, float centFT0M)
+{
+  mCentFT0A = centFT0A;
+  mCentFT0C = centFT0C;
+  mCentFT0M = centFT0M;
+}
+void V0PhotonCut::SetD_Bz(float d_bz)
+{
+  mD_Bz = d_bz;
+}
+
+void V0PhotonCut::SetCutDirMl(const std::vector<int>& cutDirMl)
+{
+  mCutDirMl = cutDirMl;
+  LOG(info) << "V0 Photon Cut, set ML cut directions with size:" << mCutDirMl.size();
+}
+
+void V0PhotonCut::SetCentralityTypeMl(const std::string& centType)
+{
+  mCentralityTypeMl = centType;
+  LOG(info) << "V0 Photon Cut, set centrality type ML: " << mCentralityTypeMl;
+}
+
+void V0PhotonCut::SetLabelsBinsMl(const std::vector<std::string>& labelsBins)
+{
+  mLabelsBinsMl = labelsBins;
+  LOG(info) << "V0 Photon Cut, set ML labels bins with size:" << mLabelsBinsMl.size();
+}
+
+void V0PhotonCut::SetLabelsCutScoresMl(const std::vector<std::string>& labelsCutScores)
+{
+  mLabelsCutScoresMl = labelsCutScores;
+  LOG(info) << "V0 Photon Cut, set ML labels cut scores with size:" << mLabelsCutScoresMl.size();
 }

@@ -16,8 +16,6 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/Core/DataCreationCharmReso.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
@@ -25,10 +23,8 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/Utils/utilsMcMatching.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -37,7 +33,6 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
@@ -48,28 +43,15 @@
 #include <Framework/Configurable.h>
 #include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH1.h>
-#include <TPDGCode.h>
-
-#include <Rtypes.h>
-
-#include <algorithm>
-#include <array>
 #include <chrono>
 #include <cmath>
-#include <cstdint>
-#include <map>
 #include <string>
-#include <type_traits>
-#include <unordered_map>
-#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -191,7 +173,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
     fitter.setWeightedFinalPCA(false);
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {

@@ -99,23 +99,23 @@ struct DQFilterPbPbTask {
     auto isSGEvent = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
     int issgevent = isSGEvent.value;
     // Translate SGSelector values to DQEventFilter values
-    if (issgevent == 0) {
+    if (issgevent == sgselector::SingleGapA) {
       filter |= (static_cast<uint64_t>(1) << VarManager::kSingleGapA);
       fFilterOutcome->Fill(3, 1);
-    } else if (issgevent == 1) {
+    } else if (issgevent == sgselector::SingleGapC) {
       filter |= (static_cast<uint64_t>(1) << VarManager::kSingleGapC);
       fFilterOutcome->Fill(4, 1);
-    } else if (issgevent == 2) {
+    } else if (issgevent == sgselector::DoubleGap) {
       filter |= (static_cast<uint64_t>(1) << VarManager::kDoubleGap);
       fFilterOutcome->Fill(2, 1);
-    } else if (issgevent == 3) {
+    } else if (issgevent == sgselector::NoUpc) {
       fFilterOutcome->Fill(5, 1);
-    } else if (issgevent == 4) {
+    } else if (issgevent == sgselector::TrkOutOfRange) {
       fFilterOutcome->Fill(6, 1);
     }
 
     // Get closest bc with FIT activity above threshold
-    if (isSGEvent.bc && issgevent < 2) {
+    if (isSGEvent.bc) {
       newbc = *(isSGEvent.bc);
     }
     upchelpers::FITInfo fitInfo{};

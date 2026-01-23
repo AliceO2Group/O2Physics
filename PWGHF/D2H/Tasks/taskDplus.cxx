@@ -49,6 +49,8 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <THnSparse.h>
+
 #include <Rtypes.h>
 
 #include <algorithm>

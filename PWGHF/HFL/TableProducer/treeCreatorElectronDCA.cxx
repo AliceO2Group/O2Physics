@@ -14,7 +14,6 @@
 ///
 /// \author Martin Voelkl <martin.andreas.volkl@cern.ch>, University of Birmingham
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/AliasTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -38,7 +37,6 @@
 
 using namespace o2;
 using namespace o2::aod;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
