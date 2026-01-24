@@ -34,6 +34,7 @@
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
 
+#include <string>
 #include <vector>
 
 using namespace o2;
