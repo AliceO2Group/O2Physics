@@ -237,7 +237,7 @@ class FemtoUniverse3DContainer
       varside = f3d[7];
       varlong = f3d[8];
     }
-    
+
     const float femtoObs1D = f3d[0];
     const float femtoObsKout = varout;
     const float femtoObsKside = varside;
