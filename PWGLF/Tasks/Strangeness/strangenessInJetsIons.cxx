@@ -127,7 +127,7 @@ struct StrangenessInJetsIons {
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from detector edge"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
-  Configurable<int> centrEstimator{"centrEstimator", 0, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M"};
+  // Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -217,14 +217,14 @@ struct StrangenessInJetsIons {
     }
 
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
-    std::string multAxTitle;
-    if (centrEstimator == 0) {
-      multAxTitle = "FT0C percentile";
-    } else if (centrEstimator == 1) {
-      multAxTitle = "FT0M percentile";
-    } else {
-      LOG(fatal) << "Centrality estimator " << centrEstimator << " not available. Exit." << endl;
-    }
+    std::string multAxTitle = "FT0M percentile";
+    // if (centrEstimator == 0) {
+    //   multAxTitle = "FT0C percentile";
+    // } else if (centrEstimator == 1) {
+    //   multAxTitle = "FT0M percentile";
+    // } else {
+    //   LOG(fatal) << "Centrality estimator " << centrEstimator << " not available. Exit." << endl;
+    // }
     AxisSpec multAxis = {multBinning, multAxTitle};
 
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
@@ -1169,12 +1169,12 @@ struct StrangenessInJetsIons {
     registryData.fill(HIST("number_of_events_data"), 7.5);
 
     // Event multiplicity
-    float multiplicity;
-    if (centrEstimator == 0) {
-      multiplicity = collision.centFT0C();
-    } else {
-      multiplicity = collision.centFT0M();
-    }
+    float multiplicity = collision.centFT0M();
+    // if (centrEstimator == 0) {
+    //   multiplicity = collision.centFT0C();
+    // } else {
+    //   multiplicity = collision.centFT0M();
+    // }
 
     // Fill event multiplicity
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
@@ -1356,8 +1356,7 @@ struct StrangenessInJetsIons {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<DaughterTracksMC> perCollisionTrk = o2::aod::track::collisionId;
 
-  void processMCgenerated(aod::McCollisions const& collisions,
-                          SimCollisions const& mcRecoCollisions,
+  void processMCgenerated(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& collisions,
                           aod::McParticles const& mcParticles)
   {
     // Define per-event particle containers
@@ -1369,9 +1368,9 @@ struct StrangenessInJetsIons {
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
 
-    // Loop over MC collisions
+   // Loop over MC collisions
     for (const auto& collision : collisions) {
-      // Get multiplicity from RECO MC
+      /* // Get multiplicity from RECO MC
       // Select RECO collisions for which "mcCollisionsID" = collision.globalIndex()
       float multiplicity = -999;
 
@@ -1398,7 +1397,7 @@ struct StrangenessInJetsIons {
       }
 
       if (multiplicity == -999)
-        continue;
+        continue; */
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
@@ -1416,7 +1415,15 @@ struct StrangenessInJetsIons {
       registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
 
       // Multiplicity of generated event retrived from corresponding MC RECO collision
-      float genMultiplicity = multiplicity;
+      // float genMultiplicity = multiplicity;
+
+      // Multiplicity of generated event
+      double genMultiplicity = collision.centFT0M();;
+      // if (centrEstimator == 0) {
+      //   genMultiplicity = collision.centFT0C();
+      // } else {
+      //   genMultiplicity = collision.centFT0M();
+      // }
 
       // MC particles per collision
       auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
@@ -1653,6 +1660,7 @@ struct StrangenessInJetsIons {
 
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions,
+                              soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
                               DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s,
                               aod::CascDataExt const& Cascades, const aod::McParticles&)
   {
@@ -1671,6 +1679,8 @@ struct StrangenessInJetsIons {
       if (!collision.has_mcCollision()) {
         continue;
       }
+
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
@@ -1706,12 +1716,7 @@ struct StrangenessInJetsIons {
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
 
       // Event multiplicity
-      float multiplicity;
-      if (centrEstimator == 0) {
-        multiplicity = collision.centFT0C();
-      } else {
-        multiplicity = collision.centFT0M();
-      }
+      float multiplicity = mcCollision.centFT0M();
 
       // Number of V0 and cascades per collision
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
