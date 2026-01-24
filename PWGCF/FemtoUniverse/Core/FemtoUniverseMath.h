@@ -177,7 +177,7 @@ class FemtoUniverseMath
   /// \param mass2 Mass of particle 2
   /// \param isiden Identical or non-identical particle pair
   template <typename T>
-  static std::vector<double> newpairfunc(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden, bool isWeight = 0)
+  static std::vector<double> newpairfunc(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden, bool isWeight = 0, bool isIdenPRF = 0)
   {
     const double e1 = std::sqrt(std::pow(part1.px(), 2) + std::pow(part1.py(), 2) + std::pow(part1.pz(), 2) + std::pow(mass1, 2));
     const double e2 = std::sqrt(std::pow(part2.px(), 2) + std::pow(part2.py(), 2) + std::pow(part2.pz(), 2) + std::pow(mass2, 2));
@@ -251,6 +251,7 @@ class FemtoUniverseMath
       vect.push_back(fDKOut);
       vect.push_back(fDKSide);
       vect.push_back(fDKLong);
+      vect.push_back(1.0);
     }
 
     if (isiden && isWeight) {
@@ -277,6 +278,13 @@ class FemtoUniverseMath
     } else {
       vect.push_back(1.0);
     }
+
+    if (isIdenPRF) {
+      vect.push_back(fDKOutPRF);
+      vect.push_back(fDKSidePRF);
+      vect.push_back(fDKLongPRF);
+    }
+
     return vect;
   }
 };
