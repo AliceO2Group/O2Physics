@@ -345,7 +345,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
     // initailize HF event selection helper
     // ------------------------------------
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     // Histograms for QA
     // -----------------
