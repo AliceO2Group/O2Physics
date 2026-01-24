@@ -15,6 +15,7 @@
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
 /// \author Krista Smith <krista.lizbeth.smith@cern.ch>, Pusan National University
 
+#include "PWGHF/Core/HfMlResponseXic0ToXiPi.h"
 #include "PWGHF/Core/HfMlResponseXic0ToXiPiKf.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -126,6 +127,7 @@ struct HfCandidateSelectorToXiPiQa {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
+  o2::analysis::HfMlResponseXic0ToXiPi<float> hfMlResponseDca;
   o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponse;
   std::vector<float> outputMlXic0ToXiPiKf = {};
   o2::ccdb::CcdbApi ccdbApi;
@@ -194,14 +196,19 @@ struct HfCandidateSelectorToXiPiQa {
 
     if (applyMl) {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      hfMlResponseDca.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
         hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        hfMlResponseDca.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
       } else {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
+        hfMlResponseDca.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponseDca.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
+      hfMlResponseDca.init();
     }
   }
 
@@ -239,7 +246,6 @@ struct HfCandidateSelectorToXiPiQa {
       int pTBin = findBin(binsPt, ptCandXic0);
       if (pTBin == -1) {
         resultSelections = false;
-        continue;
       }
 
       // eta selection
@@ -537,6 +543,16 @@ struct HfCandidateSelectorToXiPiQa {
 
       // Fill in selection result
       if constexpr (dokf == false) {
+        // ML selection
+        if (applyMl) {
+          bool isSelectedMlXic0 = false;
+          std::vector<float> inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPiKf);
+          if (!isSelectedMlXic0) {
+            continue;
+          }
+          hfMlToXiPiKf(outputMlXic0ToXiPiKf);
+        }
         hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                     trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                     trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
