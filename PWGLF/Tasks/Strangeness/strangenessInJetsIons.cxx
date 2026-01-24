@@ -134,7 +134,7 @@ struct StrangenessInJetsIons {
   Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection"};
 
   // Track analysis parameters
-  struct: ConfigurableGroup {
+  struct : ConfigurableGroup {
     Configurable<int> minITSnCls{"minITSnCls", 4, "Minimum number of ITS clusters"};
     Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "Minimum number of TPC crossed rows"};
     Configurable<double> maxChi2TPC{"maxChi2TPC", 4.0f, "Maximum chi2 per cluster TPC"};
@@ -155,9 +155,9 @@ struct StrangenessInJetsIons {
   } configTracks;
 
   // V0 analysis parameters
-  struct: ConfigurableGroup {
+  struct : ConfigurableGroup {
     Configurable<double> minimumV0Radius{"minimumV0Radius", 1.2f, "Minimum V0 Radius (cm)"};
-    Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius (cm)"};
+    // Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius (cm)"};
     Configurable<double> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 cosine of pointing angle"};
     Configurable<double> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA between V0 daughters"};
     Configurable<bool> requireV0type{"requireV0type", true, "Require V0 type Cut"};
@@ -175,9 +175,9 @@ struct StrangenessInJetsIons {
   } configV0;
 
   // Cascade analysis parameters
-  struct: ConfigurableGroup {
+  struct : ConfigurableGroup {
     Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
-    Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
+    // Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
     Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
     Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
     Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
@@ -639,7 +639,8 @@ struct StrangenessInJetsIons {
     // V0 selections
     if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    // if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius)
       return false;
     if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > configV0.ctauLambda)
       return false;
@@ -691,7 +692,8 @@ struct StrangenessInJetsIons {
     // V0 selections
     if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    // if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius)
       return false;
     if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > configV0.ctauLambda)
       return false;
@@ -743,7 +745,8 @@ struct StrangenessInJetsIons {
     // V0 selections
     if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    // if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius)
       return false;
     if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassK0Short > configV0.ctauK0s)
       return false;
@@ -856,7 +859,8 @@ struct StrangenessInJetsIons {
     // V0 selections
     if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
       return false;
-    if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
+    // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
+    if (casc.v0radius() < configV0.minimumV0Radius)
       return false;
     if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
@@ -866,7 +870,8 @@ struct StrangenessInJetsIons {
       return false;
 
     // Cascade selections
-    if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
+    // if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
+    if (casc.cascradius() < configCasc.minimumCascRadius)
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.casccospaMin)
       return false;
@@ -970,7 +975,8 @@ struct StrangenessInJetsIons {
     // V0 selections
     if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
       return false;
-    if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
+    // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
+    if (casc.v0radius() < configV0.minimumV0Radius)
       return false;
     if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
@@ -980,7 +986,8 @@ struct StrangenessInJetsIons {
       return false;
 
     // Cascade selections
-    if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
+    // if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
+    if (casc.cascradius() < configCasc.minimumCascRadius)
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.casccospaMin)
       return false;
