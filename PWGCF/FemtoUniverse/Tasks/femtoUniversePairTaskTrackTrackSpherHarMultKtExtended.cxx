@@ -624,7 +624,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         float outsideref = 0.0;
         switch (contType) {
           case PairType::PlusPlus: {
-            f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS);
+            f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
             if (!twotracksconfigs.confUseCCImCut) {
               sameEventMultContPP.fillMultNumDen(part1, part2, femto_universe_sh_container::EventType::same, 2, multCol, kT, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIs1D, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
             } else {
@@ -650,7 +650,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           }
 
           case PairType::MinusMinus: {
-            f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS);
+            f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
             if (!twotracksconfigs.confUseCCImCut) {
               sameEventMultContMM.fillMultNumDen(part1, part2, femto_universe_sh_container::EventType::same, 2, multCol, kT, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIs1D, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
             } else {
@@ -983,7 +983,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         case PairType::PlusPlus: {
-          f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS);
+          f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
           if (!twotracksconfigs.confUseCCImCut) {
             mixedEventMultContPP.fillMultNumDen(part1, part2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIs1D, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
           } else {
@@ -1010,7 +1010,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         case PairType::MinusMinus: {
-          f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS);
+          f3d = FemtoUniverseMath::newpairfunc(part1, mass1, part2, mass2, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
           if (!twotracksconfigs.confUseCCImCut) {
             mixedEventMultContMM.fillMultNumDen(part1, part2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIs1D, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
           } else {

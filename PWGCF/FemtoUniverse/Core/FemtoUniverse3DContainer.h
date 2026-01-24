@@ -216,22 +216,36 @@ class FemtoUniverse3DContainer
   /// \param isiden Choosing identical or non-identical pairs
   /// \param islcm Choosing LCMS or PRF
   template <bool isMC, typename T>
-  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, bool isiden)
+  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, bool isIdenLCMS, bool isWeight, bool isIdenPRF)
   {
     std::vector<double> f3d;
     const float kT = FemtoUniverseMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoUniverseMath::getmT(part1, mMassOne, part2, mMassTwo);
 
-    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo, isiden);
+    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo, isIdenLCMS, isWeight, isIdenPRF);
 
+    float varout = 0.0;
+    float varside = 0.0;
+    float varlong = 0.0;
+
+    if (isIdenLCMS) {
+      varout = f3d[1];
+      varside = f3d[2];
+      varlong = f3d[3];
+    } else if (isIdenPRF) {
+      varout = f3d[6];
+      varside = f3d[7];
+      varlong = f3d[8];
+    }
+    
     const float femtoObs1D = f3d[0];
-    const float femtoObsKout = f3d[1];
-    const float femtoObsKside = f3d[2];
-    const float femtoObsKlong = f3d[3];
+    const float femtoObsKout = varout;
+    const float femtoObsKside = varside;
+    const float femtoObsKlong = varlong;
 
     if (mHistogramRegistry) {
-      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObsKout, femtoObsKside, femtoObsKlong, femtoObs1D, kT, mT, part1, part2, mult, use3dplots, isiden);
-      if (!isiden) {
+      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObsKout, femtoObsKside, femtoObsKlong, femtoObs1D, kT, mT, part1, part2, mult, use3dplots, isIdenLCMS);
+      if (!isIdenLCMS) {
         if (femtoObsKout > 0.0) {
           mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/KStarOutP"), femtoObs1D);
         } else {
