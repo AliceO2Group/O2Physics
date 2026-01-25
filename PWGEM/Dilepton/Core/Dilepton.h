@@ -113,8 +113,6 @@ struct Dilepton {
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
-  // Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
-  // Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
   Configurable<bool> cfgUseSignedDCA{"cfgUseSignedDCA", false, "flag to use signs in the DCA calculation"};
@@ -162,6 +160,9 @@ struct Dilepton {
     Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -292,7 +293,7 @@ struct Dilepton {
 
   struct : ConfigurableGroup {
     std::string prefix = "zorroGroup";
-    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name"}; // 1 trigger per 1 task
+    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name. 1 trigger per 1 task."}; // 1 trigger per 1 task
     o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
     Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   } zorroGroup;
@@ -423,6 +424,13 @@ struct Dilepton {
 
     fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
 
+    if (doprocessTriggerAnalysis) {
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
+      fRegistry.add("Event/trigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{100000, 500000.5, 600000.5}}, true);          // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hScalers", "trigger counter before DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);   // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hSelections", "trigger counter after DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true); // extend X range in Run 4/5
+    }
+
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
       fRegistry.add("Event/norm/hZvtx", "hZvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
@@ -484,6 +492,15 @@ struct Dilepton {
       zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
       zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value);
       zorro.populateHistRegistry(fRegistry, collision.runNumber());
+
+      uint64_t nInspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
+      uint64_t nScalers = zorro.getScalers()->GetBinContent(zorro.getScalers()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      uint64_t nSelections = zorro.getSelections()->GetBinContent(zorro.getSelections()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      LOGF(info, "run number %d: total inspected TVX events = %llu, scalers = %llu, selections = %llu", collision.runNumber(), nInspectedTVX, nScalers, nSelections);
+
+      fRegistry.fill(HIST("Event/trigger/hInspectedTVX"), collision.runNumber(), nInspectedTVX);
+      fRegistry.fill(HIST("Event/trigger/hScalers"), collision.runNumber(), nScalers);
+      fRegistry.fill(HIST("Event/trigger/hSelections"), collision.runNumber(), nSelections);
     }
 
     mRunNumber = collision.runNumber();
@@ -1110,7 +1127,7 @@ struct Dilepton {
   }
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  // Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;

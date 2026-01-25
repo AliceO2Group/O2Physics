@@ -100,6 +100,7 @@ struct HStrangeCorrelation {
   Configurable<float> etaSel{"etaSel", 0.8, "Selection in eta for trigger and associated particles"};
   Configurable<float> ySel{"ySel", 0.5, "Selection in rapidity for consistency checks"};
 
+  Configurable<bool> useTheLeadingParticleAsTrigger{"useTheLeadingParticleAsTrigger", false, "if true, use the leading particle in the event as trigger particle"};
   // used for event selections in Pb-Pb
   Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
   Configurable<int> cfgCutOccupancyLow{"cfgCutOccupancyLow", 0, "Low cut on TPC occupancy"};
@@ -475,7 +476,7 @@ struct HStrangeCorrelation {
   }
 
   template <class TTrack>
-  bool isValidTrigger(TTrack track)
+  bool isValidTrigger(TTrack track, bool isLeading)
   {
     if (track.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRowsTrigger) {
       return false; // crossed rows
@@ -500,6 +501,9 @@ struct HStrangeCorrelation {
       return false;
     }
     if (triggerParticleCharge < 0 && track.sign() > 0) {
+      return false;
+    }
+    if (useTheLeadingParticleAsTrigger && !isLeading) {
       return false;
     }
     return true;
@@ -631,7 +635,7 @@ struct HStrangeCorrelation {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
-      if (!isValidTrigger(trigg))
+      if (!isValidTrigger(trigg, triggerTrack.isLeading()))
         continue;
       float efficiencyTrigg = 1.0f;
       float efficiencyTriggError = 0.0f;
@@ -835,7 +839,7 @@ struct HStrangeCorrelation {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
       auto trigg = triggerTrack.track_as<TracksComplete>();
-      if (!isValidTrigger(trigg))
+      if (!isValidTrigger(trigg, triggerTrack.isLeading()))
         continue;
 
       float efficiencyTrigg = 1.0f;
@@ -1027,7 +1031,7 @@ struct HStrangeCorrelation {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
       auto trigg = triggerTrack.template track_as<TracksComplete>();
-      if (!isValidTrigger(trigg))
+      if (!isValidTrigger(trigg, triggerTrack.isLeading()))
         continue;
 
       float efficiencyTrigger = 1.0f;
@@ -1706,7 +1710,7 @@ struct HStrangeCorrelation {
 
       for (auto const& triggerTrack : slicedTriggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
-        if (!isValidTrigger(track)) {
+        if (!isValidTrigger(track, triggerTrack.isLeading())) {
           continue;
         }
         auto binNumber = histos.get<TH1>(HIST("axes/hPtTriggerAxis"))->FindFixBin(track.pt()) - 1;
@@ -1750,7 +1754,7 @@ struct HStrangeCorrelation {
     if (!doprocessSameEventHCascades && !doprocessSameEventHV0s && !doprocessSameEventHPions) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
-        if (!isValidTrigger(track))
+        if (!isValidTrigger(track, triggerTrack.isLeading()))
           continue;
         float efficiency = 1.0f;
         if (efficiencyFlags.applyEfficiencyCorrection) {
@@ -1887,7 +1891,7 @@ struct HStrangeCorrelation {
     if (!doprocessSameEventHCascades) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
-        if (!isValidTrigger(track))
+        if (!isValidTrigger(track, triggerTrack.isLeading()))
           continue;
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), cent);
         histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
@@ -2003,7 +2007,7 @@ struct HStrangeCorrelation {
     }
     for (auto const& triggerTrack : triggerTracks) {
       auto track = triggerTrack.track_as<TracksComplete>();
-      if (!isValidTrigger(track))
+      if (!isValidTrigger(track, triggerTrack.isLeading()))
         continue;
       histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), cent);
       histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
@@ -2070,7 +2074,7 @@ struct HStrangeCorrelation {
     if (!doprocessSameEventHCascades && !doprocessSameEventHV0s) {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
-        if (!isValidTrigger(track))
+        if (!isValidTrigger(track, triggerTrack.isLeading()))
           continue;
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());

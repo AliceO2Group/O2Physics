@@ -25,10 +25,12 @@
 #include "Framework/HistogramSpec.h"
 
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <map>
 #include <numeric>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -68,6 +70,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> kinematicMax{"kinematicMax", -1.f, "Maximum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
   o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{250, -0.5, 0.5}}, "deta"};
   o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{250, -0.5, 0.5}}, "dphi"};
+  o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2. Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
 };
 
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
@@ -174,6 +177,17 @@ class CloseTrackRejection
     mPlotAverage = confCpr.plotAverage.value;
     mPlotAllRadii = confCpr.plotAllRadii.value;
 
+    if (confCpr.seed.value >= 0) {
+      uint64_t randomSeed;
+      mRandomizeTracks = true;
+      if (confCpr.seed.value == 0) {
+        randomSeed = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      } else {
+        randomSeed = static_cast<uint64_t>(confCpr.seed.value);
+      }
+      mRng = std::mt19937(randomSeed);
+    }
+
     // check if we need to apply any cut a plot is requested
     mIsActivated = mCutAverage || mCutAnyRadius || mPlotAverage || mPlotAllRadii;
 
@@ -210,11 +224,19 @@ class CloseTrackRejection
     mDphistar.fill(0.f);
     mDphistarMask.fill(false);
 
-    mDeta = track1.eta() - track2.eta();
+    bool swapTracks = false;
+    if (mRandomizeTracks) {
+      swapTracks = (mSwapDist(mRng) == 1);
+    }
+
+    auto const& t1 = swapTracks ? track2 : track1;
+    auto const& t2 = swapTracks ? track1 : track2;
+
+    mDeta = t1.eta() - t2.eta();
 
     for (size_t i = 0; i < TpcRadii.size(); i++) {
-      auto phistar1 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
-      auto phistar2 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
+      auto phistar1 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack1 * t1.signedPt(), t1.phi());
+      auto phistar2 = phistar(mMagField, TpcRadii[i], mChargeAbsTrack2 * t2.signedPt(), t2.phi());
       if (phistar1 && phistar2) {
         mDphistar.at(i) = RecoDecay::constrainAngle(phistar1.value() - phistar2.value(), -o2::constants::math::PI); // constrain angular difference between -pi and pi
         mDphistarMask.at(i) = true;
@@ -342,6 +364,10 @@ class CloseTrackRejection
   float mDeta = 0.f;
   std::array<float, Nradii> mDphistar = {0.f};
   std::array<bool, Nradii> mDphistarMask = {false};
+
+  bool mRandomizeTracks = false;
+  std::mt19937 mRng;
+  std::uniform_int_distribution<int> mSwapDist{0, 1};
 };
 
 template <const char* prefix>

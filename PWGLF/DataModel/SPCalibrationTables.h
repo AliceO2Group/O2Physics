@@ -17,12 +17,12 @@
 #ifndef PWGLF_DATAMODEL_SPCALIBRATIONTABLES_H_
 #define PWGLF_DATAMODEL_SPCALIBRATIONTABLES_H_
 
-#include <cmath>
-
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {

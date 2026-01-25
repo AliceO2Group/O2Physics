@@ -103,11 +103,20 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgCutmaxIR, float, 3000, "cut max IR")
   } evtSeleOpts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "dcaCutOpts";
+    TF1* fPtDepDCAxy = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
+    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut")
+  } dcaCutOpts;
+
   O2_DEFINE_CONFIGURABLE(cfgCasc_rapidity, float, 0.5, "rapidity")
   O2_DEFINE_CONFIGURABLE(cfgNSigmapid, std::vector<float>, (std::vector<float>{3, 3, 3, 9, 9, 9, 9, 9, 9}), "tpc, tof and its NSigma for Pion Proton Kaon")
   O2_DEFINE_CONFIGURABLE(cfgMeanPtcent, std::vector<float>, (std::vector<float>{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}), "mean Pt in different cent bin")
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiency2DPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency(pt, cent) object")
   O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
   O2_DEFINE_CONFIGURABLE(cfgEtaGap, float, 0.4, "eta gap for cumulant calculation, note that gap is -0.4 ~ 0.4 total 0.8, note that eta range for meanpt calculation needs to be within etagap")
   O2_DEFINE_CONFIGURABLE(cfgFlowNbootstrap, int, 30, "Number of subsamples for bootstrap")
@@ -120,6 +129,9 @@ struct PidFlowPtCorr {
   O2_DEFINE_CONFIGURABLE(cfgOutPutMC, bool, false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open")
   O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "do QA")
+
+  O2_DEFINE_CONFIGURABLE(cfgUsePtCentNUECorr, bool, true, "do NUA NUE, Using Eff(pt, cent) to do NUE")
+  O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug")
 
   /**
    * @brief cfg for PID pt range
@@ -161,19 +173,28 @@ struct PidFlowPtCorr {
   AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
   // filter and using
+  // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (aod::track::pt > trkQualityOpts.cfgCutPtMin.value) && (aod::track::pt < trkQualityOpts.cfgCutPtMax.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU>>; // tracks filter
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::MultsRun3>>;                                               // collisions filter
+  // data tracks filter
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU, aod::TracksDCA>>;
+  // data collisions filter
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::MultsRun3>>;
 
+  // MC
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
   using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
 
-  Filter particleFilter = nabs(aod::mcparticle::eta) < trkQualityOpts.cfgCutEta.value;
-  using FilteredMcParticles = soa::Filtered<soa::Join<aod::McParticles, aod::ParticlesToTracks>>;
+  Filter particleFilter = (nabs(aod::mcparticle::eta) < trkQualityOpts.cfgCutEta.value) && (aod::mcparticle::pt > trkQualityOpts.cfgCutPtMin.value) && (aod::mcparticle::pt < trkQualityOpts.cfgCutPtMax.value);
+  using FilteredMcParticles = soa::Filtered<aod::McParticles>;
+
+  using FilteredTracksWithMCLabel = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
+  using FilteredCollisionsWithMCLabel = soa::Filtered<soa::Join<AodCollisions, aod::EvSels, aod::McCollisionLabels>>;
   // end using and filter
+
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -198,6 +219,7 @@ struct PidFlowPtCorr {
   std::vector<GFW::CorrConfig> corrconfigs;
   std::vector<std::string> cfgAcceptance;
   std::vector<std::string> cfgEfficiency;
+  std::vector<std::string> cfgEfficiency2D;
   std::vector<float> cfgMultPVCutPara;
   std::vector<float> cfgNSigma;
   std::vector<float> cfgMeanPt;
@@ -223,8 +245,18 @@ struct PidFlowPtCorr {
     kCount_TH3Names
   };
 
+  enum MyFunctionName {
+    funcProcessData = 0,
+    funcDetectorPidQA,
+    funcFillCorrectionGraph,
+    funcProcessReco,
+    funcProcessSim,
+    funcNumber
+  };
+
   std::vector<GFWWeights*> mAcceptance;
   std::vector<TH1D*> mEfficiency;
+  std::vector<TH2D*> mEfficiency2D;
   bool correctionsLoaded = false;
 
   TF1* fMultPVCutLow = nullptr;
@@ -244,6 +276,15 @@ struct PidFlowPtCorr {
   TF1* funcV3;
   TF1* funcV4;
 
+  // hists for debug
+  struct {
+    TH1* hPtEffWeight = 0;
+    TH2* hPtCentEffWeight = 0;
+    THnSparse* hRunNumberPhiEtaVertexWeight = 0;
+  } debugHist;
+
+  // end hist for debug
+
   void init(InitContext const&) // Initialization
   {
     ccdb->setURL(cfgurl.value);
@@ -252,6 +293,7 @@ struct PidFlowPtCorr {
 
     cfgAcceptance = cfgAcceptancePath;
     cfgEfficiency = cfgEfficiencyPath;
+    cfgEfficiency2D = cfgEfficiency2DPath;
     cfgNSigma = cfgNSigmapid;
     cfgMeanPt = cfgMeanPtcent;
     cfgMultPVCutPara = evtSeleOpts.cfgMultPVCut;
@@ -264,6 +306,12 @@ struct PidFlowPtCorr {
     o2::framework::AxisSpec axisMult = axisMultiplicity;
     int nMultBins = axisMult.binEdges.size() - 1;
     fMultAxis = new TAxis(nMultBins, &(axisMult.binEdges)[0]);
+
+    if (dcaCutOpts.cfgDCAxyNSigma) {
+      dcaCutOpts.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", dcaCutOpts.cfgDCAxy->c_str()), 0.001, 1000);
+      dcaCutOpts.fPtDepDCAxy->SetParameter(0, dcaCutOpts.cfgDCAxyNSigma);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaCutOpts.cfgDCAxy->c_str()));
+    }
 
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {cfgaxisPhi}});
@@ -298,14 +346,24 @@ struct PidFlowPtCorr {
 
     if (cfgOutPutMC) {
       // hist for NUE correction
-      registry.add("correction/hCentPtMC", "", {HistType::kTH2D, {axisMultiplicity, cfgaxisPt}});
-      registry.add("correction/hCentPtData", "", {HistType::kTH2D, {axisMultiplicity, cfgaxisPt}});
+      registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputMC
 
     runNumbers = cfgRunNumbers;
+    // debug hists
+    if (cfgDebugMyCode) {
+      debugHist.hPtEffWeight = registry.add<TH1>("debug/hPtEffWeight", "", {HistType::kTH1D, {cfgaxisPt}}).get();
+      debugHist.hPtCentEffWeight = registry.add<TH2>("debug/hPtCentEffWeight", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}}).get();
+      debugHist.hRunNumberPhiEtaVertexWeight = registry.add<THnSparse>("debug/hRunNumberPhiEtaVertexWeight", "", {HistType::kTHnSparseD, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}}).get();
+      for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
+        registry.get<THnSparse>(HIST("debug/hRunNumberPhiEtaVertexWeight"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
+      }
+    } // cfgdebugmycode
+
     if (cfgOutputrunbyrun) {
       // hist for NUA
-      registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
+      registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseD, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
       // set "correction/hRunNumberPhiEtaVertex" axis0 label
       for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
         registry.get<THnSparse>(HIST("correction/hRunNumberPhiEtaVertex"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
@@ -314,21 +372,31 @@ struct PidFlowPtCorr {
     } // cfgooutputrunbyrun
 
     // set bin label for hEventCount
-    registry.add("hEventCount", "", {HistType::kTH1D, {{14, 0, 14}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after kTVXinTRD");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after kNoTimeFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after kNoITSROFrameBorder");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "after kDoNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "after kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "after kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after kIsGoodITSLayersAll");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "after MultPVCut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(11, "after TPC occupancy cut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(12, "after V0AT0Acut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(13, "after IRmincut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(14, "after IRmaxcut");
+    // processdata
+    registry.add("hEventCount/processData", "", {HistType::kTH1D, {{14, 0, 14}}});
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(1, "Filtered event");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(2, "after sel8");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(3, "after kTVXinTRD");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(4, "after kNoTimeFrameBorder");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(5, "after kNoITSROFrameBorder");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(6, "after kDoNoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(7, "after kIsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(8, "after kNoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(9, "after kIsGoodITSLayersAll");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(10, "after MultPVCut");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(11, "after TPC occupancy cut");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(12, "after V0AT0Acut");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(13, "after IRmincut");
+    registry.get<TH1>(HIST("hEventCount/processData"))->GetXaxis()->SetBinLabel(14, "after IRmaxcut");
+    // detector pid QA
+    registry.addClone("hEventCount/processData", "hEventCount/detectorPidQA");
+    // fillcorrectiongraph
+    registry.addClone("hEventCount/processData", "hEventCount/fillCorrectionGraph");
+    // processReco
+    registry.addClone("hEventCount/processData", "hEventCount/processReco");
+    // processSim
+    registry.addClone("hEventCount/processData", "hEventCount/processSim");
+
     registry.add("hInteractionRate", "", {HistType::kTH1D, {{1000, 0, 1000}}});
     // end set bin label for eventcount
 
@@ -629,6 +697,37 @@ struct PidFlowPtCorr {
     return resultKaon;
   }
 
+  /**
+   * @brief get stable particle
+   * @note stable particle include
+   *        1. pi
+   *        2. Ka
+   *        3. proton
+   *        4. electron
+   *        5. muon
+   *
+   * @param pdg
+   * @return true stable
+   * @return false unstable
+   */
+  bool isStable(int pdg)
+  {
+    switch (std::abs(pdg)) {
+      case PDG_t::kPiPlus:
+      case PDG_t::kKPlus:
+      case PDG_t::kProton:
+      case PDG_t::kElectron:
+      case PDG_t::kMuonMinus:
+        return true;
+        break;
+      default:
+        return false;
+        break;
+    }
+
+    return false;
+  }
+
   void fillFC(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const char* tarName)
   {
     double dnx, val;
@@ -768,11 +867,18 @@ struct PidFlowPtCorr {
     return;
   }
 
+  /**
+   * @brief load NUE(1D) NUE(2D) NUA graphs
+   * @note if u write more than one path in cfg, the graph would not load, that's the strange way to close NUE/NUA corr separatly
+   *
+   * @param timestamp
+   */
   void loadCorrections(uint64_t timestamp)
   {
     if (correctionsLoaded)
       return;
     int nspecies = 1;
+    // load NUA
     if (cfgAcceptance.size() == static_cast<uint64_t>(nspecies)) {
       for (int i = 0; i <= nspecies - 1; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
@@ -782,6 +888,9 @@ struct PidFlowPtCorr {
       else
         LOGF(warning, "Could not load acceptance weights");
     }
+    // end load NUA
+
+    // load NUE 1d
     if (cfgEfficiency.size() == static_cast<uint64_t>(nspecies)) {
       for (int i = 0; i <= nspecies - 1; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
@@ -791,11 +900,25 @@ struct PidFlowPtCorr {
       else
         LOGF(fatal, "Could not load efficiency histogram");
     }
+    // end load NUE1d
+
+    // load NUE 2D
+    if (cfgEfficiency2D.size() == static_cast<uint64_t>(nspecies)) {
+      for (int i = 0; i <= nspecies - 1; i++) {
+        mEfficiency2D.push_back(ccdb->getForTimeStamp<TH2D>(cfgEfficiency2D[i], timestamp));
+      }
+      if (mEfficiency2D.size() == static_cast<uint64_t>(nspecies))
+        LOGF(info, "Loaded efficiency2D histogram");
+      else
+        LOGF(fatal, "Could not load efficiency2D histogram");
+    }
+    // end load NUE 2D
+
     correctionsLoaded = true;
   }
 
   template <typename TrackObject>
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject& track, float vtxz, int ispecies)
   {
     float eff = 1.;
     int nspecies = 1;
@@ -803,8 +926,9 @@ struct PidFlowPtCorr {
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
     else
       eff = 1.0;
-    if (eff == 0)
+    if (eff == 0) {
       return false;
+    }
     weight_nue = 1. / eff;
     if (mAcceptance.size() == static_cast<uint64_t>(nspecies))
       weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
@@ -813,49 +937,210 @@ struct PidFlowPtCorr {
     return true;
   }
 
-  // event selection
+  template <typename TrackObject>
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject& track, float vtxz, int ispecies, double cent)
+  {
+    float eff = 1.;
+    int nspecies = 1;
+
+    // eff 2d
+    if (mEfficiency2D.size() == static_cast<uint64_t>(nspecies)) {
+      int ptBin = mEfficiency2D[ispecies]->GetXaxis()->FindBin(track.pt());
+      int centBin = mEfficiency2D[ispecies]->GetYaxis()->FindBin(cent);
+      eff = mEfficiency2D[ispecies]->GetBinContent(ptBin, centBin);
+    }
+    if (eff == 0) {
+      return false;
+    }
+    weight_nue = 1. / eff;
+    // end eff 2d
+
+    // acc
+    if (mAcceptance.size() == static_cast<uint64_t>(nspecies))
+      weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
+    else
+      weight_nua = 1;
+    return true;
+    // end acc
+  }
+
+  /**
+   * @brief cut MC particles
+   * @note include
+   *        1. eta cut
+   *        2. pt cut
+   *        3. primaryparticle check
+   *        4. stable partccle
+   *
+   * @tparam mcParticle
+   * @param particle
+   * @return true
+   * @return false
+   */
+  template <typename mcParticle>
+  bool particleSelected(mcParticle& particle)
+  {
+    // eta
+    if (std::fabs(particle.eta()) > trkQualityOpts.cfgCutEta.value)
+      return false;
+    // pt
+    if (particle.pt() < trkQualityOpts.cfgCutPtMin.value)
+      return false;
+    if (particle.pt() > trkQualityOpts.cfgCutPtMax.value)
+      return false;
+    // primary particle
+    if (!particle.isPhysicalPrimary())
+      return false;
+    // stable particle
+    if (!isStable(particle.pdgCode()))
+      return false;
+
+    return true;
+  }
+
+  /**
+   * @brief track selection
+   * @note include: 1. dcaxy
+   *                2. its ncls
+   *                3. tpc cross row
+   *                4. tpc ncls
+   *                5. pt cut
+   *                6. eta
+   *                7. tpc chi2
+   *                8. dcaz
+   *
+   * @tparam TTrack
+   * @param track
+   * @return true pass selection
+   * @return false reject track
+   */
+  template <typename TTrack>
+  bool trackSelected(TTrack& track)
+  {
+    // dca xy cut
+    // note that z cut is in filter
+    if (dcaCutOpts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > dcaCutOpts.fPtDepDCAxy->Eval(track.pt())))
+      return false;
+    // its ncls cut
+    if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+      return false;
+    // tpc crossedrows cut
+    if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+      return false;
+    // tpc ncls cut
+    if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+      return false;
+    // pt
+    if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
+      return false;
+    // eta
+    if (std::fabs(track.eta()) > trkQualityOpts.cfgCutEta.value)
+      return false;
+    // tpc chi2
+    if (track.tpcChi2NCl() > cfgCutChi2prTPCcls)
+      return false;
+    // dca z
+    if (std::fabs(track.dcaZ()) > dcaCutOpts.cfgCutDCAz.value)
+      return false;
+
+    return true;
+  }
+
+  /**
+   * @brief fill eventCount for different function
+   *
+   * @param funcName
+   * @param position
+   */
+  void fillEventCountHelper(MyFunctionName funcName, double position)
+  {
+    switch (funcName) {
+      case MyFunctionName::funcProcessData:
+        this->registry.fill(HIST("hEventCount/processData"), position);
+        break;
+      case MyFunctionName::funcDetectorPidQA:
+        this->registry.fill(HIST("hEventCount/detectorPidQA"), position);
+        break;
+      case MyFunctionName::funcFillCorrectionGraph:
+        this->registry.fill(HIST("hEventCount/fillCorrectionGraph"), position);
+        break;
+      case MyFunctionName::funcProcessReco:
+        this->registry.fill(HIST("hEventCount/processReco"), position);
+        break;
+      case MyFunctionName::funcProcessSim:
+        this->registry.fill(HIST("hEventCount/processSim"), position);
+        break;
+
+      default:
+        LOGF(warning, "could not find event count graph");
+        break;
+    }
+  }
+
+  /**
+   * @brief collision selection
+   * @note include: 1. TRD triggered
+   *                2. collisions close to Time Frame borders
+   *                3. ITS ROF border
+   *                4. pile up
+   *                5. mathc z of PV by tracks and z of PV from FT0 A-C
+   *                6. no collisions in specified time range
+   *                7. good ITS layer
+   *                8. vz cut && multiplicity cut
+   *                9. occupacy cut
+   *                10. V0A T0A 5 sigma cut
+   *                11. interaction rate
+   *
+   * @tparam TCollision
+   * @param collision
+   * @param centrality
+   * @param interactionRate
+   * @param functionName need to fill graph in different function, dont fill the same graph!
+   * @return true
+   * @return false
+   */
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const float centrality, float interactionRate = -1)
+  bool eventSelected(TCollision& collision, const float centrality, float interactionRate = -1, MyFunctionName funcName = MyFunctionName::funcProcessData)
   {
     if (evtSeleOpts.cfgDoTVXinTRD.value && collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
       return false;
     }
-    registry.fill(HIST("hEventCount"), 2.5);
+    this->fillEventCountHelper(funcName, 2.5);
     if (evtSeleOpts.cfgDoNoTimeFrameBorder.value && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       // reject collisions close to Time Frame borders
       // https://its.cern.ch/jira/browse/O2-4623
       return false;
     }
-    registry.fill(HIST("hEventCount"), 3.5);
+    this->fillEventCountHelper(funcName, 3.5);
     if (evtSeleOpts.cfgDoNoITSROFrameBorder.value && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       // reject events affected by the ITS ROF border
       // https://its.cern.ch/jira/browse/O2-4309
       return false;
     }
-    registry.fill(HIST("hEventCount"), 4.5);
+    this->fillEventCountHelper(funcName, 4.5);
     if (evtSeleOpts.cfgDoNoSameBunchPileup.value && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return false;
     }
-    registry.fill(HIST("hEventCount"), 5.5);
+    this->fillEventCountHelper(funcName, 5.5);
     if (evtSeleOpts.cfgDoIsGoodZvtxFT0vsPV.value && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return false;
     }
-    registry.fill(HIST("hEventCount"), 6.5);
+    this->fillEventCountHelper(funcName, 6.5);
     if (evtSeleOpts.cfgDoNoCollInTimeRangeStandard.value && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
-    registry.fill(HIST("hEventCount"), 7.5);
+    this->fillEventCountHelper(funcName, 7.5);
     if (evtSeleOpts.cfgDoIsGoodITSLayersAll.value && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // cut time intervals with dead ITS staves
       return 0;
     }
-    registry.fill(HIST("hEventCount"), 8.5);
+    this->fillEventCountHelper(funcName, 8.5);
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -878,11 +1163,11 @@ struct PidFlowPtCorr {
       if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
         return false;
     }
-    registry.fill(HIST("hEventCount"), 9.5);
+    this->fillEventCountHelper(funcName, 9.5);
 
     if (occupancy > evtSeleOpts.cfgCutOccupancyHigh.value)
       return 0;
-    registry.fill(HIST("hEventCount"), 10.5);
+    this->fillEventCountHelper(funcName, 10.5);
 
     // V0A T0A 5 sigma cut
     if (evtSeleOpts.cfgDoV0AT0Acut.value) {
@@ -890,15 +1175,15 @@ struct PidFlowPtCorr {
       if (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nsigma * fT0AV0ASigma->Eval(collision.multFT0A()))
         return 0;
     }
-    registry.fill(HIST("hEventCount"), 11.5);
+    this->fillEventCountHelper(funcName, 11.5);
 
     registry.fill(HIST("hInteractionRate"), interactionRate);
     if (interactionRate > 0 && interactionRate < evtSeleOpts.cfgCutminIR.value)
       return false;
-    registry.fill(HIST("hEventCount"), 12.5);
+    this->fillEventCountHelper(funcName, 12.5);
     if (interactionRate > evtSeleOpts.cfgCutmaxIR.value)
       return false;
-    registry.fill(HIST("hEventCount"), 13.5);
+    this->fillEventCountHelper(funcName, 13.5);
 
     return true;
   }
@@ -916,14 +1201,14 @@ struct PidFlowPtCorr {
 
     // collision cut
     // include : 1.track.size 2.collision.sel8 3.this->evenSelected
-    registry.fill(HIST("hEventCount"), 0.5);
+    registry.fill(HIST("hEventCount/processData"), 0.5);
     if (nTot < 1)
       return;
     fGFW->Clear();
     const auto cent = collision.centFT0C();
     if (!collision.sel8())
       return;
-    registry.fill(HIST("hEventCount"), 1.5);
+    registry.fill(HIST("hEventCount/processData"), 1.5);
     if (!eventSelected(collision, cent, interactionRate))
       return;
     // end collision cut
@@ -974,9 +1259,17 @@ struct PidFlowPtCorr {
     // fill GFW ref flow
     for (const auto& track : tracks) {
       if (cfgDoAccEffCorr) {
-        if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
-          continue;
+        if (cfgUsePtCentNUECorr) {
+          // true
+          if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0, cent))
+            continue;
+        } else {
+          // false
+          if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
+            continue;
+        } // cfgUsePtCentNUECorr
       } // cfgDoAccEffCorr
+
       if (cfgDoLocDenCorr) {
         bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value);
         if (withinPtRef) {
@@ -993,12 +1286,48 @@ struct PidFlowPtCorr {
         }
       } // cfgDoLocDenCorr
 
+      if (cfgDebugMyCode) {
+        // pt eff weight graph
+        {
+          int ptBin = debugHist.hPtEffWeight->GetXaxis()->FindBin(track.pt());
+          debugHist.hPtEffWeight->SetBinContent(ptBin, weff);
+        }
+        // end pt eff weight graph
+
+        // pt eff 2D weight graph
+        {
+          int ptBin = debugHist.hPtCentEffWeight->GetXaxis()->FindBin(track.pt());
+          int centBin = debugHist.hPtCentEffWeight->GetYaxis()->FindBin(cent);
+          debugHist.hPtCentEffWeight->SetBinContent(ptBin, centBin, weff);
+        }
+        // end pt eff 2D weight graph
+
+        // THn wacc graph
+        {
+          // loop the vector, find the place to put (phi eta Vz)
+          int matchedPosition = -1;
+          for (uint64_t idxPosition = 0; idxPosition < this->runNumbers.size(); idxPosition++) {
+            if (this->runNumbers[idxPosition] == runNumber) {
+              matchedPosition = idxPosition;
+              break;
+            }
+          }
+          if (matchedPosition == -1) {
+            return;
+          }
+          // end find place to put run data
+
+          int phiBin = debugHist.hRunNumberPhiEtaVertexWeight->GetAxis(1)->FindBin(track.phi());
+          int etaBin = debugHist.hRunNumberPhiEtaVertexWeight->GetAxis(2)->FindBin(track.eta());
+          int vzBin = debugHist.hRunNumberPhiEtaVertexWeight->GetAxis(3)->FindBin(vtxz);
+          int Bins[4] = {matchedPosition, phiBin, etaBin, vzBin};
+          debugHist.hRunNumberPhiEtaVertexWeight->SetBinContent(Bins, wacc);
+        }
+        // end thn wacc graph
+      } // cfgDebugMycode
+
       // track cut
-      if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
-        continue;
-      if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
-        continue;
-      if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+      if (!trackSelected(track))
         continue;
       // end track cut
 
@@ -1161,14 +1490,15 @@ struct PidFlowPtCorr {
 
     // collision cut
     // include : 1.track.size 2.collision.sel8 3.this->evenSelected
+    registry.fill(HIST("hEventCount/fillCorrectionGraph"), 0.5);
     if (nTot < 1)
       return;
     fGFW->Clear();
     const auto cent = collision.centFT0C();
     if (!collision.sel8())
       return;
-
-    if (!eventSelected(collision, cent, interactionRate))
+    registry.fill(HIST("hEventCount/fillCorrectionGraph"), 1.5);
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcFillCorrectionGraph))
       return;
     // end collision cut
 
@@ -1189,11 +1519,7 @@ struct PidFlowPtCorr {
     // loop all the track
     for (const auto& track : tracks) {
       // track cut
-      if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
-        continue;
-      if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
-        continue;
-      if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+      if (!trackSelected(track))
         continue;
       // end track cut
 
@@ -1220,14 +1546,15 @@ struct PidFlowPtCorr {
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
 
+    registry.fill(HIST("hEventCount/detectorPidQA"), 0.5);
     if (nTot < 1)
       return;
     fGFW->Clear();
     const auto cent = collision.centFT0C();
     if (!collision.sel8())
       return;
-
-    if (!eventSelected(collision, cent, interactionRate))
+    registry.fill(HIST("hEventCount/detectorPidQA"), 1.5);
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcDetectorPidQA))
       return;
     // loadCorrections(bc.timestamp());
     // end cut and correction
@@ -1265,17 +1592,74 @@ struct PidFlowPtCorr {
   PROCESS_SWITCH(PidFlowPtCorr, detectorPidQA, "", true);
 
   /**
-   * @brief this function is used to loop mc events
-   * @note implemented:
-   *       1.fill mc pt hist to calculate efficiency(correction/hCentPtMC, correction/hCentPtData)
+   * @brief this function is used to fill Reco particles in order to calculate pt eff
+   * @note Efficiency = Efficiency(pt, cent)
    *
+   * @param collision
+   * @param tracks
    */
-  void processMCGen(FilteredMcCollisions::iterator const&,
-                    aod::BCsWithTimestamps const&,
-                    FilteredMcParticles const& mcParticles,
-                    soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisions,
-                    AodTracks const&)
+  void processReco(FilteredCollisionsWithMCLabel::iterator const& collision,
+                   aod::BCsWithTimestamps const&,
+                   FilteredTracksWithMCLabel const& tracks,
+                   aod::McParticles const&,
+                   aod::McCollisions const&)
   {
+    // init && cut
+    registry.fill(HIST("hEventCount/processReco"), 0.5);
+    if (tracks.size() <= 0)
+      return;
+    if (!collision.sel8())
+      return;
+    registry.fill(HIST("hEventCount/processReco"), 1.5);
+
+    const auto cent = collision.centFT0C();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
+    double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
+
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessReco))
+      return;
+    // end init && cut
+
+    // loop tracks
+    for (const auto& track : tracks) {
+      // track cut
+      if (!this->trackSelected(track))
+        continue;
+      // end track cut
+
+      // loop track's matched MC particle
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+        // fill graph
+        if (this->particleSelected(mcParticle)) {
+          registry.fill(HIST("correction/hPtCentMcRec"), track.pt(), cent);
+        }
+        // end fill graph
+      }
+      // end loop track's matched MC particle
+    }
+    // end loop tracks
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processReco, "function used to do pt eff, NOTE (OutPutMc, processReco, processSim) should be open", true);
+
+  /**
+   * @brief this function is used to calculate pt eff
+   *
+   * @param mcCollision
+   * @param collisions
+   * @param mcParticles
+   */
+  void processSim(FilteredMcCollisions::iterator const&,
+                  aod::BCsWithTimestamps const&,
+                  soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisions,
+                  FilteredMcParticles const& mcParticles,
+                  FilteredTracksWithMCLabel const& tracks)
+  {
+    this->registry.fill(HIST("hEventCount/processSim"), 0.5);
+    if (collisions.size() <= 0)
+      return;
+
     // cut && init
     // loop all the collisions reco matched to MC
     double cent = -1;
@@ -1285,39 +1669,33 @@ struct PidFlowPtCorr {
       double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
       cent = oneColl.centFT0C();
 
+      auto groupedTracks = tracks.sliceBy(perCollision, oneColl.globalIndex());
+      if (groupedTracks.size() <= 0)
+        continue;
+
       // collision cut
       if (!oneColl.sel8())
-        return;
-      if (!eventSelected(oneColl, cent, interactionRate))
-        return;
+        continue;
+      this->registry.fill(HIST("hEventCount/processSim"), 1.5);
+
+      if (!eventSelected(oneColl, cent, interactionRate, MyFunctionName::funcProcessSim))
+        continue;
       // end collision cut
+
+      // loop mc particles
+      for (const auto& mcParticle : mcParticles) {
+        // fill graph
+        if (this->particleSelected(mcParticle)) {
+          registry.fill(HIST("correction/hPtCentMcGen"), mcParticle.pt(), cent);
+        }
+        // end fill graph
+      }
+      // end loop mc particles
     }
     // end loop all the collisions reco matched to MC
     // end cut && init
-
-    // loop all the particle
-    for (const auto& mcPart : mcParticles) {
-      // track cut
-      if (!mcPart.isPhysicalPrimary())
-        continue;
-      // end track cut
-
-      registry.fill(HIST("correction/hCentPtMC"), cent, mcPart.pt());
-
-      // loop real track
-      if (mcPart.has_tracks()) {
-        auto const& tracks = mcPart.tracks_as<AodTracks>();
-        for (const auto& track : tracks) {
-          // track select
-          // end track select
-          registry.fill(HIST("correction/hCentPtData"), cent, track.pt());
-        }
-      }
-      // end loop real track
-    }
-    // end loop all the particle
   }
-  PROCESS_SWITCH(PidFlowPtCorr, processMCGen, "", true);
+  PROCESS_SWITCH(PidFlowPtCorr, processSim, "function used to do pt eff, NOTE (OutPutMc, processReco, processSim) should be open", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
