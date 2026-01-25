@@ -37,9 +37,13 @@ struct McOutlierRejectorTask {
 
   Configurable<bool> checkmcCollisionForCollision{"checkmcCollisionForCollision", true, "additionally reject collision based on mcCollision"};
   Configurable<float> ptHatMax{"ptHatMax", 4.0, "maximum factor of pt hat the leading jet in the event is allowed"};
+  Configurable<float> ptTrackMaxMinBias{"ptTrackMaxMinBias", 20.0, "maximum pt for track originating from minimum bias event"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   std::vector<bool> collisionFlag;
   std::vector<bool> mcCollisionFlag;
+
+  int trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
   void processSetupCollisionSelection(aod::JCollisions const& collisions)
   {
@@ -59,34 +63,40 @@ struct McOutlierRejectorTask {
   void collisionSelection(int32_t collisionIndex, int32_t mcCollisionId, T const& selectionObjects, float ptHard, std::vector<bool>& flagArray, std::optional<std::reference_wrapper<const soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>> mcCollisionsOpt = std::nullopt)
   {
     if (selectionObjects.size() != 0) {
-      bool isTrueOutlier = true;
-      float maxSelectionObjectPt = 0.0;
+      float selectionObjectPt = 0.0;
       if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracksMCD> || std::is_same_v<std::decay_t<T>, aod::JetParticles>) {
         for (auto selectionObject : selectionObjects) {
-          if (selectionObject.pt() > maxSelectionObjectPt) {
-            maxSelectionObjectPt = selectionObject.pt();
-            // may be slow - could save only MC particle then check difference only for tracks IDd as outliers?
-            if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracksMCD>) {
-              auto& mcCollisions = mcCollisionsOpt.value().get();
-              auto mcParticle = selectionObject.template mcParticle_as<soa::Join<aod::JetParticles, aod::JMcParticlePIs>>();
-              auto mcCollision = mcCollisions.sliceBy(perColParticle, mcParticle.mcCollisionId());
-              int subGenID = mcCollision.begin().subGeneratorId();
-              int diffCollisionID = mcParticle.mcCollisionId() - mcCollisionId;
-              if (subGenID != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap &&
-                  diffCollisionID != 0) {
-                isTrueOutlier = true;
-              } else {
-                isTrueOutlier = false;
+          selectionObjectPt = selectionObject.pt();
+          // may be slow - could save only MC particle then check difference only for tracks IDd as outliers?
+          if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracksMCD>) { // tracks
+            if (!jetderiveddatautilities::selectTrack(selectionObject, trackSelection)) {
+              continue;
+            }
+            auto& mcCollisions = mcCollisionsOpt.value().get();
+            auto mcParticle = selectionObject.template mcParticle_as<soa::Join<aod::JetParticles, aod::JMcParticlePIs>>();
+            auto mcCollision = mcCollisions.sliceBy(perColParticle, mcParticle.mcCollisionId());
+            int subGenID = mcCollision.begin().getSubGeneratorId();
+            int diffCollisionID = mcParticle.mcCollisionId() - mcCollisionId;
+            if (diffCollisionID != 0 &&
+                selectionObjectPt > ptHatMax * ptHard) {
+              if (subGenID != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap && selectionObjectPt > ptHatMax * ptHard) {
+                flagArray[collisionIndex] = true;
               }
+              if (subGenID == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap && selectionObjectPt > ptTrackMaxMinBias) {
+                flagArray[collisionIndex] = true;
+              }
+            }
+          } else { // particles
+            if (selectionObjectPt > ptHatMax * ptHard) {
+              flagArray[collisionIndex] = true;
             }
           }
         }
-      } else {
-        maxSelectionObjectPt = selectionObjects.iteratorAt(0).pt();
-      }
-
-      if (maxSelectionObjectPt > ptHatMax * ptHard && isTrueOutlier) {
-        flagArray[collisionIndex] = true; // Currently if running multiple different jet finders, then a single type of jet can veto an event for others. Decide if this is the best way
+      } else { // jets
+        selectionObjectPt = selectionObjects.iteratorAt(0).pt();
+        if (selectionObjectPt > ptHatMax * ptHard) {
+          flagArray[collisionIndex] = true; // Currently if running multiple different jet finders, then a single type of jet can veto an event for others. Decide if this is the best way
+        }
       }
     }
   }

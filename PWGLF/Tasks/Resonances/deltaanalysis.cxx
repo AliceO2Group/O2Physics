@@ -25,7 +25,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"

@@ -168,7 +168,7 @@ struct FlowCumulantsUpc {
   //
   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollisionSelExtras>;
 
   // Track selection
   TrackSelection myTrackSel;
@@ -792,10 +792,10 @@ struct FlowCumulantsUpc {
     if (!((multNTracksPV < fMultPVCutLow->Eval(centrality)) || (multNTracksPV > fMultPVCutHigh->Eval(centrality)) || (multTrk < fMultCutLow->Eval(centrality)) || (multTrk > fMultCutHigh->Eval(centrality)))) {
       registry.fill(HIST("hEventCountTentative"), 8.5);
     }
-    constexpr int kSigmaCut = 5;
-    if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > kSigmaCut * fT0AV0ASigma->Eval(collision.multFT0A()))) {
-      registry.fill(HIST("hEventCountTentative"), 9.5);
-    }
+    // constexpr int kSigmaCut = 5;
+    // if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > kSigmaCut * fT0AV0ASigma->Eval(collision.multFT0A()))) {
+    //   registry.fill(HIST("hEventCountTentative"), 9.5);
+    // }
   }
 
   template <typename TTrack>
@@ -811,6 +811,19 @@ struct FlowCumulantsUpc {
     }
     double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
     if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
+      return false;
+    }
+    constexpr int kMinTPCClusters = 70;
+    constexpr int kMinITSClusters = 5;
+    constexpr int kMaxTPCChi2NCl = 4;
+
+    if (track.tpcNClsFindableMinusCrossedRows() <= kMinTPCClusters) {
+      return false;
+    }
+    if (track.itsClusterSizes() <= kMinITSClusters) {
+      return false;
+    }
+    if (track.tpcChi2NCl() >= kMaxTPCChi2NCl) {
       return false;
     }
     return true;
@@ -833,16 +846,51 @@ struct FlowCumulantsUpc {
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
 
+  template <typename TTrack>
+  float getDPhiStar(TTrack const& track1, TTrack const& track2, float radius, int runnum)
+  {
+    float charge1 = track1.sign();
+    float charge2 = track2.sign();
+
+    float phi1 = track1.phi();
+    float phi2 = track2.phi();
+
+    float pt1 = track1.pt();
+    float pt2 = track2.pt();
+
+    int fbSign = 1;
+
+    int zzo = 544868;
+    if (runnum >= zzo) {
+      fbSign = -1;
+    }
+
+    float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
+
+    if (dPhiStar > constants::math::PI)
+      dPhiStar = constants::math::TwoPI - dPhiStar;
+    if (dPhiStar < -constants::math::PI)
+      dPhiStar = -constants::math::TwoPI - dPhiStar;
+
+    return dPhiStar;
+  }
+
   void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
+    // if(!eventSelected(collision, tracks.size(), 100.0f)) {
+    //   eventCounterQA(collision, tracks.size(), 100.0f);
+    //   return;
+    // }
     int gapSide = collision.gapSide();
     constexpr int kGapSideSelection = 0;
     constexpr int kGapSideOppositeSelection = 2;
-    if (gapSide < kGapSideSelection || gapSide > kGapSideOppositeSelection) {
+    if (gapSide > kGapSideSelection && gapSide < kGapSideOppositeSelection) {
       return;
     }
-
+    if (collision.trs() == 0) {
+      return;
+    }
     int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     gapSide = trueGapSide;
     if (gapSide == cfgGapSideSelection) {
@@ -866,6 +914,7 @@ struct FlowCumulantsUpc {
     }
 
     for (const auto& track : tracks) {
+      registry.fill(HIST("hChi2prTPCcls"), track.tpcChi2NCl());
       if (!trackSelected(track))
         continue;
       auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};

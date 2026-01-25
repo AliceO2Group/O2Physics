@@ -910,7 +910,7 @@ class FemtoUniverseDetaDphiStar
     double afsi1b = deltaphiconstFD * magfield * charge2 * chosenRadii / part2.pt();
     double dphis = 0.0;
 
-    if (std::abs(afsi0b) < 1.0 && std::abs(afsi0b) < 1.0) {
+    if (std::abs(afsi0b) < 1.0 && std::abs(afsi1b) < 1.0) {
       dphis = part2.phi() - part1.phi() + std::asin(afsi1b) - std::asin(afsi0b);
     }
     return dphis;

@@ -33,8 +33,8 @@ DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);                 //! Run 3 cent. f
 DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float); //! Run 3 cent. from FT0C multiplicity
 DECLARE_SOA_COLUMN(CentFT0CVariant2, centFT0CVariant2, float); //! Run 3 cent. from FT0C multiplicity, uses classical truncated Nancestors (NOT recommended, cross-check only!)
 DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);                 //! Run 3 cent. from FDDA+FDDC multiplicity
-DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                 //! Run 3 cent. from the number of tracks contributing to the
-DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);           //! Run 3 cent. from the number of tracks contributing to the PV
+DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                 //! Run 3 cent. from the number of tracks contributing to the PV
+DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);           //! Run 3 cent. from the number of global tracks
 DECLARE_SOA_COLUMN(CentMFT, centMFT, float);                   //! Run 3 cent. from the number of tracks in the MFT
 } // namespace cent
 

@@ -201,7 +201,7 @@ struct FemtoDreamPairTaskV0Reso {
   /// Partitions for K0Short and KStar
 
   /// Partition for particle K0Short
-  Partition<aod::FDParticles> partitionK0Short1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+  Partition<aod::FDParticles> partitionK0Short1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
                                                   ((aod::femtodreamparticle::cut & V01.cutBit) == V01.cutBit) &&
                                                   (aod::femtodreamparticle::pt > V01.ptMin) &&
                                                   (aod::femtodreamparticle::pt < V01.ptMax) &&
@@ -213,10 +213,10 @@ struct FemtoDreamPairTaskV0Reso {
                                                   (aod::femtodreamparticle::mAntiLambda < V01.invMassAntiMax);
 
   /// Partition for particle KStar
-  Partition<aod::FDParticles> partitionKStar2 = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false) ||
-                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
-                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false)) &&
+  Partition<aod::FDParticles> partitionKStar2 = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
+                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false) ||
+                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCBit), false) ||
+                                                 ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.daughPosTPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.daughNegMergedTPCTOFBit), false)) &&
                                                 (aod::femtodreamparticle::pt < Reso2.ptMax) &&
                                                 (aod::femtodreamparticle::eta > Reso2.etaMin) &&
                                                 (aod::femtodreamparticle::eta < Reso2.etaMax) &&
@@ -257,7 +257,7 @@ struct FemtoDreamPairTaskV0Reso {
 
     eventHisto.init(&registry, Option.isMC);
 
-    v0HistoPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTTrack, Option.dummy, Option.dummy, Binning.tempFitVarV0, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.isMC, V01.pdgCode);
+    v0HistoPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTTrack, Option.dummy, Option.dummy, Binning.tempFitVarV0, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Binning.invMass, Option.dummy, Option.isMC, V01.pdgCode);
     posChildHistos.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTV0Child, Option.dummy, Option.dummy, Binning.tempFitVarV0Child, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
     negChildHistos.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTV0Child, Option.dummy, Option.dummy, Binning.tempFitVarV0Child, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
 

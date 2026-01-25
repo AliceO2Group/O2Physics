@@ -32,6 +32,8 @@ enum HfProngSpecies : uint8_t {
   Kaon,
   Proton,
   Deuteron,
+  Triton,
+  Helium,
   NHfProngSpecies
 };
 
@@ -117,8 +119,24 @@ void fillProngPid(TTrack const& track, TCursor& rowPid)
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaDe();
     }
+  } else if constexpr (SpecPid == HfProngSpecies::Triton) {
+    // triton PID
+    if (track.hasTPC()) {
+      nSigTpc = track.tpcNSigmaTr();
+    }
+    if (track.hasTOF()) {
+      nSigTof = track.tofNSigmaTr();
+    }
+  } else if constexpr (SpecPid == HfProngSpecies::Helium) {
+    // triton PID
+    if (track.hasTPC()) {
+      nSigTpc = track.tpcNSigmaHe();
+    }
+    if (track.hasTOF()) {
+      nSigTof = track.tofNSigmaHe();
+    }
   } else {
-    LOG(fatal) << "Unsupported PID. Supported species in HF framework: HfProngSpecies::Pion, HfProngSpecies::Kaon, HfProngSpecies::Proton, HfProngSpecies::Deuteron";
+    LOG(fatal) << "Unsupported PID. Supported species in HF framework: HfProngSpecies::Pion, HfProngSpecies::Kaon, HfProngSpecies::Proton, HfProngSpecies::Deuteron, HfProngSpecies::Triton, HfProngSpecies::Helium";
   }
 
   // fill candidate prong PID rows

@@ -69,7 +69,7 @@ struct CalcNchUpc {
 
   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollisionSelExtras>;
 
   Produces<aod::Multiplicity> multiplicityNch;
 
@@ -103,6 +103,9 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrder, bool, true, "enable trigger pT < associated pT cut")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrderInMixEvent, bool, true, "enable trigger pT < associated pT cut in mixed event")
+  O2_DEFINE_CONFIGURABLE(cfgCutMerging, float, 0.0, "Merging cut on track merge")
+  O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
+  O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -135,7 +138,7 @@ struct FlowCorrelationsUpc {
 
   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::Multiplicity>;
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::Multiplicity, aod::UDCollisionSelExtras>;
 
   // Define the outputs
   OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
@@ -180,6 +183,63 @@ struct FlowCorrelationsUpc {
     MixedEvent = 3
   };
 
+  template <typename TTrack>
+  float getDPhiStar(TTrack const& track1, TTrack const& track2, float radius, int runnum, float phi1, float phi2)
+  {
+    float charge1 = track1.sign();
+    float charge2 = track2.sign();
+
+    float pt1 = track1.pt();
+    float pt2 = track2.pt();
+
+    int fbSign = 1;
+
+    int zzo = 544868;
+    if (runnum >= zzo) {
+      fbSign = -1;
+    }
+
+    float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
+
+    if (dPhiStar > constants::math::PI)
+      dPhiStar = constants::math::TwoPI - dPhiStar;
+    if (dPhiStar < -constants::math::PI)
+      dPhiStar = -constants::math::TwoPI - dPhiStar;
+
+    return dPhiStar;
+  }
+
+  template <typename TTrack>
+  bool trackSelected(TTrack track)
+  {
+    // UPC selection
+    if (!track.isPVContributor()) {
+      return false;
+    }
+    constexpr float kDcazCut = 2.0;
+    if (!(std::fabs(track.dcaZ()) < kDcazCut)) {
+      return false;
+    }
+    double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
+    if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
+      return false;
+    }
+    constexpr int kMinTPCClusters = 70;
+    constexpr int kMinITSClusters = 5;
+    constexpr int kMaxTPCChi2NCl = 4;
+
+    if (track.tpcNClsFindableMinusCrossedRows() <= kMinTPCClusters) {
+      return false;
+    }
+    if (track.itsClusterSizes() <= kMinITSClusters) {
+      return false;
+    }
+    if (track.tpcChi2NCl() >= kMaxTPCChi2NCl) {
+      return false;
+    }
+    return true;
+  }
+
   // fill multiple histograms
   template <typename TCollision, typename TTracks>
   void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
@@ -196,7 +256,7 @@ struct FlowCorrelationsUpc {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks>
-  void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, int runnum) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
@@ -209,6 +269,8 @@ struct FlowCorrelationsUpc {
       }
 
       for (auto const& track2 : tracks2) {
+        if (!trackSelected(track2))
+          continue;
 
         if (track1.globalIndex() == track2.globalIndex())
           continue; // For pt-differential correlations, skip if the trigger and associate are the same track
@@ -217,10 +279,36 @@ struct FlowCorrelationsUpc {
 
         auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
         auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
+        double pt2 = RecoDecay::pt(momentum2);
         double phi1 = RecoDecay::phi(momentum1);
         double phi2 = RecoDecay::phi(momentum2);
         float deltaPhi = RecoDecay::constrainAngle(phi1 - phi2, -PIHalf);
         float deltaEta = RecoDecay::eta(momentum1) - RecoDecay::eta(momentum2);
+
+        if (pt2 < cfgPtCutMin || pt2 > cfgPtCutMax)
+          continue;
+
+        if (std::abs(deltaEta) < cfgCutMerging) {
+
+          double dPhiStarHigh = getDPhiStar(track1, track2, cfgRadiusHigh, runnum, phi1, phi2);
+          double dPhiStarLow = getDPhiStar(track1, track2, cfgRadiusLow, runnum, phi1, phi2);
+
+          const double kLimit = 3.0 * cfgCutMerging;
+
+          bool bIsBelow = false;
+
+          if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
+            for (double rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
+              double dPhiStar = getDPhiStar(track1, track2, rad, runnum, phi1, phi2);
+              if (std::abs(dPhiStar) < kLimit) {
+                bIsBelow = true;
+                break;
+              }
+            }
+            if (bIsBelow)
+              continue;
+          }
+        }
 
         // fill the right sparse and histograms
         if (system == SameEvent) {
@@ -236,17 +324,17 @@ struct FlowCorrelationsUpc {
 
   void processSame(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
-    if (std::abs(collision.posZ()) > cfgZVtxCut) {
+    if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
       return;
     }
-    if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
+    if (collision.trs() == 0) {
       return;
     }
 
     int gapSide = collision.gapSide();
     const int minGapSide = 0;
     const int maxGapSide = 2;
-    if (gapSide < minGapSide || gapSide > maxGapSide) {
+    if (gapSide > minGapSide && gapSide < maxGapSide) {
       return;
     }
 
@@ -256,9 +344,11 @@ struct FlowCorrelationsUpc {
       return;
     }
 
+    int runIndex = collision.runNumber();
+
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent); // fill the SE histogram and Sparse
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, runIndex); // fill the SE histogram and Sparse
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processSame, "Process same event", true);
 
@@ -275,8 +365,8 @@ struct FlowCorrelationsUpc {
     SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
-      registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent);
+      registry.fill(HIST("eventcount"), MixedEvent);                                                                                         // fill the mixed event in the 3 bin
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, collision1.runNumber()); // fill the ME histogram and Sparse
     }
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processMixed, "Process mixed events", true);

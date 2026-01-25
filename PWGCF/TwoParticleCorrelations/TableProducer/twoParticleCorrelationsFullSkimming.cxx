@@ -25,6 +25,8 @@
 #include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
 
+#include <string>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::soa;
@@ -103,7 +105,7 @@ struct TwoParticleCorrelationsSkimming {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+#include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.h" // NOLINT
 
   int nReportedTracks;
   int runNumber = 0;

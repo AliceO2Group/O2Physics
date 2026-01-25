@@ -184,7 +184,17 @@ struct qVectorsTable {
     {"QvectorFV0As", cfgUseFV0A},
     {"QvectorFT0Ms", cfgUseFT0M},
     {"QvectorFT0As", cfgUseFT0A},
-    {"QvectorFT0Cs", cfgUseFT0C}};
+    {"QvectorFT0Cs", cfgUseFT0C},
+    {"QvectorShiftedBTots", cfgUseBTot},
+    {"QvectorShiftedBNegs", cfgUseBNeg},
+    {"QvectorShiftedBPoss", cfgUseBPos},
+    {"QvectorShiftedTPCalls", cfgUseTPCall},
+    {"QvectorShiftedTPCnegs", cfgUseTPCneg},
+    {"QvectorShiftedTPCposs", cfgUseTPCpos},
+    {"QvectorShiftedFV0As", cfgUseFV0A},
+    {"QvectorShiftedFT0Ms", cfgUseFT0M},
+    {"QvectorShiftedFT0As", cfgUseFT0A},
+    {"QvectorShiftedFT0Cs", cfgUseFT0C}};
 
   void init(InitContext& initContext)
   {
@@ -192,7 +202,7 @@ struct qVectorsTable {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
-        if (input.matcher.binding == "Qvectors") {
+        if (input.matcher.binding == "Qvectors" || input.matcher.binding == "QvectorsShifteds") {
           for (auto const& det : useDetector) {
             useDetector[det.first.data()] = true;
           }

@@ -235,7 +235,7 @@ struct SingleTrackQCMC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
-  static constexpr std::string_view lepton_source_types[10] = {"lf/", "lf_prompt/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2l/", "b2l/", "b2c2l/"};
+  static constexpr std::string_view lepton_source_types[8] = {"PromptLF/", "NonPromptLF/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "c2l/", "b2l/", "b2c2l/"};
 
   ~SingleTrackQCMC() {}
 
@@ -258,54 +258,50 @@ struct SingleTrackQCMC {
       const AxisSpec axis_dcaZ{ConfDCAZBins, "DCA_{e}^{Z} (#sigma)"};
 
       // generated info
-      fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
-      fRegistry.addClone("Generated/lf/", "Generated/lf_prompt/");
-      fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
-      fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
-      fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
-      fRegistry.addClone("Generated/lf/", "Generated/NonPromptPsi2S/");
-      fRegistry.addClone("Generated/lf/", "Generated/c2l/");
-      fRegistry.addClone("Generated/lf/", "Generated/b2l/");
-      fRegistry.addClone("Generated/lf/", "Generated/b2c2l/");
+      fRegistry.add("Generated/PromptLF/hs", "gen. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.addClone("Generated/PromptLF/", "Generated/NonPromptLF/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/PromptJPsi/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/NonPromptJPsi/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/c2l/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/b2l/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/b2c2l/");
 
       // track info
-      fRegistry.add("Track/lf/positive/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
+      fRegistry.add("Track/PromptLF/positive/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
       if (fillGenValuesForRec) {
-        fRegistry.add("Track/lf/positive/hsGenRec", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
+        fRegistry.add("Track/PromptLF/positive/hsGenRec", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ, axis_charge_gen}, true);
       }
       if (cfgFillQA) {
-        fRegistry.add("Track/lf/positive/hPhiPosition", Form("phi position at r_{xy} = %3.2f m", dielectroncuts.cfgRefR.value), kTH1F, {axis_phiposition}, false);
-        fRegistry.add("Track/lf/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{4000, -20, 20}}, false);
-        fRegistry.add("Track/lf/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.f, 1.f}}, false);
-        fRegistry.add("Track/lf/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{400, -20.0f, 20.0f}, {400, -20.0f, 20.0f}}, false);
-        fRegistry.add("Track/lf/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-        fRegistry.add("Track/lf/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-        fRegistry.add("Track/lf/positive/hDCA3dRes_Pt", "DCA_{3D} resolution vs. pT;p_{T} (GeV/c);DCA_{3D} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-        fRegistry.add("Track/lf/positive/hNclsTPC_Pt", "number of TPC clusters;p_{T,e} (GeV/c);;TPC N_{cls}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
-        fRegistry.add("Track/lf/positive/hNcrTPC_Pt", "number of TPC crossed rows;p_{T,e} (GeV/c);;TPC N_{CR}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
-        fRegistry.add("Track/lf/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
-        fRegistry.add("Track/lf/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
-        fRegistry.add("Track/lf/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
-        fRegistry.add("Track/lf/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
-        fRegistry.add("Track/lf/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
-        fRegistry.add("Track/lf/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
-        fRegistry.add("Track/lf/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{in} (GeV/c);(p_{pv} - p_{in})/p_{in}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
-        fRegistry.add("Track/lf/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);chi2", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
-        fRegistry.add("Track/lf/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-        fRegistry.add("Track/lf/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
-        fRegistry.add("Track/lf/positive/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
-        fRegistry.add("Track/lf/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
+        fRegistry.add("Track/PromptLF/positive/hPhiPosition", Form("phi position at r_{xy} = %3.2f m", dielectroncuts.cfgRefR.value), kTH1F, {axis_phiposition}, false);
+        fRegistry.add("Track/PromptLF/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{4000, -20, 20}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.f, 1.f}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{400, -20.0f, 20.0f}, {400, -20.0f, 20.0f}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCA3dRes_Pt", "DCA_{3D} resolution vs. pT;p_{T} (GeV/c);DCA_{3D} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNclsTPC_Pt", "number of TPC clusters;p_{T,e} (GeV/c);;TPC N_{cls}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNcrTPC_Pt", "number of TPC crossed rows;p_{T,e} (GeV/c);;TPC N_{CR}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{in} (GeV/c);(p_{pv} - p_{in})/p_{in}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);chi2", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
+        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
+        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
       }
-      fRegistry.addClone("Track/lf/positive/", "Track/lf/negative/");
-      fRegistry.addClone("Track/lf/", "Track/lf_prompt/");
-      fRegistry.addClone("Track/lf/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
-      fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
-      fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
-      fRegistry.addClone("Track/lf/", "Track/PromptPsi2S/");
-      fRegistry.addClone("Track/lf/", "Track/NonPromptPsi2S/");
-      fRegistry.addClone("Track/lf/", "Track/c2l/");
-      fRegistry.addClone("Track/lf/", "Track/b2l/");
-      fRegistry.addClone("Track/lf/", "Track/b2c2l/");
+      fRegistry.addClone("Track/PromptLF/positive/", "Track/PromptLF/negative/");
+      fRegistry.addClone("Track/PromptLF/", "Track/NonPromptLF/");
+      fRegistry.addClone("Track/PromptLF/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
+      fRegistry.addClone("Track/PromptLF/", "Track/PromptJPsi/");
+      fRegistry.addClone("Track/PromptLF/", "Track/NonPromptJPsi/");
+      fRegistry.addClone("Track/PromptLF/", "Track/c2l/");
+      fRegistry.addClone("Track/PromptLF/", "Track/b2l/");
+      fRegistry.addClone("Track/PromptLF/", "Track/b2c2l/");
       fRegistry.add("Track/Photon/positive/hProdVtx", "production vertex of e from #gamma;p_{T,e}^{rec} (GeV/c);r_{xy}^{gen} (cm);", kTH2F, {axis_pt, {100, 0, 100}}, false);
       fRegistry.addClone("Track/Photon/positive/hProdVtx", "Track/Photon/negative/hProdVtx");
 
@@ -331,53 +327,54 @@ struct SingleTrackQCMC {
       const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true charge"};
 
       // generated info
-      fRegistry.add("Generated/lf/hs", "gen. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
-      fRegistry.addClone("Generated/lf/", "Generated/lf_prompt/");
-      fRegistry.addClone("Generated/lf/", "Generated/PromptJPsi/");
-      fRegistry.addClone("Generated/lf/", "Generated/NonPromptJPsi/");
-      fRegistry.addClone("Generated/lf/", "Generated/PromptPsi2S/");
-      fRegistry.addClone("Generated/lf/", "Generated/NonPromptPsi2S/");
-      fRegistry.addClone("Generated/lf/", "Generated/c2l/");
-      fRegistry.addClone("Generated/lf/", "Generated/b2l/");
-      fRegistry.addClone("Generated/lf/", "Generated/b2c2l/");
+      fRegistry.add("Generated/PromptLF/hs", "gen. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
+      fRegistry.addClone("Generated/PromptLF/", "Generated/NonPromptLF/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/PromptJPsi/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/NonPromptJPsi/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/c2l/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/b2l/");
+      fRegistry.addClone("Generated/PromptLF/", "Generated/b2c2l/");
 
       // track info
-      fRegistry.add("Track/lf/positive/hs", "rec. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca, axis_charge_gen}, true);
+      fRegistry.add("Track/PromptLF/positive/hs", "rec. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca, axis_charge_gen}, true);
       if (fillGenValuesForRec) {
-        fRegistry.add("Track/lf/positive/hsGenRec", "gen. info of rec. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca, axis_charge_gen}, true);
+        fRegistry.add("Track/PromptLF/positive/hsGenRec", "gen. info of rec. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca, axis_charge_gen}, true);
       }
       if (cfgFillQA) {
-        fRegistry.add("Track/lf/positive/hEtaPhi_MatchMCHMID", "#eta vs. #varphi of matched MCHMID", kTH2F, {{180, 0, 2.f * M_PI}, {100, -6, -1}}, false);
-        fRegistry.add("Track/lf/positive/hdEtadPhi", "#Delta#eta vs. #Delta#varphi between MFT-MCH-MID and MCH-MID;#varphi_{sa} - #varphi_{gl} (rad.);#eta_{sa} - #eta_{gl}", kTH2F, {{90, -M_PI / 4, M_PI / 4}, {100, -0.5, +0.5}}, false);
-        fRegistry.add("Track/lf/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -5, 5}}, false);
-        fRegistry.add("Track/lf/positive/hTrackType", "track type", kTH1F, {{6, -0.5f, 5.5}}, false);
-        fRegistry.add("Track/lf/positive/hDCAxy", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -0.5f, 0.5f}, {200, -0.5f, 0.5f}}, false);
-        fRegistry.add("Track/lf/positive/hDCAxySigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-        fRegistry.add("Track/lf/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
-        fRegistry.add("Track/lf/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
-        fRegistry.add("Track/lf/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
-        fRegistry.add("Track/lf/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
-        fRegistry.add("Track/lf/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
-        fRegistry.add("Track/lf/positive/hPDCA", "pDCA;R at absorber (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
-        fRegistry.add("Track/lf/positive/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-        fRegistry.add("Track/lf/positive/hChi2MFT", "chi2MFT;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-        fRegistry.add("Track/lf/positive/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-        fRegistry.add("Track/lf/positive/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-        fRegistry.add("Track/lf/positive/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
-        fRegistry.add("Track/lf/positive/hPtGen_DeltaPtOverPtGen", "muon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
-        fRegistry.add("Track/lf/positive/hPtGen_DeltaEta", "muon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
-        fRegistry.add("Track/lf/positive/hPtGen_DeltaPhi", "muon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
+        fRegistry.add("Track/PromptLF/positive/hEtaPhi_MatchMCHMID", "#eta vs. #varphi of matched MCHMID", kTH2F, {{180, 0, 2.f * M_PI}, {100, -6, -1}}, false);
+        fRegistry.add("Track/PromptLF/positive/hdEtadPhi", "#Delta#eta vs. #Delta#varphi between MFT-MCH-MID and MCH-MID;#varphi_{sa} - #varphi_{gl} (rad.);#eta_{sa} - #eta_{gl}", kTH2F, {{90, -M_PI / 4, M_PI / 4}, {100, -0.5, +0.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -5, 5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hTrackType", "track type", kTH1F, {{6, -0.5f, 5.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxy", "DCAxy;DCA_{xy} (cm)", kTH1F, {{100, 0.f, 1.0f}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -0.5f, 0.5f}, {200, -0.5f, 0.5f}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxy2DinSigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAx_PosZ", "DCA_{x} vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, 10}, {400, -0.2, +0.2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAy_PosZ", "DCA_{y} vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, 10}, {400, -0.2, +0.2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hPDCA", "pDCA;R at absorber (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2MFT", "chi2MFT;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+        fRegistry.add("Track/PromptLF/positive/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPtOverPtGen", "muon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
+        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaEta", "muon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
+        fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPhi", "muon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
       }
-      fRegistry.addClone("Track/lf/positive/", "Track/lf/negative/");
-      fRegistry.addClone("Track/lf/", "Track/lf_prompt/");
-      fRegistry.addClone("Track/lf/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
-      fRegistry.addClone("Track/lf/", "Track/PromptJPsi/");
-      fRegistry.addClone("Track/lf/", "Track/NonPromptJPsi/");
-      fRegistry.addClone("Track/lf/", "Track/PromptPsi2S/");
-      fRegistry.addClone("Track/lf/", "Track/NonPromptPsi2S/");
-      fRegistry.addClone("Track/lf/", "Track/c2l/");
-      fRegistry.addClone("Track/lf/", "Track/b2l/");
-      fRegistry.addClone("Track/lf/", "Track/b2c2l/");
+      fRegistry.addClone("Track/PromptLF/positive/", "Track/PromptLF/negative/");
+      fRegistry.addClone("Track/PromptLF/", "Track/NonPromptLF/");
+      fRegistry.addClone("Track/PromptLF/", "Track/Photon/"); // this is not for efficiency! only for contamination. We don't store generated photon conversions.
+      fRegistry.addClone("Track/PromptLF/", "Track/PromptJPsi/");
+      fRegistry.addClone("Track/PromptLF/", "Track/NonPromptJPsi/");
+      fRegistry.addClone("Track/PromptLF/", "Track/c2l/");
+      fRegistry.addClone("Track/PromptLF/", "Track/b2l/");
+      fRegistry.addClone("Track/PromptLF/", "Track/b2c2l/");
     }
   }
 
@@ -621,13 +618,13 @@ struct SingleTrackQCMC {
     }
   }
 
-  template <int lepton_source_id, typename TMCParticles, typename TTrack>
-  void fillTrackInfo(TTrack const& track)
+  template <int lepton_source_id, typename TMCParticles, typename TTrack, typename TCollision>
+  void fillTrackInfo(TTrack const& track, TCollision const& collision)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       fillElectronInfo<lepton_source_id, TMCParticles>(track);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      fillMuonInfo<lepton_source_id, TMCParticles>(track);
+      fillMuonInfo<lepton_source_id, TMCParticles>(track, collision);
     }
   }
 
@@ -741,8 +738,8 @@ struct SingleTrackQCMC {
     }
   }
 
-  template <int lepton_source_id, typename TMCParticles, typename TTrack>
-  void fillMuonInfo(TTrack const& track)
+  template <int lepton_source_id, typename TMCParticles, typename TTrack, typename TCollision>
+  void fillMuonInfo(TTrack const& track, TCollision const& collision)
   {
     auto mctrack = track.template emmcparticle_as<TMCParticles>();
     float dca_xy = fwdDcaXYinSigma(track);
@@ -766,11 +763,16 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hdEtadPhi"), dphi, deta, weight);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTrackType"), track.trackType());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy"), track.fwdDcaX(), track.fwdDcaY());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxySigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy"), std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)));
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy2D"), track.fwdDcaX(), track.fwdDcaY());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAy_Phi"), track.phi(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsMCH"), track.nClusters());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
@@ -793,11 +795,16 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hdEtadPhi"), dphi, deta, weight);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTrackType"), track.trackType());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy"), track.fwdDcaX(), track.fwdDcaY());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxySigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy"), std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)));
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy2D"), track.fwdDcaX(), track.fwdDcaY());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxy2DinSigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAy_Phi"), track.phi(), track.fwdDcaY());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsMCH"), track.nClusters());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNclsMFT"), track.nClustersMFT());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
@@ -885,34 +892,29 @@ struct SingleTrackQCMC {
 
         if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
           if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
-            fillTrackInfo<0, TMCParticles>(track); // lf
             if (IsFromCharm(mcmother, mcparticles) < 0 && IsFromBeauty(mcmother, mcparticles) < 0) {
-              fillTrackInfo<1, TMCParticles>(track); // lf_prompt
+              fillTrackInfo<0, TMCParticles>(track, collision); // PromptLF
+            } else {
+              fillTrackInfo<1, TMCParticles>(track, collision); // NonPromptLF
             }
           } else if (pdg_mother == 443) {
             if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<4, TMCParticles>(track);
+              fillTrackInfo<4, TMCParticles>(track, collision);
             } else {
-              fillTrackInfo<3, TMCParticles>(track);
-            }
-          } else if (pdg_mother == 100443) {
-            if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<6, TMCParticles>(track);
-            } else {
-              fillTrackInfo<5, TMCParticles>(track);
+              fillTrackInfo<3, TMCParticles>(track, collision);
             }
           } else if (isWeakDecayFromBeautyHadron(mctrack, mcparticles)) { // hb->l is found in full decay chain.
-            fillTrackInfo<8, TMCParticles>(track);
+            fillTrackInfo<6, TMCParticles>(track, collision);
           } else if (isWeakDecayFromCharmHadron(mctrack, mcparticles)) { // hc->l is found in full decay chain.
             if (IsFromBeauty(mcmother, mcparticles) > 0) {
-              fillTrackInfo<9, TMCParticles>(track); // hb->hc->l is fond.
+              fillTrackInfo<7, TMCParticles>(track, collision); // hb->hc->l is fond.
             } else {
-              fillTrackInfo<7, TMCParticles>(track); // prompt hc->l is found.
+              fillTrackInfo<5, TMCParticles>(track, collision); // prompt hc->l is found.
             }
           }
         } else {
           if (pdg_mother == 22) { // photon conversion
-            fillTrackInfo<2, TMCParticles>(track);
+            fillTrackInfo<2, TMCParticles>(track, collision);
           }
         }
       } // end of track loop
@@ -990,21 +992,16 @@ struct SingleTrackQCMC {
         }
 
         if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
-          fRegistry.fill(HIST("Generated/lf/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
           if (IsFromCharm(mcmother, mcparticles) < 0 && IsFromBeauty(mcmother, mcparticles) < 0) {
-            fRegistry.fill(HIST("Generated/lf_prompt/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+            fRegistry.fill(HIST("Generated/PromptLF/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
+          } else {
+            fRegistry.fill(HIST("Generated/NonPromptLF/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
           }
         } else if (pdg_mother == 443) {
           if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
             fRegistry.fill(HIST("Generated/NonPromptJPsi/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
           } else {
             fRegistry.fill(HIST("Generated/PromptJPsi/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
-          }
-        } else if (pdg_mother == 100443) {
-          if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-            fRegistry.fill(HIST("Generated/NonPromptPsi2S/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
-          } else {
-            fRegistry.fill(HIST("Generated/PromptPsi2S/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
           }
         } else if (isWeakDecayFromBeautyHadron(lepton, mcparticles)) { // hb->l is found
           fRegistry.fill(HIST("Generated/b2l/hs"), pt, eta, phi, -lepton.pdgCode() / pdg_lepton);
