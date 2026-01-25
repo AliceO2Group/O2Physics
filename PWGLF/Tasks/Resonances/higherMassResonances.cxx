@@ -1453,7 +1453,7 @@ struct HigherMassResonances {
       return;
     }
 
-    if (std::abs(mcCollision.posZ()) >= config.cutzvertex) {
+    if (std::abs(mcCollision.posZ()) > config.cutzvertex) {
       return;
     }
 
@@ -1491,9 +1491,9 @@ struct HigherMassResonances {
       for (const auto& kCurrentDaughter : kDaughters) {
         // int daupdg = std::abs(kCurrentDaughter.pdgCode());
 
-        if (!kCurrentDaughter.isPhysicalPrimary()) {
-          continue;
-        }
+        // if (!kCurrentDaughter.isPhysicalPrimary()) {
+        //   continue;
+        // }
         if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kK0Short) {
           passKs.push_back(true);
           if (passKs.size() == 1) {
@@ -1545,6 +1545,7 @@ struct HigherMassResonances {
       return;
     }
     hMChists.fill(HIST("Rec_Multiplicity"), multiplicity);
+    rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
 
     hMChists.fill(HIST("MC_mult_after_event_sel"), multiplicity);
     eventCounter++;
