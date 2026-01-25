@@ -2033,27 +2033,39 @@ struct StrangenessInJets {
 
       // Cross-contamination rejection flags
       const Bool_t isOmegaLike = (std::fabs(casc.massomega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega);
-      const Bool_t isXiLike    = (std::fabs(casc.massxi()    - o2::constants::physics::MassXiMinus)   < deltaMassXi);
+      const Bool_t isXiLike = (std::fabs(casc.massxi() - o2::constants::physics::MassXiMinus) < deltaMassXi);
 
       // Final PID flags
       if (casc.sign() > 0) {
-        if (isPIDALam && isBachPi && !isOmegaLike) isPIDXiplus = true;
-        if (isPIDALam && isBachKa && !isXiLike)    isPIDOmplus = true;
+        if (isPIDALam && isBachPi && !isOmegaLike)
+          isPIDXiplus = true;
+        if (isPIDALam && isBachKa && !isXiLike)
+          isPIDOmplus = true;
       } else if (casc.sign() < 0) {
-        if (isPIDLam && isBachPi && !isOmegaLike)  isPIDXiminus = true;
-        if (isPIDLam && isBachKa && !isXiLike)     isPIDOmminus = true;
+        if (isPIDLam && isBachPi && !isOmegaLike)
+          isPIDXiminus = true;
+        if (isPIDLam && isBachKa && !isXiLike)
+          isPIDOmminus = true;
       }
 
       if (casc.isUE()) {
-        if (isPIDXiminus) registryData.fill(HIST("XiNeg_in_ue"),    casc.multft0m(), casc.pt(), casc.massxi());
-        if (isPIDXiplus)  registryData.fill(HIST("XiPos_in_ue"),    casc.multft0m(), casc.pt(), casc.massxi());
-        if (isPIDOmminus) registryData.fill(HIST("OmegaNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
-        if (isPIDOmplus)  registryData.fill(HIST("OmegaPos_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
+        if (isPIDXiminus)
+          registryData.fill(HIST("XiNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
+        if (isPIDXiplus)
+          registryData.fill(HIST("XiPos_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
+        if (isPIDOmminus)
+          registryData.fill(HIST("OmegaNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
+        if (isPIDOmplus)
+          registryData.fill(HIST("OmegaPos_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
       } else if (casc.isJC()) {
-        if (isPIDXiminus) registryData.fill(HIST("XiNeg_in_jet"),    casc.multft0m(), casc.pt(), casc.massxi());
-        if (isPIDXiplus)  registryData.fill(HIST("XiPos_in_jet"),    casc.multft0m(), casc.pt(), casc.massxi());
-        if (isPIDOmminus) registryData.fill(HIST("OmegaNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
-        if (isPIDOmplus)  registryData.fill(HIST("OmegaPos_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
+        if (isPIDXiminus)
+          registryData.fill(HIST("XiNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
+        if (isPIDXiplus)
+          registryData.fill(HIST("XiPos_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
+        if (isPIDOmminus)
+          registryData.fill(HIST("OmegaNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
+        if (isPIDOmplus)
+          registryData.fill(HIST("OmegaPos_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
       }
     }
   }
