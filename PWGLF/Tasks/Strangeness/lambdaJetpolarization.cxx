@@ -2352,7 +2352,7 @@ struct LambdaJetpolarization {
         }
 
         if (registryMCAcceptV0Lambda(v0, v0.posTrack_as<DauTracksMC>(), v0.negTrack_as<DauTracksMC>(), collision)) {
-          if (isMC && lPDG == 3122) { // Lambda
+          if (isMC && lPDG == 3122) { 
             if (isprimary == 1 && isDauLambda) {
               V0Numbers = V0Numbers + 1;
               registryData.fill(HIST("MC/hMassLambda_MC"), v0.mLambda());
@@ -2430,7 +2430,7 @@ struct LambdaJetpolarization {
         }
 
         if (registryMCAcceptV0Lambda(v0, v0.posTrack_as<DauTracksMC>(), v0.negTrack_as<DauTracksMC>(), collision)) {
-          if (isMC && lPDG == 3122) { // Lambda
+          if (isMC && lPDG == 3122) { 
             if (isprimary == 1 && isDauLambda) {
               const auto& pos = v0.posTrack_as<DauTracksMC>();
               // const auto& neg = v0.negTrack_as<DauTracksMC>();
@@ -2479,7 +2479,7 @@ struct LambdaJetpolarization {
               registryData.fill(HIST("MC/TH2FprotonCosThetaPhiInJetV0"), protonCosThetaInJetV0frame, TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)));
               registryData.fill(HIST("MC/TH3DLambdaMassDeltaPhiDeltaCosTheta"), v0.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame);
             }
-          } else if (isMC && lPDG == -3122) { // AntiLambda
+          } else if (isMC && lPDG == -3122) { 
             if (isprimary == 1 && isDauAntiLambda) {
             }
 
@@ -2545,11 +2545,11 @@ struct LambdaJetpolarizationMCcount {
     const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
 
     registry.fill(HIST("hEventSelection"), 0.5);
-    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+    if (!evtReconstructedAndSelected) { 
       return;
     }
-    registry.fill(HIST("hEventSelection"), 1.5);                  // hSelAndRecoMcCollCounter
-    if (eventPosZselection && abs(mcCollision.posZ()) > 10.f) { // 10cm
+    registry.fill(HIST("hEventSelection"), 1.5);                
+    if (eventPosZselection && abs(mcCollision.posZ()) > 10.f) { 
       return;
     }
     registry.fill(HIST("hEventSelection"), 2.5);
