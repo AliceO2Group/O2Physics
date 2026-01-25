@@ -30,6 +30,7 @@
 
 #include <RtypesCore.h>
 
+#include <vector>
 #include <cstdint>
 
 using namespace o2;
