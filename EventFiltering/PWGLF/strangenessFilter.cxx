@@ -626,28 +626,28 @@ struct strangenessFilter {
 
     Bool_t isHighMultEvent = 0;
     float multFT0MNorm = 0.f;
-    float  multTrack = 0;
+    float multTrack = 0;
     EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
     if (HMTriggerSelectionForOmega & 1) {
       for (auto& track : tracks) {
         if (!mTrackSelector.IsSelected(track)) {
-           continue;
+          continue;
         }
         // Has this track contributed to the collision vertex fit
         if (!track.isPVContributor()) {
-         continue;
+          continue;
         }
         multTrack++;
       }
-      if(multTrack > LowLimitHMTriggerOmegaTracks) {
+      if (multTrack > LowLimitHMTriggerOmegaTracks) {
         isHighMultEvent = 1;
       }
-    } 
+    }
     if (HMTriggerSelectionForOmega & 2) {
       if (collision.multFT0M() > LowLimitHMTriggerOmegaT0M) {
         isHighMultEvent = 1;
       }
-    } 
+    }
     if (HMTriggerSelectionForOmega & 4) {
       float meanMultT0C = 0.f;
       float fac_FT0C_ebe = 1.;
@@ -703,15 +703,15 @@ struct strangenessFilter {
         }
       } else {
         LOG(debug) << "FT0 not Found, using FT0M";
-        //EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 149);
+        // EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 149);
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
       }
     }
-    if(HMTriggerSelectionForOmega & 8) {
+    if (HMTriggerSelectionForOmega & 8) {
       if (collision.multNTracksGlobal() > LowLimitHMTriggerOmegaTracksGlobal) {
         isHighMultEvent = 1;
       }
-    } 
+    }
     if ((HMTriggerSelectionForOmega & 0xf) == 0) {
       LOG(fatal) << "Wrong selection of HMTriggerForOmega:" << HMTriggerSelectionForOmega;
     }
