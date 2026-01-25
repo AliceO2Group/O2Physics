@@ -64,7 +64,7 @@ struct integrationTest {
                     kTrackUsedTrackedV0,
                     kTrackUsedTrackedCascade,
                     kTrackUsedQA,
-                    kNTrackTypes}; 
+                    kNTrackTypes };
 
   enum kTable { kBC = 0,
                 kBCFlag,
@@ -221,10 +221,10 @@ struct integrationTest {
           "QA"};
 
       // construct labels to make this plot easier to understand
-      for(uint8_t i=0; i<(1 << kNTrackTypes); i++){ 
-         TString trackTypeString = ""; 
-         for(uint8_t j=0; j<kTrackUsedQA+1; j++){
-          if( ((i) & (1<<(j))) ){
+      for (uint8_t i = 0; i < (1 << kNTrackTypes); i++) {
+        TString trackTypeString = "";
+        for (uint8_t j = 0; j < kTrackUsedQA + 1; j++) {
+          if (((i) & (1 << (j)))) {
             trackTypeString.Append(Form("%s ", kTrackTypeNames[j].Data()));
           }
         }
