@@ -62,7 +62,7 @@ using namespace o2::framework::expressions;
 struct PhiMesonCandProducer {
   // Produce the table with the phi candidates information
   Produces<aod::PhimesonCandidatesData> phimesonCandidatesData;
-  // Produces<aod::PhimesonCandidatesMcReco> phimesonCandidatesMcReco;
+  Produces<aod::PhimesonCandidatesMcReco> phimesonCandidatesMcReco;
   Produces<aod::PhimesonCandidatesMcGen> phimesonCandidatesMcGen;
 
   HistogramRegistry histos{"phiCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -196,8 +196,9 @@ struct PhiMesonCandProducer {
     }
   }
 
-  PROCESS_SWITCH(PhiMesonCandProducer, processData, "Process function to select Phi meson candidates in Data", true);
+  PROCESS_SWITCH(PhiMesonCandProducer, processData, "Process function to select Phi meson candidates in Data or in McReco (w/o McTruth) analysis", true);
 
+  /*
   void processMCRecoDataLike(SimCollisions::iterator const& collision, FullMCTracks const&)
   {
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -226,8 +227,9 @@ struct PhiMesonCandProducer {
   }
 
   PROCESS_SWITCH(PhiMesonCandProducer, processMCRecoDataLike, "Process function to select Phi meson candidates in MCReco w/o MC truth", false);
+  */
 
-  /*void processMCReco(SimCollisions::iterator const& collision, FullMCTracks const&)
+  void processMCReco(SimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const& mcParticles)
   {
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -235,9 +237,19 @@ struct PhiMesonCandProducer {
     for (const auto& track1 : posThisColl) {
       if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue;
+      if (!track1.has_mcParticle())
+        continue;
+      const auto track1McParticle = mcParticles.rawIteratorAt(track1.mcParticleId());
+      if (track1McParticle.pdgCode() != PDG_t::kKPlus || !track1McParticle.isPhysicalPrimary())
+        continue;
 
       for (const auto& track2 : negThisColl) {
         if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
+          continue;
+        if (!track2.has_mcParticle())
+          continue;
+        const auto track2McParticle = mcParticles.rawIteratorAt(track2.mcParticleId());
+        if (track2McParticle.pdgCode() != PDG_t::kKMinus || !track2McParticle.isPhysicalPrimary())
           continue;
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
@@ -249,12 +261,34 @@ struct PhiMesonCandProducer {
         if (std::abs(recPhi.Rapidity()) > phiConfigs.cfgYAcceptance)
           continue;
 
-        phimesonCandidatesMcReco(collision.globalIndex(), recPhi.M(), recPhi.Pt(), recPhi.Rapidity(), recPhi.Phi());
+        const auto track1mcPartMotherIndexes = track1McParticle.mothersIds();
+        const auto track2mcPartMotherIndexes = track2McParticle.mothersIds();
+
+        auto genPhiMaybe = [&]() -> std::optional<aod::McParticles::iterator> {
+          for (const auto& mother1Index : track1mcPartMotherIndexes) {
+            for (const auto& mother2Index : track2mcPartMotherIndexes) {
+              if (mother1Index != mother2Index)
+                continue;
+
+              const auto motherMcParticle = mcParticles.rawIteratorAt(mother1Index);
+              if (std::abs(motherMcParticle.pdgCode()) == o2::constants::physics::Pdg::kPhi)
+                return motherMcParticle;
+            }
+          }
+
+          return std::nullopt;
+        }();
+
+        if (!genPhiMaybe)
+          continue;
+        const auto genPhi = *genPhiMaybe;
+
+        phimesonCandidatesMcReco(collision.globalIndex(), recPhi.M(), genPhi.pt(), genPhi.y(), genPhi.phi());
       }
     }
   }
 
-  PROCESS_SWITCH(PhiMesonCandProducer, processMCReco, "Process function to select Phi meson candidates in MCReco w MC truth", false);*/
+  PROCESS_SWITCH(PhiMesonCandProducer, processMCReco, "Process function to select Phi meson candidates in MCReco w MC truth", false);
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -290,6 +324,7 @@ struct PhiMesonCandProducer {
 struct PhiMesonSelCollision {
   // Produce the table with the event selection information
   Produces<aod::PhimesonSelectionData> phimesonSelectionData;
+  // Produces<aod::PhimesonSelectionMcReco> phimesonSelectionMcReco;
   Produces<aod::PhimesonSelectionMcGen> phimesonSelectionMcGen;
 
   HistogramRegistry histos{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -474,6 +509,7 @@ struct PhiMesonSelCollision {
 
   void processMCReco(SimCollisions::iterator const& collision, MCCollisions const&, aod::PhimesonCandidatesData const& phiCandidatesData)
   {
+    // phimesonSelectionMcReco(defaultEventSelection<true, MCCollisions>(collision) && selectionType == 1 ? eventHasPhi<true, MCCollisions>(collision, phiCandidatesData) : true);
     phimesonSelectionData(defaultEventSelection<true, MCCollisions>(collision) && selectionType == 1 ? eventHasPhi<true, MCCollisions>(collision, phiCandidatesData) : true);
   }
 

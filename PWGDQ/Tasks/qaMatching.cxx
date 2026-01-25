@@ -1773,6 +1773,9 @@ struct qaMatching {
       collisionIds.push_back(collision.globalIndex());
     }
 
+    if (collisionIds.empty())
+      return;
+
     for (size_t cid = 1; cid < collisionIds.size() - 1; cid++) {
       const auto& collision = collisions.rawIteratorAt(collisionIds[cid]);
       int64_t collisionIndex = collision.globalIndex();

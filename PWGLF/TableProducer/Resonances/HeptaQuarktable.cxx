@@ -438,7 +438,7 @@ struct heptaquarktable {
     if (keepEventDoubleHQ && numberPhi > 1 && numberLambda > 0 && (hqresonance.size() == hqresonanced1.size()) && (hqresonance.size() == hqresonanced2.size())) {
       histos.fill(HIST("hEventstat"), 2.5);
       /////////// Fill collision table///////////////
-      redHQEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), centrality, numberPhi, numberLambda);
+      redHQEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), centrality, numberPhi, numberLambda);
       auto indexEvent = redHQEvents.lastIndex();
       //// Fill track table for HQ//////////////////
       for (auto if1 = hqresonance.begin(); if1 != hqresonance.end(); ++if1) {

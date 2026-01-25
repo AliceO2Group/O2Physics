@@ -881,7 +881,6 @@ struct HfDataCreatorJpsiHadReduced {
           std::array<float, 3> pVecBPlus{}, pVec0{}, pVec1{}, pVec2{};
 
           auto secondaryVertexBPlus = df3.getPCACandidate();
-          df3.propagateTracksToVertex();
           df3.getTrack(0).getPxPyPzGlo(pVec0);
           df3.getTrack(1).getPxPyPzGlo(pVec1);
           df3.getTrack(2).getPxPyPzGlo(pVec2);
@@ -969,7 +968,6 @@ struct HfDataCreatorJpsiHadReduced {
             std::array<float, 3> pVecBS{}, pVec0{}, pVec1{}, pVecPhi{};
 
             auto secondaryVertexBS = df4.getPCACandidate();
-            df4.propagateTracksToVertex();
             df4.getTrack(0).getPxPyPzGlo(pVec0);
             df4.getTrack(1).getPxPyPzGlo(pVec1);
             df4.getTrack(2).getPxPyPzGlo(pVec2);

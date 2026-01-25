@@ -661,7 +661,7 @@ struct alice3decayFinder {
     if (doprocessFindLc) {
       for (auto const& mcParticle : mcParticles) {
         if (std::abs(mcParticle.pdgCode()) != motherPdgCode) {
-          mcGenFlags(-1, -1, -1);
+          mcGenFlags(-1, 0, 0);
           continue;
         }
         std::vector<int> idxBhadMothers{};
@@ -671,7 +671,7 @@ struct alice3decayFinder {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
           ptBMotherGen = bHadMother.pt();
         }
-        mcGenFlags(origin, ptBMotherGen, mcParticle.pdgCode() ? charmHadFlag : -charmHadFlag);
+        mcGenFlags(origin, ptBMotherGen, mcParticle.pdgCode() > 0 ? charmHadFlag : -charmHadFlag);
         if (mcParticle.pdgCode() > 0) {
           histos.fill(HIST("h2dGen3Prong"), mcParticle.pt(), mcParticle.eta());
         } else {
@@ -1040,9 +1040,9 @@ struct alice3decayFinder {
                           mCandidate3Prong.eta,
                           mCandidate3Prong.phi,
                           mCandidate3Prong.pt,
-                          mCandidate3Prong.Pdaug2[0], mCandidate3Prong.Pdaug2[1], mCandidate3Prong.Pdaug2[2],
-                          mCandidate3Prong.Pdaug1[0], mCandidate3Prong.Pdaug1[1], mCandidate3Prong.Pdaug1[2],
                           mCandidate3Prong.Pdaug0[0], mCandidate3Prong.Pdaug0[1], mCandidate3Prong.Pdaug0[2],
+                          mCandidate3Prong.Pdaug1[0], mCandidate3Prong.Pdaug1[1], mCandidate3Prong.Pdaug1[2],
+                          mCandidate3Prong.Pdaug2[0], mCandidate3Prong.Pdaug2[1], mCandidate3Prong.Pdaug2[2],
                           mCandidate3Prong.impactParameterY0, mCandidate3Prong.impactParameterY1, mCandidate3Prong.impactParameterY2,
                           std::sqrt(mCandidate3Prong.errorImpactParameterY0),
                           std::sqrt(mCandidate3Prong.errorImpactParameterY1),
@@ -1066,15 +1066,27 @@ struct alice3decayFinder {
 
   void processFindLc(aod::Collision const& collision,
                      aod::McParticles const& mcParticles,
-                     Alice3TracksWPid const&)
+                     Alice3TracksWPid const& tracks)
   {
+    LOG(debug) << "Processing Lc candidates for collision " << collision.globalIndex() << " with " << tracks.size() << " tracks";
+    for (auto const& track : tracks) {
+      if (track.has_mcParticle()) {
+        LOG(debug) << "  - track index: " << track.globalIndex() << ", pT: " << track.pt() << " (MC pt " << track.mcParticle().pt() << "), PID: " << track.mcParticle().pdgCode();
+      }
+    }
 
     auto tracksPiPlus = tracksPiPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    LOG(debug) << "  - found " << tracksPiPlus.size() << " pi+ from Lc";
     auto tracksKaPlus = tracksKaPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    LOG(debug) << "  - found " << tracksKaPlus.size() << " K+ from Lc";
     auto tracksPrPlus = tracksPrPlusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    LOG(debug) << "  - found " << tracksPrPlus.size() << " p+ from Lc";
     auto tracksPiMinus = tracksPiMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    LOG(debug) << "  - found " << tracksPiMinus.size() << " pi- from Lc";
     auto tracksKaMinus = tracksKaMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    LOG(debug) << "  - found " << tracksKaMinus.size() << " K- from Lc";
     auto tracksPrMinus = tracksPrMinusFromLc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    LOG(debug) << "  - found " << tracksPrMinus.size() << " p- from Lc";
 
     if (doDCAplots3Prong) {
       for (auto const& track : tracksPiPlus)

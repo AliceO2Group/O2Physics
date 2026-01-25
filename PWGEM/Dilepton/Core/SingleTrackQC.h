@@ -81,8 +81,6 @@ struct SingleTrackQC {
   Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
-  Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
-  Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
@@ -120,6 +118,9 @@ struct SingleTrackQC {
     Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -214,15 +215,21 @@ struct SingleTrackQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "zorroGroup";
-    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name"}; // 1 trigger per 1 task
+    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name. 1 trigger per 1 task."}; // 1 trigger per 1 task
     o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
     Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   } zorroGroup;
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker;
-  o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
+  int mToIidx = 0;
+  int mTOICounter = 0;
+  int mATCounter = 0;
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  // o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber = 0;
+  float d_bz = 0;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
@@ -301,8 +308,10 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
       fRegistry.add("Track/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
       fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
-      fRegistry.add("Track/positive/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, +10}, {200, -1, +1}}, false);
-      fRegistry.add("Track/positive/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, +10}, {200, -1, +1}}, false);
+      fRegistry.add("Track/positive/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("Track/positive/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("Track/positive/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("Track/positive/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
       fRegistry.add("Track/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
       fRegistry.add("Track/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
       fRegistry.add("Track/positive/hPDCA", "pDCA;R at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
@@ -315,8 +324,6 @@ struct SingleTrackQC {
     }
   }
 
-  int mRunNumber;
-  float d_bz;
   void init(InitContext&)
   {
     ccdb->setURL(ccdburl);
@@ -331,6 +338,18 @@ struct SingleTrackQC {
     addhistograms();
     mRunNumber = 0;
     d_bz = 0;
+    mToIidx = 0;
+    mTOICounter = 0;
+    mATCounter = 0;
+
+    if (doprocessQC_TriggeredData) {
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
+      fRegistry.add("Event/trigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                  // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hScaler", "trigger counter before DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                            // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hSelection", "trigger counter after DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                          // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedTrigger", Form("analysed trigger %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true); // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedToI", Form("analysed ToI %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true);         // extend X range in Run 4/5
+    }
 
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
@@ -391,8 +410,17 @@ struct SingleTrackQC {
     if constexpr (isTriggerAnalysis) {
       zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
       zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
-      zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value);
+      mToIidx = zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value)[0];
       zorro.populateHistRegistry(fRegistry, collision.runNumber());
+
+      uint64_t nInspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
+      uint64_t nScalers = zorro.getScalers()->GetBinContent(zorro.getScalers()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      uint64_t nSelections = zorro.getSelections()->GetBinContent(zorro.getSelections()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      LOGF(info, "run number %d: total inspected TVX events = %llu, scalers = %llu, selections = %llu", collision.runNumber(), nInspectedTVX, nScalers, nSelections);
+
+      fRegistry.fill(HIST("Event/trigger/hInspectedTVX"), collision.runNumber(), nInspectedTVX);
+      fRegistry.fill(HIST("Event/trigger/hScaler"), collision.runNumber(), nScalers);
+      fRegistry.fill(HIST("Event/trigger/hSelection"), collision.runNumber(), nSelections);
     }
   }
 
@@ -637,6 +665,8 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
       fRegistry.fill(HIST("Track/positive/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+      fRegistry.fill(HIST("Track/positive/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+      fRegistry.fill(HIST("Track/positive/hDCAy_Phi"), track.phi(), track.fwdDcaY());
       fRegistry.fill(HIST("Track/positive/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/positive/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
@@ -658,6 +688,8 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
       fRegistry.fill(HIST("Track/negative/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+      fRegistry.fill(HIST("Track/negative/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+      fRegistry.fill(HIST("Track/negative/hDCAy_Phi"), track.phi(), track.fwdDcaY());
       fRegistry.fill(HIST("Track/negative/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/negative/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
@@ -690,6 +722,23 @@ struct SingleTrackQC {
       if constexpr (isTriggerAnalysis) {
         if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
           continue;
+        }
+
+        auto swt_bitset = zorro.getLastResult();         // this has to be called after zorro::isSelected
+        auto TOIcounter = zorro.getTOIcounters()[0];     // this has to be called after zorro::isSelected
+        auto ATcounter = zorro.getATcounters()[mToIidx]; // this has to be called after zorro::isSelected
+
+        if (swt_bitset.test(mToIidx)) {
+          while (ATcounter > mATCounter) {
+            mATCounter++;
+            fRegistry.fill(HIST("Event/trigger/hAnalysedTrigger"), collision.runNumber());
+          }
+
+          while (TOIcounter > mTOICounter) {
+            fRegistry.fill(HIST("Event/trigger/hAnalysedToI"), collision.runNumber());
+            mTOICounter++; // always incremented by 1 in zorro!!
+          }
+          // LOGF(info, "collision.globalIndex() = %d, collision.globalBC() = %llu, mTOICounter = %d, mATcounter = %d", collision.globalIndex(), collision.globalBC(), mTOICounter, mATCounter);
         }
       }
 
@@ -822,7 +871,7 @@ struct SingleTrackQC {
   Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;

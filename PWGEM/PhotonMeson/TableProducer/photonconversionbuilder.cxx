@@ -161,17 +161,20 @@ struct PhotonConversionBuilder {
 
   // PCM ML inference
   Configurable<bool> applyPCMMl{"applyPCMMl", false, "Flag to apply ML selections"};
-  Configurable<bool> use2DBinning{"use2DBinning", true, "Flag to enable/disable 2D binning for ML application"};
+  Configurable<bool> use2DBinning{"use2DBinning", false, "Flag to enable/disable 2D binning for ML application"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<int> nClassesPCMMl{"nClassesPCMMl", static_cast<int>(o2::analysis::em_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<int> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<std::string> centTypePCMMl{"centTypePCMMl", "CentFT0C", "Centrality type for 2D ML application: CentFT0C, CentFT0M, or CentFT0A"};
   Configurable<std::vector<int>> cutDirPCMMl{"cutDirPCMMl", std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_PCM/"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  Configurable<std::vector<double>> binsPtPCMMl{"binsPtPCMMl", std::vector<double>{o2::analysis::em_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<std::string>> labelsBinsPCMMl{"labelsBinsPCMMl", std::vector<std::string>{"bin 0", "bin 1"}, "Labels for bins"};
+  Configurable<std::vector<std::string>> labelsCutScoresPCMMl{"labelsCutScoresPCMMl", std::vector<std::string>{o2::analysis::em_cuts_ml::labelsCutScore}, "Labels for cut scores"};
+  Configurable<std::vector<double>> binsPtPCMMl{"binsPtPCMMl", std::vector<double>{0.0, +1e+10}, "pT bin limits for ML application"};
   Configurable<std::vector<double>> binsCentPCMMl{"binsCentPCMMl", std::vector<double>{0.0, 100.0}, "Centrality bin limits for ML application"};
-  Configurable<LabeledArray<double>> cutsPCMMl{"cutsPCMMl", {o2::analysis::em_cuts_ml::Cuts[0], o2::analysis::em_cuts_ml::NBinsPt, o2::analysis::em_cuts_ml::NCutScores, o2::analysis::em_cuts_ml::labelsPt, o2::analysis::em_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<std::vector<double>> cutsPCMMlFlat{"cutsPCMMlFlat", {0.5}, "Flattened ML cuts: [bin0_score0, bin0_score1, ..., binN_scoreM]"};
 
   o2::analysis::EmMlResponsePCM<float> emMlResponse;
   std::vector<float> outputML;
@@ -254,8 +257,44 @@ struct PhotonConversionBuilder {
 
     if (applyPCMMl) {
       if (use2DBinning) {
+        int binsNPt = static_cast<int>(binsPtPCMMl->size()) - 1;
+        int binsNCent = static_cast<int>(binsCentPCMMl->size()) - 1;
+        int binsN = binsNPt * binsNCent;
+        if (binsN * static_cast<int>(cutDirPCMMl->size()) != static_cast<int>(cutsPCMMlFlat->size())) {
+          LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * cutDirPCMMl: " << int(binsN) * int(cutDirPCMMl->size()) << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
+        }
+        if (binsN != static_cast<int>(onnxFileNames->size())) {
+          LOG(fatal) << "Mismatch in number of bins and ONNX files provided for 2D ML application: binsN " << binsN << " bins vs. onnxFileNames: " << onnxFileNames->size() << " ONNX files";
+        }
+        if (binsN != static_cast<int>(labelsBinsPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of bins and labels provided for 2D ML application: binsN:" << binsN << " bins vs. labelsBinsPCMMl: " << labelsBinsPCMMl->size() << " labels";
+        }
+        if (static_cast<int>(cutDirPCMMl->size()) != nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of classes and cut directions provided for 2D ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. cutDirPCMMl: " << cutDirPCMMl->size() << " cut directions";
+        }
+        if (static_cast<int>(labelsCutScoresPCMMl->size()) != nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for 2D ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << labelsCutScoresPCMMl->size() << " labels";
+        }
+        LabeledArray<double> cutsPCMMl(cutsPCMMlFlat->data(), binsN, nClassesPCMMl, labelsBinsPCMMl, labelsCutScoresPCMMl);
         emMlResponse.configure2D(binsPtPCMMl, binsCentPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
       } else {
+        int binsNPt = static_cast<int>(binsPtPCMMl->size()) - 1;
+        if (binsNPt * static_cast<int>(cutDirPCMMl->size()) != static_cast<int>(cutsPCMMlFlat->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and cuts provided for ML application: binsNPt * cutDirPCMMl:" << binsNPt * cutDirPCMMl->size() << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
+        }
+        if (binsNPt != static_cast<int>(onnxFileNames->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and ONNX files provided for ML application: binsNPt " << binsNPt << " bins vs. onnxFileNames: " << onnxFileNames->size() << " ONNX files";
+        }
+        if (binsNPt != static_cast<int>(labelsBinsPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and labels provided for ML application: binsNPt:" << binsNPt << " bins vs. labelsBinsPCMMl: " << labelsBinsPCMMl->size() << " labels";
+        }
+        if (nClassesPCMMl != static_cast<int>(cutDirPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of classes and cut directions provided for ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. cutDirPCMMl: " << cutDirPCMMl->size() << " cut directions";
+        }
+        if (static_cast<int>(labelsCutScoresPCMMl->size()) != nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for ML application: nClassesPCMMl:" << nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << labelsCutScoresPCMMl->size() << " labels";
+        }
+        LabeledArray<double> cutsPCMMl(cutsPCMMlFlat->data(), binsNPt, nClassesPCMMl, labelsBinsPCMMl, labelsCutScoresPCMMl);
         emMlResponse.configure(binsPtPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
       }
       if (loadModelsFromCCDB) {
@@ -685,7 +724,15 @@ struct PhotonConversionBuilder {
       bool isSelectedML = false;
       std::vector<float> mlInputFeatures = emMlResponse.getInputFeatures(v0photoncandidate, pos, ele);
       if (use2DBinning) {
-        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCent(), outputML);
+        if (std::string(centTypePCMMl) == "CentFT0C") {
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0C(), outputML);
+        } else if (std::string(centTypePCMMl) == "CentFT0A") {
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0A(), outputML);
+        } else if (std::string(centTypePCMMl) == "CentFT0M") {
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0M(), outputML);
+        } else {
+          LOG(fatal) << "Unsupported centTypePCMMl: " << centTypePCMMl << " , please choose from CentFT0C, CentFT0A, CentFT0M.";
+        }
       } else {
         isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), outputML);
       }
