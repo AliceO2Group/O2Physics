@@ -68,12 +68,12 @@ struct HfCandidateSelectorToXiPiQa {
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
   // KFParticle
   Produces<aod::HfSelToXiPiKf> hfSelToXiPiKf;
-  Produces<aod::HfMlToXiPi> hfMlToXiPiKf; // -> Suffix "kf" of table name was deleted
+  // ML selection - Filled with both DCAFitter and KFParticle
+  Produces<aod::HfMlToXiPi> hfMlToXiPi;
 
   // cuts from SelectorCuts.h
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_to_xi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_to_xi_pi::Cuts[0], hf_cuts_to_xi_pi::NBinsPt, hf_cuts_to_xi_pi::NCutVars, hf_cuts_to_xi_pi::labelsPt, hf_cuts_to_xi_pi::labelsCutVar}, "Xic0 candidate selection per Pt Bin"};
-
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -81,43 +81,35 @@ struct HfCandidateSelectorToXiPiQa {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
-
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic0ToXipiKf"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_Xic0ToXipiKf.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-
   // LF analysis selections
   Configurable<bool> applyTrkSelLf{"applyTrkSelLf", true, "Apply track selection for LF daughters"};
-
   // PID options
   Configurable<bool> usePidTpcOnly{"usePidTpcOnly", false, "Perform PID using only TPC"};
   Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", true, "Perform PID using TPC & TOF"};
-
   // PID - TPC selections
   Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", -1, "Lower bound of track pT for TPC PID for pion selection"};
   Configurable<double> ptPiPidTpcMax{"ptPiPidTpcMax", 9999.9, "Upper bound of track pT for TPC PID for pion selection"};
   Configurable<double> nSigmaTpcPiMax{"nSigmaTpcPiMax", 3., "Nsigma cut on TPC only for pion selection"};
   Configurable<double> nSigmaTpcCombinedPiMax{"nSigmaTpcCombinedPiMax", 0., "Nsigma cut on TPC combined with TOF for pion selection"};
-
   Configurable<double> ptPrPidTpcMin{"ptPrPidTpcMin", -1, "Lower bound of track pT for TPC PID for proton selection"};
   Configurable<double> ptPrPidTpcMax{"ptPrPidTpcMax", 9999.9, "Upper bound of track pT for TPC PID for proton selection"};
   Configurable<double> nSigmaTpcPrMax{"nSigmaTpcPrMax", 3., "Nsigma cut on TPC only for proton selection"};
   Configurable<double> nSigmaTpcCombinedPrMax{"nSigmaTpcCombinedPrMax", 0., "Nsigma cut on TPC combined with TOF for proton selection"};
-
   // PID - TOF selections
   Configurable<double> ptPiPidTofMin{"ptPiPidTofMin", -1, "Lower bound of track pT for TOF PID for pion selection"};
   Configurable<double> ptPiPidTofMax{"ptPiPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for pion selection"};
   Configurable<double> nSigmaTofPiMax{"nSigmaTofPiMax", 3., "Nsigma cut on TOF only for pion selection"};
   Configurable<double> nSigmaTofCombinedPiMax{"nSigmaTofCombinedPiMax", 0., "Nsigma cut on TOF combined with TPC for pion selection"};
-
   Configurable<double> ptPrPidTofMin{"ptPrPidTofMin", -1, "Lower bound of track pT for TOF PID for proton selection"};
   Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for proton selection"};
   Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 3., "Nsigma cut on TOF only for proton selection"};
   Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 0., "Nsigma cut on TOF combined with TPC for proton selection"};
-
   // detector track quality selections
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
   Configurable<int> nTpcCrossedRowsMin{"nTpcCrossedRowsMin", 70, "Minimum number of TPC crossed rows requirement"};
@@ -128,8 +120,8 @@ struct HfCandidateSelectorToXiPiQa {
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
   o2::analysis::HfMlResponseXic0ToXiPi<float> hfMlResponseDca;
-  o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponse;
-  std::vector<float> outputMlXic0ToXiPiKf = {};
+  o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponseKf;
+  std::vector<float> outputMlXic0ToXiPi = {};
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -194,21 +186,29 @@ struct HfCandidateSelectorToXiPiQa {
     registry.add("hInvMassCharmBaryon", "Charm baryon invariant mass; int mass; entries", {HistType::kTH1F, {{1500, 1.5, 4.5}}});
     registry.add("hInvMassCharmBaryonBkg", "Charm baryon invariant mass, rejected; int mass; entries", {HistType::kTH1F, {{1500, 1.5, 4.5}}});
 
+    // HfMlResponse initialization
     if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      hfMlResponseDca.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        hfMlResponseDca.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      if (doprocessSelectionDCAFitter) {
+        hfMlResponseDca.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseDca.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseDca.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseDca.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDca.init();
       } else {
-        hfMlResponse.setModelPathsLocal(onnxFileNames);
-        hfMlResponseDca.setModelPathsLocal(onnxFileNames);
+        hfMlResponseKf.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseKf.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseKf.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseKf.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseKf.init();
       }
-      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponseDca.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponse.init();
-      hfMlResponseDca.init();
     }
   }
 
@@ -541,33 +541,32 @@ struct HfCandidateSelectorToXiPiQa {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
       }
 
+      // ML BDT selection
+      if (applyMl) {
+        bool isSelectedMlXic0 = false;
+        std::vector<float> inputFeaturesXic0 = {};
+
+        if constexpr (dokf == false) {
+          inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
+        } else {
+          inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
+        }
+
+        if (!isSelectedMlXic0) {
+          continue;
+        }
+
+        hfMlToXiPi(outputMlXic0ToXiPi);
+      }
+
       // Fill in selection result
       if constexpr (dokf == false) {
-        // ML selection
-        if (applyMl) {
-          bool isSelectedMlXic0 = false;
-          std::vector<float> inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
-          isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPiKf);
-          if (!isSelectedMlXic0) {
-            continue;
-          }
-          hfMlToXiPiKf(outputMlXic0ToXiPiKf);
-        }
         hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                     trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                     trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
       } else {
-        // ML selections -> Currently, no Ml for DCAFitter result is implemented
-        if (applyMl) {
-          bool isSelectedMlXic0 = false;
-          std::vector<float> inputFeaturesXic0 = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
-          isSelectedMlXic0 = hfMlResponse.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPiKf);
-          if (!isSelectedMlXic0) {
-            continue;
-          }
-          hfMlToXiPiKf(outputMlXic0ToXiPiKf);
-        }
-
         // Set result of selection to false if one of the statusPID or statusInvMass is false
         // This is required because selection table for KF does not store any information about statusPID or statusInvMass while DCAFitter does.
         if (!(statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassCharmBaryon && statusInvMassCascade && statusInvMassLambda)) {
