@@ -136,7 +136,7 @@ struct LambdaJetpolarization {
   Configurable<bool> doArmenterosCut{"doArmenterosCut", 0, "do Armenteros Cut"};
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
-  Configurable<bool> NotITSAfterburner{"NotITSAfterburner", 0, "NotITSAfterburner"};
+  Configurable<bool> notITSAfterburner{"notITSAfterburner", 0, "notITSAfterburner"};
   Configurable<bool> doQA{"doQA", 1, "fill QA histograms"};
   Configurable<bool> evSel{"evSel", 1, "evSel"};
   Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
@@ -1758,7 +1758,7 @@ struct LambdaJetpolarization {
       const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
 
-      if (NotITSAfterburner && (v0.negTrack_as<StrHadronDaughterTracks>().isITSAfterburner() || v0.posTrack_as<StrHadronDaughterTracks>().isITSAfterburner())) {
+      if (notITSAfterburner && (v0.negTrack_as<StrHadronDaughterTracks>().isITSAfterburner() || v0.posTrack_as<StrHadronDaughterTracks>().isITSAfterburner())) {
         continue;
       }
 
@@ -2294,7 +2294,7 @@ struct LambdaJetpolarization {
       int AntiV0Numbers = 0;
 
       // loop over V0s
-      for (auto& v0 : v0sThisCollision) {
+      for (const auto& v0 : v0sThisCollision) {
         if (!v0.has_mcParticle()) {
           continue;
         }
@@ -2305,7 +2305,7 @@ struct LambdaJetpolarization {
         if (v0.v0Type() != v0TypeSelection) {
           continue;
         }
-        if (NotITSAfterburner && (v0.negTrack_as<DauTracksMC>().isITSAfterburner() || v0.posTrack_as<DauTracksMC>().isITSAfterburner())) {
+        if (notITSAfterburner && (v0.negTrack_as<DauTracksMC>().isITSAfterburner() || v0.posTrack_as<DauTracksMC>().isITSAfterburner())) {
           continue;
         }
         if (v0mcparticle.isPhysicalPrimary()) {
@@ -2329,8 +2329,8 @@ struct LambdaJetpolarization {
           lPDG = v0mcparticle.pdgCode();
           isprimary = v0mcparticle.isPhysicalPrimary();
         }
-        for (auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
-          for (auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
+        for (const auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
+          for (const auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
             if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) { // proton + pion^{-}
               isDauLambda = true;
             }
@@ -2343,7 +2343,7 @@ struct LambdaJetpolarization {
         float pdgMother = 0.;
 
         if (std::abs(v0mcparticle.pdgCode()) == 3122 && v0mcparticle.has_mothers()) {
-          for (auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
+          for (const auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
             if (std::abs(mcparticleMother0.pdgCode()) == 3312 || std::abs(mcparticleMother0.pdgCode()) == 3322) {
               ptMotherMC = mcparticleMother0.pt();
               pdgMother = mcparticleMother0.pdgCode();
@@ -2386,7 +2386,7 @@ struct LambdaJetpolarization {
       }
 
       // second loop over V0s
-      for (auto& v0 : v0sThisCollision) {
+      for (const auto& v0 : v0sThisCollision) {
         if (!v0.has_mcParticle()) {
           continue;
         }
@@ -2397,7 +2397,7 @@ struct LambdaJetpolarization {
         if (v0.v0Type() != v0TypeSelection) {
           continue;
         }
-        if (NotITSAfterburner && (v0.negTrack_as<DauTracksMC>().isITSAfterburner() || v0.posTrack_as<DauTracksMC>().isITSAfterburner())) {
+        if (notITSAfterburner && (v0.negTrack_as<DauTracksMC>().isITSAfterburner() || v0.posTrack_as<DauTracksMC>().isITSAfterburner())) {
           continue;
         }
 
@@ -2408,8 +2408,8 @@ struct LambdaJetpolarization {
           lPDG = v0mcparticle.pdgCode();
           isprimary = v0mcparticle.isPhysicalPrimary();
         }
-        for (auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
-          for (auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
+        for (const auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
+          for (const auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
             if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) { // proton + pion^{-}
               isDauLambda = true;
             }
@@ -2421,7 +2421,7 @@ struct LambdaJetpolarization {
         // float ptMotherMC = 0.;
         float pdgMother = 0.;
         if (std::abs(v0mcparticle.pdgCode()) == 3122 && v0mcparticle.has_mothers()) {
-          for (auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
+          for (const auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
             if (std::abs(mcparticleMother0.pdgCode()) == 3312 || std::abs(mcparticleMother0.pdgCode()) == 3322) {
               // ptMotherMC = mcparticleMother0.pt();
               pdgMother = mcparticleMother0.pdgCode();
@@ -2481,12 +2481,15 @@ struct LambdaJetpolarization {
             }
           } else if (isMC && lPDG == -3122) {
             if (isprimary == 1 && isDauAntiLambda) {
+              continue;
             }
 
           } else if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < 0.01) {
             if (pdgMother == 3312) {
+              continue;
             }
             if (pdgMother == 3312 || pdgMother == 3322) {
+              continue;
             }
           }
         }
