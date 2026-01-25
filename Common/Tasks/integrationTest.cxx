@@ -59,11 +59,11 @@ struct integrationTest {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
 
   enum kTrackType { kTrackUsedV0 = 0,
-                    kTrackUsedCascade, 
-                    kTrackUsedDecay3Body, 
+                    kTrackUsedCascade,
+                    kTrackUsedDecay3Body,
                     kTrackUsedTrackedV0,
                     kTrackUsedTrackedCascade,
-                    kTrackUsedQA}; 
+                    kTrackUsedQA };
 
   enum kTable { kBC = 0,
                 kBCFlag,
@@ -80,7 +80,7 @@ struct integrationTest {
                 kAmbiguousTrack,
                 kAmbiguousMftTrack,
                 kAmbiguousFwdTrack,
-                kTracked3Body, 
+                kTracked3Body,
                 kTrackedCascade,
                 kTrackedV0,
                 kTrackQA,
@@ -127,8 +127,8 @@ struct integrationTest {
         "ambiguoustrack",
         "ambiguousmfttrack",
         "ambiguousfwdtrack",
-        "tracked3body", 
-        "trackedcascade", 
+        "tracked3body",
+        "trackedcascade",
         "trackedv0",
         "trackqa",
         "v0",
@@ -140,7 +140,7 @@ struct integrationTest {
         "fdd",
         "fddextra",
         "ft0",
-        "ft0extra", 
+        "ft0extra",
         "fv0a",
         "fv0aextra",
         "zdc",
@@ -211,25 +211,24 @@ struct integrationTest {
       auto hThinningQA = histos.add<TH2>("hThinningQA", "hThinningQA", HistType::kTH2D, {{64, -0.5f, 63.5f}, {2, -0.5f, 1.5f}});
 
       TString kTrackTypeNames[] =
-      {
-        "V",
-        "tV",
-        "3b", 
-        "C",
-        "tC",
-        "QA"
-      };
+        {
+          "V",
+          "tV",
+          "3b",
+          "C",
+          "tC",
+          "QA"};
 
       // construct labels to make this plot easier to understand
-      for(uint8_t i=0; i<64; i++){ 
-         TString trackTypeString = ""; 
-         for(uint8_t j=0; j<kTrackUsedQA+1; j++){
-          if( ((i) & (1<<(j))) ){
+      for (uint8_t i = 0; i < 64; i++) {
+        TString trackTypeString = "";
+        for (uint8_t j = 0; j < kTrackUsedQA + 1; j++) {
+          if (((i) & (1 << (j)))) {
             trackTypeString.Append(Form("%s ", kTrackTypeNames[j].Data()));
           }
-         }
-         hThinningQA->GetXaxis()->SetBinLabel(i+1, trackTypeString.Data());
-      } 
+        }
+        hThinningQA->GetXaxis()->SetBinLabel(i + 1, trackTypeString.Data());
+      }
       hThinningQA->GetYaxis()->SetBinLabel(0, "Not TPConly");
       hThinningQA->GetYaxis()->SetBinLabel(1, "TPConly");
     }
@@ -281,7 +280,7 @@ struct integrationTest {
   PROCESS_SWITCH(integrationTest, processDataModel, "Check data model", true);
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  // Revised tables for newer data 
+  // Revised tables for newer data
   // Warning: will not work for legacy AO2Ds
   void processDataModel2026(
     aod::BCs const& bcs,
@@ -299,16 +298,16 @@ struct integrationTest {
     aod::AmbiguousTracks const& ambitracks,
     aod::AmbiguousMFTTracks const& ambimfttracks,
     aod::AmbiguousFwdTracks const& ambifwdtracks,
-    aod::Tracked3Bodys const& tracked3bodys, 
+    aod::Tracked3Bodys const& tracked3bodys,
     aod::TrackedCascades const& trackedcascades,
     aod::TrackedV0s const& trackedv0s,
     aod::TracksQAVersion const& tracksQA, // does not comply with normal iterator naming
     aod::V0s const& v0s,
     aod::Cascades const& cascades,
-    aod::Decay3Bodys const& decay3bodys, 
+    aod::Decay3Bodys const& decay3bodys,
     aod::Calos const& calos,
     aod::CaloTriggers const& calotriggers,
-    aod::CPVClusters const& cpvclusters, 
+    aod::CPVClusters const& cpvclusters,
     aod::FDDs const& fdds,
     aod::FDDsExtra const& fddsextra,
     aod::FT0s const& ft0s,
@@ -355,9 +354,9 @@ struct integrationTest {
 
     if (checkThinning) {
       // perform checks regarding thinning
-      std::vector<uint8_t> trackBits(tracks.size(), 0); 
+      std::vector<uint8_t> trackBits(tracks.size(), 0);
 
-      if(tracks.size() != trackextras.size()){ 
+      if (tracks.size() != trackextras.size()) {
         LOGF(fatal, "Check thinning requested and Tracks.size() != TracksExtra.size(). Very bad. Quitting...");
       }
 
@@ -379,7 +378,7 @@ struct integrationTest {
       }
       for (const auto& trackedcascade : trackedcascades) {
         auto cascade = trackedcascade.cascade(); // simple de-ref, no table joining
-        auto v0 = cascade.v0(); // simple de-ref, no table joining
+        auto v0 = cascade.v0();                  // simple de-ref, no table joining
         trackBits[v0.negTrackId()] = trackBits[v0.negTrackId()] | (1 << kTrackUsedTrackedCascade);
         trackBits[v0.posTrackId()] = trackBits[v0.posTrackId()] | (1 << kTrackUsedTrackedCascade);
         trackBits[cascade.bachelorId()] = trackBits[cascade.bachelorId()] | (1 << kTrackUsedTrackedCascade);
@@ -387,12 +386,12 @@ struct integrationTest {
       for (const auto& trackQA : tracksQA) {
         trackBits[trackQA.trackId()] = trackBits[trackQA.trackId()] | (1 << kTrackUsedQA);
       }
-      for (uint32_t iTrack = 0; iTrack < trackextras.size(); iTrack++) { 
-        auto track = trackextras.rawIteratorAt(iTrack); 
+      for (uint32_t iTrack = 0; iTrack < trackextras.size(); iTrack++) {
+        auto track = trackextras.rawIteratorAt(iTrack);
         bool isTPConly = track.hasTPC() && !track.hasTOF() && !track.hasTRD() && !track.hasITS();
         histos.fill(HIST("hThinningQA"), static_cast<float>(trackBits[iTrack]), static_cast<float>(isTPConly));
       }
-    }    
+    }
   }
   PROCESS_SWITCH(integrationTest, processDataModel2026, "Check data model, 2026 version", false);
 
