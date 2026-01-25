@@ -63,7 +63,7 @@ struct skimmerPrimaryMuon {
   using MFTTracksMC = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
   using MFTTrackMC = MFTTracksMC::iterator;
 
-  Produces<aod::EMPrimaryMuons_001> emprimarymuons;
+  Produces<aod::EMPrimaryMuons> emprimarymuons;
   Produces<aod::EMPrimaryMuonsCov> emprimarymuonscov;
 
   // Configurables
@@ -90,6 +90,8 @@ struct skimmerPrimaryMuon {
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   Configurable<int> minNmuon{"minNmuon", 0, "min number of muon candidates per collision"};
+  Configurable<float> maxDEta{"maxDEta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
+  Configurable<float> maxDPhi{"maxDPhi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -391,11 +393,16 @@ struct skimmerPrimaryMuon {
       return false;
     }
 
+    float deta = etaMatchedMCHMID - eta;
+    float dphi = phiMatchedMCHMID - phi;
+    o2::math_utils::bringToPMPi(dphi);
+
+    if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
+      return false;
+    }
+
     if constexpr (fillTable) {
       float dpt = (ptMatchedMCHMID - pt) / pt;
-      float deta = etaMatchedMCHMID - eta;
-      float dphi = phiMatchedMCHMID - phi;
-      o2::math_utils::bringToPMPi(dphi);
 
       float detaMP = etaMatchedMCHMIDatMP - etaMatchedMFTatMP;
       float dphiMP = phiMatchedMCHMIDatMP - phiMatchedMFTatMP;
@@ -1248,9 +1255,11 @@ struct associateSameMFT {
           if (global_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
             continue;
           }
-          if (global_muon.collisionId() == muon.collisionId()) {
-            self_Ids.emplace_back(global_muon.globalIndex());
-          }
+          self_Ids.emplace_back(global_muon.globalIndex());
+
+          // if (global_muon.collisionId() == muon.collisionId()) {
+          //   self_Ids.emplace_back(global_muon.globalIndex());
+          // }
         }
         em_same_mft_ids(self_Ids);
         self_Ids.clear();

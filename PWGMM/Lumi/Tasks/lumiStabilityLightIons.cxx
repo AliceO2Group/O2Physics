@@ -43,10 +43,13 @@ namespace o2::aod
 namespace myBc_aod
 {
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_COLUMN(BCid, bcId, int);
 DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
+DECLARE_SOA_COLUMN(AmplitudeZNA, amplitudeZNA, float);
+DECLARE_SOA_COLUMN(AmplitudeZNC, amplitudeZNC, float);
 } // namespace myBc_aod
-DECLARE_SOA_TABLE(MyBCaod, "AOD", "MYBCAOD", myBc_aod::Timestamp, myBc_aod::TimeZNA, myBc_aod::TimeZNC);
+DECLARE_SOA_TABLE(MyBCaod, "AOD", "MYBCAOD", myBc_aod::Timestamp, myBc_aod::BCid, myBc_aod::TimeZNA, myBc_aod::TimeZNC, myBc_aod::AmplitudeZNA, myBc_aod::AmplitudeZNC);
 } // namespace o2::aod
 
 using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3MatchedToBCSparse>;
@@ -65,6 +68,9 @@ struct LumiStabilityLightIons {
   Configurable<bool> cfgDoBCE{"cfgDoBCE", false, "Create and fill histograms for the BCs of type E"};
   Configurable<bool> cfgDoBCL{"cfgDoBCL", false, "Create and fill histograms for leading BCs of type B"};
   Configurable<bool> cfgDoBCSL{"cfgDoBCSL", false, "Create and fill histograms for super-leading BCs (no preceding FT0/FDD activity) of type B"};
+
+  Configurable<bool> cfgRequireZDCTriggerForZDCQA{"cfgRequireZDCTriggerForZDCQA", false, "Require ZDC trigger (1ZNC) for filling QA histograms"};
+  Configurable<bool> cfgRequireTVXTriggerForZDCQA{"cfgRequireTVXTriggerForZDCQA", false, "Require FT0 vertex trigger (MTVX) for filling ZDC QA histograms"};
 
   Configurable<bool> cfgRequireNoT0ForSLBC{"cfgRequireNoT0ForSLBC", false, "Require no T0 signal for definition of super leading BC (otherwise only no FDD)"};
 
@@ -138,7 +144,7 @@ struct LumiStabilityLightIons {
             mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
           }
         }
-        if (cfgDoBCSL && (iTrigger == kFT0Vtx || iTrigger == kFDD)) { // only for FT0Vtx and FDD fill super-leading BC histograms
+        if (cfgDoBCSL && (iTrigger == kFT0Vtx || iTrigger == kFDD || iTrigger == kAllBCs)) { // only for FT0Vtx and FDD fill super-leading BC histograms
           mHistManager.add(Form("%s", std::string(NBCsVsTimeHistNames[iTrigger][5]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
           mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][5]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
         }
@@ -250,6 +256,10 @@ struct LumiStabilityLightIons {
     for (const auto& bc : bcs) {
 
       std::bitset<64> ctpInputMask(bc.inputMask());
+      if (cfgRequireTVXTriggerForZDCQA && !(ctpInputMask.test(2))) // 2 = 3 - 1 -> MTVX
+        continue;
+      if (cfgRequireZDCTriggerForZDCQA && !(ctpInputMask.test(25))) // 25 = 26 - 1 -> 1ZNC
+        continue;
 
       bool zdcHit = !bc.has_zdc() ? 0 : ((bc.zdc().energyCommonZNC() > -1 && std::abs(bc.zdc().timeZNC()) < 1E5) ? 1 : 0);
       mHistManager.fill(HIST("ZDCQA/BCHasZDC"), zdcHit, ctpInputMask.test(25) ? 1 : 0);
@@ -274,9 +284,14 @@ struct LumiStabilityLightIons {
       mHistManager.fill(HIST("ZDCQA/ZDCTimes"), timeZNA, timeZNC);
 
       // For VdM analysis: fill timestamps and ZDC times in output tree, if enabled
+      // Fill BC idx and ZNA and ZNC amplitudes as well
       uint64_t timestamp = bc.timestamp();
+      int64_t globalBC = bc.globalBC();
+      int localBC = globalBC % nBCsPerOrbit;
+      float amplitudeZNA = bc.zdc().amplitudeZNA();
+      float amplitudeZNC = bc.zdc().amplitudeZNC();
       if (cfgFillBCao2d && timestamp >= cfgTstampStartFillingBCao2d && timestamp <= cfgTstampEndFillingBCao2d) {
-        BCaod(timestamp, timeZNA, timeZNC);
+        BCaod(timestamp, localBC, timeZNA, timeZNC, amplitudeZNA, amplitudeZNC);
       }
     }
   }
@@ -310,6 +325,8 @@ struct LumiStabilityLightIons {
 
       if (!bcPatternB[localBC])
         continue;
+
+      fillHistograms<kAllBCs, kBCSL>(timeSinceSOF, localBC);
 
       if (ctpInputMask.test(2))
         fillHistograms<kFT0Vtx, kBCSL>(timeSinceSOF, localBC);

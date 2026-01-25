@@ -15,10 +15,10 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
+// #include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
-#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
+// #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+// #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -46,6 +46,7 @@
 #include <ranges>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -55,7 +56,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils;
-using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
+// using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 
 struct DileptonPolarization {
@@ -69,9 +70,9 @@ struct DileptonPolarization {
   Configurable<int> cfgPairType{"cfgPairType", 0, "0:dielectron, 1:dimuon"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<int> ndepth{"ndepth", 10000, "depth for event mixing"};
+  // Configurable<int> ndepth{"ndepth", 10000, "depth for event mixing"};
   Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {10, -10.0f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {1, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
@@ -126,8 +127,8 @@ struct DileptonPolarization {
 
   struct : ConfigurableGroup {
     std::string prefix = "accBins";
-    Configurable<float> cfgRelDM{"cfgRelDM", 0.01, "rel. dm for lorentz boost"};
-    Configurable<float> cfgRelDPt{"cfgRelDPt", 0.1, "rel. dpT for lorentz boost"};
+    Configurable<float> cfgDM{"cfgDM", 0.01, "dm for lorentz boost"};
+    Configurable<float> cfgDPt{"cfgDPt", 0.1, "dpT for lorentz boost"};
     Configurable<float> cfgDEta{"cfgDEta", 0.1, "deta for lorentz boost"};
     Configurable<float> cfgDPhi{"cfgDPhi", 0.087, "dphi (rad.) for lorentz boost"};
   } accBins;
@@ -309,17 +310,7 @@ struct DileptonPolarization {
     mRunNumber = collision.runNumber();
   }
 
-  ~DileptonPolarization()
-  {
-    delete emh_pair_uls;
-    emh_pair_uls = 0x0;
-    delete emh_pair_lspp;
-    emh_pair_lspp = 0x0;
-    delete emh_pair_lsmm;
-    emh_pair_lsmm = 0x0;
-
-    map_mixed_eventId_to_globalBC.clear();
-  }
+  ~DileptonPolarization() {}
 
   void addhistograms()
   {
@@ -384,8 +375,8 @@ struct DileptonPolarization {
     fRegistry.add("Pair/mix/uls/hBeta", "#beta for Lorentz boost;#beta^{same};(#beta^{mix} - #beta^{same})/#beta^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
   }
 
-  template <int ev_id, typename TCollision, typename TDilepton>
-  bool fillPairInfo(TCollision const& collision, TDilepton const& dilepton)
+  template <typename TCollision, typename TDilepton, typename TMixingBin>
+  bool fillPairInfo(TCollision const& collision, TDilepton const& dilepton, TMixingBin const& mixingBin)
   {
     float weight = 1.f;
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt1(), dilepton.eta1(), dilepton.phi1(), leptonM1);
@@ -423,111 +414,74 @@ struct DileptonPolarization {
     }
 
     if (dilepton.sign1() * dilepton.sign2() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hEta"), v12.Eta(), weight);
+      fRegistry.fill(HIST("Pair/same/uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
+      fRegistry.fill(HIST("Pair/same/uls/hEta"), v12.Eta(), weight);
     } else if (dilepton.sign1() > 0 && dilepton.sign2() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hEta"), v12.Eta(), weight);
+      fRegistry.fill(HIST("Pair/same/lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
+      fRegistry.fill(HIST("Pair/same/lspp/hEta"), v12.Eta(), weight);
     } else if (dilepton.sign1() < 0 && dilepton.sign2() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hEta"), v12.Eta(), weight);
+      fRegistry.fill(HIST("Pair/same/lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
+      fRegistry.fill(HIST("Pair/same/lsmm/hEta"), v12.Eta(), weight);
     }
 
-    if constexpr (ev_id == 0) { // same event
-      auto key_df_collision = std::make_pair(ndf, collision.globalIndex());
-      float phi12_tmp = v12.Phi();
-      o2::math_utils::bringTo02Pi(phi12_tmp);
-      EMPair empair = EMPair(v12.Pt(), v12.Eta(), phi12_tmp, v12.M(), 0);
-      empair.setPositiveLegPxPyPzM(arrD[0], arrD[1], arrD[2], leptonM1);
-      // empair.setNegativeLegPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), leptonM2);
-      empair.setPairDCA(pair_dca);
-      if (dilepton.sign1() * dilepton.sign2() < 0) { // ULS
-        emh_pair_uls->AddTrackToEventPool(key_df_collision, empair);
-      } else if (dilepton.sign1() > 0 && dilepton.sign2() > 0) { // LS++
-        emh_pair_lspp->AddTrackToEventPool(key_df_collision, empair);
-      } else if (dilepton.sign1() < 0 && dilepton.sign2() < 0) { // LS--
-        emh_pair_lsmm->AddTrackToEventPool(key_df_collision, empair);
-      }
+    float phi12_tmp = v12.Phi();
+    o2::math_utils::bringTo02Pi(phi12_tmp);
+    EMPair empair = EMPair(v12.Pt(), v12.Eta(), phi12_tmp, v12.M(), 0);
+    empair.setPositiveLegPxPyPzM(arrD[0], arrD[1], arrD[2], leptonM1);
+    // empair.setNegativeLegPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), leptonM2);
+    empair.setPairDCA(pair_dca);
+    auto pair_tmp = std::make_pair(collision.globalIndex(), empair);
+    if (dilepton.sign1() * dilepton.sign2() < 0) { // ULS
+      mapMixingULS[mixingBin].emplace_back(pair_tmp);
+    } else if (dilepton.sign1() > 0 && dilepton.sign2() > 0) { // LS++
+      mapMixingLSPP[mixingBin].emplace_back(pair_tmp);
+    } else if (dilepton.sign1() < 0 && dilepton.sign2() < 0) { // LS--
+      mapMixingLSMM[mixingBin].emplace_back(pair_tmp);
     }
     return true;
   }
 
-  template <int signType, typename TCollisions, typename TEMH>
-  void fillMixedPairInfo(TCollisions const& collisions, TEMH const& emh)
+  template <int signType, typename TPairs>
+  void fillMixedPairInfo(TPairs const& pairs)
   {
-    const float weight = 1.f;
-    for (const auto& col1 : collisions) {
-      auto globalBC1 = map_mixed_eventId_to_globalBC[col1];
-      auto pairs_from_col1 = emh->GetTracksPerCollision(col1);
+    float weight = 1.f;
 
-      for (const auto& col2 : collisions) {
-        auto globalBC2 = map_mixed_eventId_to_globalBC[col2];
-        auto pairs_from_col2 = emh->GetTracksPerCollision(col2);
+    for (const auto& pair1 : pairs) {
+      auto globalBC1 = map_mixed_eventId_to_globalBC[std::get<0>(pair1)];
+      auto empair1 = std::get<1>(pair1);
+      auto v_pos = empair1.getPositiveLeg(); // pt, eta, phi, M
+      auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1};
 
-        if (col1.second <= col2.second) {
-          continue;
-        }
+      auto pairs_in_same_ptetaphim_bin = std::views::filter(pairs, [&](std::pair<int, EMPair> t) { return std::get<0>(t) != std::get<0>(pair1) && std::fabs(std::get<1>(t).mass() - empair1.mass()) < accBins.cfgDM && std::fabs(std::get<1>(t).pt() - empair1.pt()) < accBins.cfgDPt && std::fabs(std::get<1>(t).eta() - empair1.eta()) < accBins.cfgDEta && std::fabs(RecoDecay::constrainAngle(std::get<1>(t).phi() - empair1.phi(), -o2::constants::math::PI, 1U)) < accBins.cfgDPhi; });
 
+      for (const auto& pair2 : pairs_in_same_ptetaphim_bin) {
+        auto globalBC2 = map_mixed_eventId_to_globalBC[std::get<0>(pair2)];
         uint64_t diffBC = std::max(globalBC1, globalBC2) - std::min(globalBC1, globalBC2);
         fRegistry.fill(HIST("Pair/mix/hDiffBC"), diffBC);
         if (diffBC < ndiff_bc_mix) {
           continue;
         }
 
-        for (const auto& empair1 : pairs_from_col1) {
-          auto v_pos = empair1.getPositiveLeg(); // pt, eta, phi, M
-          auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1};
+        auto empair2 = std::get<1>(pair2);
+        auto arrM = std::array<float, 4>{static_cast<float>(empair2.px()), static_cast<float>(empair2.py()), static_cast<float>(empair2.pz()), static_cast<float>(empair2.mass())};
 
-          auto pairs_from_col2_sliced = std::views::filter(pairs_from_col2, [&](EMPair t) { return std::fabs(t.mass() - empair1.mass()) / empair1.mass() < accBins.cfgRelDM && std::fabs(t.pt() - empair1.pt()) / empair1.pt() < accBins.cfgRelDPt && std::fabs(t.eta() - empair1.eta()) < accBins.cfgDEta && std::fabs(RecoDecay::constrainAngle(t.phi() - empair1.phi(), -o2::constants::math::PI, 1U)) < accBins.cfgDPhi; });
-          for (const auto& empair2 : pairs_from_col2_sliced) {
-            auto arrM = std::array<float, 4>{static_cast<float>(empair2.px()), static_cast<float>(empair2.py()), static_cast<float>(empair2.pz()), static_cast<float>(empair2.mass())};
-            // LOGF(info, "[col1, col2] : empair1.mass() = %f, empair1.pt() = %f, empair1.eta() = %f, empair1.phi() = %f, empair2.mass() = %f, empair2.pt() = %f, empair2.eta() = %f, empair2.phi() = %f", empair1.mass(), empair1.pt(), empair1.eta(), empair1.phi(), empair2.mass(), empair2.pt(), empair2.eta(), empair2.phi());
-
-            float cos_thetaPol = 999.f, phiPol = 999.f;
-            if (cfgPolarizationFrame == 0) {
-              o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-            } else if (cfgPolarizationFrame == 1) {
-              o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-            }
-            o2::math_utils::bringToPMPi(phiPol);
-            float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
-            if (cfgUseAbs) {
-              cos_thetaPol = std::fabs(cos_thetaPol);
-              phiPol = std::fabs(phiPol);
-            }
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hs"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair1.p() / empair1.e(), (empair2.p() / empair2.e() - empair1.p() / empair1.e()) / (empair1.p() / empair1.e()));
-          }
+        float cos_thetaPol = 999.f, phiPol = 999.f;
+        if (cfgPolarizationFrame == 0) {
+          o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
+        } else if (cfgPolarizationFrame == 1) {
+          o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
         }
-
-        for (const auto& empair2 : pairs_from_col2) {
-          auto v_pos = empair2.getPositiveLeg(); // pt, eta, phi, M
-          auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM2};
-
-          auto pairs_from_col1_sliced = std::views::filter(pairs_from_col1, [&](EMPair t) { return std::fabs(t.mass() - empair2.mass()) / empair2.mass() < accBins.cfgRelDM && std::fabs(t.pt() - empair2.pt()) / empair2.pt() < accBins.cfgRelDPt && std::fabs(t.eta() - empair2.eta()) < accBins.cfgDEta && std::fabs(RecoDecay::constrainAngle(t.phi() - empair2.phi(), -o2::constants::math::PI, 1U)) < accBins.cfgDPhi; });
-          for (const auto& empair1 : pairs_from_col1_sliced) {
-            auto arrM = std::array<float, 4>{static_cast<float>(empair1.px()), static_cast<float>(empair1.py()), static_cast<float>(empair1.pz()), static_cast<float>(empair2.mass())};
-            // LOGF(info, "[col2, col1] : empair2.mass() = %f, empair2.pt() = %f, empair2.eta() = %f, empair2.phi() = %f, empair1.mass() = %f, empair1.pt() = %f, empair1.eta() = %f, empair1.phi() = %f", empair2.mass(), empair2.pt(), empair2.eta(), empair2.phi(), empair1.mass(), empair1.pt(), empair1.eta(), empair1.phi());
-
-            float cos_thetaPol = 999.f, phiPol = 999.f;
-            if (cfgPolarizationFrame == 0) {
-              o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-            } else if (cfgPolarizationFrame == 1) {
-              o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-            }
-            o2::math_utils::bringToPMPi(phiPol);
-            float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
-            if (cfgUseAbs) {
-              cos_thetaPol = std::fabs(cos_thetaPol);
-              phiPol = std::fabs(phiPol);
-            }
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hs"), empair2.mass(), empair2.pt(), empair2.getPairDCA(), empair2.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-            fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair2.p() / empair2.e(), (empair1.p() / empair1.e() - empair2.p() / empair2.e()) / (empair2.p() / empair2.e()));
-          }
+        o2::math_utils::bringToPMPi(phiPol);
+        float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
+        if (cfgUseAbs) {
+          cos_thetaPol = std::fabs(cos_thetaPol);
+          phiPol = std::fabs(phiPol);
         }
+        fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hs"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
+        fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair1.p() / empair1.e(), (empair2.p() / empair2.e() - empair1.p() / empair1.e()) / (empair1.p() / empair1.e()));
 
-      } // end of col2 loop
-    } // end of col1 loop
+      } // end of pair2 loop
+    } // end of pair1 loop
   }
 
   Filter collisionFilter_centrality = eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax;
@@ -545,22 +499,15 @@ struct DileptonPolarization {
   Partition<filteredDileptons> dileptonsLSPP = o2::aod::emdilepton::sign1 > static_cast<int16_t>(0) && o2::aod::emdilepton::sign2 > static_cast<int16_t>(0);
   Partition<filteredDileptons> dileptonsLSMM = o2::aod::emdilepton::sign1 < static_cast<int16_t>(0) && o2::aod::emdilepton::sign2 < static_cast<int16_t>(0);
 
-  // using MyEMH_pair = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, std::tuple<int, int, int, int, EMPair>>;
-  using MyEMH_pair = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMPair>;
-  MyEMH_pair* emh_pair_uls = nullptr;
-  MyEMH_pair* emh_pair_lspp = nullptr;
-  MyEMH_pair* emh_pair_lsmm = nullptr;
+  std::map<std::tuple<int, int, int, int>, std::vector<std::pair<int, EMPair>>> mapMixingULS;  // <zbin, centbin, epbin, occbin> -> vector of <emeventId, EMPair> for ULS pairs
+  std::map<std::tuple<int, int, int, int>, std::vector<std::pair<int, EMPair>>> mapMixingLSPP; // <zbin, centbin, epbin, occbin> -> vector of <emeventId, EMPair> for LSPP pairs
+  std::map<std::tuple<int, int, int, int>, std::vector<std::pair<int, EMPair>>> mapMixingLSMM; // <zbin, centbin, epbin, occbin> -> vector of <emeventId, EMPair> for LSMM pairs
 
-  std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
-  static constexpr int ndf = 0;
+  std::unordered_map<int, uint64_t> map_mixed_eventId_to_globalBC;
 
   template <typename TCollisions, typename TDileptons>
   void runPairing(TCollisions const& collisions, TDileptons const&)
   {
-    emh_pair_uls = new MyEMH_pair(ndepth);
-    emh_pair_lspp = new MyEMH_pair(ndepth);
-    emh_pair_lsmm = new MyEMH_pair(ndepth);
-
     for (const auto& collision : collisions) {
       initCCDB(collision);
       float centrality = collision.centFT0C();
@@ -611,6 +558,8 @@ struct DileptonPolarization {
         occbin = static_cast<int>(occ_bin_edges.size()) - 2;
       }
 
+      auto mixingBin = std::make_tuple(zbin, centbin, epbin, occbin);
+
       auto dileptons_uls_per_coll = dileptonsULS->sliceByCached(aod::emdilepton::emthineventId, collision.globalIndex(), cache);
       auto dileptons_lspp_per_coll = dileptonsLSPP->sliceByCached(aod::emdilepton::emthineventId, collision.globalIndex(), cache);
       auto dileptons_lsmm_per_coll = dileptonsLSMM->sliceByCached(aod::emdilepton::emthineventId, collision.globalIndex(), cache);
@@ -619,7 +568,7 @@ struct DileptonPolarization {
       int nuls = 0, nlspp = 0, nlsmm = 0;
       if (cfgDoULS) {
         for (const auto& dilepton : dileptons_uls_per_coll) { // ULS
-          bool is_pair_ok = fillPairInfo<0>(collision, dilepton);
+          bool is_pair_ok = fillPairInfo(collision, dilepton, mixingBin);
           if (is_pair_ok) {
             nuls++;
           }
@@ -628,13 +577,13 @@ struct DileptonPolarization {
 
       if (cfgDoLS) {
         for (const auto& dilepton : dileptons_lspp_per_coll) { // LS++
-          bool is_pair_ok = fillPairInfo<0>(collision, dilepton);
+          bool is_pair_ok = fillPairInfo(collision, dilepton, mixingBin);
           if (is_pair_ok) {
             nlspp++;
           }
         }
         for (const auto& dilepton : dileptons_lsmm_per_coll) { // LS--
-          bool is_pair_ok = fillPairInfo<0>(collision, dilepton);
+          bool is_pair_ok = fillPairInfo(collision, dilepton, mixingBin);
           if (is_pair_ok) {
             nlsmm++;
           }
@@ -645,14 +594,8 @@ struct DileptonPolarization {
         continue;
       }
 
-      auto key_bin = std::make_tuple(zbin, centbin, epbin, occbin);
-      auto key_df_collision = std::make_pair(ndf, collision.globalIndex()); // this gives the current event.
-
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) {
-        map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
-        emh_pair_uls->AddCollisionIdAtLast(key_bin, key_df_collision);
-        emh_pair_lspp->AddCollisionIdAtLast(key_bin, key_df_collision);
-        emh_pair_lsmm->AddCollisionIdAtLast(key_bin, key_df_collision);
+        map_mixed_eventId_to_globalBC[collision.globalIndex()] = collision.globalBC();
       } // end of if pair exist
 
     } // end of collision loop
@@ -662,15 +605,18 @@ struct DileptonPolarization {
         for (int iep = 0; iep < static_cast<int>(ep_bin_edges.size()) - 1; iep++) {
           for (int iocc = 0; iocc < static_cast<int>(occ_bin_edges.size()) - 1; iocc++) {
             auto key_bin = std::make_tuple(iz, icent, iep, iocc);
-            auto collisionIds_in_mixing_pool = emh_pair_uls->GetCollisionIdsFromEventPool(key_bin);
-            LOGF(info, "iz = %d, icent = %d, iep = %d, iocc = %d, collisionIds_in_mixing_pool.size() = %d", iz, icent, iep, iocc, collisionIds_in_mixing_pool.size());
+
+            auto pairsULS = mapMixingULS[key_bin];
+            auto pairsLSPP = mapMixingLSPP[key_bin];
+            auto pairsLSMM = mapMixingLSMM[key_bin];
+            LOGF(info, "iz = %d, icent = %d, iep = %d, iocc = %d, pairsULS.size() = %d, pairsLSPP.size() = %d, pairsLSMM.size() = %d", iz, icent, iep, iocc, pairsULS.size(), pairsLSPP.size(), pairsLSMM.size());
 
             if (cfgDoULS) {
-              fillMixedPairInfo<0>(collisionIds_in_mixing_pool, emh_pair_uls);
+              fillMixedPairInfo<0>(pairsULS);
             }
             if (cfgDoLS) {
-              fillMixedPairInfo<1>(collisionIds_in_mixing_pool, emh_pair_lspp);
-              fillMixedPairInfo<2>(collisionIds_in_mixing_pool, emh_pair_lsmm);
+              fillMixedPairInfo<1>(pairsLSPP);
+              fillMixedPairInfo<2>(pairsLSMM);
             }
 
           } // end of iocc loop
@@ -678,13 +624,10 @@ struct DileptonPolarization {
       } // end of icent loop
     } // end of iz loop
 
-    delete emh_pair_uls;
-    emh_pair_uls = 0x0;
-    delete emh_pair_lspp;
-    emh_pair_lspp = 0x0;
-    delete emh_pair_lsmm;
-    emh_pair_lsmm = 0x0;
-
+    mapMixingULS.clear();
+    mapMixingLSPP.clear();
+    mapMixingLSMM.clear();
+    map_mixed_eventId_to_globalBC.clear();
   } // end of DF
 
   void processAnalysis(filteredCollisions const& collisions, filteredDileptons const& dileptons)

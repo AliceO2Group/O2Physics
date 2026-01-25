@@ -33,7 +33,7 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -1252,7 +1252,7 @@ struct HypKfRecoTask {
       default:
         return -999;
     }
-    double expBethe{mMip * chargeFactor * o2::tpc::BetheBlochAleph(static_cast<float>(particle.charge * rigidity / particle.mass), parBB[0], parBB[1], parBB[2], parBB[3], parBB[4])};
+    double expBethe{mMip * chargeFactor * o2::common::BetheBlochAleph(static_cast<float>(particle.charge * rigidity / particle.mass), parBB[0], parBB[1], parBB[2], parBB[3], parBB[4])};
     double expSigma{expBethe * particle.resolution};
     float sigmaTPC = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
     return sigmaTPC;

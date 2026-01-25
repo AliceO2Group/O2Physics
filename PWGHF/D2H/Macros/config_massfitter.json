@@ -13,19 +13,19 @@
         "hMass_T_0.70_0.90",
         "hMass_T_0.90_1.60"
     ],
-    "PromptHistoName": [
+    "_PromptHistoName": [
         "MC prompt histogram name array"
     ],
-    "FDHistoName": [
+    "_FDHistoName": [
         "MC FD histogram name array"
     ],
-    "ReflHistoName": [
+    "_ReflHistoName": [
         "MC reflection histogram name array"
     ],
-    "PromptSecPeakHistoName": [
+    "_PromptSecPeakHistoName": [
         "MC prompt second peak histogram name array"
     ],
-    "FDSecPeakHistoName": [
+    "_FDSecPeakHistoName": [
         "MC FD second peak histogram name array"
     ],
     "Particle": "LcToPKPi",
@@ -123,7 +123,7 @@
         4
     ],
     "InclSecPeak": false,
-    "UseLikelihood": false,
+    "UseLikelihood": true,
     "_UseLikelihood": [
         "true: likelihood fit",
         "false: chi2 fit"
@@ -157,6 +157,6 @@
         "2 for DoubleGausSigmaRatioPar",
         "3 for GausSec"
     ],
-    "drawBgPrefit": true,
-    "highlightPeakRegion": true
+    "DrawBgPrefit": true,
+    "HighlightPeakRegion": true
 }

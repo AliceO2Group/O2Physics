@@ -159,7 +159,10 @@ void MCProng::Print() const
               << ") ExcludePDG(" << fExcludePDG[i] << ")  SourceBits(" << fSourceBits[i] << ") ExcludeSource(" << fExcludeSource[i]
               << ") UseANDonSource(" << fUseANDonSourceBitMap[i] << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ")";
     for (std::size_t j = 0; j < fPDGInHistory.size(); j++) {
-      std::cout << " #" << j << " PDGInHistory(" << fPDGInHistory[j] << ") ExcludePDGInHistory(" << fExcludePDGInHistory[j] << ")";
+      std::cout << " #" << j << " PDGInHistory(" << fPDGInHistory[j] << ")";
+    }
+    for (std::size_t j = 0; j < fExcludePDGInHistory.size(); j++) {
+      std::cout << " #" << j << " ExcludePDGInHistory(" << fExcludePDGInHistory[j] << ")";
     }
     std::cout << std::endl;
   }

@@ -246,7 +246,6 @@ struct V0PtInvMassPlots {
 
     // General Plots
     rPtAnalysis.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
-    rPtAnalysis.add("hNRecEvents_Data", "hNRecEvents_Data", {HistType::kTH1D, {{1, 0.f, 1.f}}});
     rPtAnalysis.add("hNV0s", "hNV0s", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     rPtAnalysis.add("hNK0sh", "hNK0sh", {HistType::kTH1D, {{11, 0.f, 11.f}}});
     rPtAnalysis.add("hNLambda", "hNLambda", {HistType::kTH1D, {{11, 0.f, 11.f}}});
@@ -330,8 +329,8 @@ struct V0PtInvMassPlots {
     rMCCorrections.add("hAntilambdaAfterEventSelectionPtSpectrum", "hAntilambdaAfterEventSelectionPtSpectrum", {HistType::kTH2D, {antilambdaPtAxis, centAxis}});
 
     // Event and V0s Corrections
-    rMCCorrections.add("hNEvents_Corrections", "hNEvents_Corrections", {HistType::kTH1D, {{10, 0.f, 10.f}}});
-    rMCCorrections.add("hNRecEvents_MC", "hNRecEvents_MC", {HistType::kTH1D, {{1, 0.f, 1.f}}});
+    rMCCorrections.add("hNEvents_Corrections", "hNEvents_Corrections", {HistType::kTH2D, {{10, 0.f, 10.f}, centAxis}});
+    rMCCorrections.add("hNRecEvents", "hNRecEvents", {HistType::kTH2D, {{1, 0.f, 1.f}, centAxis}});
 
     // Generated Level Pt Spectrums (with rapidity cut)
     rMCCorrections.add("GenParticleRapidity", "GenParticleRapidity", {HistType::kTH1F, {{nBins, -10.0f, 10.0f}}});
@@ -684,13 +683,14 @@ struct V0PtInvMassPlots {
     aod::McParticles const& mcParticles)
   {
     // Event Efficiency, Event Split and V0 Signal Loss Corrections
-    rMCCorrections.fill(HIST("hNEvents_Corrections"), 0.5); // Event Efficiency Denominator
+    rMCCorrections.fill(HIST("hNEvents_Corrections"), 0.5, mcCollision.centFT0M()); // All Events
     if (std::abs(mcCollision.posZ()) > cutZVertex) {
       return;
     }
     if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       return;
     }
+    rMCCorrections.fill(HIST("hNEvents_Corrections"), 1.5, mcCollision.centFT0M()); // Event Efficiency Denominator
     // Particles (of interest) Generated Pt Spectrum and Signal Loss Denominator Loop
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) < rapidityCut) {
@@ -741,11 +741,11 @@ struct V0PtInvMassPlots {
     }
     // Signal Loss Numenator Loop
     for (const auto& collision : collisions) {
-      rMCCorrections.fill(HIST("hNEvents_Corrections"), 1.5); // Number of Events Reconsctructed
-      if (!acceptEvent(collision)) {                          // Event Selection
+      rMCCorrections.fill(HIST("hNEvents_Corrections"), 2.5, mcCollision.centFT0M()); // Number of Events Reconsctructed
+      if (!acceptEvent(collision)) {                                                  // Event Selection
         return;
       }
-      rMCCorrections.fill(HIST("hNEvents_Corrections"), 2.5); // Event Split Denomimator and Event Efficiency Numenator
+      rMCCorrections.fill(HIST("hNEvents_Corrections"), 3.5, mcCollision.centFT0M()); // Event Split Denomimator and Event Efficiency Numenator
       for (const auto& mcParticle : mcParticles) {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
@@ -804,128 +804,119 @@ struct V0PtInvMassPlots {
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
-    rMCCorrections.fill(HIST("hNRecEvents_MC"), 0.5); // Event Split Numenator
-
-    // if (collision.has_mcCollision())
-    {
-
-      // const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
-
-      // std::cout<<"Measured: "<<collision.centFT0M()<<"  Generated: "<<mcCollision.centFT0M()<<std::endl;
-
-      for (const auto& v0 : V0s) {
-        // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
-        if (!acceptV0(v0)) { // V0 Selections
-          continue;
-        }
-        // kzero analysis
-        if (kzeroAnalysis == true) {
-          if (acceptK0sh(v0)) { // K0sh Selection
-            // K0sh Signal Split Numerator Start
-            for (int i = 0; i < nKaonHistograms; i++) {
-              if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
-                pthistos::kaonSplit[i]->Fill(v0.mK0Short(), collision.centFT0M());       // filling the k0s namespace histograms for K0sh Splitting Numerator
-              }
+    rMCCorrections.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Event Split Numenator
+    for (const auto& v0 : V0s) {
+      // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
+      if (!acceptV0(v0)) { // V0 Selections
+        continue;
+      }
+      // kzero analysis
+      if (kzeroAnalysis == true) {
+        if (acceptK0sh(v0)) { // K0sh Selection
+          // K0sh Signal Split Numerator Start
+          for (int i = 0; i < nKaonHistograms; i++) {
+            if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
+              pthistos::kaonSplit[i]->Fill(v0.mK0Short(), collision.centFT0M());       // filling the k0s namespace histograms for K0sh Splitting Numerator
             }
-            // K0sh Signla Split Numerator End
-            if (v0.has_mcParticle()) {
-              auto v0mcParticle = v0.mcParticle();
-              if (dotruthk0sh && (v0mcParticle.pdgCode() == kK0Short)) { // kzero matched
-                if (v0mcParticle.isPhysicalPrimary()) {
-                  for (int i = 0; i < nKaonHistograms; i++) {
-                    if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
-                      pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
-                    }
+          }
+          // K0sh Signla Split Numerator End
+          if (v0.has_mcParticle()) {
+            auto v0mcParticle = v0.mcParticle();
+            if (dotruthk0sh && (v0mcParticle.pdgCode() == kK0Short)) { // kzero matched
+              if (v0mcParticle.isPhysicalPrimary()) {
+                for (int i = 0; i < nKaonHistograms; i++) {
+                  if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
+                    pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
                   }
                 }
-                if (!v0mcParticle.isPhysicalPrimary()) {
-                  auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
-                  if (!v0mothers.empty()) {
-                    auto& v0mcParticleMother = v0mothers.front(); // First mother
-                    rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    if (v0mcParticleMother.pdgCode() == kPhi) { // Phi Mother Matched
-                      rFeeddownMatrices.fill(HIST("hK0shPhiFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    }
+              }
+              if (!v0mcParticle.isPhysicalPrimary()) {
+                auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
+                if (!v0mothers.empty()) {
+                  auto& v0mcParticleMother = v0mothers.front(); // First mother
+                  rFeeddownMatrices.fill(HIST("hK0shFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
+                  if (v0mcParticleMother.pdgCode() == kPhi) { // Phi Mother Matched
+                    rFeeddownMatrices.fill(HIST("hK0shPhiFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
                   }
                 }
               }
             }
           }
         }
-        // lambda analysis
-        if (lambdaAnalysis == true) {
-          if (acceptLambda(v0)) { // Lambda Selections
-            // Lambda Signal Split Numerator Start
-            for (int i = 0; i < nLambdaHistograms; i++) {
-              if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
-                pthistos::lambdaSplit[i]->Fill(v0.mLambda(), collision.centFT0M());
-              }
+      }
+      // lambda analysis
+      if (lambdaAnalysis == true) {
+        if (acceptLambda(v0)) { // Lambda Selections
+          // Lambda Signal Split Numerator Start
+          for (int i = 0; i < nLambdaHistograms; i++) {
+            if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+              pthistos::lambdaSplit[i]->Fill(v0.mLambda(), collision.centFT0M());
             }
-            // Lambda Signal Split Numerator End
-            if (v0.has_mcParticle()) {
-              auto v0mcParticle = v0.mcParticle();
-              if (dotruthLambda && (v0mcParticle.pdgCode() == kLambda0)) { // lambda matched
-                if (v0mcParticle.isPhysicalPrimary()) {
-                  for (int i = 0; i < nLambdaHistograms; i++) {
-                    if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
-                      pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
-                    }
+          }
+          // Lambda Signal Split Numerator End
+          if (v0.has_mcParticle()) {
+            auto v0mcParticle = v0.mcParticle();
+            if (dotruthLambda && (v0mcParticle.pdgCode() == kLambda0)) { // lambda matched
+              if (v0mcParticle.isPhysicalPrimary()) {
+                for (int i = 0; i < nLambdaHistograms; i++) {
+                  if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+                    pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
                   }
                 }
-                if (!v0mcParticle.isPhysicalPrimary()) {
-                  auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
-                  if (!v0mothers.empty()) {
-                    auto& v0mcParticleMother = v0mothers.front(); // First mother
-                    rFeeddownMatrices.fill(HIST("hLambdaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    if (v0mcParticleMother.pdgCode() == kXiMinus) { // Xi Minus Mother Matched
-                      rFeeddownMatrices.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    }
-                    if (v0mcParticleMother.pdgCode() == kXi0) { // Xi Zero Mother Matched
-                      rFeeddownMatrices.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    }
-                    if (v0mcParticleMother.pdgCode() == kOmegaMinus) { // Omega Mother Matched
-                      rFeeddownMatrices.fill(HIST("hLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    }
+              }
+              if (!v0mcParticle.isPhysicalPrimary()) {
+                auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
+                if (!v0mothers.empty()) {
+                  auto& v0mcParticleMother = v0mothers.front(); // First mother
+                  rFeeddownMatrices.fill(HIST("hLambdaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
+                  if (v0mcParticleMother.pdgCode() == kXiMinus) { // Xi Minus Mother Matched
+                    rFeeddownMatrices.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
+                  }
+                  if (v0mcParticleMother.pdgCode() == kXi0) { // Xi Zero Mother Matched
+                    rFeeddownMatrices.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
+                  }
+                  if (v0mcParticleMother.pdgCode() == kOmegaMinus) { // Omega Mother Matched
+                    rFeeddownMatrices.fill(HIST("hLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
                   }
                 }
               }
             }
           }
         }
-        // antilambda analysis
-        if (antiLambdaAnalysis == true) {
-          if (acceptAntilambda(v0)) { // Antilambda Selections
-            // Antilambda Signal Split Numerator End
-            for (int i = 0; i < nAntilambdaHistograms; i++) {
-              if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
-                pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
-              }
+      }
+      // antilambda analysis
+      if (antiLambdaAnalysis == true) {
+        if (acceptAntilambda(v0)) { // Antilambda Selections
+          // Antilambda Signal Split Numerator End
+          for (int i = 0; i < nAntilambdaHistograms; i++) {
+            if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
+              pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
             }
-            // Antilambda Signal Split Numerator End
-            if (v0.has_mcParticle()) {
-              auto v0mcParticle = v0.mcParticle();
-              if (dotruthAntilambda && (v0mcParticle.pdgCode() == kLambda0Bar)) { // antilambda matched
-                if (v0mcParticle.isPhysicalPrimary()) {
-                  for (int i = 0; i < nAntilambdaHistograms; i++) {
-                    if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
-                      pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
-                    }
+          }
+          // Antilambda Signal Split Numerator End
+          if (v0.has_mcParticle()) {
+            auto v0mcParticle = v0.mcParticle();
+            if (dotruthAntilambda && (v0mcParticle.pdgCode() == kLambda0Bar)) { // antilambda matched
+              if (v0mcParticle.isPhysicalPrimary()) {
+                for (int i = 0; i < nAntilambdaHistograms; i++) {
+                  if (antilambdaPtedgevalues[i] <= v0.pt() && v0.pt() < antilambdaPtedgevalues[i + 1]) {
+                    pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
                   }
                 }
-                if (!v0mcParticle.isPhysicalPrimary()) {
-                  auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
-                  if (!v0mothers.empty()) {
-                    auto& v0mcParticleMother = v0mothers.front(); // First mother
-                    rFeeddownMatrices.fill(HIST("hAntiLambdaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    if (v0mcParticleMother.pdgCode() == kXiPlusBar) { // Xi Plus Mother Matched
-                      rFeeddownMatrices.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    }
-                    if (v0mcParticleMother.pdgCode() == -kXi0) { // Anti-Xi Zero Mother Matched
-                      rFeeddownMatrices.fill(HIST("hAntiLambdaAntiXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    }
-                    if (v0mcParticleMother.pdgCode() == kOmegaPlusBar) { // Anti-Omega (minus) Mother Matched
-                      rFeeddownMatrices.fill(HIST("hAntiLambdaAntiOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
-                    }
+              }
+              if (!v0mcParticle.isPhysicalPrimary()) {
+                auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>(); // Get mothers
+                if (!v0mothers.empty()) {
+                  auto& v0mcParticleMother = v0mothers.front(); // First mother
+                  rFeeddownMatrices.fill(HIST("hAntiLambdaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
+                  if (v0mcParticleMother.pdgCode() == kXiPlusBar) { // Xi Plus Mother Matched
+                    rFeeddownMatrices.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
+                  }
+                  if (v0mcParticleMother.pdgCode() == -kXi0) { // Anti-Xi Zero Mother Matched
+                    rFeeddownMatrices.fill(HIST("hAntiLambdaAntiXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
+                  }
+                  if (v0mcParticleMother.pdgCode() == kOmegaPlusBar) { // Anti-Omega (minus) Mother Matched
+                    rFeeddownMatrices.fill(HIST("hAntiLambdaAntiOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt(), collision.centFT0M());
                   }
                 }
               }
@@ -969,8 +960,7 @@ struct V0PtInvMassPlots {
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
-    rPtAnalysis.fill(HIST("hNRecEvents_Data"), 0.5); // Number of Reconstructed Events
-
+    rMCCorrections.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Number of recorded events
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       if (!acceptV0(v0)) { // V0 Selection
