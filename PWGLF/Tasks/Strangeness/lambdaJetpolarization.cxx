@@ -2527,15 +2527,15 @@ struct LambdaJetpolarizationMCcount {
   }
 
   Configurable<float> rapidityMCcut{"rapidityMCcut", 0.5, "rapidity cut MC count"};
-  Configurable<bool> event_Sel8_selection{"event_Sel8_selection", true, "event selection MC count post sel8 cut"};
-  Configurable<bool> event_PosZ_selection{"event_PosZ_selection", true, "event selection MC count post poZ cut"};
+  Configurable<bool> eventSel8selection{"eventSel8selection", true, "event selection MC count post sel8 cut"};
+  Configurable<bool> eventPosZselection{"eventPosZselection", true, "event selection MC count post posZ cut"};
 
   void processMC(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions)
   {
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
     for (const auto& collision : collisions) {
-      if (event_Sel8_selection && !collision.sel8()) {
+      if (eventSel8selection && !collision.sel8()) {
         continue;
       }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
@@ -2549,7 +2549,7 @@ struct LambdaJetpolarizationMCcount {
       return;
     }
     registry.fill(HIST("hEventSelection"), 1.5);                  // hSelAndRecoMcCollCounter
-    if (event_PosZ_selection && abs(mcCollision.posZ()) > 10.f) { // 10cm
+    if (eventPosZselection && abs(mcCollision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hEventSelection"), 2.5);
