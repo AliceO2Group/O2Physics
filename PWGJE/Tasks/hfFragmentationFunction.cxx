@@ -196,7 +196,6 @@ struct HfFragmentationFunction {
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-  Configurable<std::string> chosenHadron{"chosenHadron", "D0", "choose hadron for analysis: D0 or Lc"};
 
   std::vector<int> eventSelectionBits;
 
