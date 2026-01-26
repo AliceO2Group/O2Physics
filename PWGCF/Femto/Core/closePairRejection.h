@@ -51,6 +51,8 @@ enum CprHist {
   kRadius6,
   kRadius7,
   kRadius8,
+  kPhi1VsPhi2,
+  kEta1VsEta2,
   kCprHistogramLast
 };
 
@@ -62,6 +64,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> cutAnyRadius{"cutAnyRadius", false, "Apply CPR if the deta-dphistar is below the configured values at any radius"};
   o2::framework::Configurable<bool> plotAllRadii{"plotAllRadii", true, "Plot deta-dphi distribution at all radii"};
   o2::framework::Configurable<bool> plotAverage{"plotAverage", true, "Plot average deta dphi distribution"};
+  o2::framework::Configurable<bool> plotAngluarCorrelation{"plotAngluarCorrelation", false, "Plot angular correlation of particles (eta1 vs eta2 & phi1 vs phi2"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
   o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
@@ -70,6 +73,8 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> kinematicMax{"kinematicMax", -1.f, "Maximum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
   o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{250, -0.5, 0.5}}, "deta"};
   o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{250, -0.5, 0.5}}, "dphi"};
+  o2::framework::ConfigurableAxis binningCorrelationPhi{"binningCorrelationPhi", {{720, 0, o2::constants::math::TwoPI}}, "Phi binning for correlation plot"};
+  o2::framework::ConfigurableAxis binningCorrelationEta{"binningCorrelationEta", {{160, -0.8, 0.8}}, "Eta binning for correlation plot"};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2. Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
 };
 
@@ -122,7 +127,9 @@ constexpr std::array<histmanager::HistInfo<CprHist>, kCprHistogramLast> HistTabl
    {kRadius5, o2::framework::kTH2F, "hRadius5", "Radius 5: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
    {kRadius6, o2::framework::kTH2F, "hRadius6", "Radius 6: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
    {kRadius7, o2::framework::kTH2F, "hRadius7", "Radius 7: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
-   {kRadius8, o2::framework::kTH2F, "hRadius8", "Radius 8: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"}}};
+   {kRadius8, o2::framework::kTH2F, "hRadius8", "Radius 8: #Delta #eta vs #Delta #phi*; #Delta #eta; #Delta #phi*"},
+   {kPhi1VsPhi2, o2::framework::kTH2F, "hPhi1vsPhi2", "#phi_{1} vs #phi_{2}; #phi_{1}; #phi_{2}"},
+   {kEta1VsEta2, o2::framework::kTH2F, "hEta1VsEta2", "#eta_{1} vs #eta_{2}; #eta_{1}; #eta_{2}"}}};
 
 template <typename T>
 auto makeCprHistSpecMap(const T& confCpr)
@@ -137,7 +144,10 @@ auto makeCprHistSpecMap(const T& confCpr)
     {kRadius5, {confCpr.binningDeta, confCpr.binningDphistar}},
     {kRadius6, {confCpr.binningDeta, confCpr.binningDphistar}},
     {kRadius7, {confCpr.binningDeta, confCpr.binningDphistar}},
-    {kRadius8, {confCpr.binningDeta, confCpr.binningDphistar}}};
+    {kRadius8, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kPhi1VsPhi2, {confCpr.binningCorrelationPhi, confCpr.binningCorrelationPhi}},
+    {kEta1VsEta2, {confCpr.binningCorrelationEta, confCpr.binningCorrelationEta}},
+  };
 };
 
 template <const char* prefix>
@@ -177,6 +187,8 @@ class CloseTrackRejection
     mPlotAverage = confCpr.plotAverage.value;
     mPlotAllRadii = confCpr.plotAllRadii.value;
 
+    mPlotAngluarCorrelation = confCpr.plotAngluarCorrelation.value;
+
     if (confCpr.seed.value >= 0) {
       uint64_t randomSeed;
       mRandomizeTracks = true;
@@ -206,6 +218,11 @@ class CloseTrackRejection
       mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius6, HistTable), getHistDesc(kRadius6, HistTable), getHistType(kRadius6, HistTable), {specs.at(kRadius6)});
       mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius7, HistTable), getHistDesc(kRadius7, HistTable), getHistType(kRadius7, HistTable), {specs.at(kRadius7)});
       mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kRadius8, HistTable), getHistDesc(kRadius8, HistTable), getHistType(kRadius8, HistTable), {specs.at(kRadius8)});
+    }
+
+    if (mPlotAngluarCorrelation) {
+      mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kPhi1VsPhi2, HistTable), getHistDesc(kPhi1VsPhi2, HistTable), getHistType(kPhi1VsPhi2, HistTable), {specs.at(kPhi1VsPhi2)});
+      mHistogramRegistry->add(std::string(prefix) + getHistNameV2(kEta1VsEta2, HistTable), getHistDesc(kEta1VsEta2, HistTable), getHistType(kEta1VsEta2, HistTable), {specs.at(kEta1VsEta2)});
     }
   }
 
@@ -249,6 +266,13 @@ class CloseTrackRejection
     } else {
       mAverageDphistar = 0.f; // if computation at all radii fail, set it 0
     }
+
+    if (mPlotAngluarCorrelation) {
+      mPhi1 = t1.phi();
+      mPhi2 = t2.phi();
+      mEta1 = t1.eta();
+      mEta2 = t2.eta();
+    }
   }
 
   void fill(float kinematic)
@@ -263,6 +287,11 @@ class CloseTrackRejection
 
     if (mKinematicMax > 0.f && kinematic > mKinematicMax) {
       return;
+    }
+
+    if (mPlotAngluarCorrelation) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kPhi1VsPhi2, HistTable)), mPhi1, mPhi2);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(getHistName(kEta1VsEta2, HistTable)), mEta1, mEta2);
     }
 
     // fill average hist
@@ -343,6 +372,7 @@ class CloseTrackRejection
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlotAllRadii = false;
   bool mPlotAverage = false;
+  bool mPlotAngluarCorrelation = false;
 
   float mKinematicMin = -1.f;
   float mKinematicMax = -1.f;
@@ -362,6 +392,12 @@ class CloseTrackRejection
 
   float mAverageDphistar = 0.f;
   float mDeta = 0.f;
+
+  float mPhi1 = 0.f;
+  float mPhi2 = 0.f;
+  float mEta1 = 0.f;
+  float mEta2 = 0.f;
+
   std::array<float, Nradii> mDphistar = {0.f};
   std::array<bool, Nradii> mDphistarMask = {false};
 
