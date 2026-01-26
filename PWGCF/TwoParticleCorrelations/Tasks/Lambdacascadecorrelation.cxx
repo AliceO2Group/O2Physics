@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file Lambdacascadecorrelation.cxx
-/// \brief Correlation-balance functions of multistrange baryons
-/// \author Oveis Sheibani <oveis.sheibani@cern.ch>
+// \file Lambdacascadecorrelation.cxx
+// \brief Correlation-balance functions of multistrange baryons
+// \author Oveis Sheibani <oveis.sheibani@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
@@ -31,8 +31,6 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-//#include "EventFiltering/Zorro.h"
-//#include "Common/Core/Zorro.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <Math/Vector4D.h>
@@ -2862,12 +2860,12 @@ struct CascadeCorrelations {
 //  Configurable<bool> useEff{"useEff", false, "Apply Lambda efficiency correction"};
 //
 //  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-//  
+//
 //  // 1. Define Slicing Logic explicitly (Preslice objects).
 //  // This tells 'sliceBy' exactly which column to use for partitioning.
 //  using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
 //  Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
-//  
+//
 //  // Slicer for Lambdas: using LambdaCollisionId
 //  Preslice<GoodLambdas> lambdasPerCollision = aod::lambdatrack::lambdaCollisionId;
 //
@@ -2911,7 +2909,7 @@ struct CascadeCorrelations {
 //      float wLam = useEff ? lam.corrFact() : 1.0f;
 //
 //      for (const auto& casc : cascadesInThisEvent) {
-//        
+//
 //        // 4. Access the flag using iterator arithmetic.
 //        // (start + index) gives us the row proxy, which has the .isSelected() method.
 //        // This bypasses the missing subscript operator on the Table object.
@@ -2943,7 +2941,7 @@ struct CascadeCorrelations {
 //  Configurable<bool> useEff{"useEff", false, "Apply Lambda efficiency correction"};
 //
 //  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-//  
+//
 //  // Slicing Logic
 //  using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
 //  Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
@@ -2988,7 +2986,7 @@ struct CascadeCorrelations {
 //  {
 //    for (const auto& track : tracks) {
 //      if (std::abs(track.rap()) > maxY) continue;
-//      
+//
 //      float w = useEff ? track.corrFact() : 1.0f;
 //
 //      histos.fill(HIST("Singles/Lambda/hPt"), track.pt(), w);
@@ -3070,11 +3068,11 @@ struct CascadeCorrelations {
 //  Configurable<bool> useEff{"useEff", false, "Apply Lambda efficiency correction"};
 //
 //  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-//  
+//
 //  // --- Data Slicing Definitions ---
 //  using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
 //  Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
-//  
+//
 //  Preslice<GoodLambdas> lambdasPerCollision = aod::lambdatrack::lambdaCollisionId;
 //  Preslice<aod::CascDataExt> cascadesPerCollision = aod::cascdata::collisionId;
 //
@@ -3097,21 +3095,21 @@ struct CascadeCorrelations {
 //    const AxisSpec massXi{100, 1.28, 1.36, "M_{#Lambda#pi} (GeV/c^{2})"};
 //    const AxisSpec radius{100, 0, 100, "Radius (cm)"};
 //    const AxisSpec cpa{100, 0.9, 1.0, "Cos(PA)"};
-//    
+//
 //    // --- Event Counter ---
 //    histos.add("Event/hEventCount", "Event Counter", kTH1F, {{1, 0, 1, "Count"}});
 //
 //    // --- Singles: Lambda ---
 //    histos.add("Singles/Lambda/hPt",     "Lambda p_{T}", kTH1F, {pt});
 //    histos.add("Singles/AntiLambda/hPt", "AntiLambda p_{T}", kTH1F, {pt});
-//    
+//
 //    histos.add("Singles/Lambda/hPtVsMass",     "Lambda p_{T} vs Mass", kTH2F, {massLam, pt});
 //    histos.add("Singles/AntiLambda/hPtVsMass", "AntiLambda p_{T} vs Mass", kTH2F, {massLam, pt});
 //
 //    // --- Singles: Xi (Cascades) ---
 //    histos.add("Singles/Xi/hRadius", "Xi Radius", kTH1F, {radius});
 //    histos.add("Singles/Xi/hCosPA",  "Xi CosPA",  kTH1F, {cpa});
-//    
+//
 //    histos.add("Singles/XiMinus/hPtVsMass", "Xi^{-} p_{T} vs Mass", kTH2F, {massXi, pt});
 //    histos.add("Singles/XiPlus/hPtVsMass",  "Xi^{+} p_{T} vs Mass", kTH2F, {massXi, pt});
 //
@@ -3132,7 +3130,7 @@ struct CascadeCorrelations {
 //  {
 //    for (const auto& track : tracks) {
 //      if (std::abs(track.rap()) > maxY) continue;
-//      
+//
 //      float w = useEff ? track.corrFact() : 1.0f;
 //      bool isAnti = (track.v0Type() == kAntiLambda);
 //
@@ -3186,7 +3184,7 @@ struct CascadeCorrelations {
 //
 //        float dphi = RecoDecay::constrainAngle(casc.phi() - lam.phi(), -PIHalf);
 //        float dy   = xiY - lam.rap();
-//        
+//
 //        bool isXiPlus = (casc.sign() > 0);
 //
 //        // Fill Specific Histogram based on charges
@@ -3226,7 +3224,7 @@ struct CascadeCorrelations {
 //    auto cascadesInThisEvent = cascades.sliceBy(cascadesPerCollision, refCollisionIndex);
 //
 //    // REMOVED: float cent = lambdacoll.cent(); -> Fixes unused variable warning
-//    
+//
 //    // Retrieve PV coordinates
 //    float pvX = lambdacoll.posX();
 //    float pvY = lambdacoll.posY();
@@ -3453,3 +3451,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     };
 }
  
+
