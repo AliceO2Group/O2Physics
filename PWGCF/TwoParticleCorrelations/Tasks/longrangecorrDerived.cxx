@@ -84,6 +84,7 @@ struct LongrangecorrDerived {
   Configurable<int> cfgPidMask{"cfgPidMask", 0, "Selection bitmask for the TPC particle"};
   Configurable<int> cfgV0Mask{"cfgV0Mask", 0, "Selection bitmask for the V0 particle"};
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
+  Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
 
   Configurable<float> cfgFv0Cut{"cfgFv0Cut", 50.0f, "FV0A threshold"};
   Configurable<float> cfgFt0aCut{"cfgFt0aCut", 100.0f, "FT0A threshold"};
@@ -163,6 +164,7 @@ struct LongrangecorrDerived {
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
     histos.add("hMultiplicity", "hMultiplicity", kTH1D, {axisMultiplicity});
+    histos.add("hCentrality", "hCentrality", kTH1D, {axisMultiplicity});
     histos.add("hVertexZ", "hVertexZ", kTH1D, {axisVtxZ});
 
     histos.add("hGapSide", "hGapSide", kTH1I, {{5, -0.5, 4.5}});
@@ -190,6 +192,9 @@ struct LongrangecorrDerived {
   void fillCollQA(TCollision const& col)
   {
     histos.fill(HIST("hMultiplicity"), col.multiplicity());
+    if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+      histos.fill(HIST("hCentrality"), col.centrality());
+    }
     histos.fill(HIST("hVertexZ"), col.zvtx());
   }
 
@@ -246,6 +251,8 @@ struct LongrangecorrDerived {
   using HasUpc = decltype(std::declval<T&>().gapSide());
   template <class T>
   using HasFt0 = decltype(std::declval<T&>().channelID());
+  template <class T>
+  using HasCent = decltype(std::declval<T&>().centrality());
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
@@ -295,7 +302,15 @@ struct LongrangecorrDerived {
       return;
     }
     fillCollQA(col);
-    fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.zvtx(), col.multiplicity(), 1.0);
+    auto multiplicity = 1.0f;
+    if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+      if (isUseCentEst)
+        multiplicity = col.centrality();
+      else
+        multiplicity = col.multiplicity();
+    } else
+      multiplicity = col.multiplicity();
+    fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.zvtx(), multiplicity, 1.0);
   } // process same
 
   template <typename TCollision, typename... TrackTypes>
@@ -309,7 +324,15 @@ struct LongrangecorrDerived {
       } else {
         (void)this;
       }
-      return col.multiplicity();
+      auto multiplicity = 1.0f;
+      if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+        if (isUseCentEst)
+          multiplicity = col.centrality();
+        else
+          multiplicity = col.multiplicity();
+      } else
+        multiplicity = col.multiplicity();
+      return multiplicity;
     };
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::lrcorrcolltable::Zvtx, decltype(getMultiplicity)>;
     MixedBinning binningOnVtxAndMult{{getMultiplicity}, {axisVtxZME, axisMultME}, true};
@@ -325,7 +348,15 @@ struct LongrangecorrDerived {
         }
       }
       float eventweight = 1.0f / it.currentWindowNeighbours();
-      fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.zvtx(), col1.multiplicity(), eventweight);
+      auto multiplicity = 1.0f;
+      if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+        if (isUseCentEst)
+          multiplicity = col1.centrality();
+        else
+          multiplicity = col1.multiplicity();
+      } else
+        multiplicity = col1.multiplicity();
+      fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.zvtx(), multiplicity, eventweight);
     } // pair loop
   } // process mixed
 
