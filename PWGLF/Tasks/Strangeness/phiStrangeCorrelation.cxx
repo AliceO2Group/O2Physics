@@ -40,6 +40,8 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
+#include <Framework/BinningPolicy.h>
+#include <Framework/SliceCache.h>
 #include <Framework/StaticFor.h>
 
 #include <Math/Vector4D.h>
@@ -291,6 +293,9 @@ struct PhiStrangenessCorrelation {
     // Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
   } preslices;
 
+  // Slice cache for mixed event
+  SliceCache cache;
+
   // Necessary service to retrieve efficiency maps from CCDB
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -301,6 +306,13 @@ struct PhiStrangenessCorrelation {
   std::shared_ptr<TH3> effMapPionTPCTOF = nullptr;*/
 
   std::array<std::shared_ptr<TH3>, ParticleOfInterestSize> effMaps{};
+
+  // Binning policy and axes for mixed event
+  ConfigurableAxis axisVertexMixing{"axisVertexMixing", {20, -10, 10}, "Z vertex axis binning for mixing"};
+  ConfigurableAxis axisCentralityMixing{"axisCentralityMixing", {20, 0, 100}, "Multiplicity percentil binning for mixing"};
+
+  using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
 
   void init(InitContext&)
   {
@@ -545,7 +557,6 @@ struct PhiStrangenessCorrelation {
 
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
-    // Loop over all positive tracks
     for (const auto& phiCand : phiCandidates) {
       float weightPhi = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()));
 
@@ -598,38 +609,58 @@ struct PhiStrangenessCorrelation {
 
   PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionData, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
 
-  /*
-  void processPhiK0SPionDataME(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiK0SDataME(SelCollisions const& collisions, aod::PhimesonCandidatesData const& phiCandidates, FullV0s const& V0s, V0DauTracks const&)
   {
-    Pair<SelCollisions, FullTracks, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache};
-    Triple<aod::Collisions, aod::Tracks, aod::V0s, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1, &cache};
-    float multiplicity = collision.centFT0M();
-
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
-    // Loop over all positive tracks
-    for (const auto& phiCand : phiCandidates) {
-      static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int i = i_idx.value;
+    auto tuplePhiV0 = std::make_tuple(phiCandidates, V0s);
+    Pair<SelCollisions, aod::PhimesonCandidatesData, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiV0, &cache};
 
-        const auto& [minMass, maxMass] = phiMassRegions[i];
-        if (!phiCand.inMassRegion(minMass, maxMass))
-          return;
+    for (const auto& [c1, phiCands, c2, v0s] : pairPhiK0S) {
 
-        // V0 already reconstructed by the builder
-        for (const auto& v0 : V0s) {
-          // Cut on V0 dynamic columns
-          if (!selectionV0<false>(v0, collision))
+      float multiplicity = c1.centFT0M();
+
+      for (const auto& [phiCand, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, v0s))) {
+        static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int i = i_idx.value;
+
+          const auto& [minMass, maxMass] = phiMassRegions[i];
+          if (!phiCand.inMassRegion(minMass, maxMass))
+            return;
+
+          if (!selectionV0<false>(v0, c2))
             continue;
 
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, v0.pt(), v0.yK0Short()));
 
           histos.fill(HIST("phiK0S/h5PhiK0SDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), getDeltaPhi(phiCand.phi(), v0.phi()), weightPhiK0S);
-        }
+        });
+      }
+    }
+  }
 
-        // Loop over all primary pion candidates
-        for (const auto& track : fullTracks) {
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SDataME, "Process function for Phi-K0S and Deltay and Deltaphi 2D Correlations in Data ME", false);
+
+  void processPhiPionDataME(SelCollisions const& collisions, aod::PhimesonCandidatesData const& phiCandidates, FullTracks const& fullTracks)
+  {
+    const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
+
+    auto tuplePhiPion = std::make_tuple(phiCandidates, fullTracks);
+    Pair<SelCollisions, aod::PhimesonCandidatesData, FullTracks, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiPion, &cache};
+
+    for (const auto& [c1, phiCands, c2, tracks] : pairPhiPion) {
+
+      float multiplicity = c1.centFT0M();
+
+      for (const auto& [phiCand, track] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, tracks))) {
+        static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int i = i_idx.value;
+
+          const auto& [minMass, maxMass] = phiMassRegions[i];
+          if (!phiCand.inMassRegion(minMass, maxMass))
+            return;
+
           if (!selectionPion(track))
             continue;
 
@@ -637,13 +668,12 @@ struct PhiStrangenessCorrelation {
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
 
           histos.fill(HIST("phiPi/h5PhiPiDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), getDeltaPhi(phiCand.phi(), track.phi()), weightPhiPion);
-        }
-      });
+        });
+      }
     }
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDataME, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data ME", true);
-  */
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiPionDataME, "Process function for Phi-Pion Deltay and Deltaphi 2D Correlations in Data ME", false);
 
   void processParticleEfficiency(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcReco const& phiCandidatesMcReco)
   {
