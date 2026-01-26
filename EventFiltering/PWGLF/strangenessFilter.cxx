@@ -575,6 +575,7 @@ struct strangenessFilter {
 
     initCCDB(collision.bc().runNumber());
 
+    hProcessedEvents->Fill(-0.5);
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
       return;
@@ -583,8 +584,6 @@ struct strangenessFilter {
       fillTriggerTable(keepEvent);
       return;
     }
-    hProcessedEvents->Fill(-0.5);
-    
     if (isTimeFrameBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       fillTriggerTable(keepEvent);
       return;
