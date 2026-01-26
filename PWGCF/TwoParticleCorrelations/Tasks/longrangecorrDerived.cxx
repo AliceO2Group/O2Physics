@@ -308,8 +308,9 @@ struct LongrangecorrDerived {
         multiplicity = col.centrality();
       else
         multiplicity = col.multiplicity();
-    } else
+    } else {
       multiplicity = col.multiplicity();
+    }
     fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.zvtx(), multiplicity, 1.0);
   } // process same
 
@@ -330,8 +331,9 @@ struct LongrangecorrDerived {
           multiplicity = col.centrality();
         else
           multiplicity = col.multiplicity();
-      } else
+      } else {
         multiplicity = col.multiplicity();
+      }
       return multiplicity;
     };
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::lrcorrcolltable::Zvtx, decltype(getMultiplicity)>;
@@ -354,8 +356,9 @@ struct LongrangecorrDerived {
           multiplicity = col1.centrality();
         else
           multiplicity = col1.multiplicity();
-      } else
+      } else {
         multiplicity = col1.multiplicity();
+      }
       fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.zvtx(), multiplicity, eventweight);
     } // pair loop
   } // process mixed
