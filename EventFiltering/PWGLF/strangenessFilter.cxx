@@ -146,6 +146,7 @@ struct strangenessFilter {
   Configurable<bool> hastof{"hastof", 1, "Has TOF (OOB condition)"};
   Configurable<float> ptthrtof{"ptthrtof", 1.0, "Pt threshold to apply TOF condition"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Require TVX"};
   Configurable<int> LowLimitFT0MMult{"LowLimitFT0MMult", 3100, "FT0M selection for omega + high multiplicity trigger"};
   Configurable<int> LowLimitFT0MMultNorm{"LowLimitFT0MMultNorm", 70, "FT0M selection for omega + high multiplicity trigger with Normalised FT0M"};
   Configurable<bool> useNormalisedMult{"useNormalisedMult", 1, "Use avarage multiplicity for HM omega like in multFilter.cxx"};
@@ -578,8 +579,12 @@ struct strangenessFilter {
       fillTriggerTable(keepEvent);
       return;
     }
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)){
+      fillTriggerTable(keepEvent);
+      return;
+    }
     hProcessedEvents->Fill(-0.5);
-
+    
     if (isTimeFrameBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       fillTriggerTable(keepEvent);
       return;
