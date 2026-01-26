@@ -3704,41 +3704,41 @@ struct AntinucleiInJets {
       registryMC.fill(HIST("genEventsCoalescenceCorr"), 2.5);
 
       // Build deuterons
-        for (size_t iP = 0; iP < protonCandidates.size(); ++iP) {
-            if (protonCandidates[iP].used)
-                continue;
-            
-            for (size_t iN = 0; iN < neutronCandidates.size(); ++iN) {
-                if (neutronCandidates[iN].used)
-                    continue;
-                
-                // Physics consistency check
-                if (protonCandidates[iP].pdgCode * neutronCandidates[iN].pdgCode < 0)
-                    continue;
-                
-                if (passDeuteronCoalescence(protonCandidates[iP], neutronCandidates[iN], coalescenceMomentum, mRand)) {
-                    
-                    neutronCandidates[iN].used = true;
-                    protonCandidates[iP].used = true;
-                    
-                    int sign = (protonCandidates[iP].pdgCode > 0) ? +1 : -1;
-                    int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
-                    
-                    double pxDeut = protonCandidates[iP].px + neutronCandidates[iN].px;
-                    double pyDeut = protonCandidates[iP].py + neutronCandidates[iN].py;
-                    double pzDeut = protonCandidates[iP].pz + neutronCandidates[iN].pz;
-                    double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
-                    LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
-                    if (pd.Eta() >= minEta && pd.Eta() <= maxEta && (0.5 * pd.Pt()) >= MinPtPerNucleon) {
-                        // Store Deuteron
-                        finalDeuterons.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, protonCandidates[iP].mcIndex, false});
-                    }
-                    
-                    break;
-                }
+      for (size_t iP = 0; iP < protonCandidates.size(); ++iP) {
+        if (protonCandidates[iP].used)
+          continue;
+
+        for (size_t iN = 0; iN < neutronCandidates.size(); ++iN) {
+          if (neutronCandidates[iN].used)
+            continue;
+
+          // Physics consistency check
+          if (protonCandidates[iP].pdgCode * neutronCandidates[iN].pdgCode < 0)
+            continue;
+
+          if (passDeuteronCoalescence(protonCandidates[iP], neutronCandidates[iN], coalescenceMomentum, mRand)) {
+
+            neutronCandidates[iN].used = true;
+            protonCandidates[iP].used = true;
+
+            int sign = (protonCandidates[iP].pdgCode > 0) ? +1 : -1;
+            int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
+
+            double pxDeut = protonCandidates[iP].px + neutronCandidates[iN].px;
+            double pyDeut = protonCandidates[iP].py + neutronCandidates[iN].py;
+            double pzDeut = protonCandidates[iP].pz + neutronCandidates[iN].pz;
+            double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
+            LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
+            if (pd.Eta() >= minEta && pd.Eta() <= maxEta && (0.5 * pd.Pt()) >= MinPtPerNucleon) {
+              // Store Deuteron
+              finalDeuterons.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, protonCandidates[iP].mcIndex, false});
             }
+
+            break;
+          }
         }
-        
+      }
+
       // Add unused protons to final vectors
       for (const auto& proton : protonCandidates) {
         if (!proton.used) {
