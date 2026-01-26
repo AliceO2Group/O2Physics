@@ -159,13 +159,19 @@ struct McCentrality {
     const float nFT0M = nFT0A + nFT0C;
     // const float nFV0A = mCounter.countFV0A(mcParticles);
 
-    const float valueCentFT0M = h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFT0M));
+    float valueCentFT0M = 105.0f;
+    if (h1dFT0M)
+      valueCentFT0M = h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFT0M));
     if (fillFt0A) {
-      const float valueCentFT0A = h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFT0A));
+      float valueCentFT0A = 105.0f;
+      if (h1dFT0A)
+        valueCentFT0A = h1dFT0A->GetBinContent(h1dFT0A->FindBin(nFT0A));
       centFT0A(valueCentFT0A);
     }
     if (fillFt0C) {
-      const float valueCentFT0C = h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFT0C));
+      float valueCentFT0C = 105.0f;
+      if (h1dFT0C)
+        valueCentFT0C = h1dFT0C->GetBinContent(h1dFT0C->FindBin(nFT0C));
       centFT0C(valueCentFT0C);
     }
     // const float valueCentFV0A = h1dFT0M->GetBinContent(h1dFT0M->FindBin(nFV0A));
