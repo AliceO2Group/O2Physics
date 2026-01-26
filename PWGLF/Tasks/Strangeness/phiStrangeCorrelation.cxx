@@ -629,7 +629,7 @@ struct PhiStrangenessCorrelation {
             return;
 
           if (!selectionV0<false>(v0, c2))
-            continue;
+            return;
 
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, v0.pt(), v0.yK0Short()));
@@ -662,7 +662,7 @@ struct PhiStrangenessCorrelation {
             return;
 
           if (!selectionPion(track))
-            continue;
+            return;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
