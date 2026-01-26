@@ -192,7 +192,6 @@ struct HfFragmentationFunction {
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-  Configurable<std::string> chosenHadron{"chosenHadron", "D0", "choose hadron for analysis: D0 or Lc"};
 
   std::vector<int> eventSelectionBits;
 
@@ -218,15 +217,15 @@ struct HfFragmentationFunction {
     jetCounter->GetXaxis()->SetBinLabel(5, "mcd matched to mcp loop");
     jetCounter->GetXaxis()->SetBinLabel(6, "mcp matched to mcd loop");
     // D0 candidate histograms from data
-    registry.add("h_d0_jet_projection", ";z^{D^{0},jet}_{||};dN/dz^{D^{0},jet}_{||}", {HistType::kTH1F, {{1000, 0., 10.}}});
-    registry.add("h_d0_jet_distance_vs_projection", ";#DeltaR_{D^{0},jet};z^{D^{0},jet}_{||}", {HistType::kTH2F, {{1000, 0., 10.}, {1000, 0., 10.}}});
-    registry.add("h_d0_jet_distance", ";#DeltaR_{D^{0},jet};dN/d(#DeltaR)", {HistType::kTH1F, {{1000, 0., 10.}}});
-    registry.add("h_d0_jet_pt", ";p_{T,D^{0} jet};dN/dp_{T,D^{0} jet}", {HistType::kTH1F, {{200, 0., 10.}}});
-    registry.add("h_d0_jet_eta", ";#eta_{T,D^{0} jet};dN/d#eta_{D^{0} jet}", {HistType::kTH1F, {{250, -5., 5.}}});
-    registry.add("h_d0_jet_phi", ";#phi_{T,D^{0} jet};dN/d#phi_{D^{0} jet}", {HistType::kTH1F, {{250, -10., 10.}}});
-    registry.add("h_d0_mass", ";m_{D^{0}} (GeV/c^{2});dN/dm_{D^{0}}", {HistType::kTH1F, {{1000, 0., 10.}}});
-    registry.add("h_d0_eta", ";#eta_{D^{0}} (GeV/c^{2});dN/d#eta_{D^{0}}", {HistType::kTH1F, {{250, -5., 5.}}});
-    registry.add("h_d0_phi", ";#phi_{D^{0}} (GeV/c^{2});dN/d#phi_{D^{0}}", {HistType::kTH1F, {{250, -10., 10.}}});
+    registry.add("h_hf_jet_projection", ";z^{HF,jet}_{||};dN/dz^{HF,jet}_{||}", {HistType::kTH1F, {{1000, 0., 10.}}});
+    registry.add("h_hf_jet_distance_vs_projection", ";#DeltaR_{HF,jet};z^{HF,jet}_{||}", {HistType::kTH2F, {{1000, 0., 10.}, {1000, 0., 10.}}});
+    registry.add("h_hf_jet_distance", ";#DeltaR_{HF,jet};dN/d(#DeltaR)", {HistType::kTH1F, {{1000, 0., 10.}}});
+    registry.add("h_hf_jet_pt", ";p_{T,HF jet};dN/dp_{T,HF jet}", {HistType::kTH1F, {{200, 0., 10.}}});
+    registry.add("h_hf_jet_eta", ";#eta_{T,HF jet};dN/d#eta_{HF jet}", {HistType::kTH1F, {{250, -5., 5.}}});
+    registry.add("h_hf_jet_phi", ";#phi_{T,HF jet};dN/d#phi_{HF jet}", {HistType::kTH1F, {{250, -10., 10.}}});
+    registry.add("h_hf_mass", ";m_{HF} (GeV/c^{2});dN/dm_{HF}", {HistType::kTH1F, {{1000, 0., 10.}}});
+    registry.add("h_hf_eta", ";#eta_{HF} (GeV/c^{2});dN/d#eta_{HF}", {HistType::kTH1F, {{250, -5., 5.}}});
+    registry.add("h_hf_phi", ";#phi_{HF} (GeV/c^{2});dN/d#phi_{HF}", {HistType::kTH1F, {{250, -10., 10.}}});
   }
 
   void processDummy(aod::TracksIU const&) {}
@@ -263,15 +262,15 @@ struct HfFragmentationFunction {
         double axisDistance = jetutilities::deltaR(jet, candidate);
 
         // filling histograms
-        registry.fill(HIST("h_d0_jet_projection"), zParallel);
-        registry.fill(HIST("h_d0_jet_distance_vs_projection"), axisDistance, zParallel);
-        registry.fill(HIST("h_d0_jet_distance"), axisDistance);
-        registry.fill(HIST("h_d0_jet_pt"), jet.pt());
-        registry.fill(HIST("h_d0_jet_eta"), jet.eta());
-        registry.fill(HIST("h_d0_jet_phi"), jet.phi());
-        registry.fill(HIST("h_d0_mass"), candidate.m());
-        registry.fill(HIST("h_d0_eta"), candidate.eta());
-        registry.fill(HIST("h_d0_phi"), candidate.phi());
+        registry.fill(HIST("h_hf_jet_projection"), zParallel);
+        registry.fill(HIST("h_hf_jet_distance_vs_projection"), axisDistance, zParallel);
+        registry.fill(HIST("h_hf_jet_distance"), axisDistance);
+        registry.fill(HIST("h_hf_jet_pt"), jet.pt());
+        registry.fill(HIST("h_hf_jet_eta"), jet.eta());
+        registry.fill(HIST("h_hf_jet_phi"), jet.phi());
+        registry.fill(HIST("h_hf_mass"), candidate.m());
+        registry.fill(HIST("h_hf_eta"), candidate.eta());
+        registry.fill(HIST("h_hf_phi"), candidate.phi());
 
         // filling table
         distJetTable(axisDistance,
@@ -284,21 +283,21 @@ struct HfFragmentationFunction {
     } // end of jets loop
 
   } // end of process function
-  void processD0DataChargedSubstructure(aod::JetCollision const& collision,
+  void processD0DataCharged(aod::JetCollision const& collision,
                                         soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
                                         aod::CandidatesD0Data const& candidates,
                                         aod::JetTracks const& jettracks) {
     analyzeData<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>, aod::CandidatesD0Data>(collision, jets, candidates, jettracks);
   }
-  PROCESS_SWITCH(HfFragmentationFunction, processD0DataChargedSubstructure, "charged D0 jet subtructure", false);
+  PROCESS_SWITCH(HfFragmentationFunction, processD0DataCharged, "Store kinematic charged D0 jet information from measured DATA", false);
 
-  void processLcDataChargedSubstructure(aod::JetCollision const& collision,
+  void processLcDataCharged(aod::JetCollision const& collision,
                                         soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents> const& jets,
                                         aod::CandidatesLcData const& candidates,
                                         aod::JetTracks const& jettracks) {
     analyzeData<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>, aod::CandidatesLcData>(collision, jets, candidates, jettracks);
   }
-  PROCESS_SWITCH(HfFragmentationFunction, processLcDataChargedSubstructure, "charged Lc jet subtructure", false);
+  PROCESS_SWITCH(HfFragmentationFunction, processLcDataCharged, "Store kinematic charged Lc jet information from measured DATA", false);
 
   void processMcEfficiency(aod::JetMcCollisions const& mccollisions,
                            aod::JetCollisionsMCD const& collisions,
@@ -470,6 +469,7 @@ struct HfFragmentationFunction {
     }
   }
   PROCESS_SWITCH(HfFragmentationFunction, processMcChargedMatched, "matched MC HF and jets", false);
+  
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
