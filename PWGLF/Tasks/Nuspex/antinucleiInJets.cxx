@@ -488,12 +488,12 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_coal_jet", "antiproton_coal_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_ue", "antiproton_coal_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
     }
-      
+
     // Coalescence and Correlation analysis
-      if (doprocessCoalescenceCorr) {
+    if (doprocessCoalescenceCorr) {
           
-          // Axes definitions for multidimensional histogram binning
-          const AxisSpec multiplicityAxis{100, 0.0, 100.0, "multiplicity percentile"};
+      // Axes definitions for multidimensional histogram binning
+      const AxisSpec multiplicityAxis{100, 0.0, 100.0, "multiplicity percentile"};
           const AxisSpec ptPerNucleonAxis{5, 0.4, 0.9, "{p}_{T}/A (GeV/#it{c})"};
           const AxisSpec nAntideuteronsAxis{10, 0.0, 10.0, "N_{#bar{d}}"};
           const AxisSpec nAntiprotonsAxis{10, 0.0, 10.0, "N_{#bar{p}}"};
@@ -3705,10 +3705,10 @@ struct AntinucleiInJets {
                 registryMC.fill(HIST("genEventsCoalescenceCorr"), 2.5);
              
                 // Build deuterons
-                for (auto& proton : protonCandidates) {
+                for (const auto& proton : protonCandidates) {
                     if (proton.used) continue;
                     
-                    for (auto& neutron : neutronCandidates) {
+                    for (const auto& neutron : neutronCandidates) {
                         if (neutron.used) continue;
                         
                         // Physics consistency check
