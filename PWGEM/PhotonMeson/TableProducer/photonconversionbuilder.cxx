@@ -678,89 +678,89 @@ struct PhotonConversionBuilder {
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_tpc_inner_fc) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_tpc_inner_fc) {
           return;
         }
       } else {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_tpconly) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_tpconly) {
           return;
         }
       }
     } else { // V0s with ITS hits
       if (rxy < max_r_req_its) {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_itsibss) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_itsibss) {
           return;
         }
       } else {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_its) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_its) {
           return;
         }
       }
     }
 
-    if (isITSonlyTrack(pos) && v0photoncandidate.GetPosPt() > maxpt_itsonly) {
+    if (isITSonlyTrack(pos) && v0photoncandidate.getPosPt() > maxpt_itsonly) {
       return;
     }
 
-    if (isITSonlyTrack(ele) && v0photoncandidate.GetElePt() > maxpt_itsonly) {
+    if (isITSonlyTrack(ele) && v0photoncandidate.getElePt() > maxpt_itsonly) {
       return;
     }
 
-    if (v0photoncandidate.GetChi2NDF() > 6e+3) { // protection for uint16.
+    if (v0photoncandidate.getChi2NDF() > 6e+3) { // protection for uint16.
       return;
     }
 
-    if (std::fabs(v0photoncandidate.GetDcaXYToPV()) > max_dcatopv_xy_v0 || std::fabs(v0photoncandidate.GetDcaZToPV()) > max_dcatopv_z_v0) {
+    if (std::fabs(v0photoncandidate.getDcaXYToPV()) > max_dcatopv_xy_v0 || std::fabs(v0photoncandidate.getDcaZToPV()) > max_dcatopv_z_v0) {
       return;
     }
 
-    if (!checkAP(v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt(), max_alpha_ap, max_qt_ap)) { // store only photon conversions
+    if (!checkAP(v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), max_alpha_ap, max_qt_ap)) { // store only photon conversions
       return;
     }
-    pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.GetPCA();
-    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.GetCosPA();
+    pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getPCA();
+    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getCosPA();
 
     if (applyPCMMl) {
       bool isSelectedML = false;
       std::vector<float> mlInputFeatures = emMlResponse.getInputFeatures(v0photoncandidate, pos, ele);
       if (use2DBinning) {
         if (std::string(centTypePCMMl) == "CentFT0C") {
-          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0C(), outputML);
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0C(), outputML);
         } else if (std::string(centTypePCMMl) == "CentFT0A") {
-          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0A(), outputML);
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0A(), outputML);
         } else if (std::string(centTypePCMMl) == "CentFT0M") {
-          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0M(), outputML);
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0M(), outputML);
         } else {
           LOG(fatal) << "Unsupported centTypePCMMl: " << centTypePCMMl << " , please choose from CentFT0C, CentFT0A, CentFT0M.";
         }
       } else {
-        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), outputML);
+        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), outputML);
       }
       if (filltable) {
-        registry.fill(HIST("V0/hBDTvalueBeforeCutVsPt"), v0photoncandidate.GetPt(), outputML[0]);
+        registry.fill(HIST("V0/hBDTvalueBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
       }
       if (!isSelectedML) {
         return;
       }
       if (filltable) {
-        registry.fill(HIST("V0/hBDTvalueAfterCutVsPt"), v0photoncandidate.GetPt(), outputML[0]);
+        registry.fill(HIST("V0/hBDTvalueAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
       }
     }
 
     if (filltable) {
-      registry.fill(HIST("V0/hAP"), v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt());
+      registry.fill(HIST("V0/hAP"), v0photoncandidate.getAlpha(), v0photoncandidate.getQt());
       registry.fill(HIST("V0/hConversionPointXY"), gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
       registry.fill(HIST("V0/hConversionPointRZ"), gammaKF_DecayVtx.GetZ(), rxy);
-      registry.fill(HIST("V0/hPt"), v0photoncandidate.GetPt());
+      registry.fill(HIST("V0/hPt"), v0photoncandidate.getPt());
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
-      registry.fill(HIST("V0/hCosPA"), v0photoncandidate.GetCosPA());
-      registry.fill(HIST("V0/hCosPA_Rxy"), rxy, v0photoncandidate.GetCosPA());
-      registry.fill(HIST("V0/hPCA"), v0photoncandidate.GetPCA());
-      registry.fill(HIST("V0/hPCA_CosPA"), v0photoncandidate.GetCosPA(), v0photoncandidate.GetPCA());
-      registry.fill(HIST("V0/hPCA_Rxy"), rxy, v0photoncandidate.GetPCA());
-      registry.fill(HIST("V0/hDCAxyz"), v0photoncandidate.GetDcaXYToPV(), v0photoncandidate.GetDcaZToPV());
-      registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.GetPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
-      registry.fill(HIST("V0/hPhiV"), v0photoncandidate.GetPhiV());
+      registry.fill(HIST("V0/hCosPA"), v0photoncandidate.getCosPA());
+      registry.fill(HIST("V0/hCosPA_Rxy"), rxy, v0photoncandidate.getCosPA());
+      registry.fill(HIST("V0/hPCA"), v0photoncandidate.getPCA());
+      registry.fill(HIST("V0/hPCA_CosPA"), v0photoncandidate.getCosPA(), v0photoncandidate.getPCA());
+      registry.fill(HIST("V0/hPCA_Rxy"), rxy, v0photoncandidate.getPCA());
+      registry.fill(HIST("V0/hDCAxyz"), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV());
+      registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.getPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
+      registry.fill(HIST("V0/hPhiV"), v0photoncandidate.getPhiV());
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -794,10 +794,10 @@ struct PhotonConversionBuilder {
       v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
-                  v0_sv.M(), v0photoncandidate.GetDcaXYToPV(), v0photoncandidate.GetDcaZToPV(),
+                  v0_sv.M(), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV(),
                   cospa_kf, cospaXY_kf, cospaRZ_kf,
-                  v0photoncandidate.GetPCA(), v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt(), v0photoncandidate.GetChi2NDF());
-      v0photonsphiv(v0photoncandidate.GetPhiV());
+                  v0photoncandidate.getPCA(), v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), v0photoncandidate.getChi2NDF());
+      v0photonsphiv(v0photoncandidate.getPhiV());
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 
