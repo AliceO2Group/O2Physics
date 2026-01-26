@@ -23,6 +23,8 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h" // for EM V0 legs
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -137,7 +139,8 @@ struct EmcalCorrectionTask {
   Configurable<float> mcCellEnergyShift{"mcCellEnergyShift", 1., "Relative shift of the MC cell energy. 1.1 for 10% shift to higher mass, etc. Only applied to MC."};
   Configurable<float> mcCellEnergyResolutionBroadening{"mcCellEnergyResolutionBroadening", 0., "Relative widening of the MC cell energy resolution. 0 for no widening, 0.1 for 10% widening, etc. Only applied to MC."};
   Configurable<bool> applyGainCalibShift{"applyGainCalibShift", false, "Apply shift for cell gain calibration to use values before cell format change (Sept. 2023)"};
-
+  Configurable<bool> applySoftwareTriggerSelection{"applySoftwareTriggerSelection", false, "Apply software trigger selection"};
+  Configurable<std::string> softwareTriggerSelection{"softwareTriggerSelection", "fGammaHighPtEMCAL,fGammaHighPtDCAL", "Default: fGammaHighPtEMCAL,fGammaHighPtDCAL"};
   // cross talk emulation configs
   EmcCrossTalkConf emcCrossTalkConf;
 
@@ -149,6 +152,11 @@ struct EmcalCorrectionTask {
 
   // CDB service (for geometry)
   Service<o2::ccdb::BasicCCDBManager> mCcdbManager;
+
+  // Zorro for optional software trigger selection
+  // this allows to save computation time
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // Clusterizer and related
   // Apparently streaming these objects really doesn't work, and causes problems for setting up the workflow.
@@ -222,6 +230,10 @@ struct EmcalCorrectionTask {
     // gain calibration shift initialization
     if (applyGainCalibShift) {
       initializeGainCalibShift();
+    }
+
+    if (applySoftwareTriggerSelection) {
+      zorroSummary.setObject(zorro.getZorroSummary());
     }
 
     // read all the cluster definitions specified in the options
@@ -370,6 +382,15 @@ struct EmcalCorrectionTask {
     mExtraTimeShiftRunRanges.emplace_back(559544, 559856); // PbPb 2024
   }
 
+  template <typename BCType>
+  void initZorroCCDB(const BCType& bc)
+  {
+    if (applySoftwareTriggerSelection) {
+      zorro.initCCDB(mCcdbManager.service, bc.runNumber(), bc.timestamp(), softwareTriggerSelection.value);
+      zorro.populateHistRegistry(mHistManager, bc.runNumber());
+    }
+  }
+
   // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
   // void process(aod::Collision const& collision, aod::Tracks const& tracks, aod::Calos const& cells)
   // void process(aod::BCs const& bcs, aod::Collision const& collision, aod::Calos const& cells)
@@ -386,6 +407,14 @@ struct EmcalCorrectionTask {
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
+
+      initZorroCCDB(bc);
+
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
 
       // get run number
       runNumber = bc.runNumber();
@@ -527,6 +556,14 @@ struct EmcalCorrectionTask {
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
+
+      initZorroCCDB(bc);
+
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
 
       // get run number
       runNumber = bc.runNumber();
@@ -674,6 +711,14 @@ struct EmcalCorrectionTask {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
+
+      initZorroCCDB(bc);
+
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
 
       // get run number
       runNumber = bc.runNumber();
@@ -847,6 +892,14 @@ struct EmcalCorrectionTask {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
+
+      initZorroCCDB(bc);
+
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
 
       // get run number
       runNumber = bc.runNumber();
@@ -1025,6 +1078,14 @@ struct EmcalCorrectionTask {
 
       // Get the collisions matched to the BC using global bc index of the collision
       // since we do not have event selection available here!
+
+      initZorroCCDB(bc);
+
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
 
       // get run number
       runNumber = bc.runNumber();
