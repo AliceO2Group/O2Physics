@@ -813,13 +813,9 @@ struct FlowCumulantsUpc {
     if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
       return false;
     }
-    constexpr int kMinTPCClusters = 70;
     constexpr int kMinITSClusters = 5;
     constexpr int kMaxTPCChi2NCl = 4;
 
-    if (track.tpcNClsFindableMinusCrossedRows() <= kMinTPCClusters) {
-      return false;
-    }
     if (track.itsClusterSizes() <= kMinITSClusters) {
       return false;
     }

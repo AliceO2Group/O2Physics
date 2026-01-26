@@ -103,7 +103,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrder, bool, true, "enable trigger pT < associated pT cut")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrderInMixEvent, bool, true, "enable trigger pT < associated pT cut in mixed event")
-  O2_DEFINE_CONFIGURABLE(cfgCutMerging, float, 0.0, "Merging cut on track merge")
+  O2_DEFINE_CONFIGURABLE(cfgCutMerging, float, 0.02, "Merging cut on track merge")
   O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
 
@@ -160,7 +160,7 @@ struct FlowCorrelationsUpc {
 
     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
 
-    registry.add("eventcount", "bin", {HistType::kTH1F, {{3, 0, 3, "bin"}}}); // histogram to see how many events are in the same and mixed event
+    registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
 
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
@@ -224,19 +224,17 @@ struct FlowCorrelationsUpc {
     if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
       return false;
     }
-    constexpr int kMinTPCClusters = 70;
     constexpr int kMinITSClusters = 5;
     constexpr int kMaxTPCChi2NCl = 4;
 
-    if (track.tpcNClsFindableMinusCrossedRows() <= kMinTPCClusters) {
-      return false;
-    }
     if (track.itsClusterSizes() <= kMinITSClusters) {
       return false;
     }
     if (track.tpcChi2NCl() >= kMaxTPCChi2NCl) {
       return false;
     }
+    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax)
+      return false;
     return true;
   }
 
@@ -264,6 +262,9 @@ struct FlowCorrelationsUpc {
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
+      if (!trackSelected(track1))
+        continue;
+
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
       }
@@ -279,14 +280,10 @@ struct FlowCorrelationsUpc {
 
         auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
         auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
-        double pt2 = RecoDecay::pt(momentum2);
         double phi1 = RecoDecay::phi(momentum1);
         double phi2 = RecoDecay::phi(momentum2);
         float deltaPhi = RecoDecay::constrainAngle(phi1 - phi2, -PIHalf);
         float deltaEta = RecoDecay::eta(momentum1) - RecoDecay::eta(momentum2);
-
-        if (pt2 < cfgPtCutMin || pt2 > cfgPtCutMax)
-          continue;
 
         if (std::abs(deltaEta) < cfgCutMerging) {
 
@@ -365,6 +362,32 @@ struct FlowCorrelationsUpc {
     SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
+      if (tracks1.size() < cfgMinMult || tracks1.size() > cfgMaxMult || tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
+        continue;
+      }
+      if (collision1.trs() == 0 || collision2.trs() == 0) {
+        continue;
+      }
+
+      const int minGapSide = 0;
+      const int maxGapSide = 2;
+      if (collision1.gapSide() > minGapSide && collision1.gapSide() < maxGapSide) {
+        continue;
+      }
+      if (collision2.gapSide() > minGapSide && collision2.gapSide() < maxGapSide) {
+        continue;
+      }
+
+      int trueGapSide = sgSelector.trueGap(collision1, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
+      int gapSide = trueGapSide;
+      if (gapSide == cfgGapSideSelection) {
+        continue;
+      }
+      trueGapSide = sgSelector.trueGap(collision2, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
+      gapSide = trueGapSide;
+      if (gapSide == cfgGapSideSelection) {
+        continue;
+      }
       registry.fill(HIST("eventcount"), MixedEvent);                                                                                         // fill the mixed event in the 3 bin
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, collision1.runNumber()); // fill the ME histogram and Sparse
     }
