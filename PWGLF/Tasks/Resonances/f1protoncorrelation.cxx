@@ -84,7 +84,7 @@ struct f1protoncorrelation {
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   Configurable<int> nEvtMixingBkg{"nEvtMixingBkg", 5, "Number of events to mix for background reconstruction"};
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
+  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, 10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 40.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
 
   // THnsparse bining
