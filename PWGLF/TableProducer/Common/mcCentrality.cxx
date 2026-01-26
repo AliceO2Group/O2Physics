@@ -66,12 +66,13 @@ struct McCentrality {
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {1000, 0, 5000}, "Binning of the multiplicity axis"};
   Configurable<bool> fillFt0A{"fillFt0A", false, "Fills the FT0A histogram"};
   Configurable<bool> fillFt0C{"fillFt0C", false, "Fills the FT0C histogram"};
+  Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, "If ccdb object does not exist, fill with dummy values"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  TH1F* h1dFT0M;
-  TH1F* h1dFT0A;
-  TH1F* h1dFT0C;
+  TH1F* h1dFT0M = nullptr;
+  TH1F* h1dFT0A = nullptr;
+  TH1F* h1dFT0C = nullptr;
   // TH1F* h1dFDD;
   // TH1F* h1dNTP;
 
@@ -99,13 +100,17 @@ struct McCentrality {
       histos.add("FT0C/percentilevsMult", "FT0C percentile.", HistType::kTH2D, {{binsPercentile, "FT0C percentile"}, {binsMultiplicity, "FT0C mult."}});
     }
 
-    TList* lOfInput;
+    TList* lOfInput = nullptr;
     if (path.value.rfind("ccdb://", 0) == 0) { // Getting post calib. from CCDB
       path.value.replace(0, 7, "");
       lOfInput = ccdb->get<TList>(path);
       if (!lOfInput) {
-        LOG(fatal) << "Could not find the calibration TList from CCDB in path " << path;
-        return;
+        if (doNotCrashOnNull) {
+          LOG(info) << "Could not find the calibration TList from CCDB in path " << path << ", will fill tables with dummy values";
+        } else {
+          LOG(fatal) << "Could not find the calibration TList from CCDB in path " << path;
+          return;
+        }
       }
     } else { // Getting post calib. from file
       TFile* f = TFile::Open(path.value.c_str(), "READ");
@@ -121,11 +126,18 @@ struct McCentrality {
         LOG(fatal) << "The input file " << path.value << " does not contain the TList ccdb_object";
       }
     }
-    auto getHist = [lOfInput](const char* name) -> TH1F* {
+    auto getHist = [this, lOfInput](const char* name) -> TH1F* {
+      if (!lOfInput) {
+        return nullptr;
+      }
       auto hist = static_cast<TH1F*>(lOfInput->FindObject(name));
       if (!hist) {
         lOfInput->ls();
-        LOG(fatal) << "Could not open histogram " << name << " from TList";
+        if (this->doNotCrashOnNull) {
+          LOG(info) << "Could not open histogram " << name << " from TList, will fill tables with dummy values";
+        } else {
+          LOG(fatal) << "Could not open histogram " << name << " from TList";
+        }
       }
       return hist;
     };
