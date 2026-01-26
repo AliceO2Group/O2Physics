@@ -1368,7 +1368,7 @@ struct StrangenessInJetsIons {
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
 
-   // Loop over MC collisions
+    // Loop over MC collisions
     for (const auto& collision : collisions) {
       /* // Get multiplicity from RECO MC
       // Select RECO collisions for which "mcCollisionsID" = collision.globalIndex()
@@ -1418,7 +1418,7 @@ struct StrangenessInJetsIons {
       // float genMultiplicity = multiplicity;
 
       // Multiplicity of generated event
-      double genMultiplicity = collision.centFT0M();;
+      double genMultiplicity = collision.centFT0M();
       // if (centrEstimator == 0) {
       //   genMultiplicity = collision.centFT0C();
       // } else {
