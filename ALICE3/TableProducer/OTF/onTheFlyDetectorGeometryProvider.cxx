@@ -44,7 +44,7 @@ struct OnTheFlyDetectorGeometryProvider {
       return;
     }
     int idx = 0;
-    for (auto& configFile : detectorConfiguration.value) {
+    for (std::string& configFile : detectorConfiguration.value) {
       LOG(info) << "Loading detector geometry from configuration file: " << configFile;
       histos.add<TH1>(Form("GeometryConfigFile_%d", idx), configFile.c_str(), o2::framework::HistType::kTH1D, {{1, 0, 1}})->Fill(0.5);
       // If the filename starts with ccdb: then take the file from the ccdb
