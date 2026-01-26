@@ -21,6 +21,7 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
@@ -464,6 +465,28 @@ struct HfFragmentationFunction {
               selectedAs = -1;
             }
 
+            // reflection information for storage: HF = +1, HFbar = -1, neither = 0
+            int matchedFrom = 0;
+            int decayChannel = 0;
+            if (jethfutilities::isD0Table<TCandidatesMCD>()) {
+              decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
+            } else if (jethfutilities::isLcTable<TCandidatesMCD>()) {
+              decayChannel = o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
+            }
+            int selectedAs = 0;
+
+            if (mcdcand.flagMcMatchRec() == decayChannel) { // matched to HF on truth level
+              matchedFrom = 1;
+            } else if (mcdcand.flagMcMatchRec() == -decayChannel) { // matched to HFbar on truth level
+              matchedFrom = -1;
+            }
+            // bitwise AND operation: Checks whether BIT(i) is set, regardless of other bits
+            if (mcdcand.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as HF
+              selectedAs = 1;
+            } else if (mcdcand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as HFbar
+              selectedAs = -1;
+            }
+            
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
             matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(), // particle level jet
                           mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                              // particle level HF
