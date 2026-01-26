@@ -24,13 +24,13 @@
 // Framework and other headers after
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetSubstructureUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/GammaJetAnalysisTree.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGJE/Core/JetSubstructureUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -71,14 +71,14 @@ struct GammaJetTreeProducer {
   // analysis tree
   // charged jets
   // photon candidates
-  Produces<aod::GjChargedJets> chargedJetsTable;       // detector level jets
-  Produces<aod::GjEvents> eventsTable;                 // rec events
-  Produces<aod::GjGammas> gammasTable;                 // detector level clusters
-  Produces<aod::GjMCEvents> mcEventsTable;             // mc collisions information
-  Produces<aod::GjMCParticles> mcParticlesTable;       // gen level particles (photons and pi0)
-  Produces<aod::GjGammaMCInfos> gammaMCInfosTable;     // detector level clusters MC information
-  Produces<aod::GjChJetMCInfos> chJetMCInfosTable;     // detector level charged jets MC information
-  Produces<aod::GjMCJets> mcJetsTable;                 // gen level jets
+  Produces<aod::GjChargedJets> chargedJetsTable;           // detector level jets
+  Produces<aod::GjEvents> eventsTable;                     // rec events
+  Produces<aod::GjGammas> gammasTable;                     // detector level clusters
+  Produces<aod::GjMCEvents> mcEventsTable;                 // mc collisions information
+  Produces<aod::GjMCParticles> mcParticlesTable;           // gen level particles (photons and pi0)
+  Produces<aod::GjGammaMCInfos> gammaMCInfosTable;         // detector level clusters MC information
+  Produces<aod::GjChJetMCInfos> chJetMCInfosTable;         // detector level charged jets MC information
+  Produces<aod::GjMCJets> mcJetsTable;                     // gen level jets
   Produces<aod::GjJetSubstructures> jetSubstructuresTable; // jet substructure observables
 
   HistogramRegistry mHistograms{"GammaJetTreeProducerHisto"};
@@ -932,7 +932,7 @@ struct GammaJetTreeProducer {
       if (collision.posZ() > mVertexCut) {
         continue;
       }
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits,true,true,rctLabel)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, true, true, rctLabel)) {
         continue;
       }
       if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
@@ -1208,11 +1208,11 @@ struct GammaJetTreeProducer {
 
     fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
     jetReclustered = sorted_by_pt(jetReclustered);
-    
+
     if (jetReclustered.size() == 0) {
       return;
     }
-    
+
     fastjet::PseudoJet daughterSubJet = jetReclustered[0];
     fastjet::PseudoJet parentSubJet1;
     fastjet::PseudoJet parentSubJet2;
@@ -1231,7 +1231,7 @@ struct GammaJetTreeProducer {
       // Continue with harder parent
       daughterSubJet = parentSubJet1;
     }
-    
+
     // Fill one row per jet with all splittings stored as vectors
     // Pass the jet's global index to associate this substructure entry with the jet
     jetSubstructuresTable(jetGlobalIndex, energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
@@ -1248,15 +1248,15 @@ struct GammaJetTreeProducer {
     int32_t storedColIndex = getStoredColIndex(collision);
     if (storedColIndex == -1)
       return;
-    
+
     // build kd tree for tracks (needed for perpendicular cone rho calculation)
     buildKdTree(collision, tracks);
-    
+
     // loop over charged jets
     for (const auto& jet : chargedJets) {
       // Fill jet table and get the stored jet's global index
       int64_t jetGlobalIndex = fillChargedJetTable(storedColIndex, jet, tracks);
-      
+
       // Fill substructure table if enabled and jet was stored
       if (calculateJetSubstructure && jetGlobalIndex >= 0) {
         fillSubstructureTable(jetGlobalIndex, jet, tracks);
@@ -1264,9 +1264,6 @@ struct GammaJetTreeProducer {
     }
   }
   PROCESS_SWITCH(GammaJetTreeProducer, processChargedJetsData, "Process charged jets", true);
-
-
-
 
   Preslice<aod::JetParticles> ParticlesPerMCCollisions = aod::jmcparticle::mcCollisionId;
   /// \brief Processes MC particles and fills MC particle table
@@ -1362,11 +1359,11 @@ struct GammaJetTreeProducer {
     if (!collision.has_mcCollision()) {
       return;
     }
-    
+
     // build kd tree for mc particles (needed for perpendicular cone rho calculation)
     auto particlesPerMcCollision = mcgenparticles.sliceBy(ParticlesPerMCCollisions, collision.mcCollisionId());
     buildKdTree(collision, particlesPerMcCollision);
-    
+
     int localIndex = 0;
     auto pjetsPerMcCollision = chargedJets.sliceBy(PJetsPerMCCollisions, collision.mcCollisionId());
     for (const auto& pjet : pjetsPerMcCollision) {
@@ -1394,10 +1391,10 @@ struct GammaJetTreeProducer {
     int32_t storedColIndex = getStoredColIndex(collision);
     if (storedColIndex == -1)
       return;
-    
+
     // build kd tree for tracks (needed for perpendicular cone rho calculation)
     buildKdTree(collision, tracks);
-    
+
     // loop over charged jets
     for (const auto& jet : chargedJets) {
       // Fill jet table and get the stored jet's global index

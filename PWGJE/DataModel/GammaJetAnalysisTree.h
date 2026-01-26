@@ -143,11 +143,11 @@ using GjChargedJet = GjChargedJets::iterator;
 // Jet substructure information (vectors stored per jet)
 namespace gjjetsubstructure
 {
-DECLARE_SOA_INDEX_COLUMN(GjChargedJet, gjchargedjet);                 //! jet index
-DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>);   //! energy of mother subjet at each splitting
-DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);         //! pt of leading subjet at each splitting
-DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>);   //! pt of subleading subjet at each splitting
-DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);                 //! opening angle theta at each splitting
+DECLARE_SOA_INDEX_COLUMN(GjChargedJet, gjchargedjet);               //! jet index
+DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>); //! energy of mother subjet at each splitting
+DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);       //! pt of leading subjet at each splitting
+DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>); //! pt of subleading subjet at each splitting
+DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);               //! opening angle theta at each splitting
 } // namespace gjjetsubstructure
 DECLARE_SOA_TABLE(GjJetSubstructures, "AOD", "GJJETSUBSTR",
                   gjjetsubstructure::GjChargedJetId,
