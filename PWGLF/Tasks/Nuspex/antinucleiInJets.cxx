@@ -491,36 +491,36 @@ struct AntinucleiInJets {
 
     // Coalescence and Correlation analysis
     if (doprocessCoalescenceCorr) {
-          
+
       // Axes definitions for multidimensional histogram binning
       const AxisSpec multiplicityAxis{100, 0.0, 100.0, "multiplicity percentile"};
-          const AxisSpec ptPerNucleonAxis{5, 0.4, 0.9, "{p}_{T}/A (GeV/#it{c})"};
-          const AxisSpec nAntideuteronsAxis{10, 0.0, 10.0, "N_{#bar{d}}"};
-          const AxisSpec nAntiprotonsAxis{10, 0.0, 10.0, "N_{#bar{p}}"};
-          const AxisSpec nBarD2Axis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{d}}^{j}"};
-          const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
-          const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
-          
-          registryMC.add("genEventsCoalescenceCorr", "genEventsCoalescenceCorr", HistType::kTH1F, {{20, 0, 20, "counter"}});
-          registryMC.add("antideuteron_fullEvent_CoalescenceCorr", "antideuteron_fullEvent_CoalescenceCorr", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
-          registryMC.add("antiproton_fullEvent_CoalescenceCorr", "antiproton_fullEvent_CoalescenceCorr", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-          
-          //Counter histograms
-          registryCorr.add("eventCounter_CoalescenceCorr", "number of events in Coalescence simulation", HistType::kTH1F, {{20, 0, 20, "counter"}});
-          registryCorr.add("eventCounter_centrality_fullEvent_CoalescenceCorr", "Number of events per centrality (Full Event) in Coalescence simulation", HistType::kTH1F, {multiplicityAxis});
-          
-          // Correlation histograms
-          registryCorr.add("rho_fullEvent_CoalescenceCorr", "rho_fullEvent_CoalescenceCorr", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
-          registryCorr.add("rho_netP_netD_fullEvent_CoalescenceCorr", "rho_netP_netD_fullEvent_CoalescenceCorr", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
-          
-          // Efficiency histograms full event
-          registryCorr.add("q1d_fullEvent_CoalescenceCorr", "q1d_fullEvent_CoalescenceCorr", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
-          registryCorr.add("q1p_fullEvent_CoalescenceCorr", "q1p_fullEvent_CoalescenceCorr", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
-          registryCorr.add("q1d_square_fullEvent_CoalescenceCorr", "q1d_square_fullEvent_CoalescenceCorr", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
-          registryCorr.add("q1p_square_fullEvent_CoalescenceCorr", "q1p_square_fullEvent_CoalescenceCorr", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
-          registryCorr.add("q1d_q1p_fullEvent_CoalescenceCorr", "q1d_q1p_fullEvent_CoalescenceCorr", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
-      }
-      
+      const AxisSpec ptPerNucleonAxis{5, 0.4, 0.9, "{p}_{T}/A (GeV/#it{c})"};
+      const AxisSpec nAntideuteronsAxis{10, 0.0, 10.0, "N_{#bar{d}}"};
+      const AxisSpec nAntiprotonsAxis{10, 0.0, 10.0, "N_{#bar{p}}"};
+      const AxisSpec nBarD2Axis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{d}}^{j}"};
+      const AxisSpec nBarP2Axis{100, 0.0, 100.0, "N_{#bar{p}}^{i} #times N_{#bar{p}}^{j}"};
+      const AxisSpec nBarDnBarPAxis{100, 0.0, 100.0, "N_{#bar{d}}^{i} #times N_{#bar{p}}^{j}"};
+
+      registryMC.add("genEventsCoalescenceCorr", "genEventsCoalescenceCorr", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryMC.add("antideuteron_fullEvent_CoalescenceCorr", "antideuteron_fullEvent_CoalescenceCorr", HistType::kTH1F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_fullEvent_CoalescenceCorr", "antiproton_fullEvent_CoalescenceCorr", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Counter histograms
+      registryCorr.add("eventCounter_CoalescenceCorr", "number of events in Coalescence simulation", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryCorr.add("eventCounter_centrality_fullEvent_CoalescenceCorr", "Number of events per centrality (Full Event) in Coalescence simulation", HistType::kTH1F, {multiplicityAxis});
+
+      // Correlation histograms
+      registryCorr.add("rho_fullEvent_CoalescenceCorr", "rho_fullEvent_CoalescenceCorr", HistType::kTH3F, {nAntideuteronsAxis, nAntiprotonsAxis, multiplicityAxis});
+      registryCorr.add("rho_netP_netD_fullEvent_CoalescenceCorr", "rho_netP_netD_fullEvent_CoalescenceCorr", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
+
+      // Efficiency histograms full event
+      registryCorr.add("q1d_fullEvent_CoalescenceCorr", "q1d_fullEvent_CoalescenceCorr", HistType::kTH3F, {nAntideuteronsAxis, ptPerNucleonAxis, multiplicityAxis});
+      registryCorr.add("q1p_fullEvent_CoalescenceCorr", "q1p_fullEvent_CoalescenceCorr", HistType::kTH3F, {nAntiprotonsAxis, ptPerNucleonAxis, multiplicityAxis});
+      registryCorr.add("q1d_square_fullEvent_CoalescenceCorr", "q1d_square_fullEvent_CoalescenceCorr", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis, multiplicityAxis});
+      registryCorr.add("q1p_square_fullEvent_CoalescenceCorr", "q1p_square_fullEvent_CoalescenceCorr", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis, multiplicityAxis});
+      registryCorr.add("q1d_q1p_fullEvent_CoalescenceCorr", "q1d_q1p_fullEvent_CoalescenceCorr", HistType::kTHnSparseD, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis, multiplicityAxis});
+    }
+
     // Systematic uncertainties (Data)
     if (doprocessSystData) {
       registryData.add("number_of_events_data_syst", "event counter", HistType::kTH1F, {{20, 0, 20, "counter"}});
@@ -3629,208 +3629,213 @@ struct AntinucleiInJets {
     }
   }
   PROCESS_SWITCH(AntinucleiInJets, processCoalescence, "process coalescence", false);
-    
-    // process Coalescence and Correlation Analysis
-    void processCoalescenceCorr(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
-        {
-            // Deuteron Mass and minimum pt
-            double massDeut = o2::constants::physics::MassDeuteron;
-            static constexpr double MinPtPerNucleon = 0.1; // Cut on pt/A
-           
-            // Containers for candidates (before coalescence)
-            std::vector<ReducedParticle> protonCandidates;
-            std::vector<ReducedParticle> neutronCandidates;
-            
-            // Final containers for analysis (after coalescence)
-            std::vector<ReducedParticle> finalProtons;
-            std::vector<ReducedParticle> finalDeuterons;
-           
-            // pt/A bins
-            std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
-            const int nBins = ptOverAbins.size() - 1;
-           
-            // Loop over all simulated collisions
-            for (const auto& collision : collisions) {
-             
-                // Clear containers
-                protonCandidates.clear();
-                neutronCandidates.clear();
-                finalProtons.clear();
-                finalDeuterons.clear();
-             
-                // Event counter: before event selection
-                registryCorr.fill(HIST("eventCounter_CoalescenceCorr"), 0.5);
-                registryMC.fill(HIST("genEventsCoalescenceCorr"), 0.5);
-             
-                // Apply event selection: require vertex position to be within the allowed z range
-                if (std::fabs(collision.posZ()) > zVtx)
-                    continue;
-             
-                // Event counter: after event selection
-                registryCorr.fill(HIST("eventCounter_CoalescenceCorr"), 1.5);
-                registryMC.fill(HIST("genEventsCoalescenceCorr"), 1.5);
-             
-                // Multiplicity percentile
-                const float multiplicity = collision.centFT0M();
-             
-                // Fill event counter vs centrality
-                registryCorr.fill(HIST("eventCounter_centrality_fullEvent_CoalescenceCorr"), multiplicity);
-             
-                // Get particles in this MC collision
-                const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
-                
-                // Loop over MC particles
-                for (const auto& particle : mcParticlesThisMcColl) {
-                    
-                    // Monte Carlo index
-                    int mcId = particle.globalIndex();
-                    int pdg = particle.pdgCode();
-                    int absPdg = std::abs(pdg);
 
-                    // Store Protons
-                    if (particle.isPhysicalPrimary()) {
-                        if (absPdg == PDG_t::kProton) {
-                            protonCandidates.push_back({particle.px(), particle.py(), particle.pz(), pdg, mcId, false});
-                        }
-                        else if (absPdg == PDG_t::kNeutron) { // Store Neutrons
-                            neutronCandidates.push_back({particle.px(), particle.py(), particle.pz(), pdg, mcId, false});
-                        }
-                    }
-                }
-             
-                // Reject empty events
-                if (protonCandidates.empty() && neutronCandidates.empty())
-                    continue;
-                    
-                registryMC.fill(HIST("genEventsCoalescenceCorr"), 2.5);
-             
-                // Build deuterons
-                for (const auto& proton : protonCandidates) {
-                    if (proton.used) continue;
-                    
-                    for (const auto& neutron : neutronCandidates) {
-                        if (neutron.used) continue;
-                        
-                        // Physics consistency check
-                        if (proton.pdgCode * neutron.pdgCode < 0) continue;
-                     
-                        if (passDeuteronCoalescence(proton, neutron, coalescenceMomentum, mRand)) {
-                            
-                            neutron.used = true;
-                            proton.used = true;
-                            
-                            int sign = (proton.pdgCode > 0) ? +1 : -1;
-                            int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
-                            
-                            double pxDeut = proton.px + neutron.px;
-                            double pyDeut = proton.py + neutron.py;
-                            double pzDeut = proton.pz + neutron.pz;
-                            double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
-                            LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
-                            if (pd.Eta() >= minEta && pd.Eta() <= maxEta && (0.5 * pd.Pt()) >= MinPtPerNucleon) {
-                                // Store Deuteron
-                                finalDeuterons.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, proton.mcIndex, false});
-                            }
-                            
-                            break;
-                        }
-                    }
-                }
-             
-                // Add unused protons to final vectors
-                for (const auto& proton : protonCandidates) {
-                    if (!proton.used) {
-                        finalProtons.push_back(proton);
-                    }
-                }
-                
-                // Correlation Analysis
-                std::vector<int> nAntiprotonFullEvent(nBins, 0);
-                std::vector<int> nAntideuteronFullEvent(nBins, 0);
-                int nTotProtonFullEvent(0);
-                int nTotDeuteronFullEvent(0);
-                int nTotAntiprotonFullEvent(0);
-                int nTotAntideuteronFullEvent(0);
-             
-                // Loop over final protons
-                for (const auto& part : finalProtons) {
-                    double pt = std::hypot(part.px, part.py);
-                    
-                    if (part.eta() < minEta || part.eta() > maxEta)
-                            continue;
-                 
-                    // Standard histograms for antiprotons
-                    if (part.pdgCode == PDG_t::kProtonBar) {
-                        registryMC.fill(HIST("antiproton_fullEvent_CoalescenceCorr"), pt);
-                    }
+  // process Coalescence and Correlation Analysis
+  void processCoalescenceCorr(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
+  {
+    // Deuteron Mass and minimum pt
+    double massDeut = o2::constants::physics::MassDeuteron;
+    static constexpr double MinPtPerNucleon = 0.1; // Cut on pt/A
 
-                    // Kinematic selection and Multiplicity counting
-                    if (pt < ptOverAbins[0] || pt >= ptOverAbins[nBins]) continue;
-                 
-                    if (part.pdgCode > 0) {
-                        nTotProtonFullEvent++;
-                    } else {
-                        nTotAntiprotonFullEvent++;
-                        int ibin = findBin(ptOverAbins, pt);
-                        if (ibin >= 0 && ibin < nBins) nAntiprotonFullEvent[ibin]++;
-                    }
-                }
-             
-                // Loop over final deuterons
-                for (const auto& part : finalDeuterons) {
-                    double pt = std::hypot(part.px, part.py);
-                    double ptPerNucleon = 0.5 * pt;
-                    
-                    // Apply detector acceptance cuts (to match real data)
-                    if (part.eta() < minEta || part.eta() > maxEta)
-                            continue;
-                 
-                    // Standard histograms for antideuterons
-                    if (part.pdgCode == -o2::constants::physics::Pdg::kDeuteron) {
-                        registryMC.fill(HIST("antideuteron_fullEvent_CoalescenceCorr"), pt);
-                    }
+    // Containers for candidates (before coalescence)
+    std::vector<ReducedParticle> protonCandidates;
+    std::vector<ReducedParticle> neutronCandidates;
 
-                    // Kinematic selection and Multiplicity counting
-                    if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins]) continue;
-                 
-                    if (part.pdgCode > 0) {
-                        nTotDeuteronFullEvent++;
-                    } else {
-                        nTotAntideuteronFullEvent++;
-                        int ibin = findBin(ptOverAbins, ptPerNucleon);
-                        if (ibin >= 0 && ibin < nBins) nAntideuteronFullEvent[ibin]++;
-                    }
-                }
-             
-                // Fill correlation histograms
-                int netProtonFullEvent = nTotProtonFullEvent - nTotAntiprotonFullEvent;
-                int netDeuteronFullEvent = nTotDeuteronFullEvent - nTotAntideuteronFullEvent;
-             
-                registryCorr.fill(HIST("rho_fullEvent_CoalescenceCorr"), nTotAntideuteronFullEvent, nTotAntiprotonFullEvent, multiplicity);
-                registryCorr.fill(HIST("rho_netP_netD_fullEvent_CoalescenceCorr"), netDeuteronFullEvent, netProtonFullEvent);
-             
-                // Fill efficiency histograms
-                for (int i = 0; i < nBins; i++) {
-                    double ptAcenteri = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
-                 
-                    registryCorr.fill(HIST("q1d_fullEvent_CoalescenceCorr"), nAntideuteronFullEvent[i], ptAcenteri, multiplicity);
-                    registryCorr.fill(HIST("q1p_fullEvent_CoalescenceCorr"), nAntiprotonFullEvent[i], ptAcenteri, multiplicity);
-                 
-                    for (int j = 0; j < nBins; j++) {
-                        double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
-                     
-                        registryCorr.fill(HIST("q1d_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (double)(nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]), multiplicity);
-                        registryCorr.fill(HIST("q1p_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (double)(nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
-                        registryCorr.fill(HIST("q1d_q1p_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (double)(nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
-                    }
-                }
-            }
+    // Final containers for analysis (after coalescence)
+    std::vector<ReducedParticle> finalProtons;
+    std::vector<ReducedParticle> finalDeuterons;
+
+    // pt/A bins
+    std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    const int nBins = ptOverAbins.size() - 1;
+
+    // Loop over all simulated collisions
+    for (const auto& collision : collisions) {
+
+      // Clear containers
+      protonCandidates.clear();
+      neutronCandidates.clear();
+      finalProtons.clear();
+      finalDeuterons.clear();
+
+      // Event counter: before event selection
+      registryCorr.fill(HIST("eventCounter_CoalescenceCorr"), 0.5);
+      registryMC.fill(HIST("genEventsCoalescenceCorr"), 0.5);
+
+      // Apply event selection: require vertex position to be within the allowed z range
+      if (std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Event counter: after event selection
+      registryCorr.fill(HIST("eventCounter_CoalescenceCorr"), 1.5);
+      registryMC.fill(HIST("genEventsCoalescenceCorr"), 1.5);
+
+      // Multiplicity percentile
+      const float multiplicity = collision.centFT0M();
+
+      // Fill event counter vs centrality
+      registryCorr.fill(HIST("eventCounter_centrality_fullEvent_CoalescenceCorr"), multiplicity);
+
+      // Get particles in this MC collision
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
+
+      // Loop over MC particles
+      for (const auto& particle : mcParticlesThisMcColl) {
+
+        // Monte Carlo index
+        int mcId = particle.globalIndex();
+        int pdg = particle.pdgCode();
+        int absPdg = std::abs(pdg);
+
+        // Store Protons
+        if (particle.isPhysicalPrimary()) {
+          if (absPdg == PDG_t::kProton) {
+            protonCandidates.push_back({particle.px(), particle.py(), particle.pz(), pdg, mcId, false});
+          } else if (absPdg == PDG_t::kNeutron) { // Store Neutrons
+            neutronCandidates.push_back({particle.px(), particle.py(), particle.pz(), pdg, mcId, false});
+          }
         }
-        PROCESS_SWITCH(AntinucleiInJets, processCoalescenceCorr, "process coalescence correlation", false);
+      }
+
+      // Reject empty events
+      if (protonCandidates.empty() && neutronCandidates.empty())
+        continue;
+
+      registryMC.fill(HIST("genEventsCoalescenceCorr"), 2.5);
+
+      // Build deuterons
+      for (const auto& proton : protonCandidates) {
+        if (proton.used)
+          continue;
+
+        for (const auto& neutron : neutronCandidates) {
+          if (neutron.used)
+            continue;
+
+          // Physics consistency check
+          if (proton.pdgCode * neutron.pdgCode < 0)
+            continue;
+
+          if (passDeuteronCoalescence(proton, neutron, coalescenceMomentum, mRand)) {
+
+            neutron.used = true;
+            proton.used = true;
+
+            int sign = (proton.pdgCode > 0) ? +1 : -1;
+            int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
+
+            double pxDeut = proton.px + neutron.px;
+            double pyDeut = proton.py + neutron.py;
+            double pzDeut = proton.pz + neutron.pz;
+            double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
+            LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
+            if (pd.Eta() >= minEta && pd.Eta() <= maxEta && (0.5 * pd.Pt()) >= MinPtPerNucleon) {
+              // Store Deuteron
+              finalDeuterons.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, proton.mcIndex, false});
+            }
+
+            break;
+          }
+        }
+      }
+
+      // Add unused protons to final vectors
+      for (const auto& proton : protonCandidates) {
+        if (!proton.used) {
+          finalProtons.push_back(proton);
+        }
+      }
+
+      // Correlation Analysis
+      std::vector<int> nAntiprotonFullEvent(nBins, 0);
+      std::vector<int> nAntideuteronFullEvent(nBins, 0);
+      int nTotProtonFullEvent(0);
+      int nTotDeuteronFullEvent(0);
+      int nTotAntiprotonFullEvent(0);
+      int nTotAntideuteronFullEvent(0);
+
+      // Loop over final protons
+      for (const auto& part : finalProtons) {
+        double pt = std::hypot(part.px, part.py);
+
+        if (part.eta() < minEta || part.eta() > maxEta)
+          continue;
+
+        // Standard histograms for antiprotons
+        if (part.pdgCode == PDG_t::kProtonBar) {
+          registryMC.fill(HIST("antiproton_fullEvent_CoalescenceCorr"), pt);
+        }
+
+        // Kinematic selection and Multiplicity counting
+        if (pt < ptOverAbins[0] || pt >= ptOverAbins[nBins])
+          continue;
+
+        if (part.pdgCode > 0) {
+          nTotProtonFullEvent++;
+        } else {
+          nTotAntiprotonFullEvent++;
+          int ibin = findBin(ptOverAbins, pt);
+          if (ibin >= 0 && ibin < nBins)
+            nAntiprotonFullEvent[ibin]++;
+        }
+      }
+
+      // Loop over final deuterons
+      for (const auto& part : finalDeuterons) {
+        double pt = std::hypot(part.px, part.py);
+        double ptPerNucleon = 0.5 * pt;
+
+        // Apply detector acceptance cuts (to match real data)
+        if (part.eta() < minEta || part.eta() > maxEta)
+          continue;
+
+        // Standard histograms for antideuterons
+        if (part.pdgCode == -o2::constants::physics::Pdg::kDeuteron) {
+          registryMC.fill(HIST("antideuteron_fullEvent_CoalescenceCorr"), pt);
+        }
+
+        // Kinematic selection and Multiplicity counting
+        if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins])
+          continue;
+
+        if (part.pdgCode > 0) {
+          nTotDeuteronFullEvent++;
+        } else {
+          nTotAntideuteronFullEvent++;
+          int ibin = findBin(ptOverAbins, ptPerNucleon);
+          if (ibin >= 0 && ibin < nBins)
+            nAntideuteronFullEvent[ibin]++;
+        }
+      }
+
+      // Fill correlation histograms
+      int netProtonFullEvent = nTotProtonFullEvent - nTotAntiprotonFullEvent;
+      int netDeuteronFullEvent = nTotDeuteronFullEvent - nTotAntideuteronFullEvent;
+
+      registryCorr.fill(HIST("rho_fullEvent_CoalescenceCorr"), nTotAntideuteronFullEvent, nTotAntiprotonFullEvent, multiplicity);
+      registryCorr.fill(HIST("rho_netP_netD_fullEvent_CoalescenceCorr"), netDeuteronFullEvent, netProtonFullEvent);
+
+      // Fill efficiency histograms
+      for (int i = 0; i < nBins; i++) {
+        double ptAcenteri = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
+
+        registryCorr.fill(HIST("q1d_fullEvent_CoalescenceCorr"), nAntideuteronFullEvent[i], ptAcenteri, multiplicity);
+        registryCorr.fill(HIST("q1p_fullEvent_CoalescenceCorr"), nAntiprotonFullEvent[i], ptAcenteri, multiplicity);
+
+        for (int j = 0; j < nBins; j++) {
+          double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
+
+          registryCorr.fill(HIST("q1d_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (double)(nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]), multiplicity);
+          registryCorr.fill(HIST("q1p_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (double)(nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
+          registryCorr.fill(HIST("q1d_q1p_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (double)(nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(AntinucleiInJets, processCoalescenceCorr, "process coalescence correlation", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<AntinucleiInJets>(cfgc)};
 }
-
