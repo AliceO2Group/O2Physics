@@ -580,7 +580,7 @@ struct strangenessFilter {
       fillTriggerTable(keepEvent);
       return;
     }
-    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)){
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       fillTriggerTable(keepEvent);
       return;
     }
