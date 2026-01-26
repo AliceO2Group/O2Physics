@@ -21,11 +21,11 @@
 //    HF decays. Work in progress: use at your own risk!
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFTracks.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
