@@ -280,7 +280,6 @@ struct FlowCorrelationsUpc {
 
         auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
         auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
-        double pt2 = RecoDecay::pt(momentum2);
         double phi1 = RecoDecay::phi(momentum1);
         double phi2 = RecoDecay::phi(momentum2);
         float deltaPhi = RecoDecay::constrainAngle(phi1 - phi2, -PIHalf);
