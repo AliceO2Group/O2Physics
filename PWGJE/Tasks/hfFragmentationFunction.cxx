@@ -237,8 +237,8 @@ struct HfFragmentationFunction {
   PROCESS_SWITCH(HfFragmentationFunction, processDummy, "Dummy process function turned on by default", true);
 
   template <typename TJets, typename TCandidates>
-  void analyzeData(aod::JetCollision const& collision, 
-                   TJets const& jets, 
+  void analyzeData(aod::JetCollision const& collision,
+                   TJets const& jets,
                    TCandidates const&,
                    aod::JetTracks const&)
   {
@@ -424,7 +424,7 @@ struct HfFragmentationFunction {
 
         if (mcpjet.has_matchedJetCand()) {
           registry.fill(HIST("h_jet_counter"), 1.0);
-          
+
           // loop over detector level matched to current particle level
           for (const auto& mcdjet : mcpjet.template matchedJetCand_as<TJetsMCD>()) {
             registry.fill(HIST("h_jet_counter"), 2.0);
@@ -462,7 +462,7 @@ struct HfFragmentationFunction {
             } else if (mcdcand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as HFbar
               selectedAs = -1;
             }
-            
+
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
             matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size(),   // particle level jet
                           mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),              // particle level HF
