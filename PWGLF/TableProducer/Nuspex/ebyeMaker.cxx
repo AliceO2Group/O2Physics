@@ -98,14 +98,16 @@ void encode16bit(int const& n, uint8_t& low, uint8_t& up)
   if (n >= (1 << 16)) {
     low = up = -1;
     return;
+  } else {
+    low = up = 0;
   }
-  int bbyte = 8;
-  for (int b{0}; b < bbyte; ++b) {
-    int bl = (n & (1 << b)) >> b;
-    int bu = (n & (1 << (b + bbyte))) >> (b + bbyte);
-    if (bl > 0)
+  int bByte = 8;
+  for (int b{0}; b < bByte; ++b) {
+    int bL = (n & (1 << b)) >> b;
+    int bU = (n & (1 << (b + bByte))) >> (b + bByte);
+    if (bL > 0)
       low += (1 << b);
-    if (bu > 0)
+    if (bU > 0)
       up += (1 << b);
   }
 }
@@ -554,7 +556,7 @@ struct EbyeMaker {
     histos.add<TH2>("QA/tpcCRvsCls", ";#it{N}_{TPCCR};#it{N}_{TPCcls}", HistType::kTH2F, {nTpcAxis, nTpcAxis});
     histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
     histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
-    histos.add<TH3>("QA/phiVsPtVsCR", ";#it{N}^{TPC}_{CR};#it{p}_{T} (GeV/#it{c});#phi (rad)", HistType::kTH3F, {nTpcAxis, signMomAxis, phiAxis});
+    histos.add<TH3>("QA/phiVsPtVsCls", ";#it{N}^{TPC}_{CR};#it{p}_{T} (GeV/#it{c});#phi (rad)", HistType::kTH3F, {nTpcAxis, signMomAxis, phiAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
@@ -606,9 +608,9 @@ struct EbyeMaker {
       histos.fill(HIST("QA/dcazVsPt"), track.pt(), dcaInfo[1]);
       if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca"))
         continue;
-      histos.fill(HIST("QA/phiVsPtVsCR"), track.tpcNClsCrossedRows(), track.sign() > 0. ? trackPt : -trackPt, trackPhi);
       if (track.tpcNClsFound() < trackNclusTpcCut || track.tpcNClsCrossedRows() < trackNcrossedRows)
         continue;
+      histos.fill(HIST("QA/phiVsPtVsCls"), track.tpcNClsFound(), track.sign() > 0. ? trackPt : -trackPt, trackPhi);
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
       if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (track.sign() > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll))) {
         nTracksColl++;

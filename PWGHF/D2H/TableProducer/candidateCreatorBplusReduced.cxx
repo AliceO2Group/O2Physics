@@ -169,8 +169,7 @@ struct HfCandidateCreatorBplusReduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D0 and Pi to the B+ vertex
-        df2.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B+ vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecD0);   // momentum of D0 at the B+ vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B+ vertex

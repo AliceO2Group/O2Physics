@@ -161,17 +161,20 @@ struct PhotonConversionBuilder {
 
   // PCM ML inference
   Configurable<bool> applyPCMMl{"applyPCMMl", false, "Flag to apply ML selections"};
-  Configurable<bool> use2DBinning{"use2DBinning", true, "Flag to enable/disable 2D binning for ML application"};
+  Configurable<bool> use2DBinning{"use2DBinning", false, "Flag to enable/disable 2D binning for ML application"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<int> nClassesPCMMl{"nClassesPCMMl", static_cast<int>(o2::analysis::em_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<int> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<std::string> centTypePCMMl{"centTypePCMMl", "CentFT0C", "Centrality type for 2D ML application: CentFT0C, CentFT0M, or CentFT0A"};
   Configurable<std::vector<int>> cutDirPCMMl{"cutDirPCMMl", std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_PCM/"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  Configurable<std::vector<double>> binsPtPCMMl{"binsPtPCMMl", std::vector<double>{o2::analysis::em_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<std::string>> labelsBinsPCMMl{"labelsBinsPCMMl", std::vector<std::string>{"bin 0", "bin 1"}, "Labels for bins"};
+  Configurable<std::vector<std::string>> labelsCutScoresPCMMl{"labelsCutScoresPCMMl", std::vector<std::string>{o2::analysis::em_cuts_ml::labelsCutScore}, "Labels for cut scores"};
+  Configurable<std::vector<double>> binsPtPCMMl{"binsPtPCMMl", std::vector<double>{0.0, +1e+10}, "pT bin limits for ML application"};
   Configurable<std::vector<double>> binsCentPCMMl{"binsCentPCMMl", std::vector<double>{0.0, 100.0}, "Centrality bin limits for ML application"};
-  Configurable<LabeledArray<double>> cutsPCMMl{"cutsPCMMl", {o2::analysis::em_cuts_ml::Cuts[0], o2::analysis::em_cuts_ml::NBinsPt, o2::analysis::em_cuts_ml::NCutScores, o2::analysis::em_cuts_ml::labelsPt, o2::analysis::em_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<std::vector<double>> cutsPCMMlFlat{"cutsPCMMlFlat", {0.5}, "Flattened ML cuts: [bin0_score0, bin0_score1, ..., binN_scoreM]"};
 
   o2::analysis::EmMlResponsePCM<float> emMlResponse;
   std::vector<float> outputML;
@@ -254,8 +257,44 @@ struct PhotonConversionBuilder {
 
     if (applyPCMMl) {
       if (use2DBinning) {
+        int binsNPt = static_cast<int>(binsPtPCMMl->size()) - 1;
+        int binsNCent = static_cast<int>(binsCentPCMMl->size()) - 1;
+        int binsN = binsNPt * binsNCent;
+        if (binsN * static_cast<int>(cutDirPCMMl->size()) != static_cast<int>(cutsPCMMlFlat->size())) {
+          LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * cutDirPCMMl: " << int(binsN) * int(cutDirPCMMl->size()) << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
+        }
+        if (binsN != static_cast<int>(onnxFileNames->size())) {
+          LOG(fatal) << "Mismatch in number of bins and ONNX files provided for 2D ML application: binsN " << binsN << " bins vs. onnxFileNames: " << onnxFileNames->size() << " ONNX files";
+        }
+        if (binsN != static_cast<int>(labelsBinsPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of bins and labels provided for 2D ML application: binsN:" << binsN << " bins vs. labelsBinsPCMMl: " << labelsBinsPCMMl->size() << " labels";
+        }
+        if (static_cast<int>(cutDirPCMMl->size()) != nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of classes and cut directions provided for 2D ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. cutDirPCMMl: " << cutDirPCMMl->size() << " cut directions";
+        }
+        if (static_cast<int>(labelsCutScoresPCMMl->size()) != nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for 2D ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << labelsCutScoresPCMMl->size() << " labels";
+        }
+        LabeledArray<double> cutsPCMMl(cutsPCMMlFlat->data(), binsN, nClassesPCMMl, labelsBinsPCMMl, labelsCutScoresPCMMl);
         emMlResponse.configure2D(binsPtPCMMl, binsCentPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
       } else {
+        int binsNPt = static_cast<int>(binsPtPCMMl->size()) - 1;
+        if (binsNPt * static_cast<int>(cutDirPCMMl->size()) != static_cast<int>(cutsPCMMlFlat->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and cuts provided for ML application: binsNPt * cutDirPCMMl:" << binsNPt * cutDirPCMMl->size() << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
+        }
+        if (binsNPt != static_cast<int>(onnxFileNames->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and ONNX files provided for ML application: binsNPt " << binsNPt << " bins vs. onnxFileNames: " << onnxFileNames->size() << " ONNX files";
+        }
+        if (binsNPt != static_cast<int>(labelsBinsPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of pT bins and labels provided for ML application: binsNPt:" << binsNPt << " bins vs. labelsBinsPCMMl: " << labelsBinsPCMMl->size() << " labels";
+        }
+        if (nClassesPCMMl != static_cast<int>(cutDirPCMMl->size())) {
+          LOG(fatal) << "Mismatch in number of classes and cut directions provided for ML application: nClassesPCMMl: " << nClassesPCMMl << " classes vs. cutDirPCMMl: " << cutDirPCMMl->size() << " cut directions";
+        }
+        if (static_cast<int>(labelsCutScoresPCMMl->size()) != nClassesPCMMl) {
+          LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for ML application: nClassesPCMMl:" << nClassesPCMMl << " classes vs. labelsCutScoresPCMMl: " << labelsCutScoresPCMMl->size() << " labels";
+        }
+        LabeledArray<double> cutsPCMMl(cutsPCMMlFlat->data(), binsNPt, nClassesPCMMl, labelsBinsPCMMl, labelsCutScoresPCMMl);
         emMlResponse.configure(binsPtPCMMl, cutsPCMMl, cutDirPCMMl, nClassesPCMMl);
       }
       if (loadModelsFromCCDB) {
@@ -639,81 +678,89 @@ struct PhotonConversionBuilder {
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_tpc_inner_fc) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_tpc_inner_fc) {
           return;
         }
       } else {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_tpconly) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_tpconly) {
           return;
         }
       }
     } else { // V0s with ITS hits
       if (rxy < max_r_req_its) {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_itsibss) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_itsibss) {
           return;
         }
       } else {
-        if (v0photoncandidate.GetPCA() > max_dcav0dau_its) {
+        if (v0photoncandidate.getPCA() > max_dcav0dau_its) {
           return;
         }
       }
     }
 
-    if (isITSonlyTrack(pos) && v0photoncandidate.GetPosPt() > maxpt_itsonly) {
+    if (isITSonlyTrack(pos) && v0photoncandidate.getPosPt() > maxpt_itsonly) {
       return;
     }
 
-    if (isITSonlyTrack(ele) && v0photoncandidate.GetElePt() > maxpt_itsonly) {
+    if (isITSonlyTrack(ele) && v0photoncandidate.getElePt() > maxpt_itsonly) {
       return;
     }
 
-    if (v0photoncandidate.GetChi2NDF() > 6e+3) { // protection for uint16.
+    if (v0photoncandidate.getChi2NDF() > 6e+3) { // protection for uint16.
       return;
     }
 
-    if (std::fabs(v0photoncandidate.GetDcaXYToPV()) > max_dcatopv_xy_v0 || std::fabs(v0photoncandidate.GetDcaZToPV()) > max_dcatopv_z_v0) {
+    if (std::fabs(v0photoncandidate.getDcaXYToPV()) > max_dcatopv_xy_v0 || std::fabs(v0photoncandidate.getDcaZToPV()) > max_dcatopv_z_v0) {
       return;
     }
 
-    if (!checkAP(v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt(), max_alpha_ap, max_qt_ap)) { // store only photon conversions
+    if (!checkAP(v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), max_alpha_ap, max_qt_ap)) { // store only photon conversions
       return;
     }
-    pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.GetPCA();
-    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.GetCosPA();
+    pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getPCA();
+    cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getCosPA();
 
     if (applyPCMMl) {
       bool isSelectedML = false;
       std::vector<float> mlInputFeatures = emMlResponse.getInputFeatures(v0photoncandidate, pos, ele);
       if (use2DBinning) {
-        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCent(), outputML);
+        if (std::string(centTypePCMMl) == "CentFT0C") {
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0C(), outputML);
+        } else if (std::string(centTypePCMMl) == "CentFT0A") {
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0A(), outputML);
+        } else if (std::string(centTypePCMMl) == "CentFT0M") {
+          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0M(), outputML);
+        } else {
+          LOG(fatal) << "Unsupported centTypePCMMl: " << centTypePCMMl << " , please choose from CentFT0C, CentFT0A, CentFT0M.";
+        }
       } else {
-        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), outputML);
+        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), outputML);
       }
       if (filltable) {
-        registry.fill(HIST("V0/hBDTvalueBeforeCutVsPt"), v0photoncandidate.GetPt(), outputML[0]);
+        registry.fill(HIST("V0/hBDTvalueBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
       }
       if (!isSelectedML) {
         return;
       }
       if (filltable) {
-        registry.fill(HIST("V0/hBDTvalueAfterCutVsPt"), v0photoncandidate.GetPt(), outputML[0]);
+        registry.fill(HIST("V0/hBDTvalueAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
       }
     }
 
     if (filltable) {
-      registry.fill(HIST("V0/hAP"), v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt());
+      registry.fill(HIST("V0/hAP"), v0photoncandidate.getAlpha(), v0photoncandidate.getQt());
       registry.fill(HIST("V0/hConversionPointXY"), gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
       registry.fill(HIST("V0/hConversionPointRZ"), gammaKF_DecayVtx.GetZ(), rxy);
-      registry.fill(HIST("V0/hPt"), v0photoncandidate.GetPt());
+      registry.fill(HIST("V0/hPt"), v0photoncandidate.getPt());
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
-      registry.fill(HIST("V0/hCosPA"), v0photoncandidate.GetCosPA());
-      registry.fill(HIST("V0/hCosPA_Rxy"), rxy, v0photoncandidate.GetCosPA());
-      registry.fill(HIST("V0/hPCA"), v0photoncandidate.GetPCA());
-      registry.fill(HIST("V0/hPCA_CosPA"), v0photoncandidate.GetCosPA(), v0photoncandidate.GetPCA());
-      registry.fill(HIST("V0/hPCA_Rxy"), rxy, v0photoncandidate.GetPCA());
-      registry.fill(HIST("V0/hDCAxyz"), v0photoncandidate.GetDcaXYToPV(), v0photoncandidate.GetDcaZToPV());
-      registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.GetPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
-      registry.fill(HIST("V0/hPhiV"), v0photoncandidate.GetPhiV());
+      registry.fill(HIST("V0/hCosPA"), v0photoncandidate.getCosPA());
+      registry.fill(HIST("V0/hCosPA_Rxy"), rxy, v0photoncandidate.getCosPA());
+      registry.fill(HIST("V0/hPCA"), v0photoncandidate.getPCA());
+      registry.fill(HIST("V0/hPCA_CosPA"), v0photoncandidate.getCosPA(), v0photoncandidate.getPCA());
+      registry.fill(HIST("V0/hPCA_Rxy"), rxy, v0photoncandidate.getPCA());
+      registry.fill(HIST("V0/hDCAxyz"), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV());
+      registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.getPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
+      registry.fill(HIST("V0/hPhiV"), v0photoncandidate.getPhiV());
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -747,10 +794,10 @@ struct PhotonConversionBuilder {
       v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
-                  v0_sv.M(), v0photoncandidate.GetDcaXYToPV(), v0photoncandidate.GetDcaZToPV(),
+                  v0_sv.M(), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV(),
                   cospa_kf, cospaXY_kf, cospaRZ_kf,
-                  v0photoncandidate.GetPCA(), v0photoncandidate.GetAlpha(), v0photoncandidate.GetQt(), v0photoncandidate.GetChi2NDF());
-      v0photonsphiv(v0photoncandidate.GetPhiV());
+                  v0photoncandidate.getPCA(), v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), v0photoncandidate.getChi2NDF());
+      v0photonsphiv(v0photoncandidate.getPhiV());
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 

@@ -21,7 +21,6 @@
 #include "GFWWeights.h"
 
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
@@ -40,10 +39,7 @@
 #include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
 
-#include "Math/LorentzVector.h"
-#include "Math/PxPyPzM4D.h"
 #include "TList.h"
-#include "TMath.h"
 #include "TVector3.h"
 #include <TF1.h>
 #include <TObjArray.h>
@@ -64,11 +60,6 @@ using namespace o2::framework::expressions;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct FlowCumulantsUpc {
-
-  // resort
-  //  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  PresliceUnsorted<o2::aod::UDMcParticles> perMcCollision = o2::aod::udmcparticle::udMcCollisionId;
-  // Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
@@ -175,10 +166,9 @@ struct FlowCumulantsUpc {
   TH2* gCurrentHadronicRate;
 
   //
-  // using MCparticles = aod::UDMcParticles::iterator;
   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  // using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
+  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollisionSelExtras>;
 
   // Track selection
   TrackSelection myTrackSel;
@@ -241,10 +231,6 @@ struct FlowCumulantsUpc {
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
-    registry.add("hCentMC", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
-    registry.add("hVtxZMC", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
-    registry.add("hMultMC", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-    registry.add("numberOfTracksMC", "Number of tracks per event", {HistType::kTH1D, {{1000, 0, 1000}}});
     registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
     if (!cfgUseSmallMemory) {
       registry.add("BeforeSel8_globalTracks_centT0C", "before sel8;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -281,10 +267,6 @@ struct FlowCumulantsUpc {
     registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
 
-    registry.add("hPxMc", "Px distribution of MC truth particles", {HistType::kTH1D, {{100, -10, 10}}});
-    registry.add("hPyMc", "Px distribution of MC truth particles", {HistType::kTH1D, {{100, -10, 10}}});
-    registry.add("hPzMc", "Px distribution of MC truth particles", {HistType::kTH1D, {{100, -10, 10}}});
-    registry.add("hweightMc", "weight distribution of MC truth particles", {HistType::kTH1D, {{100, 0, 1}}});
     registry.add("hPhiMC", "#phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hPhiWeightedMC", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hEtaMC", "#eta distribution", {HistType::kTH1D, {axisEta}});
@@ -297,7 +279,6 @@ struct FlowCumulantsUpc {
     registry.add("hnTPCCrossedRowMC", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
     registry.add("hDCAzMC", "DCAz after cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hDCAxyMC", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
-    registry.add("eventCounterMC", "Number of MC Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
     registry.add("hTrackCorrection2dMC", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
 
     o2::framework::AxisSpec axis = axisPt;
@@ -524,11 +505,9 @@ struct FlowCumulantsUpc {
         }
         LOGF(info, "%d: %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
         corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
-        corrconfigsmc.push_back(fGFWMC->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
       }
     }
     fGFW->CreateRegions();
-    fGFWMC->CreateRegions();
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -643,8 +622,6 @@ struct FlowCumulantsUpc {
     }
     return;
   }
-
-  // ... 其余代码保持不变 ...
 
   void loadCorrections(uint64_t timestamp, int runNumber)
   {
@@ -815,10 +792,10 @@ struct FlowCumulantsUpc {
     if (!((multNTracksPV < fMultPVCutLow->Eval(centrality)) || (multNTracksPV > fMultPVCutHigh->Eval(centrality)) || (multTrk < fMultCutLow->Eval(centrality)) || (multTrk > fMultCutHigh->Eval(centrality)))) {
       registry.fill(HIST("hEventCountTentative"), 8.5);
     }
-    constexpr int kSigmaCut = 5;
-    if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > kSigmaCut * fT0AV0ASigma->Eval(collision.multFT0A()))) {
-      registry.fill(HIST("hEventCountTentative"), 9.5);
-    }
+    // constexpr int kSigmaCut = 5;
+    // if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > kSigmaCut * fT0AV0ASigma->Eval(collision.multFT0A()))) {
+    //   registry.fill(HIST("hEventCountTentative"), 9.5);
+    // }
   }
 
   template <typename TTrack>
@@ -834,6 +811,15 @@ struct FlowCumulantsUpc {
     }
     double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
     if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
+      return false;
+    }
+    constexpr int kMinITSClusters = 5;
+    constexpr int kMaxTPCChi2NCl = 4;
+
+    if (track.itsClusterSizes() <= kMinITSClusters) {
+      return false;
+    }
+    if (track.tpcChi2NCl() >= kMaxTPCChi2NCl) {
       return false;
     }
     return true;
@@ -856,200 +842,207 @@ struct FlowCumulantsUpc {
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
 
-  // void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
-  // {
-  //   std::cout << "Processing collision============================================== " << std::endl;
-
-  //   registry.fill(HIST("hEventCount"), 0.5);
-  //   int gapSide = collision.gapSide();
-  //   constexpr int kGapSideSelection = 0;
-  //   constexpr int kGapSideOppositeSelection = 2;
-  //   if (gapSide < kGapSideSelection || gapSide > kGapSideOppositeSelection) {
-  //     return;
-  //   }
-
-  //   int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-  //   gapSide = trueGapSide;
-  //   if (gapSide == cfgGapSideSelection) {
-  //     return;
-  //   }
-  //   registry.fill(HIST("hEventCount"), 1.5);
-  //   float cent = 100;
-  //   float lRandom = fRndm->Rndm();
-  //   float vtxz = collision.posZ();
-  //   registry.fill(HIST("hVtxZ"), vtxz);
-  //   registry.fill(HIST("hMult"), tracks.size());
-  //   registry.fill(HIST("hCent"), cent);
-  //   fGFW->Clear();
-
-  //   // // track weights
-  //   float weff = 1, wacc = 1;
-  //   double nTracksCorrected = 0;
-  //   float independent = cent;
-  //   if (cfgUseNch) {
-  //     independent = static_cast<float>(tracks.size());
-  //   }
-
-  //   for (const auto& track : tracks) {
-  //     if (!trackSelected(track))
-  //       continue;
-  //     auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
-  //     double pt = RecoDecay::pt(momentum);
-  //     double phi = RecoDecay::phi(momentum);
-  //     double eta = RecoDecay::eta(momentum);
-  //     bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
-  //     bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
-  //     if (cfgOutputNUAWeights) {
-  //       if (cfgOutputNUAWeightsRefPt) {
-  //         if (withinPtRef) {
-  //           fWeights->fill(phi, eta, vtxz, pt, cent, 0);
-  //         }
-  //       } else {
-  //         fWeights->fill(phi, eta, vtxz, pt, cent, 0);
-  //       }
-  //     }
-  //     if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz)) {
-  //       continue;
-  //     }
-  //     registry.fill(HIST("hPt"), track.pt());
-  //     if (withinPtRef) {
-  //       registry.fill(HIST("hPhi"), phi);
-  //       registry.fill(HIST("hPhiWeighted"), phi, wacc);
-  //       registry.fill(HIST("hEta"), eta);
-  //       registry.fill(HIST("hPtRef"), pt);
-  //       registry.fill(HIST("hDCAz"), track.dcaZ(), track.pt());
-  //       registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
-  //       nTracksCorrected += weff;
-  //     }
-  //     if (withinPtRef) {
-  //       fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
-  //     }
-  //     if (withinPtPOI) {
-  //       fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
-  //     }
-  //     if (withinPtPOI && withinPtRef) {
-  //       fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
-  //     }
-  //   }
-  //   registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
-
-  //   // Filling Flow Container
-  //   for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-  //     fillFC(corrconfigs.at(l_ind), independent, lRandom);
-  //   }
-  // }
-  // PROCESS_SWITCH(FlowCumulantsUpc, process, "process", false);
-
-  //-----------------------------------------------------------------------------------------------------------------------
-  void processSim(aod::UDMcCollisions const& mcCollisions, aod::UDMcParticles const& mcParticles)
+  template <typename TTrack>
+  float getDPhiStar(TTrack const& track1, TTrack const& track2, float radius, int runnum)
   {
-    LOG(info) << "Processing MC collision======================== " << std::endl;
+    float charge1 = track1.sign();
+    float charge2 = track2.sign();
 
-    // std::cout << mcParicles::IndexudmcCollisions.is_sorted();
+    float phi1 = track1.phi();
+    float phi2 = track2.phi();
 
-    for (const auto& mcCollision : mcCollisions) {
-      auto groupedUDMcParticles = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
-      registry.fill(HIST("eventCounterMC"), 0.5);
+    float pt1 = track1.pt();
+    float pt2 = track2.pt();
 
-      // registry.fill(HIST("hEventCount"), 1.5);
-      float cent = 50;
-      float vtxz = 0;
+    int fbSign = 1;
 
-      vtxz = mcCollision.posZ();
-      registry.fill(HIST("hVtxZMC"), vtxz);
-      registry.fill(HIST("eventCounterMC"), mcCollision.size());
-      registry.fill(HIST("hMultMC"), groupedUDMcParticles.size());
-      registry.fill(HIST("hCentMC"), cent);
+    int zzo = 544868;
+    if (runnum >= zzo) {
+      fbSign = -1;
+    }
 
-      auto massPion = o2::constants::physics::MassPionCharged;
-      registry.fill(HIST("numberOfTracksMC"), groupedUDMcParticles.size());
-      // LOGF(info, "New event! mcParticles.size() = %d", mcParticles.size());
+    float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
 
-      float lRandomMc = fRndmMc->Rndm();
-      fGFWMC->Clear();
+    if (dPhiStar > constants::math::PI)
+      dPhiStar = constants::math::TwoPI - dPhiStar;
+    if (dPhiStar < -constants::math::PI)
+      dPhiStar = -constants::math::TwoPI - dPhiStar;
 
-      // // track weights
-      float weff = 1, wacc = 1;
-      double nTracksCorrected = 0;
-      float independent = cent;
-      if (cfgUseNch) {
-        independent = static_cast<float>(groupedUDMcParticles.size());
-      }
+    return dPhiStar;
+  }
 
-      // LOG(info) << "mcParticles.size() = " << groupedUDMcParticles.size() << std::endl;
+  void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
+  {
+    registry.fill(HIST("hEventCount"), 0.5);
+    // if(!eventSelected(collision, tracks.size(), 100.0f)) {
+    //   eventCounterQA(collision, tracks.size(), 100.0f);
+    //   return;
+    // }
+    int gapSide = collision.gapSide();
+    constexpr int kGapSideSelection = 0;
+    constexpr int kGapSideOppositeSelection = 2;
+    if (gapSide > kGapSideSelection && gapSide < kGapSideOppositeSelection) {
+      return;
+    }
+    if (collision.trs() == 0) {
+      return;
+    }
+    int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
+    gapSide = trueGapSide;
+    if (gapSide == cfgGapSideSelection) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), 1.5);
+    float cent = 100;
+    float lRandom = fRndm->Rndm();
+    float vtxz = collision.posZ();
+    registry.fill(HIST("hVtxZ"), vtxz);
+    registry.fill(HIST("hMult"), tracks.size());
+    registry.fill(HIST("hCent"), cent);
+    fGFW->Clear();
 
-      for (const auto& mcParticle : groupedUDMcParticles) {
+    // // track weights
+    float weff = 1, wacc = 1;
+    double nTracksCorrected = 0;
+    float independent = cent;
+    if (cfgUseNch) {
+      independent = static_cast<float>(tracks.size());
+    }
 
-        // LOG(info) << "filling mc particle px: " << mcParticle.px() << ", py: " << mcParticle.py() << ", pz: " << mcParticle.pz() << std::endl;
-
-        // output information from mcparticles
-        registry.fill(HIST("hPxMc"), mcParticle.px());
-        registry.fill(HIST("hPyMc"), mcParticle.py());
-        registry.fill(HIST("hPzMc"), mcParticle.pz());
-        registry.fill(HIST("hweightMc"), mcParticle.weight());
-
-        if (!mcParticle.isPhysicalPrimary()) {
-          // LOG(info) << "mcParticle.isPhysicalPrimary() = " << mcParticle.isPhysicalPrimary() << std::endl;
-          continue;
-        }
-
-        std::array<double, 3> momentum = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
-        double energy = std::sqrt(momentum[0] * momentum[0] + momentum[1] * momentum[1] + momentum[2] * momentum[2] + massPion * massPion);
-        ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> protoMC(momentum[0], momentum[1], momentum[2], energy);
-        constexpr double kEtaCut = 0.8;
-        constexpr double kPtCut = 0.1;
-        if (!(std::fabs(protoMC.Eta()) < kEtaCut && protoMC.Pt() > kPtCut)) {
-          // LOG(info) << "protoMC.Eta() = " << protoMC.Eta() << ", protoMC.Pt() = " << protoMC.Pt() << std::endl;
-          continue;
-        }
-        // auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
-        double pt = RecoDecay::pt(momentum);
-        double phi = RecoDecay::phi(momentum);
-        double eta = RecoDecay::eta(momentum);
-        bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
-        bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
-        if (cfgOutputNUAWeights) {
-          if (cfgOutputNUAWeightsRefPt) {
-            if (withinPtRef) {
-              fWeightsMc->fill(phi, eta, vtxz, pt, cent, 0);
-            }
-          } else {
-            fWeightsMc->fill(phi, eta, vtxz, pt, cent, 0);
+    for (const auto& track : tracks) {
+      registry.fill(HIST("hChi2prTPCcls"), track.tpcChi2NCl());
+      if (!trackSelected(track))
+        continue;
+      auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
+      double pt = RecoDecay::pt(momentum);
+      double phi = RecoDecay::phi(momentum);
+      double eta = RecoDecay::eta(momentum);
+      bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+      bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
+      if (cfgOutputNUAWeights) {
+        if (cfgOutputNUAWeightsRefPt) {
+          if (withinPtRef) {
+            fWeights->fill(phi, eta, vtxz, pt, cent, 0);
           }
+        } else {
+          fWeights->fill(phi, eta, vtxz, pt, cent, 0);
         }
-        if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz)) {
-          continue;
-        }
-
-        if (withinPtRef) {
-          registry.fill(HIST("hPhiMC"), phi);
-          registry.fill(HIST("hPhiWeightedMC"), phi, wacc);
-          registry.fill(HIST("hEtaMC"), eta);
-          registry.fill(HIST("hPtRefMC"), pt);
-          // registry.fill(HIST("hDCAzMC"), track.dcaZ(), track.pt());
-          // registry.fill(HIST("hDCAxyMC"), track.dcaXY(), track.pt());
-          nTracksCorrected += weff;
-        }
-        if (withinPtRef) {
-          fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
-        }
-        if (withinPtPOI) {
-          fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
-        }
-        if (withinPtPOI && withinPtRef) {
-          fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
-        }
-        // LOG(info) << "successfully filled" << std::endl;
       }
-      registry.fill(HIST("hTrackCorrection2dMC"), mcParticles.size(), nTracksCorrected);
-      // Filling Flow Container
-      for (uint l_ind = 0; l_ind < corrconfigsmc.size(); l_ind++) {
-        // LOG(info) << "filling flow container for MC" << std::endl;
-        fillFCMC(corrconfigsmc.at(l_ind), independent, lRandomMc);
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz)) {
+        continue;
+      }
+      registry.fill(HIST("hPt"), track.pt());
+      if (withinPtRef) {
+        registry.fill(HIST("hPhi"), phi);
+        registry.fill(HIST("hPhiWeighted"), phi, wacc);
+        registry.fill(HIST("hEta"), eta);
+        registry.fill(HIST("hPtRef"), pt);
+        registry.fill(HIST("hDCAz"), track.dcaZ(), track.pt());
+        registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
+        nTracksCorrected += weff;
+      }
+      if (withinPtRef) {
+        fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
+      }
+      if (withinPtPOI) {
+        fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
+      }
+      if (withinPtPOI && withinPtRef) {
+        fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
       }
     }
+    registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+
+    // Filling Flow Container
+    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+      fillFC(corrconfigs.at(l_ind), independent, lRandom);
+    }
   }
-  PROCESS_SWITCH(FlowCumulantsUpc, processSim, "processSim", true);
+  PROCESS_SWITCH(FlowCumulantsUpc, process, "process", true);
+
+  //-----------------------------------------------------------------------------------------------------------------------
+  void processSim(aod::UDMcCollision const& mcCollision, aod::UDMcParticles const& mcParticles)
+  {
+    registry.fill(HIST("eventCounterMC"), 0.5);
+
+    registry.fill(HIST("hEventCount"), 1.5);
+    float cent = 100;
+    float vtxz = mcCollision.posZ();
+    registry.fill(HIST("hVtxZMC"), vtxz);
+    registry.fill(HIST("hMultMC"), mcParticles.size());
+    registry.fill(HIST("hCentMC"), cent);
+
+    auto massPion = o2::constants::physics::MassPionCharged;
+    registry.fill(HIST("numberOfTracksMC"), mcParticles.size());
+    // LOGF(info, "New event! mcParticles.size() = %d", mcParticles.size());
+
+    float lRandomMc = fRndmMc->Rndm();
+    fGFWMC->Clear();
+
+    // // track weights
+    float weff = 1, wacc = 1;
+    double nTracksCorrected = 0;
+    float independent = cent;
+    if (cfgUseNch) {
+      independent = static_cast<float>(mcParticles.size());
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary())
+        continue;
+      std::array<double, 3> momentum = {mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+      double energy = std::sqrt(momentum[0] * momentum[0] + momentum[1] * momentum[1] + momentum[2] * momentum[2] + massPion * massPion);
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> protoMC(momentum[0], momentum[1], momentum[2], energy);
+      constexpr double kEtaCut = 0.8;
+      constexpr double kPtCut = 0.1;
+      if (!(std::fabs(protoMC.Eta()) < kEtaCut && protoMC.Pt() > kPtCut)) {
+        continue;
+      }
+      // auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+      double pt = RecoDecay::pt(momentum);
+      double phi = RecoDecay::phi(momentum);
+      double eta = RecoDecay::eta(momentum);
+      bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+      bool withinPtRef = (cfgCutPtRefMin < pt) && (pt < cfgCutPtRefMax); // within RF pT range
+      if (cfgOutputNUAWeights) {
+        if (cfgOutputNUAWeightsRefPt) {
+          if (withinPtRef) {
+            fWeightsMc->fill(phi, eta, vtxz, pt, cent, 0);
+          }
+        } else {
+          fWeightsMc->fill(phi, eta, vtxz, pt, cent, 0);
+        }
+      }
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz)) {
+        continue;
+      }
+      if (withinPtRef) {
+        registry.fill(HIST("hPhiMC"), phi);
+        registry.fill(HIST("hPhiWeightedMC"), phi, wacc);
+        registry.fill(HIST("hEtaMC"), eta);
+        registry.fill(HIST("hPtRefMC"), pt);
+        // registry.fill(HIST("hDCAzMC"), track.dcaZ(), track.pt());
+        // registry.fill(HIST("hDCAxyMC"), track.dcaXY(), track.pt());
+        nTracksCorrected += weff;
+      }
+      if (withinPtRef) {
+        fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
+      }
+      if (withinPtPOI) {
+        fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
+      }
+      if (withinPtPOI && withinPtRef) {
+        fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
+      }
+    }
+    registry.fill(HIST("hTrackCorrection2dMC"), mcParticles.size(), nTracksCorrected);
+
+    // Filling Flow Container
+    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+      fillFCMC(corrconfigs.at(l_ind), independent, lRandomMc);
+    }
+    PROCESS_SWITCH(FlowCumulantsUpc, processSim, "processSim", false);
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

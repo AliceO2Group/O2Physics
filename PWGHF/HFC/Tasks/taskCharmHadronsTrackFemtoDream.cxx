@@ -62,7 +62,10 @@ using namespace o2::constants::physics;
 
 inline o2::framework::expressions::Node coshEta(o2::framework::expressions::Node&& eta)
 {
-  return (nexp(std::move(eta)) + nexp(0.0f - std::move(eta))) * 0.5f;
+  auto e1 = std::move(eta);
+  auto e2 = e1;
+
+  return (nexp(std::move(e1)) + nexp(std::move(e2) * (-1.0f))) * 0.5f;
 }
 
 struct HfTaskCharmHadronsTrackFemtoDream {

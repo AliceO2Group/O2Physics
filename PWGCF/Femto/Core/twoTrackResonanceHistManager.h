@@ -86,9 +86,9 @@ constexpr std::array<histmanager::HistInfo<TwoTrackResonanceHist>, kTwoTrackReso
    {kPtVsMass, o2::framework::kTH2F, "hPtVsMass", "p_{T} vs invariant mass; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})"}}};
 
 template <typename T>
-std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
+std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>>{
+  return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
     {kPt, {confBinningAnalysis.pt}},
     {kEta, {confBinningAnalysis.eta}},
     {kPhi, {confBinningAnalysis.phi}},
@@ -99,7 +99,7 @@ std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>> makeTwoTrackRe
 template <typename T>
 auto makeTwoTrackResonanceQaHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>>{
+  return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
     {kPt, {confBinningAnalysis.pt}},
     {kEta, {confBinningAnalysis.eta}},
     {kPhi, {confBinningAnalysis.phi}},

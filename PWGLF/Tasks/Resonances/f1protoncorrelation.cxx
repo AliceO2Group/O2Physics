@@ -84,7 +84,7 @@ struct f1protoncorrelation {
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   Configurable<int> nEvtMixingBkg{"nEvtMixingBkg", 5, "Number of events to mix for background reconstruction"};
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
+  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, 10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 40.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
 
   // THnsparse bining
@@ -111,10 +111,10 @@ struct f1protoncorrelation {
     const AxisSpec thnAxisMultiplicity{CfgMultBins, "Multiplicity"};
 
     // register histograms
-    histos.add("hPhaseSpaceProtonKaonSame", "hPhaseSpaceProtonKaonSame", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
-    histos.add("hPhaseSpaceProtonPionSame", "hPhaseSpaceProtonPionSame", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
-    histos.add("hPhaseSpaceProtonKaonMix", "hPhaseSpaceProtonKaonMix", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
-    histos.add("hPhaseSpaceProtonPionMix", "hPhaseSpaceProtonPionMix", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
+    histos.add("hPhaseSpaceProtonKaonSame", "hPhaseSpaceProtonKaonSame", kTH3F, {{100, -0.3f, 0.3f}, {100, -0.3, 0.3}, {10, 0.0, 1.0}});
+    histos.add("hPhaseSpaceProtonPionSame", "hPhaseSpaceProtonPionSame", kTH3F, {{100, -0.3f, 0.3f}, {100, -0.3, 0.3}, {10, 0.0, 1.0}});
+    histos.add("hPhaseSpaceProtonKaonMix", "hPhaseSpaceProtonKaonMix", kTH3F, {{100, -0.3f, 0.3f}, {100, -0.3, 0.3}, {10, 0.0, 1.0}});
+    histos.add("hPhaseSpaceProtonPionMix", "hPhaseSpaceProtonPionMix", kTH3F, {{100, -0.3f, 0.3f}, {100, -0.3, 0.3}, {10, 0.0, 1.0}});
 
     histos.add("hNsigmaProtonTPC", "Nsigma Proton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
     histos.add("hNsigmaKaonTPC", "Nsigma Kaon TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});

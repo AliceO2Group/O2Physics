@@ -1881,6 +1881,45 @@ struct StrangenessInJets {
         continue;
       if (std::fabs(v0.v0dcanegtopv()) < dcanegtoPVmin)
         continue;
+      // PID selections (TPC) -- K0s
+      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
+        continue;
+      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF) -- K0s
+      if (requireTOF) {
+        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
+          continue;
+        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
+          continue;
+      }
+      // PID selections (TPC): positive track = proton, negative track = pion -- Lam
+      if (v0.ntpcsigmapospr() < nsigmaTPCmin || v0.ntpcsigmapospr() > nsigmaTPCmax)
+        continue;
+      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF): positive track = proton, negative track = pion -- Lam
+      if (requireTOF) {
+        if (v0.ntofsigmapospr() < nsigmaTOFmin || v0.ntofsigmapospr() > nsigmaTOFmax)
+          continue;
+        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
+          continue;
+      }
+      // PID selections (TPC): negative track = proton, positive track = pion --- ALam
+      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
+        continue;
+      if (v0.ntpcsigmanegpr() < nsigmaTPCmin || v0.ntpcsigmanegpr() > nsigmaTPCmax)
+        continue;
+
+      // PID selections (TOF): negative track = proton, positive track = pion --- ALam
+      if (requireTOF) {
+        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
+          continue;
+        if (v0.ntofsigmanegpr() < nsigmaTOFmin || v0.ntofsigmanegpr() > nsigmaTOFmax)
+          continue;
+      }
 
       // PID selections
       Bool_t isPIDK0s = false, isPIDLam = false, isPIDALam = false;
@@ -1928,13 +1967,16 @@ struct StrangenessInJets {
 
     for (const auto& casc : cascades) {
 
-      if (casc.v0negITSlayers() < minITSnCls || casc.v0posITSlayers() < minITSnCls || casc.bachITSlayers() < minITSnCls)
+      // Track selections
+      if (requireITS && (casc.v0negITSlayers() < minITSnCls || casc.v0posITSlayers() < minITSnCls || casc.bachITSlayers() < minITSnCls))
         continue;
       if (casc.v0negtpcCrossedRows() < minNCrossedRowsTPC || casc.v0postpcCrossedRows() < minNCrossedRowsTPC ||
           casc.bachtpcCrossedRows() < minNCrossedRowsTPC)
         continue;
       if (casc.v0negTPCChi2() > maxChi2TPC || casc.v0posTPCChi2() > maxChi2TPC || casc.bachTPCChi2() > maxChi2TPC)
         continue;
+
+      // Topological selections
       if (casc.v0cospa() < v0cospaMin)
         continue;
       if (casc.casccospa() < casccospaMin)
@@ -1955,124 +1997,75 @@ struct StrangenessInJets {
         continue;
       if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
         continue;
-      // Xi
-      //  Xi+ selection (Xi+ -> antiL + pi+)
+
+      // PID selection
+      Bool_t isPIDXiminus = false, isPIDXiplus = false, isPIDOmminus = false, isPIDOmplus = false;
+
+      // PID selection bachelor
+      Bool_t isPIDLam = false, isPIDALam = false;
       if (casc.sign() > 0) {
-        // PID selections (TPC)
-        if (casc.ntpcsigmanegpr() < nsigmaTPCmin || casc.ntpcsigmanegpr() > nsigmaTPCmax)
-          continue;
-        if (casc.ntpcsigmapospi() < nsigmaTPCmin || casc.ntpcsigmapospi() > nsigmaTPCmax)
-          continue;
-
-        // PID selections (TOF)
-        if (requireTOF) {
-          if (casc.ntofsigmanegpr() < nsigmaTOFmin || casc.ntofsigmanegpr() > nsigmaTOFmax)
-            continue;
-          if (casc.ntofsigmapospi() < nsigmaTOFmin || casc.ntofsigmapospi() > nsigmaTOFmax)
-            continue;
+        // antiLambda: (p-)neg + (pi+)pos
+        if (casc.ntpcsigmanegpr() >= nsigmaTPCmin && casc.ntpcsigmanegpr() <= nsigmaTPCmax &&
+            casc.ntpcsigmapospi() >= nsigmaTPCmin && casc.ntpcsigmapospi() <= nsigmaTPCmax) {
+          isPIDALam = true;
         }
-      }
-      // Xi- selection (Xi- -> L + pi-)
-      if (casc.sign() < 0) {
-        // PID selections (TPC)
-        if (casc.ntpcsigmapospr() < nsigmaTPCmin || casc.ntpcsigmapospr() > nsigmaTPCmax)
-          continue;
-        if (casc.ntpcsigmanegpi() < nsigmaTPCmin || casc.ntpcsigmanegpi() > nsigmaTPCmax)
-          continue;
-
-        // PID selections (TOF)
-        if (requireTOF) {
-          if (casc.ntofsigmapospr() < nsigmaTOFmin || casc.ntofsigmapospr() > nsigmaTOFmax)
-            continue;
-          if (casc.ntofsigmanegpi() < nsigmaTOFmin || casc.ntofsigmanegpi() > nsigmaTOFmax)
-            continue;
+      } else if (casc.sign() < 0) {
+        // lambda: (p+)pos + (pi-)neg
+        if (casc.ntpcsigmapospr() >= nsigmaTPCmin && casc.ntpcsigmapospr() <= nsigmaTPCmax &&
+            casc.ntpcsigmanegpi() >= nsigmaTPCmin && casc.ntpcsigmanegpi() <= nsigmaTPCmax) {
+          isPIDLam = true;
         }
       }
 
-      // PID selection on bachelor
-      if (casc.ntpcsigmabachpi() < nsigmaTPCmin || casc.ntpcsigmabachpi() > nsigmaTPCmax)
+      if (!(isPIDLam || isPIDALam))
         continue;
 
-      // PID selections (TOF)
-      if (requireTOF) {
-        if (casc.ntofsigmabachpi() < nsigmaTOFmin || casc.ntofsigmabachpi() > nsigmaTOFmax)
-          continue;
-      }
-      //  V0 mass window
-      if (std::fabs(casc.masslambda() - o2::constants::physics::MassLambda0) > deltaMassLambda)
-        continue;
-      // Reject candidates compatible with Omega
-      if (std::fabs(casc.massomega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega)
-        continue;
-
-      // Omega
-      //  Omega+ selection (Omega+ -> antiL + K+)
-      if (casc.sign() > 0) {
-        // PID selections (TPC)
-        if (casc.ntpcsigmanegpr() < nsigmaTPCmin || casc.ntpcsigmanegpr() > nsigmaTPCmax)
-          continue;
-        if (casc.ntpcsigmapospi() < nsigmaTPCmin || casc.ntpcsigmapospi() > nsigmaTPCmax)
-          continue;
-
-        // PID selections (TOF)
-        if (requireTOF) {
-          if (casc.ntofsigmanegpr() < nsigmaTOFmin || casc.ntofsigmanegpr() > nsigmaTOFmax)
-            continue;
-          if (casc.ntofsigmapospi() < nsigmaTOFmin || casc.ntofsigmapospi() > nsigmaTOFmax)
-            continue;
-        }
-      }
-
-      // Omega- selection (Omega- -> L + K-)
-      if (casc.sign() < 0) {
-        // PID selections (TPC)
-        if (casc.ntpcsigmapospr() < nsigmaTPCmin || casc.ntpcsigmapospr() > nsigmaTPCmax)
-          continue;
-        if (casc.ntpcsigmanegpi() < nsigmaTPCmin || casc.ntpcsigmanegpi() > nsigmaTPCmax)
-          continue;
-
-        // PID selections (TOF)
-        if (requireTOF) {
-          if (casc.ntofsigmapospr() < nsigmaTOFmin || casc.ntofsigmapospr() > nsigmaTOFmax)
-            continue;
-          if (casc.ntofsigmanegpi() < nsigmaTOFmin || casc.ntofsigmanegpi() > nsigmaTOFmax)
-            continue;
-        }
-      }
-
-      // PID selection on bachelor
-      if (casc.ntpcsigmabachka() < nsigmaTPCmin || casc.ntpcsigmabachka() > nsigmaTPCmax)
-        continue;
-
-      // PID selections (TOF)
-      if (requireTOF) {
-        if (casc.ntofsigmabachka() < nsigmaTOFmin || casc.ntofsigmabachka() > nsigmaTOFmax)
-          continue;
-      }
       //  V0 mass window
       if (std::fabs(casc.masslambda() - o2::constants::physics::MassLambda0) > deltaMassLambda)
         continue;
 
-      // Reject candidates compatible with Xi
-      if (std::fabs(casc.massxi() - o2::constants::physics::MassXiMinus) < deltaMassXi)
-        continue;
+      // PID selection on bachelor
+      const Bool_t isBachPi =
+        (casc.ntpcsigmabachpi() >= nsigmaTPCmin && casc.ntpcsigmabachpi() <= nsigmaTPCmax);
+
+      const Bool_t isBachKa =
+        (casc.ntpcsigmabachka() >= nsigmaTPCmin && casc.ntpcsigmabachka() <= nsigmaTPCmax);
+
+      // Cross-contamination rejection flags
+      const Bool_t isOmegaLike = (std::fabs(casc.massomega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega);
+      const Bool_t isXiLike = (std::fabs(casc.massxi() - o2::constants::physics::MassXiMinus) < deltaMassXi);
+
+      // Final PID flags
+      if (casc.sign() > 0) {
+        if (isPIDALam && isBachPi && !isOmegaLike)
+          isPIDXiplus = true;
+        if (isPIDALam && isBachKa && !isXiLike)
+          isPIDOmplus = true;
+      } else if (casc.sign() < 0) {
+        if (isPIDLam && isBachPi && !isOmegaLike)
+          isPIDXiminus = true;
+        if (isPIDLam && isBachKa && !isXiLike)
+          isPIDOmminus = true;
+      }
 
       if (casc.isUE()) {
-        if (casc.sign() < 0) {
+        if (isPIDXiminus)
           registryData.fill(HIST("XiNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
-          registryData.fill(HIST("OmegaNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
-        } else if (casc.sign() > 0) {
+        if (isPIDXiplus)
           registryData.fill(HIST("XiPos_in_ue"), casc.multft0m(), casc.pt(), casc.massxi());
+        if (isPIDOmminus)
+          registryData.fill(HIST("OmegaNeg_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
+        if (isPIDOmplus)
           registryData.fill(HIST("OmegaPos_in_ue"), casc.multft0m(), casc.pt(), casc.massomega());
-        }
       } else if (casc.isJC()) {
-        if (casc.sign() < 0) {
+        if (isPIDXiminus)
           registryData.fill(HIST("XiNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
-          registryData.fill(HIST("OmegaNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
-        } else if (casc.sign() > 0) {
+        if (isPIDXiplus)
           registryData.fill(HIST("XiPos_in_jet"), casc.multft0m(), casc.pt(), casc.massxi());
+        if (isPIDOmminus)
+          registryData.fill(HIST("OmegaNeg_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
+        if (isPIDOmplus)
           registryData.fill(HIST("OmegaPos_in_jet"), casc.multft0m(), casc.pt(), casc.massomega());
-        }
       }
     }
   }
