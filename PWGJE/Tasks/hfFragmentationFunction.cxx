@@ -19,11 +19,20 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+<<<<<<< HEAD
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
+=======
+>>>>>>> 8fcbef4d9 (Fix: clang-formatting done manually)
 #include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+<<<<<<< HEAD
+=======
+
+#include "PWGHF/Core/DecayChannels.h"
+>>>>>>> 8fcbef4d9 (Fix: clang-formatting done manually)
 
 #include "Common/Core/RecoDecay.h"
 
