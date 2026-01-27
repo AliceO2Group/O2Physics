@@ -19,11 +19,8 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-<<<<<<< HEAD
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
-=======
->>>>>>> 8fcbef4d9 (Fix: clang-formatting done manually)
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -31,9 +28,12 @@
 <<<<<<< HEAD
 =======
 
+<<<<<<< HEAD
 #include "PWGHF/Core/DecayChannels.h"
 >>>>>>> 8fcbef4d9 (Fix: clang-formatting done manually)
 
+=======
+>>>>>>> ee38d6bf6 (Fix: formatting with automatic git-clang-format feature)
 #include "Common/Core/RecoDecay.h"
 
 #include "Framework/ASoA.h"
