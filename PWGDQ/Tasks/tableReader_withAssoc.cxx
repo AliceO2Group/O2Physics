@@ -3137,6 +3137,7 @@ struct AnalysisDileptonTrack {
   Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
   Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
   Configurable<std::vector<float>> fConfigFitmassEC{"cfgTFitmassEC", std::vector<float>{-0.541438, 2.8, 3.2}, "parameter from the fit fuction and fit range"};
+  Configurable<std::vector<float>> fConfigTransRange{"cfgTransRange", std::vector<float>{0.333333, 0.666667}, "Transverse region for the energy correlstor analysis"};
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts;      // number of dilepton leg cuts
@@ -3504,7 +3505,8 @@ struct AnalysisDileptonTrack {
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
 
           // for the energy correlator analysis
-          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fConfigApplyMassEC, fMassBkg->GetRandom());
+          std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
+          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
@@ -3698,11 +3700,17 @@ struct AnalysisDileptonTrack {
         // loop over dileptons
         for (auto dilepton : evDileptons) {
 
+          // dilepton rap cut
+          float rap = dilepton.rap();
+          if (fConfigUseRapcut && abs(rap) > fConfigDileptonRapCutAbs)
+            continue;
+
           // compute dilepton - track quantities
           VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
 
           // for the energy correlator analysis
-          VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fConfigApplyMassEC, fMassBkg->GetRandom());
+          std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
+          VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {
