@@ -502,7 +502,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     eventHisto.fillQA(col);
 
-    /// Histogramming same event
+    /// Histogramming same event for first V0 particle
     for (const auto& part : groupPartsTwo) {
       if (!invMLambda(part.mLambda(), part.mAntiLambda()))
         continue;
@@ -518,6 +518,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
         trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
         posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
         negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
+        qaRegistry.fill(HIST("V0Type1/hInvMassLambdaVsCent"), multCol, part.mLambda());
+        qaRegistry.fill(HIST("V0Type1/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
       } else {
         if ((posChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
           continue;
@@ -532,12 +534,17 @@ struct FemtoUniversePairTaskTrackV0Extended {
         posChildV0Type1.fillQABase<false, false>(posChild, HIST("posChildV0Type1"));
         negChildV0Type1.fillQABase<false, false>(negChild, HIST("negChildV0Type1"));
       }
-      qaRegistry.fill(HIST("V0Type1/hInvMassLambdaVsCent"), multCol, part.mLambda());
-      qaRegistry.fill(HIST("V0Type1/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
       if constexpr (isMC) {
         effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(part, kLambda0);
       }
+    }
 
+    /// Histogramming same event for second V0 particle
+    for (const auto& part : groupPartsTwo) {
+      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+        continue;
+      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
+      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
       /// Check daughters of second V0 particle
       if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
         if (!isParticleTPC(posChild, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTPC(negChild, V0ChildTable[ConfV0Selection.confV0Type2][1]))
@@ -547,22 +554,22 @@ struct FemtoUniversePairTaskTrackV0Extended {
         trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
         posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
         negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
+        qaRegistry.fill(HIST("V0Type2/hInvMassLambdaVsCent"), multCol, part.mLambda());
+        qaRegistry.fill(HIST("V0Type2/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
       } else {
-        if ((posChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
+        if ((posChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
           continue;
         if (ConfV0Selection.confUseStrangenessTOF) {
-          if (((ConfV0Selection.confV0Type1 == 0) && (part.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type1 == 1) && (part.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type1 == 2) && (part.pidCut() & 48) != 48))
+          if (((ConfV0Selection.confV0Type2 == 0) && (part.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type1 == 1) && (part.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type2 == 2) && (part.pidCut() & 48) != 48))
             continue;
         } else {
-          if ((posChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
+          if ((posChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
             continue;
         }
         trackHistoV0Type2.fillQABase<false, false>(part, HIST("V0Type2"));
         posChildV0Type2.fillQABase<false, false>(posChild, HIST("posChildV0Type2"));
         negChildV0Type2.fillQABase<false, false>(negChild, HIST("negChildV0Type2"));
       }
-      qaRegistry.fill(HIST("V0Type2/hInvMassLambdaVsCent"), multCol, part.mLambda());
-      qaRegistry.fill(HIST("V0Type2/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
       if constexpr (isMC) {
         effCorrection.fillRecoHist<ParticleNo::TWO, FilteredFDCollisions>(part, kLambda0Bar);
       }
