@@ -386,6 +386,7 @@ struct QuarkoniaToHyperons {
     ConfigurableAxis axisHypPairCosPA{"axisHypPairCosPA", {500, 0, 1}, "Hyperon pair cosine of pointing angle"};
     ConfigurableAxis axisHypPairOpAngle{"axisHypPairOpAngle", {360, 0, o2::constants::math::TwoPI}, "Hyperon pair momentum opening angle (rad)"};
     ConfigurableAxis axisHypPairEta{"axisHypPairEta", {20, -2, 2}, "Hyperon pair pseudo-rapidity"};
+    ConfigurableAxis axisHypPairPhi{"axisHypPairPhi", {180, 0.0f, constants::math::TwoPI}, "Hyperon pair azimuthal angle (rad)"};
   } axes;
 
   o2::base::MatLayerCylSet* lut;       // material LUT for DCA fitter
@@ -636,7 +637,9 @@ struct QuarkoniaToHyperons {
         histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairCosPA", "h3dMassK0sK0sVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairOpAngle", "h3dMassK0sK0sVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairEta", "h3dMassK0sK0sVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairPhi", "h3dMassK0sK0sVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/K0sK0s/h3dDeltaEtaK0sK0sVsPairEta", "h3dDeltaEtaK0sK0sVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/K0sK0s/h3dDeltaPhiK0sK0sVsPairPhi", "h3dDeltaPhiK0sK0sVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildLaLaBarPairs) {
@@ -713,7 +716,9 @@ struct QuarkoniaToHyperons {
         histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairCosPA", "h3dMassLaLaBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairOpAngle", "h3dMassLaLaBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairEta", "h3dMassLaLaBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairPhi", "h3dMassLaLaBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/LaLaBar/h3dDeltaEtaLaLaBarVsPairEta", "h3dDeltaEtaLaLaBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/LaLaBar/h3dDeltaPhiLaLaBarVsPairPhi", "h3dDeltaPhiLaLaBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildXiXiBarPairs) {
@@ -811,7 +816,9 @@ struct QuarkoniaToHyperons {
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairCosPA", "h3dMassXiXiBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairOpAngle", "h3dMassXiXiBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass}); 
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass}); 
         histos.add("QA/LaLaBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/LaLaBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildOmOmBarPairs) {
@@ -903,7 +910,9 @@ struct QuarkoniaToHyperons {
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairCosPA", "h3dMassOmOmBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairOpAngle", "h3dMassOmOmBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairEta", "h3dMassOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairPhi", "h3dMassOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/LaLaBar/h3dDeltaEtaOmOmBarVsPairEta", "h3dDeltaEtaOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/LaLaBar/h3dDeltaPhiOmOmBarVsPairPhi", "h3dDeltaPhiOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
 
@@ -1076,6 +1085,9 @@ struct QuarkoniaToHyperons {
     float OpAngle = -999.f; 
     float Eta() const {
       return RecoDecay::eta(std::array{hyperonMomentum[0] + antiHyperonMomentum[0], hyperonMomentum[1] + antiHyperonMomentum[1], hyperonMomentum[2] + antiHyperonMomentum[2]});
+    }
+    float Phi() const {
+      return RecoDecay::phi(std::array{hyperonMomentum[0] + antiHyperonMomentum[0], hyperonMomentum[1] + antiHyperonMomentum[1]});
     }
   };
 
@@ -1899,7 +1911,9 @@ struct QuarkoniaToHyperons {
           histos.fill(HIST("QA/K0sK0s/h3dMassK0sK0sVsPairCosPA"), pair.CosPA, pt, invmass);
           histos.fill(HIST("QA/K0sK0s/h3dMassK0sK0sVsPairOpAngle"), pair.OpAngle, pt, invmass);
           histos.fill(HIST("QA/K0sK0s/h3dMassK0sK0sVsPairEta"), pair.Eta(), pt, invmass);
+          histos.fill(HIST("QA/K0sK0s/h3dMassK0sK0sVsPairPhi"), pair.Phi(), pt, invmass);
           histos.fill(HIST("QA/K0sK0s/h3dDeltaEtaK0sK0sVsPairEta"), pair.Eta(), pt, hyperon.eta() - antiHyperon.eta());
+          histos.fill(HIST("QA/K0sK0s/h3dDeltaPhiK0sK0sVsPairPhi"), pair.Phi(), pt, std::abs(hyperon.phi() - antiHyperon.phi()));
         }
       }
     }
@@ -1965,7 +1979,9 @@ struct QuarkoniaToHyperons {
           histos.fill(HIST("QA/LaLaBar/h3dMassLaLaBarVsPairCosPA"), pair.CosPA, pt, invmass);
           histos.fill(HIST("QA/LaLaBar/h3dMassLaLaBarVsPairOpAngle"), pair.OpAngle, pt, invmass);
           histos.fill(HIST("QA/LaLaBar/h3dMassLaLaBarVsPairEta"), pair.Eta(), pt, invmass);
+          histos.fill(HIST("QA/LaLaBar/h3dMassLaLaBarVsPairPhi"), pair.Phi(), pt, invmass);
           histos.fill(HIST("QA/LaLaBar/h3dDeltaEtaLaLaBarVsPairEta"), pair.Eta(), pt, hyperon.eta() - antiHyperon.eta());
+          histos.fill(HIST("QA/LaLaBar/h3dDeltaPhiLaLaBarVsPairPhi"), pair.Phi(), pt, std::abs(hyperon.phi() - antiHyperon.phi()));
         }
       }
     }
@@ -2055,7 +2071,9 @@ struct QuarkoniaToHyperons {
           histos.fill(HIST("QA/XiXiBar/h3dMassXiXiBarVsPairCosPA"), pair.CosPA, pt, invmass);
           histos.fill(HIST("QA/XiXiBar/h3dMassXiXiBarVsPairOpAngle"), pair.OpAngle, pt, invmass);
           histos.fill(HIST("QA/XiXiBar/h3dMassXiXiBarVsPairEta"), pair.Eta(), pt, invmass);
+          histos.fill(HIST("QA/XiXiBar/h3dMassXiXiBarVsPairPhi"), pair.Phi(), pt, invmass);
           histos.fill(HIST("QA/XiXiBar/h3dDeltaEtaXiXiBarVsPairEta"), pair.Eta(), pt, hyperon.eta() - antiHyperon.eta());
+          histos.fill(HIST("QA/XiXiBar/h3dDeltaPhiXiXiBarVsPairPhi"), pair.Phi(), pt, std::abs(hyperon.phi() - antiHyperon.phi()));
         }
       }
     }
@@ -2145,7 +2163,9 @@ struct QuarkoniaToHyperons {
           histos.fill(HIST("QA/OmOmBar/h3dMassOmOmBarVsPairCosPA"), pair.CosPA, pt, invmass);
           histos.fill(HIST("QA/OmOmBar/h3dMassOmOmBarVsPairOpAngle"), pair.OpAngle, pt, invmass);
           histos.fill(HIST("QA/OmOmBar/h3dMassOmOmBarVsPairEta"), pair.Eta(), pt, invmass);
+          histos.fill(HIST("QA/OmOmBar/h3dMassOmOmBarVsPairPhi"), pair.Phi(), pt, invmass);
           histos.fill(HIST("QA/OmOmBar/h3dDeltaEtaOmOmBarVsPairEta"), pair.Eta(), pt, hyperon.eta() - antiHyperon.eta());
+          histos.fill(HIST("QA/OmOmBar/h3dDeltaPhiOmOmBarVsPairPhi"), pair.Phi(), pt, std::abs(hyperon.phi() - antiHyperon.phi()));
         }
       }
     }
