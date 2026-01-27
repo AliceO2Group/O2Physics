@@ -194,8 +194,18 @@ struct generatedQuarkoniaMC {
           auto binNumber = hBinFinder->FindBin(mcCollision.bestCollisionCentFT0C(), mcp.pt()); // caution: pack
           if (mcp.pdgCode() == 441)
             genEtaC1S[binNumber]++;
-          if (mcp.pdgCode() == 443)
+          if (mcp.pdgCode() == 443) {
             genJPsi[binNumber]++;
+            auto daughters = mcp.daughters_as<aod::McParticles>();
+            std::cout << mcp.pdgCode() ;
+            for(auto dau : daughters) {
+              std::cout << " dau: " << dau.pdgCode() << " Primary? " << dau.isPhysicalPrimary();
+              auto subdaughters = dau.daughters_as<aod::McParticles>();
+              for(auto subdau : subdaughters)
+                std::cout << " subdau: " << subdau.pdgCode();
+            }
+            std::cout << std::endl;
+          }
           if (mcp.pdgCode() == 10441)
             genChiC0[binNumber]++;
           if (mcp.pdgCode() == 20443)
