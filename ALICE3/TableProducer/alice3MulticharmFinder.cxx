@@ -68,7 +68,8 @@ using namespace o2::framework::expressions;
 #define BIT_CHECK(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 #define GET_HIST(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
-using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes, aod::UpgradeRichs, aod::UpgradeRichSignals, aod::OTFLUTConfigId>;
+using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes, aod::UpgradeRichs, aod::UpgradeRichSignals>;
+using Alice3Collision = soa::Join<aod::Collisions, aod::OTFLUTConfigId>;
 
 struct Alice3MulticharmFinder {
   SliceCache cache;
@@ -388,12 +389,6 @@ struct Alice3MulticharmFinder {
     return returnValue;
   }
 
-  template <typename TTrackType>
-  bool checkSameLUTConf(TTrackType const& track1, const int track2)
-  {
-    return track1.lutConfigId() == track2;
-  }
-
   void init(InitContext&)
   {
     // initialize O2 2-prong fitter (only once)
@@ -489,7 +484,7 @@ struct Alice3MulticharmFinder {
     }
   }
 
-  void initConf(const int icfg)
+  void initDetectorConfiguration(const int icfg)
   {
     if (std::find(savedConfigs.begin(), savedConfigs.end(), icfg) != savedConfigs.end()) {
       return;
@@ -498,7 +493,7 @@ struct Alice3MulticharmFinder {
     savedConfigs.push_back(icfg);
 
     // do more plots
-    std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+    const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
     histPointers.insert({histPath + "hMassXiCC", histos.add((histPath + "hMassXiCC").c_str(), "hMassXiCC", {kTH1D, {{axisXiCCMass}}})});
     histPointers.insert({histPath + "hNCollisions", histos.add((histPath + "hNCollisions").c_str(), "hNCollisions", {kTH1D, {{2, 0.5, 2.5}}})});
     histPointers.insert({histPath + "hNTracks", histos.add((histPath + "hNTracks").c_str(), "hNTracks", {kTH1D, {{20000, 0, 20000}}})});
@@ -519,19 +514,26 @@ struct Alice3MulticharmFinder {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindXiCC(aod::Collision const& collision, Alice3Tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
+  void processFindXiCC(Alice3Collision::iterator const& collision, Alice3Tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
+    const std::string histPath = "Configuration_" + std::to_string(collision.lutConfigId()) + "/";
+    initDetectorConfiguration(collision.lutConfigId());
+
+    GET_HIST(TH1, histPath + "hNCollisions")->Fill(1);
+    GET_HIST(TH1, histPath + "hNTracks")->Fill(tracks.size());
+    std::cout << tracks.size() << std::endl;
+    if (tracks.size() < minNTracks.value[collision.lutConfigId()]) {
+      return;
+    }
+    GET_HIST(TH1, histPath + "hNCollisions")->Fill(2);
+
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
     auto picTracksGrouped = picTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto piccTracksGrouped = piccTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    static constexpr int MaxLUTConfigs = 20;
-    std::vector<int> nTracks(MaxLUTConfigs);
-    for (auto const& track : tracks) {
-      int lutConfigId = track.lutConfigId();
-      nTracks[lutConfigId]++;
 
+    for (auto const& track : tracks) {
       if (BIT_CHECK(track.decayMap(), kTruePiFromXiC)) {
         histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
       }
@@ -542,19 +544,6 @@ struct Alice3MulticharmFinder {
 
     for (auto const& xiCand : cascades) {
       auto xi = xiCand.cascadeTrack_as<Alice3Tracks>(); // de-reference cascade track
-      int lutConfigId = xi.lutConfigId();
-      initConf(lutConfigId);
-      if (minNTracks.value.size() < static_cast<size_t>(lutConfigId)) {
-        if (nTracks[lutConfigId] < minNTracks.value.front()) {
-          continue; // fallback to first
-        }
-      } else {
-        if (nTracks[lutConfigId] < minNTracks.value[lutConfigId]) {
-          continue;
-        }
-      }
-
-      std::string histPath = "Configuration_" + std::to_string(lutConfigId) + "/";
       histos.fill(HIST("hMassXi"), xiCand.mXi());
       histos.fill(HIST("h2dDCAxyVsPtXiFromXiC"), xi.pt(), xi.dcaXY() * 1e+4);
       if (std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > xiMassWindow) {
@@ -583,10 +572,6 @@ struct Alice3MulticharmFinder {
 
       histos.fill(HIST("hMinXiDecayRadius"), xiCand.cascRadius());
       for (auto const& pi1c : picTracksGrouped) {
-        if (!checkSameLUTConf(pi1c, lutConfigId)) {
-          continue;
-        }
-
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c)) {
           continue;
         }
@@ -609,10 +594,6 @@ struct Alice3MulticharmFinder {
         histos.fill(HIST("hInnerTOFTrackTimeRecoPi1c"), pi1cTOFDiffInner);
         // second pion from XiC decay for starts here
         for (auto const& pi2c : picTracksGrouped) {
-          if (!checkSameLUTConf(pi2c, lutConfigId)) {
-            continue;
-          }
-
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c)) {
             continue; // keep only if same mother
           }
@@ -691,10 +672,6 @@ struct Alice3MulticharmFinder {
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : piccTracksGrouped) {
-            if (!checkSameLUTConf(picc, lutConfigId)) {
-              continue;
-            }
-
             if (mcSameMotherCheck && !checkSameMotherExtra(xi, picc)) {
               continue;
             }
@@ -823,7 +800,7 @@ struct Alice3MulticharmFinder {
                 xicDecayDistanceFromPV,
                 xiccProperLength,
                 pi1c.pt(), pi2c.pt(), picc.pt(),
-                lutConfigId);
+                collision.lutConfigId());
 
               multiCharmPID(
                 pi1cTOFDiffInner, pi1c.nSigmaPionInnerTOF(),
