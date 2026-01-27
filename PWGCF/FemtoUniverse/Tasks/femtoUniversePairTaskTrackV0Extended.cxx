@@ -506,31 +506,30 @@ struct FemtoUniversePairTaskTrackV0Extended {
     for (const auto& part : groupPartsTwo) {
       if (!invMLambda(part.mLambda(), part.mAntiLambda()))
         continue;
-      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
-      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
-
+      const auto& posChild1 = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
+      const auto& negChild1 = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
       /// Check daughters of first V0 particle
       if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
-        if (!isParticleTPC(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
+        if (!isParticleTPC(posChild1, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTPC(negChild1, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
-        if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
+        if (!isParticleTOF(posChild1, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild1, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
         trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
-        posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
-        negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
+        posChildV0Type1.fillQABase<false, true>(posChild1, HIST("posChildV0Type1"));
+        negChildV0Type1.fillQABase<false, true>(negChild1, HIST("negChildV0Type1"));
       } else {
-        if ((posChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
+        if ((posChild1.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild1.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
           continue;
         if (ConfV0Selection.confUseStrangenessTOF) {
           if (((ConfV0Selection.confV0Type1 == 0) && (part.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type1 == 1) && (part.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type1 == 2) && (part.pidCut() & 48) != 48))
             continue;
         } else {
-          if ((posChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
+          if ((posChild1.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild1.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
             continue;
         }
         trackHistoV0Type1.fillQABase<false, false>(part, HIST("V0Type1"));
-        posChildV0Type1.fillQABase<false, false>(posChild, HIST("posChildV0Type1"));
-        negChildV0Type1.fillQABase<false, false>(negChild, HIST("negChildV0Type1"));
+        posChildV0Type1.fillQABase<false, false>(posChild1, HIST("posChildV0Type1"));
+        negChildV0Type1.fillQABase<false, false>(negChild1, HIST("negChildV0Type1"));
       }
       qaRegistry.fill(HIST("V0Type1/hInvMassLambdaVsCent"), multCol, part.mLambda());
       qaRegistry.fill(HIST("V0Type1/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
@@ -538,28 +537,30 @@ struct FemtoUniversePairTaskTrackV0Extended {
         effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(part, kLambda0);
       }
 
+      const auto& posChild2 = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
+      const auto& negChild2 = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
       /// Check daughters of second V0 particle
       if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
-        if (!isParticleTPC(posChild, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTPC(negChild, V0ChildTable[ConfV0Selection.confV0Type2][1]))
+        if (!isParticleTPC(posChild2, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTPC(negChild2, V0ChildTable[ConfV0Selection.confV0Type2][1]))
           continue;
-        if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type2][1]))
+        if (!isParticleTOF(posChild2, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTOF(negChild2, V0ChildTable[ConfV0Selection.confV0Type2][1]))
           continue;
         trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
-        posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
-        negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
+        posChildV0Type2.fillQABase<false, true>(posChild2, HIST("posChildV0Type2"));
+        negChildV0Type2.fillQABase<false, true>(negChild2, HIST("negChildV0Type2"));
       } else {
-        if ((posChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
+        if ((posChild2.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild2.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
           continue;
         if (ConfV0Selection.confUseStrangenessTOF) {
-          if (((ConfV0Selection.confV0Type1 == 0) && (part.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type1 == 1) && (part.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type1 == 2) && (part.pidCut() & 48) != 48))
+          if (((ConfV0Selection.confV0Type2 == 0) && (part.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type2 == 1) && (part.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type2 == 2) && (part.pidCut() & 48) != 48))
             continue;
         } else {
-          if ((posChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
+          if ((posChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
             continue;
         }
         trackHistoV0Type2.fillQABase<false, false>(part, HIST("V0Type2"));
-        posChildV0Type2.fillQABase<false, false>(posChild, HIST("posChildV0Type2"));
-        negChildV0Type2.fillQABase<false, false>(negChild, HIST("negChildV0Type2"));
+        posChildV0Type2.fillQABase<false, false>(posChild2, HIST("posChildV0Type2"));
+        negChildV0Type2.fillQABase<false, false>(negChild2, HIST("negChildV0Type2"));
       }
       qaRegistry.fill(HIST("V0Type2/hInvMassLambdaVsCent"), multCol, part.mLambda());
       qaRegistry.fill(HIST("V0Type2/hInvMassAntiLambdaVsCent"), multCol, part.mAntiLambda());
