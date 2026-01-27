@@ -2963,8 +2963,7 @@ struct AnalysisDileptonTrack {
     }
   }*/
 
-  PresliceUnsorted<McParticles>
-    perReducedMcEvent = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<McParticles> perReducedMcEvent = aod::mcparticle::mcCollisionId;
 
   void processMCGen(soa::Filtered<MyEventsSelected> const& events,
                     McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
