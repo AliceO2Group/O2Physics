@@ -257,7 +257,7 @@ constexpr char PrefixOmega[] = "Omega/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 
-constexpr std::string_view AnalysisDir = "Kinematics/";
+constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
 
