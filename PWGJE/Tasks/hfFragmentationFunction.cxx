@@ -18,10 +18,12 @@
 /// profile and/or jet momentum fraction for charmed hadrons
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+
+#include "PWGHF/Core/DecayChannels.h"
 
 #include "Common/Core/RecoDecay.h"
 
