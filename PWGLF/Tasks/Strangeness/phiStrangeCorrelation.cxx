@@ -281,7 +281,7 @@ struct PhiStrangenessCorrelation {
   // using FilteredTracks = soa::Filtered<FullTracks>;
   // using FilteredMCTracks = soa::Filtered<FullMCTracks>;
 
-  // Slice cache and Preslices for manual slicing
+  // Slice cache and Preslices for table slicing
   SliceCache cache;
 
   struct : PresliceGroup {
