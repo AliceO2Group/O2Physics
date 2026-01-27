@@ -347,6 +347,8 @@ struct FlowSP {
 
     rctChecker.init(rctFlags.cfgEvtRCTFlagCheckerLabel, rctFlags.cfgEvtRCTFlagCheckerZDCCheck, rctFlags.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
+    histos.add("hCentrality", "Centrality; Centrality (%); ", {HistType::kTH1D, {axisCent}});
+
     histos.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered events");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_RCTFlagsZDC + 1, "RCT Flags ZDC");
@@ -1220,6 +1222,9 @@ struct FlowSP {
       return;
     histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
 
+    // Always fill centrality histogram after event selections!
+    histos.fill(HIST("hCentrality"), spm.centrality);
+
     spm.qxA = collision.qxA();
     spm.qyA = collision.qyA();
     spm.qxC = collision.qxC();
@@ -1369,16 +1374,16 @@ struct FlowSP {
       histos.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
 
       double weight = spm.wacc[0][0] * spm.weff[0][0] * spm.centWeight;
-      double weight_charged = spm.wacc[spm.charge][0] * spm.weff[spm.charge][0] * spm.centWeight;
+      double weightCharged = spm.wacc[spm.charge][0] * spm.weff[spm.charge][0] * spm.centWeight;
 
       hRelEtaPt->Fill(track.eta(), kInclusive, track.pt(), weight);
-      hRelEtaPt->Fill(track.eta(), spm.charge, track.pt(), weight_charged);
+      hRelEtaPt->Fill(track.eta(), spm.charge, track.pt(), weightCharged);
 
       ptV1A->Fill(track.eta(), kInclusive, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ))), weight);
-      ptV1A->Fill(track.eta(), spm.charge, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ))), weight_charged);
+      ptV1A->Fill(track.eta(), spm.charge, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ))), weightCharged);
 
       ptV1C->Fill(track.eta(), kInclusive, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weight);
-      ptV1C->Fill(track.eta(), spm.charge, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weight_charged);
+      ptV1C->Fill(track.eta(), spm.charge, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weightCharged);
 
       fillAllQA<kAfter, kUnidentified>(track);
       if (cfgFillPIDQA) {
@@ -1495,22 +1500,22 @@ struct FlowSP {
           registry.fill(HIST("incl/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C / drelPt, 1);
 
         bin = hRelEtaPt->FindBin(eta, kPositive);
-        double drelPt_pos = hRelEtaPt->GetBinContent(bin);
-        double dptV1A_pos = ptV1A->GetBinContent(bin);
-        double dptV1C_pos = ptV1C->GetBinContent(bin);
-        if (drelPt_pos)
-          registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A_pos / drelPt_pos, 1);
-        if (drelPt_pos)
-          registry.fill(HIST("pos/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C_pos / drelPt_pos, 1);
+        double drelPtPos = hRelEtaPt->GetBinContent(bin);
+        double dptV1APos = ptV1A->GetBinContent(bin);
+        double dptV1CPos = ptV1C->GetBinContent(bin);
+        if (drelPtPos)
+          registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, dptV1APos / drelPtPos, 1);
+        if (drelPtPos)
+          registry.fill(HIST("pos/meanPT/meanRelPtC"), eta, spm.centrality, dptV1CPos / drelPtPos, 1);
 
         bin = hRelEtaPt->FindBin(eta, kNegative);
-        double drelPt_neg = hRelEtaPt->GetBinContent(bin);
-        double dptV1A_neg = ptV1A->GetBinContent(bin);
-        double dptV1C_neg = ptV1C->GetBinContent(bin);
-        if (drelPt_neg)
-          registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A_neg / drelPt_neg, 1);
-        if (drelPt_neg)
-          registry.fill(HIST("neg/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C_neg / drelPt_neg, 1);
+        double drelPtNeg = hRelEtaPt->GetBinContent(bin);
+        double dptV1ANeg = ptV1A->GetBinContent(bin);
+        double dptV1CNeg = ptV1C->GetBinContent(bin);
+        if (drelPtNeg)
+          registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, dptV1ANeg / drelPtNeg, 1);
+        if (drelPtNeg)
+          registry.fill(HIST("neg/meanPT/meanRelPtC"), eta, spm.centrality, dptV1CNeg / drelPtNeg, 1);
       }
     }
 
