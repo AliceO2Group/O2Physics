@@ -840,6 +840,11 @@ struct matchingMFT {
           continue;
         }
         auto mcParticle = mfttrack.template mcParticle_as<aod::McParticles>();
+
+        if (requireTrueAssociation && (mcParticle.mcCollisionId() != collision.mcCollisionId())) {
+          continue;
+        }
+
         bool isPrimary = mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator();
         float phiGen = mcParticle.phi();
         o2::math_utils::bringTo02Pi(phiGen);
