@@ -281,20 +281,16 @@ struct PhiStrangenessCorrelation {
   // using FilteredTracks = soa::Filtered<FullTracks>;
   // using FilteredMCTracks = soa::Filtered<FullMCTracks>;
 
-  // Preslice for manual slicing
+  // Slice cache and Preslices for manual slicing
+  SliceCache cache;
+
   struct : PresliceGroup {
     Preslice<FullMCV0s> v0PerCollision = aod::v0::collisionId;
     Preslice<FullMCTracks> trackPerCollision = aod::track::collisionId;
     Preslice<aod::McParticles> mcPartPerMcCollision = aod::mcparticle::mcCollisionId;
-    // Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    // PresliceUnsorted<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
+    Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
     PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
-
-    // Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
   } preslices;
-
-  // Slice cache for mixed event
-  SliceCache cache;
 
   // Necessary service to retrieve efficiency maps from CCDB
   Service<ccdb::BasicCCDBManager> ccdb;
