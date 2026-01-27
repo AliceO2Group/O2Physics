@@ -531,7 +531,6 @@ struct Alice3MulticharmFinder {
     auto picTracksGrouped = picTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto piccTracksGrouped = piccTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-
     for (auto const& track : tracks) {
       if (BIT_CHECK(track.decayMap(), kTruePiFromXiC)) {
         histos.fill(HIST("h2dDCAxyVsPtPiFromXiC"), track.pt(), track.dcaXY() * 1e+4);
