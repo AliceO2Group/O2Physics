@@ -17,13 +17,12 @@
 /// The task store data relevant to the calculation of hadronization observables radial
 /// profile and/or jet momentum fraction for charmed hadrons
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-
-#include "PWGHF/Core/DecayChannels.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -290,18 +289,18 @@ struct HfFragmentationFunction {
   } // end of analyzeData function
 
   void processD0DataCharged(aod::JetCollision const& collision,
-                                        soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
-                                        aod::CandidatesD0Data const& candidates,
-                                        aod::JetTracks const& jettracks)
+                            soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
+                            aod::CandidatesD0Data const& candidates,
+                            aod::JetTracks const& jettracks)
   {
     analyzeData<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>, aod::CandidatesD0Data>(collision, jets, candidates, jettracks);
   }
   PROCESS_SWITCH(HfFragmentationFunction, processD0DataCharged, "Store kinematic charged D0 jet information from measured DATA", false);
 
   void processLcDataCharged(aod::JetCollision const& collision,
-                                        soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents> const& jets,
-                                        aod::CandidatesLcData const& candidates,
-                                        aod::JetTracks const& jettracks)
+                            soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents> const& jets,
+                            aod::CandidatesLcData const& candidates,
+                            aod::JetTracks const& jettracks)
   {
     analyzeData<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>, aod::CandidatesLcData>(collision, jets, candidates, jettracks);
   }
@@ -475,38 +474,38 @@ struct HfFragmentationFunction {
           }
         } else {
           // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-            matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size(), // particle level jet
-                          mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                     // particle level HF
-                          -2, -2, -2, -2, -2,                                                                                                                    // detector level jet
-                          -2, -2, -2, -2, -2, -2,                                                                                                                // detector level HF
-                          -2, -2, -2,                                                                                                                            // Machine Learning PID scores: background, prompt, non-prompt
-                          -2, -2);                                                                                                                               // HF = +1, HFbar = -1, neither = 0
+          matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size(), // particle level jet
+                        mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                     // particle level HF
+                        -2, -2, -2, -2, -2,                                                                                                                    // detector level jet
+                        -2, -2, -2, -2, -2, -2,                                                                                                                // detector level HF
+                        -2, -2, -2,                                                                                                                            // Machine Learning PID scores: background, prompt, non-prompt
+                        -2, -2);                                                                                                                               // HF = +1, HFbar = -1, neither = 0
         }
       } // end of mcpjets loop
     } // end of mccollisions loop
   } // end of analyzeMC function
 
   void processD0MC(aod::JetMcCollisions const& mccollisions,
-                               aod::JetCollisionsMCD const& collisions,
-                               JetD0MCDTable const& mcdjets,
-                               JetD0MCPTable const& mcpjets,
-                               aod::CandidatesD0MCD const& mcdcands,
-                               aod::CandidatesD0MCP const& mcpcands,
-                               aod::JetTracks const& jettracks,
-                               aod::JetParticles const& jetparticles)
+                   aod::JetCollisionsMCD const& collisions,
+                   JetD0MCDTable const& mcdjets,
+                   JetD0MCPTable const& mcpjets,
+                   aod::CandidatesD0MCD const& mcdcands,
+                   aod::CandidatesD0MCP const& mcpcands,
+                   aod::JetTracks const& jettracks,
+                   aod::JetParticles const& jetparticles)
   {
     analyzeMC<Preslice<JetD0MCPTable>, JetD0MCDTable, JetD0MCPTable, aod::CandidatesD0MCD, aod::CandidatesD0MCP>(d0MCPJetsPerMCCollisionPreslice, mccollisions, collisions, mcdjets, mcpjets, mcdcands, mcpcands, jettracks, jetparticles);
   }
   PROCESS_SWITCH(HfFragmentationFunction, processD0MC, "Store all simulated D0 jets information with matched candidate (if any found)", false);
 
   void processLcMC(aod::JetMcCollisions const& mccollisions,
-                               aod::JetCollisionsMCD const& collisions,
-                               JetLcMCDTable const& mcdjets,
-                               JetLcMCPTable const& mcpjets,
-                               aod::CandidatesLcMCD const& mcdcands,
-                               aod::CandidatesLcMCP const& mcpcands,
-                               aod::JetTracks const& jettracks,
-                               aod::JetParticles const& jetparticles)
+                   aod::JetCollisionsMCD const& collisions,
+                   JetLcMCDTable const& mcdjets,
+                   JetLcMCPTable const& mcpjets,
+                   aod::CandidatesLcMCD const& mcdcands,
+                   aod::CandidatesLcMCP const& mcpcands,
+                   aod::JetTracks const& jettracks,
+                   aod::JetParticles const& jetparticles)
   {
     analyzeMC<Preslice<JetLcMCPTable>, JetLcMCDTable, JetLcMCPTable, aod::CandidatesLcMCD, aod::CandidatesLcMCP>(lcMCPJetsPerMCCollisionPreslice, mccollisions, collisions, mcdjets, mcpjets, mcdcands, mcpcands, jettracks, jetparticles);
   }
