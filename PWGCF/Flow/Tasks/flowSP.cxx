@@ -347,6 +347,8 @@ struct FlowSP {
 
     rctChecker.init(rctFlags.cfgEvtRCTFlagCheckerLabel, rctFlags.cfgEvtRCTFlagCheckerZDCCheck, rctFlags.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
+    histos.add("hCentrality", "Centrality; Centrality (%); ", {HistType::kTH1D, {axisCent}});
+
     histos.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered events");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_RCTFlagsZDC + 1, "RCT Flags ZDC");
@@ -1219,6 +1221,9 @@ struct FlowSP {
     if (!collision.isSelected()) // selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
       return;
     histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
+
+    // Always fill centrality histogram after event selections!
+    histos.fill(HIST("hCentrality"), spm.centrality);
 
     spm.qxA = collision.qxA();
     spm.qyA = collision.qyA();
