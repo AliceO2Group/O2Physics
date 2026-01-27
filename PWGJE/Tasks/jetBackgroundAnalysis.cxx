@@ -71,12 +71,14 @@ struct JetBackgroundAnalysisTask {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
+  TRandom3 randomNumber{};
 
   void init(o2::framework::InitContext&)
   {
     // selection settings initialisation
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    randomNumber.SetSeed(0);
 
     // Axes definitions
     AxisSpec bkgFluctuationsAxis = {nBinsFluct, -100.0, 100.0, "#delta #it{p}_{T} (GeV/#it{c})"};
@@ -118,7 +120,6 @@ struct JetBackgroundAnalysisTask {
   void bkgFluctuationsRandomCone(TCollisions const& collision, TJets const& jets, TTracks const& tracks, float centrality)
   {
     if (jets.size() > 0) { // Since the purpose of the fluctuation measurement is jet correction, events with zero accepted jets (from the jetfinder cuts) are excluded
-      TRandom3 randomNumber(0);
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
       float randomConePt = 0;
