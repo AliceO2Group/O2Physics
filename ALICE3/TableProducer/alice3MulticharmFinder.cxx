@@ -521,7 +521,6 @@ struct Alice3MulticharmFinder {
 
     GET_HIST(TH1, histPath + "hNCollisions")->Fill(1);
     GET_HIST(TH1, histPath + "hNTracks")->Fill(tracks.size());
-    std::cout << tracks.size() << std::endl;
     if (tracks.size() < minNTracks.value[collision.lutConfigId()]) {
       return;
     }
