@@ -69,13 +69,9 @@ using MultiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MC
 
 struct Alice3Multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  std::map<std::string, HistPtr> histPointers;
-  std::vector<int> savedConfigs;
-  std::string histPath;
 
   std::map<int, int> pdgToBin;
   o2::ml::OnnxModel bdtMCharm;
-
   std::map<std::string, std::string> metadata;
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -131,6 +127,7 @@ struct Alice3Multicharm {
   Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
   Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 1e+4, "Minimum proper length for Xicc decay (cm)"};
   Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
+
   Filter configFilter = (aod::otfmulticharm::lutConfigId == otfConfig);
 
   void init(InitContext&)
