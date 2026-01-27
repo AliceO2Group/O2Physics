@@ -29,36 +29,6 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <string>
-#include <vector>
-
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include "Math/Vector3D.h"
-
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -79,6 +49,11 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -86,6 +61,7 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include "Math/Vector3D.h"
 #include <Math/Vector4D.h>
 #include <TFile.h>
 #include <TH2F.h>
@@ -389,7 +365,7 @@ struct QuarkoniaToHyperons {
     ConfigurableAxis axisHypPairPhi{"axisHypPairPhi", {180, 0.0f, constants::math::TwoPI}, "Hyperon pair azimuthal angle (rad)"};
   } axes;
 
-  o2::base::MatLayerCylSet* lut;       // material LUT for DCA fitter
+  o2::base::MatLayerCylSet* lut; // material LUT for DCA fitter
   o2::vertexing::DCAFitterN<2> fitter;
 
   // helper object
@@ -815,8 +791,8 @@ struct QuarkoniaToHyperons {
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAPair", "h3dMassXiXiBarVsDCAPair", kTH3F, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairCosPA", "h3dMassXiXiBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairOpAngle", "h3dMassXiXiBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass}); 
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass}); 
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
         histos.add("QA/LaLaBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
         histos.add("QA/LaLaBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
@@ -1082,11 +1058,13 @@ struct QuarkoniaToHyperons {
     std::array<float, 3> antiHyperonMomentum = {0.0f, 0.0f, 0.0f};
     float DCADau = -999.f;
     float CosPA = -1.f;
-    float OpAngle = -999.f; 
-    float Eta() const {
+    float OpAngle = -999.f;
+    float Eta() const
+    {
       return RecoDecay::eta(std::array{hyperonMomentum[0] + antiHyperonMomentum[0], hyperonMomentum[1] + antiHyperonMomentum[1], hyperonMomentum[2] + antiHyperonMomentum[2]});
     }
-    float Phi() const {
+    float Phi() const
+    {
       return RecoDecay::phi(std::array{hyperonMomentum[0] + antiHyperonMomentum[0], hyperonMomentum[1] + antiHyperonMomentum[1]});
     }
   };
@@ -1141,7 +1119,7 @@ struct QuarkoniaToHyperons {
     TVector3 hyp2Momentum(pairInfo.antiHyperonMomentum[0], pairInfo.antiHyperonMomentum[1], pairInfo.antiHyperonMomentum[2]);
     pairInfo.OpAngle = hyp1Momentum.Angle(hyp2Momentum);
 
-    if (d < 1e-5f) {                  // Parallel or nearly parallel lines
+    if (d < 1e-5f) {                                 // Parallel or nearly parallel lines
       pairInfo.X = pairInfo.Y = pairInfo.Z = -999.f; // should we use another dummy value? Perhaps 999.f?
       return pairInfo;
     }
@@ -1220,7 +1198,6 @@ struct QuarkoniaToHyperons {
 
     return pairInfo;
   }
-
 
   template <typename TCollision>
   bool isEventAccepted(TCollision collision, bool fillHists)
