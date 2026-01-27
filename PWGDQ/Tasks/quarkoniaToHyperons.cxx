@@ -160,6 +160,8 @@ struct QuarkoniaToHyperons {
   Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
 
+  Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+
   Configurable<bool> buildK0sK0sPairs{"buildK0sK0sPairs", false, "Build K0s K0s from charmonia decay"};
   Configurable<bool> buildLaLaBarPairs{"buildLaLaBarPairs", false, "Build Lambda antiLambda from charmonia decay"};
   Configurable<bool> buildXiXiBarPairs{"buildXiXiBarPairs", false, "Build Xi antiXi from charmonia decay"};
@@ -1238,7 +1240,7 @@ struct QuarkoniaToHyperons {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
 
-    if (std::abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > maxZVtxPosition) {
       return false;
     }
     if (fillHists)
@@ -1712,18 +1714,18 @@ struct QuarkoniaToHyperons {
 
         if (isXi) {
           if (casc.sign() < 0) {
-            if (cascMC.pdgCode() != 3312 || cascMC.pdgCodePositive() != 2212 || cascMC.pdgCodeNegative() != -211 || cascMC.pdgCodeBachelor() != -211)
+            if (cascMC.pdgCode() != PDG_t::kXiMinus || cascMC.pdgCodePositive() != PDG_t::kProton || cascMC.pdgCodeNegative() != PDG_t::kPiMinus || cascMC.pdgCodeBachelor() != -PDG_t::kPiMinus)
               return false;
           } else {
-            if (cascMC.pdgCode() != -3312 || cascMC.pdgCodePositive() != 211 || cascMC.pdgCodeNegative() != -2212 || cascMC.pdgCodeBachelor() != 211)
+            if (cascMC.pdgCode() != PDG_t::kXiPlus || cascMC.pdgCodePositive() != PDG_t::kPiPlus || cascMC.pdgCodeNegative() != PDG_t::kProtonBar || cascMC.pdgCodeBachelor() != PDG_t::kPiPlus)
               return false;
           }
         } else {
           if (casc.sign() < 0) {
-            if (cascMC.pdgCode() != 3334 || cascMC.pdgCodePositive() != 2212 || cascMC.pdgCodeNegative() != -211 || cascMC.pdgCodeBachelor() != -321)
+            if (cascMC.pdgCode() != PDG_t::kOmegaMinus || cascMC.pdgCodePositive() != PDG_t::kProton || cascMC.pdgCodeNegative() != PDG_t::kPiMinus || cascMC.pdgCodeBachelor() != PDG_t::kKMinus)
               return false;
           } else {
-            if (cascMC.pdgCode() != -3334 || cascMC.pdgCodePositive() != 211 || cascMC.pdgCodeNegative() != -2212 || cascMC.pdgCodeBachelor() != 321)
+            if (cascMC.pdgCode() != PDG_t::kOmegaPlus || cascMC.pdgCodePositive() != PDG_t::kPiPlus || cascMC.pdgCodeNegative() != PDG_t::kProtonBar || cascMC.pdgCodeBachelor() != PDG_t::kKPlus)
               return false;
           }
         }
@@ -1740,17 +1742,17 @@ struct QuarkoniaToHyperons {
     uint64_t bitMap = 0;
     // check for specific particle species
 
-    if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211) {
+    if (v0.pdgCode() == PDG_t::kK0Short && v0.pdgCodePositive() == PDG_t::kPiPlus && v0.pdgCodeNegative() == PDG_t::kPiMinus) {
       BITSET(bitMap, selConsiderK0Short);
       if (v0.isPhysicalPrimary())
         BITSET(bitMap, selPhysPrimK0Short);
     }
-    if (v0.pdgCode() == 3122 && v0.pdgCodePositive() == 2212 && v0.pdgCodeNegative() == -211) {
+    if (v0.pdgCode() == PDG_t::kLambda0 && v0.pdgCodePositive() == PDG_t::kProton && v0.pdgCodeNegative() == PDG_t::kPiMinus) {
       BITSET(bitMap, selConsiderLambda);
       if (v0.isPhysicalPrimary())
         BITSET(bitMap, selPhysPrimLambda);
     }
-    if (v0.pdgCode() == -3122 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -2212) {
+    if (v0.pdgCode() == PDG_t::kLambda0Bar && v0.pdgCodePositive() == PDG_t::kPiPlus && v0.pdgCodeNegative() == PDG_t::kProtonBar) {
       BITSET(bitMap, selConsiderAntiLambda);
       if (v0.isPhysicalPrimary())
         BITSET(bitMap, selPhysPrimAntiLambda);
@@ -2730,9 +2732,9 @@ struct QuarkoniaToHyperons {
 
           float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
           float ymc = 1e-3;
-          if (v0MC.pdgCode() == 310)
+          if (v0MC.pdgCode() == PDG_t::kK0Short)
             ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-          else if (std::fabs(v0MC.pdgCode()) == 3122)
+          else if (std::fabs(v0MC.pdgCode()) == PDG_t::kLambda0)
             ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
 
           selMap[v0sGrouped[collision.globalIndex()][i]] = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
@@ -2804,9 +2806,9 @@ struct QuarkoniaToHyperons {
           auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
           float ymc = 1e-3;
-          if (std::fabs(cascadeMC.pdgCode()) == 3312)
+          if (std::fabs(cascadeMC.pdgCode()) == PDG_t::kXiMinus)
             ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
-          else if (std::fabs(cascadeMC.pdgCode()) == 3334)
+          else if (std::fabs(cascadeMC.pdgCode()) == PDG_t::kOmegaMinus)
             ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
 
           if (buildXiXiBarPairs) {
