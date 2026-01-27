@@ -69,6 +69,7 @@
 #include <TPDGCode.h>
 #include <TProfile.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
