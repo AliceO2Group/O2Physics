@@ -1729,7 +1729,7 @@ struct QuarkoniaToHyperons {
             if (cascMC.pdgCode() != PDG_t::kXiMinus || cascMC.pdgCodePositive() != PDG_t::kProton || cascMC.pdgCodeNegative() != PDG_t::kPiMinus || cascMC.pdgCodeBachelor() != -PDG_t::kPiMinus)
               return false;
           } else {
-            if (cascMC.pdgCode() != PDG_t::kXiPlus || cascMC.pdgCodePositive() != PDG_t::kPiPlus || cascMC.pdgCodeNegative() != PDG_t::kProtonBar || cascMC.pdgCodeBachelor() != PDG_t::kPiPlus)
+            if (cascMC.pdgCode() != PDG_t::kXiPlusBar || cascMC.pdgCodePositive() != PDG_t::kPiPlus || cascMC.pdgCodeNegative() != PDG_t::kProtonBar || cascMC.pdgCodeBachelor() != PDG_t::kPiPlus)
               return false;
           }
         } else {
@@ -1737,7 +1737,7 @@ struct QuarkoniaToHyperons {
             if (cascMC.pdgCode() != PDG_t::kOmegaMinus || cascMC.pdgCodePositive() != PDG_t::kProton || cascMC.pdgCodeNegative() != PDG_t::kPiMinus || cascMC.pdgCodeBachelor() != PDG_t::kKMinus)
               return false;
           } else {
-            if (cascMC.pdgCode() != PDG_t::kOmegaPlus || cascMC.pdgCodePositive() != PDG_t::kPiPlus || cascMC.pdgCodeNegative() != PDG_t::kProtonBar || cascMC.pdgCodeBachelor() != PDG_t::kKPlus)
+            if (cascMC.pdgCode() != PDG_t::kOmegaPlusBar || cascMC.pdgCodePositive() != PDG_t::kPiPlus || cascMC.pdgCodeNegative() != PDG_t::kProtonBar || cascMC.pdgCodeBachelor() != PDG_t::kKPlus)
               return false;
           }
         }
@@ -2460,7 +2460,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TCollision, typename THyperons>
-  void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<int> selHypIndices, std::vector<int> selAntiHypIndices, float centrality, uint8_t gapSide, int type, std::vector<uint64_t> selMap = {})
+  void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<int> selHypIndices, std::vector<int> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
   {
     // 1st loop over all v0s/cascades
     for (std::size_t iHyp = 0; iHyp < selHypIndices.size(); iHyp++) {
@@ -2738,7 +2738,6 @@ struct QuarkoniaToHyperons {
         selLambdaIndices.clear();
         selAntiLambdaIndices.clear();
 
-        std::vector<uint64_t> selMap(fullV0s.size());
         for (std::size_t i = 0; i < nV0sThisColl; i++) {
           auto v0 = fullV0s.rawIteratorAt(v0sGrouped[collision.globalIndex()][i]);
 
@@ -2754,22 +2753,22 @@ struct QuarkoniaToHyperons {
           float ymc = 1e-3;
           if (v0MC.pdgCode() == PDG_t::kK0Short)
             ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-          else if (std::fabs(v0MC.pdgCode()) == PDG_t::kLambda0)
+          else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
             ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
 
-          selMap[v0sGrouped[collision.globalIndex()][i]] = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
-          selMap[v0sGrouped[collision.globalIndex()][i]] = selMap[v0sGrouped[collision.globalIndex()][i]] | computeMCAssociation(v0MC);
+          uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
+          selMap = selMap | computeMCAssociation(v0MC);
 
           // selMap |= maskTopological | maskTrackProperties | maskLambdaSpecific;
           // selMap |= maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
           // consider only associated candidates if asked to do so, disregard association
           if (!doMCAssociation) {
-            selMap[v0sGrouped[collision.globalIndex()][i]] = selMap[v0sGrouped[collision.globalIndex()][i]] | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
-            selMap[v0sGrouped[collision.globalIndex()][i]] = selMap[v0sGrouped[collision.globalIndex()][i]] | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
+            selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
+            selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
           }
 
-          analyseV0Candidate(v0, ptmc, selMap[i], selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices /*, fullV0s.offset()*/);
+          analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices /*, fullV0s.offset()*/);
         } // end v0 loop
 
         /// count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -2794,13 +2793,13 @@ struct QuarkoniaToHyperons {
           histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
 
           if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
-            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1, selMap);
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
           }
           if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
-            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1, selMap);
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 1);
           }
           if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
-            buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1, selMap);
+            buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 1);
           }
         }
       }
@@ -2826,9 +2825,9 @@ struct QuarkoniaToHyperons {
           auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
           float ymc = 1e-3;
-          if (std::fabs(cascadeMC.pdgCode()) == PDG_t::kXiMinus)
+          if (std::abs(cascadeMC.pdgCode()) == PDG_t::kXiMinus)
             ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
-          else if (std::fabs(cascadeMC.pdgCode()) == PDG_t::kOmegaMinus)
+          else if (std::abs(cascadeMC.pdgCode()) == PDG_t::kOmegaMinus)
             ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
 
           if (buildXiXiBarPairs) {
