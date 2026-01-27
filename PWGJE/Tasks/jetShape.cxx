@@ -508,13 +508,13 @@ struct JetShapeTask {
           if (hasTofPi) {
             registry.fill(HIST("tpcTofPiOutOfJet"), trkP, tpcPi, jet.ptCorr, centrality);
             if (isTpcPiRange) {
-              registry.fill(HIST("pVsPtForPiOutOfJet"), trkP, trkPt, jet.ptCorr, centrality, track.dcaXY());
+              registry.fill(HIST("pVsPtForPiOutOfJet"), trkP, trkPt, jet.ptCorr, centrality);
             }
           }
           if (hasTofPr) {
             registry.fill(HIST("tpcTofPrOutOfJet"), trkP, tpcPr, jet.ptCorr, centrality);
             if (isTpcPrRange) {
-              registry.fill(HIST("pVsPtForPrOutOfJet"), trkP, trkPt, jet.ptCorr, centrality, track.dcaXY());
+              registry.fill(HIST("pVsPtForPrOutOfJet"), trkP, trkPt, jet.ptCorr, centrality);
             }
           }
         }
@@ -762,7 +762,6 @@ struct JetShapeTask {
 
     // --- centrality ---
     float centrality = collisions.begin().centFT0M();
-    // float centrality = mcCollision.centFT0M();
     registry.fill(HIST("mcCentralitySim"), centrality);
     const float maxR2 = distanceMax * distanceMax;
 
