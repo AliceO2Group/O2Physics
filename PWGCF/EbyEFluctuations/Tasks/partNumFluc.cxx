@@ -41,7 +41,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -655,7 +654,7 @@ struct PartNumFluc {
 
   Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "https://alice-ccdb.cern.ch", "Url of CCDB"};
   Configurable<std::string> cfgCcdbPath{"cfgCcdbPath", "Users/f/fasi/test", "Path in CCDB"};
-  Configurable<std::int64_t> cfgCcdbTimestampLatest{"cfgCcdbTimestampLatest", std::numeric_limits<std::int64_t>::max(), "Latest timestamp in CCDB"};
+  Configurable<std::int64_t> cfgCcdbTimestampLatest{"cfgCcdbTimestampLatest", 0, "Latest timestamp in CCDB"};
 
   Configurable<bool> cfgFlagQaRun{"cfgFlagQaRun", false, "Run QA flag"};
   Configurable<bool> cfgFlagQaEvent{"cfgFlagQaEvent", false, "Event QA flag"};
@@ -755,7 +754,9 @@ struct PartNumFluc {
   {
     gRandom->SetSeed(0);
 
-    assert(doprocessRaw.value ^ doprocessMc.value);
+    if (doprocessRaw.value == doprocessMc.value) {
+      LOG(fatal) << "Identical doprocessRaw and doprocessMc!";
+    }
     if (doprocessRaw.value) {
       LOG(info) << "Enabling raw data process.";
     } else if (doprocessMc.value) {
@@ -766,25 +767,29 @@ struct PartNumFluc {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(true);
-    if (cfgCcdbTimestampLatest.value < std::numeric_limits<std::int64_t>::max()) {
-      ccdb->setCreatedNotAfter(cfgCcdbTimestampLatest.value > std::numeric_limits<std::int64_t>::min() ? cfgCcdbTimestampLatest.value : std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count());
+    if (cfgCcdbTimestampLatest.value >= 0) {
+      ccdb->setCreatedNotAfter(cfgCcdbTimestampLatest.value > 0 ? cfgCcdbTimestampLatest.value : std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count());
     }
 
     const TList* const ccdbObject = ccdb->getForTimeStamp<TList>(cfgCcdbPath.value, -1);
-    assert(ccdbObject && ccdbObject->IsA() == TList::Class());
+    if (!ccdbObject || ccdbObject->IsA() != TList::Class()) {
+      LOG(fatal) << "Invalid ccdb_object!";
+    }
 
     const TGraph* const gRunNumberGroupIndex = static_cast<TGraph*>(ccdbObject->FindObject("gRunNumberGroupIndex"));
-    assert(gRunNumberGroupIndex && gRunNumberGroupIndex->IsA() == TGraph::Class());
+    if (!gRunNumberGroupIndex || gRunNumberGroupIndex->IsA() != TGraph::Class()) {
+      LOG(fatal) << "Invalid gRunNumberGroupIndex!";
+    }
     holderCcdb.clear();
     std::int32_t nRunsBad = 0;
     std::int32_t nRunGroups = 0;
     for (std::int32_t const& iRun : std::views::iota(0, gRunNumberGroupIndex->GetN())) {
       const std::int32_t runGroupIndex = std::llrint(gRunNumberGroupIndex->GetY()[iRun]);
-      if (runGroupIndex <= 0) {
+      if (runGroupIndex == 0 || (cfgFlagRejectionRunBad.value && runGroupIndex < 0)) {
         nRunsBad++;
       }
       nRunGroups = std::max(nRunGroups, std::abs(runGroupIndex));
-      holderCcdb.runNumbersIndicesGroupIndices[std::llrint(gRunNumberGroupIndex->GetX()[iRun])] = std::make_pair(iRun, runGroupIndex);
+      holderCcdb.runNumbersIndicesGroupIndices[std::llrint(gRunNumberGroupIndex->GetX()[iRun])] = std::pair<std::int32_t, std::int32_t>(iRun, runGroupIndex);
     }
 
     if (holderCcdb.runNumbersIndicesGroupIndices.empty()) {
@@ -796,12 +801,12 @@ struct PartNumFluc {
       }
     }
 
-    if (cfgFlagRejectionRunBad.value && holderCcdb.runNumbersIndicesGroupIndices.empty()) {
+    if (nRunsBad <= 0) {
       LOG(info) << "No run rejection enabled.";
     } else {
       LOG(info) << "Number of bad runs: " << nRunsBad;
       for (const auto& [runNumber, runIndexGroupIndex] : holderCcdb.runNumbersIndicesGroupIndices) {
-        if (runIndexGroupIndex.second <= 0) {
+        if (runIndexGroupIndex.second == 0 || (cfgFlagRejectionRunBad.value && runIndexGroupIndex.second < 0)) {
           LOG(info) << "Enabling rejecting run: " << runNumber;
         }
       }
@@ -832,104 +837,140 @@ struct PartNumFluc {
         break;
     }
 
-    holderCcdb.fPtSigmaDcaXyP.reserve(nRunGroups);
-    holderCcdb.fPtSigmaDcaXyM.reserve(nRunGroups);
-    holderCcdb.fPtSigmaDcaZP.reserve(nRunGroups);
-    holderCcdb.fPtSigmaDcaZM.reserve(nRunGroups);
+    holderCcdb.fPtSigmaDcaXyP.resize(nRunGroups);
+    holderCcdb.fPtSigmaDcaXyM.resize(nRunGroups);
+    holderCcdb.fPtSigmaDcaZP.resize(nRunGroups);
+    holderCcdb.fPtSigmaDcaZM.resize(nRunGroups);
     for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
       const TList* const lRunGroup = static_cast<TList*>(ccdbObject->FindObject(Form("lRunGroup_%d", iRunGroup + 1)));
-      assert(lRunGroup && lRunGroup->IsA() == TList::Class());
-      LOG(info) << "Reading fPtSigmaDca for run group: " << iRunGroup + 1;
-      holderCcdb.fPtSigmaDcaXyP.push_back(static_cast<TFormula*>(lRunGroup->FindObject("fPtSigmaDcaXyP")));
-      assert(holderCcdb.fPtSigmaDcaXyP.back() && holderCcdb.fPtSigmaDcaXyP.back()->IsA() == TFormula::Class());
-      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaXyP.back()->GetName() << " \"" << holderCcdb.fPtSigmaDcaXyP.back()->GetExpFormula("clingp") << "\"";
-      holderCcdb.fPtSigmaDcaXyM.push_back(static_cast<TFormula*>(lRunGroup->FindObject("fPtSigmaDcaXyM")));
-      assert(holderCcdb.fPtSigmaDcaXyM.back() && holderCcdb.fPtSigmaDcaXyM.back()->IsA() == TFormula::Class());
-      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaXyM.back()->GetName() << " \"" << holderCcdb.fPtSigmaDcaXyM.back()->GetExpFormula("clingp") << "\"";
-      holderCcdb.fPtSigmaDcaZP.push_back(static_cast<TFormula*>(lRunGroup->FindObject("fPtSigmaDcaZP")));
-      assert(holderCcdb.fPtSigmaDcaZP.back() && holderCcdb.fPtSigmaDcaZP.back()->IsA() == TFormula::Class());
-      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaZP.back()->GetName() << " \"" << holderCcdb.fPtSigmaDcaZP.back()->GetExpFormula("clingp") << "\"";
-      holderCcdb.fPtSigmaDcaZM.push_back(static_cast<TFormula*>(lRunGroup->FindObject("fPtSigmaDcaZM")));
-      assert(holderCcdb.fPtSigmaDcaZM.back() && holderCcdb.fPtSigmaDcaZM.back()->IsA() == TFormula::Class());
-      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaZM.back()->GetName() << " \"" << holderCcdb.fPtSigmaDcaZM.back()->GetExpFormula("clingp") << "\"";
+      if (!lRunGroup || lRunGroup->IsA() != TList::Class()) {
+        LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
+      }
+      holderCcdb.fPtSigmaDcaXyP[iRunGroup] = static_cast<TFormula*>(lRunGroup->FindObject(Form("fPtSigmaDcaXyP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+      if (!holderCcdb.fPtSigmaDcaXyP[iRunGroup] || holderCcdb.fPtSigmaDcaXyP[iRunGroup]->IsA() != TFormula::Class()) {
+        LOG(fatal) << "Invalid " << Form("fPtSigmaDcaXyP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+      }
+      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaXyP[iRunGroup]->GetName() << " \"" << holderCcdb.fPtSigmaDcaXyP[iRunGroup]->GetExpFormula("clingp") << "\"";
+      holderCcdb.fPtSigmaDcaXyM[iRunGroup] = static_cast<TFormula*>(lRunGroup->FindObject(Form("fPtSigmaDcaXyM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+      if (!holderCcdb.fPtSigmaDcaXyM[iRunGroup] || holderCcdb.fPtSigmaDcaXyM[iRunGroup]->IsA() != TFormula::Class()) {
+        LOG(fatal) << "Invalid " << Form("fPtSigmaDcaXyM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+      }
+      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaXyM[iRunGroup]->GetName() << " \"" << holderCcdb.fPtSigmaDcaXyM[iRunGroup]->GetExpFormula("clingp") << "\"";
+      holderCcdb.fPtSigmaDcaZP[iRunGroup] = static_cast<TFormula*>(lRunGroup->FindObject(Form("fPtSigmaDcaZP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+      if (!holderCcdb.fPtSigmaDcaZP[iRunGroup] || holderCcdb.fPtSigmaDcaZP[iRunGroup]->IsA() != TFormula::Class()) {
+        LOG(fatal) << "Invalid " << Form("fPtSigmaDcaZP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+      }
+      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaZP[iRunGroup]->GetName() << " \"" << holderCcdb.fPtSigmaDcaZP[iRunGroup]->GetExpFormula("clingp") << "\"";
+      holderCcdb.fPtSigmaDcaZM[iRunGroup] = static_cast<TFormula*>(lRunGroup->FindObject(Form("fPtSigmaDcaZM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+      if (!holderCcdb.fPtSigmaDcaZM[iRunGroup] || holderCcdb.fPtSigmaDcaZM[iRunGroup]->IsA() != TFormula::Class()) {
+        LOG(fatal) << "Invalid " << Form("fPtSigmaDcaZM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+      }
+      LOG(info) << "Reading from CCDB: " << holderCcdb.fPtSigmaDcaZM[iRunGroup]->GetName() << " \"" << holderCcdb.fPtSigmaDcaZM[iRunGroup]->GetExpFormula("clingp") << "\"";
     }
 
     if (cfgFlagRecalibrationNSigmaPi.value || cfgFlagRecalibrationNSigmaKa.value || cfgFlagRecalibrationNSigmaPr.value) {
       if (cfgFlagRecalibrationNSigmaPi.value) {
         LOG(info) << "Enabling nSigmaPi recalibration.";
 
-        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM.reserve(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM.resize(nRunGroups);
         for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
           const TList* const lRunGroup = static_cast<TList*>(ccdbObject->FindObject(Form("lRunGroup_%d", iRunGroup + 1)));
-          assert(lRunGroup && lRunGroup->IsA() == TList::Class());
-          LOG(info) << "Reading hCentralityPtEtaShiftNSigmaPidPi for run group: " << iRunGroup + 1;
-          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPiP%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP.back() && holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPiM%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM.back() && holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPiP%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP.back() && holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPiM%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM.back() && holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM.back()->GetName();
+          if (!lRunGroup || lRunGroup->IsA() != TList::Class()) {
+            LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
+          }
+          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPiP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTpcNSigmaPiP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiP[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPiM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTpcNSigmaPiM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPiM[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPiP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTofNSigmaPiP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPiP[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPiM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTofNSigmaPiM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPiM[iRunGroup]->GetName();
         }
       }
 
       if (cfgFlagRecalibrationNSigmaKa.value) {
         LOG(info) << "Enabling nSigmaKa recalibration.";
 
-        holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM.reserve(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM.resize(nRunGroups);
         for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
           const TList* const lRunGroup = static_cast<TList*>(ccdbObject->FindObject(Form("lRunGroup_%d", iRunGroup + 1)));
-          assert(lRunGroup && lRunGroup->IsA() == TList::Class());
-          LOG(info) << "Reading hCentralityPtEtaShiftNSigmaPidKa for run group: " << iRunGroup + 1;
-          holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaKaP%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP.back() && holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaKaM%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM.back() && holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaKaP%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP.back() && holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaKaM%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM.back() && holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM.back()->GetName();
+          if (!lRunGroup || lRunGroup->IsA() != TList::Class()) {
+            LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
+          }
+          holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaKaP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTpcNSigmaKaP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaP[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaKaM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTpcNSigmaKaM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaKaM[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaKaP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTofNSigmaKaP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaKaP[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaKaM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTofNSigmaKaM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaKaM[iRunGroup]->GetName();
         }
       }
 
       if (cfgFlagRecalibrationNSigmaPr.value) {
         LOG(info) << "Enabling nSigmaPr recalibration.";
 
-        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP.reserve(nRunGroups);
-        holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM.reserve(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP.resize(nRunGroups);
+        holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM.resize(nRunGroups);
         for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
           const TList* const lRunGroup = static_cast<TList*>(ccdbObject->FindObject(Form("lRunGroup_%d", iRunGroup + 1)));
-          assert(lRunGroup && lRunGroup->IsA() == TList::Class());
-          LOG(info) << "Reading hCentralityPtEtaShiftNSigmaPidPr for run group: " << iRunGroup + 1;
-          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPrP%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP.back() && holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPrM%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM.back() && holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPrP%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP.back() && holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP.back()->GetName();
-          holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM.push_back(static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPrM%s", doprocessMc.value ? "_mc" : ""))));
-          assert(holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM.back() && holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM.back()->InheritsFrom(TH3::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM.back()->GetName();
+          if (!lRunGroup || lRunGroup->IsA() != TList::Class()) {
+            LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
+          }
+          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPrP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTpcNSigmaPrP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrP[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTpcNSigmaPrM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTpcNSigmaPrM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTpcNSigmaPrM[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPrP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTofNSigmaPrP%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPrP[iRunGroup]->GetName();
+          holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM[iRunGroup] = static_cast<TH3*>(lRunGroup->FindObject(Form("hCentralityPtEtaShiftTofNSigmaPrM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1)));
+          if (!holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM[iRunGroup] || !holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM[iRunGroup]->InheritsFrom(TH3::Class())) {
+            LOG(fatal) << "Invalid " << Form("hCentralityPtEtaShiftTofNSigmaPrM%s_runGroup%d", doprocessMc.value ? "_mc" : "", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hCentralityPtEtaShiftTofNSigmaPrM[iRunGroup]->GetName();
         }
       }
     }
@@ -1249,74 +1290,101 @@ struct PartNumFluc {
       HistogramConfigSpec hcsFluctuationCalculator(HistType::kTH3D, {{cfgNCentralityBins.value, 0., 100., "Centrality (%)"}, {cfgNSubgroups.value, -0.5, cfgNSubgroups.value - 0.5, "Subgroup Index"}, {fluctuation_calculator_base::NOrderVectors, -0.5, fluctuation_calculator_base::NOrderVectors - 0.5, "Order Vector Index"}});
 
       if (cfgFlagCalculationFluctuationCh.value) {
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM.reserve(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM.resize(nRunGroups);
         for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
           const TList* const lRunGroup = static_cast<TList*>(ccdbObject->FindObject(Form("lRunGroup_%d", iRunGroup + 1)));
-          assert(lRunGroup && lRunGroup->IsA() == TList::Class());
-          LOG(info) << "Reading hVzCentralityPtEtaEfficiencyPi for run group: " << iRunGroup + 1;
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcPiP")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcPiM")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcTofPiP")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcTofPiM")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM.back()->GetName();
+          if (!lRunGroup || lRunGroup->IsA() != TList::Class()) {
+            LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
+          }
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPiP_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPiP_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPiM_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPiM_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPiP_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPiP_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPiM_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPiM_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup]->GetName();
         }
       }
 
       if (cfgFlagCalculationFluctuationCh.value || cfgFlagCalculationFluctuationKa.value) {
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM.reserve(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM.resize(nRunGroups);
         for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
           const TList* const lRunGroup = static_cast<TList*>(ccdbObject->FindObject(Form("lRunGroup_%d", iRunGroup + 1)));
-          assert(lRunGroup && lRunGroup->IsA() == TList::Class());
-          LOG(info) << "Reading hVzCentralityPtEtaEfficiencyKa for run group: " << iRunGroup + 1;
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcKaP")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcKaM")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcTofKaP")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcTofKaM")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM.back()->GetName();
+          if (!lRunGroup || lRunGroup->IsA() != TList::Class()) {
+            LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
+          }
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcKaP_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcKaP_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcKaM_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcKaM_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofKaP_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofKaP_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofKaM_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofKaM_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup]->GetName();
         }
       }
 
       if (cfgFlagCalculationFluctuationCh.value || cfgFlagCalculationFluctuationPr.value) {
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP.reserve(nRunGroups);
-        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM.reserve(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP.resize(nRunGroups);
+        holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM.resize(nRunGroups);
         for (std::int32_t const& iRunGroup : std::views::iota(0, nRunGroups)) {
           const TList* const lRunGroup = static_cast<TList*>(ccdbObject->FindObject(Form("lRunGroup_%d", iRunGroup + 1)));
-          assert(lRunGroup && lRunGroup->IsA() == TList::Class());
-          LOG(info) << "Reading hVzCentralityPtEtaEfficiencyPr for run group: " << iRunGroup + 1;
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcPrP")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcPrM")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcTofPrP")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP.back()->GetName();
-          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM.push_back(static_cast<THnBase*>(lRunGroup->FindObject("hVzCentralityPtEtaEfficiencyTpcTofPrM")));
-          assert(holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM.back() && holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM.back()->InheritsFrom(THnBase::Class()));
-          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM.back()->GetName();
+          if (!lRunGroup || lRunGroup->IsA() != TList::Class()) {
+            LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
+          }
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPrP_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPrP_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPrM_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPrM_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPrP_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPrP_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup]->GetName();
+          holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPrM_runGroup%d", iRunGroup + 1)));
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+            LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPrM_runGroup%d", iRunGroup + 1) << "!";
+          }
+          LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup]->GetName();
         }
       }
 
@@ -1401,7 +1469,7 @@ struct PartNumFluc {
     if (holderTrack.sign == 0) {
       return 0.;
     }
-    const TH3* const hCentralityPtEtaShiftNSigmaPid = pointersVectorHistogramShiftNSigmaPid[static_cast<std::int32_t>(particleSpecies)][holderTrack.sign > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(holderEvent.runGroupIndex - 1);
+    const TH3* const hCentralityPtEtaShiftNSigmaPid = pointersVectorHistogramShiftNSigmaPid[static_cast<std::int32_t>(particleSpecies)][holderTrack.sign > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(std::abs(holderEvent.runGroupIndex) - 1);
     return hCentralityPtEtaShiftNSigmaPid ? hCentralityPtEtaShiftNSigmaPid->Interpolate(std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderEvent.centrality, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsX()), -std::numeric_limits<double>::infinity()))), std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderTrack.pt, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsY()), -std::numeric_limits<double>::infinity()))), std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderTrack.eta, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsZ()), -std::numeric_limits<double>::infinity())))) : 0.;
   }
 
@@ -1416,7 +1484,7 @@ struct PartNumFluc {
     if (holderTrack.sign == 0) {
       return 0.;
     }
-    const THnBase* const hVzCentralityPtEtaEfficiency = pointersVectorHistogramEfficiency[static_cast<std::int32_t>(particleSpecies)][holderTrack.sign > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(holderEvent.runGroupIndex - 1);
+    const THnBase* const hVzCentralityPtEtaEfficiency = pointersVectorHistogramEfficiency[static_cast<std::int32_t>(particleSpecies)][holderTrack.sign > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(std::abs(holderEvent.runGroupIndex) - 1);
     if constexpr (doProcessingMc) {
       return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, 4>{holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta}.data())) : 0.;
     }
@@ -1503,11 +1571,11 @@ struct PartNumFluc {
     if (holderTrack.sign == 0) {
       return false;
     }
-    const TFormula* const fPtSigmaDcaXy = (holderTrack.sign > 0 ? holderCcdb.fPtSigmaDcaXyP.at(holderEvent.runGroupIndex - 1) : holderCcdb.fPtSigmaDcaXyM.at(holderEvent.runGroupIndex - 1));
+    const TFormula* const fPtSigmaDcaXy = (holderTrack.sign > 0 ? holderCcdb.fPtSigmaDcaXyP.at(std::abs(holderEvent.runGroupIndex) - 1) : holderCcdb.fPtSigmaDcaXyM.at(std::abs(holderEvent.runGroupIndex) - 1));
     if (!fPtSigmaDcaXy || !(std::fabs(holderTrack.dcaXY) < cfgCutMaxAbsNSigmaDcaXy.value * fPtSigmaDcaXy->Eval(holderTrack.pt))) {
       return false;
     }
-    const TFormula* const fPtSigmaDcaZ = (holderTrack.sign > 0 ? holderCcdb.fPtSigmaDcaZP.at(holderEvent.runGroupIndex - 1) : holderCcdb.fPtSigmaDcaZM.at(holderEvent.runGroupIndex - 1));
+    const TFormula* const fPtSigmaDcaZ = (holderTrack.sign > 0 ? holderCcdb.fPtSigmaDcaZP.at(std::abs(holderEvent.runGroupIndex) - 1) : holderCcdb.fPtSigmaDcaZM.at(std::abs(holderEvent.runGroupIndex) - 1));
     if (!fPtSigmaDcaZ || !(std::fabs(holderTrack.dcaZ) < cfgCutMaxAbsNSigmaDcaZ.value * fPtSigmaDcaZ->Eval(holderTrack.pt))) {
       return false;
     }
@@ -1834,7 +1902,7 @@ struct PartNumFluc {
 
     std::tie(holderEvent.runIndex, holderEvent.runGroupIndex) = holderCcdb.runNumbersIndicesGroupIndices.at(holderEvent.runNumber);
 
-    if (holderEvent.runGroupIndex <= 0) {
+    if (holderEvent.runGroupIndex == 0 || (cfgFlagRejectionRunBad.value && holderEvent.runGroupIndex < 0)) {
       hrCounter.fill(HIST("hNEvents"), 2.);
       return false;
     }
