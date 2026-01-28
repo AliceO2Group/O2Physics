@@ -477,15 +477,14 @@ struct checkMCTemplate {
 
     float dca = 999.f;
     float det = cXX * cYY - cXY * cXY; // determinanat
-    float dcaXYinSigma = 999.f;
     if (det < 0) {
       dca = 999.f;
     } else {
       dca = std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2.f * dcaX * dcaY * cXY) / det / 2.f)); // dca xy in sigma
     }
 
-    float rAtAbsorberEnd = muon.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
-    float pDCA = propmuonAtPV.getP() * dcaXY;
+    // float rAtAbsorberEnd = muon.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
+    // float pDCA = propmuonAtPV.getP() * dcaXY;
     int nClustersMFT = 0;
     float ptMatchedMCHMID = propmuonAtPV.getPt();
     float etaMatchedMCHMID = propmuonAtPV.getEta();
