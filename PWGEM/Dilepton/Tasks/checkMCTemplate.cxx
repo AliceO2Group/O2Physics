@@ -520,7 +520,7 @@ struct checkMCTemplate {
     // float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     // float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     // pDCA = mchtrack.p() * dcaXY_Matched;
-    pDCA = propmuonAtPV.getP() * dcaXY;
+    // pDCA = propmuonAtPV.getP() * dcaXY;
 
     nClustersMFT = mfttrack.nClusters();
     float chi2mft = mfttrack.chi2() / (2.f * nClustersMFT - 5.f);
@@ -569,35 +569,6 @@ struct checkMCTemplate {
         registry.fill(HIST("Muon/c2l/hs"), pt, eta, phi, dca, muon.sign());
       }
     }
-  }
-
-  bool isSelectedMuon(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float dcaXY)
-  {
-    if (pt < muoncuts.cfg_min_pt_track) {
-      return false;
-    }
-    if (rAtAbsorberEnd < muoncuts.cfg_mid_rabs ? pDCA > muoncuts.cfg_max_pdca_forSmallR : pDCA > muoncuts.cfg_max_pdca_forLargeR) {
-      return false;
-    }
-
-    if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
-      if (eta < muoncuts.cfg_min_eta_track_gl || muoncuts.cfg_max_eta_track_gl < eta) {
-        return false;
-      }
-      if (muoncuts.cfg_max_dcaxy_gl < dcaXY) {
-        return false;
-      }
-      if (chi2 < 0.f || muoncuts.cfg_max_chi2_gl < chi2) { // chi2/ndf
-        return false;
-      }
-      if (rAtAbsorberEnd < muoncuts.cfg_min_rabs_gl || muoncuts.cfg_max_rabs_gl < rAtAbsorberEnd) {
-        return false;
-      }
-    } else {
-      return false;
-    }
-
-    return true;
   }
 
   template <int begin = 0, int end = 9, typename T>
