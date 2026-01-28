@@ -57,9 +57,9 @@ enum ColHist {
   kColHistLast
 };
 
-constexpr std::string_view ColAnalysisDir = "Collisions/Analysis/";
-constexpr std::string_view ColQaDir = "Collisions/QA/";
-constexpr std::string_view ColMcDir = "Collisions/MC/";
+constexpr std::string_view AnalysisDir = "Collisions/Analysis/";
+constexpr std::string_view QaDir = "Collisions/QA/";
+constexpr std::string_view McDir = "Collisions/MC/";
 
 constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {
@@ -109,14 +109,14 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
 template <typename T>
 auto makeColMcHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_MC_MAP(confBinningAnalysis)};
 }
@@ -124,7 +124,7 @@ auto makeColMcHistSpecMap(const T& confBinningAnalysis)
 template <typename T1, typename T2>
 auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
@@ -132,7 +132,7 @@ auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa
 template <typename T1, typename T2>
 auto makeColMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
         COL_HIST_MC_MAP(confBinningAnalysis)};
@@ -221,7 +221,7 @@ class CollisionHistManager
  private:
   void initAnalysis(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string analysisDir = std::string(ColAnalysisDir);
+    std::string analysisDir = std::string(AnalysisDir);
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPosZ, HistTable), getHistDesc(kPosZ, HistTable), getHistType(kPosZ, HistTable), {Specs.at(kPosZ)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMult, HistTable), getHistDesc(kMult, HistTable), getHistType(kMult, HistTable), {Specs.at(kMult)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kCent, HistTable), getHistDesc(kCent, HistTable), getHistType(kCent, HistTable), {Specs.at(kCent)});
@@ -230,7 +230,7 @@ class CollisionHistManager
 
   void initQa(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string qaDir = std::string(ColQaDir);
+    std::string qaDir = std::string(QaDir);
     mHistogramRegistry->add(qaDir + getHistNameV2(kPosX, HistTable), getHistDesc(kPosX, HistTable), getHistType(kPosX, HistTable), {Specs.at(kPosX)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPosY, HistTable), getHistDesc(kPosY, HistTable), getHistType(kPosY, HistTable), {Specs.at(kPosY)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPos, HistTable), getHistDesc(kPos, HistTable), getHistType(kPos, HistTable), {Specs.at(kPos)});
@@ -247,7 +247,7 @@ class CollisionHistManager
 
   void initMc(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string mcDir = std::string(ColMcDir);
+    std::string mcDir = std::string(McDir);
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
   }
@@ -255,26 +255,26 @@ class CollisionHistManager
   template <typename T>
   void fillAnalysis(T const& col)
   {
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
   }
 
   template <typename T>
   void fillQa(T const& col)
   {
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPosX, HistTable)), col.posX());
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPosY, HistTable)), col.posY());
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kSphericity, HistTable)), col.sphericity());
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosX, HistTable)), col.posX());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosY, HistTable)), col.posY());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kSphericity, HistTable)), col.sphericity());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
     if (mPlot2d) {
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
     }
   }
 
@@ -285,8 +285,8 @@ class CollisionHistManager
       return;
     }
     auto mcCol = col.template fMcCol_as<T2>();
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;

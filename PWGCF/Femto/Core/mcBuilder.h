@@ -54,6 +54,8 @@ struct McBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FK0shortLabels> producedK0shortLabels;
   o2::framework::Produces<o2::aod::FSigmaLabels> producedSigmaLabels;
   o2::framework::Produces<o2::aod::FSigmaPlusLabels> producedSigmaPlusLabels;
+  o2::framework::Produces<o2::aod::FXiLabels> producedXiLabels;
+  o2::framework::Produces<o2::aod::FOmegaLabels> producedOmegaLabels;
 };
 
 struct ConfMcTables : o2::framework::ConfigurableGroup {
@@ -69,6 +71,8 @@ struct ConfMcTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> producedK0shortLabels{"producedK0shortLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedSigmaLabels{"producedSigmaLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedSigmaPlusLabels{"producedSigmaPlusLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> producedXiLabels{"producedXiLabels", -1, "Produce xi labels (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> producedOmegaLabels{"producedOmegaLabels", -1, "Produce omega labels (-1: auto; 0 off; 1 on)"};
 };
 
 class McBuilder
@@ -93,8 +97,15 @@ class McBuilder
     mProduceK0shortLabels = utils::enableTable("FK0shortLabels", table.producedK0shortLabels.value, initContext);
     mProduceSigmaLabels = utils::enableTable("FSigmaLabels", table.producedSigmaLabels.value, initContext);
     mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels", table.producedSigmaPlusLabels.value, initContext);
+    mProduceXiLabels = utils::enableTable("FXiLabels", table.producedXiLabels.value, initContext);
+    mProduceOmegaLabels = utils::enableTable("FOmegaLabels", table.producedOmegaLabels.value, initContext);
 
-    if (mProduceMcCollisions || mProduceMcParticles || mProduceMcMothers || mProduceMcPartonicMothers || mProduceCollisionLabels || mProduceTrackLabels || mProduceLambdaLabels || mProduceK0shortLabels) {
+    if (mProduceMcCollisions || mProduceCollisionLabels ||
+        mProduceMcParticles || mProduceMcMothers || mProduceMcPartonicMothers ||
+        mProduceTrackLabels ||
+        mProduceLambdaLabels || mProduceK0shortLabels ||
+        mProduceSigmaLabels || mProduceSigmaPlusLabels ||
+        mProduceXiLabels || mProduceOmegaLabels) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured...";
@@ -125,7 +136,7 @@ class McBuilder
       // Add label
       mcProducts.producedCollisionLabels(it->second);
     } else {
-      // Case: No MC collision associated
+      // If no MC collision associated, fill empty label
       mcProducts.producedCollisionLabels(-1);
     }
   }
@@ -176,6 +187,26 @@ class McBuilder
       return;
     }
     fillMcLabelGeneric<system>(col, mcCols, sigmaPlusDaughter, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedSigmaPlusLabels(p, m, pm); }, true);
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcXiWithLabel(T1 const& col, T2 const& mcCols, T3 const& xi, T4 const& mcParticles, T5& mcProducts)
+  {
+    if (!mProduceXiLabels) {
+      mcProducts.producedXiLabels(-1, -1, -1);
+      return;
+    }
+    fillMcLabelGeneric<system>(col, mcCols, xi, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedXiLabels(p, m, pm); });
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcOmegaWithLabel(T1 const& col, T2 const& mcCols, T3 const& omega, T4 const& mcParticles, T5& mcProducts)
+  {
+    if (!mProduceOmegaLabels) {
+      mcProducts.producedOmegaLabels(-1, -1, -1);
+      return;
+    }
+    fillMcLabelGeneric<system>(col, mcCols, omega, mcParticles, mcProducts, [](auto& prod, int64_t p, int64_t m, int64_t pm) { prod.producedOmegaLabels(p, m, pm); });
   }
 
   bool fillAnyTable() const { return mFillAnyTable; }
@@ -386,6 +417,8 @@ class McBuilder
   bool mProduceK0shortLabels = false;
   bool mProduceSigmaLabels = false;
   bool mProduceSigmaPlusLabels = false;
+  bool mProduceXiLabels = false;
+  bool mProduceOmegaLabels = false;
 
   std::unordered_map<int64_t, int64_t> mCollisionMap;
 

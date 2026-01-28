@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \file EmMlResponse.h
-// \brief Class to compute the ML response for EM-analysis selections
-// \author Isabel Kantak <isabel.kantak@cern.ch>, University of Heidelberg
+/// \file EmMlResponse.h
+/// \brief Class to compute the ML response for EM-analysis selections
+/// \author Isabel Kantak <isabel.kantak@cern.ch>, University of Heidelberg
 
 #ifndef PWGEM_PHOTONMESON_CORE_EMMLRESPONSE_H_
 #define PWGEM_PHOTONMESON_CORE_EMMLRESPONSE_H_

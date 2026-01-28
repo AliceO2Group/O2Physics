@@ -15,22 +15,22 @@
 #ifndef PWGLF_DATAMODEL_REDUCEDHEPTAQUARKTABLES_H_
 #define PWGLF_DATAMODEL_REDUCEDHEPTAQUARKTABLES_H_
 
-#include <cmath>
-
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisDataModel.h"
+
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
 namespace redhqevent
 {
-DECLARE_SOA_COLUMN(NumPhi, numPhi, int);       //! Number of negative K
-DECLARE_SOA_COLUMN(NumLambda, numLambda, int); //! Number of lambda
+DECLARE_SOA_COLUMN(NumPhi, numPhi, int);           //! Number of negative K
+DECLARE_SOA_COLUMN(NumLambda, numLambda, int);     //! Number of lambda
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 } // namespace redhqevent
 DECLARE_SOA_TABLE(RedHQEvents, "AOD", "REDHQEVENT",
@@ -38,6 +38,8 @@ DECLARE_SOA_TABLE(RedHQEvents, "AOD", "REDHQEVENT",
                   bc::GlobalBC,
                   bc::RunNumber,
                   timestamp::Timestamp,
+                  collision::PosX,
+                  collision::PosY,
                   collision::PosZ,
                   collision::NumContrib,
                   redhqevent::Centrality,

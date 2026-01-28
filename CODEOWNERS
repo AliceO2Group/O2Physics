@@ -11,7 +11,7 @@
 
 # @alibuild has to be in each line to allow self approval of PRs
 
-* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk @dsekihat
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @hscheid
@@ -29,6 +29,7 @@
 /EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava @fgrosa @ariedel-cern
 /EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava @fgrosa @ariedel-cern
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava @fgrosa @ariedel-cern
+/EventFiltering/PWGEM @alibuild @dsekihat @nstrangm @mpuccio @lietava @fgrosa @ariedel-cern
 
 /PWGCF               @alibuild @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGCF/Core          @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
@@ -56,10 +57,10 @@
 /PWGLF/Utils @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
 
 # PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
-/PWGMM      @alibuild @mpuccio @skundu692 @aalkin @jgcn
-/PWGMM/Mult @alibuild @mpuccio @skundu692 @aalkin @aortizve @ddobrigk @gbencedi @jgcn
-/PWGMM/Lumi @alibuild @mpuccio @skundu692 @aalkin @jgcn @gbencedi @abmodak
-/PWGMM/UE   @alibuild @mpuccio @skundu692 @aalkin @aortizve @jgcn
+/PWGMM      @alibuild @omvazque @mpuccio @skundu692 @aalkin @jgcn
+/PWGMM/Mult @alibuild @omvazque @mpuccio @skundu692 @aalkin @aortizve @ddobrigk @gbencedi @jgcn
+/PWGMM/Lumi @alibuild @omvazque @mpuccio @skundu692 @aalkin @jgcn @gbencedi @abmodak
+/PWGMM/UE   @alibuild @omvazque @mpuccio @skundu692 @aalkin @aortizve @jgcn
 
 /PWGUD @alibuild @amatyja @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern

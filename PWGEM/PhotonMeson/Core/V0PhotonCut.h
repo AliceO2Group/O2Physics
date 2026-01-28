@@ -55,6 +55,8 @@ enum CutDirection {
   CutNot          // do not cut on score
 };
 
+static constexpr int NBins = 12;
+
 static constexpr int NBinsPt = 12;
 static constexpr int NCutScores = 2;
 // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
@@ -98,7 +100,7 @@ constexpr int CutDir[NCutScores] = {CutGreater, CutSmaller};
 const auto vecCutDir = std::vector<int>{CutDir, CutDir + NCutScores};
 
 // default values for the cuts
-constexpr double Cuts[NBinsPt][NCutScores] = {
+constexpr double Cuts[NBins][NCutScores] = {
   {0.5, 0.5},
   {0.5, 0.5},
   {0.5, 0.5},
@@ -318,16 +320,24 @@ class V0PhotonCut : public TNamed
         LOG(error) << "EM ML Response is not initialized!";
         return false;
       }
-      bool isSelectedMl = false;
+      bool mIsSelectedMl = false;
       std::vector<float> mOutputML;
-      V0PhotonCandidate v0photoncandidate(v0, pos, ele, mCent, mD_Bz);
+      V0PhotonCandidate v0photoncandidate(v0, pos, ele, mCentFT0A, mCentFT0C, mCentFT0M, mD_Bz);
       std::vector<float> mlInputFeatures = mEmMlResponse->getInputFeatures(v0photoncandidate, pos, ele);
       if (mUse2DBinning) {
-        isSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCent(), mOutputML);
+        if (mCentralityTypeMl == "CentFT0C") {
+          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0C(), mOutputML);
+        } else if (mCentralityTypeMl == "CentFT0A") {
+          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0A(), mOutputML);
+        } else if (mCentralityTypeMl == "CentFT0M") {
+          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0M(), mOutputML);
+        } else {
+          LOG(fatal) << "Unsupported centTypePCMMl: " << mCentralityTypeMl << " , please choose from CentFT0C, CentFT0A, CentFT0M.";
+        }
       } else {
-        isSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), mOutputML);
+        mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), mOutputML);
       }
-      if (!isSelectedMl) {
+      if (!mIsSelectedMl) {
         return false;
       }
     }
@@ -542,9 +552,45 @@ class V0PhotonCut : public TNamed
       mEmMlResponse = new o2::analysis::EmMlResponsePCM<float>();
     }
     if (mUse2DBinning) {
-      mEmMlResponse->configure2D(mBinsPtMl, mBinsCentMl, mCutsPCMMl, mCutDirMl, mNClassesMl);
+      int binsNPt = static_cast<int>(mBinsPtMl.size()) - 1;
+      int binsNCent = static_cast<int>(mBinsCentMl.size()) - 1;
+      int binsN = binsNPt * binsNCent;
+      if (binsN * static_cast<int>(mCutDirMl.size()) != static_cast<int>(mCutsMlFlat.size())) {
+        LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * mCutDirMl: " << int(binsN) * int(mCutDirMl.size()) << " bins vs. mCutsMlFlat: " << mCutsMlFlat.size() << " cuts";
+      }
+      if (binsN != static_cast<int>(mOnnxFileNames.size())) {
+        LOG(fatal) << "Mismatch in number of bins and ONNX files provided for 2D ML application: binsN " << binsN << " bins vs. mOnnxFileNames: " << mOnnxFileNames.size() << " ONNX files";
+      }
+      if (binsN != static_cast<int>(mLabelsBinsMl.size())) {
+        LOG(fatal) << "Mismatch in number of bins and labels provided for 2D ML application: binsN:" << binsN << " bins vs. mLabelsBinsMl: " << mLabelsBinsMl.size() << " labels";
+      }
+      if (static_cast<int>(mCutDirMl.size()) != mNClassesMl) {
+        LOG(fatal) << "Mismatch in number of classes and cut directions provided for 2D ML application: mNClassesMl: " << mNClassesMl << " classes vs. mCutDirMl: " << mCutDirMl.size() << " cut directions";
+      }
+      if (static_cast<int>(mLabelsCutScoresMl.size()) != mNClassesMl) {
+        LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for 2D ML application: mNClassesMl: " << mNClassesMl << " classes vs. mLabelsCutScoresMl: " << mLabelsCutScoresMl.size() << " labels";
+      }
+      o2::framework::LabeledArray<double> mCutsMl(mCutsMlFlat.data(), binsN, mNClassesMl, mLabelsBinsMl, mLabelsCutScoresMl);
+      mEmMlResponse->configure2D(mBinsPtMl, mBinsCentMl, mCutsMl, mCutDirMl, mNClassesMl);
     } else {
-      mEmMlResponse->configure(mBinsPtMl, mCutsPCMMl, mCutDirMl, mNClassesMl);
+      int binsNPt = static_cast<int>(mBinsPtMl.size()) - 1;
+      if (binsNPt * static_cast<int>(mCutDirMl.size()) != static_cast<int>(mCutsMlFlat.size())) {
+        LOG(fatal) << "Mismatch in number of pT bins and cuts provided for ML application: binsNPt * mCutDirMl:" << binsNPt * mCutDirMl.size() << " bins vs. mCutsMlFlat: " << mCutsMlFlat.size() << " cuts";
+      }
+      if (binsNPt != static_cast<int>(mOnnxFileNames.size())) {
+        LOG(fatal) << "Mismatch in number of pT bins and ONNX files provided for ML application: binsNPt " << binsNPt << " bins vs. mOnnxFileNames: " << mOnnxFileNames.size() << " ONNX files";
+      }
+      if (binsNPt != static_cast<int>(mLabelsBinsMl.size())) {
+        LOG(fatal) << "Mismatch in number of pT bins and labels provided for ML application: binsNPt:" << binsNPt << " bins vs. mLabelsBinsMl: " << mLabelsBinsMl.size() << " labels";
+      }
+      if (mNClassesMl != static_cast<int>(mCutDirMl.size())) {
+        LOG(fatal) << "Mismatch in number of classes and cut directions provided for ML application: mNClassesMl: " << mNClassesMl << " classes vs. mCutDirMl: " << mCutDirMl.size() << " cut directions";
+      }
+      if (static_cast<int>(mLabelsCutScoresMl.size()) != mNClassesMl) {
+        LOG(fatal) << "Mismatch in number of labels for cut scores and number of classes provided for ML application: mNClassesMl:" << mNClassesMl << " classes vs. mLabelsCutScoresMl: " << mLabelsCutScoresMl.size() << " labels";
+      }
+      o2::framework::LabeledArray<double> mCutsMl(mCutsMlFlat.data(), binsNPt, mNClassesMl, mLabelsBinsMl, mLabelsCutScoresMl);
+      mEmMlResponse->configure(mBinsPtMl, mCutsMl, mCutDirMl, mNClassesMl);
     }
     if (mLoadMlModelsFromCCDB) {
       ccdbApi.init(mCcdbUrl);
@@ -604,15 +650,18 @@ class V0PhotonCut : public TNamed
   void SetLoadMlModelsFromCCDB(bool flag = true);
   void SetNClassesMl(int nClasses);
   void SetMlTimestampCCDB(int timestamp);
-  void SetCentrality(float cent);
+  void SetCentrality(float centFT0A, float centFT0C, float centFT0M);
   void SetD_Bz(float d_bz);
   void SetCcdbUrl(const std::string& url = "http://alice-ccdb.cern.ch");
+  void SetCentralityTypeMl(const std::string& centType);
   void SetCutDirMl(const std::vector<int>& cutDirMl);
   void SetMlModelPathsCCDB(const std::vector<std::string>& modelPaths);
   void SetMlOnnxFileNames(const std::vector<std::string>& onnxFileNamesVec);
+  void SetLabelsBinsMl(const std::vector<std::string>& labelsBins);
+  void SetLabelsCutScoresMl(const std::vector<std::string>& labelsCutScores);
   void SetBinsPtMl(const std::vector<double>& binsPt);
   void SetBinsCentMl(const std::vector<double>& binsCent);
-  void SetCutsPCMMl(const o2::framework::LabeledArray<double>& cutsPCM);
+  void SetCutsMl(const std::vector<double>& cutsMlFlat);
   void SetNamesInputFeatures(const std::vector<std::string>& namesInputFeaturesVec);
 
  private:
@@ -642,16 +691,21 @@ class V0PhotonCut : public TNamed
   bool mLoadMlModelsFromCCDB{true};
   int mTimestampCCDB{-1};
   int mNClassesMl{static_cast<int>(o2::analysis::em_cuts_ml::NCutScores)};
-  float mCent{0.f};
+  float mCentFT0A{0.f};
+  float mCentFT0C{0.f};
+  float mCentFT0M{0.f};
   float mD_Bz{0.f};
   std::string mCcdbUrl{"http://alice-ccdb.cern.ch"};
+  std::string mCentralityTypeMl{"CentFT0C"};
   std::vector<int> mCutDirMl{std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}};
   std::vector<std::string> mModelPathsCCDB{std::vector<std::string>{"path_ccdb/BDT_PCM/"}};
   std::vector<std::string> mOnnxFileNames{std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}};
   std::vector<std::string> mNamesInputFeatures{std::vector<std::string>{"feature1", "feature2"}};
+  std::vector<std::string> mLabelsBinsMl{std::vector<std::string>{"bin 0", "bin 1"}};
+  std::vector<std::string> mLabelsCutScoresMl{std::vector<std::string>{"score primary photons", "score background"}};
   std::vector<double> mBinsPtMl{std::vector<double>{o2::analysis::em_cuts_ml::vecBinsPt}};
   std::vector<double> mBinsCentMl{std::vector<double>{o2::analysis::em_cuts_ml::vecBinsCent}};
-  o2::framework::LabeledArray<double> mCutsPCMMl{o2::framework::LabeledArray<double>{o2::analysis::em_cuts_ml::Cuts[0], o2::analysis::em_cuts_ml::NBinsPt, o2::analysis::em_cuts_ml::NCutScores, o2::analysis::em_cuts_ml::labelsPt, o2::analysis::em_cuts_ml::labelsCutScore}};
+  std::vector<double> mCutsMlFlat{std::vector<double>{0.5}};
   o2::analysis::EmMlResponsePCM<float>* mEmMlResponse{nullptr};
 
   // pid cuts
@@ -683,7 +737,7 @@ class V0PhotonCut : public TNamed
   bool mDisableITSonly{false};
   bool mDisableTPConly{false};
 
-  ClassDef(V0PhotonCut, 3);
+  ClassDef(V0PhotonCut, 4);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_

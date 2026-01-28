@@ -17,8 +17,8 @@
 /// \since  November 20, 2025
 ///
 
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
-#include "ALICE3/DataModel/OTFTracks.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 

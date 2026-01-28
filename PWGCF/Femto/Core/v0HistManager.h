@@ -232,30 +232,30 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
 template <typename T>
 auto makeV0HistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<V0Hist, std::vector<framework::AxisSpec>>{
+  return std::map<V0Hist, std::vector<o2::framework::AxisSpec>>{
     V0_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
 template <typename T>
 auto makeV0McHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<V0Hist, std::vector<framework::AxisSpec>>{
+  return std::map<V0Hist, std::vector<o2::framework::AxisSpec>>{
     V0_HIST_ANALYSIS_MAP(confBinningAnalysis)
       V0_HIST_MC_MAP(confBinningAnalysis)};
 }
 
 template <typename T1, typename T2>
-std::map<V0Hist, std::vector<framework::AxisSpec>> makeV0QaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
+std::map<V0Hist, std::vector<o2::framework::AxisSpec>> makeV0QaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
-  return std::map<V0Hist, std::vector<framework::AxisSpec>>{
+  return std::map<V0Hist, std::vector<o2::framework::AxisSpec>>{
     V0_HIST_ANALYSIS_MAP(confBinningAnalysis)
       V0_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
 
 template <typename T1, typename T2>
-std::map<V0Hist, std::vector<framework::AxisSpec>> makeV0McQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
+std::map<V0Hist, std::vector<o2::framework::AxisSpec>> makeV0McQaHistSpecMap(T1 const& confBinningAnalysis, T2 const& confBinningQa)
 {
-  return std::map<V0Hist, std::vector<framework::AxisSpec>>{
+  return std::map<V0Hist, std::vector<o2::framework::AxisSpec>>{
     V0_HIST_ANALYSIS_MAP(confBinningAnalysis)
       V0_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
         V0_HIST_MC_MAP(confBinningAnalysis)
@@ -276,7 +276,7 @@ constexpr char PrefixK0short2[] = "K0short2/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 
-constexpr std::string_view AnalysisDir = "Kinematics/";
+constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
 
@@ -486,7 +486,7 @@ class V0HistManager
     mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhiVsPhi, HistTable), getHistDesc(kTruePhiVsPhi, HistTable), getHistType(kTruePhiVsPhi, HistTable), {V0Specs.at(kTruePhiVsPhi)});
 
     // mc origin can be configured here
-    const framework::AxisSpec axisOrigin = {static_cast<int>(modes::McOrigin::kMcOriginLast), -0.5, static_cast<double>(modes::McOrigin::kMcOriginLast) - 0.5};
+    const o2::framework::AxisSpec axisOrigin = {static_cast<int>(modes::McOrigin::kMcOriginLast), -0.5, static_cast<double>(modes::McOrigin::kMcOriginLast) - 0.5};
     mHistogramRegistry->add(mcDir + getHistNameV2(kOrigin, HistTable), getHistDesc(kOrigin, HistTable), getHistType(kOrigin, HistTable), {axisOrigin});
     mHistogramRegistry->get<TH1>(HIST(v0Prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kNoMcParticle), modes::mcOriginToString(modes::McOrigin::kNoMcParticle));
     mHistogramRegistry->get<TH1>(HIST(v0Prefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kFromWrongCollision), modes::mcOriginToString(modes::McOrigin::kFromWrongCollision));
@@ -679,10 +679,11 @@ class V0HistManager
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   int mPdgCode = 0;
-  bool mPlot2d = false;
   bool mPlotOrigins = false;
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
+  bool mPlot2d = false;
+
   trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };

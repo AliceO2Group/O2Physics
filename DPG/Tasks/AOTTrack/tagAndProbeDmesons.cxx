@@ -399,38 +399,11 @@ struct TagTwoProngDisplacedVertices {
     }
   }
 
-  /// Fill a vector with the Mothers pdg codes
-  /// \param pdgDecayMothers vector pdg codes of possible mothers
-  /// \param pdgResonances vector pdg codes of possible resonanced in the decays
-  /// \param channel decay channel
-  void pdgMothersDecayChannel(std::vector<int>& pdgDecayMothers, std::vector<int>& pdgResonances, const uint8_t channel)
-  {
-    pdgDecayMothers.clear();
-    pdgResonances.clear();
-    if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
-      pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
-      pdgResonances.push_back(constants::physics::Pdg::kK0Star892);
-      pdgResonances.push_back(10313);  // o2-linter: disable=pdg/explicit-code (PDG code of K1(1270)0 to be added in O2)
-      pdgResonances.push_back(100313); // o2-linter: disable=pdg/explicit-code (PDG code of K*(1410)0 to be added in O2)
-      pdgResonances.push_back(10311);  // o2-linter: disable=pdg/explicit-code (PDG code of K*0(1430)0 to be added in O2)
-      pdgResonances.push_back(100311); // o2-linter: disable=pdg/explicit-code (PDG code of K*(1460)0 to be added in O2)
-      pdgResonances.push_back(20313);  // o2-linter: disable=pdg/explicit-code (PDG code of K1(1400)0 to be added in O2)
-      pdgResonances.push_back(30313);  // o2-linter: disable=pdg/explicit-code (PDG code of K*(1680)0 to be added in O2)
-    } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
-      pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
-      pdgDecayMothers.push_back(constants::physics::Pdg::kDS);
-    } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi || channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
-      pdgDecayMothers.push_back(constants::physics::Pdg::kDStar);
-    }
-  }
-
   /// Check if the given tag tracks belong to a D meson
   /// \param firstTrack candidate
   /// \param SecondTrack candidate
   /// \param mcParticles McParticles table
   /// \param channel decay channel
-  /// \param pdgDecayMothers vector pdg codes of possible mothers
-  /// \param pdgResonances vector pdg codes of possible resonanced in the decays
   /// \param motherIdx particle mother index
   /// \return a flag that contains the information of MC truth (see aod::tagandprobe::SignalFlags)
   template <typename PParticles, typename TTrack>
@@ -438,23 +411,18 @@ struct TagTwoProngDisplacedVertices {
                        TTrack const& secondTrack,
                        PParticles const& mcParticles,
                        const uint8_t channel,
-                       std::vector<int>& pdgDecayMothers,
-                       std::vector<int>& pdgResonances,
                        int& motherIdx)
   {
-    int pdgTagMother{0};
-    int pdgProbeParticle{-1};
+    std::array<int, 2> pdgTagParticles{};
     uint8_t signalFlag = 0;
+    bool isTaggedAsSignal{false}, isResonant{false};
 
     if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
-      pdgTagMother = constants::physics::Pdg::kDPlus;
-      pdgProbeParticle = kKPlus;
+      pdgTagParticles = {kPiPlus, kPiPlus};
     } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
-      pdgTagMother = constants::physics::Pdg::kPhi;
-      pdgProbeParticle = kPiPlus;
+      pdgTagParticles = {kKPlus, kKPlus};
     } else {
-      pdgTagMother = constants::physics::Pdg::kD0;
-      pdgProbeParticle = kPiPlus;
+      pdgTagParticles = {kKPlus, kPiPlus};
     }
 
     if (!firsTrack.has_mcParticle() || !secondTrack.has_mcParticle()) {
@@ -464,56 +432,58 @@ struct TagTwoProngDisplacedVertices {
     } else {
       auto firstMcTrack = firsTrack.template mcParticle_as<PParticles>();
       auto secondMcTrack = secondTrack.template mcParticle_as<PParticles>();
-      auto firstTrackMotherId = RecoDecay::getMother(mcParticles, firstMcTrack, pdgTagMother, true);
-      auto secondTrackMotherId = RecoDecay::getMother(mcParticles, secondMcTrack, pdgTagMother, true);
+      auto pdgCodeFirst = std::abs(firstMcTrack.pdgCode());
+      auto pdgCodeSecond = std::abs(secondMcTrack.pdgCode());
 
-      bool isTaggedAsSignal{false}, isResonant{false};
-      const int nDauReso{2}, nDauNonReso{3};
-      if ((firstTrackMotherId == secondTrackMotherId) && (firstTrackMotherId != -1)) {
-        auto particleMother = mcParticles.rawIteratorAt(firstTrackMotherId);
-
+      if ((pdgCodeFirst == pdgTagParticles[0] && pdgCodeSecond == pdgTagParticles[1]) || (pdgCodeFirst == pdgTagParticles[1] && pdgCodeSecond == pdgTagParticles[0])) {
+        int8_t sign{0};
+        auto arrayDaughters = std::array{firsTrack, secondTrack};
         /// π±π± for D± → K∓π±π± decays
         if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
-          auto particleMother = mcParticles.rawIteratorAt(firstTrackMotherId);
-          auto daughters = particleMother.template daughters_as<PParticles>();
-
-          // Check if the probe is within the mother's particle daughters
-          if (daughters.size() == nDauNonReso) { // non-resonant decay
-            for (auto const& daughter : daughters) {
-              if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
-                isTaggedAsSignal = true;
-                motherIdx = firstTrackMotherId;
-                break;
-              }
+          // let's first try with depth == 1 (non resonant)
+          motherIdx = RecoDecay::getMatchedMCRec<false, false, true, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kDPlus, std::array{+kPiPlus, +kPiPlus}, true, &sign, 1);
+          if (motherIdx < 0) {
+            motherIdx = RecoDecay::getMatchedMCRec<false, false, true, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kDPlus, std::array{+kPiPlus, +kPiPlus}, true, &sign, 2);
+            isResonant = true;
+          }
+          if (motherIdx > -1) {
+            // let's check that the full decay is correct from gen particle mother
+            auto particleMother = mcParticles.rawIteratorAt(motherIdx);
+            if (RecoDecay::isMatchedMCGen<false, true, 3>(mcParticles, particleMother, constants::physics::Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+              isTaggedAsSignal = true;
+            } else {
+              motherIdx = -1;
+              isResonant = false;
             }
-          } else if (daughters.size() == nDauReso) { // resonant decay
-            for (auto const& daughter : daughters) {
-              auto absPdg = std::abs(daughter.pdgCode());
-              if (std::find(pdgResonances.begin(), pdgResonances.end(), absPdg) != pdgResonances.end()) {
+          }
+        } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) { ///  K∓K± for φ from Ds± or D± → φπ± decays
+          // we first check φ
+          auto phiIdx = RecoDecay::getMatchedMCRec<false, false, false, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kPhi, std::array{+kKPlus, -kKPlus}, false, &sign, 1);
+          if (phiIdx > -1) {
+            motherIdx = RecoDecay::getMatchedMCRec<false, false, true, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kDS, std::array{+kKPlus, -kKPlus}, true, &sign, 2);
+            if (motherIdx < 0) {
+              motherIdx = RecoDecay::getMatchedMCRec<false, false, true, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kDPlus, std::array{+kKPlus, -kKPlus}, true, &sign, 2);
+            }
+            if (motherIdx > -1) {
+              auto particleMother = mcParticles.rawIteratorAt(motherIdx);
+              if (RecoDecay::isMatchedMCGen<false, true, 3>(mcParticles, particleMother, constants::physics::Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2) || RecoDecay::isMatchedMCGen<false, true, 3>(mcParticles, particleMother, constants::physics::Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
                 isTaggedAsSignal = true;
-                isResonant = true;
-                motherIdx = firstTrackMotherId;
-                break;
+              } else {
+                motherIdx = -1;
               }
             }
           }
-        } else {
-          ///  K∓K± for φ from Ds± or D± → φπ± decays
-          ///  K∓π± for D0 from D±* → D0π± decays
-          for (auto const& pdgGrandMother : pdgDecayMothers) {
-            auto grandMotherId = RecoDecay::getMother(mcParticles, particleMother, pdgGrandMother, true);
-            if (grandMotherId != -1) {
-              auto particleGrandMother = mcParticles.rawIteratorAt(grandMotherId);
-              auto daughters = particleGrandMother.template daughters_as<PParticles>();
-              // Check if the probe is within the GrandMother's particle daughters
-              if (daughters.size() == nDauReso) { // exclude undesired decays, such as Ds± → φπ±π±π∓
-                for (auto const& daughter : daughters) {
-                  if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
-                    isTaggedAsSignal = true;
-                    motherIdx = grandMotherId;
-                    break;
-                  }
-                }
+        } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) { ///  K∓π± for D0 from D±* → D0π± decays
+          // we first check D0
+          auto dzeroIdx = RecoDecay::getMatchedMCRec<false, false, false, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, false, &sign, 1);
+          if (dzeroIdx > -1) {
+            motherIdx = RecoDecay::getMatchedMCRec<false, false, true, true, true, 2>(mcParticles, arrayDaughters, constants::physics::Pdg::kDStar, std::array{+kPiPlus, -kKPlus}, true, &sign, 2);
+            if (motherIdx > -1) {
+              auto particleMother = mcParticles.rawIteratorAt(motherIdx);
+              if (RecoDecay::isMatchedMCGen<false, true, 3>(mcParticles, particleMother, constants::physics::Pdg::kDStar, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+                isTaggedAsSignal = true;
+              } else {
+                motherIdx = -1;
               }
             }
           }
@@ -522,7 +492,7 @@ struct TagTwoProngDisplacedVertices {
 
       // check if it is non-prompt from beauty
       if (isTaggedAsSignal) {
-        if (RecoDecay::getCharmHadronOrigin(mcParticles, mcParticles.rawIteratorAt(firstTrackMotherId)) == RecoDecay::OriginType::NonPrompt) {
+        if (RecoDecay::getCharmHadronOrigin(mcParticles, mcParticles.rawIteratorAt(motherIdx), false) == RecoDecay::OriginType::NonPrompt) {
           SETBIT(signalFlag, aod::tagandprobe::SignalFlags::NonPrompt);
         } else {
           SETBIT(signalFlag, aod::tagandprobe::SignalFlags::Prompt);
@@ -674,8 +644,6 @@ struct TagTwoProngDisplacedVertices {
                                       TTracks const& tracks, // pool of tracks
                                       const uint8_t channel,
                                       float& /*bz*/,
-                                      std::vector<int>& pdgDecayMothers,
-                                      std::vector<int>& pdgResonances,
                                       PParticles const& mcParticles)
   {
     for (auto trackFirst = tracks.begin(); trackFirst != tracks.end(); ++trackFirst) {
@@ -731,7 +699,7 @@ struct TagTwoProngDisplacedVertices {
         uint8_t isSignal{0u};
         int motherIdx{-1};
         if constexpr (doMc) {
-          isSignal = getTagOrigin(trackFirst, trackSecond, mcParticles, channel, pdgDecayMothers, pdgResonances, motherIdx);
+          isSignal = getTagOrigin(trackFirst, trackSecond, mcParticles, channel, motherIdx);
         }
 
         std::vector<float> mlScoresTag{};
@@ -798,8 +766,6 @@ struct TagTwoProngDisplacedVertices {
                                           TTracks const& tracksNeg,
                                           const uint8_t channel,
                                           float& /*bz*/,
-                                          std::vector<int>& pdgDecayMothers,
-                                          std::vector<int>& pdgResonances,
                                           PParticles const& mcParticles)
   {
     for (const auto& trackPos : tracksPos) {
@@ -855,7 +821,7 @@ struct TagTwoProngDisplacedVertices {
         uint8_t isSignal{0u};
         int motherIdx{-1};
         if constexpr (doMc) {
-          isSignal = getTagOrigin(trackPos, trackNeg, mcParticles, channel, pdgDecayMothers, pdgResonances, motherIdx);
+          isSignal = getTagOrigin(trackPos, trackNeg, mcParticles, channel, motherIdx);
         }
 
         std::vector<float> mlScoresTag{};
@@ -990,15 +956,11 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    std::vector<int> pdgDecayMothers{};
-    std::vector<int> pdgResonances{};
-    pdgMothersDecayChannel(pdgDecayMothers, pdgResonances, aod::tagandprobe::TagChannels::DplusToKPiPi);
-
     auto groupPositive = positivePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialSameCharge<true>(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, pdgResonances, mcParticles);
+    computeCombinatorialSameCharge<true>(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, mcParticles);
 
     auto groupNegative = negativePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialSameCharge<true>(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, pdgResonances, mcParticles);
+    computeCombinatorialSameCharge<true>(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, mcParticles);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processPiPiFromDplusMc, "Process pipi combinatorial to tag pion pairs from D+ decays Mc", false);
 
@@ -1019,15 +981,11 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    std::vector<int> pdgDecayMothers{};
-    std::vector<int> pdgResonances{};
-    pdgMothersDecayChannel(pdgDecayMothers, pdgResonances, aod::tagandprobe::TagChannels::DplusToKPiPi);
-
     auto groupPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialSameCharge<false>(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, pdgResonances, tracks);
+    computeCombinatorialSameCharge<false>(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, tracks);
 
     auto groupNegative = negativePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialSameCharge<false>(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, pdgResonances, tracks);
+    computeCombinatorialSameCharge<false>(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, tracks);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processPiPiFromDplus, "Process pipi combinatorial to tag pion pairs from D+ decays", false);
 
@@ -1049,13 +1007,9 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    std::vector<int> pdgDecayMothers{};
-    std::vector<int> pdgResonances{};
-    pdgMothersDecayChannel(pdgDecayMothers, pdgResonances, aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
-
     auto groupPositive = positiveKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupNegative = negativeKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialOppositeCharge<true>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, bz, pdgDecayMothers, pdgResonances, mcParticles);
+    computeCombinatorialOppositeCharge<true>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, bz, mcParticles);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDsOrDplusMc, "Process KK combinatorial to tag kaon pairs from Ds+/D+ decays Mc", false);
 
@@ -1076,13 +1030,9 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    std::vector<int> pdgDecayMothers{};
-    std::vector<int> pdgResonances{};
-    pdgMothersDecayChannel(pdgDecayMothers, pdgResonances, aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
-
     auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialOppositeCharge<false>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, bz, pdgDecayMothers, pdgResonances, tracks);
+    computeCombinatorialOppositeCharge<false>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, bz, tracks);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDsOrDplus, "Process KK combinatorial to tag kaon pairs from Ds+/D+ decays", false);
 
@@ -1103,13 +1053,9 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    std::vector<int> pdgDecayMothers{};
-    std::vector<int> pdgResonances{};
-    pdgMothersDecayChannel(pdgDecayMothers, pdgResonances, aod::tagandprobe::TagChannels::DstarToDzeroToKK);
-
     auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialOppositeCharge<false>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DstarToDzeroToKK, bz, pdgDecayMothers, pdgResonances, tracks);
+    computeCombinatorialOppositeCharge<false>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DstarToDzeroToKK, bz, tracks);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDzero, "Process KK combinatorial to tag kaon pairs from Dzero decays", false);
 
@@ -1130,16 +1076,12 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    std::vector<int> pdgDecayMothers{};
-    std::vector<int> pdgResonances{};
-    pdgMothersDecayChannel(pdgDecayMothers, pdgResonances, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
-
     auto groupPionPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupPionNegative = negativePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupKaonPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupKaonNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialOppositeCharge<false>(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, bz, pdgDecayMothers, pdgResonances, tracks);
-    computeCombinatorialOppositeCharge<false>(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, bz, pdgDecayMothers, pdgResonances, tracks);
+    computeCombinatorialOppositeCharge<false>(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, bz, tracks);
+    computeCombinatorialOppositeCharge<false>(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, bz, tracks);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstar, "Process Kpi combinatorial to tag D0 from D*+ decays", false);
 
@@ -1161,16 +1103,12 @@ struct TagTwoProngDisplacedVertices {
       runNumber = bc.runNumber();
     }
 
-    std::vector<int> pdgDecayMothers{};
-    std::vector<int> pdgResonances{};
-    pdgMothersDecayChannel(pdgDecayMothers, pdgResonances, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
-
     auto groupPionPositive = positivePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupPionNegative = negativePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupKaonPositive = positiveKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupKaonNegative = negativeKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    computeCombinatorialOppositeCharge<true>(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, bz, pdgDecayMothers, pdgResonances, mcParticles);
-    computeCombinatorialOppositeCharge<true>(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, bz, pdgDecayMothers, pdgResonances, mcParticles);
+    computeCombinatorialOppositeCharge<true>(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, bz, mcParticles);
+    computeCombinatorialOppositeCharge<true>(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, bz, mcParticles);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstarMc, "Process Kpi combinatorial to tag D0 from D*+ decays", false);
 };

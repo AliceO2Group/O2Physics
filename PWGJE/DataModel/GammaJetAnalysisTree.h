@@ -136,7 +136,25 @@ DECLARE_SOA_COLUMN(LeadingTrackPt, leadingtrackpt, float);
 DECLARE_SOA_COLUMN(PerpConeRho, perpconerho, float);
 DECLARE_SOA_COLUMN(NConstituents, nConstituents, ushort);
 } // namespace gjchjet
-DECLARE_SOA_TABLE(GjChargedJets, "AOD", "GJCHJET", gjgamma::GjEventId, gjchjet::Pt, gjchjet::Eta, gjchjet::Phi, gjchjet::Radius, gjchjet::Energy, gjchjet::Mass, gjchjet::Area, gjchjet::LeadingTrackPt, gjchjet::PerpConeRho, gjchjet::NConstituents)
+DECLARE_SOA_TABLE(GjChargedJets, "AOD", "GJCHJET", o2::soa::Index<>, gjgamma::GjEventId, gjchjet::Pt, gjchjet::Eta, gjchjet::Phi, gjchjet::Radius, gjchjet::Energy, gjchjet::Mass, gjchjet::Area, gjchjet::LeadingTrackPt, gjchjet::PerpConeRho, gjchjet::NConstituents)
+
+using GjChargedJet = GjChargedJets::iterator;
+
+// Jet substructure information (vectors stored per jet)
+namespace gjjetsubstructure
+{
+DECLARE_SOA_INDEX_COLUMN(GjChargedJet, gjchargedjet);               //! jet index
+DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>); //! energy of mother subjet at each splitting
+DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);       //! pt of leading subjet at each splitting
+DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>); //! pt of subleading subjet at each splitting
+DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);               //! opening angle theta at each splitting
+} // namespace gjjetsubstructure
+DECLARE_SOA_TABLE(GjJetSubstructures, "AOD", "GJJETSUBSTR",
+                  gjjetsubstructure::GjChargedJetId,
+                  gjjetsubstructure::EnergyMother,
+                  gjjetsubstructure::PtLeading,
+                  gjjetsubstructure::PtSubLeading,
+                  gjjetsubstructure::Theta)
 
 // MC information for reconstructed charged jet
 namespace gjchjetmcinfo

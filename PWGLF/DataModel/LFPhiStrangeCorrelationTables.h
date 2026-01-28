@@ -22,14 +22,6 @@
 
 namespace o2::aod
 {
-namespace lf_selection_phi_collision
-{
-DECLARE_SOA_COLUMN(PhimesonSel, phimesonSel, bool);
-} // namespace lf_selection_phi_collision
-
-DECLARE_SOA_TABLE(PhimesonSelection, "AOD", "PHIINCOLL",
-                  lf_selection_phi_collision::PhimesonSel);
-
 namespace lf_selection_phi_candidate
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
@@ -45,13 +37,46 @@ DECLARE_SOA_DYNAMIC_COLUMN(InMassRegion, inMassRegion,
                            });
 } // namespace lf_selection_phi_candidate
 
-DECLARE_SOA_TABLE(PhimesonCandidates, "AOD", "PHICANDIDATES",
+DECLARE_SOA_TABLE(PhimesonCandidatesData, "AOD", "PHICANDDATA",
+                  soa::Index<>,
                   lf_selection_phi_candidate::CollisionId,
                   lf_selection_phi_candidate::M,
                   lf_selection_phi_candidate::Pt,
                   lf_selection_phi_candidate::Y,
                   lf_selection_phi_candidate::Phi,
                   lf_selection_phi_candidate::InMassRegion<lf_selection_phi_candidate::M>);
+
+DECLARE_SOA_TABLE(PhimesonCandidatesMcReco, "AOD", "PHICANDMCRECO",
+                  soa::Index<>,
+                  lf_selection_phi_candidate::CollisionId,
+                  lf_selection_phi_candidate::M,
+                  lf_selection_phi_candidate::Pt,
+                  lf_selection_phi_candidate::Y,
+                  lf_selection_phi_candidate::Phi,
+                  lf_selection_phi_candidate::InMassRegion<lf_selection_phi_candidate::M>);
+
+DECLARE_SOA_TABLE(PhimesonCandidatesMcGen, "AOD", "PHICANDMCGEN",
+                  soa::Index<>,
+                  lf_selection_phi_candidate::CollisionId,
+                  lf_selection_phi_candidate::M,
+                  lf_selection_phi_candidate::Pt,
+                  lf_selection_phi_candidate::Y,
+                  lf_selection_phi_candidate::Phi,
+                  lf_selection_phi_candidate::InMassRegion<lf_selection_phi_candidate::M>);
+
+namespace lf_selection_phi_collision
+{
+DECLARE_SOA_COLUMN(PhimesonSel, phimesonSel, bool);
+} // namespace lf_selection_phi_collision
+
+DECLARE_SOA_TABLE(PhimesonSelectionData, "AOD", "PHIINCOLLDATA",
+                  lf_selection_phi_collision::PhimesonSel);
+
+/*DECLARE_SOA_TABLE(PhimesonSelectionMcReco, "AOD", "PHIINCOLLMCRECO",
+                  lf_selection_phi_collision::PhimesonSel);*/
+
+DECLARE_SOA_TABLE(PhimesonSelectionMcGen, "AOD", "PHIINCOLLMCGEN",
+                  lf_selection_phi_collision::PhimesonSel);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFPHISTRANGECORRELATIONTABLES_H_
