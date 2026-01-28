@@ -3310,7 +3310,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     // }
 
     if (classStr.Contains("DileptonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
 
     if (classStr.Contains("DileptonTrack") && !classStr.Contains("ME")) {
