@@ -998,9 +998,9 @@ struct globalDimuonFilter {
         float pt = 999.f, eta = 999.f, phi = 999.f;
         if (isSelectedGlobalMuon(collision, fwdtrack, fwdtracks, mfttracks, mftCovs, pt, eta, phi)) {
           if (fwdtrack.sign() > 0) {
-            posMuons.emplace_back(std::make_tuple(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
+            posMuons.emplace_back(std::make_pair(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
           } else {
-            negMuons.emplace_back(std::make_tuple(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
+            negMuons.emplace_back(std::make_pair(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
           }
         }
       } // end of fwdtrack loop
