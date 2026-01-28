@@ -58,6 +58,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
@@ -249,6 +250,8 @@ struct HfTaskFlowCharmHadrons {
       }
     }
     registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
+    registry.add("hCentEventWithCand", "Centrality distributions with charm candidates;Cent;entries", HistType::kTH1F, {{100, 0.f, 100.f}});
+    registry.add("hCentEventWithCandInSigRegion", "Centrality distributions with charm candidates in signal range;Cent;entries", HistType::kTH1F, {{100, 0.f, 100.f}});
 
     if (occEstimator != 0) {
       registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
@@ -512,6 +515,9 @@ struct HfTaskFlowCharmHadrons {
     if (cent < centralityMin || cent > centralityMax) {
       return;
     }
+    if (candidates.size() > 0) {
+      registry.fill(HIST("hCentEventWithCand"), cent);
+    }
     float occupancy = 0.;
     o2::hf_evsel::HfCollisionRejectionMask hfevflag{};
     if (occEstimator != 0) {
@@ -519,6 +525,10 @@ struct HfTaskFlowCharmHadrons {
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
+    bool hasCandInMassWin = false;
+    float const sigmaMD0 = 0.02; // used 20 MeV as the D0 average peak width in run3
+    float const sigmaMDplus = 0.015; // used 15 MeV as the D+ average peak width in run3
+    float const nSigmaMass = 2.5;
 
     std::array<float, 3> qVecs = getQvec(collision, qVecDetector.value);
     float xQVec = qVecs[0];
@@ -554,6 +564,9 @@ struct HfTaskFlowCharmHadrons {
         }
       } else if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = HfHelper::invMassDplusToPiKPi(candidate);
+        if (std::abs(massCand - MassDPlus) < nSigmaMass * sigmaMDplus) {
+          hasCandInMassWin = true;
+        }
         auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
@@ -566,6 +579,9 @@ struct HfTaskFlowCharmHadrons {
           case DecayChannel::D0ToPiK:
             signCand = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
             massCand = HfHelper::invMassD0ToPiK(candidate);
+            if (std::abs(massCand - MassD0) < nSigmaMass * sigmaMD0) {
+              hasCandInMassWin = true;
+            }
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
@@ -574,6 +590,9 @@ struct HfTaskFlowCharmHadrons {
             break;
           case DecayChannel::D0ToKPi:
             massCand = HfHelper::invMassD0barToKPi(candidate);
+            if (std::abs(massCand - MassD0) < nSigmaMass * sigmaMD0) {
+              hasCandInMassWin = true;
+            }
             signCand = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -698,6 +717,9 @@ struct HfTaskFlowCharmHadrons {
       if (fillSparse) {
         fillThn(massCand, ptCand, etaCand, signCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
       }
+    }
+    if (hasCandInMassWin) {
+      registry.fill(HIST("hCentEventWithCandInSigRegion"), cent);
     }
   }
 
