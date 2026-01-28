@@ -249,9 +249,9 @@ struct StudyPnch {
       if (track.mcCollisionId() != McCol.globalIndex()) {
         continue;
       }
-    
-    histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
-    nTrk++;
+
+      histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
+      nTrk++;
     }
     return nTrk;
   }
