@@ -2068,6 +2068,7 @@ struct AnalysisDileptonTrack {
     Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
     Configurable<std::vector<int>> fConfigSavelessevents{"cfgSavelessevents", std::vector<int>{1, 0}, "Save less events for the energy correlator study"};
     Configurable<std::vector<float>> fConfigTransRange{"cfgTransRange", std::vector<float>{0.333333, 0.666667}, "Transverse region for the energy correlstor analysis"};
+    Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -2385,7 +2386,11 @@ struct AnalysisDileptonTrack {
         fLegCutNames.push_back(pairLegCutName);
 
         // define dilepton histograms
-        DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "barrel,vertexing");
+        if (!fConfigOptions.fConfigEnergycorrelator) {
+          DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "barrel,vertexing");
+        } else {
+          DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "");
+        }
         // loop over track cuts and create dilepton - track histogram directories
         for (int iCutTrack = 0; iCutTrack < fNCuts; iCutTrack++) {
 
