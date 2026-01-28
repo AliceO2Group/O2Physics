@@ -661,10 +661,6 @@ class VarManager : public TObject
     kMCCosChi_rec,
     kMCWeight_rec,
     kMCdeltaeta_rec,
-    kMCCosChi_randomPhi_trans_rec,
-    kMCWeight_randomPhi_trans_rec,
-    kMCCosChi_randomPhi_trans_gen,
-    kMCWeight_randomPhi_trans_gen,
 
     // MC mother particle variables
     kMCMotherPdgCode,
@@ -1280,7 +1276,7 @@ class VarManager : public TObject
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <int pairType, typename T, typename T1>
-  static void FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values = nullptr);
+  static void FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3);
   template <int pairType, typename T1, typename T2, typename T, typename T3>
   static void FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
@@ -1314,7 +1310,7 @@ class VarManager : public TObject
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename T1, typename T2>
-  static void FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values = nullptr, bool applyFitMass = false, float sidebandMass = 0.0f);
+  static void FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f);
   template <typename T1, typename T2>
   static void FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values = nullptr);
   template <typename T>
@@ -3022,7 +3018,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
 }
 
 template <int pairType, typename T, typename T1>
-void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values)
+void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values, float Translow, float Transhigh)
 {
   // energy correlators
   float MassHadron;
@@ -3062,7 +3058,8 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   float randomPhi_toward = -o2::constants::math::PIHalf;
   float randomPhi_away = -o2::constants::math::PIHalf;
 
-  if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+  float deltaphitrans = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PI);
+  if ((deltaphitrans > -Transhigh * TMath::Pi() && deltaphitrans < -Translow * TMath::Pi()) || (deltaphitrans > Translow * TMath::Pi() && deltaphitrans < Transhigh * TMath::Pi())) {
     randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
@@ -3088,7 +3085,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
 template <int pairType, typename T1, typename T2, typename T, typename T3>
 void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values)
 {
-  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec] || fgUsedVars[kMCCosChi_randomPhi_trans_rec] || fgUsedVars[kMCWeight_randomPhi_trans_rec] || fgUsedVars[kMCCosChi_randomPhi_trans_gen] || fgUsedVars[kMCWeight_randomPhi_trans_gen]) {
+  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
     // energy correlators
     float MassHadron;
     if constexpr (pairType == kJpsiHadronMass) {
@@ -3111,31 +3108,6 @@ void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& 
     float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
     values[kMCWeight_rec] = E_boost_rec / v1_rec.M();
     values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
-
-    values[kMCCosChi_randomPhi_trans_rec] = -999.9f;
-    values[kMCCosChi_randomPhi_trans_gen] = -999.9f;
-
-    float randomPhi_trans_rec = -o2::constants::math::PIHalf;
-    float randomPhi_trans_gen = -o2::constants::math::PIHalf;
-
-    float deltaphi_rec = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
-    float deltaphi_gen = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PIHalf);
-
-    if ((deltaphi_rec > -0.5 * TMath::Pi() && deltaphi_rec < -1. / 3 * TMath::Pi()) || (deltaphi_rec > 4. / 3 * TMath::Pi() && deltaphi_rec < 1.5 * TMath::Pi()) || (deltaphi_rec > 1. / 3 * TMath::Pi() && deltaphi_rec < 2. / 3 * TMath::Pi())) {
-      randomPhi_trans_rec = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-
-      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_rec(v2_rec.pt(), v2_rec.eta(), randomPhi_trans_rec, o2::constants::physics::MassPionCharged);
-      values[kMCCosChi_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_randomPhi_trans_rec);
-      values[kMCWeight_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_randomPhi_trans_rec) / v1_rec.M();
-    }
-
-    if ((deltaphi_gen > -0.5 * TMath::Pi() && deltaphi_gen < -1. / 3 * TMath::Pi()) || (deltaphi_gen > 4. / 3 * TMath::Pi() && deltaphi_gen < 1.5 * TMath::Pi()) || (deltaphi_gen > 1. / 3 * TMath::Pi() && deltaphi_gen < 2. / 3 * TMath::Pi())) {
-      randomPhi_trans_gen = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-
-      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_gen(v2_gen.pt(), v2_gen.eta(), randomPhi_trans_gen, MassHadron);
-      values[kMCCosChi_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_randomPhi_trans_gen);
-      values[kMCWeight_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_randomPhi_trans_gen) / v1_gen.M();
-    }
   }
 }
 
@@ -5495,7 +5467,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
 }
 
 template <typename T1, typename T2>
-void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values, bool applyFitMass, float sidebandMass)
+void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass)
 {
   float dileptonmass = o2::constants::physics::MassJPsi;
   if (applyFitMass) {
@@ -5518,7 +5490,7 @@ void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, floa
     values[kEtaDau] = v2.eta();
     values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
 
-    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
+    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PI);
     values[kCosChi_randomPhi_trans] = -999.9f;
     values[kCosChi_randomPhi_toward] = -999.9f;
     values[kCosChi_randomPhi_away] = -999.9f;
@@ -5531,7 +5503,7 @@ void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, floa
     float randomPhi_toward = -o2::constants::math::PIHalf;
     float randomPhi_away = -o2::constants::math::PIHalf;
 
-    if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+    if ((deltaphi > -Transhigh * TMath::Pi() && deltaphi < -Translow * TMath::Pi()) || (deltaphi > Translow * TMath::Pi() && deltaphi < Transhigh * TMath::Pi())) {
       randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
