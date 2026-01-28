@@ -133,13 +133,13 @@ struct HfCandidateSelectorLc {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
-    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
-    selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
-    selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
-    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
-    selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
+    selectorPion.setRangePtTpc(static_cast<float>(ptPidTpcMin), static_cast<float>(ptPidTpcMax));
+    selectorPion.setRangeNSigmaTpc(-static_cast<float>(nSigmaTpcMax), static_cast<float>(nSigmaTpcMax));
+    selectorPion.setRangeNSigmaTpcCondTof(-static_cast<float>(nSigmaTpcCombinedMax), static_cast<float>(nSigmaTpcCombinedMax));
+    selectorPion.setRangePtTof(static_cast<float>(ptPidTofMin), static_cast<float>(ptPidTofMax));
+    selectorPion.setRangeNSigmaTof(-static_cast<float>(nSigmaTofMax), static_cast<float>(nSigmaTofMax));
+    selectorPion.setRangeNSigmaTofCondTpc(-static_cast<float>(nSigmaTofCombinedMax), static_cast<float>(nSigmaTofCombinedMax));
+    selectorPion.setRangePtBayes(static_cast<float>(ptPidBayesMin), static_cast<float>(ptPidBayesMax));
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
 
@@ -518,11 +518,11 @@ struct HfCandidateSelectorLc {
 
       if (usePid) {
         // track-level PID selection
-        TrackSelectorPID::Status pidTrackPos1Proton;
-        TrackSelectorPID::Status pidTrackPos2Proton;
-        TrackSelectorPID::Status pidTrackPos1Pion;
-        TrackSelectorPID::Status pidTrackPos2Pion;
-        TrackSelectorPID::Status pidTrackNegKaon;
+        TrackSelectorPID::Status pidTrackPos1Proton{};
+        TrackSelectorPID::Status pidTrackPos2Proton{};
+        TrackSelectorPID::Status pidTrackPos1Pion{};
+        TrackSelectorPID::Status pidTrackPos2Pion{};
+        TrackSelectorPID::Status pidTrackNegKaon{};
         if (usePidTpcAndTof) {
           pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
           pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
