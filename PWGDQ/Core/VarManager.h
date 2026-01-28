@@ -709,7 +709,6 @@ class VarManager : public TObject
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
     kVertexingTauxyProjectedPoleJPsiMass,
-    kVertexingTauxyProjectedPoleJPsiMass,
     kVertexingTauxyProjectedPoleJPsiMassRecalculatePV,
     kVertexingTauxyProjectedNs,
     kVertexingTauxyzProjected,
