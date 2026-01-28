@@ -526,7 +526,7 @@ struct HfTaskFlowCharmHadrons {
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
     bool hasCandInMassWin = false;
-    float const sigmaMD0 = 0.02; // used 20 MeV as the D0 average peak width in run3
+    float const sigmaMD0 = 0.02;     // used 20 MeV as the D0 average peak width in run3
     float const sigmaMDplus = 0.015; // used 15 MeV as the D+ average peak width in run3
     float const nSigmaMass = 2.5;
 
