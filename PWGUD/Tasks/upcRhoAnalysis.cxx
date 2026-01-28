@@ -50,6 +50,7 @@ namespace reco_tree
 DECLARE_SOA_COLUMN(RecoSetting, recoSetting, uint16_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, float);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
@@ -86,7 +87,7 @@ DECLARE_SOA_COLUMN(LeadingTrackPrPID, leadingTrackPrPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPrPID, subleadingTrackPrPID, float);
 } // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
-                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosZ,
+                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosZ, reco_tree::OccupancyInTime,
                   reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
                   reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
@@ -201,6 +202,7 @@ struct UpcRhoAnalysis {
     rQC.add("QC/collisions/all/hNumContrib", ";number of PV contributors;counts", kTH1D, {{36, -0.5, 35.5}});
     rQC.add("QC/collisions/all/hZdcCommonEnergy", ";ZNA common energy (TeV);ZNC common energy (TeV);counts", kTH2D, {znCommonEnergyAxis, znCommonEnergyAxis});
     rQC.add("QC/collisions/all/hZdcTime", ";ZNA time (ns);ZNC time (ns);counts", kTH2D, {znTimeAxis, znTimeAxis});
+    rQC.add("QC/collisions/all/hZNTimeVsZNCommonEnergy", ";ZNA/C common energy (TeV);ZNA/C time (ns);counts", kTH2D, {znCommonEnergyAxis, znTimeAxis});
     rQC.add("QC/collisions/all/hTotalFT0AmplitudeA", ";FT0A amplitude;counts", kTH1D, {{160, 0.0, 160.0}});
     rQC.add("QC/collisions/all/hTotalFT0AmplitudeC", ";FT0C amplitude;counts", kTH1D, {{160, 0.0, 160.0}});
     rQC.add("QC/collisions/all/hTotalFV0AmplitudeA", ";FV0A amplitude;counts", kTH1D, {{300, 0.0, 300.0}});
@@ -211,6 +213,7 @@ struct UpcRhoAnalysis {
     rQC.add("QC/collisions/all/hTimeFV0A", ";FV0A time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
     rQC.add("QC/collisions/all/hTimeFDDA", ";FDDA time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
     rQC.add("QC/collisions/all/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
+    rQC.add("QC/collisions/all/hOccupancyInTime", ";occupancy in time;counts", kTH1D, {{1100, -100.0, 1000.0}});
     // events with selected rho candidates
     rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
     rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
@@ -356,6 +359,8 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hPosZ"), collision.posZ());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZdcCommonEnergy"), collision.energyCommonZNA(), collision.energyCommonZNC());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZdcTime"), collision.timeZNA(), collision.timeZNC());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZNTimeVsZNCommonEnergy"), collision.energyCommonZNA(), collision.timeZNA());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hZNTimeVsZNCommonEnergy"), collision.energyCommonZNC(), collision.timeZNC());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hNumContrib"), collision.numContrib());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTotalFT0AmplitudeA"), collision.totalFT0AmplitudeA());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTotalFT0AmplitudeC"), collision.totalFT0AmplitudeC());
@@ -367,6 +372,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTimeFV0A"), collision.timeFV0A());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTimeFDDA"), collision.timeFDDA());
     rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hTimeFDDC"), collision.timeFDDC());
+    rQC.fill(HIST("QC/collisions/") + HIST(AppliedSelections[cuts]) + HIST("hOccupancyInTime"), collision.occupancyInTime());
   }
 
   template <int cuts, typename T>
@@ -790,8 +796,11 @@ struct UpcRhoAnalysis {
     float phiRandom = getPhiRandom(cutTracksLVs);
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
 
+    if (!tracksPassPID(cutTracks)) // apply PID cut
+      return;
+
     // fill recoTree
-    recoTree(collision.flags(), collision.runNumber(), collision.posZ(),
+    recoTree(collision.flags(), collision.runNumber(), collision.posZ(), collision.occupancyInTime(),
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
              collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
              energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
@@ -803,9 +812,6 @@ struct UpcRhoAnalysis {
              leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl(),
              leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa(),
              leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr());
-
-    if (!tracksPassPID(cutTracks)) // apply PID cut
-      return;
 
     for (const auto& cutTrack : cutTracks) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 16);
