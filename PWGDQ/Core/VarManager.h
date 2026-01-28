@@ -701,6 +701,7 @@ class VarManager : public TObject
     kMCVertexingTauxy,
     kVertexingLzProjected,
     kVertexingLxyProjected,
+    kVertexingLxyProjectedRecalculatePV,
     kVertexingLxyzProjected,
     kMCVertexingLzProjected,
     kMCVertexingLxyProjected,
@@ -708,6 +709,8 @@ class VarManager : public TObject
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
     kVertexingTauxyProjectedPoleJPsiMass,
+    kVertexingTauxyProjectedPoleJPsiMass,
+    kVertexingTauxyProjectedPoleJPsiMassRecalculatePV,
     kVertexingTauxyProjectedNs,
     kVertexingTauxyzProjected,
     kMCVertexingTauzProjected,
@@ -1236,7 +1239,8 @@ class VarManager : public TObject
     }
     return deltaPsi;
   }
-
+  template <typename T, typename T1>
+  static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
   template <typename T, typename C>
   static o2::track::TrackParCovFwd FwdToTrackPar(const T& track, const C& cov);
   template <typename T, typename C>
@@ -1558,6 +1562,43 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
   return kfpVertex;
 }
 
+template <typename T, typename T1>
+o2::dataformats::VertexBase VarManager::RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision)
+{
+  KFParticle trk0KF;
+  KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
+  trk0KF = KFParticle(kfpTrack0, -11 * track0.sign());
+  KFParticle trk1KF;
+  KFPTrack kfpTrack1 = createKFPTrackFromTrack(track1);
+  trk1KF = KFParticle(kfpTrack1, -11 * track1.sign());
+
+  KFParticle kVtx;
+  kVtx.Initialize();
+  kVtx.Parameter(0) = collision.posX();
+  kVtx.Parameter(1) = collision.posY();
+  kVtx.Parameter(2) = collision.posZ();
+  kVtx.Covariance(0) = collision.covXX();
+  kVtx.Covariance(1) = collision.covXY();
+  kVtx.Covariance(2) = collision.covYY();
+  kVtx.Covariance(3) = collision.covXZ();
+  kVtx.Covariance(4) = collision.covYZ();
+  kVtx.Covariance(5) = collision.covZZ();
+  kVtx.Chi2() = collision.chi2(); // FIX THIS! to be added in AliReducedEventInfo
+  kVtx.NDF() = 2 * collision.multNTracksPV() - 3;
+  // KFVertex kfpVertex(kVtx); // kfpVertex.Initialize();
+
+  if ((track0.flags() & o2::aod::track::PVContributor) > 0) {
+    trk0KF.SubtractFromVertex(kVtx); /*printf("track1 -> subtracting \n");*/
+  }
+  if ((track1.flags() & o2::aod::track::PVContributor) > 0) {
+    trk1KF.SubtractFromVertex(kVtx); /*printf("track2 -> subtracting \n");*/
+  }
+
+  o2::math_utils::Point3D<float> vtxXYZ(kVtx.Parameter(0), kVtx.Parameter(1), kVtx.Parameter(2));
+  std::array<float, 6> vtxCov{kVtx.Covariance(0), kVtx.Covariance(1), kVtx.Covariance(2), kVtx.Covariance(3), kVtx.Covariance(4), kVtx.Covariance(5)};
+  o2::dataformats::VertexBase primaryVertexRec = {std::move(vtxXYZ), std::move(vtxCov)};
+  return primaryVertexRec;
+}
 template <typename T, typename C>
 o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
@@ -4139,6 +4180,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     }
 
     Vec3D secondaryVertex;
+    o2::dataformats::VertexBase primaryVertexNew;
 
     if constexpr (eventHasVtxCov) {
 
@@ -4161,6 +4203,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         v1 = {trackParVar0.getPt(), trackParVar0.getEta(), trackParVar0.getPhi(), m1};
         v2 = {trackParVar1.getPt(), trackParVar1.getEta(), trackParVar1.getPhi(), m2};
         v12 = v1 + v2;
+        primaryVertexNew = RecalculatePrimaryVertex(t1, t2, collision);
 
       } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
         // Get pca candidate from forward DCA fitter
@@ -4218,9 +4261,13 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()));
       values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py()) + ((secondaryVertex[2] - collision.posZ()) * v12.Pz());
       values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
+      values[kVertexingLxyProjectedRecalculatePV] = (secondaryVertex[0] - primaryVertexNew.getX()) * v12.Px() + (secondaryVertex[1] - primaryVertexNew.getY()) * v12.Py();
+      values[kVertexingLxyProjectedRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] / v12.Pt();
+     
       values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.Pt());
       values[kVertexingTauxyProjectedPoleJPsiMass] = values[kVertexingLxyProjected] * o2::constants::physics::MassJPsi / (v12.Pt());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
+      values[kVertexingTauxyProjectedPoleJPsiMassRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] * o2::constants::physics::MassJPsi / (v12.Pt());
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / TMath::Abs(v12.Pz());
       values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
     }
