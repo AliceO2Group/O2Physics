@@ -431,8 +431,7 @@ struct JetSpectraEseTask {
     registry.fill(HIST("eventQA/hRho"), centrality, collision.rho());
     registry.fill(HIST("eventQA/hCentralityAnalyzed"), centrality);
 
-    float lRndm = NumSubSmpl * fRndm->Rndm();
-    auto lRndInd = static_cast<int>(lRndm);
+    int lRndInd = fRndm->Integer(NumSubSmpl);
 
     using JetIter = typename TJets::iterator;
     JetIter leadingJet;
