@@ -3505,7 +3505,7 @@ struct AnalysisDileptonTrack {
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
 
           // for the energy correlator analysis
-          std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
+          std::vector<float> fTransRange = fConfigTransRange;
           VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // table to be written out for ML analysis
@@ -3709,7 +3709,7 @@ struct AnalysisDileptonTrack {
           VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
 
           // for the energy correlator analysis
-          std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
+          std::vector<float> fTransRange = fConfigTransRange;
           VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
