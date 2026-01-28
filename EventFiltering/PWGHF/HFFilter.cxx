@@ -94,6 +94,14 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> activateSecVtxForB{"activateSecVtxForB", false, "flag to enable 2nd vertex fitting - only beauty hadrons"};
 
   // parameters for all triggers
+  // event selection
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> applyTVX{"applyTVX", true, "flag to apply TVX selection"};
+    Configurable<bool> applyTFBorderCut{"applyTFBorderCut", true, "apply TF border cut"};
+    Configurable<bool> applyITSROFBorderCut{"applyITSROFBorderCut", false, "apply ITS ROF border cut"};
+    Configurable<float> maxPvZ{"maxPvZ", 11.f, "maximum absolute value of PV position in the Z coordinate"};
+  } evSel;
+
   // nsigma PID (except for V0 and cascades)
   Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 4, 8, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for ITS/TPC/TOF PID (except for V0 and cascades)"};
   // min and max pts for tracks and bachelors (except for V0 and cascades)
@@ -442,7 +450,11 @@ struct HfFilter { // Main struct for HF triggers
     for (const auto& collision : collisions) {
 
       bool keepEvent[kNtriggersHF]{false};
-      if (!collision.sel8() || std::fabs(collision.posZ()) > 11.f) { // safety margin for Zvtx
+      bool isSelectedTVX = evSel.applyTVX ? collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) : true;
+      bool isSelectedTFBorder = evSel.applyTFBorderCut ? collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) : true;
+      bool isSelectedITSROFBorder = evSel.applyITSROFBorderCut ? collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) : true;
+      bool isSelectedPvZ = (std::fabs(collision.posZ()) < evSel.maxPvZ);
+      if (!isSelectedTVX || !isSelectedTFBorder || !isSelectedITSROFBorder || !isSelectedPvZ) {
         tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P], keepEvent[kCharmBarToXi2Bach], keepEvent[kPrCharm2P], keepEvent[kBtoJPsiKa], keepEvent[kBtoJPsiKstar], keepEvent[kBtoJPsiPhi], keepEvent[kBtoJPsiPrKa], keepEvent[kBtoJPsiPi]);
         continue;
       }
