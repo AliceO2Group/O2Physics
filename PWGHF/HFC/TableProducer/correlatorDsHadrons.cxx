@@ -53,6 +53,7 @@
 #include <TPDGCode.h>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <unordered_map>

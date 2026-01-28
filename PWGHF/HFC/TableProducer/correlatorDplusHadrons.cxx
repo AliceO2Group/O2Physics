@@ -564,8 +564,9 @@ struct HfCorrelatorDplusHadrons {
       listDaughters.clear();
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
       int counterDaughters = 0;
-      if (listDaughters.size() != NDaughters)
+      if (listDaughters.size() != NDaughters) {
         continue;
+      }
       bool isDaughtersOk = true;
       for (const auto& dauIdx : listDaughters) {
         auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
@@ -576,8 +577,9 @@ struct HfCorrelatorDplusHadrons {
         counterDaughters += 1;
         prongsId[counterDaughters - 1] = daughI.globalIndex();
       }
-      if (!isDaughtersOk)
+      if (!isDaughtersOk) {
         continue; // Skip this D+ candidate if any daughter fails eta cut
+      }
       counterDplusHadron++;
 
       registry.fill(HIST("hDplusBin"), poolBin);

@@ -813,22 +813,22 @@ struct HfTreeCreatorLcToPKPi {
                    int functionSelection,
                    int sigbgstatus)
   {
-    float chi2primProton;
-    float chi2primPion;
-    float dcaProtonKaon;
-    float dcaPionKaon;
-    float chi2GeoProtonKaon;
-    float chi2GeoPionKaon;
-    float mass;
-    float valueTpcNSigmaPr;
+    float chi2primProton{};
+    float chi2primPion{};
+    float dcaProtonKaon{};
+    float dcaPionKaon{};
+    float chi2GeoProtonKaon{};
+    float chi2GeoPionKaon{};
+    float mass{};
+    float valueTpcNSigmaPr{};
     const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
-    float valueTpcNSigmaPi;
-    float valueTofNSigmaPr;
+    float valueTpcNSigmaPi{};
+    float valueTofNSigmaPr{};
     const float valueTofNSigmaKa = candidate.nSigTofKa1();
-    float valueTofNSigmaPi;
-    float valueTpcTofNSigmaPr;
+    float valueTofNSigmaPi{};
+    float valueTpcTofNSigmaPr{};
     const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
-    float valueTpcTofNSigmaPi;
+    float valueTpcTofNSigmaPi{};
     if (candFlag == 0) {
       chi2primProton = candidate.kfChi2PrimProng0();
       chi2primPion = candidate.kfChi2PrimProng2();
@@ -953,7 +953,7 @@ struct HfTreeCreatorLcToPKPi {
             fillKFTable(candidate, collision, candFlag, functionSelection, sigbgstatus);
           }
           if (fillCandidateMcTable) {
-            float p, pt, svX, svY, svZ, pvX, pvY, pvZ, decayLength, lifetime;
+            float p{}, pt{}, svX{}, svY{}, svZ{}, pvX{}, pvY{}, pvZ{}, decayLength{}, lifetime{};
             if (!isMcCandidateSignal) {
               p = UndefValueFloat;
               pt = UndefValueFloat;

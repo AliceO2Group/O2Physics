@@ -540,13 +540,15 @@ struct HfElectronSelectionWithTpcEmcal {
       if (isEMcal) {
         continue;
       }
-      if (std::abs(track.tofNSigmaEl()) > tofNSigmaEl)
+      if (std::abs(track.tofNSigmaEl()) > tofNSigmaEl) {
         continue;
+      }
       registry.fill(HIST("hTofNSigmaVsPt"), track.tofNSigmaEl(), track.pt());
       registry.fill(HIST("hTpcNSigmaVsPt"), track.tpcNSigmaEl(), track.pt());
 
-      if ((track.tpcNSigmaEl() < tpcNsigmaElectronMin || track.tpcNSigmaEl() > tpcNsigmaElectronMax))
+      if ((track.tpcNSigmaEl() < tpcNsigmaElectronMin || track.tpcNSigmaEl() > tpcNsigmaElectronMax)) {
         continue;
+      }
 
       nonHfe(track, tracks, false);
       /////////////////          NonHf electron Selection without Emcal       ////////////////////////

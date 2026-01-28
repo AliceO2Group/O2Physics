@@ -101,7 +101,7 @@ struct HfDataCreatorCharmResoToDstarReduced {
 
   // CCDB service
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   double bz{0.};
   int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
 
@@ -110,7 +110,7 @@ struct HfDataCreatorCharmResoToDstarReduced {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   // vertex fitter
   o2::vertexing::DCAFitterN<2> fitter;

@@ -254,8 +254,8 @@ struct HfTaskFlow {
   TF1* fPtDepDCAxy = nullptr;
 
   SliceCache cache;
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   std::vector<o2::detectors::AlignParam>* offsetFT0{};
   std::vector<o2::detectors::AlignParam>* offsetFV0{};
   o2::ccdb::CcdbApi ccdbApi;
@@ -722,10 +722,12 @@ struct HfTaskFlow {
 
     float dPhiStar = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
 
-    if (dPhiStar > constants::math::PI)
+    if (dPhiStar > constants::math::PI) {
       dPhiStar = constants::math::TwoPI - dPhiStar;
-    if (dPhiStar < -constants::math::PI)
+    }
+    if (dPhiStar < -constants::math::PI) {
       dPhiStar = -constants::math::TwoPI - dPhiStar;
+    }
 
     return dPhiStar;
   }
@@ -756,7 +758,7 @@ struct HfTaskFlow {
   {
     int const cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
-    float offsetX, offsetY;
+    float offsetX{}, offsetY{};
     if (isChnoInLeft) {
       offsetX = (*offsetFV0)[0].getX();
       offsetY = (*offsetFV0)[0].getY();
@@ -795,7 +797,7 @@ struct HfTaskFlow {
   {
     int const cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
-    float offsetX, offsetY, offsetZ;
+    float offsetX{}, offsetY{}, offsetZ{};
     if (isChnoInLeft) {
       offsetX = (*offsetFV0)[0].getX();
       offsetY = (*offsetFV0)[0].getY();
@@ -1107,15 +1109,16 @@ struct HfTaskFlow {
             bool bIsBelow = false;
 
             if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
-              for (double rad(configCentral.minMergingRadius); rad < configCentral.maxMergingRadius; rad += 0.01) {
+              for (double rad(configCentral.minMergingRadius); rad < configCentral.maxMergingRadius; rad += 0.01) { // FIXME: Variable 'rad' with floating point type 'double' should not be used as a loop counter.
                 double dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
                 if (std::abs(dPhiStar) < kLimit) {
                   bIsBelow = true;
                   break;
                 }
               }
-              if (bIsBelow)
+              if (bIsBelow) {
                 continue;
+              }
             }
           }
         }
