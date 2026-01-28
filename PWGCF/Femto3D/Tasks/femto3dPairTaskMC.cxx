@@ -162,13 +162,13 @@ struct FemtoCorrelationsMC {
     int N = _dcaBinning.value[0]; // number of bins -- must be odd otherwise will be increased by 1
     if (N % 2 != 1)
       N += 1;
-    
+
     std::unique_ptr<double[]> dca_bins;
-        if (static_cast<int>(_dcaBinning.value[2]) != 1.0) {
-            dca_bins = calc_var_bins(N + 1, _dcaBinning.value[1], static_cast<int>(_dcaBinning.value[2]));
-        } else {
-            dca_bins = calc_const_bins(N, -_dcaBinning.value[1], _dcaBinning.value[1]);
-        }    
+    if (static_cast<int>(_dcaBinning.value[2]) != 1.0) {
+      dca_bins = calc_var_bins(N + 1, _dcaBinning.value[1], static_cast<int>(_dcaBinning.value[2]));
+    } else {
+      dca_bins = calc_const_bins(N, -_dcaBinning.value[1], _dcaBinning.value[1]);
+    }
     auto const_bins = calc_const_bins(100, 0., 5.0);
 
     for (unsigned int i = 0; i < _centBins.value.size() - 1; i++) {
