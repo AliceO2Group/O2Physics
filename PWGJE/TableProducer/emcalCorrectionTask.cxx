@@ -77,7 +77,7 @@ using namespace o2::framework::expressions;
 using namespace o2::emccrosstalk;
 using namespace tmemcutilities;
 using MyGlobTracks = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
-using BcEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
+using BcEvSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 using CollEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 using FilteredCells = o2::soa::Filtered<aod::Calos>;
 using McCells = o2::soa::Join<aod::Calos, aod::McCaloLabels_001>;
@@ -497,6 +497,11 @@ struct EmcalCorrectionTask {
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
     for (const auto& collision : collisions) {
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
+          continue;
+        }
+      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);
@@ -637,6 +642,11 @@ struct EmcalCorrectionTask {
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
     for (const auto& collision : collisions) {
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
+          continue;
+        }
+      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);
@@ -805,6 +815,11 @@ struct EmcalCorrectionTask {
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
     for (const auto& collision : collisions) {
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
+          continue;
+        }
+      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);
@@ -977,6 +992,11 @@ struct EmcalCorrectionTask {
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
     for (const auto& collision : collisions) {
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
+          continue;
+        }
+      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);
@@ -991,7 +1011,7 @@ struct EmcalCorrectionTask {
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processMCWithSecondaries, "run full analysis with MC info", false);
 
-  void processStandalone(aod::BCs const& bcs, aod::Collisions const& collisions, FilteredCells const& cells)
+  void processStandalone(BcEvSels const& bcs, aod::Collisions const& collisions, FilteredCells const& cells)
   {
     LOG(debug) << "Starting process standalone.";
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
@@ -1085,7 +1105,7 @@ struct EmcalCorrectionTask {
             hasCollision = true;
             mHistManager.fill(HIST("hCollisionType"), 2);
           }
-          fillAmbigousClusterTable<aod::BC>(bc, iClusterizer, cellIndicesBC, hasCollision);
+          fillAmbigousClusterTable<BcEvSels::iterator>(bc, iClusterizer, cellIndicesBC, hasCollision);
         }
 
         mClusterPhi.clear();

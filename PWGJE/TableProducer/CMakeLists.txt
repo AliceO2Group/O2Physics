@@ -93,7 +93,7 @@ endif()
 
 o2physics_add_dpl_workflow(emcal-correction-task
                     SOURCES emcalCorrectionTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::EMCALBase O2::EMCALReconstruction O2::EMCALCalibration O2Physics::PWGJECore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::EMCALBase O2::EMCALReconstruction O2::EMCALCalibration O2Physics::PWGJECore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(emcal-matchedtracks-writer
