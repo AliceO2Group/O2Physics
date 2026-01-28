@@ -2357,7 +2357,7 @@ struct AnalysisSameEventPairing {
               auto itHist = histNames.find(index);
               if (itHist == histNames.end()) continue;
               if (sign1 * sign2 < 0) { // Opposite Sign
-                fHistMan->FillHistClass(histNames[index][0].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(itHist->second[0].Data(), VarManager::fgValues);
               } else { // Like Sign
                 if (sign1 > 0) {
                   fHistMan->FillHistClass(itHist->second[1].Data(), VarManager::fgValues);
@@ -2446,7 +2446,7 @@ struct AnalysisSameEventPairing {
                                   soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
                                   soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
-    runEmuSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMapWithCov, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(events, trackAssocsPerCollision, muonAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocs, muons);
+    runEmuSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMapWithCov, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
   }
 
   void processMixingAllSkimmed(soa::Filtered<MyEventsHashSelected>& events,
