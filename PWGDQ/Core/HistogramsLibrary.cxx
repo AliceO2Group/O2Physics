@@ -82,12 +82,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     }
     if (subGroupStr.Contains("vtxpp")) {
       hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+      hm->AddHistogram(histClass, "VtxNContrib_VtxNContribReal", "VtxNContrib_VtxNContribReal", false, 200, 0.0, 200.0, VarManager::kVtxNcontrib, 200, 0.0, 200.0, VarManager::kVtxNcontribReal);
+      hm->AddHistogram(histClass, "VtxNContribReal_kMultFT0C", "VtxNContribReal_kMultFT0C", false, 200, 0.0, 200.0, VarManager::kVtxNcontrib, 2500, 0.0, 25000, VarManager::kMultFT0C);
+      hm->AddHistogram(histClass, "VtxNContribReal_kMultFT0A", "VtxNContribReal_kMultFT0A", false, 200, 0.0, 200.0, VarManager::kVtxNcontrib, 2500, 0.0, 25000, VarManager::kMultFT0A);
     }
     if (subGroupStr.Contains("vtxPbPb")) {
       hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 20000.0, VarManager::kVtxNcontrib);
     }
     if (subGroupStr.Contains("cent")) {
       hm->AddHistogram(histClass, "CentFT0C", "CentFT0C", false, 100, 0., 100., VarManager::kCentFT0C);
+      hm->AddHistogram(histClass, "CentFT0M", "CentFT0M", false, 100, 0., 100., VarManager::kCentFT0M);
+      hm->AddHistogram(histClass, "CentFT0M_VtxNContribReal", "CentFT0M_VtxNContribReal", false, 100, 0.0, 100.0, VarManager::kCentFT0M, 200, 0.0, 200.0, VarManager::kVtxNcontribReal);
       hm->AddHistogram(histClass, "CentFT0C_vtxZ", "CentFT0C vs Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ, 20, 0., 100., VarManager::kCentFT0C);
       hm->AddHistogram(histClass, "CentFT0C_MultTPC", "CentFT0C vs MultTPC", false, 100, 0., 100., VarManager::kCentFT0C, 100, 0., 50000., VarManager::kMultTPC);
       hm->AddHistogram(histClass, "CentFT0C_Run", "Cent FT0C", true, 1, -0.5, 0.5, VarManager::kRunNo, 100, 0., 100., VarManager::kCentFT0C, 1, 0, 1, VarManager::kNothing, "", "", "", VarManager::kNothing, VarManager::kNothing, false, true);
