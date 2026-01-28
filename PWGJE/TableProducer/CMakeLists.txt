@@ -30,6 +30,7 @@ o2physics_add_dpl_workflow(jet-deriveddata-selector
 
 o2physics_add_dpl_workflow(jet-deriveddata-writer
                     SOURCES derivedDataWriter.cxx
+                    JOB_POOL serial
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
