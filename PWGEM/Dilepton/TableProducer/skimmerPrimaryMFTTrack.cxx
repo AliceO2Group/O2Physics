@@ -152,7 +152,7 @@ struct skimmerPrimaryMFTTrack {
   }
 
   template <bool isMC, typename TCollision, typename TTrack>
-  bool checkTrack(TCollision const& collision, TTrack const& track)
+  bool checkTrack(TCollision const&, TTrack const& track)
   {
     if constexpr (isMC) {
       if (!track.has_mcParticle()) {
