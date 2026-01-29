@@ -246,6 +246,8 @@ struct BjetTaggingGnn {
 
     registry.add("h_jetpT", "", {HistType::kTH1F, {axisJetpT}}, callSumw2);
     registry.add("h_jetEta", "", {HistType::kTH1F, {axisJetEta}}, callSumw2);
+    registry.add("h_jetPhi", "", {HistType::kTH1F, {200, 0., 2. * M_PI, "#it{phi}_{jet}"}});
+    registry.add("h_jetMass", "", {HistType::kTH1F, {axisJetMass}});
     registry.add("h_Db", "", {HistType::kTH1F, {axisDbFine}});
     registry.add("h2_jetpT_Db", "", {HistType::kTH2F, {axisJetpT, axisDb}});
 
@@ -506,6 +508,9 @@ struct BjetTaggingGnn {
     int nTracks = analyzeJetTrackInfo(analysisJet, allTracks, origTracks);
 
     registry.fill(HIST("h_jetpT"), analysisJet.pt());
+    registry.fill(HIST("h_jetPhi"), analysisJet.phi());
+    registry.fill(HIST("h_jetEta"), analysisJet.eta());
+    registry.fill(HIST("h_jetMass"), analysisJet.mass());
     registry.fill(HIST("h_Db"), analysisJet.scoreML());
     registry.fill(HIST("h2_jetpT_Db"), analysisJet.pt(), analysisJet.scoreML());
 
@@ -557,6 +562,9 @@ struct BjetTaggingGnn {
     }
 
     registry.fill(HIST("h_jetpT"), analysisJet.pt(), weightEvt);
+    registry.fill(HIST("h_jetPhi"), analysisJet.phi(), weightEvt);
+    registry.fill(HIST("h_jetEta"), analysisJet.eta(), weightEvt);
+    registry.fill(HIST("h_jetMass"), analysisJet.mass(), weightEvt);
     registry.fill(HIST("h_Db"), analysisJet.scoreML(), weightEvt);
     registry.fill(HIST("h2_jetpT_Db"), analysisJet.pt(), analysisJet.scoreML(), weightEvt);
 
