@@ -340,7 +340,7 @@ struct JetPlanarFlowTask {
       if (isInJet) {
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_incone_beforeRot"), track.pt(), thetaOrigin, track.phi());
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_incone_afterRot"), track.pt(), thetaRot, phiRot);
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) { // low pt tracks, no contribute to rotation axis
+        if (track.pt() > relatedTrackptlow && track.pt() < relatedTrackpthigh) { // low pt tracks, no contribute to rotation axis
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_incone_lowpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_incone_highpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
@@ -348,7 +348,7 @@ struct JetPlanarFlowTask {
       } else {
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_outcone_beforeRot"), track.pt(), thetaOrigin, track.phi());
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_outcone_afterRot"), track.pt(), thetaRot, phiRot);
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) { // low pt tracks, no contribute to rotation axis
+        if (track.pt() > relatedTrackptlow && track.pt() < relatedTrackpthigh) { // low pt tracks, no contribute to rotation axis
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_outcone_lowpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_outcone_highpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
@@ -356,13 +356,13 @@ struct JetPlanarFlowTask {
       }
 
       if (NsubTau2to1 < 0.3) {
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) {
+        if (track.pt() > relatedTrackptlow && track.pt() < relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_2prolong_lowpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_2prolong_highpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
         }
-      } else if (NsubTau2to1 > 0.6){
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) {
+      } else if (NsubTau2to1 > 0.6) {
+        if (track.pt() > relatedTrackptlow && track.pt() < relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_1prolong_lowpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_1prolong_highpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
