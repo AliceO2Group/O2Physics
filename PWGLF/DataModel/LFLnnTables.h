@@ -73,7 +73,7 @@ DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float);                        // Dec
 DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float);                        // Decay vertex of the candidate (z direction)
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);                                 // bool: true for reco
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                             // bool: true for signal
-DECLARE_SOA_COLUMN(IsRecoMcCollision, isRecoMcCollision, bool); // bool: true for survived event selection
+DECLARE_SOA_COLUMN(IsRecoMcCollision, isRecoMcCollision, bool);           // bool: true for survived event selection
 DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool); // bool: true for survived event selection
 } // namespace lnnrec
 

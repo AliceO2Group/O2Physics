@@ -331,10 +331,10 @@ struct lnnRecoTask {
     hPtItsTpcTofTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcTofTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
     hPtTrkItsTpcTofTrStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcTofTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
     hPtItsTpcPiStr = qaRegistry.add<TH2>("MC/McTracks/hPtItsTpcPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtTrkItsTpcPiStr =  qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtGeneratedTrStr =  qaRegistry.add<TH2>("MC/McGen/hPtGeneratedTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-    hPtGeneratedPiStr =  qaRegistry.add<TH2>("MC/McGen/hPtGeneratedPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
-  
+    hPtTrkItsTpcPiStr = qaRegistry.add<TH2>("MC/McTracks/hPtTrkItsTpcPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
+    hPtGeneratedTrStr = qaRegistry.add<TH2>("MC/McGen/hPtGeneratedTrStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
+    hPtGeneratedPiStr = qaRegistry.add<TH2>("MC/McGen/hPtGeneratedPiStr", ";FT0C (%);#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {{10, 0, 100}, {160, 0, 8}});
+
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     hEvents->GetXaxis()->SetBinLabel(3, "z_{vtx}");
@@ -486,7 +486,7 @@ struct lnnRecoTask {
       h2FT0CnClusTPCtoPiBfSel->Fill(collision.centFT0C(), pitrack.tpcNClsFound());
       h2FT0Cchi2NClTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcChi2NCl());
       h2FT0Cchi2NClITStoTrBfSel->Fill(collision.centFT0C(), h3track.itsChi2NCl());
-      
+
       if (doTrackQA) {
         bool passedTrTrackITS = h3track.hasITS();
         bool passedTrTrackTOF = h3track.hasTOF();
@@ -694,25 +694,26 @@ struct lnnRecoTask {
 
   bool isLnnDecay(aod::McParticles::iterator const& mcPart)
   {
-    if (!mcPart.has_mothers()) 
+    if (!mcPart.has_mothers())
       return false;
 
     bool motherIsAccepted = true;
     auto mothers = mcPart.mothers_as<o2::aod::McParticles>();
     for (const auto& mother : mothers) {
       if (mcPart.getProcess() == 4) {
-          motherIsAccepted = false;
-          // só aceita se a mãe for um Lnn
-          if (std::abs(mother.pdgCode()) == lnnPdg) {
-            motherIsAccepted = true;
-          }
+        motherIsAccepted = false;
+        // só aceita se a mãe for um Lnn
+        if (std::abs(mother.pdgCode()) == lnnPdg) {
+          motherIsAccepted = true;
         }
+      }
     }
     return motherIsAccepted;
   }
-  
+
   template <class Tcoll>
-  void fillMcHistograms(TracksFullMC::iterator const& mcTrack, aod::McParticles::iterator const& mc, bool motherIsAccepted, Tcoll const& collision) {
+  void fillMcHistograms(TracksFullMC::iterator const& mcTrack, aod::McParticles::iterator const& mc, bool motherIsAccepted, Tcoll const& collision)
+  {
 
     bool passedTrackITS = mcTrack.hasITS();
     bool passedTrackTPC = mcTrack.hasTPC();
@@ -741,7 +742,7 @@ struct lnnRecoTask {
         hPtTrkItsTpcPiStr->Fill(collision.centFT0C(), mcTrack.pt());
       }
     }
-  } 
+  }
 
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -791,7 +792,7 @@ struct lnnRecoTask {
   PROCESS_SWITCH(lnnRecoTask, processData, "Data analysis", true);
 
   // MC process
-  void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::BCsWithTimestamps const&, TracksFull const& tracks, TracksFullMC const& tracksMC,  aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::BCsWithTimestamps const&, TracksFull const& tracks, TracksFullMC const& tracksMC, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     filledMothers.clear();
     isGoodCollision.clear();
@@ -804,14 +805,14 @@ struct lnnRecoTask {
     for (const auto& collision : collisions) {
       for (auto const& trackMC : tracksMC) {
 
-      if (!trackMC.has_mcParticle()) 
-        continue;
+        if (!trackMC.has_mcParticle())
+          continue;
 
-      auto mc = trackMC.mcParticle();
-      bool motherIsAccepted = isLnnDecay(mc);
+        auto mc = trackMC.mcParticle();
+        bool motherIsAccepted = isLnnDecay(mc);
 
-      fillMcHistograms(trackMC, mc, motherIsAccepted, collision);
-    }
+        fillMcHistograms(trackMC, mc, motherIsAccepted, collision);
+      }
 
       lnnCandidates.clear();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -829,7 +830,7 @@ struct lnnRecoTask {
         continue;
       }
       hEvents->Fill(2.);
-      
+
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
@@ -884,7 +885,7 @@ struct lnnRecoTask {
 
     // now we fill only the signal candidates that were not reconstructed
     for (const auto& mcPart : particlesMC) {
-      
+
       if (std::abs(mcPart.pdgCode()) != lnnPdg) {
         continue;
       }
@@ -940,7 +941,7 @@ struct lnnRecoTask {
       lnnCand.posTrackID = -1;
       lnnCand.negTrackID = -1;
       lnnCand.isSignal = true;
-      if (lnnCand.isSignal){
+      if (lnnCand.isSignal) {
         h2FT0CPtGenColGenCandMC->Fill(cent, chargeFactor * lnnCand.genPt());
         h2FT0CPtGenColGenTrStrMC->Fill(cent, chargeFactor * lnnCand.genPt3H());
         h2FT0CPtGenColGenPiStrMC->Fill(cent, chargeFactor * lnnCand.genPtPi());
@@ -950,7 +951,7 @@ struct lnnRecoTask {
       if (lnnCand.recoMcColl) {
         auto recoCollision = collisions.rawIteratorAt(recoCollisionIds[mcPart.mcCollisionId()]);
         centFT0C = recoCollision.centFT0C();
-      }      
+      }
       outputMCTable(-1, centFT0C, -1,
                     -1, -1, -1,
                     0,
@@ -964,7 +965,7 @@ struct lnnRecoTask {
                     -1, -1, -1,
                     chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                     lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.recoMcColl, lnnCand.survEvSelection);
-      }
+    }
     }
   }
   PROCESS_SWITCH(lnnRecoTask, processMC, "MC analysis", false);
