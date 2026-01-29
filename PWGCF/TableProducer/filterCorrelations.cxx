@@ -337,7 +337,7 @@ struct FilterCF {
   void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
   {
     registrytrackQA.fill(HIST("zvtx"), collision.posZ());
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (!track.isGlobalTrack()) {
         return; // trackQA for global tracks only
       }
