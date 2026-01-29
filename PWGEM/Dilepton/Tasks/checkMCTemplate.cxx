@@ -219,6 +219,12 @@ struct checkMCTemplate {
     registry.add("Electron/c2l/hs", "hs", kTHnSparseF, {axis_pt, axis_eta_cb, axis_phi, axis_dca_cb, axis_charge}, false);
     registry.addClone("Electron/c2l/", "Electron/b2l/");
     registry.addClone("Electron/c2l/", "Electron/b2c2l/");
+    registry.addClone("Electron/c2l/", "Electron/b2Dch2l/");
+    registry.addClone("Electron/c2l/", "Electron/b2D02l/");
+    registry.addClone("Electron/c2l/", "Electron/b2Ds2l/");
+    registry.addClone("Electron/c2l/", "Electron/b2LambdaC2l/");
+    registry.addClone("Electron/c2l/", "Electron/b2LXic02l/");
+    registry.addClone("Electron/c2l/", "Electron/b2LXicch2l/");
 
     registry.add("Muon/c2l/hs", "hs", kTHnSparseF, {axis_pt, axis_eta_fwd, axis_phi, axis_dca_fwd, axis_charge}, false);
     registry.addClone("Muon/c2l/", "Muon/b2l/");
@@ -660,9 +666,22 @@ struct checkMCTemplate {
     if (isWeakDecayFromBeautyHadron(mcparticle, mcParticles)) { // hb->l is found in full decay chain.
       registry.fill(HIST("Electron/b2l/hs"), pt, eta, phi, dca_sigma, track.sign());
     } else if (isWeakDecayFromCharmHadron(mcparticle, mcParticles)) { // hc->l is found in full decay chain.
-      if (IsFromBeauty(mcmother, mcParticles) > 0) {                  // hb->hc->l is fond.
+      if (IsFromBeauty(mcmother, mcParticles) > 0) {                  // hb->hc->l is found.
         registry.fill(HIST("Electron/b2c2l/hs"), pt, eta, phi, dca_sigma, track.sign());
-      } else { // prompt hc->l is found.
+        if (abs(mcparticle.pdgCode()) == kDPlus)
+          registry.fill(HIST("Electron/b2Dch2l/hs"), pt, eta, phi, dca_sigma, track.sign()); // hb->D+->l
+        // if(abs(mcparticle.pdgCode()) == 413); registry.fill(HIST("Electron/b2DchStar2l/hs"), pt, eta, phi, dca_sigma, track.sign()); // hb->D*+->l
+        if (abs(mcparticle.pdgCode()) == kD0)
+          registry.fill(HIST("Electron/b2D02l/hs"), pt, eta, phi, dca_sigma, track.sign()); // hb->D0->l
+        if (abs(mcparticle.pdgCode()) == kDS)
+          registry.fill(HIST("Electron/b2Ds2l/hs"), pt, eta, phi, dca_sigma, track.sign()); // hb->Ds->l
+        if (abs(mcparticle.pdgCode()) == kLambdaCPlus)
+          registry.fill(HIST("Electron/b2LambdaC2l/hs"), pt, eta, phi, dca_sigma, track.sign()); // hb->LambdaC->l
+        if (abs(mcparticle.pdgCode()) == kXiC0)
+          registry.fill(HIST("Electron/b2Xic02l/hs"), pt, eta, phi, dca_sigma, track.sign()); // hb->Xic0->l
+        if (abs(mcparticle.pdgCode()) == kXiCPlus)
+          registry.fill(HIST("Electron/b2Xicch2l/hs"), pt, eta, phi, dca_sigma, track.sign()); // hb->Xicch->l
+      } else {                                                                                 // prompt hc->l is found.
         registry.fill(HIST("Electron/c2l/hs"), pt, eta, phi, dca_sigma, track.sign());
       }
     }
