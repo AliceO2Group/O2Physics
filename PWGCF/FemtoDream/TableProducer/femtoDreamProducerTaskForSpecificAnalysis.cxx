@@ -30,6 +30,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
