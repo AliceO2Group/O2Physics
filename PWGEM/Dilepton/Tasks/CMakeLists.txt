@@ -144,3 +144,9 @@ o2physics_add_dpl_workflow(dilepton-polarization
                     SOURCES dileptonPolarization.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(check-mc-template
+                    SOURCES checkMCTemplate.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
+                    COMPONENT_NAME Analysis)
+
