@@ -1200,7 +1200,7 @@ struct SginclusivePhiKstarSD {
   PresliceUnsorted<CCs> colPerMcCollision = aod::udcollision::udMcCollisionId;
   PresliceUnsorted<TCs> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
 
-  void processMCTruth(aod::UDMcCollisions const& mccollisions, CCs const& collisions, aod::UDMcParticles const& McParts, TCs const& tracks)
+  void processMCTruth(aod::UDMcCollisions const& mccollisions, CCs const& collisions, aod::UDMcParticles const& McParts, TCs const& /*tracks*/)
   {
     // number of McCollisions in DF
     ROOT::Math::PxPyPzMVector v0;
