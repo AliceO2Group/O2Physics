@@ -105,6 +105,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   lutFile.read(reinterpret_cast<char*>(mLUTHeader[ipdg]), sizeof(lutHeader_t));
   if (lutFile.gcount() != sizeof(lutHeader_t)) {
     LOG(info) << " --- troubles reading covariance matrix header for PDG " << pdg << ": " << filename << std::endl;
+    LOG(info) << " --- expected/detected " << sizeof(lutHeader_t) << "/" << lutFile.gcount() << std::endl;;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
     return false;
@@ -148,6 +149,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
           lutFile.read(reinterpret_cast<char*>(mLUTEntry[ipdg][inch][irad][ieta][ipt]), sizeof(lutEntry_t));
           if (lutFile.gcount() != sizeof(lutEntry_t)) {
             LOG(info) << " --- troubles reading covariance matrix entry for PDG " << pdg << ": " << filename << std::endl;
+            LOG(info) << " --- expected/detected " << sizeof(lutHeader_t) << "/" << lutFile.gcount() << std::endl;
             return false;
           }
         }
