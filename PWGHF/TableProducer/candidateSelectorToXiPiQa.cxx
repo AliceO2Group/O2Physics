@@ -202,7 +202,6 @@ struct HfCandidateSelectorToXiPiQa {
     // temporary check histogram for KFParticle
     const AxisSpec axisKf{20, -0.5, 19.5, "Pass status"};
     registry.add("hStatusCheckKf", "hStatusCheck;kf status;entries", {HistType::kTH1F, {axisKf}});
-    registry.add("hStatusCheckKf_res", "hStatusCheck;kf status;entries", {HistType::kTH1F, {axisSel}});
 
     // invarinat mass histograms
     registry.add("hInvMassCharmBaryon", "Charm baryon invariant mass; int mass; entries", {HistType::kTH1F, {{1500, 1.5, 4.5}}});
@@ -239,136 +238,129 @@ struct HfCandidateSelectorToXiPiQa {
   bool ExtraSelectionKf(const T& candidate)
   {
 
-    bool selectionResult = true;
+    bool isSelectedWithKf = true;
 
     auto candPt = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
     const int pTBin = findBin(binsPt, candPt);
 
     if (pTBin == -1) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 0.0);
     }
 
     // cosPa (KF Specific)
     if (candidate.cosPaCascToXic() < cuts->get(pTBin, "cosPaCascToXic")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 1.0);
     }
     if (candidate.cosPaV0ToCasc() < cuts->get(pTBin, "cosPaV0ToCasc")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 2.0);
     }
 
     // dcaXY pion0 <-- Xic0 to PV cut
     if (std::abs(candidate.kfDcaXYPiFromXic()) > cuts->get(pTBin, "kfDcaXYPiFromXic")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 3.0);
     }
 
     // dcaXY cascade tp PV cut
     if (std::abs(candidate.kfDcaXYCascToPv()) > cuts->get(pTBin, "kfDcaXYCascToPv")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 4.0);
     }
 
     // Chi2Ge0
     if (candidate.chi2GeoXic() < 0 || candidate.chi2GeoXic() > cuts->get(pTBin, "chi2GeoXic")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 5.0);
     }
     if (candidate.chi2GeoCasc() < 0 || candidate.chi2GeoCasc() > cuts->get(pTBin, "chi2GeoCasc")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 6.0);
     }
     if (candidate.chi2GeoV0() < 0 || candidate.chi2GeoV0() > cuts->get(pTBin, "chi2GeoV0")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 7.0);
     }
 
     // Chi2 Topo
     if (candidate.chi2TopoXicToPv() < 0 || candidate.chi2TopoXicToPv() > cuts->get(pTBin, "chi2TopoXicToPv")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 8.0);
     }
     if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > cuts->get(pTBin, "chi2TopoPiFromXicToPv")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 9.0);
     }
     if (candidate.chi2TopoCascToPv() < 0 || candidate.chi2TopoCascToPv() > cuts->get(pTBin, "chi2TopoCascToPv")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 10.0);
     }
     if (candidate.chi2TopoV0ToPv() < 0 || candidate.chi2TopoV0ToPv() < cuts->get(pTBin, "chi2TopoV0ToPv")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 11.0);
     }
     if (candidate.chi2TopoV0ToCasc() < 0 || candidate.chi2TopoV0ToCasc() > cuts->get(pTBin, "chi2TopoV0ToCasc")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 12.0);
     }
     if (candidate.chi2TopoCascToXic() < 0 || candidate.chi2TopoCascToXic() > cuts->get(pTBin, "chi2TopoCascToXic")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 13.0);
     }
 
     // ldl
     if (candidate.cascldl() < cuts->get(pTBin, "cascldl")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 14.0);
     }
     if (candidate.v0ldl() < cuts->get(pTBin, "v0ldl")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 15.0);
     }
 
     // decay length
     if (std::abs(candidate.decayLenXYXic()) > cuts->get(pTBin, "decayLenXYXic")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 16.0);
     }
     if (std::abs(candidate.decayLenXYCasc()) < cuts->get(pTBin, "decayLenXYCasc")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 17.0);
     }
     if (std::abs(candidate.decayLenXYLambda()) < cuts->get(pTBin, "decayLenXYLambda")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 18.0);
     }
 
     // ctau
     if (std::abs(candidate.cTauXic()) > cuts->get(pTBin, "cTauXic")) {
-      selectionResult = false;
+      isSelectedWithKf = false;
     } else {
       registry.fill(HIST("hStatusCheckKf"), 19.0);
     }
 
-    // Fill the kf output result
-    if (selectionResult) {
-      registry.fill(HIST("hStatusCheckKf_res"), 1);
-    } else {
-      registry.fill(HIST("hStatusCheckKf_res"), 0);
-    }
-
-    return selectionResult;
+    return isSelectedWithKf;
   }
 
   // DCA specific cuts
@@ -376,33 +368,33 @@ struct HfCandidateSelectorToXiPiQa {
   bool ExtraSelectionDca(const T& candidate)
   {
 
-    bool selectionResult = true;
+    bool isSelectedWithDca = true;
 
     auto candPt = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
     const int pTBin = findBin(binsPt, candPt);
 
     if (pTBin == -1) {
-      selectionResult = false;
+      isSelectedWithDca = false;
     }
 
     // impact parmeter
     if (std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParXYPiFromCharmBaryonMin || std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParXYPiFromCharmBaryonMax) {
-      selectionResult = false;
+      isSelectedWithDca = false;
     }
 
     if (std::abs(candidate.impactParBachFromCharmBaryonZ()) < impactParZPiFromCharmBaryonMin || std::abs(candidate.impactParBachFromCharmBaryonZ()) > impactParZPiFromCharmBaryonMax) {
-      selectionResult = false;
+      isSelectedWithDca = false;
     }
 
     if (std::abs(candidate.impactParCascXY()) < impactParXYCascMin || std::abs(candidate.impactParCascXY()) > impactParXYCascMax) {
-      selectionResult = false;
+      isSelectedWithDca = false;
     }
 
     if (std::abs(candidate.impactParCascZ()) < impactParZCascMin || std::abs(candidate.impactParCascZ()) > impactParZCascMax) {
-      selectionResult = false;
+      isSelectedWithDca = false;
     }
 
-    return selectionResult;
+    return isSelectedWithDca;
   }
 
   template <bool dokf, typename TCandTable>
@@ -558,9 +550,13 @@ struct HfCandidateSelectorToXiPiQa {
 
       // DCAFitter && KFParticle specific selection
       if constexpr (dokf == false) {
-        resultSelections = ExtraSelectionDca(candidate);
+        if (!ExtraSelectionDca(candidate)) {
+          resultSelections = false;
+        }
       } else {
-        resultSelections = ExtraSelectionKf(candidate);
+        if (!ExtraSelectionKf(candidate)) {
+          resultSelections = false;
+        }
       }
 
       //  TPC clusters selections
@@ -673,7 +669,6 @@ struct HfCandidateSelectorToXiPiQa {
         statusPidCharmBaryon = true;
       } else {
         registry.fill(HIST("hStatusCheck"), 2.5);
-        resultSelections = false;
       }
 
       // invariant mass cuts
@@ -692,7 +687,6 @@ struct HfCandidateSelectorToXiPiQa {
           registry.fill(HIST("hStatusCheck"), 3.5);
         }
       } else {
-        resultSelections = false;
         registry.fill(HIST("hSelMassLam"), 0);
       }
 
@@ -703,7 +697,6 @@ struct HfCandidateSelectorToXiPiQa {
           registry.fill(HIST("hStatusCheck"), 4.5);
         }
       } else {
-        resultSelections = false;
         registry.fill(HIST("hSelMassCasc"), 0);
       }
 
@@ -714,7 +707,6 @@ struct HfCandidateSelectorToXiPiQa {
           registry.fill(HIST("hStatusCheck"), 5.5);
         }
       } else {
-        resultSelections = false;
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
       }
 
