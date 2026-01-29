@@ -45,7 +45,7 @@ enum class RefTrackBit : uint16_t { // This is not for leptons, but charged trac
 };
 
 enum class RefMFTTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsMFT7 = 1, // default is 6
+  kNclsMFT7 = 1,                       // default is 6
   kNclsMFT8 = 2,
   kChi2MFT4 = 4, // default is 5
   kChi2MFT3 = 8,
