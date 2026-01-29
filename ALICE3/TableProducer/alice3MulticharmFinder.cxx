@@ -444,7 +444,7 @@ struct Alice3MulticharmFinder {
     INSERT_HIST(histPath + "hEtaXiCC", "hEtaXiCC", {kTH1D, {{axisEta}}});
     INSERT_HIST(histPath + "hPtXiCC", "hPtXiCC", {kTH1D, {{axisPt}}});
     INSERT_HIST(histPath + "h3dMassXiCC", "h3dMassXiCC", {kTH3D, {{axisPt, axisEta, axisXiCCMass}}});
-    
+
     INSERT_HIST(histPath + "hDCAXiCDaughters", "hDCAXiCDaughters", {kTH1D, {{axisDCAXiCDaughters}}});
     INSERT_HIST(histPath + "hDCAXiCCDaughters", "hDCAXiCCDaughters", {kTH1D, {{axisDCAXiCCDaughters}}});
     INSERT_HIST(histPath + "hDCAxyXi", "hDCAxyXi", {kTH1D, {{axisDCA}}});
