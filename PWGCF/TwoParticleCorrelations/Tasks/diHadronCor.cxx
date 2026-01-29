@@ -1192,7 +1192,7 @@ struct DiHadronCor {
       if (cfgUseEventWeights) {
         eventWeight = 1.0f / it.currentWindowNeighbours();
       }
-      
+
       if (cfgUseCFStepAll)
         fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
 
