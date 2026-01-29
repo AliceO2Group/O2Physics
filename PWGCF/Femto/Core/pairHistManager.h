@@ -637,8 +637,8 @@ class PairHistManager
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-  double mPdgMass1 = 0.f;
-  double mPdgMass2 = 0.f;
+  double mPdgMass1 = 0.;
+  double mPdgMass2 = 0.;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
 
