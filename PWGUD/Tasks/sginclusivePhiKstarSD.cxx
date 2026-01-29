@@ -333,6 +333,8 @@ struct SginclusivePhiKstarSD {
         registry.add("MC/genM_1", "Generated events; Mass (GeV/#it{c}^2)", {HistType::kTH1F, {{220, 0.98, 1.2}}});
 
         registry.add("MC/accMPtRap_phi_G", "Generated Phi; Mass (GeV/#it{c}^2); #it{p}_{T} (GeV/#it{c})", {HistType::kTH3F, {{220, 0.98, 1.20}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
+        registry.add("MC/accMPtRap_phi_G1", "Generated Phi1; Mass (GeV/#it{c}^2); #it{p}_{T} (GeV/#it{c})", {HistType::kTH3F, {{220, 0.98, 1.20}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
+        registry.add("MC/accMPtRap_phi_G2", "Generated Phi2; Mass (GeV/#it{c}^2); #it{p}_{T} (GeV/#it{c})", {HistType::kTH3F, {{220, 0.98, 1.20}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
 
         registry.add("MC/accEtaPt", "Generated events in acceptance; eta (1); #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{60, -1.5, 1.5}, {250, 0.0, 5.0}}});
         registry.add("MC/accRap", "Generated events in acceptance; Rapidity (1)", {HistType::kTH1F, {{60, -1.5, 1.5}}});
@@ -344,6 +346,8 @@ struct SginclusivePhiKstarSD {
         registry.add("MC/pDiff", "McTruth - reconstructed track momentum; McTruth - reconstructed track momentum; Entries", {HistType::kTH2F, {{240, -6., 6.}, {3, -1.5, 1.5}}});
         // K*0
         registry.add("MC/accMPtRap_kstar_G", "Generated K*0; Mass (GeV/#it{c}^2); #it{p}_{T} (GeV/#it{c})", {HistType::kTH3F, {{400, 0., 2.0}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
+        registry.add("MC/accMPtRap_kstar_G1", "Generated K*0 from kp; Mass (GeV/#it{c}^2); #it{p}_{T} (GeV/#it{c})", {HistType::kTH3F, {{400, 0., 2.0}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
+        registry.add("MC/accMPtRap_kstar_G2", "Generated K*0 from kp2; Mass (GeV/#it{c}^2); #it{p}_{T} (GeV/#it{c})", {HistType::kTH3F, {{400, 0., 2.0}, {200, 0.0, 10.0}, {60, -1.5, 1.5}}});
         registry.add("MC/genEtaPt_k", "Generated events; eta (1); #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{60, -1.5, 1.5}, {250, 0.0, 5.0}}});
         registry.add("MC/genRap_k", "Generated events; Rapidity (1)", {HistType::kTH1F, {{60, -1.5, 1.5}}});
         registry.add("MC/genMPt_k", "Generated events; Mass (GeV/#it{c}^2); #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{400, 0., 2.0}, {200, 0.0, 10.0}}});
@@ -474,6 +478,7 @@ struct SginclusivePhiKstarSD {
 
           // Rapidity, pseudorapisdity
           rQA.add("hEta_all_after_mc", "Pseudorapidity of all tracks after track selection; #eta; Counts", kTH1F, {{400, -1.0, 1.0}});
+          rQA.add("hphi_all_after_mc", "phi of all tracks after track selection; #eta; Counts", kTH1F, {{400, -4.0, 4.0}});
 
           rQA.add("hEta_ka_mc", "Pseudorapidity of selected Kaons; #eta; Counts", kTH1F, {{400, -1.0, 1.0}});
           rQA.add("hRap_ka_mc", "Rapidity of selected Kaons; y; Counts", kTH1F, {{400, -1.0, 1.0}});
@@ -1215,6 +1220,75 @@ struct SginclusivePhiKstarSD {
       // get McParticles which belong to mccollision
       auto partSlice = McParts.sliceBy(partPerMcCollision, mccollision.globalIndex());
       registry.get<TH1>(HIST("MC/nParts"))->Fill(partSlice.size(), 1.);
+      for (const auto& trk1 : partSlice) {
+        if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
+          vkstar.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassK0Star892);
+          auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
+          const size_t kExpectedNumberOfDaughters = 2;
+          if (kDaughters.size() != kExpectedNumberOfDaughters) {
+            continue;
+          }
+          auto daughtp = false;
+          auto daughtm = false;
+          for (const auto& kCurrentDaughter : kDaughters) {
+            if (!kCurrentDaughter.isPhysicalPrimary()) {
+              continue;
+            }
+            if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
+              daughtp = true;
+              v0.SetCoordinates(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassKaonCharged);
+            } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
+              daughtm = true;
+              v1.SetCoordinates(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
+            }
+          }
+          if (daughtp && daughtm) {
+            v01 = v0 + v1;
+            if (std::abs(v01.Rapidity()) < 0.5) {
+              registry.get<TH3>(HIST("MC/accMPtRap_kstar_G"))->Fill(v01.M(), v01.Pt(), v01.Rapidity(), 1.);
+            }
+            if (std::abs(vkstar.Rapidity()) < 0.5) {
+              //  registry.get<TH3>(HIST("MC/accMPtRap_kstar_G1"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+            }
+          }
+        }
+        // phi
+        if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+          if (trk1.has_mothers()) {
+            continue;
+          }
+          vphi.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassPhi);
+          auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
+          const size_t kExpectedNumberOfDaughters1 = 2;
+          if (kDaughters.size() != kExpectedNumberOfDaughters1) {
+            continue;
+          }
+          auto daughtp1 = false;
+          auto daughtm1 = false;
+          for (const auto& kCurrentDaughter : kDaughters) {
+            if (!kCurrentDaughter.isPhysicalPrimary()) {
+              continue;
+            }
+            if (kCurrentDaughter.pdgCode() == PDG_t::kKPlus) {
+              daughtp1 = true;
+              v0.SetCoordinates(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassKaonCharged);
+            } else if (kCurrentDaughter.pdgCode() == PDG_t::kKMinus) {
+              daughtm1 = true;
+              v1.SetCoordinates(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassKaonCharged);
+            }
+          }
+          if (daughtp1 && daughtm1) {
+            v01 = v0 + v1;
+            if (std::abs(v01.Rapidity()) < 0.5) {
+              registry.get<TH3>(HIST("MC/accMPtRap_phi_G"))->Fill(v01.M(), v01.Pt(), v01.Rapidity(), 1.);
+            }
+            if (std::abs(vphi.Rapidity()) < 0.5) {
+              registry.get<TH3>(HIST("MC/accMPtRap_phi_G2"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+            }
+          }
+        }
+      }
+      /*
       for (const auto& [tr1, tr2] : combinations(partSlice, partSlice)) {
         if ((tr1.pdgCode() == kKPlus && tr2.pdgCode() == kPiMinus) || (tr1.pdgCode() == kKMinus && tr2.pdgCode() == kPiPlus) || (tr1.pdgCode() == kPiPlus && tr2.pdgCode() == kKMinus) || (tr1.pdgCode() == kPiMinus && tr2.pdgCode() == kKPlus)) {
           if (std::abs(tr1.pdgCode()) == kKPlus) {
@@ -1238,7 +1312,7 @@ struct SginclusivePhiKstarSD {
             for (const auto& mother : tr1.mothers_as<aod::UDMcParticles>()) {
               if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
                 vkstar.SetCoordinates(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassK0Star892);
-                registry.get<TH3>(HIST("MC/accMPtRap_kstar_G"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+    // registry.get<TH3>(HIST("MC/accMPtRap_kstar_G"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
                 flag = true;
               }
             }
@@ -1279,7 +1353,7 @@ struct SginclusivePhiKstarSD {
           for (const auto& mother : tr1.mothers_as<aod::UDMcParticles>()) {
             if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
               vphi.SetCoordinates(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPhi);
-              registry.get<TH3>(HIST("MC/accMPtRap_phi_G"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+        //  registry.get<TH3>(HIST("MC/accMPtRap_phi_G"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
               flag = true;
             }
           }
@@ -1316,13 +1390,16 @@ struct SginclusivePhiKstarSD {
           registry.get<TH2>(HIST("MC/pDiff"))->Fill(-5.9, -1, 1.);
         }
       }
+      */
     }
   }
   PROCESS_SWITCH(SginclusivePhiKstarSD, processMCTruth, "Process MC truth", true);
   // ...............................................................................................................
-  void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& /*McParts*/)
+  void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& McParts)
   {
     registry.fill(HIST("Reco/hEventCutFlowMC"), 0);
+    ROOT::Math::PxPyPzMVector vkstar;
+    ROOT::Math::PxPyPzMVector vphi;
 
     if (!collision.has_udMcCollision())
       return;
@@ -1334,6 +1411,28 @@ struct SginclusivePhiKstarSD {
     auto mccoll = collision.udMcCollision();
     if (mccoll.generatorsID() != generatedId)
       return;
+    if (upcflag != -1 && collision.flags() == upcflag) {
+      auto partSlice = McParts.sliceBy(partPerMcCollision, mccoll.globalIndex());
+      for (const auto& trk1 : partSlice) {
+        if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
+          vkstar.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassK0Star892);
+          if (std::abs(vkstar.Rapidity()) < 0.5) {
+            registry.get<TH3>(HIST("MC/accMPtRap_kstar_G1"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+          }
+        }
+        // phi
+        if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+          if (trk1.has_mothers()) {
+            continue;
+          }
+          vphi.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassPhi);
+          if (std::abs(vphi.Rapidity()) < 0.5) {
+            registry.get<TH3>(HIST("MC/accMPtRap_phi_G1"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+          }
+        }
+      }
+    }
+
     registry.fill(HIST("Reco/hEventCutFlowMC"), 2);
 
     float fitCut[5] = {fv0Cut, ft0aCut, ft0cCut, fddaCut, fddcCut};
@@ -1407,8 +1506,8 @@ struct SginclusivePhiKstarSD {
       rQA.fill(HIST("hOcc_after_mc"), collision.occupancyInTime());
 
     // registry.get<TH1>(HIST("Reco/nPVContributors"))->Fill(pvContributors.size(), 1.);
-    ROOT::Math::PxPyPzMVector vphi;
-    ROOT::Math::PxPyPzMVector vkstar;
+    // ROOT::Math::PxPyPzMVector vphi;
+    // ROOT::Math::PxPyPzMVector vkstar;
     ROOT::Math::PxPyPzMVector v0;
     ROOT::Math::PxPyPzMVector vr0;
     ROOT::Math::PxPyPzMVector vr1;
@@ -1465,6 +1564,7 @@ struct SginclusivePhiKstarSD {
         rQA.fill(HIST("hDcaxy_all_after_mc"), tr1.dcaXY());
         rQA.fill(HIST("hDcaz_all_after_mc"), tr1.dcaZ());
         rQA.fill(HIST("hEta_all_after_mc"), v0.Eta());
+        rQA.fill(HIST("hphi_all_after_mc"), v0.Phi());
 
         rQA.fill(HIST("tpc_dedx_mc"), v0.P(), tr1.tpcSignal());
         rQA.fill(HIST("tof_beta_mc"), v0.P(), tr1.beta());
@@ -1519,8 +1619,8 @@ struct SginclusivePhiKstarSD {
             continue;
           vr1.SetCoordinates(tr2.px(), tr2.py(), tr2.pz(), o2::constants::physics::MassKaonCharged);
           auto mcPart2 = tr2.udMcParticle();
-          if (std::abs(mcPart2.globalIndex() - mcPart1.globalIndex()) != 1)
-            continue;
+          //  if (std::abs(mcPart2.globalIndex() - mcPart1.globalIndex()) != 1)
+          //   continue;
           if (std::abs(mcPart1.pdgCode()) != kKPlus || std::abs(mcPart2.pdgCode()) != kKPlus)
             continue;
           if (mcPart1.pdgCode() == mcPart2.pdgCode())
@@ -1529,17 +1629,28 @@ struct SginclusivePhiKstarSD {
             continue;
           bool flag = false;
           bool flag1 = false;
+          int gIndex1 = 0;
+          int gIndex2 = 0;
           if (mcPart1.has_mothers() && mcPart2.has_mothers()) {
             for (const auto& mother : mcPart1.mothers_as<aod::UDMcParticles>()) {
               if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+                if (mother.has_mothers()) {
+                  continue;
+                }
                 vphi.SetCoordinates(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassPhi);
-                registry.get<TH3>(HIST("MC/accMPtRap_phi_T"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+                if (std::abs(vphi.Rapidity()) > 0.5)
+                  continue;
                 flag = true;
+                gIndex1 = mother.globalIndex();
               }
             }
             for (const auto& mother1 : mcPart1.mothers_as<aod::UDMcParticles>()) {
               if (std::abs(mother1.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+                vphi.SetCoordinates(mother1.px(), mother1.py(), mother1.pz(), o2::constants::physics::MassPhi);
+                if (std::abs(vphi.Rapidity()) > 0.5)
+                  continue;
                 flag1 = true;
+                gIndex2 = mother1.globalIndex();
               }
             }
           }
@@ -1547,15 +1658,21 @@ struct SginclusivePhiKstarSD {
           vr1g.SetCoordinates(mcPart2.px(), mcPart2.py(), mcPart2.pz(), o2::constants::physics::MassKaonCharged);
           vr01g = vr0g + vr1g;
           vr01 = vr0 + vr1;
-
-          if (flag && flag1) {
-            registry.get<TH2>(HIST("Reco/selMPt"))->Fill(vr01.M(), vr01.Pt(), 1.);
+          if (flag && flag1 && (gIndex1 == gIndex2)) {
+            if (std::abs(vr01g.Rapidity()) < 0.5) {
+              registry.get<TH2>(HIST("Reco/selMPt"))->Fill(vr01g.M(), vr01g.Pt(), 1.);
+            }
+            if (std::abs(vr01.Rapidity()) < 0.5) {
+              registry.get<TH3>(HIST("Reco/selMPtRap"))->Fill(vr01.M(), vr01.Pt(), vr01.Rapidity(), 1.);
+            }
+            if (std::abs(vphi.Rapidity()) < 0.5) {
+              registry.get<TH3>(HIST("MC/accMPtRap_phi_T"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+            }
           }
           registry.get<TH1>(HIST("Reco/selRap"))->Fill(vr01.Rapidity(), 1.);
-          registry.get<TH3>(HIST("Reco/selMPtRap"))->Fill(vr01.M(), vr01.Pt(), vr01.Rapidity(), 1.);
           registry.get<TH1>(HIST("Reco/selPt"))->Fill(vr01.Pt(), 1.);
           registry.get<TH1>(HIST("Reco/selM"))->Fill(vr01.M(), 1.);
-          registry.get<TH3>(HIST("Reco/selMPtRap_gen"))->Fill(vr01g.M(), vr01g.Pt(), vr01g.Rapidity(), 1.);
+          // registry.get<TH3>(HIST("Reco/selMPtRap_gen"))->Fill(vr01g.M(), vr01g.Pt(), vr01g.Rapidity(), 1.);
         }
       }
     }
@@ -1573,8 +1690,8 @@ struct SginclusivePhiKstarSD {
         continue;
       if (!mcPart1.isPhysicalPrimary() || !mcPart2.isPhysicalPrimary())
         continue;
-      if (std::abs(mcPart2.globalIndex() - mcPart1.globalIndex()) != 1)
-        continue;
+      // if (std::abs(mcPart2.globalIndex() - mcPart1.globalIndex()) != 1)
+      //  continue;
 
       if (tr1.sign() * tr2.sign() > 0)
         continue;
@@ -1591,26 +1708,43 @@ struct SginclusivePhiKstarSD {
       if (trackselector(tr1, parameters) && trackselector(tr2, parameters)) {
         bool flag = false;
         bool flag1 = false;
+        int gIndex1 = 0;
+        int gIndex2 = 0;
         if (mcPart1.has_mothers() && mcPart2.has_mothers()) {
           for (const auto& mother : mcPart1.mothers_as<aod::UDMcParticles>()) {
             if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
               vkstar.SetCoordinates(mother.px(), mother.py(), mother.pz(), o2::constants::physics::MassK0Star892);
-              registry.get<TH3>(HIST("MC/accMPtRap_kstar_T"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+              // registry.get<TH3>(HIST("MC/accMPtRap_kstar_T"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+              if (std::abs(vkstar.Rapidity()) > 0.5)
+                continue;
               flag = true;
+              gIndex1 = mother.globalIndex();
             }
           }
           for (const auto& mother1 : mcPart2.mothers_as<aod::UDMcParticles>()) {
             if (std::abs(mother1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
+              vkstar.SetCoordinates(mother1.px(), mother1.py(), mother1.pz(), o2::constants::physics::MassK0Star892);
+              if (std::abs(vkstar.Rapidity()) > 0.5)
+                continue;
               flag1 = true;
+              gIndex2 = mother1.globalIndex();
             }
           }
         }
-        if (flag && flag1) {
-          registry.get<TH2>(HIST("Reco/selMPt_k"))->Fill(vr01.M(), vr01.Pt(), 1.);
+        if (flag && flag1 && (gIndex1 == gIndex2)) {
+          if (std::abs(vr01g.Rapidity()) < 0.5) {
+            registry.get<TH2>(HIST("Reco/selMPt_k"))->Fill(vr01g.M(), vr01g.Pt(), 1.);
+          }
+          if (std::abs(vr01.Rapidity()) < 0.5) {
+            registry.get<TH3>(HIST("Reco/selMPtRap_k"))->Fill(vr01.M(), vr01.Pt(), vr01.Rapidity(), 1.);
+          }
+          if (std::abs(vkstar.Rapidity()) < 0.5) {
+            registry.get<TH3>(HIST("MC/accMPtRap_kstar_T"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+          }
         }
         registry.get<TH1>(HIST("Reco/selM_k_K"))->Fill(vr01.M(), 1.);
         registry.get<TH1>(HIST("Reco/selRap_k"))->Fill(vr01.Rapidity(), 1.);
-        registry.get<TH3>(HIST("Reco/selMPtRap_k"))->Fill(vr01.M(), vr01.Pt(), vr01.Rapidity(), 1.);
+
         registry.get<TH1>(HIST("Reco/selPt_k"))->Fill(vr01.Pt(), 1.);
         registry.get<TH3>(HIST("Reco/selMPtRap_k_gen"))->Fill(vr01g.M(), vr01g.Pt(), vr01g.Rapidity(), 1.);
       }
