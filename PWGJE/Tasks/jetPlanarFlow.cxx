@@ -241,7 +241,7 @@ struct JetPlanarFlowTask {
 
     auto planarFlow = (4.0 * PrinciplMatrixDeterminant) / (principleMatrixTrace * principleMatrixTrace);
     auto NsubTau2to1 = nSubCASDResults[2] / nSubCASDResults[1];
-    
+
     float jetPt = 0.0;
     if constexpr (isAreaSubtracted) {
       jetPt = jet.pt() - (jet.area() * collision.rho());
@@ -340,7 +340,7 @@ struct JetPlanarFlowTask {
       if (isInJet) {
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_incone_beforeRot"), track.pt(), thetaOrigin, track.phi());
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_incone_afterRot"), track.pt(), thetaRot, phiRot);
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh){ // low pt tracks, no contribute to rotation axis
+        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) { // low pt tracks, no contribute to rotation axis
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_incone_lowpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_incone_highpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
@@ -348,21 +348,21 @@ struct JetPlanarFlowTask {
       } else {
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_outcone_beforeRot"), track.pt(), thetaOrigin, track.phi());
         registry.fill(HIST("h3_track_pt_track_theta_track_phi_outcone_afterRot"), track.pt(), thetaRot, phiRot);
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh){ // low pt tracks, no contribute to rotation axis
+        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) { // low pt tracks, no contribute to rotation axis
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_outcone_lowpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h2_track_thetaSinphi_track_thetaCosphi_outcone_highpt_afterRot"), thetaRot * TMath::Sin(phiRot), thetaRot * TMath::Cos(phiRot));
         }
       }
 
-      if (NsubTau2to1 < 0.3 ) {
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh){
+      if (NsubTau2to1 < 0.3) {
+        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_2prolong_lowpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_2prolong_highpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
         }
-      } else if (NsubTau2to1 > 0.6 ){
-        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh){
+      } else if (NsubTau2to1 > 0.6){
+        if (track.pt() > relatedTrackptlow &&  track.pt() < relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_1prolong_lowpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
         } else if (track.pt() > relatedTrackpthigh) {
           registry.fill(HIST("h3_track_thetaSinPhi_track_thetaCosphi_jetDR_1prolong_highpt"), nSubCASDResults[0], thetaRot * TMath::Sin(track.phi()), thetaRot * TMath::Cos(track.phi()));
@@ -424,7 +424,7 @@ struct JetPlanarFlowTask {
       registry.fill(HIST("h_track_pt"), track.pt());
       registry.fill(HIST("h2_track_eta_track_phi"), track.eta(), track.phi());
     }
-    
+
     bool isjetlead = true;
     for (auto const& jet : jets) {
 
@@ -433,7 +433,6 @@ struct JetPlanarFlowTask {
       }
       fillJetQCHistograms(jet, isjetlead);
       isjetlead = false;
-
     }
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processJetsQCData, "charged jet QC data ", true);
@@ -458,7 +457,7 @@ struct JetPlanarFlowTask {
       registry.fill(HIST("h_track_pt"), track.pt());
       registry.fill(HIST("h2_track_eta_track_phi"), track.eta(), track.phi());
     }
-    
+
     bool isjetlead = true;
     for (auto const& jet : jets) {
 
@@ -467,7 +466,6 @@ struct JetPlanarFlowTask {
       }
       fillJetQCHistograms(jet, isjetlead);
       isjetlead = false;
-
     }
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processJetsQCMCD, "charged jet QC MCD ", false);
