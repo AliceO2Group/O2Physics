@@ -246,7 +246,7 @@ struct BjetTaggingGnn {
 
     registry.add("h_jetpT", "", {HistType::kTH1F, {axisJetpT}}, callSumw2);
     registry.add("h_jetEta", "", {HistType::kTH1F, {axisJetEta}}, callSumw2);
-    registry.add("h_jetPhi", "", {HistType::kTH1F, {200, 0., 2. * M_PI, "#it{phi}_{jet}"}});
+    registry.add("h_jetPhi", "", {HistType::kTH1F, {{200, 0., 2. * M_PI, "#it{phi}_{jet}"}}});
     registry.add("h_jetMass", "", {HistType::kTH1F, {axisJetMass}});
     registry.add("h_Db", "", {HistType::kTH1F, {axisDbFine}});
     registry.add("h2_jetpT_Db", "", {HistType::kTH2F, {axisJetpT, axisDb}});
