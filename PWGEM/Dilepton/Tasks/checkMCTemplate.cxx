@@ -470,7 +470,7 @@ struct checkMCTemplate {
 
     float dcaX = propmuonAtPV.getX() - collision.posX();
     float dcaY = propmuonAtPV.getY() - collision.posY();
-    float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+    // float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
     float cXX = propmuonAtPV.getSigma2X();
     float cYY = propmuonAtPV.getSigma2Y();
     float cXY = propmuonAtPV.getSigmaXY();
