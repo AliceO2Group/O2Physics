@@ -59,6 +59,7 @@ using namespace o2::aod;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::fwdtrackutils;
+using namespace o2::constants::physics;
 
 struct checkMCTemplate {
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
