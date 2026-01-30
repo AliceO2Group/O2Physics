@@ -83,6 +83,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   /// Selections on candidate soft π-,+
   Configurable<bool> applyGlobalTrkWoDcaCutsSoftPi{"applyGlobalTrkWoDcaCutsSoftPi", false, "Switch on the application of the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS"};
+  Configurable<float> softPiPtMin{"softPiPtMin", 0.1, "Soft pion min value for pt"};
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
   Configurable<float> softPiChi2Max{"softPiChi2Max", 36.f, "Soft pion max value for chi2 ITS"};
   Configurable<int> softPiApplyCustomITSHitMap{"softPiApplyCustomITSHitMap", true, "Flag to enable/disable the application of the custom ITS hitmap requirement for the candidate soft pion"};
@@ -157,7 +158,7 @@ struct HfCandidateCreatorSigmac0plusplus {
     }
 
     // kinematics
-    // softPiCuts.SetPtRange(0.001, 1000.); // pt
+    softPiCuts.SetPtRange(softPiPtMin, 1000.);           // pt
     softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
     // softPiCuts.SetMaxDcaXY(softPiDcaXYMax);              // dcaXY
     // softPiCuts.SetMaxDcaZ(softPiDcaZMax);                // dcaZ
