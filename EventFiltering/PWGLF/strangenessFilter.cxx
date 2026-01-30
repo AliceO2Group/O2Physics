@@ -699,10 +699,6 @@ struct strangenessFilter {
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
       }
     }
-    if ((HMTriggerSelectionForOmega & 0x7) == 0) {
-      LOG(fatal) << "Wrong selection of HMTriggerForOmega:" << HMTriggerSelectionForOmega;
-    }
-
     // constants
     const float ctauxi = 4.91;     // from PDG
     const float ctauomega = 2.461; // from PDG
