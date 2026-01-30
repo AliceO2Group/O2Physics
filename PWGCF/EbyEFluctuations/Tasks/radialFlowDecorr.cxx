@@ -233,15 +233,11 @@ struct RadialFlowDecorr {
 
   TProfile3D* pmeanTruNchEtabinPtbinStep2 = nullptr;
   TProfile3D* pmeanRecoNchEtabinPtbinStep2 = nullptr;
-  // TProfile3D* pmeanRecoMatchedNchEtabinPtbinStep2 = nullptr;
   TProfile3D* pmeanRecoEffcorrNchEtabinPtbinStep2 = nullptr;
-  // TProfile3D* pmeanRecoMatchedEffcorrNchEtabinPtbinStep2 = nullptr;
 
   TProfile3D* pmeanEtTruNchEtabinPtbinStep2 = nullptr;
   TProfile3D* pmeanEtRecoNchEtabinPtbinStep2 = nullptr;
-  // TProfile3D* pmeanEtRecoMatchedNchEtabinPtbinStep2 = nullptr;
   TProfile3D* pmeanEtRecoEffcorrNchEtabinPtbinStep2 = nullptr;
-  // TProfile3D* pmeanEtRecoMatchedEffcorrNchEtabinPtbinStep2 = nullptr;
 
   TProfile3D* pmeanMultTruNchEtabinPtbinStep2 = nullptr;
   TProfile3D* pmeanMultRecoNchEtabinPtbinStep2 = nullptr;
@@ -310,7 +306,6 @@ struct RadialFlowDecorr {
     auto* pd = pdg->GetParticle(particle.pdgCode());
     if (!pd)
       return false;
-    // if (dpt::isStrangeBaryonPDG(particle.pdgCode())) return false;
     if (std::abs(pd->Charge()) == 0)
       return false;
     if (particle.pt() < cfgCutPtLower || particle.pt() > cfgCutPtUpper || std::abs(particle.eta()) > cfgCutEta)
@@ -655,18 +650,14 @@ struct RadialFlowDecorr {
 
     histos.add<TProfile3D>("pmeanTruNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
     histos.add<TProfile3D>("pmeanRecoNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
-    // histos.add<TProfile3D>("pmeanRecoMatchedNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
     histos.add<TProfile3D>("pmeanRecoEffcorrNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
-    // histos.add<TProfile3D>("pmeanRecoMatchedEffcorrNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
 
     histos.add("MCGen/Prof_Cent_MeanEt", ";cent;#LT E_{T}#GT", kTProfile, {centAxis1Per});
     histos.add("MCGen/Prof_Mult_MeanEt", ";N_{PV};#LT E_{T}#GT", kTProfile, {nChAxis});
 
     histos.add<TProfile3D>("pmeanEtTruNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
     histos.add<TProfile3D>("pmeanEtRecoNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
-    // histos.add<TProfile3D>("pmeanEtRecoMatchedNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
     histos.add<TProfile3D>("pmeanEtRecoEffcorrNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
-    // histos.add<TProfile3D>("pmeanEtRecoMatchedEffcorrNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
 
     histos.add<TProfile3D>("pmeanMultTruNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
     histos.add<TProfile3D>("pmeanMultRecoNchEtabinPtbin", ";N_{PV};#eta; p_{T}", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
@@ -801,7 +792,6 @@ struct RadialFlowDecorr {
     }
     auto hWMap = reinterpret_cast<THnSparseF*>(hRaw->Clone(mapName));
     hWMap->SetTitle(Form("Flattening Weight Map %s (w_{#phi} = <N_{#phi}> / N_{#phi})", mapName));
-    // hWMap->SetDirectory(nullptr);
     hWMap->Reset();
     auto axV = hRaw->GetAxis(0);   // Vz
     auto axChg = hRaw->GetAxis(1); // Charge
@@ -922,16 +912,12 @@ struct RadialFlowDecorr {
     if (cfgRunMCMean) {
       declareMCMeanHists();
       histos.addClone("MCGen/", "MCReco/");
-      // histos.addClone("MCGen/", "MCRecoMatched/");
       histos.addClone("MCGen/", "MCRecoEffCorr/");
-      // histos.addClone("MCGen/", "MCRecoMatchedEffCorr/");
     }
     if (cfgRunMCFluc) {
       declareMCFlucHists();
       histos.addClone("MCGen/", "MCReco/");
-      // histos.addClone("MCGen/", "MCRecoMatched/");
       histos.addClone("MCGen/", "MCRecoEffCorr/");
-      // histos.addClone("MCGen/", "MCRecoMatchedEffCorr/");
     }
     if (cfgRunGetDataFlat) {
       declareDataGetFlatHists();
@@ -1066,15 +1052,11 @@ struct RadialFlowDecorr {
       if (lstMCMean) {
         loadTProfile3DFromList(lstMCMean, "pmeanTruNchEtabinPtbin", pmeanTruNchEtabinPtbinStep2);
         loadTProfile3DFromList(lstMCMean, "pmeanRecoNchEtabinPtbin", pmeanRecoNchEtabinPtbinStep2);
-        // loadTProfile3DFromList(lstMCMean, "pmeanRecoMatchedNchEtabinPtbin", pmeanRecoMatchedNchEtabinPtbinStep2);
         loadTProfile3DFromList(lstMCMean, "pmeanRecoEffcorrNchEtabinPtbin", pmeanRecoEffcorrNchEtabinPtbinStep2);
-        // loadTProfile3DFromList(lstMCMean, "pmeanRecoMatchedEffcorrNchEtabinPtbin", pmeanRecoMatchedEffcorrNchEtabinPtbinStep2);
 
         loadTProfile3DFromList(lstMCMean, "pmeanEtTruNchEtabinPtbin", pmeanEtTruNchEtabinPtbinStep2);
         loadTProfile3DFromList(lstMCMean, "pmeanEtRecoNchEtabinPtbin", pmeanEtRecoNchEtabinPtbinStep2);
-        // loadTProfile3DFromList(lstMCMean, "pmeanEtRecoMatchedNchEtabinPtbin", pmeanEtRecoMatchedNchEtabinPtbinStep2);
         loadTProfile3DFromList(lstMCMean, "pmeanEtRecoEffcorrNchEtabinPtbin", pmeanEtRecoEffcorrNchEtabinPtbinStep2);
-        // loadTProfile3DFromList(lstMCMean, "pmeanEtRecoMatchedEffcorrNchEtabinPtbin", pmeanEtRecoMatchedEffcorrNchEtabinPtbinStep2);
 
         loadTProfile3DFromList(lstMCMean, "pmeanMultTruNchEtabinPtbin", pmeanMultTruNchEtabinPtbinStep2);
         loadTProfile3DFromList(lstMCMean, "pmeanMultRecoNchEtabinPtbin", pmeanMultRecoNchEtabinPtbinStep2);
@@ -1328,7 +1310,6 @@ struct RadialFlowDecorr {
         histos.fill(HIST("TruthTracKVz"), mcCollision.posZ(), col.posZ());
         histos.fill(HIST("vzResolution"), mcCollision.posZ(), mcCollision.posZ() - col.posZ());
 
-        // LOGF(info, "Event Check: cent = %.1f, nTracks = %d", cent, (int)trackSlice.size());
         memset(sumWiTruth, 0, sizeof(sumWiTruth));
         memset(sumWiptiTruth, 0, sizeof(sumWiptiTruth));
         memset(sumWiReco, 0, sizeof(sumWiReco));
@@ -1612,7 +1593,6 @@ struct RadialFlowDecorr {
       auto colSlice = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       if (colSlice.size() != 1)
         continue;
-      // histos.fill(HIST("MCGen/hVtxZ"), mcCollision.posZ());
       for (const auto& col : colSlice) {
 
         auto trackSlice = tracks.sliceBy(trackPerCollision, col.globalIndex());
