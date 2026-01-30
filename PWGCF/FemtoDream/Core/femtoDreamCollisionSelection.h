@@ -236,15 +236,15 @@ class FemtoDreamCollisionSelection
     }
 
     mHistogramQn = registry;
-    mHistogramQn->add("Event/hN2allQn",  ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", kTH1F, {{centBins, 0, 100}});
-    mHistogramQn->add("Event/hD2allQn",  ";centrality; #sum (W_{A} W_{B})",           kTH1F, {{centBins, 0, 100}});
+    mHistogramQn->add("Event/hN2allQn", ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", kTH1F, {{centBins, 0, 100}});
+    mHistogramQn->add("Event/hD2allQn", ";centrality; #sum (W_{A} W_{B})", kTH1F, {{centBins, 0, 100}});
     mHistogramQn->get<TH1>(HIST("Event/hN2allQn"))->Sumw2();
     mHistogramQn->get<TH1>(HIST("Event/hD2allQn"))->Sumw2();
 
     if (doQnSeparation) {
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
         hN2.push_back(mHistogramQn->add(("Qn/hN2_" + std::to_string(iqn)).c_str(), ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", kTH1F, {{centBins, 0, 100}}));
-        hD2.push_back(mHistogramQn->add(("Qn/hD2_" + std::to_string(iqn)).c_str(), ";centrality; #sum (W_{A} W_{B})",           kTH1F, {{centBins, 0, 100}}));
+        hD2.push_back(mHistogramQn->add(("Qn/hD2_" + std::to_string(iqn)).c_str(), ";centrality; #sum (W_{A} W_{B})", kTH1F, {{centBins, 0, 100}}));
       }
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
         std::get<std::shared_ptr<TH1>>(hN2[iqn])->Sumw2();
@@ -441,29 +441,29 @@ class FemtoDreamCollisionSelection
     int nA = 0, nB = 0;
 
     for (auto const& trk : tracks) {
-      const double pt  = trk.pt();
+      const double pt = trk.pt();
       const double eta = trk.eta();
       if (pt < ptMin || pt > ptMax) {
         continue;
       }
-      
-      const double w   = 1.0; // TODO: NUA/NUE weight if you want
+
+      const double w = 1.0; // TODO: NUA/NUE weight if you want
       const double phi = trk.phi();
-      const double c   = w * TMath::Cos(harmonic * phi);
-      const double s   = w * TMath::Sin(harmonic * phi);
+      const double c = w * TMath::Cos(harmonic * phi);
+      const double s = w * TMath::Sin(harmonic * phi);
 
       if (eta > fEtaGap) {
-        Q2A_re += c;  
-        Q2A_im += s;  
-        WA += w;  
+        Q2A_re += c;
+        Q2A_im += s;
+        WA += w;
         nA++;
-      } else if (eta < -1* fEtaGap) {
-        Q2B_re += c;  
-        Q2B_im += s;  
-        WB += w;  
+      } else if (eta < -1 * fEtaGap) {
+        Q2B_re += c;
+        Q2B_im += s;
+        WB += w;
         nB++;
       }
-    }  
+    }
 
     // need at least 1 track on each side to form pairs; for stability, require >=2
     if (nA < 2 || nB < 2) {
