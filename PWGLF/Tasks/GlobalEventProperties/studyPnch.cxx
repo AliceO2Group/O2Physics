@@ -125,7 +125,7 @@ struct StudyPnch {
     x->SetBinLabel(6, "INEL > 0");
     x->SetBinLabel(7, "|vz| < 10");
 
-    if (doprocessData || doprocessCorrelation || doprocessMonteCarlo) {
+    if (doprocessData || doprocessCorrelation || doprocessMonteCarlo || doprocessTreatedMonteCarlo) {
       histos.add("PhiVsEtaHist", "PhiVsEtaHist", kTH2F, {axisPhi, axisEta}, false);
     }
     if (doprocessData) {
@@ -142,6 +142,11 @@ struct StudyPnch {
       histos.add("hMultiplicityMCrec", "hMultiplicityMCrec", kTH1F, {axisMult}, true);
       histos.add("hMultiplicityMCgen", "hMultiplicityMCgen", kTH1F, {axisMult}, true);
       histos.add("hResponseMatrix", "hResponseMatrix", kTH2F, {axisMult, axisMult}, true);
+    }
+    if (doprocessTreatedMonteCarlo) {
+      histos.add("hMultiplicityTreatMCrec", "hMultiplicityTreatMCrec", kTH1F, {axisMult}, true);
+      histos.add("hMultiplicityTreatMCgen", "hMultiplicityTreatMCgen", kTH1F, {axisMult}, true);
+      histos.add("hResponseMatrixTreat", "hResponseMatrixTreat", kTH2F, {axisMult, axisMult}, true);
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
@@ -249,7 +254,6 @@ struct StudyPnch {
       if (track.mcCollisionId() != McCol.globalIndex()) {
         continue;
       }
-    
     histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
     nTrk++;
     }
@@ -264,7 +268,6 @@ struct StudyPnch {
       if (!isTrackSelected(track)) {
         continue;
       }
-
       // Verify that the track belongs to the given MC collision
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
@@ -322,6 +325,26 @@ struct StudyPnch {
     }
   }
 
+  void processTreatedMonteCarlo(ColMCTrueTable::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  {
+    // Count generated tracks at each iterator
+    auto multgen = countGenTracks(GenParticles, mcCollision);
+    histos.fill(HIST("hMultiplicityTreatMCgen"), multgen);
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol)) {
+        continue;
+      }
+      // Verify that the reconstructed collision corresponds to the given MC collision
+      if (RecCol.mcCollisionId() != mcCollision.globalIndex()) {
+        continue;
+      }
+      auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
+      auto multrec = countNTracksMcCol(recTracksPart, RecCol);
+      histos.fill(HIST("hMultiplicityTreatMCrec"), multrec);
+      histos.fill(HIST("hResponseMatrixTreat"), multrec, multgen);
+    }
+  }
+
   void processEvtLossSigLossMC(soa::Join<ColMCTrueTable, aod::MultMCExtras>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles)
   {
     if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
@@ -359,6 +382,7 @@ struct StudyPnch {
   PROCESS_SWITCH(StudyPnch, processData, "process data CentFT0C", false);
   PROCESS_SWITCH(StudyPnch, processCorrelation, "do correlation study in data", false);
   PROCESS_SWITCH(StudyPnch, processMonteCarlo, "process MC CentFT0C", false);
+  PROCESS_SWITCH(StudyPnch, processTreatedMonteCarlo, "process Treated MC CentFT0C", false);
   PROCESS_SWITCH(StudyPnch, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
 };
 
