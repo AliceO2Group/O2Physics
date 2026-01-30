@@ -1070,12 +1070,11 @@ struct FlowSP {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnFull_EP"), track.pt(), track.eta(), spm.centrality, spm.vnFull, weight);
     }
 
-    if (cfgFillMeanPT) {  
+    if (cfgFillMeanPT) {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hRelEtaPt"), track.eta(), spm.centrality, track.pt(), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/meanPT"), spm.centrality, track.pt(), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ))), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weight);
-
     }
   }
 
@@ -1318,19 +1317,18 @@ struct FlowSP {
 
     fillEventQA<kAfter>(collision, tracks);
 
-    TProfile* meanPTMap = new TProfile("meanPTMap", "meanPTMap", 8,-0.8,0.8);
-    TProfile* meanPTMapPos = new TProfile("meanPTMapPos", "meanPTMapPos", 8,-0.8,0.8);
-    TProfile* meanPTMapNeg = new TProfile("meanPTMapNeg", "meanPTMapNeg", 8,-0.8,0.8);
+    TProfile* meanPTMap = new TProfile("meanPTMap", "meanPTMap", 8, -0.8, 0.8);
+    TProfile* meanPTMapPos = new TProfile("meanPTMapPos", "meanPTMapPos", 8, -0.8, 0.8);
+    TProfile* meanPTMapNeg = new TProfile("meanPTMapNeg", "meanPTMapNeg", 8, -0.8, 0.8);
 
-    TProfile* relPxA = new TProfile("relPxA", "relPxA", 8,-0.8,0.8);
-    TProfile* relPxC = new TProfile("relPxC", "relPxC", 8,-0.8,0.8);
+    TProfile* relPxA = new TProfile("relPxA", "relPxA", 8, -0.8, 0.8);
+    TProfile* relPxC = new TProfile("relPxC", "relPxC", 8, -0.8, 0.8);
 
-    TProfile* relPxANeg = new TProfile("relPxANeg", "relPxANeg", 8,-0.8,0.8);
-    TProfile* relPxAPos = new TProfile("relPxAPos", "relPxAPos", 8,-0.8,0.8);
+    TProfile* relPxANeg = new TProfile("relPxANeg", "relPxANeg", 8, -0.8, 0.8);
+    TProfile* relPxAPos = new TProfile("relPxAPos", "relPxAPos", 8, -0.8, 0.8);
 
-    TProfile* relPxCNeg = new TProfile("relPxCNeg", "relPxCNeg", 8,-0.8,0.8);
-    TProfile* relPxCPos = new TProfile("relPxCPos", "relPxCPos", 8,-0.8,0.8);
-
+    TProfile* relPxCNeg = new TProfile("relPxCNeg", "relPxCNeg", 8, -0.8, 0.8);
+    TProfile* relPxCPos = new TProfile("relPxCPos", "relPxCPos", 8, -0.8, 0.8);
 
     for (const auto& track : tracks) {
 
@@ -1493,18 +1491,18 @@ struct FlowSP {
       double drelPxA = track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ)));
       double drelPxC = track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ)));
 
-      meanPTMap->Fill(track.eta(), track.pt(), spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified]); 
+      meanPTMap->Fill(track.eta(), track.pt(), spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified]);
       relPxA->Fill(track.eta(), drelPxA, spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified]);
       relPxC->Fill(track.eta(), drelPxC, spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified]);
 
-      if (spm.charge == kPositive){
-        meanPTMapPos->Fill(track.eta(), track.pt(), spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified]); 
+      if (spm.charge == kPositive) {
+        meanPTMapPos->Fill(track.eta(), track.pt(), spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified]);
         relPxAPos->Fill(track.eta(), drelPxA, spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified]);
         relPxCPos->Fill(track.eta(), drelPxC, spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified]);
       }
-        
-      if (spm.charge == kNegative){
-        meanPTMapNeg->Fill(track.eta(), track.pt(), spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified]); 
+
+      if (spm.charge == kNegative) {
+        meanPTMapNeg->Fill(track.eta(), track.pt(), spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified]);
         relPxANeg->Fill(track.eta(), drelPxA, spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified]);
         relPxCNeg->Fill(track.eta(), drelPxC, spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified]);
       }
@@ -1514,9 +1512,9 @@ struct FlowSP {
     // Now we want to fill the final relPt histogram
     // Loop over all eta and fill bins
     if (cfgFillMeanPT) {
-      int nBinsEta = 8; 
+      int nBinsEta = 8;
       for (int etabin = 1; etabin <= nBinsEta; etabin++) {
-        // eta bin is 1 --> Find centbin!! 
+        // eta bin is 1 --> Find centbin!!
         double eta = meanPTMap->GetXaxis()->GetBinCenter(etabin);
         double meanPt = meanPTMap->GetBinContent(etabin);
         double meanPtPos = meanPTMapPos->GetBinContent(etabin);
@@ -1530,9 +1528,8 @@ struct FlowSP {
         double drelPxCNeg = relPxCNeg->GetBinContent(etabin);
         double drelPxCPos = relPxCPos->GetBinContent(etabin);
 
-
         if (meanPt != 0) {
-        registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, drelPxA / meanPt, 1);
+          registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, drelPxA / meanPt, 1);
           registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, drelPxANeg / meanPt, 1);
           registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, drelPxAPos / meanPt, 1);
           registry.fill(HIST("incl/meanPT/meanRelPtC"), eta, spm.centrality, drelPxC / meanPt, 1);
