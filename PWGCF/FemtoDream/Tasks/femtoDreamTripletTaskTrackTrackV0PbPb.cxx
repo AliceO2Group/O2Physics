@@ -232,6 +232,13 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPosAfter", ";primaryTrack; posDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNegAfter", ";primaryTrack; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hCentralityME", ";Centrality;Entries", kTH1F, {{100, 0.0, 100.0}});
+
+    threeBodyQARegistry.add("SameEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
+    threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});    
+    threeBodyQARegistry.add("SameEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
+    threeBodyQARegistry.add("SameEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});    
+    threeBodyQARegistry.add("MixedEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});        
+    threeBodyQARegistry.add("MixedEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});            
     sameEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     mixedEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     sameEventCont.setPDGCodes(confPDGCodePart, confPDGCodePart, confPDGCodeV0);
@@ -397,6 +404,13 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
         threeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), T1.pt(), T2.pt(), V0.pt(), q3);
         sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
         threeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, q3);
+        
+        auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
+        auto kstarT1V = FemtoDreamMath::getkstar(T1, mMassOne, V0, mMassThree);        
+        auto kstarT2V = FemtoDreamMath::getkstar(T2, mMassTwo, V0, mMassThree);                
+        threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_trackTrack"), kstarTT);
+        threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_track1V0"), kstarT1V);
+        threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_track2V0"), kstarT2V);        
       }
     }
   }
@@ -576,6 +590,13 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
       threeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvME_AntiLambda"), q3, V0.mAntiLambda());
       threeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_ME"), T1.pt(), T2.pt(), V0.pt(), q3);
       mixedEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
+      
+      auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
+      auto kstarT1V = FemtoDreamMath::getkstar(T1, mMassOne, V0, mMassThree);   
+      auto kstarT2V = FemtoDreamMath::getkstar(T2, mMassTwo, V0, mMassThree);         
+      threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_trackTrack"), kstarTT);
+      threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_track1V0"), kstarT1V);
+      threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_track2V0"), kstarT2V);      
     }
   }
 
