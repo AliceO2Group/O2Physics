@@ -1416,8 +1416,27 @@ struct SginclusivePhiKstarSD {
       for (const auto& trk1 : partSlice) {
         if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
           vkstar.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassK0Star892);
-          if (std::abs(vkstar.Rapidity()) < 0.5) {
-            registry.get<TH3>(HIST("MC/accMPtRap_kstar_G1"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+          auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
+          const size_t kExpectedNumberOfDaughters = 2;
+          if (kDaughters.size() != kExpectedNumberOfDaughters) {
+            continue;
+          }
+          auto daughtp = false;
+          auto daughtm = false;
+          for (const auto& kCurrentDaughter : kDaughters) {
+            if (!kCurrentDaughter.isPhysicalPrimary()) {
+              continue;
+            }
+            if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
+              daughtp = true;
+            } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
+              daughtm = true;
+            }
+          }
+          if (daughtp && daughtm) {
+            if (std::abs(vkstar.Rapidity()) < 0.5) {
+              registry.get<TH3>(HIST("MC/accMPtRap_kstar_G1"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+            }
           }
         }
         // phi
@@ -1426,8 +1445,27 @@ struct SginclusivePhiKstarSD {
             continue;
           }
           vphi.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassPhi);
-          if (std::abs(vphi.Rapidity()) < 0.5) {
-            registry.get<TH3>(HIST("MC/accMPtRap_phi_G1"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+          auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
+          const size_t kExpectedNumberOfDaughters1 = 2;
+          if (kDaughters.size() != kExpectedNumberOfDaughters1) {
+            continue;
+          }
+          auto daughtp1 = false;
+          auto daughtm1 = false;
+          for (const auto& kCurrentDaughter : kDaughters) {
+            if (!kCurrentDaughter.isPhysicalPrimary()) {
+              continue;
+            }
+            if (kCurrentDaughter.pdgCode() == PDG_t::kKPlus) {
+              daughtp1 = true;
+            } else if (kCurrentDaughter.pdgCode() == PDG_t::kKMinus) {
+              daughtm1 = true;
+            }
+          }
+          if (daughtp1 && daughtm1) {
+            if (std::abs(vphi.Rapidity()) < 0.5) {
+              registry.get<TH3>(HIST("MC/accMPtRap_phi_G1"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+            }
           }
         }
       }
@@ -1502,8 +1540,12 @@ struct SginclusivePhiKstarSD {
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 17);
 
-    if (qaMC)
+    if (qaMC) {
       rQA.fill(HIST("hOcc_after_mc"), collision.occupancyInTime());
+      rQA.fill(HIST("hVertexX_mc"), collision.posX());
+      rQA.fill(HIST("hVertexY_mc"), collision.posY());
+      rQA.fill(HIST("hVertexZ_mc"), collision.posZ());
+    }
 
     // registry.get<TH1>(HIST("Reco/nPVContributors"))->Fill(pvContributors.size(), 1.);
     // ROOT::Math::PxPyPzMVector vphi;
