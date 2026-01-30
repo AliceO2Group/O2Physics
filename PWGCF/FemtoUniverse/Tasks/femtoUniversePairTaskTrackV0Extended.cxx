@@ -167,6 +167,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   EfficiencyCorrection effCorrection{&effCorConfGroup};
 
   static constexpr unsigned int V0ChildTable[][2] = {{0, 1}, {1, 0}, {1, 1}}; // Table to select the V0 children
+  static constexpr double v0InvMass[] = {1.115, 1.115, 0.497};                // Table to select invariant mass of V0s
 
   FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
   FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
@@ -584,45 +585,42 @@ struct FemtoUniversePairTaskTrackV0Extended {
         return;
       // track cleaning & checking for duplicate pairs
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-        // mark for rejection the cascades that share a daughter with other cascades
-        v0Duplicates.insert(p1.globalIndex());
-        v0Duplicates.insert(p2.globalIndex());
+        // mark for rejection the cascade that shares a daughter with another cascade and has an invariant mass further from default value
+        if (std::abs(p1.mLambda() - v0InvMass[ConfV0Selection.confV0Type1]) < std::abs(p2.mLambda() - v0InvMass[ConfV0Selection.confV0Type2])) {
+          v0Duplicates.insert(p2.globalIndex());
+        } else {
+          v0Duplicates.insert(p1.globalIndex());
+        }
       }
     };
 
-    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> bool {
       if (v0Duplicates.contains(p1.globalIndex()) || v0Duplicates.contains(p2.globalIndex()))
-        return;
+        return false;
       // Lambda invariant mass cut for p1
       if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
-        return;
+        return false;
       // Lambda invariant mass cut for p2
       if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
-        return;
-      if (confIsCPR.value) {
-        if (confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
-          return;
-        } else if (!confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
-          return;
-        }
-      }
+        return false;
+
       const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& negChild1 = parts.iteratorAt(p1.globalIndex() - 1 - parts.begin().globalIndex());
       /// p1 daughters that do not pass this condition are not selected
       if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
         if (!isParticleTPC(posChild1, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTPC(negChild1, V0ChildTable[ConfV0Selection.confV0Type1][1]))
-          return;
+          return false;
         if (!isParticleTOF(posChild1, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild1, V0ChildTable[ConfV0Selection.confV0Type1][1]))
-          return;
+          return false;
       } else {
         if ((posChild1.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild1.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
-          return;
+          return false;
         if (ConfV0Selection.confUseStrangenessTOF) {
           if (((ConfV0Selection.confV0Type1 == 0) && (p1.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type1 == 1) && (p1.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type1 == 2) && (p1.pidCut() & 48) != 48))
-            return;
+            return false;
         } else {
           if ((posChild1.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild1.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
-            return;
+            return false;
         }
       }
 
@@ -631,18 +629,26 @@ struct FemtoUniversePairTaskTrackV0Extended {
       /// p2 daughters that do not pass this condition are not selected
       if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
         if (!isParticleTPC(posChild2, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTPC(negChild2, V0ChildTable[ConfV0Selection.confV0Type2][1]))
-          return;
+          return false;
         if (!isParticleTOF(posChild2, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTOF(negChild2, V0ChildTable[ConfV0Selection.confV0Type2][1]))
-          return;
+          return false;
       } else {
         if ((posChild2.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild2.pidCut() & (1u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
-          return;
+          return false;
         if (ConfV0Selection.confUseStrangenessTOF) {
           if (((ConfV0Selection.confV0Type2 == 0) && (p2.pidCut() & 3) != 3) || ((ConfV0Selection.confV0Type2 == 1) && (p2.pidCut() & 12) != 12) || ((ConfV0Selection.confV0Type2 == 2) && (p2.pidCut() & 48) != 48))
-            return;
+            return false;
         } else {
           if ((posChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
-            return;
+            return false;
+        }
+      }
+
+      if (confIsCPR.value) {
+        if (confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+          return false;
+        } else if (!confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+          return false;
         }
       }
 
@@ -650,25 +656,17 @@ struct FemtoUniversePairTaskTrackV0Extended {
         sameEventCont.setPair<true>(p1, p2, multCol, confUse3D);
       else
         sameEventCont.setPair<false>(p1, p2, multCol, confUse3D);
+      return true;
     };
 
     v0Duplicates.clear();
-    if (ConfV0Selection.confV0Type1 == ConfV0Selection.confV0Type2) {
-      for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        pairDuplicateCheckFunc(p1, p2);
-      }
-      /// Now build the combinations for identical V0s
-      for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        pairProcessFunc(p1, p2);
-      }
-    } else {
-      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        pairDuplicateCheckFunc(p1, p2);
-      }
-      /// Now build the combinations for non-identical V0s
-      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-        pairProcessFunc(p1, p2);
-      }
+    for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+      pairDuplicateCheckFunc(p1, p2);
+    }
+    /// Now build the combinations for V0s
+    for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+      if (!pairProcessFunc(p1, p2))
+        pairProcessFunc(p2, p1);
     }
   }
 

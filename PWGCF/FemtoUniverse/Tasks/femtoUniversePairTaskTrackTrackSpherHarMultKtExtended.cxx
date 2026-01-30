@@ -585,29 +585,6 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         if (kT < firstRealElement || kT > lastElement)
           continue;
 
-        if (twotracksconfigs.confIsCPR.value) {
-          if (twotracksconfigs.confCPRFracMax.value) {
-            if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
-              continue;
-            }
-          } else {
-            if (twotracksconfigs.confIsCPRkT) {
-              if (pairCloseRejection.isClosePairkT(p1, p2, femto_universe_container::EventType::same, kT, twotracksconfigs.confCPRDphiAvgOrDist)) {
-                continue;
-              }
-            } else {
-              if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, twotracksconfigs.confCPRDphiAvgOrDist, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confCPRDphiAvgOrDist)) {
-                continue;
-              }
-            }
-          }
-        }
-
-        // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
-
         double rand;
         rand = randgen->Rndm();
 
@@ -617,6 +594,29 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         if (rand > 0.5) {
           part1 = p2;
           part2 = p1;
+        }
+
+        if (twotracksconfigs.confIsCPR.value) {
+          if (twotracksconfigs.confCPRFracMax.value) {
+            if (pairCloseRejection.isClosePairAtITS(part1, part2, magFieldTesla, femto_universe_container::EventType::same)) {
+              continue;
+            }
+          } else {
+            if (twotracksconfigs.confIsCPRkT) {
+              if (pairCloseRejection.isClosePairkT(part1, part2, femto_universe_container::EventType::same, kT, twotracksconfigs.confCPRDphiAvgOrDist)) {
+                continue;
+              }
+            } else {
+              if (pairCloseRejection.isClosePairFrac(part1, part2, magFieldTesla, femto_universe_container::EventType::same, twotracksconfigs.confCPRDphiAvgOrDist, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confCPRDphiAvgOrDist)) {
+                continue;
+              }
+            }
+          }
+        }
+
+        // track cleaning
+        if (!pairCleaner.isCleanPair(part1, part2, parts)) {
+          continue;
         }
 
         std::vector<double> f3d;
@@ -943,25 +943,6 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
       if (kT < firstRealElement || kT > lastElement)
         continue;
-
-      if (twotracksconfigs.confIsCPR.value) {
-        if (twotracksconfigs.confCPRFracMax.value) {
-          if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed)) {
-            continue;
-          }
-        } else {
-          if (twotracksconfigs.confIsCPRkT) {
-            if (pairCloseRejection.isClosePairkT(p1, p2, femto_universe_container::EventType::mixed, kT, twotracksconfigs.confCPRDphiAvgOrDist)) {
-              continue;
-            }
-          } else {
-            if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, twotracksconfigs.confCPRDphiAvgOrDist, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confCPRDphiAvgOrDist)) {
-              continue;
-            }
-          }
-        }
-      }
-
       double rand;
       rand = randgen->Rndm();
       auto part1 = p1;
@@ -970,6 +951,24 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       if (rand > 0.5) {
         part1 = p2;
         part2 = p1;
+      }
+
+      if (twotracksconfigs.confIsCPR.value) {
+        if (twotracksconfigs.confCPRFracMax.value) {
+          if (pairCloseRejection.isClosePairAtITS(part1, part2, magFieldTesla, femto_universe_container::EventType::mixed)) {
+            continue;
+          }
+        } else {
+          if (twotracksconfigs.confIsCPRkT) {
+            if (pairCloseRejection.isClosePairkT(part1, part2, femto_universe_container::EventType::mixed, kT, twotracksconfigs.confCPRDphiAvgOrDist)) {
+              continue;
+            }
+          } else {
+            if (pairCloseRejection.isClosePairFrac(part1, part2, magFieldTesla, femto_universe_container::EventType::mixed, twotracksconfigs.confCPRDphiAvgOrDist, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confCPRDphiAvgOrDist)) {
+              continue;
+            }
+          }
+        }
       }
 
       std::vector<double> f3d;

@@ -2068,6 +2068,7 @@ struct AnalysisDileptonTrack {
     Configurable<bool> fConfigApplyMassEC{"cfgApplyMassEC", false, "Apply fit mass for sideband for the energy correlator study"};
     Configurable<std::vector<int>> fConfigSavelessevents{"cfgSavelessevents", std::vector<int>{1, 0}, "Save less events for the energy correlator study"};
     Configurable<std::vector<float>> fConfigTransRange{"cfgTransRange", std::vector<float>{0.333333, 0.666667}, "Transverse region for the energy correlstor analysis"};
+    Configurable<bool> fConfigEnergycorrelator{"cfgEnergycorrelator", false, "Add some hist for energy correlator study"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -2385,7 +2386,11 @@ struct AnalysisDileptonTrack {
         fLegCutNames.push_back(pairLegCutName);
 
         // define dilepton histograms
-        DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "barrel,vertexing");
+        if (!fConfigOptions.fConfigEnergycorrelator) {
+          DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "barrel,vertexing");
+        } else {
+          DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "");
+        }
         // loop over track cuts and create dilepton - track histogram directories
         for (int iCutTrack = 0; iCutTrack < fNCuts; iCutTrack++) {
 
@@ -2887,6 +2892,8 @@ struct AnalysisDileptonTrack {
           auto trackMC = track.mcParticle();
           // for the energy correlator analysis
           auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
+          std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
+          VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigOptions.fConfigApplyMassEC);
           VarManager::FillEnergyCorrelatorsMCUnfolding<VarManager::kJpsiHadronMass>(dilepton, track, motherParticle, trackMC, VarManager::fgValues);
           mcDecision = 0;
           isig = 0;
@@ -3305,7 +3312,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     // }
 
     if (classStr.Contains("DileptonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
 
     if (classStr.Contains("DileptonTrack") && !classStr.Contains("ME")) {

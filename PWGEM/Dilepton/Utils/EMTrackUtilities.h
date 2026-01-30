@@ -44,6 +44,17 @@ enum class RefTrackBit : uint16_t { // This is not for leptons, but charged trac
   kDCAz03cm = 8192,
 };
 
+enum class RefMFTTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
+  kNclsMFT7 = 1,                       // default is 6
+  kNclsMFT8 = 2,
+  kChi2MFT4 = 4, // default is 5
+  kChi2MFT3 = 8,
+  kDCAxy004cm = 16, // default is 0.05 cm
+  kDCAxy003cm = 32,
+  kDCAxy002cm = 64,
+  kDCAxy001cm = 128,
+};
+
 //_______________________________________________________________________
 template <typename T>
 float dca3DinSigma(T const& track)

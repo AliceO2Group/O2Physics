@@ -1422,7 +1422,7 @@ struct FemtoUniverseProducerTask {
 
       if (ConfFilterCuts.confIsOnlyPrimary) {
         if (!mc.isPhysicalPrimary()) {
-          return;
+          continue;
         }
       }
 

@@ -1432,32 +1432,32 @@ struct StrangenessInJets {
                 break;
               case kPiPlus:
                 if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_in_jet"), genMultiplicity, hadron.first.Pt());
+                  registryMC.fill(HIST("Pion_Plus_generated_in_jet"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kKPlus:
                 if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_in_jet"), genMultiplicity, hadron.first.Pt());
+                  registryMC.fill(HIST("Kaon_Plus_generated_in_jet"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kProton:
                 if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_in_jet"), genMultiplicity, hadron.first.Pt());
+                  registryMC.fill(HIST("Proton_Plus_generated_in_jet"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kPiMinus:
                 if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_in_jet"), genMultiplicity, -hadron.first.Pt());
+                  registryMC.fill(HIST("Pion_Minus_generated_in_jet"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kKMinus:
                 if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_in_jet"), genMultiplicity, -hadron.first.Pt());
+                  registryMC.fill(HIST("Kaon_Minus_generated_in_jet"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kProtonBar:
                 if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_in_jet"), genMultiplicity, -hadron.first.Pt());
+                  registryMC.fill(HIST("Proton_Minus_generated_in_jet"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               default:
@@ -1505,32 +1505,32 @@ struct StrangenessInJets {
                 break;
               case kPiPlus:
                 if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.first.Pt());
+                  registryMC.fill(HIST("Pion_Plus_generated_in_ue"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kKPlus:
                 if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.first.Pt());
+                  registryMC.fill(HIST("Kaon_Plus_generated_in_ue"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kProton:
                 if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.first.Pt());
+                  registryMC.fill(HIST("Proton_Plus_generated_in_ue"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kPiMinus:
                 if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, -hadron.first.Pt());
+                  registryMC.fill(HIST("Pion_Minus_generated_in_ue"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kKMinus:
                 if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, -hadron.first.Pt());
+                  registryMC.fill(HIST("Kaon_Minus_generated_in_ue"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               case kProtonBar:
                 if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, -hadron.first.Pt());
+                  registryMC.fill(HIST("Proton_Minus_generated_in_ue"), genMultiplicity, hadron.first.Pt());
                 }
                 break;
               default:

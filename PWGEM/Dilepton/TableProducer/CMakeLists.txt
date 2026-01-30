@@ -41,6 +41,11 @@ o2physics_add_dpl_workflow(skimmer-primary-track
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(skimmer-primary-mfttrack
+                    SOURCES skimmerPrimaryMFTTrack.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(create-emevent-dilepton
                     SOURCES createEMEventDilepton.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

@@ -1,4 +1,4 @@
-# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+# Copyright 2019-2026 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
 #
@@ -27,8 +27,7 @@ include_guard()
 #
 
 function(o2physics_add_dpl_workflow baseTargetName)
-
-  cmake_parse_arguments(PARSE_ARGV 1 A "" "COMPONENT_NAME;TARGETVARNAME"
+  cmake_parse_arguments(PARSE_ARGV 1 A "" "COMPONENT_NAME;TARGETVARNAME;REUSE_FROM"
                         "SOURCES;PUBLIC_LINK_LIBRARIES")
 
   if(A_UNPARSED_ARGUMENTS)
@@ -47,6 +46,10 @@ function(o2physics_add_dpl_workflow baseTargetName)
   endif()
   set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_COMPILE analysis)
   set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_LINK analysis)
+
+  if(A_REUSE_FROM)
+    target_precompile_headers(${targetExeName} REUSE_FROM ${A_REUSE_FROM})
+  endif()
 
   set(jsonFile $<TARGET_FILE_BASE_NAME:${targetExeName}>.json)
 

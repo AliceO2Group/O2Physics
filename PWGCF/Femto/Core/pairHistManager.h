@@ -304,8 +304,6 @@ class PairHistManager
   {
     mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
     mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
-    mAverageMass = (mPdgMass1 + mPdgMass2) / 2.f;
-    mReducedMass = 2.f * (mPdgMass1 * mPdgMass2) / (mPdgMass1 + mPdgMass2);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
@@ -596,7 +594,8 @@ class PairHistManager
 
   float getKt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
-    double kt = 0.5 * (part1 + part2).Pt();
+    auto sum = (part1 + part2);
+    double kt = 0.5 * sum.Pt();
     return static_cast<float>(kt);
   }
 
@@ -604,15 +603,19 @@ class PairHistManager
   {
     auto sum = part1 + part2;
     double mt = 0;
+    double averageMass = 0;
+    double reducedMass = 0;
     switch (mMtType) {
       case modes::TransverseMassType::kAveragePdgMass:
-        mt = std::hypot(0.5 * sum.Pt(), mAverageMass);
+        averageMass = 0.5 * (part1.M() + part2.M());
+        mt = std::hypot(0.5 * sum.Pt(), averageMass);
         break;
       case modes::TransverseMassType::kReducedPdgMass:
-        mt = std::hypot(0.5 * sum.Pt(), mReducedMass);
+        reducedMass = 2. * (part1.M() * part2.M()) / (part1.M() + part2.M());
+        mt = std::hypot(0.5 * sum.Pt(), reducedMass);
         break;
       case modes::TransverseMassType::kMt4Vector:
-        mt = sum.Mt() / 2.f;
+        mt = 0.5 * sum.Mt();
         break;
       default:
         LOG(fatal) << "Invalid transverse mass type, breaking...";
@@ -634,12 +637,10 @@ class PairHistManager
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-  float mPdgMass1 = 0.f;
-  float mPdgMass2 = 0.f;
+  double mPdgMass1 = 0.;
+  double mPdgMass2 = 0.;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
-  double mAverageMass = 0.f;
-  double mReducedMass = 0.f;
 
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
