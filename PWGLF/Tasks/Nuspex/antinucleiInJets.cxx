@@ -89,10 +89,9 @@ using std::array;
 // Define convenient aliases for commonly used table joins
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using RecCollisionsMc = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
-using GenCollisionsMc = aod::McCollisions;
+using GenCollisionsMc = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 using AntiNucleiTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
 using AntiNucleiTracksMc = soa::Join<AntiNucleiTracks, aod::McTrackLabels>;
-
 using LorentzVector = ROOT::Math::PxPyPzEVector;
 
 // Lightweight particle container for fast kinematic access
@@ -3630,7 +3629,7 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processCoalescence, "process coalescence", false);
 
-  // process Coalescence and Correlation Analysis
+  // process Coalescence and Correlation Analysis 
   void processCoalescenceCorr(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
   {
     // Deuteron Mass and minimum pt
@@ -3704,41 +3703,41 @@ struct AntinucleiInJets {
       registryMC.fill(HIST("genEventsCoalescenceCorr"), 2.5);
 
       // Build deuterons
-      for (size_t iP = 0; iP < protonCandidates.size(); ++iP) {
-        if (protonCandidates[iP].used)
-          continue;
-
-        for (size_t iN = 0; iN < neutronCandidates.size(); ++iN) {
-          if (neutronCandidates[iN].used)
-            continue;
-
-          // Physics consistency check
-          if (protonCandidates[iP].pdgCode * neutronCandidates[iN].pdgCode < 0)
-            continue;
-
-          if (passDeuteronCoalescence(protonCandidates[iP], neutronCandidates[iN], coalescenceMomentum, mRand)) {
-
-            neutronCandidates[iN].used = true;
-            protonCandidates[iP].used = true;
-
-            int sign = (protonCandidates[iP].pdgCode > 0) ? +1 : -1;
-            int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
-
-            double pxDeut = protonCandidates[iP].px + neutronCandidates[iN].px;
-            double pyDeut = protonCandidates[iP].py + neutronCandidates[iN].py;
-            double pzDeut = protonCandidates[iP].pz + neutronCandidates[iN].pz;
-            double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
-            LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
-            if (pd.Eta() >= minEta && pd.Eta() <= maxEta && (0.5 * pd.Pt()) >= MinPtPerNucleon) {
-              // Store Deuteron
-              finalDeuterons.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, protonCandidates[iP].mcIndex, false});
+        for (size_t iP = 0; iP < protonCandidates.size(); ++iP) {
+            if (protonCandidates[iP].used)
+                continue;
+            
+            for (size_t iN = 0; iN < neutronCandidates.size(); ++iN) {
+                if (neutronCandidates[iN].used)
+                    continue;
+                
+                // Physics consistency check
+                if (protonCandidates[iP].pdgCode * neutronCandidates[iN].pdgCode < 0)
+                    continue;
+                
+                if (passDeuteronCoalescence(protonCandidates[iP], neutronCandidates[iN], coalescenceMomentum, mRand)) {
+                    
+                    neutronCandidates[iN].used = true;
+                    protonCandidates[iP].used = true;
+                    
+                    int sign = (protonCandidates[iP].pdgCode > 0) ? +1 : -1;
+                    int deuteronPdg = sign * o2::constants::physics::Pdg::kDeuteron;
+                    
+                    double pxDeut = protonCandidates[iP].px + neutronCandidates[iN].px;
+                    double pyDeut = protonCandidates[iP].py + neutronCandidates[iN].py;
+                    double pzDeut = protonCandidates[iP].pz + neutronCandidates[iN].pz;
+                    double energyDeut = std::sqrt(pxDeut * pxDeut + pyDeut * pyDeut + pzDeut * pzDeut + massDeut * massDeut);
+                    LorentzVector pd(pxDeut, pyDeut, pzDeut, energyDeut);
+                    if (pd.Eta() >= minEta && pd.Eta() <= maxEta && (0.5 * pd.Pt()) >= MinPtPerNucleon) {
+                        // Store Deuteron
+                        finalDeuterons.push_back({pxDeut, pyDeut, pzDeut, deuteronPdg, protonCandidates[iP].mcIndex, false});
+                    }
+                    
+                    break;
+                }
             }
-
-            break;
-          }
         }
-      }
-
+        
       // Add unused protons to final vectors
       for (const auto& proton : protonCandidates) {
         if (!proton.used) {
