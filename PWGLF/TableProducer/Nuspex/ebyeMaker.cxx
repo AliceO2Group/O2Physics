@@ -252,6 +252,7 @@ struct EbyeMaker {
   Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
   Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
+  Configurable<float> trackMinChi2Cut{"trackMinChi2Cut", 0.f, "Minimum chi2/ncls in TPC"};
 
   Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 100, "Minimum number of crossed TPC rows for V0 daughter"};
   Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 0, "Minimum number of ITS clusters for V0 daughter"};
@@ -350,7 +351,6 @@ struct EbyeMaker {
   {
     const float defItsChi2NClCut = 36.f;
     const float defNClCROverFind = 0.8f;
-    const float defMinChi2Cut = 0.f;
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
@@ -358,9 +358,9 @@ struct EbyeMaker {
       return false;
     }
     if (track.itsNCls() < trackNclusItsCut ||
-        track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
+        (track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() && !(doprocessRun3 || doprocessMcRun3)) ||
         track.tpcChi2NCl() > trackChi2Cut ||
-        track.tpcChi2NCl() < defMinChi2Cut ||
+        track.tpcChi2NCl() < trackMinChi2Cut ||
         track.itsChi2NCl() > defItsChi2NClCut) {
       return false;
     }
