@@ -218,6 +218,7 @@ struct centralEventFilterTask {
 
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(DoublePhiFilters);
+  FILTER_CONFIGURABLE(GlueballFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
   FILTER_CONFIGURABLE(DqFilters);
