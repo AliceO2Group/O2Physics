@@ -943,6 +943,7 @@ struct f1protoncorrelation {
   {
     const float maxMomPi = maxMomentumPion;
     const float maxMomK = maxMomentumKaon;
+
     // const float pTofPiMin = momentumTOFPionMin;
     // const float pTofPiMax = momentumTOFPionMax;
     // const float pTofKMin = momentumTOFKaonMin;
