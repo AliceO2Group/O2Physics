@@ -3629,7 +3629,7 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processCoalescence, "process coalescence", false);
 
-  // process Coalescence and Correlation Analysis 
+  // process Coalescence and Correlation Analysis
   void processCoalescenceCorr(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
   {
     // Deuteron Mass and minimum pt
@@ -3716,7 +3716,6 @@ struct AntinucleiInJets {
                     continue;
                 
                 if (passDeuteronCoalescence(protonCandidates[iP], neutronCandidates[iN], coalescenceMomentum, mRand)) {
-                    
                     neutronCandidates[iN].used = true;
                     protonCandidates[iP].used = true;
                     
@@ -3738,8 +3737,8 @@ struct AntinucleiInJets {
             }
         }
         
-      // Add unused protons to final vectors
-      for (const auto& proton : protonCandidates) {
+        // Add unused protons to final vectors
+        for (const auto& proton : protonCandidates) {
         if (!proton.used) {
           finalProtons.push_back(proton);
         }
