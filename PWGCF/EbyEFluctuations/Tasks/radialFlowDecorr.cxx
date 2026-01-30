@@ -191,9 +191,10 @@ struct RadialFlowDecorr {
   Configurable<int> cfgNchPbMax{"cfgNchPbMax", 4000, "Max Nch range for PbPb collisions"};
   Configurable<int> cfgNchOMax{"cfgNchOMax", 600, "Max Nch range for OO collisions"};
 
-  Configurable<int> cfgSys{"cfgSys", 2, "Efficiency to be used for which system? 1-->PbPb, 2-->OO, 3-->pPb, 4-->pp"};
-  Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights or not"};
-  Configurable<bool> cfgEff{"cfgEff", false, "Whether to use Efficiency weights or not"};
+  Configurable<int> cfgSys{"cfgSys", 1, "Efficiency to be used for which system? 1-->PbPb, 2-->OO, 3-->pPb, 4-->pp"};
+  Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
+  Configurable<bool> cfgEff{"cfgEff", false, "Whether to use Efficiency weights"};
+  Configurable<bool> cfgZDC{"cfgZDC", false, "Whether to use ZDC for pileup histograms"};
 
   Configurable<std::string> cfgCCDBurl{"cfgCCDBurl", "https://alice-ccdb.cern.ch", "ccdb url"};
   Configurable<std::string> cfgCCDBUserPath{"cfgCCDBUserPath", "/Users/s/somadutt", "Base CCDB path"};
@@ -544,6 +545,7 @@ struct RadialFlowDecorr {
   using AodTracksSel = soa::Filtered<UnfilteredTracks>;
   using TCs = soa::Join<UnfilteredTracks, aod::McTrackLabels>;
   using FilteredTCs = soa::Filtered<TCs>;
+  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
   using MyRun3MCCollisions = soa::Join<
     aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra,
@@ -724,6 +726,12 @@ struct RadialFlowDecorr {
     histos.add("hEtaPhiRecoEffWtd", "hEtaPhiRecoEffWtd", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {(KNEta - 1), KEtaAxisMin, KEtaAxisMax}, {KNbinsPhiFine, KPhiMin, TwoPI}});
     histos.add("hEtaPhiRecoWtd_PID", "hEtaPhiRecoWtd_PID", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {(KNEta - 1), KEtaAxisMin, KEtaAxisMax}, {KNbinsPhiFine, KPhiMin, TwoPI}});
     histos.add("hEtaPhiRecoEffWtd_PID", "hEtaPhiRecoEffWtd_PID", kTHnSparseF, {{vzAxis}, {chgAxis}, {pTAxis}, {(KNEta - 1), KEtaAxisMin, KEtaAxisMax}, {KNbinsPhiFine, KPhiMin, TwoPI}});
+
+    histos.add("hnTrkPVZDC", ";ZDC_{A+C};N_{PV}", kTH2F, {{nChAxis2}, {200, 0, 3000}});
+    histos.add("hNchZDC", ";ZDC_{A+C};N_{trk}", kTH2F, {{nChAxis2}, {200, 0, 30000}});
+
+    histos.add("hCentnTrk", ";Centrality (%);N_{trk}", kTH2F, {{centAxis1Per}, {nChAxis2}});
+    histos.add("hCentnTrkPV", ";Centrality (%),N_{trk, PV}", kTH2F, {{centAxis1Per}, {nChAxis2}});
   }
 
   void declareDataMeanHists()
@@ -1818,29 +1826,29 @@ struct RadialFlowDecorr {
               std::tie(meanRecoEffCorEt[ieta][ipt], c2RecoEffCorEt[ieta][ipt]) = calculateMeanAndC2FromSums<KIntM, KIntK>(sumPmwkRecoEffCorEt[ieta][ipt], sumWkRecoEffCorEt[ieta][ipt], mmetRecoEffCor);
 
             //"Truth"
-            if (isfinite(meanTru[ieta][ipt])) {
+            if (std::isfinite(meanTru[ieta][ipt])) {
               histos.fill(HIST("MCGen/Prof_Cent_MeanpT_etabin_ptbin"), cent, ieta, ipt, meanTru[ieta][ipt]);
               histos.fill(HIST("MCGen/Prof_Mult_MeanpT_etabin_ptbin"), col.multNTracksPV(), ieta, ipt, meanTru[ieta][ipt]);
             }
-            if (isfinite(meanTruEt[ieta][ipt])) {
+            if (std::isfinite(meanTruEt[ieta][ipt])) {
               histos.fill(HIST("MCGen/Prof_Cent_MeanEt_etabin_ptbin"), cent, ieta, ipt, meanTruEt[ieta][ipt]);
               histos.fill(HIST("MCGen/Prof_Mult_MeanEt_etabin_ptbin"), col.multNTracksPV(), ieta, ipt, meanTruEt[ieta][ipt]);
             }
             // "MCReco"
-            if (isfinite(meanReco[ieta][ipt])) {
+            if (std::isfinite(meanReco[ieta][ipt])) {
               histos.fill(HIST("MCReco/Prof_Cent_MeanpT_etabin_ptbin"), cent, ieta, ipt, meanReco[ieta][ipt]);
               histos.fill(HIST("MCReco/Prof_Mult_MeanpT_etabin_ptbin"), col.multNTracksPV(), ieta, ipt, meanReco[ieta][ipt]);
             }
-            if (isfinite(meanRecoEt[ieta][ipt])) {
+            if (std::isfinite(meanRecoEt[ieta][ipt])) {
               histos.fill(HIST("MCReco/Prof_Cent_MeanEt_etabin_ptbin"), cent, ieta, ipt, meanRecoEt[ieta][ipt]);
               histos.fill(HIST("MCReco/Prof_Mult_MeanEt_etabin_ptbin"), col.multNTracksPV(), ieta, ipt, meanRecoEt[ieta][ipt]);
             }
             // "MCRecoEffCor"
-            if (isfinite(meanRecoEffCor[ieta][ipt])) {
+            if (std::isfinite(meanRecoEffCor[ieta][ipt])) {
               histos.fill(HIST("MCRecoEffCorr/Prof_Cent_MeanpT_etabin_ptbin"), cent, ieta, ipt, meanRecoEffCor[ieta][ipt]);
               histos.fill(HIST("MCRecoEffCorr/Prof_Mult_MeanpT_etabin_ptbin"), col.multNTracksPV(), ieta, ipt, meanRecoEffCor[ieta][ipt]);
             }
-            if (isfinite(meanRecoEffCorEt[ieta][ipt])) {
+            if (std::isfinite(meanRecoEffCorEt[ieta][ipt])) {
               histos.fill(HIST("MCRecoEffCorr/Prof_Cent_MeanEt_etabin_ptbin"), cent, ieta, ipt, meanRecoEffCorEt[ieta][ipt]);
               histos.fill(HIST("MCRecoEffCorr/Prof_Mult_MeanEt_etabin_ptbin"), col.multNTracksPV(), ieta, ipt, meanRecoEffCorEt[ieta][ipt]);
             }
@@ -2080,13 +2088,22 @@ struct RadialFlowDecorr {
   }
   PROCESS_SWITCH(RadialFlowDecorr, processMCFluc, "process MC to calculate pt/Et fluc", cfgRunMCFluc);
 
-  void processGetDataFlat(AodCollisionsSel::iterator const& coll, aod::BCsWithTimestamps const&, AodTracksSel const& tracks)
+  void processGetDataFlat(AodCollisionsSel::iterator const& coll, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, AodTracksSel const& tracks)
   {
+    histos.fill(HIST("hVtxZ"), coll.posZ());
     if (!isEventSelected(coll))
       return;
     float cent = getCentrality(coll);
     if (cent > KCentMax)
       return;
+
+    histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
+    histos.fill(HIST("hCentrality"), cent);
+
+    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), coll.multNTracksPV(), tracks.size());
+    histos.fill(HIST("Hist2D_cent_nch"), tracks.size(), cent);
+
+    int ntrk = 0;
     for (const auto& track : tracks) {
       if (!isTrackSelected(track))
         continue;
@@ -2104,6 +2121,9 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hEtaPhiReco"), coll.posZ(), track.sign(), pt, eta, phi);
       histos.fill(HIST("hEtaPhiRecoEffWtd"), coll.posZ(), track.sign(), pt, eta, phi, wIncl);
 
+      if (eta > etaLw[0] && eta < etaUp[0])
+        ntrk++;
+
       const bool isPion = selectionPion(track);
       const bool isKaon = selectionKaon(track);
       const bool isProton = selectionProton(track);
@@ -2116,6 +2136,19 @@ struct RadialFlowDecorr {
         histos.fill(HIST("hEtaPhiReco_PID"), coll.posZ(), track.sign(), pt, eta, phi);
         histos.fill(HIST("hEtaPhiRecoEffWtd_PID"), coll.posZ(), track.sign(), pt, eta, phi, wPid);
       }
+    }
+
+    histos.fill(HIST("hCentnTrk"), cent, ntrk);
+    histos.fill(HIST("hCentnTrkPV"), cent, coll.multNTracksPV());
+    if (cfgZDC) {
+      const auto& foundBC = coll.foundBC_as<BCsRun3>();
+      if (!foundBC.has_zdc()) {
+        return;
+      }
+      auto zdc = foundBC.zdc();
+      auto zdcAmp = zdc.energyCommonZNA() + zdc.energyCommonZNC();
+      histos.fill(HIST("hnTrkPVZDC"), coll.multNTracksPV(), zdcAmp);
+      histos.fill(HIST("hNchZDC"), ntrk, zdcAmp);
     }
   }
   PROCESS_SWITCH(RadialFlowDecorr, processGetDataFlat, "process data to calculate Flattening maps", cfgRunGetDataFlat);
