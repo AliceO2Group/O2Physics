@@ -78,9 +78,9 @@ struct globalDimuonFilter {
     Configurable<float> maxEta{"maxEta", -2.5, "max. eta acceptance for MFT-MCH-MID"};
     Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end for global muon (min. eta = -3.6)"}; // std::tan(2.f * std::atan(std::exp(- -3.6)) ) * -505. = 27.6
     Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
-    Configurable<float> maxDCAxy{"maxDCAxy", 0.5, "max. DCAxy for global muons"};
+    Configurable<float> maxDCAxy{"maxDCAxy", 0.3, "max. DCAxy for global muons"};
     Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 100.f, "max. chi2 for MCH-MFT matching"};
-    Configurable<float> maxChi2{"maxChi2", 1e+10, "max. chi2/ndf for global muon"};
+    Configurable<float> maxChi2{"maxChi2", 20, "max. chi2/ndf for global muon"};
     Configurable<float> maxChi2MFT{"maxChi2MFT", 1e+10, "max. chi2/ndf for MFTsa"};
     Configurable<int> minNclsMFT{"minNclsMFT", 5, "min ncluster of MFT"};
     Configurable<int> minNclsMCH{"minNclsMCH", 5, "min ncluster of MCH"};
@@ -216,7 +216,7 @@ struct globalDimuonFilter {
 
       const AxisSpec axisMll{{0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.50, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.1, 8.2, 8.3, 8.4, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0}, "m_{#mu#mu} (GeV/c^{2})"};
       const AxisSpec axisPtll{{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "p_{T,#mu#mu} (GeV/c)"};
-      const AxisSpec axisYll{30, -4.0, -2.5, "y_{#mu#mu}"};
+      const AxisSpec axisYll{40, -4.0, -2.0, "y_{#mu#mu}"};
 
       fRegistry.add("Pair/same/uls/hs", "dimuon", kTHnSparseD, {axisMll, axisPtll, axisYll}, false);
       fRegistry.add("Pair/same/lspp/hs", "dimuon", kTHnSparseD, {axisMll, axisPtll, axisYll}, false);
@@ -224,7 +224,7 @@ struct globalDimuonFilter {
 
       const AxisSpec axisMllLMR{{0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.01, 2.02, 2.03, 2.04, 2.05, 2.06, 2.07, 2.08, 2.09, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18, 2.19, 2.20, 2.21, 2.22, 2.23, 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.32, 2.33, 2.34, 2.35, 2.36, 2.37, 2.38, 2.39, 2.40, 2.41, 2.42, 2.43, 2.44, 2.45, 2.46, 2.47, 2.48, 2.49, 2.50, 2.51, 2.52, 2.53, 2.54, 2.55, 2.56, 2.57, 2.58, 2.59, 2.60, 2.61, 2.62, 2.63, 2.64, 2.65, 2.66, 2.67, 2.68, 2.69, 2.70, 2.71, 2.72, 2.73, 2.74, 2.75, 2.76, 2.77, 2.78, 2.79, 2.80, 2.81, 2.82, 2.83, 2.84, 2.85, 2.86, 2.87, 2.88, 2.89, 2.90, 2.91, 2.92, 2.93, 2.94, 2.95, 2.96, 2.97, 2.98, 2.99, 3.00, 3.01, 3.02, 3.03, 3.04, 3.05, 3.06, 3.07, 3.08, 3.09, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 3.18, 3.19, 3.20, 3.21, 3.22, 3.23, 3.24, 3.25, 3.26, 3.27, 3.28, 3.29, 3.30, 3.31, 3.32, 3.33, 3.34, 3.35, 3.36, 3.37, 3.38, 3.39, 3.40, 3.41, 3.42, 3.43, 3.44, 3.45, 3.46, 3.47, 3.48, 3.49, 3.50, 3.51, 3.52, 3.53, 3.54, 3.55, 3.56, 3.57, 3.58, 3.59, 3.60, 3.61, 3.62, 3.63, 3.64, 3.65, 3.66, 3.67, 3.68, 3.69, 3.70, 3.71, 3.72, 3.73, 3.74, 3.75, 3.76, 3.77, 3.78, 3.79, 3.80, 3.81, 3.82, 3.83, 3.84, 3.85, 3.86, 3.87, 3.88, 3.89, 3.90, 3.91, 3.92, 3.93, 3.94, 3.95, 3.96, 3.97, 3.98, 3.99, 4.00}, "m_{#mu#mu} (GeV/c^{2})"};
       const AxisSpec axisPt{{0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "p_{T,#mu} (GeV/c)"};
-      const AxisSpec axisEta{30, -4.0, -2.5, "#eta_{#mu}"};
+      const AxisSpec axisEta{40, -4.0, -2.0, "#eta_{#mu}"};
       const AxisSpec axisPhi{36, 0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
       const AxisSpec axisDEta{100, -0.5, 0.5, "#Delta#eta"};
       const AxisSpec axisDPhi{90, -M_PI / 4, M_PI / 4, "#Delta#varphi (rad.)"};
@@ -989,26 +989,47 @@ struct globalDimuonFilter {
       fRegistry.fill(HIST("hCollisionCounter"), 9);
 
       auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
-      std::vector<std::tuple<int, ROOT::Math::PtEtaPhiMVector>> posMuons;
-      std::vector<std::tuple<int, ROOT::Math::PtEtaPhiMVector>> negMuons;
+      std::vector<std::pair<int, ROOT::Math::PtEtaPhiMVector>> posMuons;
+      std::vector<std::pair<int, ROOT::Math::PtEtaPhiMVector>> negMuons;
       posMuons.reserve(fwdtracks_per_coll.size());
       negMuons.reserve(fwdtracks_per_coll.size());
 
+      for (const auto& fwdtrack : fwdtracks_per_coll) {
+        float pt = 999.f, eta = 999.f, phi = 999.f;
+        if (isSelectedGlobalMuon(collision, fwdtrack, fwdtracks, mfttracks, mftCovs, pt, eta, phi)) {
+          if (fwdtrack.sign() > 0) {
+            posMuons.emplace_back(std::make_pair(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
+          } else {
+            negMuons.emplace_back(std::make_pair(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
+          }
+        }
+      } // end of fwdtrack loop
+
+      // make pairs
+      runPairing(collision, posMuons, negMuons, fwdtracks, mfttracks, mftCovs);
+
+      posMuons.clear();
+      posMuons.shrink_to_fit();
+      negMuons.clear();
+      negMuons.shrink_to_fit();
+    } // end of collision loop
+
+    // for TAP
+    for (const auto& collision : collisions) {
+      auto bc = collision.template bc_as<MyBCs>();
+      initCCDB(bc);
+
+      if (!isSelectedCollision(collision)) {
+        continue;
+      }
+
+      auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
       std::vector<int> posProbeMuons;
       std::vector<int> negProbeMuons;
       posProbeMuons.reserve(fwdtracks_per_coll.size());
       negProbeMuons.reserve(fwdtracks_per_coll.size());
 
       for (const auto& fwdtrack : fwdtracks_per_coll) {
-        float pt = 999.f, eta = 999.f, phi = 999.f;
-        if (isSelectedGlobalMuon(collision, fwdtrack, fwdtracks, mfttracks, mftCovs, pt, eta, phi)) {
-          if (fwdtrack.sign() > 0) {
-            posMuons.emplace_back(std::make_tuple(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
-          } else {
-            negMuons.emplace_back(std::make_tuple(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
-          }
-        }
-
         if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
           if (fwdtrack.sign() > 0) {
             posProbeMuons.emplace_back(fwdtrack.globalIndex());
@@ -1018,16 +1039,8 @@ struct globalDimuonFilter {
         }
       } // end of fwdtrack loop
 
-      // make pairs
-      runPairing(collision, posMuons, negMuons, fwdtracks, mfttracks, mftCovs);
-
       // track cut efficiency
       runTAP(collision, posProbeMuons, negProbeMuons, fwdtracks, mfttracks, mftCovs);
-
-      posMuons.clear();
-      posMuons.shrink_to_fit();
-      negMuons.clear();
-      negMuons.shrink_to_fit();
 
       posProbeMuons.clear();
       posProbeMuons.shrink_to_fit();
@@ -1125,11 +1138,6 @@ struct globalDimuonFilter {
       posMuons.reserve(fwdtrackIdsThisCollision.size());
       negMuons.reserve(fwdtrackIdsThisCollision.size());
 
-      std::vector<int> posProbeMuons;
-      std::vector<int> negProbeMuons;
-      posProbeMuons.reserve(fwdtrackIdsThisCollision.size());
-      negProbeMuons.reserve(fwdtrackIdsThisCollision.size());
-
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
         float pt = 999.f, eta = 999.f, phi = 999.f;
@@ -1140,7 +1148,34 @@ struct globalDimuonFilter {
             negMuons.emplace_back(std::make_pair(fwdtrack.globalIndex(), ROOT::Math::PtEtaPhiMVector(pt, eta, phi, o2::constants::physics::MassMuon)));
           }
         }
+      } // end of fwdtrack loop
 
+      // make pairs
+      runPairing(collision, posMuons, negMuons, fwdtracks, mfttracks, mftCovs);
+
+      posMuons.clear();
+      posMuons.shrink_to_fit();
+      negMuons.clear();
+      negMuons.shrink_to_fit();
+    } // end of collision loop
+
+    // for TAP
+    for (const auto& collision : collisions) {
+      auto bc = collision.template bc_as<MyBCs>();
+      initCCDB(bc);
+
+      if (!isSelectedCollision(collision)) {
+        continue;
+      }
+
+      auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      std::vector<int> posProbeMuons;
+      std::vector<int> negProbeMuons;
+      posProbeMuons.reserve(fwdtrackIdsThisCollision.size());
+      negProbeMuons.reserve(fwdtrackIdsThisCollision.size());
+
+      for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
+        auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
         if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
           if (fwdtrack.sign() > 0) {
             posProbeMuons.emplace_back(fwdtrack.globalIndex());
@@ -1150,16 +1185,8 @@ struct globalDimuonFilter {
         }
       } // end of fwdtrack loop
 
-      // make pairs
-      runPairing(collision, posMuons, negMuons, fwdtracks, mfttracks, mftCovs);
-
       // track cut efficiency
       runTAP(collision, posProbeMuons, negProbeMuons, fwdtracks, mfttracks, mftCovs);
-
-      posMuons.clear();
-      posMuons.shrink_to_fit();
-      negMuons.clear();
-      negMuons.shrink_to_fit();
 
       posProbeMuons.clear();
       posProbeMuons.shrink_to_fit();
