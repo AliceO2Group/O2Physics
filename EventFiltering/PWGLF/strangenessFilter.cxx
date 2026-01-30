@@ -79,7 +79,7 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 17, -1., 16.)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 20, -1., 19.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Omega events with pT_h higher than thrd; min p_{T, trigg} (GeV/c); Number of events", 11, 0., 11.)};
 
@@ -146,12 +146,11 @@ struct strangenessFilter {
   Configurable<bool> hastof{"hastof", 1, "Has TOF (OOB condition)"};
   Configurable<float> ptthrtof{"ptthrtof", 1.0, "Pt threshold to apply TOF condition"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
-  // Selection mask: bit 1 = 0 of multFilter - Tracks, bit 2 = FT0M used in 2024, bit 2 (4) = 2 of multFilter normalised FT0M used in 2025, bit 3 (8) = multNTracksGlobal
-  Configurable<int> HMTriggerSelectionForOmega{"HMTriggerSelectionForOmega", 1, "0 =  HM trigger selection for omega"};
-  Configurable<int> LowLimitHMTriggerOmegaTracks{"LowLimitHMTriggerOmegaTracks", 30, "tracks as defined in multFilter selection [0]"};
+  // Selection mask: bit 1 = 0 of multFilter - Tracks, bit 2 = FT0M used in 2024, bit 2 (4) = 4 of multFilter normalised FT0M used in 2025
+  Configurable<uint> HMTriggerSelectionForOmega{"HMTriggerSelectionForOmega", 5 , "0 =  HM trigger selection for omega"};
+  Configurable<int> LowLimitHMTriggerOmegaTracks{"LowLimitHMTriggerOmegaTracks", 90, "tracks as defined in multFilter selection [0]"};
   Configurable<int> LowLimitHMTriggerOmegaT0M{"LowLimitHMTriggerOmegaT0M", 3100, "T0M"};
   Configurable<int> LowLimitHMTriggerOmegaT0MNorm{"LowLimitHMTriggerOmegaT0MNorm", 70, "normalised T0M selection [2] of multFiler"};
-  Configurable<int> LowLimitHMTriggerOmegaTracksGlobal{"LowLimitHMTriggerOmegaTracksGlobal", 30, "tracks as defined in table MultsGlobal"};
 
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
@@ -210,11 +209,14 @@ struct strangenessFilter {
   float mBz = 0.;
   std::vector<double>* mMeanMultT0C;
   std::vector<double>* mMeanMultT0A;
-  TrackSelection mTrackSelector;
 
   bool selectTrack(const auto& track)
   {
-    return track.pt() > hMinPt && std::abs(track.eta()) < hEta && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcCrossedRowsOverFindableCls() >= 0.8f && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
+     return track.pt() > hMinPt && std::abs(track.eta()) < hEta && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcCrossedRowsOverFindableCls() >= 0.8f && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
+  }
+  bool selectTrackOHM(const auto& track)
+  {
+    return track.pt() > 0.15 && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcCrossedRowsOverFindableCls() >= 0.8f && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
   }
 
   float getV0V0DCA(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
@@ -294,20 +296,6 @@ struct strangenessFilter {
 
   void init(o2::framework::InitContext&)
   {
-    // Track selector from multFilter
-    mTrackSelector.SetPtRange(0.15f, 1e10f);
-    mTrackSelector.SetEtaRange(-0.8f, 0.8f);
-    mTrackSelector.SetRequireITSRefit(true);
-    mTrackSelector.SetRequireTPCRefit(true);
-    mTrackSelector.SetRequireGoldenChi2(false);
-    mTrackSelector.SetMinNClustersTPC(60);
-    mTrackSelector.SetMinNCrossedRowsTPC(70);
-    mTrackSelector.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-    mTrackSelector.SetMaxChi2PerClusterTPC(4.f);
-    mTrackSelector.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
-    mTrackSelector.SetMaxChi2PerClusterITS(36.f);
-    mTrackSelector.SetMaxDcaXY(1.f);
-    mTrackSelector.SetMaxDcaZ(1.f);
     // set V0 parameters in the helper
     mStraHelper.v0selections.minCrossedRows = tpcmincrossedrows;
     if (dcamesontopv <= dcabaryontopv)
@@ -351,7 +339,12 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(14, aod::filtering::OmegaHighMult::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(15, aod::filtering::DoubleOmega::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(16, aod::filtering::OmegaXi::columnLabel());
+    //hProcessedEvents->GetXaxis()->SetBinLabel(17, aod::filtering::LambdaLambda::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(17, "LL");
+    hProcessedEvents->GetXaxis()->SetBinLabel(18, aod::filtering::OmegaHighMultTrk::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(19, aod::filtering::HighMultFT0M::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(20, aod::filtering::HighMultTrk::columnLabel());
+
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "PassBuilderSel");
@@ -378,7 +371,7 @@ struct strangenessFilter {
     AxisSpec multAxisNTPV = {100, 0.0f, 100.0f, "N. tracks PV estimator"};
     AxisSpec multAxisT0M = {600, 0.0f, 6000.0f, "T0M multiplicity estimator"};
     AxisSpec multAxisT0MNorm = {150, 0.0f, 150.0f, "Normalised T0M multiplicity estimator"};
-    AxisSpec multAxisTrack = {100, 0.0f, 100.0f, "Tracks"};
+    AxisSpec multAxisTrack = {120, 0.0f, 120.0f, "Tracks"};
     AxisSpec multAxisV0A = {500, 0.0f, 25000.0f, "V0A multiplicity estimator"};
     AxisSpec ximassAxis = {200, 1.28f, 1.36f};
     AxisSpec omegamassAxis = {200, 1.59f, 1.75f};
@@ -436,15 +429,14 @@ struct strangenessFilter {
     QAHistosTriggerParticles.add("hEtaTriggerAllEv", "hEtaTriggerAllEv", HistType::kTH2F, {{180, -1.4, 1.4, "Eta of trigger particles"}, {ptTriggAxis}});
     QAHistosTriggerParticles.add("hPhiTriggerAllEv", "hPhiTriggerAllEv", HistType::kTH2F, {{100, 0, 2 * TMath::Pi(), "Phi of trigger particles"}, {ptTriggAxis}});
 
+    EventsvsMultiplicity.add("AllEventsvsEta", "eta ditribution", HistType::kTH1F, {{100,-2,2}});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0M", "T0M distribution of all events", HistType::kTH1F, {multAxisT0M});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MwOmega", "T0M distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisT0M});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNorm", "T0M Normalised of all events", HistType::kTH1F, {multAxisT0MNorm});
-    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MwOmegaNorm", "T0M distribution of events w/ Omega candidate - Normalised FT0M", HistType::kTH1F, {multAxisT0MNorm});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNormwOmega", "T0M distribution of events w/ Omega candidate - Normalised FT0M", HistType::kTH1F, {multAxisT0MNorm});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNoFT0", "T0M distribution of events without FT0", HistType::kTH1F, {multAxisT0M});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityTracks", "Track distribution of all events", HistType::kTH1F, {multAxisTrack});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityTrackswOmega", "Track distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisTrack});
-    EventsvsMultiplicity.add("AllEventsvsMultiplicityTracksGlobal", "TrackGlobal distribution of all events", HistType::kTH1F, {multAxisTrack});
-    EventsvsMultiplicity.add("AllEventsvsMultiplicityTracksGlobalwOmega", "TrackGlobal distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisTrack});
 
     if (doextraQA) {
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of all events", HistType::kTH1F, {multAxisV0A});
@@ -535,6 +527,7 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.add("hPtVsMassTrkXiSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1.2, 1.7}});
       QAHistosStrangenessTracking.add("hPtVsMassTrkOmegaSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1.6, 2.1}});
     }
+    LOG(info) << "HM Omega track trigger:" << LowLimitHMTriggerOmegaTracks;
   }
 
   void initCCDB(int run)
@@ -587,14 +580,14 @@ struct strangenessFilter {
 
   void fillTriggerTable(bool keepEvent[])
   {
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11], keepEvent[12]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11], keepEvent[12], keepEvent[13], keepEvent[14], keepEvent[15]);
   }
 
   void process(CollisionCandidates const& collision, TrackCandidates const& tracks, aod::Cascades const& cascadesBase, aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const& v0Base, aod::BCs const&, aod::FT0s const& /*ft0s*/)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
-    bool keepEvent[13]{}; // explicitly zero-initialised
+    bool keepEvent[16]{}; // explicitly zero-initialised
     std::vector<std::array<int64_t, 2>> v0sFromOmegaID;
     std::vector<std::array<int64_t, 2>> v0sFromXiID;
 
@@ -625,30 +618,30 @@ struct strangenessFilter {
     }
 
     Bool_t isHighMultEvent = 0;
+    Bool_t isHighMultEventTrk = 0;
+
     float multFT0MNorm = 0.f;
     float multTrack = 0;
-    EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
-    if (HMTriggerSelectionForOmega & 1) {
+    if (HMTriggerSelectionForOmega & 1) { //=====================================
       for (auto& track : tracks) {
-        if (!mTrackSelector.IsSelected(track)) {
-          continue;
+        if(selectTrackOHM(track)) {
+           multTrack++;
+           EventsvsMultiplicity.fill(HIST("AllEventsvsEta"), track.eta());
         }
-        // Has this track contributed to the collision vertex fit
-        if (!track.isPVContributor()) {
-          continue;
-        }
-        multTrack++;
       }
+      //std::cout << multTrack << std::endl;
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracks"), multTrack);
       if (multTrack > LowLimitHMTriggerOmegaTracks) {
-        isHighMultEvent = 1;
+        isHighMultEventTrk = 1;
       }
     }
-    if (HMTriggerSelectionForOmega & 2) {
+    if (HMTriggerSelectionForOmega & 2) { //=====================================
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());    
       if (collision.multFT0M() > LowLimitHMTriggerOmegaT0M) {
         isHighMultEvent = 1;
       }
     }
-    if (HMTriggerSelectionForOmega & 4) {
+    if (HMTriggerSelectionForOmega & 4) { //=====================================
       float meanMultT0C = 0.f;
       float fac_FT0C_ebe = 1.;
       meanMultT0C = (*mMeanMultT0C)[0];
@@ -707,12 +700,7 @@ struct strangenessFilter {
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
       }
     }
-    if (HMTriggerSelectionForOmega & 8) {
-      if (collision.multNTracksGlobal() > LowLimitHMTriggerOmegaTracksGlobal) {
-        isHighMultEvent = 1;
-      }
-    }
-    if ((HMTriggerSelectionForOmega & 0xf) == 0) {
+    if ((HMTriggerSelectionForOmega & 0x7) == 0) {
       LOG(fatal) << "Wrong selection of HMTriggerForOmega:" << HMTriggerSelectionForOmega;
     }
 
@@ -1215,12 +1203,21 @@ struct strangenessFilter {
     // Omega in high multiplicity events
     if (omegacounter > 0) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
-      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmegaNorm"), multFT0MNorm);
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNormwOmega"), multFT0MNorm);
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTrackswOmega"), multTrack);
     }
     if (omegacounter > 0 && isHighMultEvent) {
       keepEvent[9] = true;
     }
-
+    if (omegacounter > 0 && isHighMultEventTrk) {
+      keepEvent[13] = true;
+    }
+    if(isHighMultEvent) {
+      keepEvent[14] = true;
+    }
+    if(isHighMultEventTrk) {
+      keepEvent[15] = true;
+    }
     for (const auto& trackedCascade : trackedCascades) {
       const auto trackCasc = trackedCascade.track_as<TrackCandidates>();
       QAHistosStrangenessTracking.fill(HIST("hPtCascTracked"), trackCasc.pt());
@@ -1410,6 +1407,15 @@ struct strangenessFilter {
     }
     if (keepEvent[12]) {
       hProcessedEvents->Fill(15.5);
+    }
+    if (keepEvent[13]) {
+      hProcessedEvents->Fill(16.5);
+    }
+    if (keepEvent[14]) {
+      hProcessedEvents->Fill(17.5);
+    }
+    if (keepEvent[15]) {
+      hProcessedEvents->Fill(18.5);
     }
     // Filling the table
     fillTriggerTable(keepEvent);
