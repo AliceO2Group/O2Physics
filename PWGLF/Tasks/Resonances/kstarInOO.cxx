@@ -373,7 +373,6 @@ struct kstarInOO {
   //||       Helper Templates
   //||
   //==================================
-
   template <typename objType>
   void fillQA(const bool pass, const objType& obj, const int objecttype = 0)
   {
@@ -1482,7 +1481,7 @@ struct kstarInOO {
   //|
   //======================================================
   int nprocessEffiEvents = 0;
-  void processEff(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+  void processEff(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
   {
     if (cDebugLevel > 0) {
       ++nprocessEffiEvents;
@@ -1537,6 +1536,7 @@ struct kstarInOO {
           continue;
       } // enforce BR restriction
       */
+
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffGen_pT"), particle.pt());
       }
