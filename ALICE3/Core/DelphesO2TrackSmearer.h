@@ -33,6 +33,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <string>
 
 ///////////////////////////////
 /// DelphesO2/src/lutCovm.hh //
