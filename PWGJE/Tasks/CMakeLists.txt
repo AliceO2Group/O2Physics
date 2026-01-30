@@ -148,6 +148,15 @@ if(FastJet_FOUND)
                         SOURCES jetSubstructureDielectronOutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+
+    # PCH for jet substructure HF tasks (makes for much faster compilation)
+    target_precompile_headers(O2Physicsexe-analysis-je-jet-substructure-d0
+        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/jetSubstructureHFPCH.h")
+    foreach(T IN ITEMS dplus ds dstar lc b0 bplus xictoxipipi dielectron)
+        target_precompile_headers(O2Physicsexe-analysis-je-jet-substructure-${T}
+            REUSE_FROM O2Physicsexe-analysis-je-jet-substructure-d0)
+    endforeach()
+
     o2physics_add_dpl_workflow(jet-fragmentation
                         SOURCES jetFragmentation.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
