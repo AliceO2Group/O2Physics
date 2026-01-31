@@ -51,6 +51,7 @@ DECLARE_SOA_COLUMN(RecoSetting, recoSetting, uint16_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, float);
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
@@ -87,7 +88,7 @@ DECLARE_SOA_COLUMN(LeadingTrackPrPID, leadingTrackPrPID, float);
 DECLARE_SOA_COLUMN(SubleadingTrackPrPID, subleadingTrackPrPID, float);
 } // namespace reco_tree
 DECLARE_SOA_TABLE(RecoTree, "AOD", "RECOTREE",
-                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosZ, reco_tree::OccupancyInTime,
+                  reco_tree::RecoSetting, reco_tree::RunNumber, reco_tree::PosZ, reco_tree::OccupancyInTime, reco_tree::HadronicRate,
                   reco_tree::TotalFT0AmplitudeA, reco_tree::TotalFT0AmplitudeC, reco_tree::TotalFV0AmplitudeA, reco_tree::TotalFDDAmplitudeA, reco_tree::TotalFDDAmplitudeC,
                   reco_tree::TimeFT0A, reco_tree::TimeFT0C, reco_tree::TimeFV0A, reco_tree::TimeFDDA, reco_tree::TimeFDDC,
                   reco_tree::EnergyCommonZNA, reco_tree::EnergyCommonZNC, reco_tree::TimeZNA, reco_tree::TimeZNC, reco_tree::NeutronClass,
@@ -192,6 +193,7 @@ struct UpcRhoAnalysis {
   HistogramRegistry rTracks{"rTracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry rSystem{"rSystem", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry rMC{"rMC", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry rResolution{"rResolution", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext& context)
   {
@@ -345,6 +347,14 @@ struct UpcRhoAnalysis {
       rMC.add("MC/system/hPhiRandomVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
       rMC.add("MC/system/hPhiChargeVsM", ";#it{m} (GeV/#it{c}^{2});#Delta#it{#phi} (rad);counts", kTH2D, {mAxis, deltaPhiAxis});
       rMC.addClone("MC/system/", "MC/system/selected/");
+    }
+
+    if (context.mOptions.get<bool>("processResolution")) {
+      rResolution.add("MC/resolution/collisions/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
+      rResolution.add("MC/resolution/tracks/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
+      rResolution.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
+      rResolution.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {{200, -0.2, 0.2}});
     }
   }
 
@@ -800,7 +810,7 @@ struct UpcRhoAnalysis {
       return;
 
     // fill recoTree
-    recoTree(collision.flags(), collision.runNumber(), collision.posZ(), collision.occupancyInTime(),
+    recoTree(collision.flags(), collision.runNumber(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(),
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
              collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
              energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
@@ -1054,6 +1064,25 @@ struct UpcRhoAnalysis {
     processMC(mcCollision, mcParticles, runNumber);
   }
   PROCESS_SWITCH(UpcRhoAnalysis, processMCdataWithBCs, "analyse MC data with BCs (only with on-the-fly skimming)", false);
+
+  void processResolution(soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>::iterator const& collision, soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels> const& tracks, aod::UDMcCollisions const&, aod::UDMcParticles const&)
+  {
+    rResolution.fill(HIST("MC/resolution/collisions/hMatch"), 0);
+    if (!collision.has_udMcCollision())
+      return;
+    rResolution.fill(HIST("MC/resolution/collisions/hMatch"), 1);
+    for (const auto& track : tracks) {
+      rResolution.fill(HIST("MC/resolution/tracks/hMatch"), 0);
+      if (!track.has_udMcParticle())
+        continue;
+      rResolution.fill(HIST("MC/resolution/tracks/hMatch"), 1);
+      auto mcParticle = track.udMcParticle();
+      rResolution.fill(HIST("MC/resolution/tracks/hPt"), pt(track.px(), track.py()) - pt(mcParticle.px(), mcParticle.py()));
+      rResolution.fill(HIST("MC/resolution/tracks/hEta"), eta(track.px(), track.py(), track.pz()) - eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
+      rResolution.fill(HIST("MC/resolution/tracks/hPhi"), phi(track.px(), track.py()) - phi(mcParticle.px(), mcParticle.py()));
+    }
+  }
+  PROCESS_SWITCH(UpcRhoAnalysis, processResolution, "check resolution of kinematic variables", false);
 
   void processCollisionRecoCheck(aod::UDMcCollision const& /* mcCollision */, soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions>> const& collisions)
   {
