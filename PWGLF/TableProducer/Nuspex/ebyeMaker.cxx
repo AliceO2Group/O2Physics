@@ -646,7 +646,7 @@ struct EbyeMaker {
           candTrack.dcaxypv = dcaInfo[0];
           candTrack.dcazpv = dcaInfo[1];
           candTrack.tpcchi2 = track.tpcChi2NCl();
-          candTrack.tpcncls = track.tpcNClsFound();
+          candTrack.tpcncls = (doprocessRun3 || doprocessMcRun3) ? track.tpcNClsCrossedRows() : track.tpcNClsFound();
           candTrack.tpcnsigma = nSigmaTPC;
           candTrack.tofmass = hasTof ? mass : -999.f;
           candTrack.globalIndex = track.globalIndex();
