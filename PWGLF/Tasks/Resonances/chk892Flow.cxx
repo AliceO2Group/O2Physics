@@ -412,7 +412,7 @@ struct Chk892Flow {
       histos.add("QA/before/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
       histos.add("QA/before/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
       histos.add("QA/before/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-			histos.add("QA/before/hArmSecondary", "Armenteros distribution of secondary resonance", HistType::kTH2D, {AxisSpec{100, -1, 1, "alpha"}, {200, 0, 0.5, "qtArm"}});
+      histos.add("QA/before/hArmSecondary", "Armenteros distribution of secondary resonance", HistType::kTH2D, {AxisSpec{100, -1, 1, "alpha"}, {200, 0, 0.5, "qtArm"}});
       histos.add("QA/before/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
 
       histos.add("QA/after/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
@@ -420,7 +420,7 @@ struct Chk892Flow {
       histos.add("QA/after/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
       histos.add("QA/after/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
       histos.add("QA/after/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-			histos.add("QA/after/hArmSecondary", "Armenteros distribution of secondary resonance", HistType::kTH2D, {AxisSpec{100, -1, 1, "alpha"}, {200, 0, 0.5, "qtArm"}});
+      histos.add("QA/after/hArmSecondary", "Armenteros distribution of secondary resonance", HistType::kTH2D, {AxisSpec{100, -1, 1, "alpha"}, {200, 0, 0.5, "qtArm"}});
       histos.add("QA/after/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
 
       // Mass QA (quick check)
@@ -582,8 +582,8 @@ struct Chk892Flow {
       if (std::abs(track.dcaXY()) > TrackCuts.cfgMaxbDCArToPVcut)
         return false;
     }
-		if (TrackCuts.cfgpTdepDCAzCut) {
-			// Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
+    if (TrackCuts.cfgpTdepDCAzCut) {
+      // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
       if (std::abs(track.dcaZ()) > (0.004 + (0.013 / track.pt())))
         return false;
     } else {
@@ -828,7 +828,7 @@ struct Chk892Flow {
         if (AnalysisConfig.cfgFillQAPlots) {
           // Bachelor pion QA plots after applying cuts
           histos.fill(HIST("QA/after/trkbpionTPCPID"), trkbpt, trkbNSigmaPiTPC);
-          if (istrkbhasTOF && trkbpt>PIDCuts.cfgTOFMinPt) {
+          if (istrkbhasTOF && trkbpt > PIDCuts.cfgTOFMinPt) {
             histos.fill(HIST("QA/after/trkbpionTOFPID"), trkbpt, trkbNSigmaPiTOF);
             histos.fill(HIST("QA/after/trkbpionTPCTOFPID"), trkbNSigmaPiTPC, trkbNSigmaPiTOF);
           }
