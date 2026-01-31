@@ -164,6 +164,30 @@ DECLARE_SOA_TABLE(HfSelLc, "AOD", "HFSELLC", //!
 DECLARE_SOA_TABLE(HfMlLcToPKPi, "AOD", "HFMLLc", //!
                   hf_sel_candidate_lc::MlProbLcToPKPi, hf_sel_candidate_lc::MlProbLcToPiKP);
 
+namespace hf_sel_candidate_cd
+{
+DECLARE_SOA_COLUMN(IsSelCdToDeKPi, isSelCdToDeKPi, int); //!
+DECLARE_SOA_COLUMN(IsSelCdToPiKDe, isSelCdToPiKDe, int); //!
+} // namespace hf_sel_candidate_cd
+DECLARE_SOA_TABLE(HfSelCd, "AOD", "HFSELCD", //!
+                  hf_sel_candidate_cd::IsSelCdToDeKPi, hf_sel_candidate_cd::IsSelCdToPiKDe);
+
+namespace hf_sel_candidate_ct
+{
+DECLARE_SOA_COLUMN(IsSelCtToTrKPi, isSelCtToTrKPi, int); //!
+DECLARE_SOA_COLUMN(IsSelCtToPiKTr, isSelCtToPiKTr, int); //!
+} // namespace hf_sel_candidate_ct
+DECLARE_SOA_TABLE(HfSelCt, "AOD", "HFSELCT", //!
+                  hf_sel_candidate_ct::IsSelCtToTrKPi, hf_sel_candidate_ct::IsSelCtToPiKTr);
+
+namespace hf_sel_candidate_ch
+{
+DECLARE_SOA_COLUMN(IsSelChToHeKPi, isSelChToHeKPi, int); //!
+DECLARE_SOA_COLUMN(IsSelChToPiKHe, isSelChToPiKHe, int); //!
+} // namespace hf_sel_candidate_ch
+DECLARE_SOA_TABLE(HfSelCh, "AOD", "HFSELCH", //!
+                  hf_sel_candidate_ch::IsSelChToHeKPi, hf_sel_candidate_ch::IsSelChToPiKHe);
+
 namespace hf_sel_candidate_lc_alice3
 {
 DECLARE_SOA_COLUMN(IsSelLcToPKPiNoPid, isSelLcToPKPiNoPid, int);                   //!
@@ -381,7 +405,7 @@ DECLARE_SOA_TABLE(HfSelToXiPiKf, "AOD", "HFSELTOXIPIKF",
                   hf_sel_toxipi::TpcNSigmaPiFromCharmBaryon, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
                   hf_sel_toxipi::TofNSigmaPiFromCharmBaryon, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
 
-DECLARE_SOA_TABLE(HfMlToXiPiKf, "AOD", "HFMLSELTOXIPIKF",
+DECLARE_SOA_TABLE(HfMlToXiPi, "AOD", "HFMLSELTOXIPI",
                   hf_sel_toxipi::MlProbToXiPi);
 
 namespace hf_sel_toomegapi

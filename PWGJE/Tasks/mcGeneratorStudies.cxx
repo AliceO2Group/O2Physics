@@ -248,7 +248,7 @@ struct MCGeneratorStudies {
       int iCellID = -1;
       try {
         iCellID = emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(mcParticles.iteratorAt(daughterId).eta(), mcParticles.iteratorAt(daughterId).phi());
-      } catch (emcal::InvalidPositionException& e) {
+      } catch (const emcal::InvalidPositionException& e) {
         iCellID = -1;
       }
       if (iCellID == -1)

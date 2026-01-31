@@ -34,7 +34,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsTPC/BetheBlochAleph.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -415,15 +415,15 @@ class HfFilterHelper
     mForceTofProtonForFemto = forceTofProtons;
     mForceTofDeuteronForFemto = forceTofDeuterons;
   }
-  void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
-  void setPtBinsBeautyHadrons(std::vector<double> ptBins) { mPtBinsBeautyHadrons = ptBins; }
-  void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P, o2::framework::LabeledArray<double> cutsSingleToJPsi)
+  void setPtBinsSingleTracks(const std::vector<double>& ptBins) { mPtBinsTracks = ptBins; }
+  void setPtBinsBeautyHadrons(const std::vector<double>& ptBins) { mPtBinsBeautyHadrons = ptBins; }
+  void setCutsSingleTrackBeauty(const o2::framework::LabeledArray<double>& cutsSingleTrack3P, const o2::framework::LabeledArray<double>& cutsSingleTrack4P, const o2::framework::LabeledArray<double>& cutsSingleToJPsi)
   {
     mCutsSingleTrackBeauty3Prong = cutsSingleTrack3P;
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
     mCutsSingleTrackBeautyToJPsi = cutsSingleToJPsi;
   }
-  void setCutsBhadrons(o2::framework::LabeledArray<double> cutsBplus, o2::framework::LabeledArray<double> cutsB0toDstar, o2::framework::LabeledArray<double> cutsBc, o2::framework::LabeledArray<double> cutsB0, o2::framework::LabeledArray<double> cutsBs, o2::framework::LabeledArray<double> cutsLb, o2::framework::LabeledArray<double> cutsXib)
+  void setCutsBhadrons(const o2::framework::LabeledArray<double>& cutsBplus, const o2::framework::LabeledArray<double>& cutsB0toDstar, const o2::framework::LabeledArray<double>& cutsBc, const o2::framework::LabeledArray<double>& cutsB0, const o2::framework::LabeledArray<double>& cutsBs, const o2::framework::LabeledArray<double>& cutsLb, const o2::framework::LabeledArray<double>& cutsXib)
   {
     mCutsBhad[kBplus] = cutsBplus;
     mCutsBhad[kB0toDStar] = cutsB0toDstar;
@@ -433,7 +433,7 @@ class HfFilterHelper
     mCutsBhad[kLb] = cutsLb;
     mCutsBhad[kXib] = cutsXib;
   }
-  void setCutsBtoJPsi(o2::framework::LabeledArray<double> cuts)
+  void setCutsBtoJPsi(const o2::framework::LabeledArray<double>& cuts)
   {
     mCutsBhadToJPsi = cuts;
   }
@@ -554,7 +554,7 @@ class HfFilterHelper
     mMaxDcaXyXi = maxDcaxyXi;
     mMaxNsigmaXiDau = nSigma;
   }
-  void setCutsSingleTrackCharmBaryonBachelor(o2::framework::LabeledArray<double> cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
+  void setCutsSingleTrackCharmBaryonBachelor(const o2::framework::LabeledArray<double>& cutsSingleTrack) { mCutsSingleTrackCharmBaryonBachelor = cutsSingleTrack; }
   void setNsigmaPiCutsForCharmBaryonBachelor(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPiCharmBaryonBachelor = nSigmaTpc;
@@ -583,7 +583,7 @@ class HfFilterHelper
 
   void setTpcPidCalibrationOption(int opt) { mTpcPidCalibrationOption = opt; }
 
-  void setMassResolParametrisation(std::string recoPass)
+  void setMassResolParametrisation(const std::string& recoPass)
   {
     if (recoPass == "2023_pass3") {
       mSigmaPars2Prongs[0] = 0.01424f;
@@ -610,7 +610,7 @@ class HfFilterHelper
 
   void setNumSigmaForDeltaMassCharmHadCut(float nSigma) { mNumSigmaDeltaMassCharmHad = nSigma; }
 
-  void setPreselDsToKKPi(std::vector<double> ptBins, o2::framework::LabeledArray<double> preselections)
+  void setPreselDsToKKPi(const std::vector<double>& ptBins, const o2::framework::LabeledArray<double>& preselections)
   {
     mPtBinsPreselDsToKKPi = ptBins;
     mPreselDsToKKPi = preselections;
@@ -679,9 +679,9 @@ class HfFilterHelper
   template <typename T>
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
   template <typename T>
-  int computeNumberOfCandidates(std::vector<std::vector<T>> indices);
+  int computeNumberOfCandidates(const std::vector<std::vector<T>>& indices);
   template <typename T1>
-  int setVtxConfiguration(T1 vertexer, bool useAbsDCA);
+  int setVtxConfiguration(T1& vertexer, bool useAbsDCA);
   template <typename V, typename T, typename C>
   bool buildV0(V const& v0Indices, T const& tracks, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const std::vector<int>& vetoedTrackIds, V0Cand& v0Cand);
   template <typename Casc, typename T, typename C, typename V>
@@ -1504,14 +1504,14 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const int& activateQA, 
   float nSigmaPrTpc[2] = {v0.nSigmaPrTpcPos, v0.nSigmaPrTpcNeg};
   float nSigmaPrTof[2] = {v0.nSigmaPrTofPos, v0.nSigmaPrTofNeg};
   float pInTpc[2] = {v0.pinTpcPos, v0.pinTpcNeg};
-  float nClsTpc[2] = {v0.nClsFoundTpcPos, v0.nClsFoundTpcNeg};
-  float etaDaus[2] = {v0.etaPos, v0.etaNeg};
-  float signalTpc[2] = {v0.signalTpcPos, v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
+    float nClsTpc[2] = {v0.nClsFoundTpcPos, v0.nClsFoundTpcNeg};
+    float etaDaus[2] = {v0.etaPos, v0.etaNeg};
     for (int iDau{0}; iDau < 2; ++iDau) {
       nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
+    float signalTpc[2] = {v0.signalTpcPos, v0.signalTpcNeg};
     for (int iDau{0}; iDau < 2; ++iDau) {
       nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPr : kAntiPr);
     }
@@ -1651,7 +1651,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
   }
 
   // V0 mass
-  if (std::fabs(casc.v0.mLambda - massLambda) > mDeltaMassLambdaFromXi) {
+  if ((casc.sign < 0 && std::fabs(casc.v0.mLambda - massLambda) > mDeltaMassLambdaFromXi) || (casc.sign > 0 && std::fabs(casc.v0.mAntiLambda - massLambda) > mDeltaMassLambdaFromXi)) {
     return false;
   }
 
@@ -1664,9 +1664,8 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
   float nClsTpc[3] = {casc.nClsFoundTpcBach, casc.v0.nClsFoundTpcPos, casc.v0.nClsFoundTpcNeg};
   float nCrossedRowsTpc[3] = {casc.nClsCrossedRowsTpcBach, casc.v0.nClsCrossedRowsTpcPos, casc.v0.nClsCrossedRowsTpcNeg};
   float crossedRowsOverFindableClsTpc[3] = {casc.crossedRowsOverFindableClsTpcBach, casc.v0.crossedRowsOverFindableClsTpcPos, casc.v0.crossedRowsOverFindableClsTpcNeg};
-  float etaDaus[3] = {casc.etaBach, casc.v0.etaPos, casc.v0.etaNeg};
-  float signalTpc[3] = {casc.signalTpcBach, casc.v0.signalTpcPos, casc.v0.signalTpcNeg};
   if (mTpcPidCalibrationOption == 1) {
+    float etaDaus[3] = {casc.etaBach, casc.v0.etaPos, casc.v0.etaNeg};
     for (int iDau{0}; iDau < 3; ++iDau) {
       nSigmaPiTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPi);
       if (iDau == 0) {
@@ -1675,12 +1674,13 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc)
       nSigmaPrTpc[iDau] = getTPCPostCalib(pInTpc[iDau], nClsTpc[iDau], etaDaus[iDau], nSigmaPrTpc[iDau], kPr);
     }
   } else if (mTpcPidCalibrationOption == 2) {
+    float signalTpc[3] = {casc.signalTpcBach, casc.v0.signalTpcPos, casc.v0.signalTpcNeg};
     for (int iDau{0}; iDau < 3; ++iDau) {
       nSigmaPiTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPi : kAntiPi);
       if (iDau == 0) {
         continue;
       }
-      nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], (iDau == 0) ? kPr : kAntiPr);
+      nSigmaPrTpc[iDau] = getTPCSplineCalib(pInTpc[iDau], signalTpc[iDau], kAntiPr);
     }
   }
 
@@ -1838,7 +1838,7 @@ inline T HfFilterHelper::computeRelativeMomentum(const std::array<T, 3>& pTrack,
 /// Computation of the number of candidates in an event that do not share daughter tracks
 /// \return 0 or 1 in case of less than 2 independent candidates in a single event, 2 otherwise
 template <typename T>
-inline int HfFilterHelper::computeNumberOfCandidates(std::vector<std::vector<T>> indices)
+inline int HfFilterHelper::computeNumberOfCandidates(const std::vector<std::vector<T>>& indices)
 {
   if (indices.size() < 2) {
     return indices.size();
@@ -2377,7 +2377,6 @@ inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& tra
     }
 
     const auto& vtx = dcaFitter.getPCACandidate();
-    dcaFitter.propagateTracksToVertex();
     const auto& trackCascProp = dcaFitter.getTrack(0);
     const auto& trackBachProp = dcaFitter.getTrack(1);
     std::array<float, 3> momCasc{}, momBach{};
@@ -2456,7 +2455,6 @@ inline bool HfFilterHelper::isSelectedXiBachBach(T const& trackParCasc, std::arr
     const auto& vtx = dcaFitter.getPCACandidate();
 
     std::array<float, 3> momCasc{pVecCascade}, momBachFirst{}, momBachSecond{};
-    dcaFitter.propagateTracksToVertex();
     const auto& trackBachFirstProp = dcaFitter.getTrack(0);
     const auto& trackBachSecondProp = dcaFitter.getTrack(1);
     trackBachFirstProp.getPxPyPzGlo(momBachFirst);
@@ -2515,7 +2513,7 @@ inline float HfFilterHelper::getTPCSplineCalib(const float tpcPin, const float d
   }
 
   auto bgScaling = 1 / mMassPar;
-  double expBethe = tpc::BetheBlochAleph(static_cast<double>(tpcPin * bgScaling), mBetheBlochPiKaPrDe[pidSpecies][0], mBetheBlochPiKaPrDe[pidSpecies][1], mBetheBlochPiKaPrDe[pidSpecies][2], mBetheBlochPiKaPrDe[pidSpecies][3], mBetheBlochPiKaPrDe[pidSpecies][4]);
+  double expBethe = common::BetheBlochAleph(static_cast<double>(tpcPin * bgScaling), mBetheBlochPiKaPrDe[pidSpecies][0], mBetheBlochPiKaPrDe[pidSpecies][1], mBetheBlochPiKaPrDe[pidSpecies][2], mBetheBlochPiKaPrDe[pidSpecies][3], mBetheBlochPiKaPrDe[pidSpecies][4]);
   double expSigma = expBethe * mBetheBlochPiKaPrDe[pidSpecies][5];
   return static_cast<float>((dEdx - expBethe) / expSigma);
 }
@@ -2605,7 +2603,7 @@ inline int HfFilterHelper::findBin(T1 const& binsPt, T2 value)
 /// Set vertxing configuration
 /// \param vertexer o2::vertexing::DCAFitterN<N> object
 template <typename T1>
-inline int HfFilterHelper::setVtxConfiguration(T1 vertexer, bool useAbsDCA)
+inline int HfFilterHelper::setVtxConfiguration(T1& vertexer, bool useAbsDCA)
 {
   // Fitter initialisation
   vertexer.setPropagateToPCA(true);
@@ -2681,7 +2679,6 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   }
 
   // compute candidate momentum from tracks propagated to decay vertex
-  dcaFitter.propagateTracksToVertex();
   auto& trackPosProp = dcaFitter.getTrack(0);
   auto& trackNegProp = dcaFitter.getTrack(1);
   std::array<float, 3> momPos{}, momNeg{};
@@ -2813,7 +2810,6 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   }
 
   // compute candidate momentum from tracks propagated to decay vertex
-  dcaFitter.propagateTracksToVertex();
   auto& trackV0Prop = dcaFitter.getTrack(0);
   auto& trackBachProp = dcaFitter.getTrack(1);
   std::array<float, 3> momV0{}, momBach{};

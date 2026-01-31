@@ -18,17 +18,19 @@
 #ifndef COMMON_CORE_FWDTRACKUTILITIES_H_
 #define COMMON_CORE_FWDTRACKUTILITIES_H_
 
-#include <DetectorsBase/GeometryManager.h>
-#include <Field/MagneticField.h>
-#include <GlobalTracking/MatchGlobalFwd.h>
-#include <MCHTracking/TrackExtrap.h>
-#include <ReconstructionDataFormats/GlobalFwdTrack.h>
-#include <ReconstructionDataFormats/TrackFwd.h>
+#include "DetectorsBase/GeometryManager.h"
+#include "Field/MagneticField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
+#include "MCHTracking/TrackExtrap.h"
+#include "ReconstructionDataFormats/GlobalFwdTrack.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
 
-#include <Math/MatrixRepresentationsStatic.h>
-#include <Math/SMatrix.h>
-#include <TGeoGlobalMagField.h>
+#include "Math/MatrixRepresentationsStatic.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
 
+#include <type_traits>
 #include <vector>
 
 namespace o2::aod
@@ -40,30 +42,113 @@ enum class propagationPoint : int {
   kToVertex = 0,
   kToDCA = 1,
   kToRabs = 2,
+  kToMatchingPlane = 3,
 };
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix55Std = ROOT::Math::SMatrix<double, 5>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
-/// propagate fwdtrack to a certain point.
-template <typename TFwdTrack, typename TCollision>
-o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TCollision const& collision, const propagationPoint endPoint)
+/// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift
+template <typename TFwdTrack, typename... TCovariance>
+o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float zshift, TCovariance const&... covOpt)
 {
-  double chi2 = muon.chi2();
-  SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
-  std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
-                         muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
-                         muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
-  SMatrix55 tcovs(v1.begin(), v1.end());
-  o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+  double chi2 = track.chi2();
+  if constexpr (sizeof...(covOpt) == 0) {
+    // No covariance passed
+    if constexpr (std::is_same_v<std::decay_t<TFwdTrack>, aod::FwdTracks::iterator>) {
+      if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+        chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
+      }
+    }
+  } else {
+    // Covariance passed
+    using TCov = std::decay_t<decltype((covOpt, ...))>;
+    if constexpr (std::is_same_v<TCov, aod::FwdTracksCov::iterator>) {
+      if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+        chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
+      }
+    }
+  }
+
+  SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+
+  SMatrix55 tcovs;
+  if constexpr (sizeof...(covOpt) == 1) {
+    auto const& cov = (covOpt, ...);
+    std::vector<double> v1{
+      cov.cXX(), cov.cXY(), cov.cYY(), cov.cPhiX(), cov.cPhiY(),
+      cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
+      cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
+    tcovs = SMatrix55(v1.begin(), v1.end());
+    v1.clear();
+    v1.shrink_to_fit();
+  } else {
+    tcovs = SMatrix55{};
+  }
+
+  return o2::track::TrackParCovFwd(track.z() + zshift, tpars, tcovs, chi2);
+}
+
+template <typename TFwdTrack, typename TFwdTrackCov>
+o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov const& cov)
+{
+  return getTrackParCovFwdShift(track, 0, cov);
+
+  // // This function works for (glMuon, glMuon), (saMuon, saMuon) and (MFTTrack, MFTTrackCov).
+
+  // double chi2 = track.chi2();
+  // if constexpr (std::is_same_v<std::decay_t<TFwdTrackCov>, aod::MFTTracksCov::iterator>) {
+  //   chi2 = track.chi2();
+  // } else {
+  //   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+  //     chi2 = track.chi2();
+  //   } else if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+  //     chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
+  //   }
+  // }
+
+  // SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+  // std::vector<double> v1{cov.cXX(), cov.cXY(), cov.cYY(), cov.cPhiX(), cov.cPhiY(),
+  //                        cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
+  //                        cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
+  // SMatrix55 tcovs(v1.begin(), v1.end());
+  // o2::track::TrackParCovFwd trackparCov{track.z(), tpars, tcovs, chi2}; // this is chi2! Not chi2/ndf.
+  // v1.clear();
+  // v1.shrink_to_fit();
+  // return trackparCov;
+}
+
+/// propagate fwdtrack to a certain point.
+template <typename TFwdTrack, typename TFwdTrackCov, typename TCollision>
+o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TFwdTrackCov const& cov, TCollision const& collision, const propagationPoint endPoint, const float matchingZ, const float bzkG, const float zshift = 0.f)
+{
+  o2::track::TrackParCovFwd trackParCovFwd;
+  if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, cov);
+  } else if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, muon);
+  } else {
+    trackParCovFwd = getTrackParCovFwdShift(muon, zshift, muon);
+  }
+
+  o2::dataformats::GlobalFwdTrack propmuon = propagateTrackParCovFwd(trackParCovFwd, muon.trackType(), collision, endPoint, matchingZ, bzkG);
+  return propmuon;
+}
+
+template <typename TFwdTrackParCov, typename TCollision>
+o2::dataformats::GlobalFwdTrack propagateTrackParCovFwd(TFwdTrackParCov const& fwdtrackORG, uint8_t trackType, TCollision const& collision, const propagationPoint endPoint, const float matchingZ, const float bzkG)
+{
+  // TFwdTrackParCov is o2::track::TrackParCovFwd
+
+  o2::track::TrackParCovFwd fwdtrack(fwdtrackORG);
   o2::dataformats::GlobalFwdTrack propmuon;
   o2::globaltracking::MatchGlobalFwd mMatching;
 
-  if (static_cast<int>(muon.trackType()) > 2) { // MCH-MID or MCH standalone
+  if (trackType > 2) { // MCH-MID or MCH standalone
     o2::dataformats::GlobalFwdTrack track;
-    track.setParameters(tpars);
+    track.setParameters(fwdtrack.getParameters());
     track.setZ(fwdtrack.getZ());
-    track.setCovariances(tcovs);
+    track.setCovariances(fwdtrack.getCovariances());
     auto mchTrack = mMatching.FwdtoMCH(track);
 
     if (endPoint == propagationPoint::kToVertex) {
@@ -72,30 +157,34 @@ o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TCollision 
       o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, collision.posZ());
     } else if (endPoint == propagationPoint::kToRabs) {
       o2::mch::TrackExtrap::extrapToZ(mchTrack, -505.);
+    } else if (endPoint == propagationPoint::kToMatchingPlane) {
+      o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, matchingZ);
     }
 
     auto proptrack = mMatching.MCHtoFwd(mchTrack);
     propmuon.setParameters(proptrack.getParameters());
     propmuon.setZ(proptrack.getZ());
     propmuon.setCovariances(proptrack.getCovariances());
-  } else if (static_cast<int>(muon.trackType()) < 2) { // MFT-MCH-MID
-    const double centerMFT[3] = {0, 0, -61.4};
-    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-    auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
-    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
-    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+  } else if (trackType < 2) { // MFT-MCH-MID
+    // const double centerMFT[3] = {0, 0, -61.4};
+    // o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    // auto Bz = field->getBz(centerMFT); // Get field at centre of MFT in kG.
+
     if (endPoint == propagationPoint::kToVertex) {
-      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+      // auto geoMan = o2::base::GeometryManager::meanMaterialBudget(fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), collision.posX(), collision.posY(), collision.posZ());
+      // auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+      // fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, bzkG, x2x0);
+      std::array<double, 3> dcaInfOrig{999.f, 999.f, 999.f};
+      fwdtrack.propagateToDCAhelix(bzkG, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
     } else if (endPoint == propagationPoint::kToDCA) {
-      fwdtrack.propagateToZhelix(collision.posZ(), Bz);
+      fwdtrack.propagateToZhelix(collision.posZ(), bzkG);
+    } else if (endPoint == propagationPoint::kToMatchingPlane) {
+      fwdtrack.propagateToZhelix(matchingZ, bzkG);
     }
     propmuon.setParameters(fwdtrack.getParameters());
     propmuon.setZ(fwdtrack.getZ());
     propmuon.setCovariances(fwdtrack.getCovariances());
   }
-
-  v1.clear();
-  v1.shrink_to_fit();
 
   return propmuon;
 }
@@ -103,6 +192,8 @@ o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TCollision 
 template <typename TFwdTrack, typename TMFTTrack>
 o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTrack const& mft)
 {
+  // TFwdTrack and TMFTTrack are o2::track::TrackParCovFwd.
+
   auto muonCov = muon.getCovariances();
   auto mftCov = mft.getCovariances();
 
@@ -135,6 +226,7 @@ o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTr
 
   o2::dataformats::GlobalFwdTrack globalTrack;
   globalTrack.setParameters(mft.getParameters());
+  globalTrack.setZ(mft.getZ());
   globalTrack.setInvQPt(invQPtGlob);
   globalTrack.setCovariances(globalCov);
 

@@ -15,14 +15,14 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,8 +32,6 @@ using namespace o2::framework::expressions;
 struct HfTaskD0Alice3Barrel {
   // Configurable<double> centralitySelectionMin{"centralitySelectionMin", 0.0, "Lower boundary of centrality selection"};
   // Configurable<double> centralitySelectionMax{"centralitySelectionMax", 0.0, "Higher boundary of centrality selection"};
-
-  HfHelper hfHelper;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_d0_alice3_barrel::isSelHfFlag >= 1);
 
@@ -73,14 +71,14 @@ struct HfTaskD0Alice3Barrel {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
       }
-      if (std::abs(hfHelper.yD0(candidate)) > 4.0) {
+      if (std::abs(HfHelper::yD0(candidate)) > 4.0) {
         continue;
       }
 
-      auto massD0 = hfHelper.invMassD0ToPiK(candidate);
-      auto massD0bar = hfHelper.invMassD0barToKPi(candidate);
+      auto massD0 = HfHelper::invMassD0ToPiK(candidate);
+      auto massD0bar = HfHelper::invMassD0barToKPi(candidate);
       auto ptCandidate = candidate.pt();
-      auto rapidityCandidate = std::abs(hfHelper.yD0(candidate));
+      auto rapidityCandidate = std::abs(HfHelper::yD0(candidate));
 
       if (candidate.isSelD0NoPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);

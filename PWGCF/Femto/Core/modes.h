@@ -60,18 +60,80 @@ enum class System : uint32_t {
   kRun3 = BIT(3),
   kRun2 = BIT(4),
   kPP_Run3 = kPP | kRun3,
+  kPP_Run3_MC = kPP | kRun3 | kMC,
   kPP_Run2 = kPP | kRun2,
   kPbPb_Run3 = kPbPb | kRun3,
   kPbPb_Run2 = kPbPb | kRun2,
 };
 
 enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
-  kPAtPv, // momentum at primary vertex
-  kPt,    // transverse momentum
+  kPt = 0,    // transverse momentum
+  kPAtPv = 1, // momentum at primary vertex
+  kPTpc = 2,  // momentum at inner wall of tpc
 };
 
+enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
+  kAveragePdgMass = 0,
+  kReducedPdgMass = 1,
+  kMt4Vector = 2
+};
+
+enum class Particle : o2::aod::femtodatatypes::ParticleType {
+  kTrack = 0,
+  kTwoTrackResonance = 1,
+  kV0 = 2,
+  kKink = 3,
+  kCascade = 4,
+};
+
+enum class McOrigin : o2::aod::femtodatatypes::McOriginType {
+  kNoMcParticle = 0,       // no associated mc particle normally indicated a wrongly reconstruced partilce
+  kFromWrongCollision = 1, // partilce originates from the wrong collision or a collision which was wrongly reconstructed (like a split vertex)
+  kPhysicalPrimary = 2,    // primary particle
+  kFromSecondaryDecay = 3, // particle from secondary decay
+  kFromMaterial = 4,       // partilce orginates from material
+  kMissidentified = 5,     // partilce was kMissidentified (also know as fake)
+  kMcOriginLast = 6
+  // kFromFakeRecoCollision,
+  // kFromUnkown
+};
+
+constexpr const char* mcOriginToString(McOrigin origin)
+{
+  switch (origin) {
+    case McOrigin::kNoMcParticle:
+      return "NoMcParticle";
+    case McOrigin::kFromWrongCollision:
+      return "FromWrongCollision";
+    case McOrigin::kPhysicalPrimary:
+      return "PhysicalPrimary";
+    case McOrigin::kFromSecondaryDecay:
+      return "FromSecondaryDecay";
+    case McOrigin::kFromMaterial:
+      return "FromMaterial";
+    case McOrigin::kMissidentified:
+      return "Missidentified";
+    default:
+      return "UnknownMcOrigin";
+  }
+}
+
+constexpr bool
+  hasMass(Particle p)
+{
+  switch (p) {
+    case Particle::kV0:
+    case Particle::kTwoTrackResonance:
+    case Particle::kKink:
+    case Particle::kCascade:
+      return true;
+    default:
+      return false;
+  }
+}
+
 enum class Track : o2::aod::femtodatatypes::TrackType {
-  kPrimaryTrack,
+  kTrack,
   kV0Daughter,
   kCascadeBachelor,
   kResonanceDaughter,
@@ -85,7 +147,8 @@ enum class V0 : o2::aod::femtodatatypes::V0Type {
 };
 
 enum class Kink : o2::aod::femtodatatypes::KinkType {
-  kSigma
+  kSigma,
+  kSigmaPlus
 };
 
 enum class Cascade : o2::aod::femtodatatypes::CascadeType {

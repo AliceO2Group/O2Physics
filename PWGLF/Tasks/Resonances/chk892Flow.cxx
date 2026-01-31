@@ -23,7 +23,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -150,7 +151,7 @@ struct Chk892Flow {
     ConfigurableAxis cfgBinsCent{"cfgBinsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
     ConfigurableAxis cfgBinsVtxZ{"cfgBinsVtxZ", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "Binning of the z-vertex axis"};
     ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
-    ConfigurableAxis cfgBinsOccu{"cfgBinsOccu", {VARIABLE_WIDTH, 0, 500, 1000, 2500, 9999}, "Binning of the occupancy axis"};
+    ConfigurableAxis cfgBinsOccu{"cfgBinsOccu", {VARIABLE_WIDTH, 0, 500, 1000, 2500, 10000, 999999}, "Binning of the occupancy axis"};
     Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
     Configurable<int> cNbinsDivQA{"cNbinsDivQA", 1, "Integer to divide the number of bins for QA"};
     ConfigurableAxis cfgAxisV2{"cfgAxisV2", {200, -1, 1}, "Binning of the v2 axis (+-1 for EP method)"};
@@ -163,6 +164,7 @@ struct Chk892Flow {
     Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
     Configurable<bool> cfgFillAdditionalAxis{"cfgFillAdditionalAxis", false, "Fill additional axis"};
     Configurable<bool> cfgUseScalProduct{"cfgUseScalProduct", false, "Use scalar product method"};
+    Configurable<bool> cfgFillOccupancy{"cfgFillOccupancy", false, "Fill Occupancy"};
   } AnalysisConfig;
 
   // Event cuts
@@ -198,11 +200,12 @@ struct Chk892Flow {
     Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                 // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
     Configurable<bool> cfgTOFVeto{"cfgTOFVeto", true, "TOF Veto, if false, TOF is nessessary for PID selection"};   // TOF Veto
+    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.6, "Minimum TOF pT cut for Pion"};                             // TOF pT cut
   } PIDCuts;
 
   // Track selections
   struct : ConfigurableGroup {
-    Configurable<float> cfgMinPtcut{"cfgMinPtcut", 0.6, "Track minium pt cut"};
+    Configurable<float> cfgMinPtcut{"cfgMinPtcut", 0.15, "Track minium pt cut"};
     Configurable<float> cfgMaxEtacut{"cfgMaxEtacut", 0.8, "Track maximum eta cut"};
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -229,7 +232,7 @@ struct Chk892Flow {
     Configurable<bool> cfgReturnFlag{"cfgReturnFlag", false, "Return Flag for debugging"};
     Configurable<bool> cfgSecondaryRequire{"cfgSecondaryRequire", true, "Secondary cuts on/off"};
     Configurable<bool> cfgSecondaryArmenterosCut{"cfgSecondaryArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
-    Configurable<bool> cfgSecondaryCrossMassHypothesisCut{"cfgSecondaryCrossMassHypothesisCut", true, "Apply cut based on the lambda mass hypothesis"};
+    Configurable<bool> cfgSecondaryCrossMassHypothesisCut{"cfgSecondaryCrossMassHypothesisCut", false, "Apply cut based on the lambda mass hypothesis"};
 
     Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
     Configurable<bool> cfgByPassDauRapiditySelection{"cfgByPassDauRapiditySelection", false, "Bypass Daughters Rapidity selection"};
@@ -436,18 +439,36 @@ struct Chk892Flow {
 
     // Invariant mass nSparse
     if (AnalysisConfig.cfgFillAdditionalAxis) {
-      histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis, occuAxis});
-      histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, phiAxis, occuAxis});
-      if (doprocessMC) {
-        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis, occuAxis});
-        histos.add("hInvmass_K0s_MC", "Invariant mass of unlike K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis, occuAxis});
+      if (AnalysisConfig.cfgFillOccupancy) {
+        histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis, occuAxis});
+        histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, phiAxis, occuAxis});
+        if (doprocessMC) {
+          histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis, occuAxis});
+          histos.add("hInvmass_K0s_MC", "Invariant mass of unlike K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis, occuAxis});
+        }
+      } else {
+        histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
+        histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, phiAxis});
+        if (doprocessMC) {
+          histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
+          histos.add("hInvmass_K0s_MC", "Invariant mass of unlike K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisReso, v2Axis, phiAxis});
+        }
       }
     } else {
-      histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, occuAxis});
-      histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, occuAxis});
-      if (doprocessMC) {
-        histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, occuAxis});
-        histos.add("hInvmass_K0s_MC", "Invariant mass of unlike K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, occuAxis});
+      if (AnalysisConfig.cfgFillOccupancy) {
+        histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, occuAxis});
+        histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, occuAxis});
+        if (doprocessMC) {
+          histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis, occuAxis});
+          histos.add("hInvmass_K0s_MC", "Invariant mass of unlike K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis, occuAxis});
+        }
+      } else {
+        histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
+        histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis});
+        if (doprocessMC) {
+          histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso, v2Axis});
+          histos.add("hInvmass_K0s_MC", "Invariant mass of unlike K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s, v2Axis});
+        }
       }
     }
 
@@ -567,24 +588,23 @@ struct Chk892Flow {
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
   {
-    bool tpcPIDPassed = std::abs(candidate.tpcNSigmaPi()) < PIDCuts.cfgMaxTPCnSigmaPion;
-    bool tofPIDPassed = false;
-
-    if (PIDCuts.cfgTPConly) {
-      return tpcPIDPassed;
-    }
+    if (std::abs(candidate.tpcNSigmaPi()) >= PIDCuts.cfgMaxTPCnSigmaPion)
+      return false;
+    if (PIDCuts.cfgTPConly)
+      return true;
+    if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
+      return true;
 
     if (candidate.hasTOF()) {
-      tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion ||
-                     (PIDCuts.cfgNsigmaCutCombinedPion > 0 &&
-                      candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
-                          candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
-                        PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
+      const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
+      const bool combo = (PIDCuts.cfgNsigmaCutCombinedPion > 0) &&
+                         (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
+                            candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
+                          PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
+      return tofPIDPassed || combo;
     } else {
-      tofPIDPassed = PIDCuts.cfgTOFVeto;
+      return PIDCuts.cfgTOFVeto;
     }
-
-    return tpcPIDPassed && tofPIDPassed;
   }
 
   template <typename CollisionType, typename K0sType>
@@ -734,6 +754,7 @@ struct Chk892Flow {
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksTypeK0s& dTracks2, int nmode)
   {
     histos.fill(HIST("QA/before/CentDist"), lCentrality);
+    histos.fill(HIST("QA/before/Occupancy"), collision.trackOccupancyInTimeRange());
 
     lQvecDetInd = lDetId * 4 + 3 + (nmode - 2) * EventPlaneConfig.cfgNQvec * 4;
     lQvecRefAInd = lRefAId * 4 + 3 + (nmode - 2) * EventPlaneConfig.cfgNQvec * 4;
@@ -916,9 +937,17 @@ struct Chk892Flow {
 
           histos.fill(HIST("QA/after/k0sv2vsinvmass"), lResoSecondary.M(), v2K0s);
           if (AnalysisConfig.cfgFillAdditionalAxis) {
-            histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s, collision.trackOccupancyInTimeRange());
+            if (AnalysisConfig.cfgFillOccupancy) {
+              histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s, collision.trackOccupancyInTimeRange());
+            } else {
+              histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, static_cast<float>(nmode) * lPhiMinusPsiK0s);
+            }
           } else {
-            histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, collision.trackOccupancyInTimeRange());
+            if (AnalysisConfig.cfgFillOccupancy) {
+              histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s, collision.trackOccupancyInTimeRange());
+            } else {
+              histos.fill(HIST("hInvmass_K0s"), lCentrality, lResoSecondary.Pt(), lResoSecondary.M(), v2K0s);
+            }
           }
         }
         k0sIndicies.push_back(k0sCand.index());
@@ -966,9 +995,17 @@ struct Chk892Flow {
             histos.fill(HIST("QA/after/kstarv2vsinvmass"), lResoKstar.M(), resoFlowValue);
           }
           if (AnalysisConfig.cfgFillAdditionalAxis) {
-            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar, collision.trackOccupancyInTimeRange());
+            if (AnalysisConfig.cfgFillOccupancy) {
+              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar, collision.trackOccupancyInTimeRange());
+            } else {
+              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar);
+            }
           } else {
-            histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue, collision.trackOccupancyInTimeRange());
+            if (AnalysisConfig.cfgFillOccupancy) {
+              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue, collision.trackOccupancyInTimeRange());
+            } else {
+              histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResoKstar.Pt(), lResoKstar.M(), resoFlowValue);
+            }
           }
 
           if (BkgEstimationConfig.cfgFillRotBkg) {
@@ -1000,9 +1037,17 @@ struct Chk892Flow {
               }
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
               if (AnalysisConfig.cfgFillAdditionalAxis) {
-                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar, collision.trackOccupancyInTimeRange());
+                if (AnalysisConfig.cfgFillOccupancy) {
+                  histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar, collision.trackOccupancyInTimeRange());
+                } else {
+                  histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue, static_cast<float>(nmode) * lPhiMinusPsiKstar);
+                }
               } else {
-                histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue, collision.trackOccupancyInTimeRange());
+                if (AnalysisConfig.cfgFillOccupancy) {
+                  histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue, collision.trackOccupancyInTimeRange());
+                } else {
+                  histos.fill(HIST("hInvmass_Kstar"), typeKstar, lCentrality, lResonanceRot.Pt(), lResonanceRot.M(), resoFlowValue);
+                }
               }
             }
           }

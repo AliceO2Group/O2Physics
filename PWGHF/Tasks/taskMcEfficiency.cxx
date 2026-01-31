@@ -17,6 +17,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -69,7 +70,6 @@ struct HfTaskMcEfficiency {
   Configurable<float> mcAcceptanceEta{"mcAcceptanceEta", 0.8, "MC Acceptance: upper eta limit"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
-  HfHelper hfHelper;
 
   enum HFStep { kHFStepMC = 0,
                 kHFStepMcInRapidity,        // MC mothers in rapidity |y| < 0.5
@@ -118,14 +118,14 @@ struct HfTaskMcEfficiency {
   }
 
   template <typename T>
-  inline bool checkTrack(T track)
+  bool checkTrack(T track)
   {
     // TODO configurable?
     return track.isGlobalTrackWoDCA();
   }
 
-  template <bool mc, bool hasDplus, bool hasDs, bool hasLc, bool hasXicPlus, typename T1, typename T2, typename T3>
-  void candidate3ProngLoop(T1& candidates, T2& tracks, T3& mcParticles, std::vector<int> pdgCodes)
+  template <bool Mc, bool HasDplus, bool HasDs, bool HasLc, bool HasXicPlus, typename T1, typename T2, typename T3>
+  void candidate3ProngLoop(T1 const& candidates, T2 const& tracks, T3 const& mcParticles, std::vector<int> const& pdgCodes)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
 
@@ -136,7 +136,7 @@ struct HfTaskMcEfficiency {
 
       for (const auto pdgCode : pdgCodes) { /// loop on pdg codes
         auto decayType = -1;
-        std::array<int, 3> pdgDaughters;
+        std::array<int, 3> pdgDaughters{};
 
         if (pdgCode == Pdg::kDPlus) {
           decayType = 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
@@ -175,24 +175,24 @@ struct HfTaskMcEfficiency {
         bool isHypoMass1SelStep = false;
         bool isHypoMass2SelStep = false;
         /// selections from candidate selectors
-        if constexpr (hasDplus) {
+        if constexpr (HasDplus) {
           if (pdgCode == Pdg::kDPlus) {
             isHypoMass1SelStep = candidate.isSelDplusToPiKPi(); // only one mass hypo for D+
           }
         }
-        if constexpr (hasDs) {
+        if constexpr (HasDs) {
           if (pdgCode == Pdg::kDS) {
             isHypoMass1SelStep = candidate.isSelDsToKKPi();
             isHypoMass2SelStep = candidate.isSelDsToPiKK();
           }
         }
-        if constexpr (hasLc) {
+        if constexpr (HasLc) {
           if (pdgCode == Pdg::kLambdaCPlus) {
             isHypoMass1SelStep = candidate.isSelLcToPKPi();
             isHypoMass2SelStep = candidate.isSelLcToPiKP();
           }
         }
-        if constexpr (hasXicPlus) {
+        if constexpr (HasXicPlus) {
           if (pdgCode == Pdg::kXiCPlus) {
             isHypoMass1SelStep = candidate.isSelXicToPKPi();
             isHypoMass2SelStep = candidate.isSelXicToPiKP();
@@ -201,9 +201,9 @@ struct HfTaskMcEfficiency {
 
         bool collisionMatched = false;
         int origin = RecoDecay::OriginType::None;
-        if constexpr (mc) { /// info MC used
+        if constexpr (Mc) { /// info MC used
           int8_t sign = 0;
-          int indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg, trackThird}, pdgCode, pdgDaughters, true, &sign, 2);
+          int const indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg, trackThird}, pdgCode, pdgDaughters, true, &sign, 2);
 
           if (indexRec < 0) {
             continue;
@@ -250,30 +250,30 @@ struct HfTaskMcEfficiency {
 
         float massHypo1 = -1;
         float massHypo2 = -1;
-        float cpa = candidate.cpa();
-        float pt = candidate.pt();
+        float const cpa = candidate.cpa();
+        float const pt = candidate.pt();
         // bool selected = false;
 
         /// all candidates
         if (isHypoMass1TrackStep) {
           if (pdgCode == Pdg::kLambdaCPlus) {
-            massHypo1 = hfHelper.invMassLcToPKPi(candidate);
+            massHypo1 = HfHelper::invMassLcToPKPi(candidate);
           } else if (pdgCode == Pdg::kXiCPlus) {
-            massHypo1 = hfHelper.invMassXicToPKPi(candidate);
+            massHypo1 = HfHelper::invMassXicToPKPi(candidate);
           } else if (pdgCode == Pdg::kDPlus) {
-            massHypo1 = hfHelper.invMassDplusToPiKPi(candidate);
+            massHypo1 = HfHelper::invMassDplusToPiKPi(candidate);
           } else if (pdgCode == Pdg::kDS) {
-            massHypo1 = hfHelper.invMassDsToKKPi(candidate);
+            massHypo1 = HfHelper::invMassDsToKKPi(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo1, pdgCode, cpa, collisionMatched, origin);
         }
         if (isHypoMass2TrackStep) {
           if (pdgCode == Pdg::kLambdaCPlus) {
-            massHypo2 = hfHelper.invMassLcToPiKP(candidate);
+            massHypo2 = HfHelper::invMassLcToPiKP(candidate);
           } else if (pdgCode == Pdg::kXiCPlus) {
-            massHypo2 = hfHelper.invMassXicToPiKP(candidate);
+            massHypo2 = HfHelper::invMassXicToPiKP(candidate);
           } else if (pdgCode == Pdg::kDS) {
-            massHypo2 = hfHelper.invMassDsToPiKK(candidate);
+            massHypo2 = HfHelper::invMassDsToPiKK(candidate);
           }
           hCandidates->Fill(kHFStepTracked, pt, massHypo2, pdgCode, cpa, collisionMatched, origin);
         }
@@ -303,8 +303,8 @@ struct HfTaskMcEfficiency {
         // duplicates
         std::array<int, 3> prongIds = {candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id()};
         std::sort(prongIds.begin(), prongIds.end());
-        std::string concat = std::to_string(prongIds[0]) + std::to_string(prongIds[1]) + std::to_string(prongIds[2]);
-        std::size_t hash = std::hash<std::string>{}(concat); /// unique value for the 'concat' string
+        std::string const concat = std::to_string(prongIds[0]) + std::to_string(prongIds[1]) + std::to_string(prongIds[2]);
+        std::size_t const hash = std::hash<std::string>{}(concat); /// unique value for the 'concat' string
         if (duplicates.find(hash) != duplicates.end()) {
           if (isHypoMass1TrackStep) {
             hCandidates->Fill(kHFStepTrackedDuplicates, pt, massHypo1, pdgCode, cpa, collisionMatched, origin);
@@ -324,8 +324,8 @@ struct HfTaskMcEfficiency {
     }
   }
 
-  template <bool mc, typename T1, typename T2, typename T3>
-  void candidate2ProngLoop(T1 const& candidates, T2 const& tracks, T3 const& mcParticles, std::vector<int> pdgCodes)
+  template <bool Mc, typename T1, typename T2, typename T3>
+  void candidate2ProngLoop(T1 const& candidates, T2 const& tracks, T3 const& mcParticles, std::vector<int> const& pdgCodes)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
 
@@ -334,7 +334,7 @@ struct HfTaskMcEfficiency {
 
     for (const auto pdgCode : pdgCodes) {
       auto decayType = -1;
-      std::array<int, 2> pdgDaughters;
+      std::array<int, 2> pdgDaughters{};
 
       if (pdgCode == Pdg::kD0) {
         decayType = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
@@ -360,7 +360,7 @@ struct HfTaskMcEfficiency {
 
         bool collisionMatched = false;
         int origin = RecoDecay::OriginType::None;
-        if constexpr (mc) {
+        if constexpr (Mc) {
           auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg}, pdgCode, pdgDaughters, false);
           if (indexRec < 0) {
             continue;
@@ -371,14 +371,14 @@ struct HfTaskMcEfficiency {
         }
 
         float mass = -1;
-        float cpa = candidate.cpa();
-        float pt = candidate.pt();
+        float const cpa = candidate.cpa();
+        float const pt = candidate.pt();
         bool selected = false;
         if (pdgCode == Pdg::kD0) {
-          mass = hfHelper.invMassD0ToPiK(candidate);
+          mass = HfHelper::invMassD0ToPiK(candidate);
           selected = candidate.isSelD0() >= selectionFlagD0;
         } else if (pdgCode == Pdg::kD0Bar) {
-          mass = hfHelper.invMassD0barToKPi(candidate);
+          mass = HfHelper::invMassD0barToKPi(candidate);
           selected = candidate.isSelD0bar() >= selectionFlagD0bar;
         }
         LOGP(debug, "Candidate {} has prong {} and prong {} and pT {} and mass {}", candidate.globalIndex(), candidate.prong0Id(), candidate.prong1Id(), candidate.pt(), mass);
@@ -465,7 +465,7 @@ struct HfTaskMcEfficiency {
           continue;
         }
 
-        int origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
+        int const origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
 
         hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode, 1.0, true, origin);
 
@@ -536,10 +536,10 @@ struct HfTaskMcEfficiency {
 
   /// 3-prong analyses
 
-  template <bool hasDplus, bool hasDs, bool hasLc, bool hasXicPlus, typename C>
+  template <bool HasDplus, bool HasDs, bool HasLc, bool HasXicPlus, typename C>
   void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
   {
-    candidate3ProngLoop<true, hasDplus, hasDs, hasLc, hasXicPlus>(candidates, tracks, mcParticles, pdgCodes);
+    candidate3ProngLoop<true, HasDplus, HasDs, HasLc, HasXicPlus>(candidates, tracks, mcParticles, pdgCodes);
 
     auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
     auto hTrackablePtEta = registry.get<StepTHn>(HIST("hTrackablePtEta"));
@@ -577,7 +577,7 @@ struct HfTaskMcEfficiency {
           continue;
         }
 
-        std::array<int, 3> pdgDaughters;
+        std::array<int, 3> pdgDaughters{};
         if (pdgCode == Pdg::kDPlus) {
           pdgDaughters[0] = +kPiPlus;
           pdgDaughters[1] = -kKPlus;
@@ -600,13 +600,13 @@ struct HfTaskMcEfficiency {
 
         /// check if we end-up with the correct final state using MC info
         int8_t sign = 0;
-        std::unique_ptr<std::vector<int>> listIndexDaughters(new std::vector<int>{});
+        std::unique_ptr<std::vector<int>> const listIndexDaughters(new std::vector<int>{});
         if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, pdgCode, pdgDaughters, true, &sign, 2, listIndexDaughters.get())) {
           /// check if we have Λc± → p± K∓ π± (either direct or resonant), or D± → π± K∓ π± (either direct or resonant) or Ds± → K± K∓ π± (either direct or resonant)
           continue;
         }
 
-        int origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
+        int const origin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
 
         hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, pdgCode * sign, 1.0, true, origin);
 
@@ -711,7 +711,7 @@ struct HfTaskMcEfficiency {
   void processDataD0(soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates,
                      TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kD0Bar, Pdg::kD0};
+    std::vector<int> const pdgCodes{Pdg::kD0Bar, Pdg::kD0};
     candidate2ProngLoop<false>(candidates, tracks, tracks, pdgCodes); // NOTE third argument has to be provided but is not used as template argument is <false>
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataD0, "Process D0 data (no MC information needed)", false);
@@ -719,7 +719,7 @@ struct HfTaskMcEfficiency {
   void processDataDplus(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates,
                         TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus};
+    std::vector<int> const pdgCodes{Pdg::kDPlus};
     candidate3ProngLoop<false, true, false, false, false>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataDplus, "Process D+ data (no MC information needed)", false);
@@ -727,7 +727,7 @@ struct HfTaskMcEfficiency {
   void processDataDs(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi> const& candidates,
                      TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kDS};
+    std::vector<int> const pdgCodes{Pdg::kDS};
     candidate3ProngLoop<false, false, true, false, false>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataDs, "Process Ds+ data (no MC information needed)", false);
@@ -735,7 +735,7 @@ struct HfTaskMcEfficiency {
   void processDataLc(soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
                      TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kLambdaCPlus};
     candidate3ProngLoop<false, false, false, true, false>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataLc, "Process Lc data (no MC information needed)", false);
@@ -743,7 +743,7 @@ struct HfTaskMcEfficiency {
   void processDataXic(soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi> const& candidates,
                       TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kXiCPlus};
+    std::vector<int> const pdgCodes{Pdg::kXiCPlus};
     candidate3ProngLoop<false, false, false, false, true>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataXic, "Process Xic data (no MC information needed)", false);
@@ -751,7 +751,7 @@ struct HfTaskMcEfficiency {
   void processDataDplusDs(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfSelDsToKKPi> const& candidates,
                           TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus, Pdg::kDS};
+    std::vector<int> const pdgCodes{Pdg::kDPlus, Pdg::kDS};
     candidate3ProngLoop<false, true, true, false, false>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataDplusDs, "Process D+ and Ds+ data (no MC information needed)", false);
@@ -759,7 +759,7 @@ struct HfTaskMcEfficiency {
   void processDataDplusDsLc(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfSelDsToKKPi, aod::HfSelLc> const& candidates,
                             TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus, Pdg::kDS, Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kDPlus, Pdg::kDS, Pdg::kLambdaCPlus};
     candidate3ProngLoop<false, true, true, true, false>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataDplusDsLc, "Process D+, Ds+, and Lc data (no MC information needed)", false);
@@ -767,7 +767,7 @@ struct HfTaskMcEfficiency {
   void processDataDplusLc(soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfSelLc> const& candidates,
                           TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus, Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kDPlus, Pdg::kLambdaCPlus};
     candidate3ProngLoop<false, true, false, true, false>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataDplusLc, "Process D+ and Lc data (no MC information needed)", false);
@@ -775,7 +775,7 @@ struct HfTaskMcEfficiency {
   void processDataDsLc(soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfSelLc> const& candidates,
                        TracksWithSelection const& tracks)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus, Pdg::kDS, Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kDPlus, Pdg::kDS, Pdg::kLambdaCPlus};
     candidate3ProngLoop<false, false, true, true, false>(candidates, tracks, tracks, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processDataDsLc, "Process Ds+ and Lc data (no MC information needed)", false);
@@ -786,7 +786,7 @@ struct HfTaskMcEfficiency {
                    aod::McParticles const& mcParticles,
                    aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kD0Bar, Pdg::kD0};
+    std::vector<int> const pdgCodes{Pdg::kD0Bar, Pdg::kD0};
     candidate2ProngMcLoop(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcD0, "Process MC for D0 signal", true);
@@ -796,7 +796,7 @@ struct HfTaskMcEfficiency {
                       aod::McParticles const& mcParticles,
                       aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus};
+    std::vector<int> const pdgCodes{Pdg::kDPlus};
     candidate3ProngMcLoop<true, false, false, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDplus, "Process MC for D+ signal", false);
@@ -806,7 +806,7 @@ struct HfTaskMcEfficiency {
                    aod::McParticles const& mcParticles,
                    aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kDS};
+    std::vector<int> const pdgCodes{Pdg::kDS};
     candidate3ProngMcLoop<false, true, false, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDs, "Process MC for Ds+ signal", false);
@@ -816,7 +816,7 @@ struct HfTaskMcEfficiency {
                    aod::McParticles const& mcParticles,
                    aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kLambdaCPlus};
     candidate3ProngMcLoop<false, false, true, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcLc, "Process MC for Lc signal", false);
@@ -826,7 +826,7 @@ struct HfTaskMcEfficiency {
                     aod::McParticles const& mcParticles,
                     aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kXiCPlus};
+    std::vector<int> const pdgCodes{Pdg::kXiCPlus};
     candidate3ProngMcLoop<false, false, false, true>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcXic, "Process MC for Xic signal", false);
@@ -836,7 +836,7 @@ struct HfTaskMcEfficiency {
                         aod::McParticles const& mcParticles,
                         aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus, Pdg::kDS};
+    std::vector<int> const pdgCodes{Pdg::kDPlus, Pdg::kDS};
     candidate3ProngMcLoop<true, true, false, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDplusDs, "Process MC for D+ and Ds+ signals", false);
@@ -846,7 +846,7 @@ struct HfTaskMcEfficiency {
                           aod::McParticles const& mcParticles,
                           aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus, Pdg::kDS, Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kDPlus, Pdg::kDS, Pdg::kLambdaCPlus};
     candidate3ProngMcLoop<true, true, true, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDplusDsLc, "Process MC for D+, Ds+, and Lc signals", false);
@@ -856,7 +856,7 @@ struct HfTaskMcEfficiency {
                         aod::McParticles const& mcParticles,
                         aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kDPlus, Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kDPlus, Pdg::kLambdaCPlus};
     candidate3ProngMcLoop<true, false, true, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDplusLc, "Process MC for D+ and Lc signals", false);
@@ -866,7 +866,7 @@ struct HfTaskMcEfficiency {
                      aod::McParticles const& mcParticles,
                      aod::McCollisionLabels const& colls)
   {
-    std::vector<int> pdgCodes{Pdg::kDS, Pdg::kLambdaCPlus};
+    std::vector<int> const pdgCodes{Pdg::kDS, Pdg::kLambdaCPlus};
     candidate3ProngMcLoop<false, true, true, false>(candidates, tracks, mcParticles, colls, pdgCodes);
   }
   PROCESS_SWITCH(HfTaskMcEfficiency, processMcDsLc, "Process MC for Ds+ and Lc signals", false);

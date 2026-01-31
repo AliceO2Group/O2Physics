@@ -24,7 +24,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -68,12 +69,27 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLimitAcceptAsBad, bool, false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad");
   } rctFlags;
 
+  // struct : ConfigurableGroup { // <-- change all to evsels.Selection
+  // event selection configurable group
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsNoCollInTimeRangeNarrow, bool, true, "kNoCollInTimeRangeNarrow");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsIsGoodITSLayersAll, bool, true, "Cut time intervals with dead ITS staves");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsIsGoodITSLayer0123, bool, true, "Cut time intervals with dead ITS staves");
+  // } evSels;
+
   // QA Plots
   O2_DEFINE_CONFIGURABLE(cfgFillEventQA, bool, false, "Fill histograms for event QA");
   O2_DEFINE_CONFIGURABLE(cfgFillTrackQA, bool, false, "Fill histograms for track QA");
   O2_DEFINE_CONFIGURABLE(cfgFillPIDQA, bool, false, "Fill histograms for PID QA");
   O2_DEFINE_CONFIGURABLE(cfgFillEventPlaneQA, bool, false, "Fill histograms for Event Plane QA");
   O2_DEFINE_CONFIGURABLE(cfgFillQABefore, bool, false, "Fill QA histograms before cuts, only for processData");
+  O2_DEFINE_CONFIGURABLE(cfgFillMeanPT, bool, false, "Fill histograms for mean PX/PT");
   // Flags to make and fill histograms
   O2_DEFINE_CONFIGURABLE(cfgFillGeneralV1Histos, bool, true, "Fill histograms for vn analysis");
   O2_DEFINE_CONFIGURABLE(cfgFillMixedHarmonics, bool, true, "Flag to make and fill histos for mixed harmonics");
@@ -104,8 +120,10 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, true, "Fill NUA weights");
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsPOS, bool, true, "Fill NUA weights only for positive charges");
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsNEG, bool, true, "Fill NUA weights only for negative charges");
-  O2_DEFINE_CONFIGURABLE(cfguseNUA1D, bool, false, "Use 1D NUA weights (only phi)");
-  O2_DEFINE_CONFIGURABLE(cfguseNUA2D, bool, true, "Use 2D NUA weights (phi and eta)");
+  O2_DEFINE_CONFIGURABLE(cfgUseNUA1D, bool, false, "Use 1D NUA weights (only phi)");
+  O2_DEFINE_CONFIGURABLE(cfgUseNUA2D, bool, true, "Use 2D NUA weights (phi and eta)");
+  O2_DEFINE_CONFIGURABLE(cfgUseNUE2D, bool, true, "Use 2D NUE weights");
+  O2_DEFINE_CONFIGURABLE(cfgUseNUE2Deta, bool, true, "Use 2D NUE weights TRUE: (pt and eta) FALSE: (pt and centrality)");
   // Additional track Selections
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsUseAdditionalTrackCut, bool, false, "Bool to enable Additional Track Cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt, bool, false, "Apply Pt dependent DCAz cut");
@@ -113,16 +131,6 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2, float, 0.035, "DcaZ < a * b / pt^1.1 -> this sets b");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsPIDNsigma, float, 2.0, "nSigma cut for PID");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelDoTrackQAvsCent, bool, true, "Do track selection QA plots as function of centrality");
-  // Additional event selections
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsTVXinTRD, bool, false, "Use kTVXinTRD (reject TRD triggered events)");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
-  O2_DEFINE_CONFIGURABLE(cfgEvSelsIsGoodITSLayersAll, bool, true, "Cut time intervals with dead ITS staves");
   // harmonics for v coefficients
   O2_DEFINE_CONFIGURABLE(cfgHarm, int, 1, "Flow harmonic n for ux and uy: (Cos(n*phi), Sin(n*phi))");
   O2_DEFINE_CONFIGURABLE(cfgHarmMixed, int, 2, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
@@ -130,15 +138,16 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_QQ, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/meanQQ/Default", "ccdb dir for average QQ values in 1% centrality bins");
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_SP, std::string, "", "ccdb dir for average event plane resolution in 1% centrality bins");
   O2_DEFINE_CONFIGURABLE(cfgCCDB_NUA, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/Default", "ccdb dir for NUA corrections");
-  O2_DEFINE_CONFIGURABLE(cfgCCDB_NUE, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/Default", "ccdb dir for NUE corrections");
+  O2_DEFINE_CONFIGURABLE(cfgCCDB_NUE, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/Default", "ccdb dir for NUE corrections (pt)");
+  O2_DEFINE_CONFIGURABLE(cfgCCDB_NUE2D, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/2D", "ccdb dir for NUE 2D corrections (eta, pt)");
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_centrality, std::string, "", "ccdb dir for Centrality corrections");
   // Confogirable axis
   ConfigurableAxis axisCentrality{"axisCentrality", {20, 0, 100}, "Centrality bins for vn "};
   ConfigurableAxis axisNch = {"axisNch", {400, 0, 4000}, "Global N_{ch}"};
   ConfigurableAxis axisMultpv = {"axisMultpv", {400, 0, 4000}, "N_{ch} (PV)"};
   // Configurables containing vector
-  Configurable<std::vector<double>> cfgEvSelsMultPv{"cfgEvSelsMultPv", std::vector<double>{2228.05, -75.5988, 0.976695, -0.00585275, 1.40738e-05, 3795.65, -136.988, 2.12393, -0.017028, 5.78679e-05}, "Multiplicity cuts (PV) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
-  Configurable<std::vector<double>> cfgEvSelsMult{"cfgEvSelsMult", std::vector<double>{1308.86, -41.9314, 0.488423, -0.00248178, 4.71554e-06, 2973.55, -103.092, 1.47673, -0.0106685, 3.29348e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
+  Configurable<std::vector<double>> cfgEvSelsMultPv{"cfgEvSelsMultPv", std::vector<double>{2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05}, "Multiplicity cuts (PV) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
+  Configurable<std::vector<double>> cfgEvSelsMult{"cfgEvSelsMult", std::vector<double>{1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgEvSelsVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
@@ -169,6 +178,7 @@ struct FlowSP {
   // struct to hold the correction histos/
   struct Config {
     std::vector<TH1D*> mEfficiency = {};
+    std::vector<TH2D*> mEfficiency2D = {};
     std::vector<GFWWeights*> mAcceptance = {};
     std::vector<TH3D*> mAcceptance2D = {};
     bool correctionsLoaded = false;
@@ -179,10 +189,12 @@ struct FlowSP {
     TProfile* hcorrQQy = nullptr;
     TProfile* hEvPlaneRes = nullptr;
     TH1D* hCentrality = nullptr;
+    TProfile2D* hRelPt = nullptr;
 
     bool clQQ = false;
     bool clEvPlaneRes = false;
     bool clCentrality = false;
+    bool clRelPt = false;
 
   } cfg;
 
@@ -210,6 +222,12 @@ struct FlowSP {
     double vy = 0;
     double vz = 0;
     int charge = 0;
+    double relPt = 1.;
+    double psiA = 0;
+    double psiC = 0;
+    double psiFull = 0;
+    double trackPxA = 0;
+    double trackPxC = 0;
   } spm;
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
@@ -233,13 +251,14 @@ struct FlowSP {
     evSel_sel8,
     evSel_RCTFlagsZDC,
     evSel_occupancy,
-    evSel_kTVXinTRD,
     evSel_kNoSameBunchPileup,
     evSel_kIsGoodZvtxFT0vsPV,
     evSel_kNoCollInTimeRangeStandard,
+    evSel_kNoCollInTimeRangeNarrow,
     evSel_kIsVertexITSTPC,
-    evSel_MultCuts,
     evSel_kIsGoodITSLayersAll,
+    evSel_kIsGoodITSLayer0123,
+    evSel_MultCuts,
     evSel_isSelectedZDC,
     evSel_CentCuts,
     nEventSelections
@@ -319,6 +338,7 @@ struct FlowSP {
     AxisSpec axisNsigma = {100, -10, 10, "Nsigma for TPC and TOF"};
     AxisSpec axisdEdx = {300, 0, 300, "dEdx for PID"};
     AxisSpec axisBeta = {150, 0, 1.5, "Beta for PID"};
+    AxisSpec axisCharge = {3, 0, 3, "Charge: 0 = inclusive, 1 = positive, 2 = negative"};
 
     std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
     AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
@@ -327,20 +347,23 @@ struct FlowSP {
 
     rctChecker.init(rctFlags.cfgEvtRCTFlagCheckerLabel, rctFlags.cfgEvtRCTFlagCheckerZDCCheck, rctFlags.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
+    histos.add("hCentrality", "Centrality; Centrality (%); ", {HistType::kTH1D, {axisCent}});
+
     histos.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered event");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered events");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_RCTFlagsZDC + 1, "RCT Flags ZDC");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_RCTFlagsZDC + 1, "RCTFlags (ZDC CBT LimAcc");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kTVXinTRD + 1, "kTVXinTRD");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeNarrow + 1, "kNoCollInTimeRangeNarrow");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Multiplicity cuts");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected ZDC");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayer0123 + 1, "kkIsGoodITSLayer0123");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Multiplicity Cuts Pilup");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
 
     histos.add("hTrackCount", "Number of Tracks; Cut; #Tracks Passed Cut", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
     histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_Eta + 1, "Eta");
@@ -418,6 +441,7 @@ struct FlowSP {
         histos.add("incl/QA/after/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
         histos.add("incl/QA/after/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         histos.add("incl/QA/after/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
+        histos.add("incl/QA/after/hMeanPtEta", "", {HistType::kTProfile2D, {axisEta, axisCent}});
 
         if (cfgTrackSelDoTrackQAvsCent) {
           histos.add<TH3>("incl/QA/after/hPt_Eta", "", kTH3D, {axisPt, axisEta, axisCent});
@@ -500,6 +524,10 @@ struct FlowSP {
           // track properties per centrality and per eta, pt bin
           registry.add<TProfile3D>("incl/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
           registry.add<TProfile3D>("incl/vnA", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+        }
+        if (cfgFillMeanPT) {
+          registry.add<TProfile2D>("incl/meanPT/meanRelPtA", "", kTProfile2D, {axisEtaVn, axisCentrality});
+          registry.add<TProfile2D>("incl/meanPT/meanRelPtC", "", kTProfile2D, {axisEtaVn, axisCentrality});
         }
         if (cfgFillPID) {
           registry.add<TProfile3D>("incl/pion/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
@@ -700,7 +728,7 @@ struct FlowSP {
 
     int nWeights = 3;
 
-    if (cfguseNUA1D) {
+    if (cfgUseNUA1D) {
       if (cfgCCDB_NUA.value.empty() == false) {
         TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUA, timestamp);
         cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
@@ -714,7 +742,7 @@ struct FlowSP {
       } else {
         LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");
       }
-    } else if (cfguseNUA2D) {
+    } else if (cfgUseNUA2D) {
       if (cfgCCDB_NUA.value.empty() == false) {
         TH3D* hNUA2D = ccdb->getForTimeStamp<TH3D>(cfgCCDB_NUA, timestamp);
         if (!hNUA2D) {
@@ -741,31 +769,59 @@ struct FlowSP {
     } else {
       LOGF(info, "cfgCCDB_NUE empty! No corrections loaded");
     }
+    // Get Efficiency correction
+    if (cfgCCDB_NUE2D.value.empty() == false) {
+      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUE2D, timestamp);
+      cfg.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency")));
+      cfg.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency_pos")));
+      cfg.mEfficiency2D.push_back(reinterpret_cast<TH2D*>(listCorrections->FindObject("Efficiency_neg")));
+      int sizeEff = cfg.mEfficiency2D.size();
+      if (sizeEff < nWeights)
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCCDB_NUE.value.c_str());
+      else
+        LOGF(info, "Loaded efficiency histogram from %s", cfgCCDB_NUE.value.c_str());
+    } else {
+      LOGF(info, "cfgCCDB_NUE2 empty! No corrections loaded");
+    }
     cfg.correctionsLoaded = true;
   }
 
   // From Generic Framework
-  bool setCurrentParticleWeights(int pID, int spec, const float& phi, const float& eta, const float& pt, const float& vtxz)
+  bool setCurrentParticleWeights(int pID, int spec, const float& phi, const float& eta, const float& pt, const float& vtxz, const float& centrality)
   {
     float eff = 1.;
     int sizeEff = cfg.mEfficiency.size();
-    if (sizeEff > pID)
-      eff = cfg.mEfficiency[pID]->GetBinContent(cfg.mEfficiency[pID]->FindBin(pt));
-    else
+    if (sizeEff > pID) {
+      if (cfgUseNUE2D) {
+        int binx;
+        int biny;
+        if (cfgUseNUE2Deta) {
+          biny = cfg.mEfficiency2D[pID]->GetYaxis()->FindBin(pt);
+          binx = cfg.mEfficiency2D[pID]->GetXaxis()->FindBin(eta);
+        } else {
+          binx = cfg.mEfficiency2D[pID]->GetXaxis()->FindBin(pt);
+          biny = cfg.mEfficiency2D[pID]->GetYaxis()->FindBin(centrality);
+        }
+        eff = cfg.mEfficiency2D[pID]->GetBinContent(binx, biny);
+      } else {
+        eff = cfg.mEfficiency[pID]->GetBinContent(cfg.mEfficiency[pID]->FindBin(pt));
+      }
+    } else {
       eff = 1.0;
+    }
     if (eff == 0)
       return false;
 
     spm.weff[pID][spec] = 1. / eff;
 
-    if (cfguseNUA1D) {
+    if (cfgUseNUA1D) {
       int sizeAcc = cfg.mAcceptance.size();
       if (sizeAcc > pID) {
         spm.wacc[pID][spec] = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
       } else {
         spm.wacc[pID][spec] = 1;
       }
-    } else if (cfguseNUA2D) {
+    } else if (cfgUseNUA2D) {
       if (cfg.mAcceptance2D.size() > 0) {
         spm.wacc[pID][spec] = getNUA2D(cfg.mAcceptance2D[0], eta, phi, vtxz);
       } else {
@@ -795,15 +851,6 @@ struct FlowSP {
       histos.fill(HIST("hEventCount"), evSel_occupancy);
     }
 
-    if (cfgEvSelsTVXinTRD) {
-      if (collision.alias_bit(kTVXinTRD)) {
-        // TRD triggered
-        // "CMTVX-B-NOPF-TRD,minbias_TVX"
-        return 0;
-      }
-      histos.fill(HIST("hEventCount"), evSel_kTVXinTRD);
-    }
-
     if (cfgEvSelsNoSameBunchPileupCut) {
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         // rejects collisions which are associated with the same "found-by-T0" bunch crossing
@@ -827,13 +874,34 @@ struct FlowSP {
       }
       histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
     }
-
+    if (cfgEvSelsNoCollInTimeRangeNarrow) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+        // Rejection of the collisions which have other events nearby
+        return 0;
+      }
+      histos.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeNarrow);
+    }
     if (cfgEvSelsIsVertexITSTPC) {
       if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
         return 0;
       }
       histos.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
+    }
+
+    if (cfgEvSelsIsGoodITSLayersAll) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        // New event selection bits to cut time intervals with dead ITS staves
+        // https://indico.cern.ch/event/1493023/ (09-01-2025)
+        return 0;
+      }
+      histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
+    }
+    if (cfgEvSelsIsGoodITSLayer0123) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+        return 0;
+      }
+      histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayer0123);
     }
 
     if (cfgEvSelsUseAdditionalEventCut) {
@@ -861,15 +929,6 @@ struct FlowSP {
         return 0;
 
       histos.fill(HIST("hEventCount"), evSel_MultCuts);
-    }
-
-    if (cfgEvSelsIsGoodITSLayersAll) {
-      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-        // New event selection bits to cut time intervals with dead ITS staves
-        // https://indico.cern.ch/event/1493023/ (09-01-2025)
-        return 0;
-      }
-      histos.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
     }
 
     return 1;
@@ -956,7 +1015,7 @@ struct FlowSP {
     histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), spm.centWeight);
 
     if (cfgFillEventPlaneQA) {
-      if constexpr (o2::framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
+      if constexpr (o2::framework::has_type_v<aod::sptablezdc::Vertex, typename CollisionObject::all_columns>) {
         double psiA = 1.0 * std::atan2(collision.qyA(), collision.qxA());
         double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
         double psiFull = 1.0 * std::atan2(collision.qyA() + collision.qyC(), collision.qxA() + collision.qxC());
@@ -964,12 +1023,12 @@ struct FlowSP {
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Cent"), psiA, collision.centFT0C(), spm.centWeight);
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Cent"), psiC, collision.centFT0C(), spm.centWeight);
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Cent"), psiFull, collision.centFT0C(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vx"), psiA, collision.vx(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vx"), psiC, collision.vx(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vx"), psiFull, collision.vx(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vy"), psiA, collision.vy(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vy"), psiC, collision.vy(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vy"), psiFull, collision.vy(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vx"), psiA, collision.vertex()[0], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vx"), psiC, collision.vertex()[0], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vx"), psiFull, collision.vertex()[0], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vy"), psiA, collision.vertex()[1], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vy"), psiC, collision.vertex()[1], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vy"), psiFull, collision.vertex()[1], spm.centWeight);
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vz"), psiA, collision.posZ(), spm.centWeight);
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vz"), psiC, collision.posZ(), spm.centWeight);
         histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vz"), psiFull, collision.posZ(), spm.centWeight);
@@ -1034,6 +1093,7 @@ struct FlowSP {
     histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), spm.wacc[ct][par] * spm.weff[ct][par]);
     histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), spm.wacc[ct][par] * spm.weff[ct][par]);
     histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), spm.wacc[ct][par] * spm.weff[ct][par]);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hMeanPtEta"), track.eta(), spm.centrality, track.pt(), spm.wacc[ct][par] * spm.weff[ct][par]);
   }
 
   template <FillType ft, ChargeType ct, typename TrackObject>
@@ -1162,6 +1222,9 @@ struct FlowSP {
       return;
     histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
 
+    // Always fill centrality histogram after event selections!
+    histos.fill(HIST("hCentrality"), spm.centrality);
+
     spm.qxA = collision.qxA();
     spm.qyA = collision.qyA();
     spm.qxC = collision.qxC();
@@ -1170,11 +1233,11 @@ struct FlowSP {
     spm.vz = collision.posZ();
     float vtxz = collision.posZ();
 
-    double psiA = 1.0 * std::atan2(spm.qyA, spm.qxA);
-    double psiC = 1.0 * std::atan2(spm.qyC, spm.qxC);
+    spm.psiA = 1.0 * std::atan2(spm.qyA, spm.qxA);
+    spm.psiC = 1.0 * std::atan2(spm.qyC, spm.qxC);
 
     // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/vn_ZDC_ALICE_INT_NOTE_version02.pdf
-    double psiFull = 1.0 * std::atan2(spm.qyA + spm.qyC, spm.qxA + spm.qxC);
+    spm.psiFull = 1.0 * std::atan2(spm.qyA + spm.qyC, spm.qxA + spm.qxC);
 
     // always fill these histograms!
     registry.fill(HIST("QQCorrelations/qAqCXY"), spm.centrality, spm.qxA * spm.qxC + spm.qyA * spm.qyC);
@@ -1188,14 +1251,14 @@ struct FlowSP {
       histos.fill(HIST("QA/hCentFull"), spm.centrality, 1);
     }
     if (cfgFillEventPlaneQA) {
-      histos.fill(HIST("QA/hSPplaneA"), psiA, 1);
-      histos.fill(HIST("QA/hSPplaneC"), psiC, 1);
-      histos.fill(HIST("QA/hSPplaneFull"), psiFull, 1);
-      histos.fill(HIST("QA/hCosPhiACosPhiC"), spm.centrality, std::cos(psiA) * std::cos(psiC));
-      histos.fill(HIST("QA/hSinPhiASinPhiC"), spm.centrality, std::sin(psiA) * std::sin(psiC));
-      histos.fill(HIST("QA/hSinPhiACosPhiC"), spm.centrality, std::sin(psiA) * std::cos(psiC));
-      histos.fill(HIST("QA/hCosPhiASinsPhiC"), spm.centrality, std::cos(psiA) * std::sin(psiC));
-      histos.fill(HIST("QA/hFullEvPlaneRes"), spm.centrality, -1 * std::cos(psiA - psiC));
+      histos.fill(HIST("QA/hSPplaneA"), spm.psiA, 1);
+      histos.fill(HIST("QA/hSPplaneC"), spm.psiC, 1);
+      histos.fill(HIST("QA/hSPplaneFull"), spm.psiFull, 1);
+      histos.fill(HIST("QA/hCosPhiACosPhiC"), spm.centrality, std::cos(spm.psiA) * std::cos(spm.psiC));
+      histos.fill(HIST("QA/hSinPhiASinPhiC"), spm.centrality, std::sin(spm.psiA) * std::sin(spm.psiC));
+      histos.fill(HIST("QA/hSinPhiACosPhiC"), spm.centrality, std::sin(spm.psiA) * std::cos(spm.psiC));
+      histos.fill(HIST("QA/hCosPhiASinsPhiC"), spm.centrality, std::cos(spm.psiA) * std::sin(spm.psiC));
+      histos.fill(HIST("QA/hFullEvPlaneRes"), spm.centrality, -1 * std::cos(spm.psiA - spm.psiC));
     }
 
     if (spm.centrality > cfgCentMax || spm.centrality < cfgCentMin)
@@ -1243,6 +1306,10 @@ struct FlowSP {
     }
 
     fillEventQA<kAfter>(collision, tracks);
+
+    TProfile2D* hRelEtaPt = new TProfile2D("hRelEtaPt", "hRelEtaPt", 8, -.8, .8, 3, 0, 3);
+    TProfile2D* ptV1A = new TProfile2D("ptV1A", "ptV1A", 8, -.8, .8, 3, 0, 3);
+    TProfile2D* ptV1C = new TProfile2D("ptV1C", "ptV1C", 8, -.8, .8, 3, 0, 3);
 
     for (const auto& track : tracks) {
 
@@ -1299,12 +1366,24 @@ struct FlowSP {
       }
 
       // Set weff and wacc for inclusive, negative and positive hadrons
-      if (!setCurrentParticleWeights(kInclusive, kUnidentified, phi, track.eta(), track.pt(), vtxz))
+      if (!setCurrentParticleWeights(kInclusive, kUnidentified, phi, track.eta(), track.pt(), vtxz, spm.centrality))
         continue;
-      if (!setCurrentParticleWeights(spm.charge, kUnidentified, phi, track.eta(), track.pt(), vtxz))
+      if (!setCurrentParticleWeights(spm.charge, kUnidentified, phi, track.eta(), track.pt(), vtxz, spm.centrality))
         continue;
 
       histos.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
+
+      double weight = spm.wacc[0][0] * spm.weff[0][0] * spm.centWeight;
+      double weightCharged = spm.wacc[spm.charge][0] * spm.weff[spm.charge][0] * spm.centWeight;
+
+      hRelEtaPt->Fill(track.eta(), kInclusive, track.pt(), weight);
+      hRelEtaPt->Fill(track.eta(), spm.charge, track.pt(), weightCharged);
+
+      ptV1A->Fill(track.eta(), kInclusive, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ))), weight);
+      ptV1A->Fill(track.eta(), spm.charge, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ))), weightCharged);
+
+      ptV1C->Fill(track.eta(), kInclusive, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weight);
+      ptV1C->Fill(track.eta(), spm.charge, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weightCharged);
 
       fillAllQA<kAfter, kUnidentified>(track);
       if (cfgFillPIDQA) {
@@ -1331,9 +1410,11 @@ struct FlowSP {
       spm.uyMH = std::sin(cfgHarmMixed * phi);
       // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-      spm.vnA = std::cos(cfgHarm * (phi - psiA)) / evPlaneRes;
-      spm.vnC = std::cos(cfgHarm * (phi - psiC)) / evPlaneRes;
-      spm.vnFull = std::cos(cfgHarm * (phi - psiFull)) / evPlaneRes;
+      spm.vnA = std::cos(cfgHarm * (phi - spm.psiA)) / evPlaneRes;
+      spm.vnC = std::cos(cfgHarm * (phi - spm.psiC)) / evPlaneRes;
+      spm.vnFull = std::cos(cfgHarm * (phi - spm.psiFull)) / evPlaneRes;
+
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
       fillHistograms<kInclusive, kUnidentified>(track);
 
@@ -1401,6 +1482,46 @@ struct FlowSP {
       } // end of fillPID
 
     } // end of track loop
+
+    // Now we want to fill the final relPt histogram
+    // Loop over all eta and fill bins
+    if (cfgFillMeanPT) {
+      for (int i = 0; i < hRelEtaPt->GetNbinsX(); i++) {
+        double eta = hRelEtaPt->GetXaxis()->GetBinCenter(i);
+
+        int bin = hRelEtaPt->FindBin(eta, kInclusive);
+
+        double drelPt = hRelEtaPt->GetBinContent(bin);
+        double dptV1A = ptV1A->GetBinContent(bin);
+        double dptV1C = ptV1C->GetBinContent(bin);
+        if (drelPt)
+          registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, dptV1A / drelPt, 1);
+        if (drelPt)
+          registry.fill(HIST("incl/meanPT/meanRelPtC"), eta, spm.centrality, dptV1C / drelPt, 1);
+
+        bin = hRelEtaPt->FindBin(eta, kPositive);
+        double drelPtPos = hRelEtaPt->GetBinContent(bin);
+        double dptV1APos = ptV1A->GetBinContent(bin);
+        double dptV1CPos = ptV1C->GetBinContent(bin);
+        if (drelPtPos)
+          registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, dptV1APos / drelPtPos, 1);
+        if (drelPtPos)
+          registry.fill(HIST("pos/meanPT/meanRelPtC"), eta, spm.centrality, dptV1CPos / drelPtPos, 1);
+
+        bin = hRelEtaPt->FindBin(eta, kNegative);
+        double drelPtNeg = hRelEtaPt->GetBinContent(bin);
+        double dptV1ANeg = ptV1A->GetBinContent(bin);
+        double dptV1CNeg = ptV1C->GetBinContent(bin);
+        if (drelPtNeg)
+          registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, dptV1ANeg / drelPtNeg, 1);
+        if (drelPtNeg)
+          registry.fill(HIST("neg/meanPT/meanRelPtC"), eta, spm.centrality, dptV1CNeg / drelPtNeg, 1);
+      }
+    }
+
+    delete hRelEtaPt;
+    delete ptV1A;
+    delete ptV1C;
   }
 
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
@@ -1456,6 +1577,11 @@ struct FlowSP {
         continue;
 
       spm.charge = (track.sign() > 0) ? kPositive : kNegative;
+
+      int minVal = 100;
+      if (cfgFilterLeptons && std::abs(mcParticle.pdgCode()) < minVal) {
+        continue;
+      }
 
       // This neglects PID (for now) later use getPID like in data.
       if (cfgFillQABefore) {

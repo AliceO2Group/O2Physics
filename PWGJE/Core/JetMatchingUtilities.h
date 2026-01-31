@@ -330,27 +330,25 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
     }
     std::tie(baseToTagMatchingGeoIndex, tagToBaseMatchingGeoIndex) = MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance); // change max distnace to a function call
     int jetBaseIndex = 0;
+    int jetTagIndex = 0;
     for (const auto& jetBase : jetsBasePerCollision) {
       if (std::round(jetBase.r()) != std::round(jetR)) {
         continue;
       }
-      int jetTagIndex = baseToTagMatchingGeoIndex[jetBaseIndex];
-      int jetTagGlobalIndex;
+      jetTagIndex = baseToTagMatchingGeoIndex[jetBaseIndex];
       if (jetTagIndex > -1 && jetTagIndex < jetsTagPerCollision.size()) {
-        jetTagGlobalIndex = jetsTagPerCollision.iteratorAt(jetTagIndex).globalIndex();
+        int jetTagGlobalIndex = jetsTagPerCollision.iteratorAt(jetTagIndex).globalIndex();
         baseToTagMatchingGeo[jetBase.globalIndex()].push_back(jetTagGlobalIndex);
       }
       jetBaseIndex++;
     }
-    int jetTagIndex = 0;
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetTag.r()) != std::round(jetR)) {
         continue;
       }
-      int jetBaseIndex = tagToBaseMatchingGeoIndex[jetTagIndex];
-      int jetBaseGlobalIndex;
+      jetBaseIndex = tagToBaseMatchingGeoIndex[jetTagIndex];
       if (jetBaseIndex > -1 && jetBaseIndex < jetsBasePerCollision.size()) {
-        jetBaseGlobalIndex = jetsBasePerCollision.iteratorAt(jetBaseIndex).globalIndex();
+        int jetBaseGlobalIndex = jetsBasePerCollision.iteratorAt(jetBaseIndex).globalIndex();
         tagToBaseMatchingGeo[jetTag.globalIndex()].push_back(jetBaseGlobalIndex);
       }
       jetTagIndex++;
@@ -366,7 +364,6 @@ void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
     if (jetBase.candidatesIds().size() == 0) {
       continue;
     }
-    const auto candidateBase = jetBase.template candidates_first_as<V>();
     for (const auto& jetTag : jetsTagPerCollision) {
       if (jetTag.candidatesIds().size() == 0) {
         continue;
@@ -374,22 +371,30 @@ void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
       if (std::round(jetBase.r()) != std::round(jetTag.r())) {
         continue;
       }
-      if constexpr (jetsBaseIsMc || jetsTagIsMc) {
-        if (jetcandidateutilities::isMatchedCandidate(candidateBase)) {
-          const auto candidateBaseMcId = jetcandidateutilities::matchedParticleId(candidateBase, tracksBase, tracksTag);
-          const auto candidateTag = jetTag.template candidates_first_as<M>();
-          const auto candidateTagId = candidateTag.mcParticleId();
-          if (candidateBaseMcId == candidateTagId) {
-            baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
-            tagToBaseMatchingHF[jetTag.globalIndex()].push_back(jetBase.globalIndex());
+      auto const& candidatesBase = jetBase.template candidates_as<V>();
+      std::size_t iCandidateBaseMatched = 0;
+      for (auto const& candidateBase : candidatesBase) {
+        if constexpr (jetsBaseIsMc || jetsTagIsMc) {
+          if (jetcandidateutilities::isMatchedCandidate(candidateBase)) {
+            const auto candidateBaseMcId = jetcandidateutilities::matchedParticleId(candidateBase, tracksBase, tracksTag);
+            for (auto const& candidateTag : jetTag.template candidates_as<M>()) {
+              const auto candidateTagId = candidateTag.mcParticleId();
+              if (candidateBaseMcId == candidateTagId) {
+                iCandidateBaseMatched++;
+              }
+            }
+          }
+        } else {
+          for (auto const& candidateTag : jetTag.template candidates_as<M>()) {
+            if (candidateBase.globalIndex() == candidateTag.globalIndex()) {
+              iCandidateBaseMatched++;
+            }
           }
         }
-      } else {
-        const auto candidateTag = jetTag.template candidates_first_as<M>();
-        if (candidateBase.globalIndex() == candidateTag.globalIndex()) {
-          baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
-          tagToBaseMatchingHF[jetTag.globalIndex()].push_back(jetBase.globalIndex());
-        }
+      }
+      if (iCandidateBaseMatched == candidatesBase.size()) {
+        baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
+        tagToBaseMatchingHF[jetTag.globalIndex()].push_back(jetBase.globalIndex());
       }
     }
   }

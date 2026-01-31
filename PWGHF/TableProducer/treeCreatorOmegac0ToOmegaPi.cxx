@@ -18,10 +18,14 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -169,7 +173,7 @@ DECLARE_SOA_TABLE(HfToOmegaPiEvs, "AOD", "HFTOOMEPIEV",
                   full::IsEventSel8, full::IsEventSelZ);
 
 DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiLites, "AOD", "HFTOOMEPILITE",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
+                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2, cent::CentFT0M,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
@@ -211,7 +215,7 @@ DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::MassV0Ndf, full::MassCascNdf,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf, full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag, collision::NumContrib);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag, collision::NumContrib, cent::CentFT0M);
 
 DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
@@ -225,7 +229,7 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag, collision::NumContrib);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag, collision::NumContrib, cent::CentFT0M);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -240,9 +244,16 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   Configurable<bool> keepOnlyMcSignal{"keepOnlyMcSignal", true, "Fill MC tree only with signal candidates"};
 
   using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
-  using Colls = soa::Join<aod::Collisions, aod::EvSels>;
+
+  using CandSel = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>>;
   using CandKfSel = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi>>;
-  using CascKfMcSel = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>>;
+  using CandMcSel = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>>;
+  using CandKfMcSel = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>>;
+
+  using Colls = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using CollsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using McCollsWithFT0M = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterOmegaCToOmegaPiFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) != static_cast<uint8_t>(0);
 
@@ -250,14 +261,14 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
   {
   }
 
-  template <typename T>
-  void fillEvent(const T& collision, float cutZPv)
+  template <typename C>
+  void fillEvent(const C& collision, float cutZPv)
   {
     rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
-  template <typename T>
-  void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
+  template <typename P, typename C>
+  void fillCandidateLite(const P& candidate, const C&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
@@ -265,8 +276,9 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         candidate.xPv(),
         candidate.yPv(),
         candidate.zPv(),
-        candidate.template collision_as<Colls>().numContrib(),
-        candidate.template collision_as<Colls>().chi2(),
+        candidate.template collision_as<C>().numContrib(),
+        candidate.template collision_as<C>().chi2(),
+        centFt0m,
         candidate.xDecayVtxCharmBaryon(),
         candidate.yDecayVtxCharmBaryon(),
         candidate.zDecayVtxCharmBaryon(),
@@ -331,8 +343,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
   }
 
-  template <typename T>
-  void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
+  template <typename P, typename C>
+  void fillKfCandidate(const P& candidate, const C&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
@@ -397,12 +409,13 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         originMc,
         collisionMatched,
         candidate.hfflag(),
-        candidate.template collision_as<Colls>().numContrib());
+        candidate.template collision_as<C>().numContrib(),
+        centFt0m);
     }
   }
 
-  template <typename T>
-  void fillKfCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
+  template <typename P, typename C>
+  void fillKfCandidateLite(const P& candidate, const C&, int8_t flagMc, int8_t originMc, bool collisionMatched, float centFt0m)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
@@ -441,12 +454,14 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         originMc,
         collisionMatched,
         candidate.hfflag(),
-        candidate.template collision_as<Colls>().numContrib());
+        candidate.template collision_as<C>().numContrib(),
+        centFt0m);
     }
   } // fillKfCandidateLite end
 
-  void processDataLite(Colls const& collisions, Tracks const&,
-                       soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>> const& candidates)
+  void processData(Colls const& collisions,
+                   CandSel const& candidates,
+                   Tracks const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -457,12 +472,13 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
+      fillCandidateLite(candidate, collisions, -7, RecoDecay::OriginType::None, false, -1.);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataLite, "Process data", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processData, "Process data", false);
 
-  void processKfDataFull(Colls const& collisions, Tracks const&, CandKfSel const& candidates)
+  void processKfData(Colls const& collisions,
+                     CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -473,12 +489,50 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate(candidate, -7, RecoDecay::OriginType::None, false);
+      fillKfCandidate(candidate, collisions, -7, RecoDecay::OriginType::None, false, -1.);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataFull, "Process KF data", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfData, "Process KF data", false);
 
-  void processKfDataLite(Colls const& collisions, Tracks const&, CandKfSel const& candidates)
+  void processKfDataLite(Colls const& collisions,
+                         CandKfSel const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidateLite(candidate, collisions, -7, RecoDecay::OriginType::None, false, -1.);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataLite, "Process KF data lite", false);
+
+  void processDataCent(CollsWithFT0M const& collisions,
+                       CandSel const& candidates,
+                       Tracks const&)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      auto collision = candidate.collision_as<CollsWithFT0M>();
+      float centFt0m = o2::hf_centrality::getCentralityColl(collision);
+      fillCandidateLite(candidate, collisions, -7, RecoDecay::OriginType::None, false, centFt0m);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataCent, "Process data with FT0M info", false);
+
+  void processKfDataCent(CollsWithFT0M const& collisions,
+                         CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -489,13 +543,35 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
+      auto collision = candidate.collision_as<CollsWithFT0M>();
+      float centFt0m = o2::hf_centrality::getCentralityColl(collision);
+      fillKfCandidate(candidate, collisions, -7, RecoDecay::OriginType::None, false, centFt0m);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataLite, "Process KF data Lite", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataCent, "Process KF data with FT0M info", false);
 
-  void processMcLite(Colls const& collisions, Tracks const&,
-                     soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>> const& candidates)
+  void processKfDataCentLite(CollsWithFT0M const& collisions,
+                             CandKfSel const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      auto collision = candidate.collision_as<CollsWithFT0M>();
+      float centFt0m = o2::hf_centrality::getCentralityColl(collision);
+      fillKfCandidateLite(candidate, collisions, -7, RecoDecay::OriginType::None, false, centFt0m);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataCentLite, "Process KF data lite with FT0M info", false);
+
+  void processMc(Colls const& collisions,
+                 CandMcSel const& candidates,
+                 Tracks const&)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -506,34 +582,16 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC", false);
-
-  void processKFMcFull(Colls const& collisions, Tracks const&, CascKfMcSel const& candidates)
-  {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
-    }
-
-    // Filling candidate properties
-    rowCandidateLite.reserve(candidates.size());
-    for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal) {
-        if (candidate.originMcRec() != 0) {
-          fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
-        }
-      } else {
-        fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
+        continue;
       }
+      fillCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), -1.);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcFull, "Process KF MC", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMc, "Process MC", false);
 
-  void processKFMcLite(Colls const& collisions, Tracks const&, CascKfMcSel const& candidates)
+  void processKFMc(Colls const& collisions,
+                   CandKfMcSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -542,18 +600,105 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
 
     // Filling candidate properties
-    rowCandidateLite.reserve(candidates.size());
+    rowKfCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (keepOnlyMcSignal) {
-        if (candidate.originMcRec() != 0) {
-          fillKfCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
-        }
-      } else {
-        fillKfCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
+        continue;
       }
+      fillKfCandidate(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), -1.);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMc, "Process KF MC", false);
+
+  void processKFMcLite(Colls const& collisions,
+                       CandKfMcSel const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
+        continue;
+      }
+      fillKfCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), -1.);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcLite, "Process KF MC Lite", false);
+
+  void processMcCent(CollsWithMcLabels const& collisions,
+                     CandMcSel const& candidates,
+                     Tracks const&,
+                     McCollsWithFT0M const&)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
+        continue;
+      }
+      auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
+      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
+      fillCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), centFt0m);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcCent, "Process MC with FT0M info", false);
+
+  void processKFMcCent(CollsWithMcLabels const& collisions,
+                       CandKfMcSel const& candidates,
+                       McCollsWithFT0M const&)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidateFull.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
+        continue;
+      }
+      auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
+      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
+      fillKfCandidate(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), centFt0m);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcCent, "Process KF MC with FT0M info", false);
+
+  void processKFMcCentLite(CollsWithMcLabels const& collisions,
+                           CandKfMcSel const& candidates,
+                           McCollsWithFT0M const&)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      if (keepOnlyMcSignal && candidate.originMcRec() == RecoDecay::OriginType::None) {
+        continue;
+      }
+      auto mcCollision = candidate.collision_as<CollsWithMcLabels>().mcCollision_as<McCollsWithFT0M>();
+      float centFt0m = o2::hf_centrality::getCentralityColl(mcCollision);
+      fillKfCandidateLite(candidate, collisions, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched(), centFt0m);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcCentLite, "Process KF MC Lite with FT0M info", false);
 
 }; // end of struct
 

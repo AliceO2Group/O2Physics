@@ -124,7 +124,9 @@ struct NetchargeFluctuations {
   Configurable<bool> cPVcont{"cPVcont", false, "primary vertex contributor"};
 
   // Configurable to enable multiplicity correlation cuts
+
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, false, "Multiplicity correlation cut")
+
 
   // Struct grouping multiplicity vs centrality/vertex cuts and related parameters
   struct : ConfigurableGroup {
@@ -165,10 +167,11 @@ struct NetchargeFluctuations {
   } cfgFunCoeff;
 
   // Histogram pointer for CCDB efficiency
-  // TH1D* efficiency = nullptr;
+
 
   TH1D* efficiencyPos = nullptr;
   TH1D* efficiencyNeg = nullptr;
+
 
   // Filters for selecting collisions and tracks
   Filter collisionFilter = nabs(aod::collision::posZ) <= vertexZcut;
@@ -347,6 +350,7 @@ struct NetchargeFluctuations {
     histogramRegistry.add("QA/hNchGlobal", "", kTH1F, {nchAxis});
     histogramRegistry.add("QA/hNchPV", "", kTH1F, {nchAxis});
 
+
     histogramRegistry.add("eff/hPt_np_gen", "", kTH1F, {ptAxis});
     histogramRegistry.add("eff/hPt_nm_gen", "", kTH1F, {ptAxis});
     histogramRegistry.add("eff/hPt_np", "", kTH1F, {ptAxis});
@@ -419,12 +423,14 @@ struct NetchargeFluctuations {
       ccdb->setLocalObjectValidityChecking();
 
       TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
+
       efficiencyPos = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Pos_Run3"));
       efficiencyNeg = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Neg_Run3"));
       // Log fatal error if efficiency histogram is not found
       if (!efficiencyPos || !efficiencyNeg) {
-        LOGF(info, "FATAL!! Could not find required histograms in CCDB");
-      }
+
+      // Log fatal error if efficiency histogram is not found
+      
     }
   }
 
@@ -1177,7 +1183,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", true);
 
   // process function for MC Run3
 

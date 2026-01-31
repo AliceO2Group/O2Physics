@@ -103,17 +103,17 @@ struct HfTaskSingleMuonSource {
       "Hadron",
       "Unidentified"};
 
-    AxisSpec axisColNumber{1, 0.5, 1.5, "Selected collisions"};
-    AxisSpec axisDCA{5000, 0., 5., "DCA (cm)"};
-    AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
-    AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
-    AxisSpec axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisColNumber{1, 0.5, 1.5, "Selected collisions"};
+    AxisSpec const axisDCA{5000, 0., 5., "DCA (cm)"};
+    AxisSpec const axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
+    AxisSpec const axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
+    AxisSpec const axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
 
-    HistogramConfigSpec h1ColNumber{HistType::kTH1F, {axisColNumber}};
-    HistogramConfigSpec h1Pt{HistType::kTH1F, {axisPt}};
-    HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
-    HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
-    HistogramConfigSpec h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
+    HistogramConfigSpec const h1ColNumber{HistType::kTH1F, {axisColNumber}};
+    HistogramConfigSpec const h1Pt{HistType::kTH1F, {axisPt}};
+    HistogramConfigSpec const h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
+    HistogramConfigSpec const h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
+    HistogramConfigSpec const h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
 
     registry.add("h1ColNumber", "", h1ColNumber);
     for (const auto& src : muonSources) {
@@ -146,8 +146,9 @@ struct HfTaskSingleMuonSource {
       mcPart = *(mcPart.mothers_first_as<aod::McParticles>());
 
       const auto pdgAbs(std::abs(mcPart.pdgCode()));
-      if (pdgAbs < 10)
+      if (pdgAbs < 10) {
         break; // Quark
+      }
 
       if (!mcPart.producedByGenerator()) { // Produced in transport code
         SETBIT(mask, IsSecondary);
@@ -181,8 +182,8 @@ struct HfTaskSingleMuonSource {
         continue;
       }
 
-      auto pdgData(TDatabasePDG::Instance()->GetParticle(mcPart.pdgCode()));
-      if (pdgData && !pdgData->AntiParticle()) {
+      auto* pdgData(TDatabasePDG::Instance()->GetParticle(mcPart.pdgCode()));
+      if ((pdgData != nullptr) && (pdgData->AntiParticle() == nullptr)) {
         SETBIT(mask, HasQuarkoniumParent);
       } else if (flv == 4) {
         SETBIT(mask, HasCharmParent);

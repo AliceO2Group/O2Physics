@@ -83,6 +83,39 @@ constexpr bool isEMCALClusterTable()
 }
 
 /**
+ * performs all track selections
+ *
+ * @param track track to be checked
+ * @param trackSelection track selection to be applied to tracks
+ * @param candidate optional HF candidiate
+ */
+
+template <typename T, typename U>
+bool isTrackSelected(T const& track, int trackSelection, bool applyTrackingEfficiency, const std::vector<double>& trackingEfficiency, const std::vector<double>& trackingEfficiencyPtBinning, const U* candidate = nullptr)
+{
+
+  if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+    return false;
+  }
+    if (candidate != nullptr) {
+      if (jetcandidateutilities::isDaughterTrack(track, *candidate)) {
+        return false;
+      }
+    }
+    if (applyTrackingEfficiency) {
+      auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
+      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
+        std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
+        TRandom3 randomNumber(0);
+        if (randomNumber.Rndm() > trackingEfficiency[index]) {
+          return false;
+        }
+      }
+    }
+    return true;
+}
+
+/**
  * Adds tracks to a fastjet inputParticles list
  *
  * @param inputParticles fastjet container
@@ -92,24 +125,12 @@ constexpr bool isEMCALClusterTable()
  */
 
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, const U* candidate = nullptr)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, const std::vector<double>& trackingEfficiency, const std::vector<double>& trackingEfficiencyPtBinning, const U* candidate = nullptr)
 {
   for (auto& track : tracks) {
-    if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-      continue;
+    if (isTrackSelected(track, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning, candidate)) {
+      fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
     }
-    if (candidate != nullptr) {
-      if (jetcandidateutilities::isDaughterTrack(track, *candidate, tracks)) {
-        continue;
-      }
-    }
-    if (trackingEfficinecy < 0.999) { // this code is a bit ugly but it stops us needing to do the random generation unless asked for
-      TRandom3 randomNumber(0);
-      if (randomNumber.Rndm() > trackingEfficinecy) { // Is Rndm ok to use?
-        continue;
-      }
-    }
-    fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
   }
 }
 
@@ -123,21 +144,25 @@ void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tra
  */
 
 template <typename T, typename U>
-void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, U const& candidates)
+void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, bool applyTrackingEfficiency, const std::vector<double>& trackingEfficiency, const std::vector<double>& trackingEfficiencyPtBinning, U const& candidates)
 {
   for (auto& track : tracks) {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
       continue;
     }
     for (auto& candidate : candidates) {
-      if (jetcandidateutilities::isDaughterTrack(track, candidate, tracks)) {
+      if (jetcandidateutilities::isDaughterTrack(track, candidate)) {
         continue;
       }
     }
-    if (trackingEfficinecy < 0.999) { // this code is a bit ugly but it stops us needing to do the random generation unless asked for
-      TRandom3 randomNumber(0);
-      if (randomNumber.Rndm() > trackingEfficinecy) { // Is Rndm ok to use?
-        continue;
+    if (applyTrackingEfficiency) {
+      auto iter = std::upper_bound(trackingEfficiencyPtBinning.begin(), trackingEfficiencyPtBinning.end(), track.pt());
+      if (iter != trackingEfficiencyPtBinning.begin() && iter != trackingEfficiencyPtBinning.end()) {
+        std::size_t index = std::distance(trackingEfficiencyPtBinning.begin(), iter) - 1;
+        TRandom3 randomNumber(0);
+        if (randomNumber.Rndm() > trackingEfficiency[index]) {
+          continue;
+        }
       }
     }
     fastjetutilities::fillTracks(track, inputParticles, track.globalIndex());
@@ -287,8 +312,8 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       if (fillThnSparse) {
         thnSparseJet->Fill(R, jet.pt(), jet.eta(), jet.phi()); // important for normalisation in V0Jet analyses to store all jets, including those that aren't V0s
       }
-      bool isCandidateJet = false;
       if (doCandidateJetFinding) {
+        bool isCandidateJet = false;
         for (const auto& constituent : jet.constituents()) {
           auto constituentStatus = constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus();
           if (constituentStatus == static_cast<int>(JetConstituentStatus::candidate)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
@@ -332,7 +357,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
  * @param candidate optional hf candidiate
  */
 template <bool checkIsDaughter, typename T, typename U>
-void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
+void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std::string& particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
 {
   for (auto& particle : particles) {
     if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?

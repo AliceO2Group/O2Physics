@@ -15,23 +15,26 @@
 ///
 /// \author Nasir Mehdi Malik
 
-#include <array>
+#include "RecoDecay.h"
 
-#include <TPDGCode.h>
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/DataProcessorSpec.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
+#include "Framework/DataProcessorSpec.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "RecoDecay.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TPDGCode.h>
+
+#include <array>
 
 using namespace o2;
 using namespace o2::framework;

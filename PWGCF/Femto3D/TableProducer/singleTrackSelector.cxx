@@ -13,32 +13,32 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
-#include <fairlogger/Logger.h>
-#include <Framework/AnalysisDataModel.h>
-
-#include <vector>
-#include <string>
-#include <utility>
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/CCDB/ctpRateFetcher.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include "DetectorsBase/Propagator.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -74,9 +74,12 @@ struct singleTrackSelector {
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-5.0f, 5.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
 
   Configurable<float> _pRemoveTofOutOfRange{"pRemoveTofOutOfRange", 100.f, "momentum starting from which request TOF nSigma to be within the stored range (-10 < Nsigma < 10)"};
+  Configurable<std::array<float, 3>> _ptRemoveTofOutOfRange{"ptRemoveTofOutOfRange", {100.f, -10.f, 10.f}, "transverse momentum starting from which request TOF nSigma to be within the stored range (-10 < Nsigma < 10)"};
 
   Configurable<float> _min_P{"min_P", 0.f, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.f, "upper mometum limit"};
+  Configurable<float> _min_Pt{"min_Pt", 0.f, "lower trasnverse mometum limit"};
+  Configurable<float> _max_Pt{"max_Pt", 100.f, "upper trasnverse mometum limit"};
   Configurable<float> _eta{"eta", 100.f, "abs eta value limit"};
   Configurable<float> _dcaXY{"dcaXY", 1000.f, "Maximum dca of track in xy"};
   Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
@@ -120,6 +123,7 @@ struct singleTrackSelector {
   Filter trackFilter = ((o2::aod::track::itsChi2NCl <= 36.f) && (o2::aod::track::itsChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl <= 4.f));
 
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
+  Filter ptFilter = o2::aod::track::pt > _min_Pt&& o2::aod::track::pt < _max_Pt;
   Filter etaFilter = nabs(o2::aod::track::eta) < _eta;
   Filter dcaFilter = ((nabs(o2::aod::track::dcaXY) <= _dcaXY) && (nabs(o2::aod::track::dcaZ) <= _dcaZ)) &&
                      ((nabs(o2::aod::track::dcaXY) >= _dcaXYmin) && (nabs(o2::aod::track::dcaZ) >= _dcaZmin));
@@ -237,6 +241,8 @@ struct singleTrackSelector {
       for (auto ii : particlesToKeep)
         if (o2::aod::singletrackselector::TPCselection<false>(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
           if (track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-10.0, 10.0}), std::vector<float>{-10.0, 10.0}))
+            continue;
+          if (track.pt() > _ptRemoveTofOutOfRange.value[0] && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{_ptRemoveTofOutOfRange.value[1], _ptRemoveTofOutOfRange.value[2]}), std::vector<float>{-10.f, +10.f}))
             continue;
 
           tableRow(tableRowColl.lastIndex(),

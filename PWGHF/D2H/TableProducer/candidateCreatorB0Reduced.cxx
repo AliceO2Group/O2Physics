@@ -132,7 +132,7 @@ struct HfCandidateCreatorB0Reduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2DPiMin minimum B0 invariant-mass
   /// \param invMass2DPiMax maximum B0 invariant-mass
-  template <bool withDmesMl, typename Cands, typename Pions, typename SoftPions, typename Coll>
+  template <bool WithDmesMl, typename Cands, typename Pions, typename SoftPions, typename Coll>
   void runCandidateCreationDStar(Coll const& collision,
                                  Cands const& candsDThisColl,
                                  SoftPions const& softPions,
@@ -192,8 +192,7 @@ struct HfCandidateCreatorB0Reduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D and Pi to the B0 vertex
-        df3.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B0 vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df3.getTrack(0).getPxPyPzGlo(pVecD0);       // momentum of D at the B0 vertex
         df3.getTrack(1).getPxPyPzGlo(pVecSoftPion); // momentum of SoftPi at the B0 vertex
@@ -230,7 +229,7 @@ struct HfCandidateCreatorB0Reduced {
 
         rowCandidateProngsDStar(candD.globalIndex(), trackBachPion.globalIndex(), trackSoftPion.globalIndex());
 
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
       } // pi loop
@@ -244,7 +243,7 @@ struct HfCandidateCreatorB0Reduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2DPiMin minimum B0 invariant-mass
   /// \param invMass2DPiMax maximum B0 invariant-mass
-  template <bool withDmesMl, typename Cands, typename Pions, typename Coll>
+  template <bool WithDmesMl, typename Cands, typename Pions, typename Coll>
   void runCandidateCreation(Coll const& collision,
                             Cands const& candsDThisColl,
                             Pions const& tracksPionThisCollision,
@@ -299,8 +298,7 @@ struct HfCandidateCreatorB0Reduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D and Pi to the B0 vertex
-        df2.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B0 vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
@@ -333,7 +331,7 @@ struct HfCandidateCreatorB0Reduced {
 
         rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
 
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
       } // pi loop
@@ -352,8 +350,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float const invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float const invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -386,8 +384,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float const invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float const invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -421,8 +419,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float const invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float const invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -456,8 +454,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float const invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float const invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -492,7 +490,7 @@ struct HfCandidateCreatorB0ReducedExpressions {
   /// \param checkDecayTypeMc
   /// \param rowsDPiMcRec MC reco information on DPi pairs
   /// \param candsB0 prong global indices of B0 candidates
-  template <bool checkDecayTypeMc, typename McRec, typename B0Prongs>
+  template <bool CheckDecayTypeMc, typename McRec, typename B0Prongs>
   void fillB0McRec(McRec const& rowsDPiMcRec, B0Prongs const& candsB0)
   {
     for (const auto& candB0 : candsB0) {
@@ -509,7 +507,7 @@ struct HfCandidateCreatorB0ReducedExpressions {
         }
         rowB0McRec(rowDPiMcRec.flagMcMatchRec(), -1 /*channel*/, rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
         filledMcInfo = true;
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowB0McCheck(rowDPiMcRec.pdgCodeBeautyMother(),
                        rowDPiMcRec.pdgCodeCharmMother(),
                        rowDPiMcRec.pdgCodeProng0(),
@@ -521,7 +519,7 @@ struct HfCandidateCreatorB0ReducedExpressions {
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
         rowB0McRec(0, -1, -1, -1, -1.f);
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowB0McCheck(-1, -1, -1, -1, -1, -1);
         }
       }

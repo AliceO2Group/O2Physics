@@ -13,6 +13,7 @@
 /// \brief Omegac0 → Omega Ka selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -231,7 +232,7 @@ struct HfCandidateSelectorToOmegaKa {
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
+      int8_t const signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
@@ -242,10 +243,10 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       // eta selection
-      double etaV0PosDau = candidate.etaV0PosDau();
-      double etaV0NegDau = candidate.etaV0NegDau();
-      double etaKaFromCasc = candidate.etaBachFromCasc();
-      double etaKaFromCharmBaryon = candidate.etaBachFromCharmBaryon();
+      double const etaV0PosDau = candidate.etaV0PosDau();
+      double const etaV0NegDau = candidate.etaV0NegDau();
+      double const etaKaFromCasc = candidate.etaBachFromCasc();
+      double const etaKaFromCharmBaryon = candidate.etaBachFromCharmBaryon();
       if (std::abs(etaV0PosDau) > etaTrackLFDauMax) {
         resultSelections = false;
         registry.fill(HIST("hSelEtaPosV0Dau"), 0);
@@ -367,8 +368,8 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       // pT selections
-      double ptKaFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
-      double ptKaFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+      double const ptKaFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
+      double const ptKaFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
       if (std::abs(ptKaFromCasc) < ptKaFromCascMin) {
         resultSelections = false;
         registry.fill(HIST("hSelPtKaFromCasc"), 0);
@@ -500,9 +501,9 @@ struct HfCandidateSelectorToOmegaKa {
       bool statusInvMassCascade = false;
       bool statusInvMassCharmBaryon = false;
 
-      double invMassLambda = candidate.invMassLambda();
-      double invMassCascade = candidate.invMassCascade();
-      double invMassCharmBaryon = candidate.invMassCharmBaryon();
+      double const invMassLambda = candidate.invMassLambda();
+      double const invMassCascade = candidate.invMassCascade();
+      double const invMassCharmBaryon = candidate.invMassCharmBaryon();
 
       if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;

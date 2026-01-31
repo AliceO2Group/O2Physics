@@ -46,6 +46,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::physics;
@@ -53,7 +54,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-const int kEta = 221;
+const int kEtaLocal = 221;
 
 struct HfElectronSelectionWithTpcEmcal {
 
@@ -61,6 +62,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Produces<aod::HfCorrSelEl> hfElectronSelection;
   Produces<aod::HfMcGenSelEl> hfGenElectronSel;
 
+  // select the emcal or dcal acceptance
   enum EMCalRegion {
     NoAcceptance = 0,
     EMCalAcceptance = 1,
@@ -71,6 +73,10 @@ struct HfElectronSelectionWithTpcEmcal {
   KFParticle kfNonHfe;
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
   Configurable<bool> fillTrackInfo{"fillTrackInfo", true, "Fill histograms with Track Information info before track match"};
+  Configurable<bool> skipNoEmcClusters{"skipNoEmcClusters", false, "Skip events with no EMCal clusters"};
+
+  // select the emcal or dcal acceptance
+  Configurable<int> emcalRegion{"emcalRegion", 0, "Select EMCal region for filling histograms (see EMCalRegion enum)"};
 
   // Event Selection
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
@@ -118,6 +124,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> m20EmcClusterElectronMin{"m20EmcClusterElectronMin", 0.0f, "min Electron  EMCal Cluster M20"};
   Configurable<float> tpcNsigmaElectronMin{"tpcNsigmaElectronMin", -0.5f, "min Electron TPCnsigma"};
   Configurable<float> tpcNsigmaElectronMax{"tpcNsigmaElectronMax", 3.0f, "max Electron TPCnsigma"};
+  Configurable<float> tofNSigmaEl{"tofNSigmaEl", 3.0, "Sigma cut for electrons not in EMCal"};
   Configurable<int> pdgCodeCharmMin{"pdgCodeCharmMin", 400, "Min Charm Hadron PdgCode"};
   Configurable<int> pdgCodeCharmMax{"pdgCodeCharmMax", 600, "Max Charm Hadron PdgCode"};
   Configurable<int> pdgCodeBeautyMin{"pdgCodeBeautyMin", 4000, "Min beauty Hadron PdgCode"};
@@ -138,7 +145,6 @@ struct HfElectronSelectionWithTpcEmcal {
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
   // configurable axis
-
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsEta{"binsEta", {100, -2.0, 2.}, "#it{#eta}"};
   ConfigurableAxis binsPhi{"binsPhi", {32, 0.0, o2::constants::math::TwoPI}, "#it{#varphi}"};
@@ -163,7 +169,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec axisPosZ = {binsPosZ, "Pos Z"};
+    AxisSpec const axisPosZ = {binsPosZ, "Pos Z"};
     AxisSpec axisMass = {binsMass, "Mass (GeV/#it{c}^{2}); entries"};
     AxisSpec axisPt = {binsPt, "#it{p_{T}}(GeV/#it{c})"};
     AxisSpec axisEta = {binsEta, "#it{#eta}"};
@@ -181,6 +187,7 @@ struct HfElectronSelectionWithTpcEmcal {
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{trk}- #varphi_{cluster}"};
 
     registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
+    registry.add("hNeventsAfterPassEmcal", "No of events pass the Emcal", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hNevents", "No of events", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hLikeMass", "Like mass", {HistType::kTH1D, {{axisMass}}});
     registry.add("hUnLikeMass", "unLike mass", {HistType::kTH1D, {{axisMass}}});
@@ -219,6 +226,8 @@ struct HfElectronSelectionWithTpcEmcal {
 
     registry.add("hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", {HistType::kTHnSparseF, {{axisEoP}, {axisPt}, {axisnSigma}, {axisM02}, {axisM20}}});
     registry.add("hEmcClsTrkEtaPhiDiffTime", "EmcClsTrkEtaPhiDiffTime;#Delta#eta;#Delta#varphi;Sec;", {HistType::kTH3F, {{axisDeltaEta}, {axisDeltaPhi}, {axisEmcClsTime}}});
+    registry.add("hTofNSigmaVsPt", " TOF nSigma vs pt; n#sigma;#it{pt} (GeV/#it{c});", {HistType::kTH2F, {{axisnSigma}, {axisPt}}});
+    registry.add("hTpcNSigmaVsPt", " TPC nSigma vs pt; n#sigma;#it{pt} (GeV/#it{c});", {HistType::kTH2F, {{axisnSigma}, {axisPt}}});
   }
   // Track Selection Cut
   template <typename T>
@@ -287,12 +296,11 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     int nElPairsLS = 0;
     int nElPairsUS = 0;
-    bool isLSElectron = false;
-    bool isULSElectron = false;
     float invMassElectron = 0.;
     float massLike = 0;
     float massUnLike = 0;
-
+    std::vector<float> vecLSMass;
+    std::vector<float> vecULSMass;
     for (const auto& pTrack : tracks) {
       if (pTrack.globalIndex() == electron.globalIndex()) {
         continue;
@@ -315,16 +323,16 @@ struct HfElectronSelectionWithTpcEmcal {
         pdgE2 = kPositron;
       }
 
-      KFPTrack kfpTrack = createKFPTrackFromTrack(electron);
-      KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
-      KFParticle kfTrack(kfpTrack, pdgE1);
-      KFParticle kfAssociatedTrack(kfpAssociatedTrack, pdgE2);
+      KFPTrack const kfpTrack = createKFPTrackFromTrack(electron);
+      KFPTrack const kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
+      KFParticle const kfTrack(kfpTrack, pdgE1);
+      KFParticle const kfAssociatedTrack(kfpAssociatedTrack, pdgE2);
       const KFParticle* electronPairs[2] = {&kfTrack, &kfAssociatedTrack};
       kfNonHfe.SetConstructMethod(2);
       kfNonHfe.Construct(electronPairs, 2);
 
-      int ndf = kfNonHfe.GetNDF();
-      double chi2recg = kfNonHfe.GetChi2() / ndf;
+      int const ndf = kfNonHfe.GetNDF();
+      double const chi2recg = kfNonHfe.GetChi2() / ndf;
       if (ndf < 1.0) {
         continue;
       }
@@ -334,10 +342,12 @@ struct HfElectronSelectionWithTpcEmcal {
       }
 
       invMassElectron = RecoDecay::m(std::array{pTrack.pVector(), electron.pVector()}, std::array{MassElectron, MassElectron});
-
+      bool isLSElectron = false;
+      bool isULSElectron = false;
       // for like charge
       if (pTrack.sign() == electron.sign()) {
         massLike = invMassElectron;
+        vecLSMass.push_back(massLike);
         isLSElectron = true;
         if (isEMcal) {
           registry.fill(HIST("hLikeMass"), massLike);
@@ -346,6 +356,7 @@ struct HfElectronSelectionWithTpcEmcal {
       // for unlike charge
       if (pTrack.sign() != electron.sign()) {
         massUnLike = invMassElectron;
+        vecULSMass.push_back(massUnLike);
         isULSElectron = true;
         if (isEMcal) {
           registry.fill(HIST("hUnLikeMass"), massUnLike);
@@ -370,23 +381,25 @@ struct HfElectronSelectionWithTpcEmcal {
       }
     }
     // Pass multiplicities and other required parameters for this electron
-    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), nElPairsLS, nElPairsUS, isEMcal);
+    // Pass multiplicities and other required parameters for this electron
+    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), vecLSMass, vecULSMass, nElPairsLS, nElPairsUS, isEMcal);
   }
   // Electron Identification
-  template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
+  template <bool IsMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
   void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const& /*particlemc*/)
   {
-    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
+    }
 
-    registry.fill(HIST("hNevents"), 1);
+    registry.fill(HIST("hNevents"), emcalRegion.value);
 
     // skip events with no clusters
-    if (emcClusters.size() == 0) {
+    if (emcClusters.size() == 0 && skipNoEmcClusters) {
       return;
     }
     registry.fill(HIST("hZvertex"), collision.posZ());
-
+    registry.fill(HIST("hNeventsAfterPassEmcal"), static_cast<int>(emcalRegion));
     /////////////////////////////////
     // EMCal cluster info before match ///
     ///////////////////////////////
@@ -421,10 +434,12 @@ struct HfElectronSelectionWithTpcEmcal {
       if (!selTracks(track)) {
         continue;
       }
-      if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
+      if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax)) {
         passEMCal = EMCalAcceptance; // EMcal acceptance passed
-      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax)))
+      }
+      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax))) {
         passEMCal = DCalAcceptance; // Dcal acceptance passed
+      }
 
       if (fillTrackInfo) {
         registry.fill(HIST("hTrackEtaPhi"), etaTrack, phiTrack, passEMCal);                 // track etaphi infor after filter bit
@@ -449,7 +464,7 @@ struct HfElectronSelectionWithTpcEmcal {
       float deltaPhiMatch = -999.;
       float deltaEtaMatch = -999.;
       float eop = -999;
-      bool isEMcal = false;
+      bool const isEMcal = false;
 
       float trackRapidity = track.rapidity(MassElectron);
 
@@ -517,13 +532,22 @@ struct HfElectronSelectionWithTpcEmcal {
 
         nonHfe(matchTrack, tracks, true);
 
-        electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
+        /////////////////          NonHf electron Selection without Emcal       ////////////////////////
+        electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
       /// Electron information without Emcal and use TPC and TOF
       if (isEMcal) {
         continue;
       }
+      if (std::abs(track.tofNSigmaEl()) > tofNSigmaEl)
+        continue;
+      registry.fill(HIST("hTofNSigmaVsPt"), track.tofNSigmaEl(), track.pt());
+      registry.fill(HIST("hTpcNSigmaVsPt"), track.tpcNSigmaEl(), track.pt());
+
+      if ((track.tpcNSigmaEl() < tpcNsigmaElectronMin || track.tpcNSigmaEl() > tpcNsigmaElectronMax))
+        continue;
+
       nonHfe(track, tracks, false);
       /////////////////          NonHf electron Selection without Emcal       ////////////////////////
       electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
@@ -570,15 +594,14 @@ struct HfElectronSelectionWithTpcEmcal {
         if (particleMc.has_mothers()) {
           auto const& mother = particleMc.mothers_first_as<aod::McParticles>();
 
-          if (std::abs(mother.pdgCode()) == kEta || std::abs(mother.pdgCode()) == kPi0 || std::abs(mother.pdgCode()) == kGamma) {
-
+          if (std::abs(mother.pdgCode()) == kEtaLocal || std::abs(mother.pdgCode()) == kPi0 || std::abs(mother.pdgCode()) == kGamma) {
             registry.fill(HIST("hMcgenAllNonHfeElectron"), particleMc.pt());
 
             auto const& gmother = mother.mothers_first_as<aod::McParticles>();
             // cases to consider: eta->e, eta->pi0->e, eta->gamma->e, eta->pi0->gamma->e, pi0->e, pi0->gamma->e
 
             //=================  eta->e ======================================
-            if (std::abs(mother.pdgCode()) == kEta) {
+            if (std::abs(mother.pdgCode()) == kEtaLocal) {
 
               if (mother.isPhysicalPrimary()) {
                 if ((std::abs(gmother.pdgCode()) >= pdgCodeCharmMin && std::abs(gmother.pdgCode()) < pdgCodeCharmMax) ||
@@ -599,7 +622,7 @@ struct HfElectronSelectionWithTpcEmcal {
                 }
                 isEmbPi0 = true; // pi0 -> e
               }
-              if (std::abs(gmother.pdgCode()) == kEta) {
+              if (std::abs(gmother.pdgCode()) == kEtaLocal) {
                 if (gmother.isPhysicalPrimary() || gmother.has_mothers()) {
                   auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
                   if ((std::abs(ggmother.pdgCode()) >= pdgCodeCharmMin && std::abs(ggmother.pdgCode()) < pdgCodeCharmMax) ||
@@ -614,7 +637,7 @@ struct HfElectronSelectionWithTpcEmcal {
             /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
             if (std::abs(mother.pdgCode()) == kGamma) {
 
-              if (std::abs(gmother.pdgCode()) == kEta) {
+              if (std::abs(gmother.pdgCode()) == kEtaLocal) {
                 if (gmother.isPhysicalPrimary() || gmother.has_mothers()) {
                   auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
                   if ((std::abs(ggmother.pdgCode()) >= pdgCodeCharmMin && std::abs(ggmother.pdgCode()) < pdgCodeCharmMax) ||
@@ -635,7 +658,7 @@ struct HfElectronSelectionWithTpcEmcal {
                 }
                 if (gmother.has_mothers()) {
                   auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
-                  if (std::abs(ggmother.pdgCode()) == kEta) {
+                  if (std::abs(ggmother.pdgCode()) == kEtaLocal) {
                     if (ggmother.isPhysicalPrimary() || ggmother.has_mothers()) {
                       auto const& gggmother = ggmother.mothers_first_as<aod::McParticles>();
                       if ((std::abs(gggmother.pdgCode()) >= pdgCodeCharmMin && std::abs(gggmother.pdgCode()) < pdgCodeCharmMax) ||

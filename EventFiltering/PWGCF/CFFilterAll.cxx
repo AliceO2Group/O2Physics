@@ -14,35 +14,36 @@
 ///
 /// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch; Anton Riedel, TU München, anton.riedel@cern.ch; Maximilian Korwieser, TU Munich, maximilian.korwieser@cern.ch
 
-#include <string>
-#include <vector>
-
 #include "../filterTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h"
 
-#include "fairlogger/Logger.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/RecoDecay.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGLF/Utils/strangenessBuilderHelper.h"
-
 #include "Math/GenVector/Boost.h"
 #include "Math/Vector4D.h"
 #include "TMath.h"
+
+#include "fairlogger/Logger.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -139,7 +140,10 @@ struct CFFilterAll {
   struct : ConfigurableGroup {
     std::string prefix = "EventSel";
     Configurable<float> zvtx{"zvtx", 10.f, "Max. z-Vertex (cm)"};
-    Configurable<bool> eventSel{"eventSel", true, "Use sel8"};
+    Configurable<bool> useSel8{"useSel8", true, "Use sel8"};
+    Configurable<bool> useIsTriggerTvx{"useIsTriggerTvx", false, "Use TVX trigger"};
+    Configurable<bool> useNoTimeFrameBorder{"useNoTimeFrameBorder", false, "Use time frame border cut"};
+    Configurable<bool> useNoItsRofFrameBorder{"useNoItsRofFrameBorder", false, "Use ITS ROF border cut"};
   } EventSelection;
 
   // Configs for tracks
@@ -1050,7 +1054,18 @@ struct CFFilterAll {
     if (std::abs(col.posZ()) > EventSelection.zvtx.value) {
       return false;
     }
-    if (EventSelection.eventSel.value && !col.sel8()) {
+    // full cut on sel 8
+    if (EventSelection.useSel8.value && !col.sel8()) {
+      return false;
+    }
+    // allow cut on components of sel8 in case we dont need ROF cut in 2026 anymore
+    if (EventSelection.useIsTriggerTvx.value && !col.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    if (EventSelection.useNoTimeFrameBorder.value && !col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if (EventSelection.useNoItsRofFrameBorder.value && !col.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     return true;

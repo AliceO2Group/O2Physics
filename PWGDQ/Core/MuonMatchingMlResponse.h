@@ -263,8 +263,8 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
     return inputFeature;
   }
 
-  template <typename T1, typename T2, typename T3, typename C1, typename U>
-  float returnFeatureGlob(uint8_t idx, T1 const& muonglob, T2 const& muon, T3 const& mft, C1 const& mftcov, U const& collision)
+  template <typename T1, typename T2, typename T3, typename U>
+  float returnFeatureGlob(uint8_t idx, T1 const& muonglob, T2 const& muon, T3 const& mft, U const& collision)
   {
     float inputFeature = 0.;
     switch (idx) {
@@ -285,7 +285,6 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_MUONGLOB_TRACK(Rabs, rAtAbsorberEnd);
       // Below are dummy files to remove warning of unused parameters
       CHECK_AND_FILL_MFTMUON_COLLISION(posZ);
-      CHECK_AND_FILL_MFT_COV(cXXMFT, cXX);
     }
     return inputFeature;
   }
@@ -325,12 +324,12 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
     return inputFeatures;
   }
 
-  template <typename T1, typename T2, typename T3, typename C1, typename U>
-  std::vector<float> getInputFeaturesGlob(T1 const& muonglob, T2 const& muon, T3 const& mft, C1 const& mftcov, U const& collision)
+  template <typename T1, typename T2, typename T3, typename U>
+  std::vector<float> getInputFeaturesGlob(T1 const& muonglob, T2 const& muon, T3 const& mft, U const& collision)
   {
     std::vector<float> inputFeatures;
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
-      float inputFeature = returnFeatureGlob(idx, muonglob, muon, mft, mftcov, collision);
+      float inputFeature = returnFeatureGlob(idx, muonglob, muon, mft, collision);
       inputFeatures.emplace_back(inputFeature);
     }
     return inputFeatures;

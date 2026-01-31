@@ -14,32 +14,36 @@
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since June 1, 2021
 
-#include <cmath>
-#include "TVector3.h"
+#include "../filterTables.h"
+
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/TrackParametrization.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "../filterTables.h"
-#include "PWGLF/Utils/strangenessBuilderHelper.h"
+
+#include "TVector3.h"
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -142,6 +146,7 @@ struct strangenessFilter {
   Configurable<bool> hastof{"hastof", 1, "Has TOF (OOB condition)"};
   Configurable<float> ptthrtof{"ptthrtof", 1.0, "Pt threshold to apply TOF condition"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Require TVX"};
   Configurable<int> LowLimitFT0MMult{"LowLimitFT0MMult", 3100, "FT0M selection for omega + high multiplicity trigger"};
   Configurable<int> LowLimitFT0MMultNorm{"LowLimitFT0MMultNorm", 70, "FT0M selection for omega + high multiplicity trigger with Normalised FT0M"};
   Configurable<bool> useNormalisedMult{"useNormalisedMult", 1, "Use avarage multiplicity for HM omega like in multFilter.cxx"};
@@ -570,12 +575,15 @@ struct strangenessFilter {
 
     initCCDB(collision.bc().runNumber());
 
+    hProcessedEvents->Fill(-0.5);
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
       return;
     }
-    hProcessedEvents->Fill(-0.5);
-
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      fillTriggerTable(keepEvent);
+      return;
+    }
     if (isTimeFrameBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       fillTriggerTable(keepEvent);
       return;
@@ -778,7 +786,7 @@ struct strangenessFilter {
     }
 
     for (auto& casc : cascadesBase) { // loop over cascades
-      hCandidate->Fill(0.5); // All candidates
+      hCandidate->Fill(0.5);          // All candidates
 
       const auto bachTrack = casc.bachelor_as<TrackCandidates>();
       const auto v0Dau = casc.v0_as<o2::aod::V0s>();

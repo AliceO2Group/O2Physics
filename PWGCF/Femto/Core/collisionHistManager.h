@@ -51,11 +51,15 @@ enum ColHist {
   kCentVsMult,
   kCentVsSphericity,
   kMultVsSphericity,
+  // mc
+  kTrueCentVsCent,
+  kTrueMultVsMult,
   kColHistLast
 };
 
-constexpr std::string_view ColAnalysisDir = "Collisions/Analysis/";
-constexpr std::string_view ColQaDir = "Collisions/QA/";
+constexpr std::string_view AnalysisDir = "Collisions/Analysis/";
+constexpr std::string_view QaDir = "Collisions/QA/";
+constexpr std::string_view McDir = "Collisions/MC/";
 
 constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {
@@ -63,47 +67,80 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kMult, o2::framework::kTH1F, "hMult", "Multiplicity; Multiplicity; Entries"},
     {kCent, o2::framework::kTH1F, "hCent", "Centrality; Centrality (%); Entries"},
     {kMagField, o2::framework::kTH1F, "hMagField", "Magnetic Field; B (kG); Entries"},
+    // qa
     {kPosX, o2::framework::kTH1F, "hPosX", "Vertex X; V_{X} (cm); Entries"},
-    {kPosY, o2::framework::kTH1F, "hPosY", "Vertex Z; V_{Y} (cm); Entries"},
+    {kPosY, o2::framework::kTH1F, "hPosY", "Vertex Y; V_{Y} (cm); Entries"},
     {kPos, o2::framework::kTH1F, "hPos", "Primary vertex; V_{pos} (cm); Entries"},
     {kSphericity, o2::framework::kTH1F, "hSphericity", "Sphericity; Sphericity; Entries"},
     {kOccupancy, o2::framework::kTH1F, "hOccupancy", "Occupancy; Occupancy; Entries"},
+    // 2d
     {kPoszVsMult, o2::framework::kTH2F, "hPoszVsMult", "Vertex Z vs Multiplicity; V_{Z} (cm); Multiplicity"},
     {kPoszVsCent, o2::framework::kTH2F, "hPoszVsCent", "Vertex Z vs Centrality; V_{Z} (cm); Centrality (%)"},
     {kCentVsMult, o2::framework::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
     {kMultVsSphericity, o2::framework::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
     {kCentVsSphericity, o2::framework::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
+    // mc
+    {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
+    {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
+
+#define COL_HIST_ANALYSIS_MAP(conf) \
+  {kPosZ, {conf.vtxZ}},             \
+    {kMult, {conf.mult}},           \
+    {kCent, {conf.cent}},           \
+    {kMagField, {conf.magField}},
+
+#define COL_HIST_QA_MAP(confAnalysis, confQa)                    \
+  {kPosX, {confQa.vtxXY}},                                       \
+    {kPosY, {confQa.vtxXY}},                                     \
+    {kPos, {confQa.vtx}},                                        \
+    {kSphericity, {confQa.sphericity}},                          \
+    {kOccupancy, {confQa.occupancy}},                            \
+    {kPoszVsMult, {confAnalysis.vtxZ, confAnalysis.mult}},       \
+    {kPoszVsCent, {confAnalysis.vtxZ, confAnalysis.cent}},       \
+    {kCentVsMult, {confAnalysis.cent, confAnalysis.mult}},       \
+    {kMultVsSphericity, {confAnalysis.mult, confQa.sphericity}}, \
+    {kCentVsSphericity, {confBinningAnalysis.cent, confQa.sphericity}},
+
+#define COL_HIST_MC_MAP(conf)                \
+  {kTrueMultVsMult, {conf.mult, conf.mult}}, \
+    {kTrueCentVsCent, {conf.cent, conf.cent}},
 
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
-    {kPosZ, {confBinningAnalysis.vtxZ}},
-    {kMult, {confBinningAnalysis.mult}},
-    {kCent, {confBinningAnalysis.cent}},
-    {kMagField, {confBinningAnalysis.magField}}};
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
+    COL_HIST_ANALYSIS_MAP(confBinningAnalysis)};
+}
+
+template <typename T>
+auto makeColMcHistSpecMap(const T& confBinningAnalysis)
+{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
+    COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      COL_HIST_MC_MAP(confBinningAnalysis)};
 }
 
 template <typename T1, typename T2>
 auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
-    {kPosZ, {confBinningAnalysis.vtxZ}},
-    {kMult, {confBinningAnalysis.mult}},
-    {kCent, {confBinningAnalysis.cent}},
-    {kMagField, {confBinningAnalysis.magField}},
-    {kPosX, {confBinningQa.vtxXY}},
-    {kPosY, {confBinningQa.vtxXY}},
-    {kPos, {confBinningQa.vtx}},
-    {kSphericity, {confBinningQa.sphericity}},
-    {kOccupancy, {confBinningQa.occupancy}},
-    {kPoszVsMult, {confBinningAnalysis.vtxZ, confBinningAnalysis.mult}},
-    {kPoszVsCent, {confBinningAnalysis.vtxZ, confBinningAnalysis.cent}},
-    {kCentVsMult, {confBinningAnalysis.cent, confBinningAnalysis.mult}},
-    {kMultVsSphericity, {confBinningAnalysis.mult, confBinningQa.sphericity}},
-    {kCentVsSphericity, {confBinningAnalysis.cent, confBinningQa.sphericity}}};
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
+    COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
+
+template <typename T1, typename T2>
+auto makeColMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
+{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
+    COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
+        COL_HIST_MC_MAP(confBinningAnalysis)};
+}
+
+#undef COL_HIST_ANALYSIS_MAP
+#undef COL_HIST_QA_MAP
+#undef COL_HIST_MC_MAP
 
 struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBinning");
@@ -115,73 +152,145 @@ struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
 
 struct ConfCollisionQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionQaBinning");
+  o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d QA histograms"};
   o2::framework::ConfigurableAxis vtx{"vtx", {120, 0.f, 12.f}, "Vertex position binning"};
   o2::framework::ConfigurableAxis vtxXY{"vtxXY", {100, -1.f, 1.f}, "Vertex X/Y binning"};
   o2::framework::ConfigurableAxis sphericity{"sphericity", {100, 0.f, 1.f}, "Spericity Binning"};
   o2::framework::ConfigurableAxis occupancy{"occupancy", {500, 0.f, 5000.f}, "Spericity Binning"};
 };
 
-template <modes::Mode mode>
 class CollisionHistManager
 {
  public:
-  /// Destructor
-  virtual ~CollisionHistManager() = default;
-  /// Initializes histograms for the task
-  /// \param registry Histogram registry to be passed
-  void init(o2::framework::HistogramRegistry* registry, std::map<ColHist, std::vector<o2::framework::AxisSpec>> Specs)
+  CollisionHistManager() = default;
+  ~CollisionHistManager() = default;
+
+  template <modes::Mode mode>
+  void init(o2::framework::HistogramRegistry* registry, std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     mHistogramRegistry = registry;
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      std::string analysisDir = std::string(ColAnalysisDir);
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPosZ, HistTable), GetHistDesc(kPosZ, HistTable), GetHistType(kPosZ, HistTable), {Specs[kPosZ]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kMult, HistTable), GetHistDesc(kMult, HistTable), GetHistType(kMult, HistTable), {Specs[kMult]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kCent, HistTable), GetHistDesc(kCent, HistTable), GetHistType(kCent, HistTable), {Specs[kCent]});
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kMagField, HistTable), GetHistDesc(kMagField, HistTable), GetHistType(kMagField, HistTable), {Specs[kMagField]});
+      initAnalysis(Specs);
     }
-
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      std::string qaDir = std::string(ColQaDir);
-
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPosX, HistTable), GetHistDesc(kPosX, HistTable), GetHistType(kPosX, HistTable), {Specs[kPosX]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPosY, HistTable), GetHistDesc(kPosY, HistTable), GetHistType(kPosY, HistTable), {Specs[kPosY]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPos, HistTable), GetHistDesc(kPos, HistTable), GetHistType(kPos, HistTable), {Specs[kPos]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kSphericity, HistTable), GetHistDesc(kSphericity, HistTable), GetHistType(kSphericity, HistTable), {Specs[kSphericity]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kOccupancy, HistTable), GetHistDesc(kOccupancy, HistTable), GetHistType(kOccupancy, HistTable), {Specs[kOccupancy]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPoszVsMult, HistTable), GetHistDesc(kPoszVsMult, HistTable), GetHistType(kPoszVsMult, HistTable), {Specs[kPoszVsMult]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kPoszVsCent, HistTable), GetHistDesc(kPoszVsCent, HistTable), GetHistType(kPoszVsCent, HistTable), {Specs[kPoszVsCent]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kCentVsMult, HistTable), GetHistDesc(kCentVsMult, HistTable), GetHistType(kCentVsMult, HistTable), {Specs[kCentVsMult]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kMultVsSphericity, HistTable), GetHistDesc(kMultVsSphericity, HistTable), GetHistType(kMultVsSphericity, HistTable), {Specs[kMultVsSphericity]});
-      mHistogramRegistry->add(qaDir + GetHistNamev2(kCentVsSphericity, HistTable), GetHistDesc(kCentVsSphericity, HistTable), GetHistType(kCentVsSphericity, HistTable), {Specs[kCentVsSphericity]});
+      initQa(Specs);
     }
-  } // namespace o2::analysis::femtounited
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      initMc(Specs);
+    }
+  }
 
   template <typename T>
+  void enableOptionalHistograms(T const& ConfBinningQa)
+  {
+    mPlot2d = ConfBinningQa.plot2d.value;
+  }
+
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry, std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs, T const& ConfBinningQa)
+  {
+    enableOptionalHistograms(ConfBinningQa);
+    this->template init<mode>(registry, Specs);
+  }
+
+  template <modes::Mode mode, typename T>
   void fill(T const& col)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kPosZ, HistTable)), col.posZ());
-      mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kMult, HistTable)), col.mult());
-      mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kCent, HistTable)), col.cent());
-      mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kMagField, HistTable)), col.magField());
+      fillAnalysis(col);
     }
-
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kPosX, HistTable)), col.posX());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kPosY, HistTable)), col.posY());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kSphericity, HistTable)), col.sphericity());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(GetHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
+      fillQa(col);
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2>
+  void fill(T1 const& col, T2 const& mcCols)
+  {
+    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+      fillAnalysis(col);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+      fillQa(col);
+    }
+    if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
+      fillMc(col, mcCols);
     }
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;
+  void initAnalysis(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string analysisDir = std::string(AnalysisDir);
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kPosZ, HistTable), getHistDesc(kPosZ, HistTable), getHistType(kPosZ, HistTable), {Specs.at(kPosZ)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kMult, HistTable), getHistDesc(kMult, HistTable), getHistType(kMult, HistTable), {Specs.at(kMult)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kCent, HistTable), getHistDesc(kCent, HistTable), getHistType(kCent, HistTable), {Specs.at(kCent)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kMagField, HistTable), getHistDesc(kMagField, HistTable), getHistType(kMagField, HistTable), {Specs.at(kMagField)});
+  }
+
+  void initQa(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string qaDir = std::string(QaDir);
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPosX, HistTable), getHistDesc(kPosX, HistTable), getHistType(kPosX, HistTable), {Specs.at(kPosX)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPosY, HistTable), getHistDesc(kPosY, HistTable), getHistType(kPosY, HistTable), {Specs.at(kPosY)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kPos, HistTable), getHistDesc(kPos, HistTable), getHistType(kPos, HistTable), {Specs.at(kPos)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kSphericity, HistTable), getHistDesc(kSphericity, HistTable), getHistType(kSphericity, HistTable), {Specs.at(kSphericity)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kOccupancy, HistTable), getHistDesc(kOccupancy, HistTable), getHistType(kOccupancy, HistTable), {Specs.at(kOccupancy)});
+    if (mPlot2d) {
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPoszVsMult, HistTable), getHistDesc(kPoszVsMult, HistTable), getHistType(kPoszVsMult, HistTable), {Specs.at(kPoszVsMult)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPoszVsCent, HistTable), getHistDesc(kPoszVsCent, HistTable), getHistType(kPoszVsCent, HistTable), {Specs.at(kPoszVsCent)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kCentVsMult, HistTable), getHistDesc(kCentVsMult, HistTable), getHistType(kCentVsMult, HistTable), {Specs.at(kCentVsMult)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kMultVsSphericity, HistTable), getHistDesc(kMultVsSphericity, HistTable), getHistType(kMultVsSphericity, HistTable), {Specs.at(kMultVsSphericity)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kCentVsSphericity, HistTable), getHistDesc(kCentVsSphericity, HistTable), getHistType(kCentVsSphericity, HistTable), {Specs.at(kCentVsSphericity)});
+    }
+  }
+
+  void initMc(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  {
+    std::string mcDir = std::string(McDir);
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
+  }
+
+  template <typename T>
+  void fillAnalysis(T const& col)
+  {
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
+  }
+
+  template <typename T>
+  void fillQa(T const& col)
+  {
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosX, HistTable)), col.posX());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosY, HistTable)), col.posY());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kSphericity, HistTable)), col.sphericity());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
+    if (mPlot2d) {
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
+    }
+  }
+
+  template <typename T1, typename T2>
+  void fillMc(T1 const& col, T2 const& /*mcCols*/)
+  {
+    if (!col.has_fMcCol()) {
+      return;
+    }
+    auto mcCol = col.template fMcCol_as<T2>();
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
+  }
+
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
+  bool mPlot2d = true;
 }; // namespace femtounitedcolhistmanager
 }; // namespace colhistmanager
 }; // namespace o2::analysis::femto

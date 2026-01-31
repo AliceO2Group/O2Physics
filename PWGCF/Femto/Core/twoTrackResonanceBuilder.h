@@ -27,10 +27,11 @@
 
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/Configurable.h"
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h>
 
 #include "fairlogger/Logger.h"
 
@@ -128,7 +129,7 @@ struct ConfKstar0Bits : o2::framework::ConfigurableGroup {
 #undef TWOTRACKRESONANCE_PIONPID_BITS
 
 #define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultPdgCode, defaultMassMin, defaultMassMax)                                                                                              \
-  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Resonance PDG code"};                                                                                             \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "Resonance PDG code. Set sign to minus 1 for antiparticle"};                                                 \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                                                                  \
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                                                                  \
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                                                                             \
@@ -147,11 +148,13 @@ struct ConfKstar0Bits : o2::framework::ConfigurableGroup {
 struct ConfPhiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("PhiSelection");
   TWOTRACKRESONANCE_DEFAULT_SELECTION(333, 0.95f, 1.05f)
+  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatability"};
 };
 
 struct ConfRho0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Rho0Selection");
   TWOTRACKRESONANCE_DEFAULT_SELECTION(113, 0.7f, 0.84f)
+  o2::framework::Configurable<int> sign{"sign", 1, "Dummy value for compatability"};
 };
 
 struct ConfKstar0Selection : o2::framework::ConfigurableGroup {
@@ -198,8 +201,12 @@ enum TwoTrackResonanceSels {
   kResonanceSelsMax
 };
 
-const char twoTrackResonanceSelsName[] = "TwoTrackResonance Selection Object";
-const std::unordered_map<TwoTrackResonanceSels, std::string> twoTrackResonanceSelsToString = {
+constexpr char PhiSelHistName[] = "hPhiSelection";
+constexpr char RhoSelHistName[] = "hRhoSelection";
+constexpr char Kstar0SelHistName[] = "hKstar0Selection";
+constexpr char Kstar0barSelHistName[] = "hKstar0BarSelection";
+constexpr char TwoTrackResonanceSelsName[] = "TwoTrackResonance Selection Object";
+const std::unordered_map<TwoTrackResonanceSels, std::string> twoTrackResonanceSelectionNames = {
   {kDauEtaAbsMax, "Max. |eta| of daughters"},
   {kDauTpcClusterMin, "Min. number of TPC clusters of daughters"},
   {kDauDcaxyAbsMax, "Max. |DCA_xy| of daughters"},
@@ -225,55 +232,55 @@ const std::unordered_map<TwoTrackResonanceSels, std::string> twoTrackResonanceSe
 
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
-template <modes::TwoTrackResonance resoType>
+template <modes::TwoTrackResonance resoType, const char* HistName>
 class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodatatypes::TwoTrackResonanceMaskType, kResonanceSelsMax>
 {
  public:
-  TwoTrackResonanceSelection() {}
-  virtual ~TwoTrackResonanceSelection() = default;
+  TwoTrackResonanceSelection() = default;
+  ~TwoTrackResonanceSelection() = default;
 
   template <typename T1, typename T2, typename T3>
-  void configure(T1& config, T2& filter, T3& daughterFilter)
+  void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& daughterFilter)
   {
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kPhi)) {
       mPosDaughterMass = o2::constants::physics::MassKPlus;
       mNegDaughterMass = o2::constants::physics::MassKMinus;
-      this->addSelection(config.posDauTpcKaon.value, kPosDauTpcKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTofKaon.value, kPosDauTofKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTpctofKaon.value, kPosDauTpctofKaon, limits::kUpperLimit, false, false);
-      this->addSelection(config.negDauTpcKaon.value, kNegDauTpcKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTofKaon.value, kNegDauTofKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTpctofKaon.value, kNegDauTpctofKaon, limits::kUpperLimit, false, false);
+      this->addSelection(kPosDauTpcKaon, twoTrackResonanceSelectionNames.at(kPosDauTpcKaon), config.posDauTpcKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTofKaon, twoTrackResonanceSelectionNames.at(kPosDauTofKaon), config.posDauTofKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTpctofKaon, twoTrackResonanceSelectionNames.at(kPosDauTpctofKaon), config.posDauTpctofKaon.value, limits::kUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpcKaon, twoTrackResonanceSelectionNames.at(kNegDauTpcKaon), config.negDauTpcKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTofKaon, twoTrackResonanceSelectionNames.at(kNegDauTofKaon), config.negDauTofKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpctofKaon, twoTrackResonanceSelectionNames.at(kNegDauTpctofKaon), config.negDauTpctofKaon.value, limits::kUpperLimit, false, false, true);
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kRho0)) {
       mPosDaughterMass = o2::constants::physics::MassPiPlus;
       mNegDaughterMass = o2::constants::physics::MassPiMinus;
-      this->addSelection(config.posDauTpcPion.value, kPosDauTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTofPion.value, kPosDauTofPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTpctofPion.value, kPosDauTpctofPion, limits::kUpperLimit, false, false);
-      this->addSelection(config.negDauTpcPion.value, kNegDauTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTofPion.value, kNegDauTofPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTpctofPion.value, kNegDauTpctofPion, limits::kUpperLimit, false, false);
+      this->addSelection(kPosDauTpcPion, twoTrackResonanceSelectionNames.at(kPosDauTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTofPion, twoTrackResonanceSelectionNames.at(kPosDauTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTpctofPion, twoTrackResonanceSelectionNames.at(kPosDauTpctofPion), config.posDauTpctofPion.value, limits::kUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpcPion, twoTrackResonanceSelectionNames.at(kNegDauTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTofPion, twoTrackResonanceSelectionNames.at(kNegDauTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpctofPion, twoTrackResonanceSelectionNames.at(kNegDauTpctofPion), config.negDauTpctofPion.value, limits::kUpperLimit, false, false, true);
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0)) {
       mPosDaughterMass = o2::constants::physics::MassKPlus;
       mNegDaughterMass = o2::constants::physics::MassPiMinus;
-      this->addSelection(config.posDauTpcKaon.value, kPosDauTpcKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTofKaon.value, kPosDauTofKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTpctofKaon.value, kPosDauTpctofKaon, limits::kUpperLimit, false, false);
-      this->addSelection(config.negDauTpcPion.value, kNegDauTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTofPion.value, kNegDauTofPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTpctofPion.value, kNegDauTpctofPion, limits::kUpperLimit, false, false);
+      this->addSelection(kPosDauTpcKaon, twoTrackResonanceSelectionNames.at(kPosDauTpcKaon), config.posDauTpcKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTofKaon, twoTrackResonanceSelectionNames.at(kPosDauTofKaon), config.posDauTofKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTpctofKaon, twoTrackResonanceSelectionNames.at(kPosDauTpctofKaon), config.posDauTpctofKaon.value, limits::kUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpcPion, twoTrackResonanceSelectionNames.at(kNegDauTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTofPion, twoTrackResonanceSelectionNames.at(kNegDauTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpctofPion, twoTrackResonanceSelectionNames.at(kNegDauTpctofPion), config.negDauTpctofPion.value, limits::kUpperLimit, false, false, true);
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0Bar)) {
       mPosDaughterMass = o2::constants::physics::MassPiPlus;
       mNegDaughterMass = o2::constants::physics::MassKMinus;
-      this->addSelection(config.posDauTpcPion.value, kPosDauTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTofPion.value, kPosDauTofPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTpctofPion.value, kPosDauTpctofPion, limits::kUpperLimit, false, false);
-      this->addSelection(config.negDauTpcKaon.value, kNegDauTpcKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTofKaon.value, kNegDauTofKaon, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTpctofKaon.value, kNegDauTpctofKaon, limits::kUpperLimit, false, false);
+      this->addSelection(kPosDauTpcPion, twoTrackResonanceSelectionNames.at(kPosDauTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTofPion, twoTrackResonanceSelectionNames.at(kPosDauTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kPosDauTpctofPion, twoTrackResonanceSelectionNames.at(kPosDauTpctofPion), config.posDauTpctofPion.value, limits::kUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpcKaon, twoTrackResonanceSelectionNames.at(kNegDauTpcKaon), config.negDauTpcKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTofKaon, twoTrackResonanceSelectionNames.at(kNegDauTofKaon), config.negDauTofKaon.value, limits::kAbsUpperLimit, false, false, true);
+      this->addSelection(kNegDauTpctofKaon, twoTrackResonanceSelectionNames.at(kNegDauTpctofKaon), config.negDauTpctofKaon.value, limits::kUpperLimit, false, false, true);
     }
 
     mMassMin = filter.massMin.value;
@@ -285,18 +292,19 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
 
-    this->addSelection(config.dauEtaMax.value, kDauEtaAbsMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.dauTpcClustersMin.value, kDauTpcClusterMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.dauDcaxyMax.name, daughterFilter.ptMin.value, daughterFilter.ptMax.value, config.dauDcaxyMax.value, kDauDcaxyAbsMax, limits::kAbsUpperFunctionLimit, true, true);
-    this->addSelection(config.dauDcazMax.name, daughterFilter.ptMin.value, daughterFilter.ptMax.value, config.dauDcazMax.value, kDauDcazAbsMax, limits::kAbsUpperFunctionLimit, true, true);
+    this->addSelection(kDauEtaAbsMax, twoTrackResonanceSelectionNames.at(kDauEtaAbsMax), config.dauEtaMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kDauTpcClusterMin, twoTrackResonanceSelectionNames.at(kDauTpcClusterMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kDauDcaxyAbsMax, twoTrackResonanceSelectionNames.at(kDauDcaxyAbsMax), daughterFilter.ptMin.value, daughterFilter.ptMax.value, config.dauDcaxyMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
+    this->addSelection(kDauDcazAbsMax, twoTrackResonanceSelectionNames.at(kDauDcazAbsMax), daughterFilter.ptMin.value, daughterFilter.ptMax.value, config.dauDcazMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
+    this->addSelection(kPosDauMinMomForTof, twoTrackResonanceSelectionNames.at(kPosDauMinMomForTof), config.posDauMinMomForTof.value, limits::kUpperLimit, false, false, true); // momentum threshold for TOF is no minimal/optional cut
+    this->addSelection(kPosDauPtMin, twoTrackResonanceSelectionNames.at(kPosDauPtMin), config.posDauPtMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kPosDauPtMax, twoTrackResonanceSelectionNames.at(kPosDauPtMax), config.posDauPtMax.value, limits::kUpperLimit, true, true, false);
 
-    this->addSelection(config.posDauMinMomForTof.value, kPosDauMinMomForTof, limits::kLowerLimit, false, false); // momentum threshold for TOF is no minimal cut
-    this->addSelection(config.posDauPtMin.value, kPosDauPtMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.posDauPtMax.value, kPosDauPtMax, limits::kUpperLimit, true, true);
+    this->addSelection(kNegDauMinMomForTof, twoTrackResonanceSelectionNames.at(kNegDauMinMomForTof), config.negDauMinMomForTof.value, limits::kUpperLimit, false, false, true); // momentum threshold for TOF is no minimal/optional cut
+    this->addSelection(kNegDauPtMin, twoTrackResonanceSelectionNames.at(kNegDauPtMin), config.negDauPtMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kNegDauPtMax, twoTrackResonanceSelectionNames.at(kNegDauPtMax), config.negDauPtMax.value, limits::kUpperLimit, true, true, false);
 
-    this->addSelection(config.negDauMinMomForTof.value, kNegDauMinMomForTof, limits::kLowerLimit, false, false); // momentum threshold for TOF is no minimal cut
-    this->addSelection(config.negDauPtMin.value, kNegDauPtMin, limits::kLowerLimit, true, true);
-    this->addSelection(config.negDauPtMax.value, kNegDauPtMax, limits::kUpperLimit, true, true);
+    this->setupContainers<HistName>(registry);
   };
 
   template <typename Tracks>
@@ -322,14 +330,6 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
             (mPhi > mPhiMin && mPhi < mPhiMax));
   }
 
-  template <typename T>
-  bool hasTofAboveThreshold(T const& positiveDaughter, T const& negativeDaughter)
-  {
-    bool posDauHasTofAboveThreshold = !this->passesOptionalSelection(kPosDauMinMomForTof) || positiveDaughter.hasTOF(); // is always true if momentum is below threshold
-    bool negDauHasTofAboveThreshold = !this->passesOptionalSelection(kNegDauMinMomForTof) || negativeDaughter.hasTOF(); // is always true if momentum is below threshold
-    return posDauHasTofAboveThreshold && negDauHasTofAboveThreshold;
-  }
-
   float getPt() const { return mPt; }
   float getEta() const { return mEta; }
   float getPhi() const { return mPhi; }
@@ -339,7 +339,7 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
   void applySelections(Tracks const& posDaughter, Tracks const& negDaughter)
   {
     this->reset();
-    // for resoanace topological selectsion are in general not possible, so only selections on the daughters are performed
+    // for resonances, topological selection are in general not possible, so only selections on the daughters are performed
 
     // common daugher selections
     std::array<float, 2> etaDaughters = {std::fabs(posDaughter.eta()), std::fabs(negDaughter.eta())};
@@ -374,50 +374,57 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     this->evaluateObservable(kPosDauPtMin, posDaughter.pt());
     this->evaluateObservable(kPosDauPtMax, posDaughter.pt());
 
-    this->evaluateObservable(kPosDauTpcPion, posDaughter.tpcNSigmaPi());
-    this->evaluateObservable(kPosDauTofPion, posDaughter.tofNSigmaPi());
-    this->evaluateObservable(kPosDauTpctofPion, std::hypot(posDaughter.tpcNSigmaPi(), posDaughter.tofNSigmaPi()));
-
-    this->evaluateObservable(kPosDauTpcKaon, posDaughter.tpcNSigmaKa());
-    this->evaluateObservable(kPosDauTofKaon, posDaughter.tofNSigmaKa());
-    this->evaluateObservable(kPosDauTpctofKaon, std::hypot(posDaughter.tpcNSigmaKa(), posDaughter.tofNSigmaKa()));
+    float tofThreshold = this->getLoosestSelection(kPosDauMinMomForTof);
+    if (posDaughter.p() <= tofThreshold) {
+      this->evaluateObservable(kPosDauTpcPion, posDaughter.tpcNSigmaPi());
+      this->evaluateObservable(kPosDauTofPion, posDaughter.tofNSigmaPi());
+      this->evaluateObservable(kPosDauTpctofPion, std::hypot(posDaughter.tpcNSigmaPi(), posDaughter.tofNSigmaPi()));
+      this->evaluateObservable(kPosDauTpcKaon, posDaughter.tpcNSigmaKa());
+      this->evaluateObservable(kPosDauTofKaon, posDaughter.tofNSigmaKa());
+      this->evaluateObservable(kPosDauTpctofKaon, std::hypot(posDaughter.tpcNSigmaKa(), posDaughter.tofNSigmaKa()));
+    } else if (posDaughter.p() > tofThreshold && posDaughter.hasTOF()) {
+      this->evaluateObservable(kPosDauTofPion, posDaughter.tofNSigmaPi());
+      this->evaluateObservable(kPosDauTpctofPion, std::hypot(posDaughter.tpcNSigmaPi(), posDaughter.tofNSigmaPi()));
+      this->evaluateObservable(kPosDauTofKaon, posDaughter.tofNSigmaKa());
+      this->evaluateObservable(kPosDauTpctofKaon, std::hypot(posDaughter.tpcNSigmaKa(), posDaughter.tofNSigmaKa()));
+      if (this->passesOptionalSelection(kPosDauTofPion) ||
+          this->passesOptionalSelection(kPosDauTpctofPion) ||
+          this->passesOptionalSelection(kPosDauTofKaon) ||
+          this->passesOptionalSelection(kPosDauTpctofKaon)) {
+        this->evaluateObservable(kPosDauTpcPion, posDaughter.tpcNSigmaPi());
+        this->evaluateObservable(kPosDauTpcKaon, posDaughter.tpcNSigmaKa());
+      }
+    }
 
     // negative daughter selections
     this->evaluateObservable(kNegDauMinMomForTof, negDaughter.p());
     this->evaluateObservable(kNegDauPtMin, negDaughter.pt());
     this->evaluateObservable(kNegDauPtMax, negDaughter.pt());
 
-    this->evaluateObservable(kNegDauTpcPion, negDaughter.tpcNSigmaPi());
-    this->evaluateObservable(kNegDauTofPion, negDaughter.tofNSigmaPi());
-    this->evaluateObservable(kNegDauTpctofPion, std::hypot(negDaughter.tpcNSigmaPi(), negDaughter.tofNSigmaPi()));
+    tofThreshold = this->getLoosestSelection(kNegDauMinMomForTof);
+    if (negDaughter.p() < tofThreshold) {
+      this->evaluateObservable(kNegDauTpcPion, negDaughter.tpcNSigmaPi());
+      this->evaluateObservable(kNegDauTofPion, negDaughter.tofNSigmaPi());
+      this->evaluateObservable(kNegDauTpctofPion, std::hypot(negDaughter.tpcNSigmaPi(), negDaughter.tofNSigmaPi()));
+      this->evaluateObservable(kNegDauTpcKaon, negDaughter.tpcNSigmaKa());
+      this->evaluateObservable(kNegDauTofKaon, negDaughter.tofNSigmaKa());
+      this->evaluateObservable(kNegDauTpctofKaon, std::hypot(negDaughter.tpcNSigmaKa(), negDaughter.tofNSigmaKa()));
+    } else if (negDaughter.p() > tofThreshold && negDaughter.hasTOF()) {
+      this->evaluateObservable(kNegDauTofPion, negDaughter.tofNSigmaPi());
+      this->evaluateObservable(kNegDauTpctofPion, std::hypot(negDaughter.tpcNSigmaPi(), negDaughter.tofNSigmaPi()));
+      this->evaluateObservable(kNegDauTofKaon, negDaughter.tofNSigmaKa());
+      this->evaluateObservable(kNegDauTpctofKaon, std::hypot(negDaughter.tpcNSigmaKa(), negDaughter.tofNSigmaKa()));
+      if (this->passesOptionalSelection(kNegDauTofPion) ||
+          this->passesOptionalSelection(kNegDauTpctofPion) ||
+          this->passesOptionalSelection(kNegDauTofKaon) ||
+          this->passesOptionalSelection(kNegDauTpctofKaon)) {
+        this->evaluateObservable(kNegDauTpcPion, negDaughter.tpcNSigmaPi());
+        this->evaluateObservable(kNegDauTpcKaon, negDaughter.tpcNSigmaKa());
+      }
+    }
 
-    this->evaluateObservable(kNegDauTpcKaon, negDaughter.tpcNSigmaKa());
-    this->evaluateObservable(kNegDauTofKaon, negDaughter.tofNSigmaKa());
-    this->evaluateObservable(kNegDauTpctofKaon, std::hypot(negDaughter.tpcNSigmaKa(), negDaughter.tofNSigmaKa()));
-
-    this->assembleBitmask();
+    this->assembleBitmask<HistName>();
   };
-
-  bool checkHypothesis()
-  {
-    if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kRho0)) {
-      return (this->passesOptionalSelection(kPosDauTpcPion) || this->passesOptionalSelection(kPosDauTofPion) || this->passesOptionalSelection(kPosDauTpctofPion)) &&
-             (this->passesOptionalSelection(kNegDauTpcPion) || this->passesOptionalSelection(kNegDauTofPion) || this->passesOptionalSelection(kNegDauTpctofPion));
-    }
-    if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kPhi)) {
-      return (this->passesOptionalSelection(kPosDauTpcKaon) || this->passesOptionalSelection(kPosDauTofKaon) || this->passesOptionalSelection(kPosDauTpctofKaon)) &&
-             (this->passesOptionalSelection(kNegDauTpcKaon) || this->passesOptionalSelection(kNegDauTofKaon) || this->passesOptionalSelection(kNegDauTpctofKaon));
-    }
-    if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0)) {
-      return (this->passesOptionalSelection(kPosDauTpcKaon) || this->passesOptionalSelection(kPosDauTofKaon) || this->passesOptionalSelection(kPosDauTpctofKaon)) &&
-             (this->passesOptionalSelection(kNegDauTpcPion) || this->passesOptionalSelection(kNegDauTofPion) || this->passesOptionalSelection(kNegDauTpctofPion));
-    }
-    if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0Bar)) {
-      return (this->passesOptionalSelection(kPosDauTpcPion) || this->passesOptionalSelection(kPosDauTofPion) || this->passesOptionalSelection(kPosDauTpctofPion)) &&
-             (this->passesOptionalSelection(kNegDauTpcKaon) || this->passesOptionalSelection(kNegDauTofKaon) || this->passesOptionalSelection(kNegDauTpctofKaon));
-    }
-    return false;
-  }
 
  protected:
   // (cached) kinematic variables of the resonance
@@ -460,17 +467,16 @@ struct ConfTwoTrackResonanceTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceRho0Masks{"produceRho0Masks", -1, "Produce Rho0Masks (-1: auto; 0 off; 1 on)"};
 };
 
-template <modes::TwoTrackResonance resoType>
+template <modes::TwoTrackResonance resoType, const char* HistName>
 class TwoTrackResonanceBuilder
 {
  public:
-  TwoTrackResonanceBuilder() {}
-  virtual ~TwoTrackResonanceBuilder() = default;
+  TwoTrackResonanceBuilder() = default;
+  ~TwoTrackResonanceBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  void init(T1& config, T2& filter, T3& daughterFilter, T4& table, T5 initContext)
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& daughterFilter, T4& table, T5 initContext)
   {
-    mTwoTrackResonanceSelection.configure(config, filter, daughterFilter);
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kPhi)) {
       LOG(info) << "Initialize femto Phi builder...";
       mProducePhis = utils::enableTable("FPhis_001", table.producePhis.value, initContext);
@@ -494,43 +500,51 @@ class TwoTrackResonanceBuilder
 
     if (mProducePhis || mProducePhiMasks || mProduceKstar0s || mProduceKstar0Masks || mProduceRho0s || mProduceRho0Masks) {
       mFillAnyTable = true;
-      mTwoTrackResonanceSelection.printSelections(twoTrackResonanceSelsName, twoTrackResonanceSelsToString);
     } else {
-      LOG(info) << "No tables configured";
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
+      return;
     }
+    mTwoTrackResonanceSelection.configure(registry, config, filter, daughterFilter);
+    mTwoTrackResonanceSelection.printSelections(TwoTrackResonanceSelsName);
     LOG(info) << "Initialization done...";
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-  void fillResonances(T1& collisionProducts, T2& trackProducts, T3& resonanceProducts, T4& groupPositiveTracks, T5& groupNegativeTracks, T6& trackBuilder, T7& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void fillResonances(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& resonanceProducts, T6 const& groupPositiveTracks, T7 const& groupNegativeTracks, T8 const& tracks, T9 const& tracksWithItsPid, T10& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
     }
-    // combinations object ?
-    for (auto const& positiveTrack : groupPositiveTracks) {
-      for (auto const& negativeTrack : groupNegativeTracks) {
-        this->fillResonance(collisionProducts, trackProducts, resonanceProducts, positiveTrack, negativeTrack, trackBuilder, indexMap);
-      }
+    for (auto const& [positiveTrack, negativeTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupPositiveTracks, groupNegativeTracks))) {
+      auto positiveTrackWithItsPid = tracksWithItsPid.iteratorAt(positiveTrack.index() - tracks.offset());
+      auto negativeTrackWithItsPid = tracksWithItsPid.iteratorAt(negativeTrack.index() - tracks.offset());
+
+      this->fillResonance<system>(col, collisionBuilder, collisionProducts, trackProducts, resonanceProducts, positiveTrackWithItsPid, negativeTrackWithItsPid, trackBuilder);
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void fillResonance(T1& collisionProducts, T2& trackProducts, T3& resonanceProducts, T4 const& posDaughter, T4 const& negDaughter, T5& trackBuilder, T6& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillResonance(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& resonanceProducts, T6 const& posDaughter, T7 const& negDaughter, T8& trackBuilder)
   {
 
-    mTwoTrackResonanceSelection.applySelections(posDaughter, negDaughter); // for resonances selection are only applied to daughter tracks
-    if (!mTwoTrackResonanceSelection.hasTofAboveThreshold(posDaughter, negDaughter) || !mTwoTrackResonanceSelection.passesAllRequiredSelections()) {
-      return;
-    }
     mTwoTrackResonanceSelection.reconstructResonance(posDaughter, negDaughter);
-    if (!mTwoTrackResonanceSelection.checkFilters() || !mTwoTrackResonanceSelection.checkHypothesis()) {
+    if (!mTwoTrackResonanceSelection.checkFilters()) {
       return;
     }
+    mTwoTrackResonanceSelection.applySelections(posDaughter, negDaughter); // for resonances selection are only applied to daughter tracks
+
+    if (!mTwoTrackResonanceSelection.passesAllRequiredSelections()) {
+      return;
+    }
+
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
-    posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kResonanceDaughter>(posDaughter, trackProducts, collisionProducts, indexMap);
-    negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kResonanceDaughter>(negDaughter, trackProducts, collisionProducts, indexMap);
+
+    collisionBuilder.template fillCollision<system>(collisionProducts, col);
+
+    posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kResonanceDaughter>(posDaughter, trackProducts, collisionProducts);
+    negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kResonanceDaughter>(negDaughter, trackProducts, collisionProducts);
 
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kRho0)) {
       if (mProduceRho0s) {
@@ -595,7 +609,7 @@ class TwoTrackResonanceBuilder
   }
 
  private:
-  TwoTrackResonanceSelection<resoType> mTwoTrackResonanceSelection;
+  TwoTrackResonanceSelection<resoType, HistName> mTwoTrackResonanceSelection;
   bool mFillAnyTable = false;
   bool mProducePhis = false;
   bool mProducePhiMasks = false;

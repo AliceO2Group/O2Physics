@@ -18,7 +18,8 @@ o2physics_add_library(PWGEMPhotonMesonCore
                         EMPhotonEventCut.cxx
                         CutsLibrary.cxx
                         HistogramsLibrary.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore)
+                        EMBitFlags.cxx
+               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore KFParticle::KFParticle)
 
 o2physics_target_root_dictionary(PWGEMPhotonMesonCore
               HEADERS   V0PhotonCut.h
@@ -29,4 +30,5 @@ o2physics_target_root_dictionary(PWGEMPhotonMesonCore
                         EMPhotonEventCut.h
                         CutsLibrary.h
                         HistogramsLibrary.h
+                        EMBitFlags.h
               LINKDEF PWGEMPhotonMesonCoreLinkDef.h)

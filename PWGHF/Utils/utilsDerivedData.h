@@ -87,7 +87,7 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
   o2::framework::Produces<HfPBases> rowParticleBase;
   o2::framework::Produces<HfPIds> rowParticleId;
 
-  HfConfigurableDerivedData const* conf;
+  HfConfigurableDerivedData const* conf{};
   std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
   std::map<int, bool> hasMcParticles;                // flags for MC collisions with HF particles
 
@@ -136,7 +136,7 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
     }
   }
 
-  template <bool isMC, typename TCollision>
+  template <bool IsMc, typename TCollision>
   void fillTablesCollision(TCollision const& collision)
   {
     if (conf->fillCollBase.value) {
@@ -155,7 +155,7 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
       rowCollId(
         collision.globalIndex());
     }
-    if constexpr (isMC) {
+    if constexpr (IsMc) {
       if (conf->fillMcRCollId.value && collision.has_mcCollision()) {
         // Save rowCollBase.lastIndex() at key collision.mcCollisionId()
         LOGF(debug, "Rec. collision %d: Filling derived-collision index %d for MC collision %d", collision.globalIndex(), rowCollBase.lastIndex(), collision.mcCollisionId());

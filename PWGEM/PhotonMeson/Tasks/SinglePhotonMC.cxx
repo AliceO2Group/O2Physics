@@ -8,11 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
-// This code loops over photon candidate and fill histograms
-//    Please write to: daiki.sekihata@cern.ch
+
+/// \file SinglePhotonMC.cxx
+/// \brief HeadThis code loops over photon candidate and fill histograms
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #include "EMPhotonEventCut.h"
 
@@ -53,7 +52,7 @@ using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -215,14 +214,6 @@ struct SinglePhotonMC {
   //
   //  void DefineEMCCuts()
   //  {
-  //    const float a = EMC_TM_Eta->at(0);
-  //    const float b = EMC_TM_Eta->at(1);
-  //    const float c = EMC_TM_Eta->at(2);
-  //
-  //    const float d = EMC_TM_Phi->at(0);
-  //    const float e = EMC_TM_Phi->at(1);
-  //    const float f = EMC_TM_Phi->at(2);
-  //    LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
   //
   //    TString cutNamesStr = fConfigEMCCuts.value;
   //    if (!cutNamesStr.IsNull()) {
@@ -237,12 +228,8 @@ struct SinglePhotonMC {
   //          custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
   //          custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
   //
-  //          custom_cut->SetTrackMatchingEta([&a, &b, &c](float pT) {
-  //            return a + pow(pT + b, c);
-  //          });
-  //          custom_cut->SetTrackMatchingPhi([&d, &e, &f](float pT) {
-  //            return d + pow(pT + e, f);
-  //          });
+  //          custom_cut->SetTrackMatchingEtaParams(EMC_TM_Eta->at(0), EMC_TM_Eta->at(1), EMC_TM_Eta->at(2));
+  //          custom_cut->SetTrackMatchingPhiParams(EMC_TM_Phi->at(0), EMC_TM_Phi->at(1), EMC_TM_Phi->at(2));
   //
   //          custom_cut->SetMinEoverP(EMC_Eoverp);
   //          custom_cut->SetUseExoticCut(EMC_UseExoticCut);
@@ -264,7 +251,7 @@ struct SinglePhotonMC {
   {
     bool is_selected = false;
     if constexpr (photontype == EMDetType::kPCM) {
-      is_selected = cut1.template IsSelected<MyMCV0Legs>(g1);
+      is_selected = cut1.template IsSelected<decltype(g1), MyMCV0Legs>(g1);
     } else if constexpr (photontype == EMDetType::kPHOS) {
       is_selected = cut1.template IsSelected<int>(g1); // dummy, because track matching is not ready.
       //} else if constexpr (photontype == EMDetType::kEMC) {

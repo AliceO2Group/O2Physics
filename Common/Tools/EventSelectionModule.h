@@ -96,7 +96,7 @@ struct bcselConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<std::vector<int>> maxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
+  o2::framework::Configurable<std::vector<int>> confMaxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
   o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
 };
 
@@ -111,22 +111,21 @@ struct evselConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> confSigmaBCforHighPtTracks{"confSigmaBCforHighPtTracks", 4, "Custom sigma (in bcs) for collisions with high-pt tracks"};
 
   // configurables for occupancy-based event selection
-  o2::framework::Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};           // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};           // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                 // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 2.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                      // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confFT0CamplCutVetoOnCollInTimeRange{"FT0CamplPerCollCutVetoOnCollInTimeRange", 8000, "Max allowed FT0C amplitude for each nearby collision in +/- time range"}; // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};         // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                            // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                      // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};                                                     // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};                        // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};                        // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confTimeRangeVetoOnCollStrict{"TimeRangeVetoOnCollStrict", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                                  // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 0.25, "Exclusion of a collision if other collisions nearby, to suppress bc-collision mis-associations, +/- us"}; // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confFT0CamplCutVetoOnCollInTimeRange{"FT0CamplPerCollCutVetoOnCollInTimeRange", 8000, "Max allowed FT0C amplitude for each nearby collision in +/- time range"};              // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};                      // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                                         // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                                   // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};                                                                  // o2-linter: disable=name/configurable (temporary fix)
 
-  // configurables for light-ion event selection (testing mode)
-  o2::framework::Configurable<int> confLightIonsAlternativeBcMatching{"TestAlternativeBcMatching", 0, "0 - use standard matching, 1 - try alternative for light ions"}; // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confLightIonsModifyTimeVetoOnNearbyColl{"TestModifyTimeVetoOnNearbyColl", 0, "0 - use standard time veto, 1 - modify time range"};   // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<int> confLightIonsVetoOnTRDinPast{"TestVetoOnTRDinPast", 0, "0 - use standard time veto, 1 - use veto on TRD in the past events"};        // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<float> confLightIonsNsigmaOnVzDiff{"TestVzDiffNsigma", 3.0, "+/- nSigma on vZ difference by FT0 and by tracks"};                          // o2-linter: disable=name/configurable (temporary fix)
-  o2::framework::Configurable<float> confLightIonsMarginVzDiff{"TestVzDiffMargin", 0.2, "margin for +/- nSigma on vZ difference by FT0 and by tracks"};                 // o2-linter: disable=name/configurable (temporary fix)
+  // o2::framework::Configurable<std::vector<float>> confTimeIntervalsForGranularOccupancy{"timeIntervalsForGranularOccupancy", {-100, -60, -30, -10, 0, 10, 30, 60, 100}, "Delta-time intervals (wrt given collision) for which we store occupancy"};
+
+  // configurables for light-ion event selection
+  o2::framework::Configurable<float> confLightIonsNsigmaOnVzDiff{"VzDiffNsigma", 3.0, "+/- nSigma on vZ difference by FT0 and by tracks"};                  // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confLightIonsMarginVzDiff{"VzDiffMargin", 0.2, "margin for +/- nSigma cut on vZ difference by FT0 and by tracks, cm"}; // o2-linter: disable=name/configurable (temporary fix)
 };
 
 // luminosity configurables
@@ -232,8 +231,6 @@ class BcSelectionModule
         bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
         // duration of TF in bcs
         nBCsPerTF = bcselOpts.confNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * nBCsPerOrbit : bcselOpts.confNumberOfOrbitsPerTF * nBCsPerOrbit;
-        if (strLPMProductionTag == "LHC25f3") // temporary workaround for MC production LHC25f3 anchored to Pb-Pb 2023 apass5 (to be removed once the info is in ccdb)
-          nBCsPerTF = 8 * nBCsPerOrbit;
       }
 
       // timestamp of the middle of the run used to access run-wise CCDB entries
@@ -566,14 +563,14 @@ class BcSelectionModule
         LOGP(debug, "orbit: {}, previous orbit: {}, next orbit: {} ", orbit, prevOrbitForInactiveChips, nextOrbitForInactiveChips);
         LOGP(debug, "next inactive chips: {} {} {} {} {} {} {}", vNextInactiveChips[0], vNextInactiveChips[1], vNextInactiveChips[2], vNextInactiveChips[3], vNextInactiveChips[4], vNextInactiveChips[5], vNextInactiveChips[6]);
         LOGP(debug, "prev inactive chips: {} {} {} {} {} {} {}", vPrevInactiveChips[0], vPrevInactiveChips[1], vPrevInactiveChips[2], vPrevInactiveChips[3], vPrevInactiveChips[4], vPrevInactiveChips[5], vPrevInactiveChips[6]);
-        isGoodITSLayer3 = vPrevInactiveChips[3] <= bcselOpts.maxInactiveChipsPerLayer->at(3) && vNextInactiveChips[3] <= bcselOpts.maxInactiveChipsPerLayer->at(3);
+        isGoodITSLayer3 = vPrevInactiveChips[3] <= bcselOpts.confMaxInactiveChipsPerLayer->at(3) && vNextInactiveChips[3] <= bcselOpts.confMaxInactiveChipsPerLayer->at(3);
         isGoodITSLayer0123 = true;
         for (int i = 0; i < 4; i++) { // o2-linter: disable=magic-number (counting first 4 ITS layers)
-          isGoodITSLayer0123 &= vPrevInactiveChips[i] <= bcselOpts.maxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= bcselOpts.maxInactiveChipsPerLayer->at(i);
+          isGoodITSLayer0123 &= vPrevInactiveChips[i] <= bcselOpts.confMaxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= bcselOpts.confMaxInactiveChipsPerLayer->at(i);
         }
         isGoodITSLayersAll = true;
         for (int i = 0; i < o2::itsmft::ChipMappingITS::NLayers; i++) {
-          isGoodITSLayersAll &= vPrevInactiveChips[i] <= bcselOpts.maxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= bcselOpts.maxInactiveChipsPerLayer->at(i);
+          isGoodITSLayersAll &= vPrevInactiveChips[i] <= bcselOpts.confMaxInactiveChipsPerLayer->at(i) && vNextInactiveChips[i] <= bcselOpts.confMaxInactiveChipsPerLayer->at(i);
         }
       }
 
@@ -692,6 +689,20 @@ class EventSelectionModule
     return bestGlobalBC;
   }
 
+  float calcWeightForOccupancy(float dt)
+  {
+    float wOccup = 0;
+    if (dt >= -40 && dt < -5)                     // collisions in the past                    // o2-linter: disable=magic-number
+      wOccup = 1. / 1225 * (dt + 40) * (dt + 40); // o2-linter: disable=magic-number
+    else if (dt >= -5 && dt < 15)                 // collisions near a given one           // o2-linter: disable=magic-number
+      wOccup = 1;
+    else if (dt >= 15 && dt < 40)              // collisions from the future            // o2-linter: disable=magic-number
+      wOccup = -0.4 / 25 * dt + 1.24;          // o2-linter: disable=magic-number
+    else if (dt >= 40 && dt < 100)             // collisions from the distant future   // o2-linter: disable=magic-number
+      wOccup = -0.4 / 60 * dt + 0.6 + 0.8 / 3; // o2-linter: disable=magic-number
+    return wOccup;
+  }
+
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
   o2::common::eventselection::evselConfigurables evselOpts;
@@ -753,20 +764,20 @@ class EventSelectionModule
       auto grplhcif = ccdb->template getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
       bcsPattern = grplhcif->getBunchFilling().getFilledBCs();
+      if (runLightIons >= 0) {
+        for (uint32_t i = 0; i < bcsPattern.size(); i++)
+          LOGP(debug, "bcsPattern: i={} bc={}", i, bcsPattern.at(i));
+      }
 
       // extract ITS ROF parameters
       auto alppar = ccdb->template getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
       rofOffset = alppar->roFrameBiasInBC;
       rofLength = alppar->roFrameLengthInBC;
       LOGP(debug, "ITS ROF Offset={} ITS ROF Length={}", rofOffset, rofLength);
-      if (evselOpts.confLightIonsAlternativeBcMatching) {
-        for (unsigned long i = 0; i < bcsPattern.size(); i++)
-          LOGP(info, "bcsPattern: i={} bc={}", i, bcsPattern.at(i));
-      }
 
       // special treatment of light ion runs
       if (lastRun >= 564356 && lastRun <= 564472) {
-        for (unsigned long i = 0; i < sizeof(runListLightIons) / sizeof(*runListLightIons); i++) {
+        for (uint32_t i = 0; i < sizeof(runListLightIons) / sizeof(*runListLightIons); i++) {
           if (runListLightIons[i] == lastRun) {
             runLightIons = lastRun;
             // extract parameterization for diff of vZ by FT0 vs by tracks
@@ -775,10 +786,10 @@ class EventSelectionModule
             diffVzParMean = *parMeans;
             diffVzParSigma = *parSigmas;
             LOGP(info, ">>> special treatment for diffVz for light ion run {}", runLightIons);
-            for (int i = 0; i < 5; i++)
-              LOGP(info, " mean par {} = {}", i, diffVzParMean[i]);
-            for (int i = 0; i < 5; i++)
-              LOGP(info, " sigma par {} = {}", i, diffVzParSigma[i]);
+            for (int j = 0; j < 5; j++)
+              LOGP(info, " mean par {} = {}", j, diffVzParMean[j]);
+            for (int j = 0; j < 5; j++)
+              LOGP(info, " sigma par {} = {}", j, diffVzParSigma[j]);
             break;
           }
         }
@@ -866,7 +877,7 @@ class EventSelectionModule
         }
       }
 
-      evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0);
+      evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0, 0, 0);
     }
   } // end processRun2
 
@@ -915,19 +926,16 @@ class EventSelectionModule
         int32_t foundFDD = bcselbuffer[bc.globalIndex()].foundFDDId;
         int32_t foundZDC = bcselbuffer[bc.globalIndex()].foundZDCId;
         uint32_t rct = 0;
-        evsel(bcselbuffer[bc.globalIndex()].alias, bcselbuffer[bc.globalIndex()].selection, rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, -1, -1);
+        evsel(bcselbuffer[bc.globalIndex()].alias, bcselbuffer[bc.globalIndex()].selection, rct, kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, -1, -1, -1);
       }
       return;
     }
-    std::vector<int> vTracksITS567perColl(cols.size(), 0);                                              // counter of tracks per collision for occupancy studies
-    std::vector<float> vAmpFT0CperColl(cols.size(), 0);                                                 // amplitude FT0C per collision
-    std::vector<float> vCollVz(cols.size(), 0);                                                         // vector with vZ positions for each collision
-    std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);                                          // info for occupancy in +/- windows is available (i.e. a given coll is not too close to the TF borders)
-    const float timeWinOccupancyCalcMinNS = evselOpts.confTimeIntervalForOccupancyCalculationMin * 1e3; // ns
-    const float timeWinOccupancyCalcMaxNS = evselOpts.confTimeIntervalForOccupancyCalculationMax * 1e3; // ns
-    std::vector<bool> vIsVertexITSTPC(cols.size(), 0);                                                  // at least one of vertex contributors is ITS-TPC track
-    std::vector<bool> vIsVertexTOFmatched(cols.size(), 0);                                              // at least one of vertex contributors is matched to TOF
-    std::vector<bool> vIsVertexTRDmatched(cols.size(), 0);                                              // at least one of vertex contributors is matched to TRD
+    std::vector<int> vTracksITS567perColl(cols.size(), 0); // counter of tracks per collision for occupancy studies
+    std::vector<float> vAmpFT0CperColl(cols.size(), 0);    // amplitude FT0C per collision
+    std::vector<float> vCollVz(cols.size(), 0);            // vector with vZ positions for each collision
+    std::vector<bool> vIsVertexITSTPC(cols.size(), 0);     // at least one of vertex contributors is ITS-TPC track
+    std::vector<bool> vIsVertexTOFmatched(cols.size(), 0); // at least one of vertex contributors is matched to TOF
+    std::vector<bool> vIsVertexTRDmatched(cols.size(), 0); // at least one of vertex contributors is matched to TRD
 
     std::vector<int> vCollisionsPerBc(bcs.size(), 0);          // counter of collisions per found bc for pileup checks
     std::vector<int> vCollisionsPileupPerColl(cols.size(), 0); // counter of pileup in the same bc as a given collision
@@ -950,19 +958,13 @@ class EventSelectionModule
     // first loop to match collisions to TVX, also extract other per-collision information for further use
     for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
-
       vCollVz[colIndex] = col.posZ();
 
-      int64_t globalBC = bc.globalBC();
-      int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
-      vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > -timeWinOccupancyCalcMinNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcMaxNS) ? true : false;
-
-      const auto& colPvTracks = pvTracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
       vTrackTimesTOF.clear();
       vTrackTimesTRDnoTOF.clear();
       int nPvTracksTPCnoTOFnoTRD = 0;
       int nPvTracksHighPtTPCnoTOFnoTRD = 0;
+      const auto& colPvTracks = pvTracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
       float sumTime = 0, sumW = 0, sumHighPtTime = 0, sumHighPtW = 0;
       for (const auto& track : colPvTracks) {
         float trackTime = track.trackTime();
@@ -1002,14 +1004,17 @@ class EventSelectionModule
       vIsVertexTPC[colIndex] = nPvTracksTPCnoTOFnoTRD > 0;
       vIsVertexHighPtTPC[colIndex] = nPvTracksHighPtTPCnoTOFnoTRD > 0;
 
+      // collision-bc association, other bc-related routine
+      auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
+      int64_t globalBC = bc.globalBC();
       int64_t foundGlobalBC = 0;
       int32_t foundBCindex = -1;
 
       // alternative collision-BC matching (currently: test mode, the aim is to improve pileup rejection)
-      if (evselOpts.confLightIonsAlternativeBcMatching) {
+      if (runLightIons >= 0) {
         foundGlobalBC = globalBC;
         // find closest nominal bc in pattern
-        for (unsigned long i = 0; i < bcsPattern.size(); i++) {
+        for (uint32_t i = 0; i < bcsPattern.size(); i++) {
           int32_t localBC = globalBC % nBCsPerOrbit;
           int32_t bcFromPattern = bcsPattern.at(i);
           int64_t bcDiff = bcFromPattern - localBC;
@@ -1039,14 +1044,15 @@ class EventSelectionModule
               }
             }
           }
-        } // end of if TOF-matched vertex
-        else { // for non-TOF and low-mult vertices, consider nearby nominal bcs
+          // end of if TOF-matched vertex
+        } else {
+          // for non-TOF and low-mult vertices, consider nearby nominal bcs
           int64_t meanBC = globalBC + TMath::Nint(sumHighPtTime / sumHighPtW / bcNS);
           int64_t bestGlobalBC = findBestGlobalBC(meanBC, evselOpts.confSigmaBCforHighPtTracks, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
           if (bestGlobalBC > 0) {
             foundGlobalBC = bestGlobalBC;
             // find closest nominal bc in pattern
-            for (unsigned long j = 0; j < bcsPattern.size(); j++) {
+            for (uint32_t j = 0; j < bcsPattern.size(); j++) {
               int32_t bcFromPatternBest = bcsPattern.at(j);
               int64_t bcDiff = bcFromPatternBest - (bestGlobalBC % nBCsPerOrbit);
               if (std::abs(bcDiff) <= 20) {
@@ -1059,7 +1065,7 @@ class EventSelectionModule
             foundBCindex = bc.globalIndex(); // keep original BC index
           }
         } // end of non-TOF matched vertices
-        //  sanitity check: if BC was not found
+        //  sanity check: if BC was not found
         if (foundBCindex == -1) {
           foundBCindex = bc.globalIndex();
         }
@@ -1104,10 +1110,10 @@ class EventSelectionModule
         mapGlobalBcVtxZ.erase(foundGlobalBC);
     }
     // alternative matching: looking for collisions with the same nominal BC
-    if (evselOpts.confLightIonsAlternativeBcMatching) {
-      for (unsigned long iCol = 0; iCol < vBCinPatternPerColl.size(); iCol++) {
+    if (runLightIons >= 0) {
+      for (uint32_t iCol = 0; iCol < vBCinPatternPerColl.size(); iCol++) {
         int64_t foundNominalBC = vBCinPatternPerColl[iCol];
-        for (unsigned long jCol = 0; jCol < vBCinPatternPerColl.size(); jCol++) {
+        for (uint32_t jCol = 0; jCol < vBCinPatternPerColl.size(); jCol++) {
           int64_t foundNominalBC2 = vBCinPatternPerColl[jCol];
           if (foundNominalBC2 == foundNominalBC) {
             vCollisionsPileupPerColl[iCol]++;
@@ -1130,6 +1136,36 @@ class EventSelectionModule
         }
         // fill pileup counter
         vCollisionsPerBc[vFoundBCindex[colIndex]]++;
+      }
+    }
+
+    // pre-loop for occupancy calculation
+    std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);               // info for occupancy in +/- windows is available (i.e. a given coll is not too close to the TF borders)
+    std::vector<bool> vIsCollRejectedByTFborderCut(cols.size(), 0);          // helper vector with
+    std::vector<bool> vCanHaveAssocCollsWithinLastDriftTime(cols.size(), 0); // to see if for some collisions in the occupancy calc (that are close to TF border) we will switch to FT0C based occupancy estimation
+    std::vector<int> vProxyForCollNtracks(cols.size(), 0);                   // n tracks, or - if a collision is close to ITS ROF border - scaled FT0C mult
+    std::vector<float> vMedianTimeForOccupancy(cols.size(), 0);              // median time for the occupancy in a defined time window
+
+    const float timeWinOccupancyCalcMinNS = evselOpts.confTimeIntervalForOccupancyCalculationMin * 1e3; // ns
+    const float timeWinOccupancyCalcMaxNS = evselOpts.confTimeIntervalForOccupancyCalculationMax * 1e3; // ns
+
+    for (const auto& col : cols) {
+      int32_t colIndex = col.globalIndex();
+      int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
+      int bcInTF = (foundGlobalBC - bcSOR) % nBCsPerTF;
+      vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 10) * bcNS > -timeWinOccupancyCalcMinNS) && ((nBCsPerTF - 10 - bcInTF) * bcNS > timeWinOccupancyCalcMaxNS) ? true : false; // 10 BCs is margin
+
+      int32_t foundBC = vFoundBCindex[colIndex];
+      auto bcselEntry = bcselbuffer[foundBC];
+      // check if we are close to ITS ROF borders => N ITS tracks is not reliable, and FT0C ampl can be used for occupancy estimation
+      // denominator for vAmpFT0CperColl is the approximate conversion factor b/n FT0C ampl and number of PV tracks after cuts
+      vProxyForCollNtracks[colIndex] = bitcheck64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder) ? vTracksITS567perColl[colIndex] : vAmpFT0CperColl[colIndex] / 10.;
+
+      if (!bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder)) {
+        vIsCollRejectedByTFborderCut[colIndex] = true;
+      }
+      if (nBCsPerTF - bcInTF < 4000 * 2) {
+        vCanHaveAssocCollsWithinLastDriftTime[colIndex] = true;
       }
     }
 
@@ -1206,12 +1242,7 @@ class EventSelectionModule
       // ### for occupancy in time windows
       std::vector<int> vAssocToThisCol;
       std::vector<float> vCollsTimeDeltaWrtGivenColl;
-      // protection against the TF borders
-      if (!vIsFullInfoForOccupancy[colIndex]) {
-        vCollsInTimeWin.push_back(vAssocToThisCol);
-        vTimeDeltaForColls.push_back(vCollsTimeDeltaWrtGivenColl);
-        continue;
-      }
+      std::vector<float> vProxyNtracksAssocColls; // mult of associated collisions, for the median time calc
       // find all collisions in time window before the current one
       minColIndex = colIndex - 1;
       while (minColIndex >= 0) {
@@ -1226,6 +1257,7 @@ class EventSelectionModule
           break;
         vAssocToThisCol.push_back(minColIndex);
         vCollsTimeDeltaWrtGivenColl.push_back(dt);
+        vProxyNtracksAssocColls.push_back(vProxyForCollNtracks[minColIndex]);
         minColIndex--;
       }
       // find all collisions in time window after the current one
@@ -1240,10 +1272,31 @@ class EventSelectionModule
           break;
         vAssocToThisCol.push_back(maxColIndex);
         vCollsTimeDeltaWrtGivenColl.push_back(dt);
+        vProxyNtracksAssocColls.push_back(vProxyForCollNtracks[maxColIndex]);
         maxColIndex++;
       }
       vCollsInTimeWin.push_back(vAssocToThisCol);
       vTimeDeltaForColls.push_back(vCollsTimeDeltaWrtGivenColl);
+
+      // calculation of the median time for the occupancy in a given time window
+      std::vector<std::pair<float, float>> pairsDeltaTimeMult;
+      for (size_t iCol = 0; iCol < vCollsTimeDeltaWrtGivenColl.size(); iCol++)
+        pairsDeltaTimeMult.emplace_back(vCollsTimeDeltaWrtGivenColl[iCol], vProxyNtracksAssocColls[iCol]);
+      std::sort(pairsDeltaTimeMult.begin(), pairsDeltaTimeMult.end()); // sorts by first element by default
+      int proxyTotalMultInTimeWin = std::accumulate(vProxyNtracksAssocColls.begin(), vProxyNtracksAssocColls.end(), 0);
+
+      float sumMult = 0.0;
+      for (size_t iCol = 0; iCol < vCollsTimeDeltaWrtGivenColl.size(); iCol++) {
+        sumMult += pairsDeltaTimeMult[iCol].second;
+        if (sumMult > proxyTotalMultInTimeWin / 2.0) {
+          vMedianTimeForOccupancy[colIndex] = pairsDeltaTimeMult[iCol].first / 1e3; // ns -> us
+          break;
+        }
+      }
+      for (size_t iCol = 0; iCol < vCollsTimeDeltaWrtGivenColl.size(); iCol++) {
+        LOGP(debug, "dt={} mult={}", pairsDeltaTimeMult[iCol].first, pairsDeltaTimeMult[iCol].second);
+      }
+      LOGP(debug, "   --> median time = {}", vMedianTimeForOccupancy[colIndex]);
     }
 
     // perform the occupancy calculation per ITS ROF and also in the pre-defined time window
@@ -1292,84 +1345,94 @@ class EventSelectionModule
       vNoHighMultCollInPrevRof[colIndex] = (totalFT0amplInPrevROF < evselOpts.confFT0CamplCutVetoOnCollInROF);
 
       // ### occupancy in time windows
-      // protection against TF borders
-      if (!vIsFullInfoForOccupancy[colIndex]) { // occupancy in undefined (too close to TF borders)
-        vNumTracksITS567inFullTimeWin[colIndex] = -1;
-        vSumAmpFT0CinFullTimeWin[colIndex] = -1;
-        continue;
-      }
       std::vector<int> vAssocToThisCol = vCollsInTimeWin[colIndex];
       std::vector<float> vCollsTimeDeltaWrtGivenColl = vTimeDeltaForColls[colIndex];
       int nITS567tracksInFullTimeWindow = 0;
       float sumAmpFT0CInFullTimeWindow = 0;
-      int nITS567tracksForVetoNarrow = 0;      // to veto events with nearby collisions (narrower range)
+      int nITS567tracksForVetoNarrow = 0;      // to veto events with nearby collisions (narrow range) with per-collision multiplicity above threshold
       int nITS567tracksForVetoStrict = 0;      // to veto events with nearby collisions
-      int nCollsWithFT0CAboveVetoStandard = 0; // to veto events with per-collision multiplicity above threshold
+      int nCollsWithFT0CAboveVetoStandard = 0; // to veto events with nearby collisions that have per-collision multiplicity above threshold
+      int colIndexFirstRejectedByTFborderCut = -1;
       for (uint32_t iCol = 0; iCol < vAssocToThisCol.size(); iCol++) {
         int thisColIndex = vAssocToThisCol[iCol];
         float dt = vCollsTimeDeltaWrtGivenColl[iCol] / 1e3; // ns -> us
-        float wOccup = 1.;
-        if (evselOpts.confUseWeightsForOccupancyVariable) {
-          // weighted occupancy
-          wOccup = 0;
-          if (dt >= -40 && dt < -5)                     // collisions in the past                    // o2-linter: disable=magic-number (to be checked by Igor)
-            wOccup = 1. / 1225 * (dt + 40) * (dt + 40); // o2-linter: disable=magic-number (to be checked by Igor)
-          else if (dt >= -5 && dt < 15)                 // collisions near a given one           // o2-linter: disable=magic-number (to be checked by Igor)
-            wOccup = 1;
-          // else if (dt >= 15 && dt < 100) // collisions from the future
-          //   wOccup = -1. / 85 * dt + 20. / 17;
-          else if (dt >= 15 && dt < 40)              // collisions from the future            // o2-linter: disable=magic-number (to be checked by Igor)
-            wOccup = -0.4 / 25 * dt + 1.24;          // o2-linter: disable=magic-number (to be checked by Igor)
-          else if (dt >= 40 && dt < 100)             // collisions from the distant future   // o2-linter: disable=magic-number (to be checked by Igor)
-            wOccup = -0.4 / 60 * dt + 0.6 + 0.8 / 3; // o2-linter: disable=magic-number (to be checked by Igor)
-        }
-        nITS567tracksInFullTimeWindow += wOccup * vTracksITS567perColl[thisColIndex];
-        sumAmpFT0CInFullTimeWindow += wOccup * vAmpFT0CperColl[thisColIndex];
-
         // counting tracks from other collisions in fixed time windows
-        if (!evselOpts.confLightIonsModifyTimeVetoOnNearbyColl) {
-          if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollNarrow)
-            nITS567tracksForVetoNarrow += vTracksITS567perColl[thisColIndex];
-          if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollStandard)
-            nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
-        } else {                     // special veto ranges (tests for light ion runs)
-          if (dt > -4.5 && dt < 2.5) // avoid TOF- and TRD-related structures, with 0.5 us margin
-            nITS567tracksForVetoNarrow += vTracksITS567perColl[thisColIndex];
+        if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollNarrow)
+          nITS567tracksForVetoNarrow += vProxyForCollNtracks[thisColIndex];
+        if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollStrict)
+          nITS567tracksForVetoStrict += vProxyForCollNtracks[thisColIndex];
 
-          if (!evselOpts.confLightIonsVetoOnTRDinPast) {
-            if (dt > -25.5 && dt < 2.5) // test effect from TRD triggers in the past
-              nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
-          } else {
-            // counting TRD-matched vertices in a long time interval in the past
-            if (dt > -25.5 && dt < 2.5)
-              nITS567tracksForVetoStrict += vIsVertexTRDmatched[thisColIndex];
-          }
+        // veto on high-mult collisions nearby, where artificial structures in the dt-occupancy plots are observed
+        if (dt > -4.0 && dt < 2.0 && vAmpFT0CperColl[thisColIndex] > evselOpts.confFT0CamplCutVetoOnCollInTimeRange) { // dt in us // o2-linter: disable=magic-number
+          nCollsWithFT0CAboveVetoStandard++;
         }
 
-        // standard cut on other collisions vs delta-times
-        const float driftV = 2.5;  // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
-        if (std::fabs(dt) < 2.0) { // us, complete veto on other collisions  // o2-linter: disable=magic-number (to be checked by Igor)
-          nCollsWithFT0CAboveVetoStandard++;
-        } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more  // o2-linter: disable=magic-number (to be checked by Igor)
-          if (vAmpFT0CperColl[thisColIndex] > evselOpts.confFT0CamplCutVetoOnCollInTimeRange / 5)
-            nCollsWithFT0CAboveVetoStandard++;
-        } else if (std::fabs(dt) < 8 + std::fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm  // o2-linter: disable=magic-number (to be checked by Igor)
-          // counting number of other collisions with multiplicity above threshold
-          if (vAmpFT0CperColl[thisColIndex] > evselOpts.confFT0CamplCutVetoOnCollInTimeRange)
-            nCollsWithFT0CAboveVetoStandard++;
+        // check if we are close to TF borders => N ITS tracks is not reliable, and FT0C ampl will be used for occupancy estimation (a loop below)
+        if (vIsCollRejectedByTFborderCut[thisColIndex]) {
+          if (colIndexFirstRejectedByTFborderCut == -1)
+            colIndexFirstRejectedByTFborderCut = thisColIndex;
+          continue;
+        }
+
+        // weighted occupancy calc:
+        if (vIsFullInfoForOccupancy[colIndex]) {
+          float wOccup = 1.;
+          if (evselOpts.confUseWeightsForOccupancyVariable) {
+            // weighted occupancy
+            wOccup = calcWeightForOccupancy(dt);
+          }
+          nITS567tracksInFullTimeWindow += wOccup * vProxyForCollNtracks[thisColIndex];
+          sumAmpFT0CInFullTimeWindow += wOccup * vAmpFT0CperColl[thisColIndex];
         }
       }
+
+      // if some associated collisions are close to TF border - take FT0C amplitude instead of nTracks, using BC table
+      if (vIsFullInfoForOccupancy[colIndex] && vCanHaveAssocCollsWithinLastDriftTime[colIndex] && colIndexFirstRejectedByTFborderCut >= 0) {
+        int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
+        int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
+        std::map<int64_t, int32_t>::iterator it = mapGlobalBcWithTVX.find(vFoundGlobalBC[colIndexFirstRejectedByTFborderCut]);
+        while (it != mapGlobalBcWithTVX.end()) {
+          int64_t thisFoundGlobalBC = it->first;
+          int32_t thisFoundBCindex = it->second;
+          auto bc = bcs.iteratorAt(thisFoundBCindex);
+          int64_t thisTFid = (bc.globalBC() - bcSOR) / nBCsPerTF;
+          if (thisTFid != tfId)
+            break;
+
+          float dt = (thisFoundGlobalBC - foundGlobalBC) * bcNS; // ns
+          if (dt > timeWinOccupancyCalcMaxNS)
+            break;
+
+          float multT0C = -1;
+          if (bc.has_ft0()) {
+            multT0C = bc.ft0().sumAmpC();
+            float wOccup = 1.;
+            if (evselOpts.confUseWeightsForOccupancyVariable) {
+              wOccup = calcWeightForOccupancy(dt / 1e3); // ns -> us
+            }
+            if (multT0C > 50.) // multiplicity in TVX is non-negligible, take it into occupancy calc
+            {
+              nITS567tracksInFullTimeWindow += wOccup * multT0C / 10.;
+              sumAmpFT0CInFullTimeWindow += wOccup * multT0C;
+            }
+          }
+          it++;
+        }
+      }
+
+      // protection against TF borders
+      if (!vIsFullInfoForOccupancy[colIndex]) { // occupancy in undefined (too close to TF borders)
+        nITS567tracksInFullTimeWindow = -1;
+        sumAmpFT0CInFullTimeWindow = -1;
+      }
+
       vNumTracksITS567inFullTimeWin[colIndex] = nITS567tracksInFullTimeWindow; // occupancy by a sum of number of ITS tracks (without a current collision)
       vSumAmpFT0CinFullTimeWin[colIndex] = sumAmpFT0CInFullTimeWindow;         // occupancy by a sum of FT0C amplitudes (without a current collision)
       // occupancy flags based on nearby collisions
       vNoCollInTimeRangeNarrow[colIndex] = (nITS567tracksForVetoNarrow == 0);
-      if (!evselOpts.confLightIonsVetoOnTRDinPast)
-        vNoCollInTimeRangeStrict[colIndex] = (nITS567tracksForVetoStrict == 0);
-      else
-        vNoCollInTimeRangeStrict[colIndex] = (nITS567tracksForVetoStrict == 0 && nITS567tracksForVetoNarrow == 0);
-
-      vNoHighMultCollInTimeRange[colIndex] = (nCollsWithFT0CAboveVetoStandard == 0);
-    }
+      vNoCollInTimeRangeStrict[colIndex] = (nITS567tracksForVetoStrict == 0);
+      vNoHighMultCollInTimeRange[colIndex] = (nCollsWithFT0CAboveVetoStandard == 0 && nITS567tracksForVetoNarrow == 0);
+    } // end of the occupancy calculation
 
     for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
@@ -1409,7 +1472,7 @@ class EventSelectionModule
 
       // copy selection decisions from bcsel table
       uint64_t selection = bcselbuffer[bc.globalIndex()].selection;
-      if (evselOpts.confLightIonsAlternativeBcMatching)
+      if (runLightIons >= 0) // for light ions, apply different condition to assign pileup flags
         selection |= vCollisionsPileupPerColl[colIndex] <= 1 ? BIT(aod::evsel::kNoSameBunchPileup) : 0;
       else
         selection |= vCollisionsPerBc[foundBC] <= 1 ? BIT(aod::evsel::kNoSameBunchPileup) : 0;
@@ -1449,7 +1512,7 @@ class EventSelectionModule
       }
 
       evsel(alias, selection, rct, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC,
-            vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+            vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex], vMedianTimeForOccupancy[colIndex]);
     }
   } // end processRun3
 }; // end EventSelectionModule
@@ -1512,10 +1575,12 @@ class LumiModule
     histos.add("luminosity/hCounterTCE", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZEM", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZNC", "", framework::kTH1D, {{1, 0., 1.}});
+    histos.add("luminosity/hCounterTVXZDC", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterTVXafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterTCEafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZEMafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZNCafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
+    histos.add("luminosity/hCounterTVXZDCafterBCcuts", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hLumiTVX", ";;Luminosity, 1/#mub", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hLumiTCE", ";;Luminosity, 1/#mub", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hLumiZEM", ";;Luminosity, 1/#mub", framework::kTH1D, {{1, 0., 1.}});
@@ -1758,9 +1823,15 @@ class LumiModule
       if (isTriggerTVX) {
         histos.template get<TH1>(HIST("luminosity/hCounterTVX"))->Fill(srun, 1);
         histos.template get<TH1>(HIST("luminosity/hLumiTVX"))->Fill(srun, lumiTVX);
+        if (isTriggerZNA && isTriggerZNC) {
+          histos.template get<TH1>(HIST("luminosity/hCounterTVXZDC"))->Fill(srun, 1);
+        }
         if (noBorder) {
           histos.template get<TH1>(HIST("luminosity/hCounterTVXafterBCcuts"))->Fill(srun, 1);
           histos.template get<TH1>(HIST("luminosity/hLumiTVXafterBCcuts"))->Fill(srun, lumiTVX);
+          if (isTriggerZNA && isTriggerZNC) {
+            histos.template get<TH1>(HIST("luminosity/hCounterTVXZDCafterBCcuts"))->Fill(srun, 1);
+          }
           for (size_t i = 0; i < mRCTFlagsCheckers.size(); i++) {
             if ((rct & mRCTFlagsCheckers[i].value()) == 0)
               histos.template get<TH2>(HIST("luminosity/hLumiTVXafterBCcutsRCT"))->Fill(srun, i, lumiTVX);

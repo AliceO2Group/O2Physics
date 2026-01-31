@@ -20,12 +20,17 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "MathUtils/detail/TypeTruncation.h"
+#include <Framework/Output.h>
 
+#include <TH1F.h>
+#include <TH2F.h>
 #include <TH3F.h>
 
+#include <cstdint>
 #include <experimental/type_traits> // required for is_detected
 #include <vector>
 
@@ -105,6 +110,8 @@ struct FilterCF {
   OutputObj<TH3F> yields{TH3F("yields", "centrality vs pT vs eta", 100, 0, 100, 40, 0, 20, 100, -2, 2)};
   OutputObj<TH3F> etaphi{TH3F("etaphi", "centrality vs eta vs phi", 100, 0, 100, 100, -2, 2, 200, 0, 2 * M_PI)};
 
+  HistogramRegistry registrytrackQA{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
   Produces<aod::CFCollisions> outputCollisions;
   Produces<aod::CFTracks> outputTracks;
 
@@ -124,6 +131,22 @@ struct FilterCF {
   // persistent caches
   std::vector<bool> mcReconstructedCache;
   std::vector<int> mcParticleLabelsCache;
+
+  void init(InitContext&)
+  {
+    if (doprocessTrackQA) {
+      registrytrackQA.add("zvtx", "Z Vertex position;  posz (cm); Events", HistType::kTH1F, {{100, -12, 12}});
+      registrytrackQA.add("eta", "eta distribution;  eta; arb. units", HistType::kTH1F, {{100, -2, 2}});
+      registrytrackQA.add("pT", "pT distribution;  #it{p}_{T} (GeV/#it{c}); arb. units", HistType::kTH1F, {{1000, 0, 30}});
+      registrytrackQA.add("ptdcaxy", "pT vs DCAxy;  #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", HistType::kTH2F, {{100, 0, 10}, {200, -1, 1}});
+      registrytrackQA.add("ptdcaz", "pT vs DCAz; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", HistType::kTH2F, {{100, 0, 10}, {600, -3.0, 3.0}});
+      registrytrackQA.add("tpcxrows", "TPC crossed rows; TPC X-rows; Counts", HistType::kTH1F, {{180, 0, 180}});
+      registrytrackQA.add("tpcnclst", "TPC found clusters; TPC N_{cls}; Counts", HistType::kTH1F, {{180, 0, 180}});
+      registrytrackQA.add("itsnclst", "ITS clusters; ITS N_{cls}; Counts", HistType::kTH1F, {{10, 0, 10}});
+      registrytrackQA.add("chi2tpc", "Chi2 per TPC cluster; #chi^{2}/TPC cluster; Counts", HistType::kTH1F, {{100, 0, 10}});
+      registrytrackQA.add("chi2its", "Chi2 per ITS cluster; #chi^{2}/ITS cluster; Counts", HistType::kTH1F, {{60, 0, 60}});
+    }
+  }
 
   template <typename TCollision>
   bool keepCollision(TCollision& collision)
@@ -150,8 +173,8 @@ struct FilterCF {
         return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
       else
         return false;
-    } else if (cfgTrigger == 13) { // relevant for OO/NeNe
-      return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
+    } else if (cfgTrigger == 13) { // relevant for pO/OO/NeNe --recommended by Physics Board on 27.01.2026
+      return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
     }
     return false;
   }
@@ -272,6 +295,8 @@ struct FilterCF {
         multiplicities.push_back(collision.multNTracksPV());
       if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
         multiplicities.push_back(collision.multNTracksGlobal());
+      if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M)
+        multiplicities.push_back(collision.centFT0M());
       outputMultSets(multiplicities);
     }
 
@@ -303,11 +328,33 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processDataPid, "Process data with PID", false);
 
-  void processDataMults(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
+  void processDataMults(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
   {
     processDataT(collision, tracks);
   }
   PROCESS_SWITCH(FilterCF, processDataMults, "Process data with multiplicity sets", false);
+
+  void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
+  {
+    registrytrackQA.fill(HIST("zvtx"), collision.posZ());
+    for (const auto& track : tracks) {
+      if (!track.isGlobalTrack()) {
+        return; // trackQA for global tracks only
+      }
+      registrytrackQA.fill(HIST("eta"), track.eta());
+      registrytrackQA.fill(HIST("pT"), track.pt());
+      registrytrackQA.fill(HIST("ptdcaxy"), track.pt(), track.dcaXY());
+      registrytrackQA.fill(HIST("ptdcaz"), track.pt(), track.dcaZ());
+      registrytrackQA.fill(HIST("tpcxrows"), track.tpcNClsCrossedRows());
+      registrytrackQA.fill(HIST("tpcnclst"), track.tpcNClsFound());
+      registrytrackQA.fill(HIST("itsnclst"), track.itsNCls());
+      if (track.tpcNClsFound() > 0)
+        registrytrackQA.fill(HIST("chi2tpc"), track.tpcChi2NCl());
+      if (track.itsNCls() > 0)
+        registrytrackQA.fill(HIST("chi2its"), track.itsChi2NCl());
+    }
+  }
+  PROCESS_SWITCH(FilterCF, processTrackQA, "Process track QA", false);
 
   /// \brief Process MC data for a given set of MC collisions and associated particles and tracks
   /// \param mcCollisions The collection of MC collisions
@@ -316,9 +363,9 @@ struct FilterCF {
   ///                      event selections
   /// \param tracks The collection of tracks, filtered by selection criteria
   /// \param bcs The collection of bunch crossings with timestamps
-  template <typename T1>
+  template <typename C1, typename T1>
   void processMCT(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
-                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                  C1 const& allCollisions,
                   T1 const& tracks,
                   aod::BCsWithTimestamps const&)
   {
@@ -403,10 +450,26 @@ struct FilterCF {
         continue;
       }
 
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       // NOTE works only when we store all MC collisions (as we do here)
       outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
       outputMcCollisionLabels(collision.mcCollisionId());
+
+      if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
+        multiplicities.clear();
+        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0C)
+          multiplicities.push_back(collision.centFT0C());
+        if (cfgEstimatorBitMask & aod::cfmultset::MultFV0A)
+          multiplicities.push_back(collision.multFV0A());
+        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksPV)
+          multiplicities.push_back(collision.multNTracksPV());
+        if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
+          multiplicities.push_back(collision.multNTracksGlobal());
+        if (cfgEstimatorBitMask & aod::cfmultset::CentFT0M)
+          multiplicities.push_back(collision.centFT0M());
+        outputMultSets(multiplicities);
+      }
+
       if (cfgTransientTables)
         outputCollRefs(collision.globalIndex());
 
@@ -450,6 +513,16 @@ struct FilterCF {
     processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
   }
   PROCESS_SWITCH(FilterCF, processMCPid, "Process MC with PID", false);
+
+  void processMCMults(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+                      soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal> const& allCollisions,
+                      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                      aod::BCsWithTimestamps const& bcs)
+  {
+    processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
+  }
+
+  PROCESS_SWITCH(FilterCF, processMCMults, "Process MC with multiplicity sets", false);
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
   {

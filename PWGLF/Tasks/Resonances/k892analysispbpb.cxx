@@ -13,38 +13,40 @@
 /// \brief K*0 spectra in Pb-Pb
 /// \author Marta Urioni <marta.urioni@cern.ch>
 
-#include <TH1F.h>
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TRandom3.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
+#include <TRandom3.h>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -834,6 +836,8 @@ struct K892analysispbpb {
   Partition<TrackCandidates> posPitof = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (nabs(aod::track::pt) > cMinPtTOF);
   Partition<TrackCandidates> negKatof = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (nabs(aod::track::pt) > cMinPtTOF);
 
+  Preslice<aod::Tracks> trackPerCollision = aod::track::collisionId;
+
   template <bool IsMC, bool IsMix, bool IsRot, bool IsRun2, typename CollisionType, typename TracksType>
   void callFillHistoswithPartitions(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&)
   {
@@ -1095,9 +1099,8 @@ struct K892analysispbpb {
   }
   PROCESS_SWITCH(K892analysispbpb, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
 
-  void processMC(aod::McCollisions::iterator const& /*mcCollision*/, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
+  void processMC(aod::McCollisions::iterator const&, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMCrec>& recCollisions, TrackCandidatesMCrec const& RecTracks)
   {
-
     histos.fill(HIST("QAevent/hMCrecCollSels"), 0);
     if (recCollisions.size() == 0) {
       histos.fill(HIST("QAevent/hMCrecCollSels"), 1);
@@ -1117,7 +1120,7 @@ struct K892analysispbpb {
       auto centrality = RecCollision.centFT0C();
       histos.fill(HIST("QAevent/hMultiplicityPercentMC"), centrality);
 
-      auto tracks = RecTracks.sliceByCached(aod::track::collisionId, RecCollision.globalIndex(), cache);
+      auto tracks = RecTracks.sliceBy(trackPerCollision, RecCollision.globalIndex());
 
       //            <IsMC, IsMix, IsRot, IsRun2>
       fillHistograms<true, false, false, false>(RecCollision, tracks, tracks);
@@ -1192,7 +1195,7 @@ struct K892analysispbpb {
 
       auto centrality = RecCollision.centRun2V0M();
       histos.fill(HIST("QAevent/hMultiplicityPercentMC"), centrality);
-      auto tracks = RecTracks.sliceByCached(aod::track::collisionId, RecCollision.globalIndex(), cache);
+      auto tracks = RecTracks.sliceBy(trackPerCollision, RecCollision.globalIndex());
 
       //            <IsMC, IsMix, IsRot, IsRun2>
       fillHistograms<true, false, false, true>(RecCollision, tracks, tracks);

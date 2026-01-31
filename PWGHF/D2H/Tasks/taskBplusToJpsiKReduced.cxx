@@ -236,13 +236,12 @@ struct HfTaskBplusToJpsiKReduced {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   TrackSelectorKa selectorKaon;
   o2::analysis::HfMlResponseBplusToJpsiKReduced<float> hfMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
   using TracksKaon = soa::Join<HfRedTracks, HfRedTracksPid>;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
 
   // Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToJpsiPi >= selectionFlagBplus);
 
@@ -324,7 +323,7 @@ struct HfTaskBplusToJpsiKReduced {
   /// Calculate pseudorapidity from track tan(lambda)
   /// \param tgl is the track tangent of the dip angle
   /// \return pseudorapidity
-  inline float absEta(float tgl)
+  float absEta(float tgl)
   {
     return std::abs(std::log(std::tan(o2::constants::math::PIQuarter - 0.5f * std::atan(tgl))));
   }
@@ -334,13 +333,13 @@ struct HfTaskBplusToJpsiKReduced {
   /// \param withBplusMl is the flag to enable the filling with ML scores for the B+ candidate
   /// \param candidate is the B+ candidate
   /// \param candidatesJpsi is the table with Jpsi candidates
-  template <bool doMc, bool withBplusMl, typename Cand>
+  template <bool DoMc, bool WithBplusMl, typename Cand>
   void fillCand(Cand const& candidate,
                 aod::HfRedJpsis const& /*candidatesJpsi*/,
                 aod::HfRedBach0Tracks const&)
   {
     auto ptCandBplus = candidate.pt();
-    auto invMassBplus = hfHelper.invMassBplusToJpsiK(candidate);
+    auto invMassBplus = HfHelper::invMassBplusToJpsiK(candidate);
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa = candidate.template bachKa_as<aod::HfRedBach0Tracks>();
     auto ptJpsi = candidate.ptProng0();
@@ -349,7 +348,7 @@ struct HfTaskBplusToJpsiKReduced {
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
@@ -357,7 +356,7 @@ struct HfTaskBplusToJpsiKReduced {
     }
 
     SETBIT(statusBplus, SelectionStep::RecoSkims);
-    if (hfHelper.selectionBplusToJpsiKTopol(candidate, cuts, binsPt)) {
+    if (HfHelper::selectionBplusToJpsiKTopol(candidate, cuts, binsPt)) {
       SETBIT(statusBplus, SelectionStep::RecoTopol);
     } else if (selectionFlagBplus >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
       return;
@@ -371,7 +370,7 @@ struct HfTaskBplusToJpsiKReduced {
       } else if (kaonPidMethod == PidMethod::TpcAndTof) {
         pidTrackKa = selectorKaon.statusTpcAndTof(candKa);
       }
-      if (hfHelper.selectionBplusToJpsiKPid(pidTrackKa, acceptPIDNotApplicable.value)) {
+      if (HfHelper::selectionBplusToJpsiKPid(pidTrackKa, acceptPIDNotApplicable.value)) {
         // LOGF(info, "B+ candidate selection failed at PID selection");
         SETBIT(statusBplus, SelectionStep::RecoPID);
       } else if (selectionFlagBplus >= BIT(SelectionStep::RecoPID) * 2 - 1) {
@@ -380,7 +379,7 @@ struct HfTaskBplusToJpsiKReduced {
     }
 
     float candidateMlScoreSig = -1;
-    if constexpr (withBplusMl) {
+    if constexpr (WithBplusMl) {
       // B+ ML selections
       std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, candKa);
       if (hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl)) {
@@ -394,7 +393,7 @@ struct HfTaskBplusToJpsiKReduced {
     registry.fill(HIST("hMass"), invMassBplus, ptCandBplus);
     registry.fill(HIST("hMassJpsi"), invMassJpsi, candidate.ptProng0());
     registry.fill(HIST("hd0K"), candidate.impactParameter1(), candidate.ptProng1());
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       if (isSignal) {
         registry.fill(HIST("hMassRecSig"), invMassBplus, ptCandBplus);
         registry.fill(HIST("hMassJpsiRecSig"), invMassJpsi, candidate.ptProng0());
@@ -406,10 +405,10 @@ struct HfTaskBplusToJpsiKReduced {
       }
     }
 
-    float pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
+    float const pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
     if (ptCandBplus >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
       float ptMother = -1.;
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         ptMother = candidate.ptMother();
       }
 
@@ -419,7 +418,7 @@ struct HfTaskBplusToJpsiKReduced {
         ptCandBplus,
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yBplus(candidate),
+        HfHelper::yBplus(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.chi2PCA(),
@@ -477,7 +476,7 @@ struct HfTaskBplusToJpsiKReduced {
     }
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     registry.fill(HIST("hPtJpsiGen"), ptProngs[0], ptParticle);
     registry.fill(HIST("hPtKGen"), ptProngs[1], ptParticle);
@@ -494,7 +493,7 @@ struct HfTaskBplusToJpsiKReduced {
                    aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false>(candidate, candidatesJpsi, kaonTracks);
@@ -507,7 +506,7 @@ struct HfTaskBplusToJpsiKReduced {
                               aod::HfRedBach0Tracks const& kaonTracks)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, true>(candidate, candidatesJpsi, kaonTracks);
@@ -522,7 +521,7 @@ struct HfTaskBplusToJpsiKReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false>(candidate, candidatesJpsi, kaonTracks);
@@ -542,7 +541,7 @@ struct HfTaskBplusToJpsiKReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true>(candidate, candidatesJpsi, kaonTracks);

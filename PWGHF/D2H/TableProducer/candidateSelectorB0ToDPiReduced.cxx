@@ -97,11 +97,10 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
   o2::analysis::HfMlResponseB0ToDPi<float, true> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
-  HfHelper hfHelper;
 
   using TracksBachPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using TracksSoftPions = soa::Join<aod::HfRedSoftPiBases, aod::HfRedSoftPiCov, aod::HfRedSoftPiPid>;
@@ -170,11 +169,11 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param candidate is the B0 candidate
   /// \param prongBachPi is the candidate's bachelor pion prong
   /// \note this method is used for B0 → D*- π+ candidates with D meson ML scores
-  template <bool withDmesMl, IsB0ToDstarPiChannel T1, typename T2>
+  template <bool WithDmesMl, IsB0ToDstarPiChannel T1, typename T2>
   auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi)
   {
     auto prongSoftPi = candB0.template prongSoftPi_as<TracksSoftPions>();
-    if constexpr (withDmesMl) {
+    if constexpr (WithDmesMl) {
       return hfMlResponse.getInputFeaturesDStarPi<true>(candB0, prongBachPi, prongSoftPi);
     } else {
       return hfMlResponse.getInputFeaturesDStarPi<false>(candB0, prongBachPi, prongSoftPi);
@@ -195,10 +194,10 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param candB0 is the B0 candidate
   /// \param prongBachPi is the candidate's bachelor pion prong
   /// \note this method is used for B0 → D- π+ candidates with D meson ML scores
-  template <bool withDmesMl, typename T1, typename T2>
+  template <bool WithDmesMl, typename T1, typename T2>
   auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi)
   {
-    if constexpr (withDmesMl) {
+    if constexpr (WithDmesMl) {
       return hfMlResponse.getInputFeatures<true>(candB0, prongBachPi);
     } else {
       return hfMlResponse.getInputFeatures<false>(candB0, prongBachPi);
@@ -210,7 +209,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param hfCandsB0 B0 candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the Dpi data creator
-  template <bool withDmesMl, typename Cands>
+  template <bool WithDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsB0,
                     TracksBachPion const&,
                     HfCandB0Configs const& configs)
@@ -230,7 +229,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
 
       // topological cuts
-      if (!hfHelper.selectionB0ToDPiTopol(hfCandB0, cuts, binsPt)) {
+      if (!HfHelper::selectionB0ToDPiTopol(hfCandB0, cuts, binsPt)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
         if (applyB0Ml) {
           hfMlB0ToDPiCandidate(outputMlNotPreselected);
@@ -239,8 +238,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
         continue;
       }
 
-      if constexpr (withDmesMl) { // we include it in the topological selections
-        if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandB0, cutsDmesMl, binsPtDmesMl)) {
+      if constexpr (WithDmesMl) { // we include it in the topological selections
+        if (!HfHelper::selectionDmesMlScoresForBReduced(hfCandB0, cutsDmesMl, binsPtDmesMl)) {
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           if (applyB0Ml) {
             hfMlB0ToDPiCandidate(outputMlNotPreselected);
@@ -263,7 +262,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
           pidTrackBachPi = selectorPion.statusTpcAndTof(trackBachPi);
         }
-        if (!hfHelper.selectionB0ToDPiPid(pidTrackBachPi, acceptPIDNotApplicable.value)) {
+        if (!HfHelper::selectionB0ToDPiPid(pidTrackBachPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           if (applyB0Ml) {
@@ -278,8 +277,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
       if (applyB0Ml) {
         // B0 ML selections
-        std::vector<float> inputFeatures = getMlInputFeatures<withDmesMl>(hfCandB0, trackBachPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
+        std::vector<float> inputFeatures = getMlInputFeatures<WithDmesMl>(hfCandB0, trackBachPi);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
         hfMlB0ToDPiCandidate(outputMl[1]); // storing ML score for signal class
 
         if (!isSelectedMl) {

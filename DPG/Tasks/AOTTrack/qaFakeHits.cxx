@@ -16,18 +16,19 @@
 /// \brief  Task to analyze the fraction of the true and fake hits depending on where the fake hits are picked
 ///
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
 
 using namespace o2::framework;
 // Particle information
@@ -38,12 +39,16 @@ static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K"
                                                           "e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
 static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
-std::array<std::shared_ptr<TH1>, nParticles> hPtAll;
-std::array<std::shared_ptr<TH1>, nParticles> hPtITS;
-std::array<std::shared_ptr<TH1>, nParticles> hPtTPC;
-std::array<std::shared_ptr<TH1>, nParticles> hPtTRD;
-std::array<std::shared_ptr<TH1>, nParticles> hPtTOF;
-std::array<std::shared_ptr<TH1>, nParticles> hPtOverall;
+std::array<std::shared_ptr<TH2>, nParticles> hPtAll;
+std::array<std::shared_ptr<TH2>, nParticles> hPtITS;
+std::array<std::shared_ptr<TH2>, nParticles> hPtITSAB;
+std::array<std::shared_ptr<TH2>, nParticles> hPtITSTPC;
+std::array<std::shared_ptr<TH2>, nParticles> hPtTPC;
+std::array<std::shared_ptr<TH2>, nParticles> hPtTRD;
+std::array<std::shared_ptr<TH2>, nParticles> hPtTOF;
+std::array<std::shared_ptr<TH2>, nParticles> hPtOverall;
+std::array<std::shared_ptr<TH2>, nParticles> hPtNoise;
+std::array<std::shared_ptr<TH2>, nParticles> hPtNoMismatch;
 
 struct QaFakeHits {
   // Charge selection
@@ -103,23 +108,24 @@ struct QaFakeHits {
         LOG(fatal) << "Can't interpret pdgSign " << pdgSign;
     }
 
-    const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
-    // const AxisSpec axisP{ptBins, "#it{p} (GeV/#it{c})"};
-    // const AxisSpec axisEta{etaBins, "#it{#eta}"};
-    // const AxisSpec axisY{yBins, "#it{y}"};
-    // const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
+    const AxisSpec axisPt{ptBins, "#it{p}_{T}^{gen} (GeV/#it{c})"};
+    const AxisSpec axisPtDiff{100, -1, 1, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"};
 
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
     const int histogramIndex = id + pdgSign * nSpecies;
 
     const TString tagPt = Form("%s ", partName);
-    hPtAll[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/all", PDGs[histogramIndex]), "All tracks " + tagPt, kTH1D, {axisPt});
-    hPtITS[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/its", PDGs[histogramIndex]), "ITS mismatch " + tagPt, kTH1D, {axisPt});
-    hPtTPC[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/tpc", PDGs[histogramIndex]), "TPC mismatch " + tagPt, kTH1D, {axisPt});
-    hPtTRD[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/trd", PDGs[histogramIndex]), "TRD mismatch " + tagPt, kTH1D, {axisPt});
-    hPtTOF[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/tof", PDGs[histogramIndex]), "TOF mismatch " + tagPt, kTH1D, {axisPt});
-    hPtOverall[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/mismatched/overall", PDGs[histogramIndex]), "Overall mismatch " + tagPt, kTH1D, {axisPt});
+    hPtAll[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/all", PDGs[histogramIndex]), "All tracks " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtITS[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/its", PDGs[histogramIndex]), "ITS mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtITSAB[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/itsab", PDGs[histogramIndex]), "ITSAB mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtTPC[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/tpc", PDGs[histogramIndex]), "TPC mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtITSTPC[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/itstpc", PDGs[histogramIndex]), "ITSTPC mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtTRD[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/trd", PDGs[histogramIndex]), "TRD mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtTOF[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/tof", PDGs[histogramIndex]), "TOF mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtOverall[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/overall", PDGs[histogramIndex]), "Overall mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtNoise[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/noise", PDGs[histogramIndex]), "Noise " + tagPt, kTH2D, {axisPt, axisPtDiff});
+    hPtNoMismatch[histogramIndex] = histos.add<TH2>(Form("MC/pdg%i/pt/mismatched/no", PDGs[histogramIndex]), "No mismatch " + tagPt, kTH2D, {axisPt, axisPtDiff});
 
     LOG(info) << "Done with particle: " << partName;
   }
@@ -185,13 +191,17 @@ struct QaFakeHits {
     if (!track.isGlobalTrack()) {
       return;
     }
-    hPtAll[histogramIndex]->Fill(mcParticle.pt());
+    const float ptDiff = mcParticle.pt() - track.pt();
+    hPtAll[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
     bool mismatchInITS = false;
     for (int i = 0; i < 7; i++) {
       if (isMismatched(track, i)) {
         mismatchInITS = true;
         break;
       }
+    }
+    if (mismatchInITS) {
+      hPtITS[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
     }
 
     bool mismatchInTPC = false;
@@ -201,24 +211,36 @@ struct QaFakeHits {
         break;
       }
     }
-    const bool mismatchInTRD = isMismatched(track, 10);
-    const bool mismatchInTOF = isMismatched(track, 11);
-    const bool overallMismatch = isMismatched(track, 15);
-
-    if (mismatchInITS) {
-      hPtITS[histogramIndex]->Fill(mcParticle.pt());
-    }
     if (mismatchInTPC) {
-      hPtTPC[histogramIndex]->Fill(mcParticle.pt());
+      hPtTPC[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
     }
+
+    if (track.mcMask() == 0) {
+      hPtNoMismatch[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
+    }
+    const bool mismatchInTRD = isMismatched(track, 10); // Not set
     if (mismatchInTRD) {
-      hPtTRD[histogramIndex]->Fill(mcParticle.pt());
+      hPtTRD[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
     }
+    const bool mismatchInTOF = isMismatched(track, 15) && track.hasTOF();
     if (mismatchInTOF) {
-      hPtTOF[histogramIndex]->Fill(mcParticle.pt());
+      hPtTOF[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
     }
+    const bool itsAfterBurnerMismatch = isMismatched(track, 12);
+    if (itsAfterBurnerMismatch) {
+      hPtITSAB[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
+    }
+    const bool itstpcMismatch = isMismatched(track, 13);
+    if (itstpcMismatch) {
+      hPtITSTPC[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
+    }
+    const bool isNoise = isMismatched(track, 14);
+    if (isNoise) {
+      hPtNoise[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
+    }
+    const bool overallMismatch = isMismatched(track, 15);
     if (overallMismatch) {
-      hPtOverall[histogramIndex]->Fill(mcParticle.pt());
+      hPtOverall[histogramIndex]->Fill(mcParticle.pt(), ptDiff);
     }
   }
 
@@ -227,12 +249,16 @@ struct QaFakeHits {
 
   // MC process
   void process(o2::aod::Collision const& /*collision*/,
-               o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
+               TrackCandidatesMC const& tracks,
                o2::aod::McCollisions const&,
                o2::aod::McParticles const&)
   {
     // Track loop
     for (const auto& track : tracks) {
+
+      LOG(debug) << "Processing track with global index " << track.globalIndex() << " and mask " << track.mcMask();
+      LOG(debug) << "mcMask bits: " << std::bitset<16>(track.mcMask());
+
       static_for<0, 1>([&](auto pdgSign) {
         fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
         fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);

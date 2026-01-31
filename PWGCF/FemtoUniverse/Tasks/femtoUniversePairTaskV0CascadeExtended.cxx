@@ -181,7 +181,7 @@ struct FemtoUniversePairTaskV0CascadeExtended {
   template <typename T>
   bool isParticleTPC(const T& part, int id, float* partSigma = 0)
   {
-    const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
+    const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
     if (partSigma)
       *partSigma = tpcNSigmas[id];
     return isNSigmaTPC(tpcNSigmas[id]);
@@ -190,7 +190,7 @@ struct FemtoUniversePairTaskV0CascadeExtended {
   template <typename T>
   bool isParticleTOF(const T& part, int id, float* partSigma = 0)
   {
-    const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+    const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
     if (partSigma)
       *partSigma = tofNSigmas[id];
     return isNSigmaTOF(part.p(), tofNSigmas[id], part.tempFitVar());

@@ -53,7 +53,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -214,15 +214,6 @@ struct SinglePhoton {
 
   void DefineEMCCuts()
   {
-    const float a = EMC_TM_Eta->at(0);
-    const float b = EMC_TM_Eta->at(1);
-    const float c = EMC_TM_Eta->at(2);
-
-    const float d = EMC_TM_Phi->at(0);
-    const float e = EMC_TM_Phi->at(1);
-    const float f = EMC_TM_Phi->at(2);
-    LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
-
     TString cutNamesStr = fConfigEMCCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -236,12 +227,8 @@ struct SinglePhoton {
           custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
           custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
 
-          custom_cut->SetTrackMatchingEta([a, b, c](float pT) {
-            return a + pow(pT + b, c);
-          });
-          custom_cut->SetTrackMatchingPhi([d, e, f](float pT) {
-            return d + pow(pT + e, f);
-          });
+          custom_cut->SetTrackMatchingEtaParams(EMC_TM_Eta->at(0), EMC_TM_Eta->at(1), EMC_TM_Eta->at(2));
+          custom_cut->SetTrackMatchingPhiParams(EMC_TM_Phi->at(0), EMC_TM_Phi->at(1), EMC_TM_Phi->at(2));
 
           custom_cut->SetMinEoverP(EMC_Eoverp);
           custom_cut->SetUseExoticCut(EMC_UseExoticCut);
@@ -263,7 +250,7 @@ struct SinglePhoton {
   {
     bool is_selected = false;
     if constexpr (photontype == EMDetType::kPCM) {
-      is_selected = cut1.template IsSelected<aod::V0Legs>(g1);
+      is_selected = cut1.template IsSelected<decltype(g1), aod::V0Legs>(g1);
     } else if constexpr (photontype == EMDetType::kPHOS) {
       is_selected = cut1.template IsSelected<int>(g1); // dummy, because track matching is not ready.
       //} else if constexpr (photontype == EMDetType::kEMC) {

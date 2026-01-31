@@ -18,8 +18,10 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
@@ -94,12 +96,11 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   HfMlResponseDplusToPiKPi<float> hfMlResponse;
-  std::vector<float> outputMlNotPreselected = {};
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMlNotPreselected;
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
-  HfHelper hfHelper;
   HfTrigger3ProngCuts hfTriggerCuts;
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
@@ -154,7 +155,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   bool selection(const T1& candidate, const T2& trackPion1, const T2& trackKaon, const T2& trackPion2)
   {
     auto ptCand = candidate.pt();
-    int pTBin = findBin(binsPt, ptCand);
+    int const pTBin = findBin(binsPt, ptCand);
     if (pTBin == -1) {
       return false;
     }
@@ -167,10 +168,10 @@ struct HfCandidateSelectorDplusToPiKPi {
       return false;
     }
     // invariant-mass cut
-    if (std::abs(hfHelper.invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
+    if (std::abs(HfHelper::invMassDplusToPiKPi(candidate) - o2::constants::physics::MassDPlus) > cuts->get(pTBin, "deltaM")) {
       return false;
     }
-    if (useTriggerMassCut && !isCandidateInMassRange(hfHelper.invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand, hfTriggerCuts)) {
+    if (useTriggerMassCut && !isCandidateInMassRange(HfHelper::invMassDplusToPiKPi(candidate), o2::constants::physics::MassDPlus, ptCand, hfTriggerCuts)) {
       return false;
     }
     if (candidate.decayLength() < cuts->get(pTBin, "decay length")) {
@@ -302,7 +303,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (applyMl) {
         // ML selections
         std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
 
         if (!isSelectedMl) {

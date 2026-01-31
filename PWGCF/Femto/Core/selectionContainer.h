@@ -41,11 +41,13 @@ enum LimitType { kUpperLimit,            ///< simple upper limit for the value, 
                  kAbsUpperLimit,         ///< upper limit of the absolute value, e.g. |eta| < 0.8
                  kLowerLimit,            ///< simple lower limit for the value, e.g. p_T > 0.2 GeV/c
                  kAbsLowerLimit,         ///< lower limit of the absolute value, e.g. |DCA_xyz| > 0.05 cm
-                 kEqual,                 ///< values need to be equal, e.g. sign = 1
                  kUpperFunctionLimit,    ///< simple upper limit of a function value, e.g. DCA_xy > f(pt)
                  kAbsUpperFunctionLimit, ///< upper limit of an absolute value given by a function, e.g. |DCA_xy| > f(pt)
                  kLowerFunctionLimit,    ///< simple lower limit of a function value, e.g. DCA_xy < f(pt)
-                 kAbsLowerFunctionLimit  ///< lower limit of an absolute value given by a function, e.g. |DCA_xy| < f(pt)
+                 kAbsLowerFunctionLimit, ///< lower limit of an absolute value given by a function, e.g. |DCA_xy| < f(pt)
+                 kEqual,                 ///< values need to be equal, e.g. sign = 1
+                 kEqualArray,            ///< values inside an array need to be equal
+                 kLimitTypeLast
 };
 
 std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
@@ -53,11 +55,14 @@ std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
   {kAbsUpperLimit, "Absolute Upper Limit"},
   {kLowerLimit, "Lower Limit"},
   {kAbsLowerLimit, "Absolute Lower Limit"},
-  {kEqual, "Equal"},
   {kUpperFunctionLimit, "Upper Function Limit"},
   {kAbsUpperFunctionLimit, "Absolute Upper Function Limit"},
   {kLowerFunctionLimit, "Lower Function Limit"},
-  {kAbsLowerFunctionLimit, "Absolute Lower Function Limit"}};
+  {kAbsLowerFunctionLimit, "Absolute Lower Function Limit"},
+  {kEqual, "Equal"},
+  {kEqualArray, "EqualArray"},
+
+};
 
 }; // namespace limits
 
@@ -70,18 +75,26 @@ class SelectionContainer
 {
  public:
   /// Default constructor
-  SelectionContainer() {}
+  SelectionContainer() = default;
+  ~SelectionContainer() = default;
 
   /// \brief Constructor for static value-based selection.
   /// \param SelectionValues Vector of values for the selection.
   /// \param limitType Type of limit (from limits::LimitType).
   /// \param SkipMostPermissiveBit Whether to skip the most permissive bit in the bitmask.
   /// \param IsMinimalCut Whether this selection should be treated as a minimal required cut.
-  SelectionContainer(std::vector<T> const& SelectionValues, limits::LimitType limitType, bool SkipMostPermissiveBit, bool IsMinimalCut)
-    : mSelectionValues(SelectionValues),
+  SelectionContainer(std::string const& SelectionName,
+                     std::vector<T> const& SelectionValues,
+                     limits::LimitType limitType,
+                     bool SkipMostPermissiveBit,
+                     bool IsMinimalCut,
+                     bool isOptionalCut)
+    : mSelectionName(SelectionName),
+      mSelectionValues(SelectionValues),
       mLimitType(limitType),
       mSkipMostPermissiveBit(SkipMostPermissiveBit),
-      mIsMinimalCut(IsMinimalCut)
+      mIsMinimalCut(IsMinimalCut),
+      mIsOptionalCut(isOptionalCut)
   {
     if (mSelectionValues.size() > sizeof(BitmaskType) * CHAR_BIT) {
       LOG(fatal) << "Too many selections for single a observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
@@ -98,24 +111,25 @@ class SelectionContainer
   /// \param limitType Type of limit.
   /// \param skipMostPermissiveBit Whether to skip the most permissive bit in the bitmask.
   /// \param IsMinimalCut Whether this selection should be treated as a minimal required cut.
-  SelectionContainer(std::string const& baseName,
+  SelectionContainer(std::string const& SelectionName,
                      T lowerLimit,
                      T upperLimit,
                      std::vector<std::string> const& functions,
                      limits::LimitType limitType,
                      bool skipMostPermissiveBit,
-                     bool IsMinimalCut)
-    : mLimitType(limitType),
+                     bool IsMinimalCut,
+                     bool isOptionalCut)
+    : mSelectionName(SelectionName),
+      mLimitType(limitType),
       mSkipMostPermissiveBit(skipMostPermissiveBit),
-      mIsMinimalCut(IsMinimalCut)
+      mIsMinimalCut(IsMinimalCut),
+      mIsOptionalCut(isOptionalCut)
   {
     if (functions.size() > sizeof(BitmaskType) * CHAR_BIT) {
       LOG(fatal) << "Too many selections for single a observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
     for (std::size_t i = 0; i < functions.size(); i++) {
-      const std::string& func = functions.at(i);
-      const std::string& safeFunc = func.empty() ? "0.1" : func; // in case string is empty, set to constant value of 0.1
-      mSelectionFunctions.emplace_back((baseName + std::to_string(i)).c_str(), safeFunc.c_str(), lowerLimit, upperLimit);
+      mSelectionFunctions.emplace_back((mSelectionName + std::to_string(i)).c_str(), functions.at(i).c_str(), lowerLimit, upperLimit);
     }
     // functions for selection are not necessarily ordered correctly
     // use value at midpoint to order them
@@ -128,8 +142,6 @@ class SelectionContainer
     }
   }
 
-  virtual ~SelectionContainer() = default;
-
   /// \brief Sort static selection values based on the limit type.
   void sortSelections()
   {
@@ -140,7 +152,6 @@ class SelectionContainer
         break;
       case (limits::kLowerLimit):
       case (limits::kAbsLowerLimit):
-      case (limits::kEqual):
         std::sort(mSelectionValues.begin(), mSelectionValues.end(), [](T a, T b) { return a < b; });
         break;
       default:
@@ -155,16 +166,28 @@ class SelectionContainer
     switch (mLimitType) {
       case (limits::kUpperFunctionLimit):
       case (limits::kAbsUpperFunctionLimit):
-        std::sort(mSelectionFunctions.begin(), mSelectionFunctions.end(), [value](TF1 a, TF1 b) { return a.Eval(value) > b.Eval(value); });
+        std::sort(mSelectionFunctions.begin(), mSelectionFunctions.end(), [value](TF1 const& a, TF1 const& b) { return a.Eval(value) > b.Eval(value); });
         break;
       case (limits::kLowerFunctionLimit):
       case (limits::kAbsLowerFunctionLimit):
-        std::sort(mSelectionFunctions.begin(), mSelectionFunctions.end(), [value](TF1 a, TF1 b) { return a.Eval(value) < b.Eval(value); });
+        std::sort(mSelectionFunctions.begin(), mSelectionFunctions.end(), [value](TF1 const& a, TF1 const& b) { return a.Eval(value) < b.Eval(value); });
         break;
       default:
         break;
     }
   }
+
+  /// \brief Add comments to the selection values
+  /// \param comments Vector of comments
+  void addComments(std::vector<std::string> const& comments)
+  {
+    // make sure that the comments are in correct order
+    // the values passed to the selection container can be reordered based on the limit type
+    mComments = comments;
+  }
+
+  std::vector<std::string> const& getComments() const { return mComments; }
+  std::string const& getSelectionName() const { return mSelectionName; }
 
   /// \brief Update selection limits using internal functions evaluated at a given value.
   /// \param value Input value to evaluate functions at.
@@ -237,6 +260,26 @@ class SelectionContainer
     }
   }
 
+  /// \brief Evaluate which selection criteria are fulfilled for a given value.
+  /// \param values Values of the observable to evaluate
+  void evaluate(std::vector<T> const& values)
+  {
+    if (values.size() != mSelectionValues.size()) {
+      LOG(fatal) << "Wrong number of values have been passed";
+    }
+    for (size_t i = 0; i < mSelectionValues.size(); i++) {
+      switch (mLimitType) {
+        case (limits::kEqualArray):
+          if (std::fabs(values.at(i) - mSelectionValues.at(i)) < constants::math::Epsilon) {
+            mBitmask.set(i);
+          }
+          break;
+        default:
+          continue;
+      }
+    }
+  }
+
   /// \brief Retrieve the bitmask indicating which selections were passed.
   /// \return Bitset representing passed selections.
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> getBitmask() const
@@ -260,34 +303,38 @@ class SelectionContainer
   bool passesAsMinimalCut() const
   {
     if (mIsMinimalCut) {
-      // check if loosest bit is set
-      return mBitmask.test(0);
-    } else {
-      // if selection is not marked as a minimal cut, we return true by default
-      return true;
+      // check if any bit is set
+      // in case were bits are evaluted in order, if the loosests fails, all fail, so testing any is safe here
+      return mBitmask.any();
     }
+    // if a selection is not marked as minimal cut we return true by default
+    return true;
   }
 
   /// \brief Check whether any optional cuts are fulfilled.
   /// \return True if at least one optional cut is passed.
   bool passesAsOptionalCut() const
   {
-    // if selection is marekd as minimal cut, we return false by default
-    if (mIsMinimalCut) {
-      return false;
-    } else {
+    if (mIsOptionalCut) {
       // check if any bit is set
+      // in case were bits are evaluted in order, if the loosests fails, all fail, so testing any is safe here
       return mBitmask.any();
     }
+    // if a selection is not marked as optional cut we return false by default
+    return false;
   }
 
   /// \brief Get the loosest (most permissive) selection value.
   /// \return First (loosest) selection value.
   T getLoosestSelection() const { return mSelectionValues.at(0); }
 
-  /// \brief Check if there are any selection values configured.
+  /// \brief Check if there are any selection values configured. We also init values in case of function so this is safe
   /// \return True if no selections are configured.
   bool isEmpty() const { return mSelectionValues.empty(); }
+
+  /// \brief Check if there are any selection values configured.
+  /// \return True if no selections are configured.
+  bool isUsingFunctions() const { return !mSelectionFunctions.empty(); }
 
   /// \brief Get the number of bits to shift for the final bitmask.
   /// \return Number of bits to shift.
@@ -303,33 +350,80 @@ class SelectionContainer
     }
   }
 
+  void setOffset(int offset) { mOffset = offset; }
+  int getOffset() const { return mOffset; }
+
+  int getNSelections() const { return mSelectionValues.size(); }
+
+  std::string getBinLabel(int selectionIndex) const
+  {
+    std::ostringstream oss;
+    std::string sectionDelimiter = ":::";
+    std::string valueDelimiter = "___";
+    std::string noValue = "X";
+    oss << "SelectionName" << valueDelimiter << mSelectionName << sectionDelimiter
+        << "LimitType" << valueDelimiter << getLimitTypeAsString() << sectionDelimiter
+        << "MinimalCut" << valueDelimiter << (mIsMinimalCut ? "1" : "0") << sectionDelimiter
+        << "SkipMostPermissiveBit" << valueDelimiter << (mSkipMostPermissiveBit ? "1" : "0") << sectionDelimiter
+        << "OptionalCut" << valueDelimiter << (mIsOptionalCut ? "1" : "0") << sectionDelimiter
+        << "Shift" << valueDelimiter << getShift() << sectionDelimiter
+        << "Offset" << valueDelimiter << mOffset << sectionDelimiter
+        << "Value" << valueDelimiter << (mSelectionFunctions.empty() ? std::to_string(mSelectionValues.at(selectionIndex)) : mSelectionFunctions.at(selectionIndex).GetExpFormula().Data()) << sectionDelimiter
+        << "BitPosition" << valueDelimiter << (mSkipMostPermissiveBit ? (selectionIndex == 0 ? noValue : std::to_string(mOffset + selectionIndex - 1)) : std::to_string(mOffset + selectionIndex)) << sectionDelimiter
+        << "Comment" << valueDelimiter << (mComments.empty() ? noValue : mComments.at(selectionIndex));
+    return oss.str();
+  }
+
+  int getBitPosition(int selectionIndex) const
+  {
+    if (selectionIndex == 0 && mSkipMostPermissiveBit) {
+      LOG(fatal) << "Trying to accessed the bit position of a skipped selection. Breaking...";
+      return -1;
+    }
+    if (mSkipMostPermissiveBit) {
+      return mOffset + selectionIndex - 1;
+    } else {
+      return mOffset + selectionIndex;
+    }
+  }
+
   /// \brief Get string representation of the limit type.
   /// \return String name of the limit type.
   std::string getLimitTypeAsString() const { return limits::limitTypeAsStrings[mLimitType]; }
 
   /// \brief Get a copy of all selection values.
   /// \return Vector of selection values.
-  std::vector<T> getSelectionValues() const { return mSelectionValues; }
+  std::vector<T> const& getSelectionValues() const { return mSelectionValues; }
 
   /// \brief Get a copy of all selection values.
   /// \return Vector of selection values.
-  std::vector<TF1> getSelectionFunction() const { return mSelectionFunctions; }
+  std::vector<TF1> const& getSelectionFunction() const { return mSelectionFunctions; }
 
-  /// \brief Check if this container is marked as minimal cut.
+  /// \brief Check if this container is marked as minimal cut
   /// \return True if minimal cut, false otherwise.
   bool isMinimalCut() const { return mIsMinimalCut; }
+
+  /// \brief Check if this container is marked as optional cut
+  /// \return True if minimal cut, false otherwise.
+  bool isOptionalCut() const { return mIsOptionalCut; }
 
   /// \brief Check whether the most permissive bit is skipped.
   /// \return True if skipped, false otherwise.
   bool skipMostPermissiveBit() const { return mSkipMostPermissiveBit; }
 
+  void reset() { mBitmask.reset(); }
+
  private:
+  std::string mSelectionName = std::string("");
   std::vector<T> mSelectionValues = {};                      ///< Values used for the selection
   std::vector<TF1> mSelectionFunctions = {};                 ///< Function used for the selection
-  limits::LimitType mLimitType;                              ///< Limit type of selection
-  std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask = {}; ///< bitmask for the observable
+  limits::LimitType mLimitType = limits::kLimitTypeLast;     ///< Limit type of selection
   bool mSkipMostPermissiveBit = false;                       ///< whether to skip the last bit or not
   bool mIsMinimalCut = false;                                ///< whether to use this observable for minimal selection or not
+  bool mIsOptionalCut = false;                               ///< whether to use this observable for minimal selection or not
+  std::vector<std::string> mComments = {};                   ///< Comments for the values
+  std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask = {}; ///< bitmask for the observable
+  int mOffset = 0;
 };
 
 } // namespace o2::analysis::femto

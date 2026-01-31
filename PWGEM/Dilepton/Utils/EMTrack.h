@@ -17,19 +17,13 @@
 
 #include "Math/Vector4D.h"
 
-#include <vector>
-
 namespace o2::aod::pwgem::dilepton::utils
 {
 class EMTrack
 {
  public:
-  EMTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {}, float CYY = 0, float CZY = 0, float CZZ = 0)
+  EMTrack(float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, float CYY = 0, float CZY = 0, float CZZ = 0)
   {
-    fDFId = dfId;
-    fGlobalId = globalId;
-    fCollisionId = collisionId;
-    fTrackId = trackId;
     fPt = pt;
     fEta = eta;
     fPhi = phi;
@@ -40,41 +34,10 @@ class EMTrack
     fCYY = CYY;
     fCZY = CZY;
     fCZZ = CZZ;
-    fPairDCA3DinSigmaOTF = 0;
-
-    fAmbEleSelfIds = amb_ele_self_ids;
-    if (fAmbEleSelfIds.size() > 0) {
-      fIsAmbiguous = true;
-    } else {
-      fIsAmbiguous = false;
-    }
-    fVx = 0.f;
-    fVy = 0.f;
-    fVz = 0.f;
-    fVPos = ROOT::Math::PtEtaPhiMVector(0, 0, 0, 0);
-    fVNeg = ROOT::Math::PtEtaPhiMVector(0, 0, 0, 0);
-    fAmbPosLegSelfIds.clear();
-    fAmbNegLegSelfIds.clear();
-    fAmbPosLegSelfIds.shrink_to_fit();
-    fAmbNegLegSelfIds.shrink_to_fit();
-    fGlobalPosId = 0;
-    fGlobalNegId = 0;
   }
 
-  ~EMTrack()
-  {
-    fAmbEleSelfIds.clear();
-    fAmbEleSelfIds.shrink_to_fit();
-    fAmbPosLegSelfIds.clear();
-    fAmbNegLegSelfIds.clear();
-    fAmbPosLegSelfIds.shrink_to_fit();
-    fAmbNegLegSelfIds.shrink_to_fit();
-  }
+  ~EMTrack() {}
 
-  int dfId() const { return fDFId; }
-  int globalIndex() const { return fGlobalId; }
-  int collisionId() const { return fCollisionId; }
-  int trackId() const { return fTrackId; }
   float pt() const { return fPt; }
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
@@ -87,67 +50,15 @@ class EMTrack
   float cZY() const { return fCZY; }
   float cZZ() const { return fCZZ; }
 
+  float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(fPt * std::cosh(fEta), 2)) + fPt * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(fPt, 2))); }
   float p() const { return fPt * std::cosh(fEta); }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
-  bool has_ambiguousElectrons() const { return fIsAmbiguous; }
-  std::vector<int> ambiguousElectronsIds() const { return fAmbEleSelfIds; }
+  float e() const { return std::hypot(fPt * std::cosh(fEta), fMass); } // e2 = p2 + m2
   float signed1Pt() const { return fCharge * 1.f / fPt; }
 
-  float pairDca3DinSigmaOTF() const { return fPairDCA3DinSigmaOTF; }
-  void setPairDca3DinSigmaOTF(float dca) { fPairDCA3DinSigmaOTF = dca; }
-
-  void setConversionPointXYZ(float x, float y, float z)
-  {
-    fVx = x;
-    fVy = y;
-    fVz = z;
-  }
-  float vx() const { return fVx; }
-  float vy() const { return fVy; }
-  float vz() const { return fVz; }
-  float v0radius() const { return std::sqrt(std::pow(fVx, 2) + std::pow(fVy, 2)); }
-  float eta_cp() const { return std::atanh(fVz / sqrt(pow(fVx, 2) + pow(fVy, 2) + pow(fVz, 2))); }
-  float phi_cp() const { return std::atan2(fVy, fVx); }
-
-  void setPositiveLegPtEtaPhiM(float pt, float eta, float phi, float m)
-  {
-    fVPos.SetPt(pt);
-    fVPos.SetEta(eta);
-    fVPos.SetPhi(phi);
-    fVPos.SetM(m);
-  }
-  void setNegativeLegPtEtaPhiM(float pt, float eta, float phi, float m)
-  {
-    fVNeg.SetPt(pt);
-    fVNeg.SetEta(eta);
-    fVNeg.SetPhi(phi);
-    fVNeg.SetM(m);
-  }
-
-  ROOT::Math::PtEtaPhiMVector getPositiveLeg() const { return fVPos; }
-  ROOT::Math::PtEtaPhiMVector getNegativeLeg() const { return fVNeg; }
-
-  void setGlobalPosId(int id) { fGlobalPosId = id; }
-  void setGlobalNegId(int id) { fGlobalNegId = id; }
-  int globalIndexPos() const { return fGlobalPosId; }
-  int globalIndexNeg() const { return fGlobalNegId; }
-
-  void setAmbPosLegSelfIds(std::vector<int> selfIds) { fAmbPosLegSelfIds = selfIds; }
-  void setAmbNegLegSelfIds(std::vector<int> selfIds) { fAmbNegLegSelfIds = selfIds; }
-  std::vector<int> ambiguousPosLegIds() const { return fAmbPosLegSelfIds; }
-  std::vector<int> ambiguousNegLegIds() const { return fAmbNegLegSelfIds; }
-
-  void setCYY(float cYY) { fCYY = cYY; }
-  void setCZY(float cZY) { fCZY = cZY; }
-  void setCZZ(float cZZ) { fCZZ = cZZ; }
-
  protected:
-  int fDFId;
-  int fGlobalId;
-  int fCollisionId;
-  int fTrackId;
   float fPt;
   float fEta;
   float fPhi;
@@ -155,37 +66,20 @@ class EMTrack
   int8_t fCharge;
   float fDCAxy;
   float fDCAz;
-
   float fCYY;
   float fCZY;
   float fCZZ;
-
-  float fPairDCA3DinSigmaOTF;
-  bool fIsAmbiguous;
-  std::vector<int> fAmbEleSelfIds;
-
-  int fGlobalPosId;
-  int fGlobalNegId;
-  ROOT::Math::PtEtaPhiMVector fVPos;
-  ROOT::Math::PtEtaPhiMVector fVNeg;
-  std::vector<int> fAmbPosLegSelfIds; // for dileptons
-  std::vector<int> fAmbNegLegSelfIds; // for dileptons
-
-  // only for photon conversion point
-  float fVx;
-  float fVy;
-  float fVz;
 };
 
 class EMTrackWithCov : public EMTrack
 {
  public:
-  EMTrackWithCov(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {},
+  EMTrackWithCov(float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f,
                  float X = 0.f, float Y = 0.f, float Z = 0.f, float Alpha = 0.f, float Snp = 0.f, float Tgl = 0.f,
                  float CYY = 0.f, float CZY = 0.f, float CZZ = 0.f,
                  float CSnpY = 0.f, float CSnpZ = 0.f, float CSnpSnp = 0.f,
                  float CTglY = 0.f, float CTglZ = 0.f, float CTglSnp = 0.f, float CTglTgl = 0.f,
-                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(dfId, globalId, collisionId, trackId, pt, eta, phi, mass, charge, dcaXY, dcaZ, amb_ele_self_ids)
+                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(pt, eta, phi, mass, charge, dcaXY, dcaZ)
   {
     fX = X;
     fY = Y;
@@ -209,6 +103,8 @@ class EMTrackWithCov : public EMTrack
     fC1PtTgl = C1PtTgl;
     fC1Pt21Pt2 = C1Pt21Pt2;
   }
+
+  ~EMTrackWithCov() {}
 
   float x() const { return fX; }
   float y() const { return fY; }
@@ -249,6 +145,95 @@ class EMTrackWithCov : public EMTrack
   float fC1PtSnp;
   float fC1PtTgl;
   float fC1Pt21Pt2;
+};
+
+class EMPair : public EMTrack
+{
+ public:
+  EMPair(float pt, float eta, float phi, float mass, int8_t charge = 0) : EMTrack(pt, eta, phi, mass, charge, 0, 0, 0, 0, 0)
+  {
+    fPairDCA = 999.f;
+    fVPos = ROOT::Math::PtEtaPhiMVector(0, 0, 0, 0);
+    fVNeg = ROOT::Math::PtEtaPhiMVector(0, 0, 0, 0);
+    fVx = 0.f;
+    fVy = 0.f;
+    fVz = 0.f;
+  }
+
+  ~EMPair() {}
+
+  void setPairDCA(float dca) { fPairDCA = dca; }
+  float getPairDCA() const { return fPairDCA; }
+
+  void setPositiveLegPtEtaPhiM(float pt, float eta, float phi, float m)
+  {
+    fVPos.SetPt(pt);
+    fVPos.SetEta(eta);
+    fVPos.SetPhi(phi);
+    fVPos.SetM(m);
+  }
+  void setNegativeLegPtEtaPhiM(float pt, float eta, float phi, float m)
+  {
+    fVNeg.SetPt(pt);
+    fVNeg.SetEta(eta);
+    fVNeg.SetPhi(phi);
+    fVNeg.SetM(m);
+  }
+
+  void setPositiveLegPxPyPzM(float px, float py, float pz, float m)
+  {
+    float pt = std::sqrt(px * px + py * py);
+    float eta = std::atanh(pz / std::sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)));
+    float phi = std::atan2(py, px);
+    if (phi < 0.f) {
+      phi += 2.f * M_PI;
+    }
+
+    fVPos.SetPt(pt);
+    fVPos.SetEta(eta);
+    fVPos.SetPhi(phi);
+    fVPos.SetM(m);
+  }
+  void setNegativeLegPxPyPzM(float px, float py, float pz, float m)
+  {
+    float pt = std::sqrt(px * px + py * py);
+    float eta = std::atanh(pz / std::sqrt(std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2)));
+    float phi = std::atan2(py, px);
+    if (phi < 0.f) {
+      phi += 2.f * M_PI;
+    }
+
+    fVNeg.SetPt(pt);
+    fVNeg.SetEta(eta);
+    fVNeg.SetPhi(phi);
+    fVNeg.SetM(m);
+  }
+
+  ROOT::Math::PtEtaPhiMVector getPositiveLeg() const { return fVPos; }
+  ROOT::Math::PtEtaPhiMVector getNegativeLeg() const { return fVNeg; }
+
+  void setConversionPointXYZ(float x, float y, float z)
+  {
+    fVx = x;
+    fVy = y;
+    fVz = z;
+  }
+  float vx() const { return fVx; }
+  float vy() const { return fVy; }
+  float vz() const { return fVz; }
+  float v0radius() const { return std::sqrt(std::pow(fVx, 2) + std::pow(fVy, 2)); }
+  float eta_cp() const { return std::atanh(fVz / std::sqrt(std::pow(fVx, 2) + std::pow(fVy, 2) + std::pow(fVz, 2))); }
+  float phi_cp() const { return std::atan2(fVy, fVx); }
+
+ protected:
+  float fPairDCA;
+  ROOT::Math::PtEtaPhiMVector fVPos;
+  ROOT::Math::PtEtaPhiMVector fVNeg;
+
+  // only for photon conversion point
+  float fVx;
+  float fVy;
+  float fVz;
 };
 
 } // namespace o2::aod::pwgem::dilepton::utils

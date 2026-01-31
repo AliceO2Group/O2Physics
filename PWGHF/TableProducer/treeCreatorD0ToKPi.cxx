@@ -241,8 +241,6 @@ struct HfTreeCreatorD0ToKPi {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<bool> fillCorrBkgs{"fillCorrBkgs", false, "Flag to fill derived tables with correlated background candidates"};
 
-  HfHelper hfHelper;
-
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
@@ -286,7 +284,7 @@ struct HfTreeCreatorD0ToKPi {
       runNumber);
   }
 
-  template <bool applyMl, typename T>
+  template <bool ApplyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double topoChi2,
                  double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin)
   {
@@ -329,7 +327,7 @@ struct HfTreeCreatorD0ToKPi {
         flagMcDecay,
         origin);
     } else {
-      double cosThetaStar = candFlag == 0 ? hfHelper.cosThetaStarD0(candidate) : hfHelper.cosThetaStarD0bar(candidate);
+      double cosThetaStar = candFlag == 0 ? HfHelper::cosThetaStarD0(candidate) : HfHelper::cosThetaStarD0bar(candidate);
       rowCandidateFull(
         candidate.posX(),
         candidate.posY(),
@@ -392,7 +390,7 @@ struct HfTreeCreatorD0ToKPi {
         flagMcDecay,
         origin);
     }
-    if constexpr (applyMl) {
+    if constexpr (ApplyMl) {
       if (candFlag == 0) {
         rowCandidateMl(
           candidate.mlProbD0()[0],
@@ -407,7 +405,7 @@ struct HfTreeCreatorD0ToKPi {
     }
   }
 
-  template <int reconstructionType, bool applyMl, typename CandType>
+  template <int ReconstructionType, bool ApplyMl, typename CandType>
   void processData(aod::Collisions const& collisions,
                    CandType const& candidates,
                    aod::Tracks const&, aod::BCs const&)
@@ -424,34 +422,34 @@ struct HfTreeCreatorD0ToKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    if constexpr (applyMl) {
+    if constexpr (ApplyMl) {
       rowCandidateMl.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
       }
-      double yD = hfHelper.yD0(candidate);
-      double eD = hfHelper.eD0(candidate);
-      double ctD = hfHelper.ctD0(candidate);
+      double const yD = HfHelper::yD0(candidate);
+      double const eD = HfHelper::eD0(candidate);
+      double const ctD = HfHelper::ctD0(candidate);
       float massD0, massD0bar;
       float topolChi2PerNdf = -999.;
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
         topolChi2PerNdf = candidate.kfTopolChi2OverNdf();
       } else {
-        massD0 = hfHelper.invMassD0ToPiK(candidate);
-        massD0bar = hfHelper.invMassD0barToKPi(candidate);
+        massD0 = HfHelper::invMassD0ToPiK(candidate);
+        massD0bar = HfHelper::invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<applyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
+        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
       }
       if (candidate.isSelD0bar()) {
-        fillTable<applyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
+        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
       }
     }
   }
@@ -492,7 +490,7 @@ struct HfTreeCreatorD0ToKPi {
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithKFParticleMl, "Process data with KFParticle and ML", false);
 
-  template <int reconstructionType, bool onlyBkg, bool onlySig, bool applyMl, typename CandType>
+  template <int ReconstructionType, bool OnlyBkg, bool OnlySig, bool ApplyMl, typename CandType>
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  CandType const& candidates,
@@ -512,22 +510,22 @@ struct HfTreeCreatorD0ToKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    if constexpr (applyMl) {
+    if constexpr (ApplyMl) {
       rowCandidateMl.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
-      if constexpr (onlyBkg) {
+      if constexpr (OnlyBkg) {
         if ((std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0))) {
           continue;
         }
         if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+          float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
             continue;
           }
         }
       }
-      if constexpr (onlySig) {
+      if constexpr (OnlySig) {
         if (fillCorrBkgs && candidate.flagMcMatchRec() == 0) {
           continue;
         }
@@ -535,24 +533,24 @@ struct HfTreeCreatorD0ToKPi {
           continue;
         }
       }
-      double yD = hfHelper.yD0(candidate);
-      double eD = hfHelper.eD0(candidate);
-      double ctD = hfHelper.ctD0(candidate);
+      double const yD = HfHelper::yD0(candidate);
+      double const eD = HfHelper::eD0(candidate);
+      double const ctD = HfHelper::ctD0(candidate);
       float massD0, massD0bar;
       float topolChi2PerNdf = -999.;
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
         topolChi2PerNdf = candidate.kfTopolChi2OverNdf();
       } else {
-        massD0 = hfHelper.invMassD0ToPiK(candidate);
-        massD0bar = hfHelper.invMassD0barToKPi(candidate);
+        massD0 = HfHelper::invMassD0ToPiK(candidate);
+        massD0bar = HfHelper::invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<applyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
+        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
       }
       if (candidate.isSelD0bar()) {
-        fillTable<applyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
+        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
       }
     }
 

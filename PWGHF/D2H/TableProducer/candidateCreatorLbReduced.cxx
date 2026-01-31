@@ -109,8 +109,8 @@ struct HfCandidateCreatorLbReduced {
   }
 
   template <typename Config>
-  inline std::pair<float, float> computeInvMass2LcPiWindow(Config const& configs,
-                                                           float invMassWindowLcPiTolerance)
+  std::pair<float, float> computeInvMass2LcPiWindow(Config const& configs,
+                                                    float invMassWindowLcPiTolerance)
   {
 
     myInvMassWindowLcPi = 0.0f;
@@ -118,11 +118,11 @@ struct HfCandidateCreatorLbReduced {
       myInvMassWindowLcPi = config.myInvMassWindowLcPi();
     }
 
-    float deltaMin = MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance;
-    float deltaMax = MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance;
+    float const deltaMin = MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance;
+    float const deltaMax = MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance;
 
-    float invMass2LcPiMin = deltaMin * deltaMin;
-    float invMass2LcPiMax = deltaMax * deltaMax;
+    float const invMass2LcPiMin = deltaMin * deltaMin;
+    float const invMass2LcPiMax = deltaMax * deltaMax;
 
     return {invMass2LcPiMin, invMass2LcPiMax};
   }
@@ -134,7 +134,7 @@ struct HfCandidateCreatorLbReduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2LcPiMin minimum Lb invariant-mass
   /// \param invMass2LcPiMax maximum Lb invariant-mass
-  template <bool withLcMl, typename Cands, typename Pions, typename Coll>
+  template <bool WithLcMl, typename Cands, typename Pions, typename Coll>
   void runCandidateCreation(Coll const& collision,
                             Cands const& candsLcThisColl,
                             Pions const& tracksPionThisCollision,
@@ -189,8 +189,7 @@ struct HfCandidateCreatorLbReduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate Lc and Pi to the Lb vertex
-        df2.propagateTracksToVertex();
+        // get Lc and Pi tracks (propagated to the Lb vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecLc);   // momentum of Lc at the Lb vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Lb vertex
@@ -223,7 +222,7 @@ struct HfCandidateCreatorLbReduced {
 
         rowCandidateProngs(candLc.globalIndex(), trackPion.globalIndex());
 
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           if (candLc.invMassHypo0() > 0) {
             rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo0(), candLc.mlScorePromptMassHypo0(), candLc.mlScoreNonpromptMassHypo0());
           } else {
@@ -308,7 +307,7 @@ struct HfCandidateCreatorLbReducedExpressions {
   /// \param checkDecayTypeMc
   /// \param rowsLcPiMcRec MC reco information on LcPi pairs
   /// \param candsLb prong global indices of Lb candidates
-  template <bool checkDecayTypeMc, typename McRec>
+  template <bool CheckDecayTypeMc, typename McRec>
   void fillLbMcRec(McRec const& rowsLcPiMcRec, HfRedLbProngs const& candsLb)
   {
     for (const auto& candLb : candsLb) {
@@ -319,7 +318,7 @@ struct HfCandidateCreatorLbReducedExpressions {
         }
         rowLbMcRec(rowLcPiMcRec.flagMcMatchRec(), rowLcPiMcRec.flagWrongCollision(), rowLcPiMcRec.debugMcRec(), rowLcPiMcRec.ptMother());
         filledMcInfo = true;
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowLbMcCheck(rowLcPiMcRec.pdgCodeBeautyMother(),
                        rowLcPiMcRec.pdgCodeCharmMother(),
                        rowLcPiMcRec.pdgCodeProng0(),
@@ -331,7 +330,7 @@ struct HfCandidateCreatorLbReducedExpressions {
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the LcPi creator
         rowLbMcRec(0, -1, -1, -1.f);
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowLbMcCheck(-1, -1, -1, -1, -1, -1);
         }
       }

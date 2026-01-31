@@ -14,41 +14,42 @@
 /// \brief  task to calculate the P He3 flow correlation.
 // C++/ROOT includes.
 #include <CCDB/BasicCCDBManager.h>
-#include <chrono>
-#include <string>
-#include <vector>
-#include <utility>
-#include <memory>
-#include <TF1.h>
+
 #include <TComplex.h>
+#include <TF1.h>
 #include <TH1F.h>
 #include <TH2D.h>
 #include <TMath.h>
 #include <TVector2.h>
 
+#include <chrono>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 // o2Physics includes.
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-
-#include "DataFormatsTPC/BetheBlochAleph.h"
-
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "MathUtils/BetheBlochAleph.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,6 +65,7 @@ DECLARE_SOA_COLUMN(EseCentFT0C, eseCentFT0C, float);
 DECLARE_SOA_COLUMN(EsePsi2FT0C, esePsi2FT0C, float);
 DECLARE_SOA_COLUMN(Eseq2Tar, eseq2Tar, float);
 DECLARE_SOA_COLUMN(Eseq2Ref, eseq2Ref, float);
+DECLARE_SOA_COLUMN(Eseq2FT0C, eseq2FT0C, float);
 DECLARE_SOA_COLUMN(EseTarSign, eseTarSign, int8_t);
 DECLARE_SOA_COLUMN(EseTarTPCInnerParam, eseTarTPCInnerParam, float);
 DECLARE_SOA_COLUMN(EseTarTPCSignal, eseTarTPCSignal, float);
@@ -88,6 +90,7 @@ DECLARE_SOA_TABLE(ESETable, "AOD", "ESETable",
                   ese_var_table::EsePsi2FT0C,
                   ese_var_table::Eseq2Tar,
                   ese_var_table::Eseq2Ref,
+                  ese_var_table::Eseq2FT0C,
                   ese_var_table::EseTarSign,
                   ese_var_table::EseTarTPCInnerParam,
                   ese_var_table::EseTarTPCSignal,
@@ -112,6 +115,7 @@ struct ESECandidate {
   float psi2FT0C;
   float q2Tar;
   float q2Ref;
+  float q2FT0C;
   int8_t signTar;
   float tpcInnerParamTar;
   float tpcSignalTar;
@@ -297,16 +301,19 @@ std::shared_ptr<TH1> hPIDQATar1D[12];
 std::shared_ptr<TH2> hPIDQATar2D[4];
 std::shared_ptr<TH3> hPIDQATar3D[3];
 std::shared_ptr<TProfile3D> hv2Tar[2];
-std::shared_ptr<TH1> hESEQATar1D[4];
-std::shared_ptr<TH2> hESEQATar2D;
+std::shared_ptr<TH1> hESEQATar1D[8];
+std::shared_ptr<TH2> hESEQATar2D[2];
 std::shared_ptr<THnSparse> hESETar;
 // Ref ptr
 std::shared_ptr<TH1> hPIDQARef1D[12];
 std::shared_ptr<TH2> hPIDQARef2D[4];
 std::shared_ptr<TH3> hPIDQARef3D[3];
 std::shared_ptr<TProfile3D> hv2Ref[2];
-std::shared_ptr<TH1> hESEQARef1D[4];
-std::shared_ptr<TH2> hESEQARef2D;
+std::shared_ptr<TH1> hESEQARef1D[8];
+std::shared_ptr<TH2> hESEQARef2D[2];
+// FT0C general q2 QA
+std::shared_ptr<TH1> hESEQAFT0C1D[2];
+std::shared_ptr<TH2> hESEQAFT0C2D[2];
 } // namespace ese_parameters
 
 using TracksPIDFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>;
@@ -396,6 +403,7 @@ struct FlowEsePHe3 {
   ConfigurableAxis cfgaxisCent{"cfgaxisCent", {90, 0, 90}, ""};
   ConfigurableAxis cfgaxisq2Tar{"cfgaxisq2Tar", {100, 0, 2}, "Binning for q_{2} traget particle"};
   ConfigurableAxis cfgaxisq2Ref{"cfgaxisq2Ref", {120, 0, 12}, "Binning for q_{2} reference particle"};
+  ConfigurableAxis cfgaxisq2FT0C{"cfgaxisq2FT0C", {900, 0, 900}, "Binning for q_{2} FT0C"};
   ConfigurableAxis cfgq2NumeratorTar{"cfgq2NumeratorTar", {20, 0, 2}, "q2 Numerator bin for tar particle"};
   ConfigurableAxis cfgq2NumeratorRef{"cfgq2NumeratorRef", {100, 0, 10}, "q2 Numerator bin for ref particle"};
   ConfigurableAxis cfgq2DenominatorTar{"cfgq2DenominatorTar", {20, 0, 2}, "q2 Denominator bin for tar particle"};
@@ -430,35 +438,35 @@ struct FlowEsePHe3 {
     switch (POI) {
       case ese_parameters::kProton: {
         const double bgScaling[2]{ese_parameters::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / ese_parameters::Masses[0], ese_parameters::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / ese_parameters::Masses[0]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(0u, 0u), cfgBetheBlochParams->get(0u, 1u), cfgBetheBlochParams->get(0u, 2u), cfgBetheBlochParams->get(0u, 3u), cfgBetheBlochParams->get(0u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(0u, 0u), cfgBetheBlochParams->get(0u, 1u), cfgBetheBlochParams->get(0u, 2u), cfgBetheBlochParams->get(0u, 3u), cfgBetheBlochParams->get(0u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(0u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kDeuteron: {
         const double bgScaling[2]{ese_parameters::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / ese_parameters::Masses[1], ese_parameters::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / ese_parameters::Masses[1]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(1u, 0u), cfgBetheBlochParams->get(1u, 1u), cfgBetheBlochParams->get(1u, 2u), cfgBetheBlochParams->get(1u, 3u), cfgBetheBlochParams->get(1u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(1u, 0u), cfgBetheBlochParams->get(1u, 1u), cfgBetheBlochParams->get(1u, 2u), cfgBetheBlochParams->get(1u, 3u), cfgBetheBlochParams->get(1u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(1u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kTriton: {
         const double bgScaling[2]{ese_parameters::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / ese_parameters::Masses[2], ese_parameters::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / ese_parameters::Masses[2]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(2u, 0u), cfgBetheBlochParams->get(2u, 1u), cfgBetheBlochParams->get(2u, 2u), cfgBetheBlochParams->get(2u, 3u), cfgBetheBlochParams->get(2u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(2u, 0u), cfgBetheBlochParams->get(2u, 1u), cfgBetheBlochParams->get(2u, 2u), cfgBetheBlochParams->get(2u, 3u), cfgBetheBlochParams->get(2u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(2u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kHe3: {
         const double bgScaling[2]{ese_parameters::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / ese_parameters::Masses[3], ese_parameters::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / ese_parameters::Masses[3]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(3u, 0u), cfgBetheBlochParams->get(3u, 1u), cfgBetheBlochParams->get(3u, 2u), cfgBetheBlochParams->get(3u, 3u), cfgBetheBlochParams->get(3u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(3u, 0u), cfgBetheBlochParams->get(3u, 1u), cfgBetheBlochParams->get(3u, 2u), cfgBetheBlochParams->get(3u, 3u), cfgBetheBlochParams->get(3u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(3u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
       }
       case ese_parameters::kAlpha: {
         const double bgScaling[2]{ese_parameters::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 0u) / ese_parameters::Masses[4], ese_parameters::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 1u) / ese_parameters::Masses[4]};
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(4u, 0u), cfgBetheBlochParams->get(4u, 1u), cfgBetheBlochParams->get(4u, 2u), cfgBetheBlochParams->get(4u, 3u), cfgBetheBlochParams->get(4u, 4u))};
+        double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScaling[iC]), cfgBetheBlochParams->get(4u, 0u), cfgBetheBlochParams->get(4u, 1u), cfgBetheBlochParams->get(4u, 2u), cfgBetheBlochParams->get(4u, 3u), cfgBetheBlochParams->get(4u, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(4u, 5u)};
         double nSigmaTPC{static_cast<float>((track.tpcSignal() - expBethe) / expSigma)};
         return nSigmaTPC;
@@ -962,6 +970,7 @@ struct FlowEsePHe3 {
     float psi2 = helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], 2);
     float q2Tarinit{0.f};
     float q2Refinit{0.f};
+    float q2FT0Cinit{0.f};
     for (const auto& track : tracks) { // loop on tracks
       if (!trackSelBasic(track)) {
         continue;
@@ -1016,7 +1025,7 @@ struct FlowEsePHe3 {
           }
         }
         ese_parameters::eseCandidates.emplace_back(ESECandidate{
-          collision.posZ(), collision.centFT0C(), psi2, q2Tarinit, q2Refinit, static_cast<int8_t>(track.sign()), correctedTpcInnerParam, track.tpcSignal(), ese_parameters::Charges[poiTar] * track.pt(), track.eta(), track.phi(),
+          collision.posZ(), collision.centFT0C(), psi2, q2Tarinit, q2Refinit, q2FT0Cinit, static_cast<int8_t>(track.sign()), correctedTpcInnerParam, track.tpcSignal(), ese_parameters::Charges[poiTar] * track.pt(), track.eta(), track.phi(),
           track.dcaXY(), track.dcaZ(), static_cast<uint8_t>(track.tpcNClsFound()), track.itsNCls(), track.tpcChi2NCl(), track.itsChi2NCl(),
           nSigmaTPCTar, nSigmaTOFTar, nSigmaITSTar, track.itsClusterSizes()});
       }
@@ -1245,19 +1254,33 @@ struct FlowEsePHe3 {
       ese_parameters::hESEQATar1D[1] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2", cfgTarName.value.c_str()), ";#it{q}_{2};counts", HistType::kTH1F, {cfgaxisq2Tar});
       ese_parameters::hESEQATar1D[2] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Numerator", cfgTarName.value.c_str()), ";#it{q}_{2} numerator;counts", HistType::kTH1F, {cfgq2NumeratorTar});
       ese_parameters::hESEQATar1D[3] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Denominator", cfgTarName.value.c_str()), ";#it{q}_{2} denominator;counts", HistType::kTH1F, {cfgq2DenominatorTar});
-      ese_parameters::hESEQATar2D = histsESE.add<TH2>(Form("ESE/ESEQA/hist_%sq2_Cent", cfgTarName.value.c_str()), ";#it{q}_{2};Centrality (%)", HistType::kTH2F, {cfgaxisq2Tar, cfgaxisCent});
+      ese_parameters::hESEQATar1D[4] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sNum_Survived", cfgTarName.value.c_str()), ";Num_{Proton}/Event;counts", HistType::kTH1F, {{100, 0, 100}});
+      ese_parameters::hESEQATar1D[5] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2_Survived", cfgTarName.value.c_str()), ";#it{q}_{2};counts", HistType::kTH1F, {cfgaxisq2Tar});
+      ese_parameters::hESEQATar1D[6] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Numerator_Survived", cfgTarName.value.c_str()), ";#it{q}_{2} numerator;counts", HistType::kTH1F, {cfgq2NumeratorTar});
+      ese_parameters::hESEQATar1D[7] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Denominator_Survived", cfgTarName.value.c_str()), ";#it{q}_{2} denominator;counts", HistType::kTH1F, {cfgq2DenominatorTar});
+      ese_parameters::hESEQATar2D[0] = histsESE.add<TH2>(Form("ESE/ESEQA/hist_%sq2_Cent", cfgTarName.value.c_str()), ";#it{q}_{2};Centrality (%)", HistType::kTH2F, {cfgaxisq2Tar, cfgaxisCent});
+      ese_parameters::hESEQATar2D[1] = histsESE.add<TH2>(Form("ESE/ESEQA/hist_%sq2_Cent_Survived", cfgTarName.value.c_str()), ";#it{q}_{2};Centrality (%)", HistType::kTH2F, {cfgaxisq2Tar, cfgaxisCent});
       ese_parameters::hESEQARef1D[0] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sNum", cfgRefName.value.c_str()), ";Num_{He3}/Event;counts", HistType::kTH1F, {{10, 0, 10}});
       ese_parameters::hESEQARef1D[1] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2", cfgRefName.value.c_str()), ";#it{q}_{2};counts", HistType::kTH1F, {cfgaxisq2Ref});
       ese_parameters::hESEQARef1D[2] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Numerator", cfgRefName.value.c_str()), ";#it{q}_{2} numerator;counts", HistType::kTH1F, {cfgq2NumeratorRef});
       ese_parameters::hESEQARef1D[3] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Denominator", cfgRefName.value.c_str()), ";#it{q}_{2} denominator;counts", HistType::kTH1F, {cfgq2DenominatorRef});
-      ese_parameters::hESEQARef2D = histsESE.add<TH2>(Form("ESE/ESEQA/hist_%sq2_Cent", cfgRefName.value.c_str()), ";#it{q}_{2};Centrality (%)", HistType::kTH2F, {cfgaxisq2Ref, cfgaxisCent});
+      ese_parameters::hESEQARef1D[4] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sNum_Survived", cfgRefName.value.c_str()), ";Num_{He3}/Event;counts", HistType::kTH1F, {{10, 0, 10}});
+      ese_parameters::hESEQARef1D[5] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2_Survived", cfgRefName.value.c_str()), ";#it{q}_{2};counts", HistType::kTH1F, {cfgaxisq2Ref});
+      ese_parameters::hESEQARef1D[6] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Numerator_Survived", cfgRefName.value.c_str()), ";#it{q}_{2} numerator;counts", HistType::kTH1F, {cfgq2NumeratorRef});
+      ese_parameters::hESEQARef1D[7] = histsESE.add<TH1>(Form("ESE/ESEQA/hist_%sq2Denominator_Survived", cfgRefName.value.c_str()), ";#it{q}_{2} denominator;counts", HistType::kTH1F, {cfgq2DenominatorRef});
+      ese_parameters::hESEQARef2D[0] = histsESE.add<TH2>(Form("ESE/ESEQA/hist_%sq2_Cent", cfgRefName.value.c_str()), ";#it{q}_{2};Centrality (%)", HistType::kTH2F, {cfgaxisq2Ref, cfgaxisCent});
+      ese_parameters::hESEQARef2D[1] = histsESE.add<TH2>(Form("ESE/ESEQA/hist_%sq2_Cent_Survived", cfgRefName.value.c_str()), ";#it{q}_{2};Centrality (%)", HistType::kTH2F, {cfgaxisq2Ref, cfgaxisCent});
+      ese_parameters::hESEQAFT0C1D[0] = histsESE.add<TH1>("ESE/ESEQA/hist_q2FT0C", ";#it{q}_{2} (FT0C)", HistType::kTH1F, {cfgaxisq2FT0C});
+      ese_parameters::hESEQAFT0C1D[1] = histsESE.add<TH1>("ESE/ESEQA/hist_q2FT0C_Survived", ";#it{q}_{2} (FT0C)", HistType::kTH1F, {cfgaxisq2FT0C});
+      ese_parameters::hESEQAFT0C2D[0] = histsESE.add<TH2>("ESE/ESEQA/hist_q2FT0C_Cent", ";#it{q}_{2} (FT0C);Centrality (%)", HistType::kTH2F, {cfgaxisq2FT0C, cfgaxisCent});
+      ese_parameters::hESEQAFT0C2D[1] = histsESE.add<TH2>("ESE/ESEQA/hist_q2FT0C_Cent_Survived", ";#it{q}_{2} (FT0C);Centrality (%)", HistType::kTH2F, {cfgaxisq2FT0C, cfgaxisCent});
     }
     if (cfgOpenESE) {
       ese_parameters::hESETar = histsESE.add<THnSparse>(Form("ESE/ESE/histESE_%s", cfgTarName.value.c_str()), ";#it{p}_{T};Centrality (%);#it{q}_{2};cos(#phi-#Psi_{2});Charge", HistType::kTHnSparseF, {cfgaxispt, cfgaxisCent, cfgaxisq2Ref, axisCos, axisCharge});
     }
   }
 
-  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::Qvectors>>::iterator const& collision, TracksPIDFull const& tracks)
+  void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::Qvectors, aod::QvectorFT0CVecs>>::iterator const& collision, TracksPIDFull const& tracks)
   {
     ese_parameters::eseCandidates.clear();
     ese_parameters::eseReferences.clear();
@@ -1269,6 +1292,7 @@ struct FlowEsePHe3 {
       return;
     if (cfgOpenFullEventQA)
       fillEventQAhistAf(collision, multTrk, centrality);
+    float q2FT0C{std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C())};
     float q2Tarx{0.};
     float q2Tary{0.};
     float q2Refx{0.};
@@ -1284,12 +1308,14 @@ struct FlowEsePHe3 {
       ese_parameters::hESEQATar1D[1]->Fill(q2Tar);
       ese_parameters::hESEQATar1D[2]->Fill(std::hypot(q2Tarx, q2Tary));
       ese_parameters::hESEQATar1D[3]->Fill(std::sqrt(static_cast<float>(multiTar)));
-      ese_parameters::hESEQATar2D->Fill(q2Tar, centrality);
+      ese_parameters::hESEQATar2D[0]->Fill(q2Tar, centrality);
       ese_parameters::hESEQARef1D[0]->Fill(multiRef);
       ese_parameters::hESEQARef1D[1]->Fill(q2Ref);
-      ese_parameters::hESEQARef2D->Fill(q2Ref, centrality);
       ese_parameters::hESEQARef1D[2]->Fill(std::hypot(q2Refx, q2Refy));
       ese_parameters::hESEQARef1D[3]->Fill(std::sqrt(static_cast<float>(multiRef)));
+      ese_parameters::hESEQARef2D[0]->Fill(q2Ref, centrality);
+      ese_parameters::hESEQAFT0C1D[0]->Fill(q2FT0C);
+      ese_parameters::hESEQAFT0C2D[0]->Fill(q2FT0C, centrality);
     }
     if (cfgOpenv2Ref) {
       for (const auto& c : ese_parameters::eseReferences) {
@@ -1302,8 +1328,22 @@ struct FlowEsePHe3 {
     }
     if (multiTar == 0)
       return;
+    if (cfgOpenESEQA) {
+      ese_parameters::hESEQATar1D[4]->Fill(multiTar);
+      ese_parameters::hESEQATar1D[5]->Fill(q2Tar);
+      ese_parameters::hESEQATar1D[6]->Fill(std::hypot(q2Tarx, q2Tary));
+      ese_parameters::hESEQATar1D[7]->Fill(std::sqrt(static_cast<float>(multiTar)));
+      ese_parameters::hESEQATar2D[1]->Fill(q2Tar, centrality);
+      ese_parameters::hESEQARef1D[4]->Fill(multiRef);
+      ese_parameters::hESEQARef1D[5]->Fill(q2Ref);
+      ese_parameters::hESEQARef1D[6]->Fill(std::hypot(q2Refx, q2Refy));
+      ese_parameters::hESEQARef1D[7]->Fill(std::sqrt(static_cast<float>(multiRef)));
+      ese_parameters::hESEQARef2D[1]->Fill(q2Ref, centrality);
+      ese_parameters::hESEQAFT0C1D[1]->Fill(q2FT0C);
+      ese_parameters::hESEQAFT0C2D[1]->Fill(q2FT0C, centrality);
+    }
     for (const auto& c : ese_parameters::eseCandidates) {
-      eseTable(c.vtz, c.centFT0C, c.psi2FT0C, q2Tar, q2Ref, c.signTar, c.tpcInnerParamTar, c.tpcSignalTar, c.ptTar, c.etaTar, c.phiTar, c.dcaXYTar, c.dcaZTar, c.tpcNclsTar, c.itsNclsTar, c.tpcChi2NDFTar, c.itsChi2NDFTar, c.tpcNSigmaTar, c.tofNSigmaTar, c.itsNSigmaTar, c.itsClusSizeTar);
+      eseTable(c.vtz, c.centFT0C, c.psi2FT0C, q2Tar, q2Ref, q2FT0C, c.signTar, c.tpcInnerParamTar, c.tpcSignalTar, c.ptTar, c.etaTar, c.phiTar, c.dcaXYTar, c.dcaZTar, c.tpcNclsTar, c.itsNclsTar, c.tpcChi2NDFTar, c.itsChi2NDFTar, c.tpcNSigmaTar, c.tofNSigmaTar, c.itsNSigmaTar, c.itsClusSizeTar);
       if (cfgOpenESE) {
         ese_parameters::hESETar->Fill(c.ptTar, c.centFT0C, q2Ref, std::cos(2 * (c.phiTar - c.psi2FT0C)), c.signTar);
       }

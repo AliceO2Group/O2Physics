@@ -30,10 +30,10 @@
 /// \since  May 22, 2024
 ///
 
-#include "TableHelper.h"
-
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -48,7 +48,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -57,6 +56,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TPDGCode.h>
@@ -82,9 +82,6 @@ struct OnTheFlyRichPid {
   Service<o2::framework::O2DatabasePDG> pdg;
   // Necessary for LUTs
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  // master setting: magnetic field
-  Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
 
   // add rich-specific configurables here
   Configurable<int> bRichNumberOfSectors{"bRichNumberOfSectors", 21, "barrel RICH number of sectors"};
@@ -132,11 +129,12 @@ struct OnTheFlyRichPid {
   Configurable<float> bRichRefractiveIndexSector20{"bRichRefractiveIndexSector20", 1.03, "barrel RICH refractive index central(s)-20 and central(s)+20"}; // central(s)-20 and central(s)+20
   Configurable<float> bRICHPixelSize{"bRICHPixelSize", 0.1, "barrel RICH pixel size (cm)"};
   Configurable<float> bRichGapRefractiveIndex{"bRichGapRefractiveIndex", 1.000283, "barrel RICH gap refractive index"};
+  Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  // Track smearer (here used to get relative pt and eta uncertainties)
-  o2::delphes::DelphesO2TrackSmearer mSmearer;
+  // Track smearer array, one per geometry
+  std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
 
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -286,40 +284,69 @@ struct OnTheFlyRichPid {
     // std::cout << std::endl << std::endl;
   }
 
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
+    mGeoContainer.init(initContext);
+
+    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
+
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
-    if (magneticField.value < o2::constants::math::Epsilon) {
-      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", magneticField, false)) {
-        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
-      }
-      LOG(info) << "Bz = " << magneticField.value << " T";
-    }
+    for (int icfg = 0; icfg < nGeometries; ++icfg) {
+      const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+      mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
+      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
+      mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+      mSmearer[icfg]->setDownloadPath("RICHPID");
+      std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
+      for (const auto& entry : globalConfiguration) {
+        int pdg = 0;
+        if (entry.first.find("lut") != 0) {
+          continue;
+        }
+        if (entry.first.find("lutEl") != std::string::npos) {
+          pdg = kElectron;
+        } else if (entry.first.find("lutMu") != std::string::npos) {
+          pdg = kMuonMinus;
+        } else if (entry.first.find("lutPi") != std::string::npos) {
+          pdg = kPiPlus;
+        } else if (entry.first.find("lutKa") != std::string::npos) {
+          pdg = kKPlus;
+        } else if (entry.first.find("lutPr") != std::string::npos) {
+          pdg = kProton;
+        } else if (entry.first.find("lutDe") != std::string::npos) {
+          pdg = o2::constants::physics::kDeuteron;
+        } else if (entry.first.find("lutTr") != std::string::npos) {
+          pdg = o2::constants::physics::kTriton;
+        } else if (entry.first.find("lutHe3") != std::string::npos) {
+          pdg = o2::constants::physics::kHelium3;
+        } else if (entry.first.find("lutAl") != std::string::npos) {
+          pdg = o2::constants::physics::kAlpha;
+        }
 
-    // Load LUT for pt and eta smearing
-    if (flagIncludeTrackAngularRes && flagRICHLoadDelphesLUTs) {
-      mSmearer.setCcdbManager(ccdb.operator->());
-      auto loadLUT = [&](int pdg, const std::string& cfgNameToInherit) {
-        std::string lut = "none";
-        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, lut, false)) {
-          LOG(fatal) << "Could not get " << cfgNameToInherit << " from on-the-fly-tracker task";
+        std::string filename = entry.second;
+        if (pdg == 0) {
+          LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
         }
-        bool success = mSmearer.loadTable(pdg, lut.c_str());
-        if (!success && !lut.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lut;
+        LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
+        if (filename.empty()) {
+          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
         }
-      };
-      loadLUT(11, "lutEl");
-      loadLUT(13, "lutMu");
-      loadLUT(211, "lutPi");
-      loadLUT(321, "lutKa");
-      loadLUT(2212, "lutPr");
-      loadLUT(1000010020, "lutDe");
-      loadLUT(1000010030, "lutTr");
-      loadLUT(1000020030, "lutHe3");
-      loadLUT(1000020040, "lutAl");
+        // strip from leading/trailing spaces
+        filename.erase(0, filename.find_first_not_of(" "));
+        filename.erase(filename.find_last_not_of(" ") + 1);
+        if (filename.empty()) {
+          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+        }
+        bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
+        if (!success) {
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
+        }
+      }
     }
 
     if (doQAplots) {
@@ -691,7 +718,7 @@ struct OnTheFlyRichPid {
     return trackAngularResolution;
   }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::OTFLUTConfigId>::iterator const& collision,
                soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks,
                aod::McParticles const&,
                aod::McCollisions const&)
@@ -751,7 +778,7 @@ struct OnTheFlyRichPid {
       o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
 
       // float xPv = kErrorValue;
-      if (o2track.propagateToDCA(mcPvVtx, magneticField)) {
+      if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
         // xPv = o2track.getX();
       }
 
@@ -781,7 +808,7 @@ struct OnTheFlyRichPid {
       const float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), iSecor);
       bool flagReachesRadiator = false;
       if (projectiveRadiatorRadius > kErrorValue + 1.) {
-        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, magneticField);
+        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, mMagneticField);
       }
       /// DISCLAIMER: Exact extrapolation of angular resolution would require track propagation
       ///             to the RICH radiator (accounting sector inclination) in terms of (R,z).
@@ -794,7 +821,7 @@ struct OnTheFlyRichPid {
       // Now we calculate the expected Cherenkov angle following certain mass hypotheses
       // and the (imperfect!) reconstructed track parametrizations
       auto recoTrack = getTrackParCov(track);
-      if (recoTrack.propagateToDCA(pvVtx, magneticField)) {
+      if (recoTrack.propagateToDCA(pvVtx, mMagneticField)) {
         // xPv = recoTrack.getX();
       }
 
@@ -812,21 +839,29 @@ struct OnTheFlyRichPid {
       float nSigmaBarrelRich[kNspecies] = {kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue};
       bool signalBarrelRich[kNspecies] = {false, false, false, false, false, false, false, false, false};
       float deltaThetaBarrelRich[kNspecies]; //, nSigmaBarrelRich[kNspecies];
-      static constexpr int kPdgArray[kNspecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, o2::constants::physics::kDeuteron, o2::constants::physics::kTriton, o2::constants::physics::kHelium3, o2::constants::physics::kAlpha};
-      static constexpr float kMasses[kNspecies] = {o2::track::pid_constants::sMasses[o2::track::PID::Electron],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Muon],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Pion],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Kaon],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Proton],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Deuteron],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Triton],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Helium3],
-                                                   o2::track::pid_constants::sMasses[o2::track::PID::Alpha]};
+      static constexpr int kParticlePdgs[kNspecies] = {kElectron,
+                                                       kMuonMinus,
+                                                       kPiPlus,
+                                                       kKPlus,
+                                                       kProton,
+                                                       o2::constants::physics::kDeuteron,
+                                                       o2::constants::physics::kTriton,
+                                                       o2::constants::physics::kHelium3,
+                                                       o2::constants::physics::kAlpha};
+      static constexpr float kParticleMasses[kNspecies] = {o2::track::pid_constants::sMasses[o2::track::PID::Electron],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Muon],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Pion],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Kaon],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Proton],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Deuteron],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Triton],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Helium3],
+                                                           o2::track::pid_constants::sMasses[o2::track::PID::Alpha]};
 
       for (int ii = 0; ii < kNspecies; ii++) { // Loop on the particle hypotheses
 
         float hypothesisAngleBarrelRich = kErrorValue;
-        const bool hypothesisAngleBarrelRichOk = cherenkovAngle(recoTrack.getP(), kMasses[ii], aerogelRindex[iSecor], hypothesisAngleBarrelRich);
+        const bool hypothesisAngleBarrelRichOk = cherenkovAngle(recoTrack.getP(), kParticleMasses[ii], aerogelRindex[iSecor], hypothesisAngleBarrelRich);
         signalBarrelRich[ii] = hypothesisAngleBarrelRichOk; // Particle is above the threshold and enough photons
 
         // Evaluate total sigma (layer + tracking resolution)
@@ -836,11 +871,13 @@ struct OnTheFlyRichPid {
           double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(recoTrack.getSigma1Pt2());
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagRICHLoadDelphesLUTs) {
-            ptResolution = mSmearer.getAbsPtRes(kPdgArray[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
-            etaResolution = mSmearer.getAbsEtaRes(kPdgArray[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+            if (mSmearer[collision.lutConfigId()]->hasTable(kParticlePdgs[ii])) {
+              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+            }
           }
           // cout << endl <<  "Pt resolution: " << ptResolution << ", Eta resolution: " << etaResolution << endl << endl;
-          const float barrelTrackAngularReso = calculateTrackAngularResolutionAdvanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), ptResolution, etaResolution, kMasses[ii], aerogelRindex[iSecor]);
+          const float barrelTrackAngularReso = calculateTrackAngularResolutionAdvanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), ptResolution, etaResolution, kParticleMasses[ii], aerogelRindex[iSecor]);
           barrelTotalAngularReso = std::hypot(barrelRICHAngularResolution, barrelTrackAngularReso);
           if (doQAplots &&
               hypothesisAngleBarrelRich > kErrorValue + 1. &&
@@ -848,64 +885,64 @@ struct OnTheFlyRichPid {
               barrelRICHAngularResolution > kErrorValue + 1. &&
               flagReachesRadiator) {
             switch (mcParticle.pdgCode()) {
-              case kPdgArray[kEl]:  // Electron
-              case -kPdgArray[kEl]: // Positron
+              case kParticlePdgs[kEl]:  // Electron
+              case -kParticlePdgs[kEl]: // Positron
                 if (ii == kEl) {
                   histos.fill(HIST("h2dBarrelAngularResTrackElecVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalElecVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kMu]:  // Muon
-              case -kPdgArray[kMu]: // AntiMuon
+              case kParticlePdgs[kMu]:  // Muon
+              case -kParticlePdgs[kMu]: // AntiMuon
                 if (ii == kMu) {
                   histos.fill(HIST("h2dBarrelAngularResTrackMuonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalMuonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kPi]:  // Pion
-              case -kPdgArray[kPi]: // AntiPion
+              case kParticlePdgs[kPi]:  // Pion
+              case -kParticlePdgs[kPi]: // AntiPion
                 if (ii == kPi) {
                   histos.fill(HIST("h2dBarrelAngularResTrackPionVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalPionVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kKa]:  // Kaon
-              case -kPdgArray[kKa]: // AntiKaon
+              case kParticlePdgs[kKa]:  // Kaon
+              case -kParticlePdgs[kKa]: // AntiKaon
                 if (ii == kKa) {
                   histos.fill(HIST("h2dBarrelAngularResTrackKaonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalKaonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kPr]:  // Proton
-              case -kPdgArray[kPr]: // AntiProton
+              case kParticlePdgs[kPr]:  // Proton
+              case -kParticlePdgs[kPr]: // AntiProton
                 if (ii == kPr) {
                   histos.fill(HIST("h2dBarrelAngularResTrackProtVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalProtVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kDe]:  // Deuteron
-              case -kPdgArray[kDe]: // AntiDeuteron
+              case kParticlePdgs[kDe]:  // Deuteron
+              case -kParticlePdgs[kDe]: // AntiDeuteron
                 if (ii == kDe) {
                   histos.fill(HIST("h2dBarrelAngularResTrackDeutVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalDeutVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kTr]:  // Triton
-              case -kPdgArray[kTr]: // AntiTriton
+              case kParticlePdgs[kTr]:  // Triton
+              case -kParticlePdgs[kTr]: // AntiTriton
                 if (ii == kTr) {
                   histos.fill(HIST("h2dBarrelAngularResTrackTritVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalTritVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kHe3]:  // Helium3
-              case -kPdgArray[kHe3]: // AntiHelium3
+              case kParticlePdgs[kHe3]:  // Helium3
+              case -kParticlePdgs[kHe3]: // AntiHelium3
                 if (ii == kHe3) {
                   histos.fill(HIST("h2dBarrelAngularResTrackHe3VsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalHe3VsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case kPdgArray[kAl]:  // Alpha
-              case -kPdgArray[kAl]: // AntiAlpha
+              case kParticlePdgs[kAl]:  // Alpha
+              case -kParticlePdgs[kAl]: // AntiAlpha
                 if (ii == kAl) {
                   histos.fill(HIST("h2dBarrelAngularResTrackAlVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalAlVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
@@ -941,40 +978,40 @@ struct OnTheFlyRichPid {
           histos.fill(HIST("hSectorID"), iSecor);
 
           switch (mcParticle.pdgCode()) {
-            case kPdgArray[kEl]:  // Electron
-            case -kPdgArray[kEl]: // Positron
+            case kParticlePdgs[kEl]:  // Electron
+            case -kParticlePdgs[kEl]: // Positron
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case kPdgArray[kMu]:  // Muon
-            case -kPdgArray[kMu]: // AntiMuon
+            case kParticlePdgs[kMu]:  // Muon
+            case -kParticlePdgs[kMu]: // AntiMuon
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case kPdgArray[kPi]:  // Pion
-            case -kPdgArray[kPi]: // AntiPion
+            case kParticlePdgs[kPi]:  // Pion
+            case -kParticlePdgs[kPi]: // AntiPion
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case kPdgArray[kKa]:  // Kaon
-            case -kPdgArray[kKa]: // AntiKaon
+            case kParticlePdgs[kKa]:  // Kaon
+            case -kParticlePdgs[kKa]: // AntiKaon
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case kPdgArray[kPr]:  // Proton
-            case -kPdgArray[kPr]: // AntiProton
+            case kParticlePdgs[kPr]:  // Proton
+            case -kParticlePdgs[kPr]: // AntiProton
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
@@ -982,31 +1019,31 @@ struct OnTheFlyRichPid {
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsDeutHypothesis"), recoTrack.getP(), nSigmaBarrelRich[5]);
               break;
-            case kPdgArray[kDe]:  // Deuteron
-            case -kPdgArray[kDe]: // AntiDeuteron
+            case kParticlePdgs[kDe]:  // Deuteron
+            case -kParticlePdgs[kDe]: // AntiDeuteron
               histos.fill(HIST("h2dBarrelNsigmaTrueDeutVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               histos.fill(HIST("h2dBarrelNsigmaTrueDeutVsDeutHypothesis"), recoTrack.getP(), nSigmaBarrelRich[5]);
               histos.fill(HIST("h2dBarrelNsigmaTrueDeutVsTritHypothesis"), recoTrack.getP(), nSigmaBarrelRich[6]);
               histos.fill(HIST("h2dBarrelNsigmaTrueDeutVsHe3Hypothesis"), recoTrack.getP(), nSigmaBarrelRich[7]);
               histos.fill(HIST("h2dBarrelNsigmaTrueDeutVsAlHypothesis"), recoTrack.getP(), nSigmaBarrelRich[8]);
               break;
-            case kPdgArray[kTr]:  // Triton
-            case -kPdgArray[kTr]: // AntiTriton
+            case kParticlePdgs[kTr]:  // Triton
+            case -kParticlePdgs[kTr]: // AntiTriton
               histos.fill(HIST("h2dBarrelNsigmaTrueTritVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               histos.fill(HIST("h2dBarrelNsigmaTrueTritVsDeutHypothesis"), recoTrack.getP(), nSigmaBarrelRich[5]);
               histos.fill(HIST("h2dBarrelNsigmaTrueTritVsTritHypothesis"), recoTrack.getP(), nSigmaBarrelRich[6]);
               histos.fill(HIST("h2dBarrelNsigmaTrueTritVsHe3Hypothesis"), recoTrack.getP(), nSigmaBarrelRich[7]);
               histos.fill(HIST("h2dBarrelNsigmaTrueTritVsAlHypothesis"), recoTrack.getP(), nSigmaBarrelRich[8]);
               break;
-            case kPdgArray[kHe3]:  // Helium3
-            case -kPdgArray[kHe3]: // AntiHelium3
+            case kParticlePdgs[kHe3]:  // Helium3
+            case -kParticlePdgs[kHe3]: // AntiHelium3
               histos.fill(HIST("h2dBarrelNsigmaTrueHe3VsDeutHypothesis"), recoTrack.getP(), nSigmaBarrelRich[5]);
               histos.fill(HIST("h2dBarrelNsigmaTrueHe3VsTritHypothesis"), recoTrack.getP(), nSigmaBarrelRich[6]);
               histos.fill(HIST("h2dBarrelNsigmaTrueHe3VsHe3Hypothesis"), recoTrack.getP(), nSigmaBarrelRich[7]);
               histos.fill(HIST("h2dBarrelNsigmaTrueHe3VsAlHypothesis"), recoTrack.getP(), nSigmaBarrelRich[8]);
               break;
-            case kPdgArray[kAl]:  // Alpha
-            case -kPdgArray[kAl]: // AntiAlpha
+            case kParticlePdgs[kAl]:  // Alpha
+            case -kParticlePdgs[kAl]: // AntiAlpha
               histos.fill(HIST("h2dBarrelNsigmaTrueAlVsDeutHypothesis"), recoTrack.getP(), nSigmaBarrelRich[5]);
               histos.fill(HIST("h2dBarrelNsigmaTrueAlVsTritHypothesis"), recoTrack.getP(), nSigmaBarrelRich[6]);
               histos.fill(HIST("h2dBarrelNsigmaTrueAlVsHe3Hypothesis"), recoTrack.getP(), nSigmaBarrelRich[7]);
