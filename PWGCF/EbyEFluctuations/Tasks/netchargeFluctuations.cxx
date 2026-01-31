@@ -124,9 +124,7 @@ struct NetchargeFluctuations {
   Configurable<bool> cPVcont{"cPVcont", false, "primary vertex contributor"};
 
   // Configurable to enable multiplicity correlation cuts
-
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, false, "Multiplicity correlation cut")
-
 
   // Struct grouping multiplicity vs centrality/vertex cuts and related parameters
   struct : ConfigurableGroup {
@@ -167,11 +165,10 @@ struct NetchargeFluctuations {
   } cfgFunCoeff;
 
   // Histogram pointer for CCDB efficiency
-
-
+ // TH1D* efficiency = nullptr;
+  
   TH1D* efficiencyPos = nullptr;
   TH1D* efficiencyNeg = nullptr;
-
 
   // Filters for selecting collisions and tracks
   Filter collisionFilter = nabs(aod::collision::posZ) <= vertexZcut;
@@ -423,14 +420,12 @@ struct NetchargeFluctuations {
       ccdb->setLocalObjectValidityChecking();
 
       TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
-
       efficiencyPos = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Pos_Run3"));
       efficiencyNeg = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Neg_Run3"));
       // Log fatal error if efficiency histogram is not found
       if (!efficiencyPos || !efficiencyNeg) {
-
-      // Log fatal error if efficiency histogram is not found
-      
+        LOGF(info, "FATAL!! Could not find required histograms in CCDB");
+      }
     }
   }
 
@@ -565,13 +560,13 @@ struct NetchargeFluctuations {
 
   double getEfficiency(float pt, int sign)
   {
-    TH1D* hEff = nullptr;
-
-    if (sign > 0) {
-      hEff = efficiencyPos;
-    } else if (sign < 0) {
-      hEff = efficiencyNeg;
-    }
+    TH1D* hEff = nullptr;	  
+    
+  if (sign > 0) {
+    hEff = efficiencyPos;
+  } else if (sign < 0) {
+    hEff = efficiencyNeg;
+  }
 
     if (!hEff) {
       return 1e-6;
@@ -646,19 +641,19 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("QA/hMultiplicity"), mult);
 
     int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0;
-    double fposW = 0, fnegW = 0, fposW2 = 0.0, fnegW2 = 0.0;
+    double fposW = 0, fnegW = 0,fposW2 = 0.0, fnegW2 = 0.0;
     double posnegW = 0.0, termnW = 0.0, termpW = 0.0;
     int nch = 0, nchTotal = 0;
-    double nchCor = 0;
+    double  nchCor = 0;
     for (const auto& track : tracks) {
 
       fillBeforeQA(track);
       nchTotal += 1;
       if (!selTrack(track))
         continue;
-
-      double eff = getEfficiency(track.pt(), track.sign());
-      if (eff < threshold) {
+      
+     double eff = getEfficiency(track.pt(), track.sign());
+      if (eff < threshold){
         continue;
       }
       double weight = 1.0 / eff;
@@ -670,30 +665,31 @@ struct NetchargeFluctuations {
       histogramRegistry.fill(HIST("data/hPt_cor"), track.pt(), weight);
       histogramRegistry.fill(HIST("data/hEta_cor"), track.eta(), weight);
 
-      if (track.sign() == 1) {
-        histogramRegistry.fill(HIST("eff/hPt_np"), track.pt());
-      } else if (track.sign() == -1) {
-        histogramRegistry.fill(HIST("eff/hPt_nm"), track.pt());
-      }
+if (track.sign() ==1){
+histogramRegistry.fill(HIST("eff/hPt_np"), track.pt());
+}else if (track.sign() == -1){
+histogramRegistry.fill(HIST("eff/hPt_nm"), track.pt());
+}
 
       nchCor += weight;
       if (track.sign() == 1) {
         fpos += 1;
-        fposW += weight;
+	fposW  += weight;
         fposW2 += weight * weight;
-      } else if (track.sign() == -1) {
-        fneg += 1;
-        fnegW += weight;
-        fnegW2 += weight * weight;
-      }
+      } 
+	else if (track.sign() == -1) {
+	fneg +=1;	
+        fnegW  += weight;
+	fnegW2 += weight * weight;
+	}
     } // track
     termp = fpos * (fpos - 1);
     termn = fneg * (fneg - 1);
     posneg = fpos * fneg;
 
-    termpW = fposW * fposW - fposW2;
-    termnW = fnegW * fnegW - fnegW2;
-    posnegW = fposW * fnegW;
+    	termpW  = fposW * fposW - fposW2;
+	termnW  = fnegW * fnegW - fnegW2;
+	posnegW = fposW * fnegW;
 
     histogramRegistry.fill(HIST("data/nch_nchCor"), nch, nchCor);
     histogramRegistry.fill(HIST("data/nchCor"), nchCor);
@@ -701,11 +697,12 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("data/cent_nch"), cent, nch);
     histogramRegistry.fill(HIST("data/cent_pos_cor"), cent, fposW);
     histogramRegistry.fill(HIST("data/cent_neg_cor"), cent, fnegW);
-
-    if (cfgEffNue) {
-      fillHistograms(nchCor, cent, fposW, fnegW, posnegW, termpW, termnW);
+ 
+    
+    if (cfgEffNue) {  
+    fillHistograms(nchCor, cent, fposW, fnegW, posnegW, termpW, termnW);
     } else {
-      fillHistograms(nch, cent, fpos, fneg, posneg, termp, termn);
+    fillHistograms(nch, cent, fpos, fneg, posneg, termp, termn);
     }
   }
 
@@ -746,10 +743,10 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("QA/hMultiplicity"), mult);
 
     int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0;
-    double fposW = 0.0, fnegW = 0.0, fposW2 = 0.0, fnegW2 = 0.0;
+    double fposW = 0.0, fnegW = 0.0,fposW2 = 0.0, fnegW2 = 0.0;
     double posnegW = 0.0, termnW = 0.0, termpW = 0.0;
     int nch = 0;
-    double nchCor = 0.0;
+    double  nchCor = 0.0;
 
     for (const auto& track : inputTracks) {
       fillBeforeQA(track);
@@ -758,11 +755,11 @@ struct NetchargeFluctuations {
       nch += 1;
       fillAfterQA(track);
 
-      if (track.sign() == 1) {
-        histogramRegistry.fill(HIST("eff/hPt_np"), track.pt());
-      } else if (track.sign() == -1) {
-        histogramRegistry.fill(HIST("eff/hPt_nm"), track.pt());
-      }
+      if (track.sign() ==1){
+	histogramRegistry.fill(HIST("eff/hPt_np"), track.pt());
+	}else if (track.sign() == -1){
+	histogramRegistry.fill(HIST("eff/hPt_nm"), track.pt());
+	}
 
       histogramRegistry.fill(HIST("QA/cent_hEta"), cent, track.eta());
       histogramRegistry.fill(HIST("QA/cent_hPt"), cent, track.pt());
@@ -774,36 +771,37 @@ struct NetchargeFluctuations {
       histogramRegistry.fill(HIST("data/hPt_cor"), track.pt(), weight);
       histogramRegistry.fill(HIST("data/hEta_cor"), track.eta(), weight);
 
-      if (track.sign() == 1) {
+     if (track.sign() == 1) {
         fpos += 1;
-        fposW += weight;
+	fposW  += weight;
         fposW2 += weight * weight;
-      } else if (track.sign() == -1) {
-        fneg += 1;
-        fnegW += weight;
-        fnegW2 += weight * weight;
-      }
-      nchCor += weight;
+      } 
+	else if (track.sign() == -1) {
+	fneg +=1;	
+        fnegW  += weight;
+	fnegW2 += weight * weight;
+	}
+      nchCor += weight ;
     } // track
     termp = fpos * (fpos - 1);
     termn = fneg * (fneg - 1);
     posneg = fpos * fneg;
 
-    termpW = fposW * fposW - fposW2;
-    termnW = fnegW * fnegW - fnegW2;
-    posnegW = fposW * fnegW;
+    	termpW  = fposW * fposW - fposW2;
+	termnW  = fnegW * fnegW - fnegW2;
+	posnegW = fposW * fnegW;
 
-    histogramRegistry.fill(HIST("data/nch_nchCor"), nch, nchCor);
-    histogramRegistry.fill(HIST("data/nchCor"), nchCor);
-    histogramRegistry.fill(HIST("data/cent_nchCor"), cent, nchCor);
-    histogramRegistry.fill(HIST("data/cent_nch"), cent, nch);
-    histogramRegistry.fill(HIST("data/cent_pos_cor"), cent, fposW);
-    histogramRegistry.fill(HIST("data/cent_neg_cor"), cent, fnegW);
+   histogramRegistry.fill(HIST("data/nch_nchCor"), nch, nchCor);
+   histogramRegistry.fill(HIST("data/nchCor"), nchCor);
+   histogramRegistry.fill(HIST("data/cent_nchCor"), cent, nchCor);
+   histogramRegistry.fill(HIST("data/cent_nch"), cent, nch);
+   histogramRegistry.fill(HIST("data/cent_pos_cor"), cent, fposW);
+   histogramRegistry.fill(HIST("data/cent_neg_cor"), cent, fnegW);
 
-    if (cfgEffNue) {
-      fillHistograms(nchCor, cent, fposW, fnegW, posnegW, termpW, termnW);
+   if (cfgEffNue) {  
+    fillHistograms(nchCor, cent, fposW, fnegW, posnegW, termpW, termnW);
     } else {
-      fillHistograms(nch, cent, fpos, fneg, posneg, termp, termn);
+    fillHistograms(nch, cent, fpos, fneg, posneg, termp, termn);
     }
 
     int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0, nchGen = 0;
@@ -834,14 +832,14 @@ struct NetchargeFluctuations {
         continue;
       if (std::fabs(mcpart.eta()) >= etaCut)
         continue;
-      if ((mcpart.pt() <= ptMinCut) || (mcpart.pt() >= ptMaxCut)) {
+      if ((mcpart.pt() <= ptMinCut) || (mcpart.pt() >= ptMaxCut)){
         continue;
       }
-      if (sign == 1) {
-        histogramRegistry.fill(HIST("eff/hPt_np_gen"), mcpart.pt());
-      } else if (sign == -1) {
-        histogramRegistry.fill(HIST("eff/hPt_nm_gen"), mcpart.pt());
-      }
+	if (sign ==1){
+	histogramRegistry.fill(HIST("eff/hPt_np_gen"), mcpart.pt());
+	}else if (sign == -1){
+	histogramRegistry.fill(HIST("eff/hPt_nm_gen"), mcpart.pt());
+	}
 
       histogramRegistry.fill(HIST("gen/hPt"), mcpart.pt());
       histogramRegistry.fill(HIST("gen/cent_hPt"), cent, mcpart.pt());
@@ -856,7 +854,7 @@ struct NetchargeFluctuations {
       if (sign == -1) {
         negGen += 1;
       }
-    }
+     }
     termPGen = posGen * (posGen - 1);
     termNGen = negGen * (negGen - 1);
     posNegGen = posGen * negGen;
@@ -900,52 +898,52 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("data/delta_eta_cent"), cent);
 
     int fpos = 0, fneg = 0, termp = 0, termn = 0, posneg = 0;
-    double fposW = 0.0, fnegW = 0.0;
-    double fposW2 = 0.0, fnegW2 = 0.0;
-    double termpW = 0.0, termnW = 0.0, posnegW = 0.0;
+	double fposW = 0.0, fnegW = 0.0;
+	double fposW2 = 0.0, fnegW2 = 0.0;
+	double termpW = 0.0, termnW = 0.0, posnegW = 0.0;
 
-    int nch = 0, nchTotal = 0;
-    double nchCor = 0.0;
+	int nch = 0, nchTotal = 0;
+	double nchCor = 0.0;
 
-    for (const auto& track : tracks) {
+for (const auto& track : tracks) {
 
-      nchTotal += 1;
-      if (!selTrack(track))
-        continue;
+  nchTotal += 1;
+  if (!selTrack(track))
+    continue;
 
-      double eta = track.eta();
-      if (eta < deta1 || eta > deta2)
-        continue;
+  double eta = track.eta();
+  if (eta < deta1 || eta > deta2)
+    continue;
 
-      double eff = getEfficiency(track.pt(), track.sign());
-      if (eff < threshold)
-        continue;
+  double eff = getEfficiency(track.pt(), track.sign());
+  if (eff < threshold)
+    continue;
 
-      double weight = 1.0 / eff;
+  double weight = 1.0 / eff;
 
-      nch += 1;
-      nchCor += weight;
+  nch += 1;
+  nchCor += weight;
 
-      histogramRegistry.fill(HIST("data/delta_eta_eta"), eta);
+  histogramRegistry.fill(HIST("data/delta_eta_eta"), eta);
 
-      if (track.sign() == 1) {
-        fpos += 1;
-        fposW += weight;
-        fposW2 += weight * weight;
-      } else if (track.sign() == -1) {
-        fneg += 1;
-        fnegW += weight;
-        fnegW2 += weight * weight;
-      }
-    }
+  if (track.sign() == 1) {
+    fpos += 1;
+    fposW  += weight;
+    fposW2 += weight * weight;
+  } else if (track.sign() == -1) {
+    fneg += 1;
+    fnegW  += weight;
+    fnegW2 += weight * weight;
+  }
+}
 
-    termp = fpos * (fpos - 1);
-    termn = fneg * (fneg - 1);
-    posneg = fpos * fneg;
+	termp = fpos * (fpos - 1);
+	termn = fneg * (fneg - 1);
+	posneg = fpos * fneg;
 
-    termpW = fposW * fposW - fposW2;
-    termnW = fnegW * fnegW - fnegW2;
-    posnegW = fposW * fnegW;
+	termpW  = fposW * fposW - fposW2;
+	termnW  = fnegW * fnegW - fnegW2;
+	posnegW = fposW * fnegW;
 
     float deltaEtaWidth = deta2 - deta1 + 1e-5f;
 
@@ -954,43 +952,45 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("data/delta_eta_pos_cor"), deltaEtaWidth, fposW);
     histogramRegistry.fill(HIST("data/delta_eta_neg_cor"), deltaEtaWidth, fnegW);
 
-    if (cfgEffNue) {
-      histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fposW);
-      histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fnegW);
-      histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termpW);
-      histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termnW);
-      histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fposW * fposW);
-      histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fnegW * fnegW);
-      histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posnegW);
-    } else {
 
-      histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fpos);
-      histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fneg);
-      histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termp);
-      histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termn);
-      histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fpos * fpos);
-      histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fneg * fneg);
-      histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posneg);
-    }
+    if (cfgEffNue) {
+    histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fposW);
+    histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fnegW);
+    histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termpW);
+    histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termnW);
+    histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fposW * fposW);
+    histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fnegW * fnegW);
+    histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posnegW);
+} else {
+    
+    histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fpos);
+    histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fneg);
+    histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termp);
+    histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termn);
+    histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fpos * fpos);
+    histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fneg * fneg);
+    histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posneg);
+}
     float lRandom = fRndm->Rndm();
     int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
 
-    if (cfgEffNue) {
-      histogramRegistry.fill(HIST("subsample/delta_eta/pos"), deltaEtaWidth, sampleIndex, fposW);
-      histogramRegistry.fill(HIST("subsample/delta_eta/neg"), deltaEtaWidth, sampleIndex, fnegW);
-      histogramRegistry.fill(HIST("subsample/delta_eta/termp"), deltaEtaWidth, sampleIndex, termpW);
-      histogramRegistry.fill(HIST("subsample/delta_eta/termn"), deltaEtaWidth, sampleIndex, termnW);
-      histogramRegistry.fill(HIST("subsample/delta_eta/pos_sq"), deltaEtaWidth, sampleIndex, fposW * fposW);
-      histogramRegistry.fill(HIST("subsample/delta_eta/neg_sq"), deltaEtaWidth, sampleIndex, fnegW * fnegW);
-      histogramRegistry.fill(HIST("subsample/delta_eta/posneg"), deltaEtaWidth, sampleIndex, posnegW);
+
+ if (cfgEffNue) {
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos"), deltaEtaWidth, sampleIndex, fposW);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg"), deltaEtaWidth, sampleIndex, fnegW);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termp"), deltaEtaWidth, sampleIndex, termpW);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termn"), deltaEtaWidth, sampleIndex, termnW);
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos_sq"), deltaEtaWidth, sampleIndex, fposW * fposW);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg_sq"), deltaEtaWidth, sampleIndex, fnegW * fnegW);
+    histogramRegistry.fill(HIST("subsample/delta_eta/posneg"), deltaEtaWidth, sampleIndex, posnegW);
     } else {
-      histogramRegistry.fill(HIST("subsample/delta_eta/pos"), deltaEtaWidth, sampleIndex, fpos);
-      histogramRegistry.fill(HIST("subsample/delta_eta/neg"), deltaEtaWidth, sampleIndex, fneg);
-      histogramRegistry.fill(HIST("subsample/delta_eta/termp"), deltaEtaWidth, sampleIndex, termp);
-      histogramRegistry.fill(HIST("subsample/delta_eta/termn"), deltaEtaWidth, sampleIndex, termn);
-      histogramRegistry.fill(HIST("subsample/delta_eta/pos_sq"), deltaEtaWidth, sampleIndex, fpos * fpos);
-      histogramRegistry.fill(HIST("subsample/delta_eta/neg_sq"), deltaEtaWidth, sampleIndex, fneg * fneg);
-      histogramRegistry.fill(HIST("subsample/delta_eta/posneg"), deltaEtaWidth, sampleIndex, posneg);
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos"), deltaEtaWidth, sampleIndex, fpos);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg"), deltaEtaWidth, sampleIndex, fneg);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termp"), deltaEtaWidth, sampleIndex, termp);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termn"), deltaEtaWidth, sampleIndex, termn);
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos_sq"), deltaEtaWidth, sampleIndex, fpos * fpos);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg_sq"), deltaEtaWidth, sampleIndex, fneg * fneg);
+    histogramRegistry.fill(HIST("subsample/delta_eta/posneg"), deltaEtaWidth, sampleIndex, posneg);
     }
   }
 
@@ -1038,49 +1038,49 @@ struct NetchargeFluctuations {
       double weight = 1.0 / eff;
       nch += 1;
       nchCor += weight;
-      if (track.sign() == 1) {
-        fpos += 1;
-        fposW += weight;
-        fposW2 += weight * weight;
-      } else if (track.sign() == -1) {
-        fneg += 1;
-        fnegW += weight;
-        fnegW2 += weight * weight;
-      }
-    } // tracks
+     if (track.sign() == 1) {
+  fpos += 1;
+  fposW  += weight;
+  fposW2 += weight * weight;
+} else if (track.sign() == -1) {
+  fneg += 1;
+  fnegW  += weight;
+  fnegW2 += weight * weight;
+}    } // tracks
 
     termp = fpos * (fpos - 1);
     termn = fneg * (fneg - 1);
     posneg = fpos * fneg;
 
-    termpW = fposW * fposW - fposW2;
-    termnW = fnegW * fnegW - fnegW2;
+    termpW  = fposW * fposW - fposW2;
+    termnW  = fnegW * fnegW - fnegW2;
     posnegW = fposW * fnegW;
 
+    
     histogramRegistry.fill(HIST("data/delta_eta_nch"), deltaEtaWidth, nch);
     histogramRegistry.fill(HIST("data/delta_eta_nchCor"), deltaEtaWidth, nchCor);
     histogramRegistry.fill(HIST("data/delta_eta_pos_cor"), deltaEtaWidth, fposW);
     histogramRegistry.fill(HIST("data/delta_eta_neg_cor"), deltaEtaWidth, fnegW);
 
     if (cfgEffNue) {
-      histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fposW);
-      histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fnegW);
-      histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termpW);
-      histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termnW);
-      histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fposW * fposW);
-      histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fnegW * fnegW);
-      histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posnegW);
-    } else {
-
-      histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fpos);
-      histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fneg);
-      histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termp);
-      histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termn);
-      histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fpos * fpos);
-      histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fneg * fneg);
-      histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posneg);
-    }
-
+    histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fposW);
+    histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fnegW);
+    histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termpW);
+    histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termnW);
+    histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fposW * fposW);
+    histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fnegW * fnegW);
+    histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posnegW);
+} else {
+    
+    histogramRegistry.fill(HIST("data/delta_eta_pos"), deltaEtaWidth, fpos);
+    histogramRegistry.fill(HIST("data/delta_eta_neg"), deltaEtaWidth, fneg);
+    histogramRegistry.fill(HIST("data/delta_eta_termp"), deltaEtaWidth, termp);
+    histogramRegistry.fill(HIST("data/delta_eta_termn"), deltaEtaWidth, termn);
+    histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fpos * fpos);
+    histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fneg * fneg);
+    histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posneg);
+}
+   
     const auto& mccolgen = coll.template mcCollision_as<aod::McCollisions>();
 
     if (std::abs(mccolgen.posZ()) >= vertexZcut)
@@ -1183,7 +1183,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", false);
 
   // process function for MC Run3
 
