@@ -642,7 +642,7 @@ struct NetchargeFluctuations {
     int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0;
     double fposW = 0, fnegW = 0, fposW2 = 0.0, fnegW2 = 0.0;
     double posnegW = 0.0, termnW = 0.0, termpW = 0.0;
-    int nch = 0, nchTotal = 0;
+    int nch = 0;
     double nchCor = 0;
     for (const auto& track : tracks) {
 
@@ -898,7 +898,7 @@ struct NetchargeFluctuations {
     double fposW2 = 0.0, fnegW2 = 0.0;
     double termpW = 0.0, termnW = 0.0, posnegW = 0.0;
 
-    int nch = 0, nchTotal = 0;
+    int nch = 0;
     double nchCor = 0.0;
 
     for (const auto& track : tracks) {
@@ -1012,7 +1012,7 @@ struct NetchargeFluctuations {
     float deltaEtaWidth = deta2 - deta1 + 1e-5f;
 
     int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0;
-    int nch = 0, nchTotal = 0;
+    int nch = 0;
     double fposW = 0.0, fnegW = 0.0;
     double fposW2 = 0.0, fnegW2 = 0.0;
     double nchCor = 0.0, termpW = 0.0, termnW = 0.0, posnegW = 0.0;
