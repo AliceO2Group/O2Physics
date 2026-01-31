@@ -1861,7 +1861,7 @@ struct HfTrackIndexSkimCreator {
         } else if (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi) {
           nucleiType = ChannelsNucleiQA::Helium3;
         } else {
-          LOG(fatal, "Unhandled DecayType = %d", static_cast<int>(iDecay3P));
+          LOGF(fatal, "Unhandled DecayType = %d", static_cast<int>(iDecay3P));
         }
 
         // hypo0: nucleus on track0
