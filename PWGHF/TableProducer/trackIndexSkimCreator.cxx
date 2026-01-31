@@ -1294,7 +1294,7 @@ struct HfTrackIndexSkimCreator {
     Configurable<LabeledArray<double>> cutsCdToDeKPi{"cutsCdToDeKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Cd->deKpi selections per pT bin"};
     // Ct cuts
     Configurable<std::vector<double>> binsPtCtToTrKPi{"binsPtCtToTrKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Ct->tKpi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsCtToTrKPi{"cutsCdToTrKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ct->tKpi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsCtToTrKPi{"cutsCtToTrKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ct->tKpi selections per pT bin"};
     // Ch cuts
     Configurable<std::vector<double>> binsPtChToHeKPi{"binsPtChToHeKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Ch->heKpi pT-dependent cuts"};
     Configurable<LabeledArray<double>> cutsChToHeKPi{"cutsChToHeKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ch->heKpi selections per pT bin"};
@@ -1483,7 +1483,9 @@ struct HfTrackIndexSkimCreator {
       registry.add("hMassCdToDeKPi", "C Deuteron candidates;inv. mass (De K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassCtToTrKPi", "C Triton candidates;inv. mass (Tr K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassChToHeKPi", "C Helium3 candidates;inv. mass (He3 K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
-
+      if (config.applyNucleiSelcForCharmNuclei && config.applyLightNucleiTpcPidBasedOnBB) {
+        registry.add("hTPCSignalsLightNuclei", "Light Nuclei TPC signal (a.u.)", {HistType::kTH2D, {{2000, -10., 10.}, {1000, 0., 2000.}}});
+      }
       // needed for PV refitting
       if (doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) {
         const AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
@@ -1860,10 +1862,14 @@ struct HfTrackIndexSkimCreator {
         // hypo0: nucleus on track0
         if (!applyTrackSelectionForCharmNuclei(track0, nucleiType)) {
           CLRBIT(whichHypo[iDecay3P], 0);
+        } else {
+          registry.fill(HIST("hTPCSignalsLightNuclei"), track0.tpcInnerParam() * track0.sign(), track0.tpcSignal());
         }
         // hypo1: nucleus on track2
         if (!applyTrackSelectionForCharmNuclei(track2, nucleiType)) {
           CLRBIT(whichHypo[iDecay3P], 1);
+        } else {
+          registry.fill(HIST("hTPCSignalsLightNuclei"), track2.tpcInnerParam() * track2.sign(), track2.tpcSignal());
         }
 
         if (whichHypo[iDecay3P] == 0) {
