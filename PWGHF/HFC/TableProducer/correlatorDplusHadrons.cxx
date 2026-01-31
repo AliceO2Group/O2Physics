@@ -729,7 +729,7 @@ struct HfCorrelatorDplusHadrons {
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processMcRecMixedEvent, "Process Mixed Event MCRec", false);
-  
+
   void processMcGenMixedEvent(SelCollisionsWithDplusMc const& collisions,
                               CandDplusMcGen const& mcParticles)
   {
