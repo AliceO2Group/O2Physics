@@ -1854,13 +1854,13 @@ struct HfTrackIndexSkimCreator {
            iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi)) {
 
         ChannelsNucleiQA nucleiType;
-        if (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi)
+        if (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi) {
           nucleiType = ChannelsNucleiQA::Deuteron;
-        else if (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi)
+        } else if (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi) {
           nucleiType = ChannelsNucleiQA::Triton;
-        else if (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi)
+        } else if (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi) {
           nucleiType = ChannelsNucleiQA::Helium3;
-        else {
+        } else {
           LOG(fatal, "Unhandled DecayType = %d", static_cast<int>(iDecay3P));
         }
 

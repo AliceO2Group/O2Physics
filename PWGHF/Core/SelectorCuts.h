@@ -93,7 +93,7 @@ static const std::vector<std::string> labelsRowsNucleiType = {"Deutron", "Triton
 
 constexpr float BetheBlochParams[3][6] = {{5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
                                           {5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
-                                          {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}};
+                                          {-126.55736, -0.858569, 1.11164, 1.21032, 2.656374, 0.09}};
 
 static const std::vector<std::string> labelsBetheBlochParams = {"p0", "p1", "p2", "p3", "p4", "resolution"};
 
