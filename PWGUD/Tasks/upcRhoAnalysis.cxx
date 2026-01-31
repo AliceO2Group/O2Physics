@@ -134,8 +134,6 @@ struct UpcRhoAnalysis {
   const std::vector<int> runNumbers = {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544911, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544991, 544992, 545004, 545008, 545009, 545041, 545042, 545044, 545047, 545060, 545062, 545063, 545064, 545066, 545086, 545103, 545117, 545171, 545184, 545185, 545210, 545222, 545223, 545246, 545249, 545262, 545289, 545291, 545294, 545295, 545296, 545311, 545312, 545332, 545345, 545367};
   AxisSpec runNumberAxis = {static_cast<int>(runNumbers.size()), 0.5, static_cast<double>(runNumbers.size()) + 0.5, "run number"};
 
-  Configurable<int> numPions{"numPions", 2, "required number of pions in the event"};
-
   Configurable<bool> isPO{"isPO", false, "process proton-oxygen data"};
 
   Configurable<bool> cutGapSide{"cutGapSide", true, "apply gap side cut"};
@@ -776,9 +774,9 @@ struct UpcRhoAnalysis {
     }
     rQC.fill(HIST("QC/tracks/trackSelections/hRemainingTracks"), cutTracks.size());
 
-    if (static_cast<int>(cutTracks.size()) != numPions) // further consider only two pion systems
+    if (static_cast<int>(cutTracks.size()) != 2) // further consider only two pion systems
       return;
-    for (int i = 0; i < numPions; i++) {
+    for (int i = 0; i < 2; i++) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
       rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 15, runIndex);
     }
@@ -805,10 +803,7 @@ struct UpcRhoAnalysis {
     float subleadingPhi = phi(subleadingTrack.px(), subleadingTrack.py());
     float phiRandom = getPhiRandom(cutTracksLVs);
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
-
-    if (!tracksPassPID(cutTracks)) // apply PID cut
-      return;
-
+    
     // fill recoTree
     recoTree(collision.flags(), collision.runNumber(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(),
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
@@ -822,7 +817,10 @@ struct UpcRhoAnalysis {
              leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl(),
              leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa(),
              leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr());
-
+    
+    if (!tracksPassPID(cutTracks)) // apply PID cut
+      return;
+    
     for (const auto& cutTrack : cutTracks) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 16);
       rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 16, runIndex);
@@ -961,7 +959,7 @@ struct UpcRhoAnalysis {
     }
     rMC.fill(HIST("MC/collisions/hNPions"), cutMcParticles.size());
 
-    if (static_cast<int>(cutMcParticles.size()) != numPions)
+    if (static_cast<int>(cutMcParticles.size()) != 2)
       return;
     if (mcParticlesLVs.size() != cutMcParticles.size()) // sanity check
       return;
