@@ -647,7 +647,6 @@ struct NetchargeFluctuations {
     for (const auto& track : tracks) {
 
       fillBeforeQA(track);
-      nchTotal += 1;
       if (!selTrack(track))
         continue;
 
@@ -903,7 +902,6 @@ struct NetchargeFluctuations {
 
     for (const auto& track : tracks) {
 
-      nchTotal += 1;
       if (!selTrack(track))
         continue;
 
@@ -1018,7 +1016,6 @@ struct NetchargeFluctuations {
     double nchCor = 0.0, termpW = 0.0, termnW = 0.0, posnegW = 0.0;
 
     for (const auto& track : inputTracks) {
-      nchTotal += 1;
       if (!selTrack(track))
         continue;
       double eta = track.eta();
