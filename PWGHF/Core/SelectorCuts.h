@@ -85,11 +85,17 @@ namespace hf_presel_lightnuclei
 {
 
 // default values for the track cuts for lightnuclei in the track-index-skim-creator
-constexpr float CutsTrackQuality[3][9] = {{-4, 3, 5., 0., 100, 100, 0.83, 160., 1.},
-                                          {-4, 3, 5., 0., 100, 100, 0.83, 160., 1.},
-                                          {-4, 3, 5., 0., 100, 100, 0.83, 160., 1.}};
-static const std::vector<std::string> labelsCutsTrack = {"nSigmaMinIts", "minItsClusterSizes", "minItsCluster", "minItsIbCluster", "minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared"};
+constexpr float CutsTrackQuality[3][10] = {{-4, 3, 5., 0., 100, 100, 0.83, 160., 1., 5},
+                                           {-4, 3, 5., 0., 100, 100, 0.83, 160., 1., 5},
+                                           {-4, 3, 5., 0., 100, 100, 0.83, 160., 1., 5}};
+static const std::vector<std::string> labelsCutsTrack = {"nSigmaMinIts", "minItsClusterSizes", "minItsCluster", "minItsIbCluster", "minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared", "maxTPCnSigmaBB"};
 static const std::vector<std::string> labelsRowsNucleiType = {"Deutron", "Triton", "Helium3"};
+
+constexpr float BetheBlochParams[3][6] = {{5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
+                                          {5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
+                                          {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}};
+
+static const std::vector<std::string> labelsBetheBlochParams = {"p0", "p1", "p2", "p3", "p4", "resolution"};
 
 } // namespace hf_presel_lightnuclei
 
