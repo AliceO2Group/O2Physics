@@ -348,11 +348,22 @@ struct UpcRhoAnalysis {
     }
 
     if (context.mOptions.get<bool>("processResolution")) {
+      // collision matching
       rResolution.add("MC/resolution/collisions/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
+      // track matching and resolutions
       rResolution.add("MC/resolution/tracks/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
       rResolution.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
       rResolution.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
       rResolution.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {{200, -0.2, 0.2}});
+      // dipion system resolutions (1D and 2D)
+      rResolution.add("MC/resolution/system/1D/hM", ";#it{m}_{reco} - #it{m}_{true} (GeV/#it{c}^{2});counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/system/2D/hMVsM", ";#it{m}_{true} (GeV/#it{c}^{2});#it{m}_{reco} (GeV/#it{c}^{2});counts", kTH2D, {mAxis, mAxis});
+      rResolution.add("MC/resolution/system/1D/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/system/2D/hPtVsPt", ";#it{p}_{T, true} (GeV/#it{c});#it{p}_{T, reco} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+      rResolution.add("MC/resolution/system/1D/hY", ";#it{y}_{reco} - #it{y}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
+      rResolution.add("MC/resolution/system/2D/hYVsY", ";#it{y}_{true};#it{y}_{reco};counts", kTH2D, {yAxis, yAxis});
+      rResolution.add("MC/resolution/system/1D/hDeltaPhi", ";#Delta#it{#phi}_{reco} - #Delta#it{#phi}_{true} (rad);counts", kTH1D, {{1000, -0.5, 0.5}});
+      rResolution.add("MC/resolution/system/2D/hDeltaPhiVsDeltaPhi", ";#Delta#it{#phi}_{true} (rad);#Delta#it{#phi}_{reco} (rad);counts", kTH2D, {deltaPhiAxis, deltaPhiAxis});
     }
   }
 
@@ -1069,6 +1080,11 @@ struct UpcRhoAnalysis {
     if (!collision.has_udMcCollision())
       return;
     rResolution.fill(HIST("MC/resolution/collisions/hMatch"), 1);
+
+    std::vector<decltype(tracks.begin().udMcParticle())> trueTracks;
+    std::vector<decltype(tracks.begin())> recoTracks;
+    std::vector<ROOT::Math::PxPyPzMVector> truePionLVs, recoPionLVs;
+
     for (const auto& track : tracks) {
       rResolution.fill(HIST("MC/resolution/tracks/hMatch"), 0);
       if (!track.has_udMcParticle())
@@ -1078,7 +1094,27 @@ struct UpcRhoAnalysis {
       rResolution.fill(HIST("MC/resolution/tracks/hPt"), pt(track.px(), track.py()) - pt(mcParticle.px(), mcParticle.py()));
       rResolution.fill(HIST("MC/resolution/tracks/hEta"), eta(track.px(), track.py(), track.pz()) - eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
       rResolution.fill(HIST("MC/resolution/tracks/hPhi"), phi(track.px(), track.py()) - phi(mcParticle.px(), mcParticle.py()));
+      if (std::abs(mcParticle.pdgCode()) != kPiPlus && !mcParticle.isPhysicalPrimary())
+        continue;
+      truePionLVs.push_back(ROOT::Math::PxPyPzMVector(mcParticle.px(), mcParticle.py(), mcParticle.pz(), o2::constants::physics::MassPionCharged));
+      trueTracks.push_back(mcParticle);
+      recoPionLVs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged));
+      recoTracks.push_back(track);
     }
+    if (truePionLVs.size() != 2 || recoPionLVs.size() != 2)
+      return;
+    ROOT::Math::PxPyPzMVector trueSystem = reconstructSystem(truePionLVs);
+    const float trueDeltaPhi = getPhiChargeMC(trueTracks, truePionLVs);
+    ROOT::Math::PxPyPzMVector recoSystem = reconstructSystem(recoPionLVs);
+    const float recoDeltaPhi = getPhiCharge(recoTracks, recoPionLVs);
+    rResolution.fill(HIST("MC/resolution/system/1D/hM"), recoSystem.M() - trueSystem.M());
+    rResolution.fill(HIST("MC/resolution/system/2D/hMVsM"), trueSystem.M(), recoSystem.M());
+    rResolution.fill(HIST("MC/resolution/system/1D/hPt"), recoSystem.Pt() - trueSystem.Pt());
+    rResolution.fill(HIST("MC/resolution/system/2D/hPtVsPt"), trueSystem.Pt(), recoSystem.Pt());
+    rResolution.fill(HIST("MC/resolution/system/1D/hY"), recoSystem.Rapidity() - trueSystem.Rapidity());
+    rResolution.fill(HIST("MC/resolution/system/2D/hYVsY"), trueSystem.Rapidity(), recoSystem.Rapidity());
+    rResolution.fill(HIST("MC/resolution/system/1D/hDeltaPhi"), recoDeltaPhi - trueDeltaPhi);
+    rResolution.fill(HIST("MC/resolution/system/2D/hDeltaPhiVsDeltaPhi"), trueDeltaPhi, recoDeltaPhi);
   }
   PROCESS_SWITCH(UpcRhoAnalysis, processResolution, "check resolution of kinematic variables", false);
 
