@@ -233,12 +233,12 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNegAfter", ";primaryTrack; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hCentralityME", ";Centrality;Entries", kTH1F, {{100, 0.0, 100.0}});
 
-    threeBodyQARegistry.add("SameEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
-    threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
-    threeBodyQARegistry.add("SameEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
-    threeBodyQARegistry.add("SameEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
-    threeBodyQARegistry.add("MixedEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
-    threeBodyQARegistry.add("MixedEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{500, 0.0, 5.0}});
+    threeBodyQARegistry.add("SameEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 2.0}});
+    threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 2.0}});
+    threeBodyQARegistry.add("SameEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 2.0}});
+    threeBodyQARegistry.add("SameEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 2.0}});
+    threeBodyQARegistry.add("MixedEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 2.0}});
+    threeBodyQARegistry.add("MixedEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 2.0}});
     sameEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     mixedEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     sameEventCont.setPDGCodes(confPDGCodePart, confPDGCodePart, confPDGCodeV0);
