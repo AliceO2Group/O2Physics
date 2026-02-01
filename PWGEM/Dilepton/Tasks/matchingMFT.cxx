@@ -97,7 +97,7 @@ struct matchingMFT {
   Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   Configurable<int> cfgBestMatchFinder{"cfgBestMatchFinder", 0, "matching chi2:0, dr:1"};
-  Configurable<float> cfgSlope_dr_chi2MatchMFTMCH{"cfgSlope_dr_chi2MatchMFTMCH", -0.15/30, "slope of chiMatchMCHMFT vs. dR"};
+  Configurable<float> cfgSlope_dr_chi2MatchMFTMCH{"cfgSlope_dr_chi2MatchMFTMCH", -0.15 / 30, "slope of chiMatchMCHMFT vs. dR"};
   Configurable<float> cfgIntercept_dr_chi2MatchMFTMCH{"cfgIntercept_dr_chi2MatchMFTMCH", 1e+10f, "intercept of chiMatchMCHMFT vs. dR"};
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
