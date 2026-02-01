@@ -407,7 +407,6 @@ struct LumiStabilityTask {
         }
       }
       if (bcPatternL[localBC + nBCsOffSet]) {
-        std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " << "I am in the leading BC pattern" << std::endl;
         if (trgFDD) {
           histos.fill(HIST("FDD/nBCsVsTimeLeadingBC"), timeSinceSOF);
           histos.fill(HIST("FDD/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
