@@ -67,14 +67,10 @@
 #include <string>
 #include <vector>
 
-using namespace std;
 using namespace o2;
-using namespace o2::soa;
-using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::math;
-using std::array;
 
 // Define convenient aliases for joined AOD tables
 using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
@@ -197,7 +193,7 @@ struct StrangenessInJets {
     enabled += checkEnabled(ParticleOfInterest::kKaons);
     enabled += checkEnabled(ParticleOfInterest::kProtons);
     if (enabled == 0) {
-      LOG(fatal) << "At least one particle species must be enabled for the analysis. Please check the configuration of the task." << endl;
+      LOG(fatal) << "At least one particle species must be enabled for the analysis. Please check the configuration of the task.";
     }
 
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
@@ -319,7 +315,7 @@ struct StrangenessInJets {
         const AxisSpec axisInJetOutOfJet = AxisSpec{2, -2., 2., "In jet / Out of jet"};
         const AxisSpec axisCharge = AxisSpec{2, -2., 2., "Charge"};
         const AxisSpec axisParticleType = AxisSpec{3, -0.5, 2.5, "Particle Type"};
-        registryData.add("LongLivedGenerated", "LongLivedGenerated", HistType::kTHnSparseF, {axisInJetOutOfJet, axisParticleType, axisCharge, ptAxisLongLived, multAxis});
+        registryMC.add("LongLivedGenerated", "LongLivedGenerated", HistType::kTHnSparseF, {axisInJetOutOfJet, axisParticleType, axisCharge, ptAxisLongLived, multAxis});
       }
     }
 
@@ -385,8 +381,28 @@ struct StrangenessInJets {
         const AxisSpec axisCharge = AxisSpec{2, -2., 2., "Charge"};
         const AxisSpec axisParticleType = AxisSpec{3, -0.5, 2.5, "Particle Type"};
         const AxisSpec axisDetector = AxisSpec{2, -0.5, 1.5, "TPC / TOF"};
-        registryData.add("LongLivedReconstructed", "LongLivedReconstructed", HistType::kTHnSparseF, {axisInJetOutOfJet, axisParticleType, axisCharge, ptAxisLongLived, multAxis, axisDetector});
+        registryMC.add("LongLivedReconstructed", "LongLivedReconstructed", HistType::kTHnSparseF, {axisInJetOutOfJet, axisParticleType, axisCharge, ptAxisLongLived, multAxis, axisDetector});
       }
+    }
+  }
+
+  bool pdgToLongLivedIndex(const int pdg, float& particle, float& charge)
+  {
+    switch (std::abs(pdg)) {
+      case PDG_t::kPiPlus:
+        particle = 0; // pion
+        charge = (pdg > 0) ? 1 : -1;
+        return enabledSignals.value[ParticleOfInterest::kPions];
+      case PDG_t::kKPlus:
+        particle = 1; // kaon
+        charge = (pdg > 0) ? 1 : -1;
+        return enabledSignals.value[ParticleOfInterest::kKaons];
+      case PDG_t::kProton:
+        particle = 2; // proton
+        charge = (pdg > 0) ? 1 : -1;
+        return enabledSignals.value[ParticleOfInterest::kProtons];
+      default:
+        return false;
     }
   }
 
@@ -1129,7 +1145,9 @@ struct StrangenessInJets {
           }
         }
       }
-      if (enabledSignals.value[ParticleOfInterest::kPions] || enabledSignals.value[ParticleOfInterest::kKaons] || enabledSignals.value[ParticleOfInterest::kProtons]) {
+      if (enabledSignals.value[ParticleOfInterest::kPions] ||
+          enabledSignals.value[ParticleOfInterest::kKaons] ||
+          enabledSignals.value[ParticleOfInterest::kProtons]) {
         for (const auto& trk : tracks) {
 
           if (!passedSingleTrackSelection(trk)) {
@@ -1424,33 +1442,14 @@ struct StrangenessInJets {
                 }
                 break;
               case kPiPlus:
-                if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, 0.f, 1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
-              case kKPlus:
-                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, 1.f, 1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
-              case kProton:
-                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, 2.f, 1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
               case kPiMinus:
-                if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, 0.f, -1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
+              case kKPlus:
               case kKMinus:
-                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, 1.f, -1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
+              case kProton:
               case kProtonBar:
-                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, 2.f, -1.f, hadron.first.Pt(), genMultiplicity);
+                float particleId, chargeId;
+                if (pdgToLongLivedIndex(hadron.second, particleId, chargeId)) {
+                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, particleId, chargeId, hadron.first.Pt(), genMultiplicity);
                 }
                 break;
               default:
@@ -1497,33 +1496,14 @@ struct StrangenessInJets {
                 }
                 break;
               case kPiPlus:
-                if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, 0.f, 1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
-              case kKPlus:
-                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, 1.f, 1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
-              case kProton:
-                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, 2.f, 1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
               case kPiMinus:
-                if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, 0.f, -1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
+              case kKPlus:
               case kKMinus:
-                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, 1.f, -1.f, hadron.first.Pt(), genMultiplicity);
-                }
-                break;
+              case kProton:
               case kProtonBar:
-                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, 2.f, -1.f, hadron.first.Pt(), genMultiplicity);
+                float particleId, chargeId;
+                if (pdgToLongLivedIndex(hadron.second, particleId, chargeId)) {
+                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, particleId, chargeId, hadron.first.Pt(), genMultiplicity);
                 }
                 break;
               default:
@@ -1692,6 +1672,7 @@ struct StrangenessInJets {
               if (enabledSignals.value[ParticleOfInterest::kPions]) {
                 registryMC.fill(HIST("Pion_Plus_reconstructed_fullevent"), multiplicity, trk.pt());
               }
+              break;
             case kPiMinus:
               if (enabledSignals.value[ParticleOfInterest::kPions]) {
                 registryMC.fill(HIST("Pion_Minus_reconstructed_fullevent"), multiplicity, trk.pt());
@@ -1984,46 +1965,14 @@ struct StrangenessInJets {
             const double deltaPhiUe2 = getDeltaPhi(trackDir.Phi(), ue2[i].Phi());
             const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-            float indexParticle = -1;
-            float indexCharge = 0;
-            switch (mcParticle.pdgCode()) {
-              case kPiPlus:
-                if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  indexParticle = 0;
-                  indexCharge = 1;
-                }
-                break;
-              case kPiMinus:
-                if (enabledSignals.value[ParticleOfInterest::kPions]) {
-                  indexParticle = 0;
-                  indexCharge = -1;
-                }
-                break;
-              case kKPlus:
-                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  indexParticle = 1;
-                  indexCharge = 1;
-                }
-              case kKMinus:
-                if (enabledSignals.value[ParticleOfInterest::kKaons]) {
-                  indexParticle = 1;
-                  indexCharge = -1;
-                }
-                break;
-              case kProton:
-                if (enabledSignals.value[ParticleOfInterest::kProtons]) {
-                  indexParticle = 2;
-                  indexCharge = 1;
-                }
-            }
-            if (indexParticle <= -0.5f) {
-              continue;
-            }
-            if (deltaRjet < rJet) {
-              registryMC.fill(HIST("LongLivedReconstructed"), -1.f, indexParticle, indexCharge, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
-            }
-            if (deltaRue1 < rJet || deltaRue2 < rJet) {
-              registryMC.fill(HIST("LongLivedReconstructed"), 1.f, indexParticle, indexCharge, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
+            float particleId, chargeId;
+            if (pdgToLongLivedIndex(mcParticle.pdgCode(), particleId, chargeId)) {
+              if (deltaRjet < rJet) {
+                registryMC.fill(HIST("LongLivedReconstructed"), -1.f, indexParticle, indexCharge, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
+              }
+              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                registryMC.fill(HIST("LongLivedReconstructed"), 1.f, indexParticle, indexCharge, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
+              }
             }
           }
         }
