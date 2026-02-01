@@ -821,6 +821,7 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
     case DoubleSidedCrystalBall: {
       sgnPdf = workspace->pdf("sgnFuncDSCB");
       mRooSigmaSgn = workspace->var("sigma");
+      mRooSecSigmaSgn = workspace->var("sigma");
       mRooMeanSgn = workspace->var("mean");
       mRooDscbAlphaL = workspace->var("alphaL");
       mRooDscbNL = workspace->var("nL");
