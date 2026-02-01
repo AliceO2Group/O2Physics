@@ -84,16 +84,20 @@ static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "Prot
 namespace hf_presel_lightnuclei
 {
 
+static constexpr int NParticleRows = 3;     // number of particles / rows
+static constexpr int NVarCuts = 10;         // number of cuts for each particles
+static constexpr int NBetheBlochParams = 6; // number of parameters for Bethe-Bloch
+
 // default values for the track cuts for lightnuclei in the track-index-skim-creator
-constexpr float CutsTrackQuality[3][10] = {{-4, 3, 5., 0., 100, 100, 0.83, 160., 1., 5},
-                                           {-4, 3, 5., 0., 100, 100, 0.83, 160., 1., 5},
-                                           {-4, 3, 5., 0., 100, 100, 0.83, 160., 1., 5}};
+constexpr float CutsTrackQuality[NParticleRows][NVarCuts] = {{-4.f, 3.f, 5.f, 0.f, 100.f, 100.f, 0.83, 160.f, 1.f, 5.f},
+                                                             {-4.f, 3.f, 5.f, 0.f, 100.f, 100.f, 0.83, 160.f, 1.f, 5.f},
+                                                             {-4.f, 3.f, 5.f, 0.f, 100.f, 100.f, 0.83, 160.f, 1.f, 5.f}};
 static const std::vector<std::string> labelsCutsTrack = {"nSigmaMinIts", "minItsClusterSizes", "minItsCluster", "minItsIbCluster", "minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared", "maxTPCnSigmaBB"};
 static const std::vector<std::string> labelsRowsNucleiType = {"Deutron", "Triton", "Helium3"};
 
-constexpr float BetheBlochParams[3][6] = {{5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
-                                          {5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
-                                          {-126.55736, -0.858569, 1.11164, 1.21032, 2.656374, 0.09}};
+constexpr float BetheBlochParams[NParticleRows][NBetheBlochParams] = {{5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
+                                                                      {5.39302, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},
+                                                                      {-126.55736, -0.858569, 1.11164, 1.21032, 2.656374, 0.09}};
 
 static const std::vector<std::string> labelsBetheBlochParams = {"p0", "p1", "p2", "p3", "p4", "resolution"};
 

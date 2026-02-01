@@ -45,7 +45,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 
-#include "MathUtils/BetheBlochAleph.h"
 #include <CCDB/BasicCCDBManager.h> // for PV refit
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -66,6 +65,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/Vertex.h> // for PV refit
 
@@ -1303,8 +1303,8 @@ struct HfTrackIndexSkimCreator {
     Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
     // CharmNuclei track selection
-    Configurable<LabeledArray<float>> selectionsLightNuclei{"selectionsLightNuclei", {hf_presel_lightnuclei::CutsTrackQuality[0], 3, 10, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsCutsTrack}, "nuclei track selections for deuteron / triton / helium applied if proper process function enabled"};
-    Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], 3, 6, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams},
+    Configurable<LabeledArray<float>> selectionsLightNuclei{"selectionsLightNuclei", {hf_presel_lightnuclei::CutsTrackQuality[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NVarCuts, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsCutsTrack}, "nuclei track selections for deuteron / triton / helium applied if proper process function enabled"};
+    Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams},
                                                                 "TPC PID Bethe–Bloch parameter configurations for light nuclei "
                                                                 "(deuteron, triton, helium-3), used in BB-based PID when enabled"};
 
@@ -1676,71 +1676,67 @@ struct HfTrackIndexSkimCreator {
       return false;
     }
 
-    float nSigmaItsNuclei = -999.f;
+    float itsPidNsigma = -999.f;
 
     switch (lightnuclei) {
       case ChannelsNucleiQA::Deuteron:
-        nSigmaItsNuclei = track.itsNSigmaDe();
+        itsPidNsigma = track.itsNSigmaDe();
         break;
       case ChannelsNucleiQA::Triton:
-        nSigmaItsNuclei = track.itsNSigmaTr();
+        itsPidNsigma = track.itsNSigmaTr();
         break;
       case ChannelsNucleiQA::Helium3:
-        nSigmaItsNuclei = track.itsNSigmaHe();
+        itsPidNsigma = track.itsNSigmaHe();
         break;
       default:
-        return false;
+        LOG(fatal) << "Unhandled ChannelsNucleiQA " << static_cast<int>(lightnuclei);
     }
 
     // Load cuts for the selected species.
-    const float minItsNSigmaPid = config.selectionsLightNuclei->get(row, 0u);
-    const int minItsClusterSizes = config.selectionsLightNuclei->get(row, 1u);
-    const int minItsCluster = config.selectionsLightNuclei->get(row, 2u);
-    const int minItsIbCluster = config.selectionsLightNuclei->get(row, 3u);
-    const int minTpcCluster = config.selectionsLightNuclei->get(row, 4u);
-    const int minTpcRow = config.selectionsLightNuclei->get(row, 5u);
-    const float minTpcCrossedOverFound = config.selectionsLightNuclei->get(row, 6u);
-    const int maxTpcShared = config.selectionsLightNuclei->get(row, 7u);
-    const float maxTpcFracShared = config.selectionsLightNuclei->get(row, 8u);
+    const float itsPidNsigmaMin = config.selectionsLightNuclei->get(row, 0u);
+    const float itsClusterSizeMin = config.selectionsLightNuclei->get(row, 1u);
+    const float itsClusterMin = config.selectionsLightNuclei->get(row, 2u);
+    const float itsIbClusterMin = config.selectionsLightNuclei->get(row, 3u);
+    const float tpcClusterMin = config.selectionsLightNuclei->get(row, 4u);
+    const float tpcCrossedRowsMin = config.selectionsLightNuclei->get(row, 5u);
+    const float tpcCrossedRowsOverFindMin = config.selectionsLightNuclei->get(row, 6u);
+    const float tpcSharedMax = config.selectionsLightNuclei->get(row, 7u);
+    const float tpcFracSharedMax = config.selectionsLightNuclei->get(row, 8u);
 
     // Optional: BB-based TPC nσ selection (only if enabled)
-    const float maxTPCnSigmaBB = config.selectionsLightNuclei->get(row, 9u);
+    const float tpcBbPidNsigmaMax = config.selectionsLightNuclei->get(row, 9u);
 
-    if (nSigmaItsNuclei < minItsNSigmaPid) {
+    if (itsPidNsigma < itsPidNsigmaMin) {
       return false;
     }
-    if (track.itsClusterSizes() < static_cast<unsigned int>(minItsClusterSizes)) {
+    if (track.itsClusterSizes() < static_cast<unsigned int>(itsClusterSizeMin)) {
       return false;
     }
-    if (track.itsNCls() < minItsCluster) {
+    if (track.itsNCls() < itsClusterMin) {
       return false;
     }
-    if (track.itsNClsInnerBarrel() < minItsIbCluster) {
+    if (track.itsNClsInnerBarrel() < itsIbClusterMin) {
       return false;
     }
-    if (track.tpcNClsFound() < minTpcCluster) {
+    if (track.tpcNClsFound() < tpcClusterMin) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < minTpcRow) {
+    if (track.tpcNClsCrossedRows() < tpcCrossedRowsMin) {
       return false;
     }
-    if (track.tpcCrossedRowsOverFindableCls() < minTpcCrossedOverFound) {
+    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindMin) {
       return false;
     }
-    if (maxTpcShared >= 0 && track.tpcNClsShared() > maxTpcShared) {
+    if (track.tpcNClsShared() > tpcSharedMax) {
       return false;
     }
-    if (track.tpcFractionSharedCls() > maxTpcFracShared) {
+    if (track.tpcFractionSharedCls() > tpcFracSharedMax) {
       return false;
     }
 
     if (config.applyLightNucleiTpcPidBasedOnBB) {
-      const float nSigmaTpcNuclei = getTPCnSigmaBB(track, lightnuclei);
-      if (nSigmaTpcNuclei < -999.f) { // invalid marker
-        return false;
-      }
-      // Correct inequality: reject if |nσ| exceeds allowed window
-      if (std::abs(nSigmaTpcNuclei) > maxTPCnSigmaBB) {
+      const float tpcBbPidNsigma = getTPCnSigmaBB(track, lightnuclei);
+      if (std::abs(tpcBbPidNsigma) > tpcBbPidNsigmaMax) {
         return false;
       }
     }
@@ -1779,9 +1775,20 @@ struct HfTrackIndexSkimCreator {
     }
 
     // Mass/charge hypothesis for the selected nucleus.
-    const double mass =
-      (lightnuclei == ChannelsNucleiQA::Deuteron) ? MassDeuteron : (lightnuclei == ChannelsNucleiQA::Triton) ? MassTriton
-                                                                                                             : MassHelium3;
+    double mass = 0.;
+    switch (lightnuclei) {
+      case ChannelsNucleiQA::Deuteron:
+        mass = MassDeuteron;
+        break;
+      case ChannelsNucleiQA::Triton:
+        mass = MassTriton;
+        break;
+      case ChannelsNucleiQA::Helium3:
+        mass = MassHelium3;
+        break;
+      default:
+        LOG(fatal) << "Unhandled ChannelsNucleiQA " << static_cast<int>(lightnuclei);
+    }
 
     const int charge = (lightnuclei == ChannelsNucleiQA::Helium3) ? 2 : 1;
 
@@ -1853,9 +1860,23 @@ struct HfTrackIndexSkimCreator {
            iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi ||
            iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi)) {
 
-        ChannelsNucleiQA nucleiType =
-          (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi) ? ChannelsNucleiQA::Deuteron : (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi) ? ChannelsNucleiQA::Triton
-                                                                                                                                               : ChannelsNucleiQA::Helium3;
+        ChannelsNucleiQA nucleiType;
+
+        switch (iDecay3P) {
+          case hf_cand_3prong::DecayType::CdToDeKPi:
+            nucleiType = ChannelsNucleiQA::Deuteron;
+            break;
+          case hf_cand_3prong::DecayType::CtToTrKPi:
+            nucleiType = ChannelsNucleiQA::Triton;
+            break;
+          case hf_cand_3prong::DecayType::ChToHeKPi:
+            nucleiType = ChannelsNucleiQA::Helium3;
+            break;
+          default:
+            LOG(fatal) << "Unhandled DecayType " << static_cast<int>(iDecay3P);
+            continue;
+        }
+
         // hypo0: nucleus on track0
         if (!applyTrackSelectionForCharmNuclei(track0, nucleiType)) {
           CLRBIT(whichHypo[iDecay3P], 0);
