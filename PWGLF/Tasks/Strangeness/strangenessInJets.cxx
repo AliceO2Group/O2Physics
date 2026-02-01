@@ -417,6 +417,7 @@ struct StrangenessInJets {
       return diff;
     if (diff > PI)
       return TwoPI - diff;
+    return diff; // should not happen
   }
 
   struct ParticlePositionWithRespectToJet {
