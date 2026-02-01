@@ -77,7 +77,7 @@ class HFInvMassFitter : public TNamed
   };
   std::array<std::string, NTypesOfReflPdf> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
   HFInvMassFitter() = delete;
-  HFInvMassFitter(TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg = Expo, int fitTypeSgn = SingleGaus);
+  HFInvMassFitter(TH1* histoToFit, double minValue, double maxValue, int fitTypeBkg = Expo, int fitTypeSgn = SingleGaus, int randomSeed = -1);
   ~HFInvMassFitter() override;
   void setHistogramForFit(TH1* histoToFit);
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
@@ -169,7 +169,6 @@ class HFInvMassFitter : public TNamed
   void drawResidual(TVirtualPad* c);
   void drawRatio(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
-  void setRandomSeed(int seed) { mRandomSeed = seed; }
 
  private:
   HFInvMassFitter(const HFInvMassFitter& source);

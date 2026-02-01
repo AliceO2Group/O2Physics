@@ -431,7 +431,7 @@ void runMassFitter(const std::string& configFileName)
 
     double reflOverSgn = 0;
 
-    HFInvMassFitter* massFitter = new HFInvMassFitter(hMass[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
+    HFInvMassFitter* massFitter = new HFInvMassFitter(hMass[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar], randomSeed);
     massFitter->setDrawBgPrefit(drawBgPrefit);
     massFitter->setHighlightPeakRegion(highlightPeakRegion);
     massFitter->setInitialGaussianMean(massPDG);
@@ -442,7 +442,6 @@ void runMassFitter(const std::string& configFileName)
     } else {
       massFitter->setUseChi2Fit();
     }
-    massFitter->setRandomSeed(randomSeed);
 
     auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(double)> setFunc, std::string const& var) -> void {
       if (isFix) {
@@ -741,8 +740,8 @@ void readJsonVectorFromHisto(std::vector<double>& vec, const Document& config, c
   if (!vec.empty()) {
     throw std::runtime_error("readJsonVectorFromHisto(): vector is not empty!");
   }
-  const auto fileName = readJsonField<std::string>(config, fileNameFieldName);
-  const auto histoName = readJsonField<std::string>(config, histoNameFieldName);
+  const auto fileName = readJsonField<std::string>(config, fileNameFieldName, "");
+  const auto histoName = readJsonField<std::string>(config, histoNameFieldName, "");
   if (fileName.empty() || histoName.empty()) {
     return;
   }

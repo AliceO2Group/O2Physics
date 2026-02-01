@@ -62,7 +62,8 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                  double minValue,
                                  double maxValue,
                                  int fitTypeBkg,
-                                 int fitTypeSgn) : mHistoInvMass(nullptr),
+                                 int fitTypeSgn,
+                                 int randomSeed) : mHistoInvMass(nullptr),
                                                    mFitOption("L,E"),
                                                    mMinMass(minValue),
                                                    mMaxMass(maxValue),
@@ -149,7 +150,7 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mHistoTemplateRefl(nullptr),
                                                    mDrawBgPrefit(false),
                                                    mHighlightPeakRegion(false),
-                                                   mRandomSeed(-1),
+                                                   mRandomSeed(randomSeed),
                                                    mRandomGen(nullptr)
 {
   // standard constructor
