@@ -1104,12 +1104,15 @@ struct UpcRhoAnalysis {
       recoPionLVs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged));
       recoTracks.push_back(track);
     }
+
     if (truePionLVs.size() != 2 || recoPionLVs.size() != 2)
       return;
+    
     ROOT::Math::PxPyPzMVector trueSystem = reconstructSystem(truePionLVs);
     const float trueDeltaPhi = getPhiChargeMC(trueTracks, truePionLVs);
     ROOT::Math::PxPyPzMVector recoSystem = reconstructSystem(recoPionLVs);
     const float recoDeltaPhi = getPhiCharge(recoTracks, recoPionLVs);
+    
     rResolution.fill(HIST("MC/resolution/system/1D/hM"), recoSystem.M() - trueSystem.M());
     rResolution.fill(HIST("MC/resolution/system/2D/hMVsM"), trueSystem.M(), recoSystem.M());
     rResolution.fill(HIST("MC/resolution/system/1D/hPt"), recoSystem.Pt() - trueSystem.Pt());
