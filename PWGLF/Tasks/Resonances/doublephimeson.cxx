@@ -82,7 +82,10 @@ struct doublephimeson {
   ConfigurableAxis configThnAxisNumPhi{"configThnAxisNumPhi", {101, -0.5, 100.5}, "cos #theta{*}"};
   ConfigurableAxis configThnAxisDeltaPt{"configThnAxisDeltaPt", {100, 0.0, 1.0}, "delta pt"};
   Configurable<float> maxDeltaMPhi{"maxDeltaMPhi", 0.01f, "Delta-m cut on the two phi masses: sqrt((m1-mPDG)^2 + (m2-mPDG)^2) < maxDeltaMPhi (GeV/c^2)"};
-
+  // --- NEW: steerable axes from JSON ---
+  ConfigurableAxis configThnAxisDeltaRPhi{"configThnAxisDeltaRPhi", {120, 0.0, 6.0}, "ΔR(φ,φ)"};
+  ConfigurableAxis configThnAxisZ{"configThnAxisZ", {100, 0.0, 1.0}, "z"};
+  ConfigurableAxis configThnAxisA{"configThnAxisA", {100, 0.0, 1.0}, "A"};
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
   {
@@ -109,10 +112,15 @@ struct doublephimeson {
     const AxisSpec thnAxisCosTheta{configThnAxisCosTheta, "cos #theta"};
     const AxisSpec thnAxisNumPhi{configThnAxisNumPhi, "Number of phi meson"};
     const AxisSpec thnAxisPtCorr{configThnAxisPtCorr, "Pt Corr var"};
-
+    const AxisSpec thnAxisDeltaRPhi{configThnAxisDeltaRPhi, "#Delta R(#phi,#phi)"};
+    const AxisSpec thnAxisZ{configThnAxisZ, "z = p_{T1}/(p_{T1}+p_{T2})"};
+    const AxisSpec thnAxisA{configThnAxisA, "A = |p_{T1}-p_{T2}|/(p_{T1}+p_{T2})"};
     histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisDeltaR, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisPtCorr});
     // histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
     histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisDeltaR, thnAxisPt, thnAxisDeltaR, thnAxisInvMassDeltaPhi, thnAxisPtCorr});
+    // --- NEW THnSparse storing (ΔRphi, z, A) WITHOUT applying cuts ---
+    histos.add("SEMassUnlike_DeltaRZA", "SEMassUnlike_DeltaRZA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaRPhi, thnAxisZ, thnAxisA, thnAxisInvMassDeltaPhi});
+    histos.add("MEMassUnlike_DeltaRZA", "MEMassUnlike_DeltaRZA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaRPhi, thnAxisZ, thnAxisA, thnAxisInvMassDeltaPhi});
   }
 
   // get kstar
@@ -1129,6 +1137,17 @@ struct doublephimeson {
                   dR,
                   dM,
                   ptcorr);
+
+      // --- NEW: compute z and A from phi candidates (no cuts) ---
+      const double pt1 = p1.Pt();
+      const double pt2 = p2.Pt();
+      const double ptsum = pt1 + pt2;
+      if (ptsum <= 0.0)
+        continue;
+      const double z = pt1 / ptsum;
+      const double A = std::abs(pt1 - pt2) / ptsum;
+      // --- Fill NEW THnSparse (no cuts) ---
+      histos.fill(HIST("SEMassUnlike_DeltaRZA"), M, pair.Pt(), pair.Pt() * dR, z, A, dM);
     }
   }
   PROCESS_SWITCH(doublephimeson, processopti4, "Process Optimized same event", true);
@@ -1310,6 +1329,17 @@ struct doublephimeson {
                       dR,        // ΔR(phi1, phi2)
                       dM,        // Δm(phi)
                       ptcorr);   // pT correlation
+
+          // --- NEW: compute z and A from phi candidates (no cuts) ---
+          const double pt1 = phi1.Pt();
+          const double pt2 = phi2.Pt();
+          const double ptsum = pt1 + pt2;
+          if (ptsum <= 0.0)
+            continue;
+          const double z = pt1 / ptsum;
+          const double A = std::abs(pt1 - pt2) / ptsum;
+          // --- Fill NEW THnSparse (no cuts) ---
+          histos.fill(HIST("MEMassUnlike_DeltaRZA"), pair.M(), pair.Pt(), pair.Pt() * dR, z, A, dM);
         }
       }
     }
