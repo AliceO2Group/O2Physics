@@ -345,7 +345,7 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(18, aod::filtering::OmegaHighMultTrk::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(19, aod::filtering::HighMultFT0M::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(20, aod::filtering::HighMultTrk::columnLabel());
-    
+
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "PassBuilderSel");
     hCandidate->GetXaxis()->SetBinLabel(3, "DCA_meson");
@@ -621,7 +621,7 @@ struct strangenessFilter {
     float multFT0MNorm = 0.f;
     Bool_t isHighMultEventTrk = 0;
     float multTrack = 0.f;
-    if (HMTrgSelectionForOmegaFT0M == 1){
+    if (HMTrgSelectionForOmegaFT0M == 1) {
       float meanMultT0C = 0.f;
       float fac_FT0C_ebe = 1.;
       meanMultT0C = (*mMeanMultT0C)[0];
@@ -682,7 +682,7 @@ struct strangenessFilter {
     }
     if (HMTrgSelectionForOmegaFT0M == 2) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
-      if (collision.multFT0M() > LowLimitHMTrgOmegaT0M ) {
+      if (collision.multFT0M() > LowLimitHMTrgOmegaT0M) {
         isHighMultEvent = 1;
       }
     }
@@ -692,7 +692,7 @@ struct strangenessFilter {
         isHighMultEventTrk = 1;
       }
     }
-    if (HMTrgSelectionForOmegaTrks == 2 ) {
+    if (HMTrgSelectionForOmegaTrks == 2) {
       for (auto& track : tracks) {
         if (selectTrackOHM(track)) {
           multTrack++;
