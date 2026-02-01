@@ -1968,10 +1968,10 @@ struct StrangenessInJets {
             float particleId, chargeId;
             if (pdgToLongLivedIndex(mcParticle.pdgCode(), particleId, chargeId)) {
               if (deltaRjet < rJet) {
-                registryMC.fill(HIST("LongLivedReconstructed"), -1.f, indexParticle, indexCharge, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
+                registryMC.fill(HIST("LongLivedReconstructed"), -1.f, particleId, chargeId, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
               }
               if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("LongLivedReconstructed"), 1.f, indexParticle, indexCharge, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
+                registryMC.fill(HIST("LongLivedReconstructed"), 1.f, particleId, chargeId, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
               }
             }
           }
