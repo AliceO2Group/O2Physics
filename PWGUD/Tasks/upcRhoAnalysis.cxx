@@ -264,7 +264,7 @@ struct UpcRhoAnalysis {
       }
       for (int i = 0; i < static_cast<int>(runNumbers.size()); ++i)
         rQC.get<TH2>(HIST("QC/tracks/hSelectionCounterPerRun"))->GetYaxis()->SetBinLabel(i + 1, std::to_string(runNumbers[i]).c_str());
-      
+
       rQC.add("QC/tracks/hTofHitCheck", ";leading track TOF hit;subleading track TOF hit;counts", kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
       rQC.get<TH2>(HIST("QC/tracks/hTofHitCheck"))->GetXaxis()->SetBinLabel(1, "no hit");
       rQC.get<TH2>(HIST("QC/tracks/hTofHitCheck"))->GetXaxis()->SetBinLabel(2, "hit");
@@ -817,7 +817,7 @@ struct UpcRhoAnalysis {
     float subleadingPhi = phi(subleadingTrack.px(), subleadingTrack.py());
     float phiRandom = getPhiRandom(cutTracksLVs);
     float phiCharge = getPhiCharge(cutTracks, cutTracksLVs);
-    
+
     // fill recoTree
     recoTree(collision.flags(), collision.runNumber(), collision.posZ(), collision.occupancyInTime(), collision.hadronicRate(),
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
@@ -831,10 +831,10 @@ struct UpcRhoAnalysis {
              leadingTrack.tpcNSigmaEl(), subleadingTrack.tpcNSigmaEl(),
              leadingTrack.tpcNSigmaKa(), subleadingTrack.tpcNSigmaKa(),
              leadingTrack.tpcNSigmaPr(), subleadingTrack.tpcNSigmaPr());
-    
+
     if (!tracksPassPID(cutTracks)) // apply PID cut
       return;
-    
+
     for (const auto& cutTrack : cutTracks) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 16);
       rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 16, runIndex);
@@ -1107,12 +1107,12 @@ struct UpcRhoAnalysis {
 
     if (truePionLVs.size() != 2 || recoPionLVs.size() != 2)
       return;
-    
+
     ROOT::Math::PxPyPzMVector trueSystem = reconstructSystem(truePionLVs);
     const float trueDeltaPhi = getPhiChargeMC(trueTracks, truePionLVs);
     ROOT::Math::PxPyPzMVector recoSystem = reconstructSystem(recoPionLVs);
     const float recoDeltaPhi = getPhiCharge(recoTracks, recoPionLVs);
-    
+
     rResolution.fill(HIST("MC/resolution/system/1D/hM"), recoSystem.M() - trueSystem.M());
     rResolution.fill(HIST("MC/resolution/system/2D/hMVsM"), trueSystem.M(), recoSystem.M());
     rResolution.fill(HIST("MC/resolution/system/1D/hPt"), recoSystem.Pt() - trueSystem.Pt());
