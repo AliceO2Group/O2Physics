@@ -163,36 +163,6 @@ struct StrangenessInJets {
   // Instantiate utility class for jet background subtraction
   JetBkgSubUtils backgroundSub;
 
-  struct ParticlePositionWithRespectToJet {
-    void ParticlePositionWithRespectToJet(const float px, const float py, const float pz,
-                                          const TVector3& jet,
-                                          const TVector3& ue1,
-                                          const TVector3& ue2)
-    {
-      const TVector3 candidateDirection(px, py, pz);
-      const double deltaEtaJet = candidateDirection.Eta() - jet.Eta();
-      const double deltaPhiJet = getDeltaPhi(candidateDirection.Phi(), jet.Phi());
-      const double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-      const double deltaEtaUe1 = candidateDirection.Eta() - ue1.Eta();
-      const double deltaPhiUe1 = getDeltaPhi(candidateDirection.Phi(), ue1.Phi());
-      const double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-      const double deltaEtaUe2 = candidateDirection.Eta() - ue2.Eta();
-      const double deltaPhiUe2 = getDeltaPhi(candidateDirection.Phi(), ue2.Phi());
-      const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-      mInJet = deltaRjet < rJet;
-      mInUE1 = deltaRue1 < rJet;
-      mInUE2 = deltaRue2 < rJet;
-    }
-    bool isInJet() const { return mInJet; }
-    bool isInUE1() const { return mInUE1; }
-    bool isInUE2() const { return mInUE2; }
-
-   private:
-    bool mInJet = false;
-    bool mInUE1 = false;
-    bool mInUE2 = false;
-  };
-
   // Initialize CCDB access and histogram registry for Zorro processing
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -204,6 +174,7 @@ struct StrangenessInJets {
 
   void init(InitContext const&)
   {
+    ParticlePositionWithRespectToJet::mJetRadius = rJet.value;
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
@@ -447,6 +418,38 @@ struct StrangenessInJets {
     if (diff > PI)
       return TwoPI - diff;
   }
+
+  struct ParticlePositionWithRespectToJet {
+    ParticlePositionWithRespectToJet(const float px, const float py, const float pz,
+                                     const TVector3& jet,
+                                     const TVector3& ue1,
+                                     const TVector3& ue2)
+    {
+      const TVector3 candidateDirection(px, py, pz);
+      const double deltaEtaJet = candidateDirection.Eta() - jet.Eta();
+      const double deltaPhiJet = getDeltaPhi(candidateDirection.Phi(), jet.Phi());
+      const double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+      const double deltaEtaUe1 = candidateDirection.Eta() - ue1.Eta();
+      const double deltaPhiUe1 = getDeltaPhi(candidateDirection.Phi(), ue1.Phi());
+      const double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+      const double deltaEtaUe2 = candidateDirection.Eta() - ue2.Eta();
+      const double deltaPhiUe2 = getDeltaPhi(candidateDirection.Phi(), ue2.Phi());
+      const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+      mInJet = deltaRjet < mJetRadius;
+      mInUE1 = deltaRue1 < mJetRadius;
+      mInUE2 = deltaRue2 < mJetRadius;
+    }
+    bool isInJet() const { return mInJet; }
+    bool isInUE1() const { return mInUE1; }
+    bool isInUE2() const { return mInUE2; }
+
+    static double mJetRadius = 0.f;
+
+   private:
+    bool mInJet = false;
+    bool mInUE1 = false;
+    bool mInUE2 = false;
+  };
 
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
   bool isPhysicalPrimaryOrFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
