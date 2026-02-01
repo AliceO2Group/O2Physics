@@ -408,7 +408,7 @@ struct StrangenessInJets {
   }
 
   // Delta phi calculation
-  double getDeltaPhi(double a1, double a2)
+  static double getDeltaPhi(const double a1, const double a2)
   {
     const double phi1 = TVector2::Phi_0_2pi(a1);
     const double phi2 = TVector2::Phi_0_2pi(a2);
@@ -443,7 +443,7 @@ struct StrangenessInJets {
     bool isInUE1() const { return mInUE1; }
     bool isInUE2() const { return mInUE2; }
 
-    static double mJetRadius = 0.f;
+    static double mJetRadius;
 
    private:
     bool mInJet = false;
