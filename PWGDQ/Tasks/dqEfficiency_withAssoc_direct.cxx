@@ -23,6 +23,9 @@
 #include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include <DetectorsVertexing/PVertexer.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <Common/Core/trackUtilities.h>
 
 #include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
@@ -1507,6 +1510,7 @@ struct AnalysisSameEventPairing {
 
     cout << "AnalysisSameEventPairing::init() completed" << endl;
   }
+
 
   void initParamsFromCCDB(uint64_t timestamp, bool withTwoProngFitter = true)
   {
