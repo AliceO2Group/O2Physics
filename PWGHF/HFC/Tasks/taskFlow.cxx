@@ -185,6 +185,7 @@ struct HfTaskFlow {
     Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
     Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
     Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
+    Configurable<int> nSamples{"nSamples", 10, "number of different samples for correlations"};
   } configTask;
 
   //   configurables for collisions
@@ -251,6 +252,13 @@ struct HfTaskFlow {
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
   } configMft;
 
+  //   configurables for MFT tracks
+  struct : ConfigurableGroup {
+    std::string prefix = "ConfigFit_group";
+    Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Analysis/EventPlane/GainEq", "CCDB path for gain equalization constants"};
+    Configurable<int> cfgCorrLevel{"cfgCorrLevel", 1, "calibration step: 0 = no corr, 1 = gain corr"};
+  } configFit;
+
   TF1* fPtDepDCAxy = nullptr;
 
   SliceCache cache;
@@ -261,6 +269,7 @@ struct HfTaskFlow {
   o2::ccdb::CcdbApi ccdbApi;
   o2::ft0::Geometry ft0Det;
   o2::fv0::Geometry* fv0Det{};
+  std::vector<float> cstFT0RelGain{};
 
   // =========================
   //      using declarations : DATA
@@ -343,6 +352,10 @@ struct HfTaskFlow {
     ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt trigger axis for histograms"};
     ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
     ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {1, -10, 10}, "vertex axis for efficiency histograms"};
+    ConfigurableAxis axisAmplitudeFit{"axisAmplitudeFit", {5000, 0, 1000}, "FT0A amplitude axis"};
+    ConfigurableAxis axisChannelFt0a{"axisChannelFt0a", {96, 0.0, 96.0}, "FT0A channel axis"};
+    ConfigurableAxis axisSamples{"axisSamples", {10, 0, 10}, "sample axis for correlation containers"};
+    ConfigurableAxis axisChID{"axisChID", {220, 0, 220}, "FIT channel ID"};
   } configAxis;
 
   HistogramRegistry registry{"registry"};
@@ -463,7 +476,8 @@ struct HfTaskFlow {
     //      Declaration of correlation containers and their respective axis
     //  =========================
 
-    std::vector<AxisSpec> const corrAxis = {{configAxis.axisDeltaEta, "#Delta#eta"},
+    std::vector<AxisSpec> const corrAxis = {{configAxis.axisSamples, "sampling"},
+                                            {configAxis.axisDeltaEta, "#Delta#eta"},
                                             {configAxis.axisPtAssoc, "p_{T} (GeV/c)"},
                                             {configAxis.axisPtTrigger, "p_{T} (GeV/c)"},
                                             {configAxis.axisMultiplicity, "multiplicity"},
@@ -568,6 +582,8 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcFt0aChCh) {
       addHistograms<Data, TpcFt0a, ChPartChPart>();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
       mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
@@ -575,6 +591,8 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcFt0aD0Ch) {
       addHistograms<Data, TpcFt0a, D0ChPart>();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEventHf.setObject(new CorrelationContainer("sameEventHf", "sameEventHf", corrAxis, effAxis, userAxis));
       mixedEventHf.setObject(new CorrelationContainer("mixedEventHf", "mixedEventHf", corrAxis, effAxis, userAxis));
@@ -582,6 +600,8 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcFt0aLcCh) {
       addHistograms<Data, TpcFt0a, LcChPart>();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEventHf.setObject(new CorrelationContainer("sameEventHf", "sameEventHf", corrAxis, effAxis, userAxis));
       mixedEventHf.setObject(new CorrelationContainer("mixedEventHf", "mixedEventHf", corrAxis, effAxis, userAxis));
@@ -594,6 +614,8 @@ struct HfTaskFlow {
     if (doprocessSameMftFt0aChCh || doprocessSameMftFt0aChChReassociated || doprocessSameMftFt0aChChReassociated3d || doprocessSameMftFt0aChChNonAmbiguous) {
       addHistograms<Data, MftFt0a, ChPartChPart>();
       addMftHistograms();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
       mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
@@ -605,6 +627,8 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcFt0cChCh) {
       addHistograms<Data, TpcFt0c, ChPartChPart>();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
       mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
@@ -612,6 +636,8 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcFt0cD0Ch) {
       addHistograms<Data, TpcFt0c, D0ChPart>();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEventHf.setObject(new CorrelationContainer("sameEventHf", "sameEventHf", corrAxis, effAxis, userAxis));
       mixedEventHf.setObject(new CorrelationContainer("mixedEventHf", "mixedEventHf", corrAxis, effAxis, userAxis));
@@ -619,6 +645,8 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcFt0cLcCh) {
       addHistograms<Data, TpcFt0c, LcChPart>();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEventHf.setObject(new CorrelationContainer("sameEventHf", "sameEventHf", corrAxis, effAxis, userAxis));
       mixedEventHf.setObject(new CorrelationContainer("mixedEventHf", "mixedEventHf", corrAxis, effAxis, userAxis));
@@ -630,6 +658,8 @@ struct HfTaskFlow {
 
     if (doprocessSameFt0aFt0cChCh) {
       addHistograms<Data, Ft0aFt0c, ChPartChPart>();
+      registry.add("Data/FT0Amp", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
+      registry.add("Data/FT0AmpCorr", "", {HistType::kTH2F, {configAxis.axisChID, configAxis.axisAmplitudeFit}});
 
       sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
       mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
@@ -822,14 +852,48 @@ struct HfTaskFlow {
   }
 
   template <typename TFT0s>
-  void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, int fitType)
+  void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, int fitType, float& amplitude)
   {
+    int rID{0};
     if (fitType == isFT0C) {
       id = ft0.channelC()[iCh] + MinFt0cCell;
+      rID = id + MinFt0cCell;
+      amplitude = ft0.amplitudeC()[iCh];
     } else if (fitType == isFT0A) {
       id = ft0.channelA()[iCh];
+      rID = id;
+      amplitude = ft0.amplitudeA()[iCh];
     } else {
       LOGF(fatal, "Cor Index %d out of range", fitType);
+    }
+    registry.fill(HIST("Data/FT0Amp"), rID, amplitude);
+    amplitude = amplitude / cstFT0RelGain[iCh];
+    registry.fill(HIST("Data/FT0AmpCorr"), rID, amplitude);
+  }
+
+  void loadGain(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    cstFT0RelGain.clear();
+    cstFT0RelGain = {};
+    std::string fullPath;
+
+    auto timestamp = bc.timestamp();
+    constexpr int ChannelsFT0 = 208;
+    if (configFit.cfgCorrLevel == 0) {
+      for (auto i{0u}; i < ChannelsFT0; i++) {
+        cstFT0RelGain.push_back(1.);
+      }
+    } else {
+      fullPath = configFit.cfgGainEqPath;
+      fullPath += "/FT0";
+      const auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
+      if (!objft0Gain) {
+        for (auto i{0u}; i < ChannelsFT0; i++) {
+          cstFT0RelGain.push_back(1.);
+        }
+      } else {
+        cstFT0RelGain = *(objft0Gain);
+      }
     }
   }
 
@@ -987,6 +1051,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
+    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
     for (const auto& track1 : tracks1) {
@@ -1148,10 +1213,10 @@ struct HfTaskFlow {
 
         if (!fillingHFcontainer) {
           //  fill pair correlations
-          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
-          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
         }
 
@@ -1191,6 +1256,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
+    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
     for (const auto& track1 : tracks1) {
@@ -1315,10 +1381,10 @@ struct HfTaskFlow {
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
 
         if (!fillingHFcontainer) {
-          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
-          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
         }
 
@@ -1347,6 +1413,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
+    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
     for (auto const& track1 : tracks1) {
@@ -1447,10 +1514,10 @@ struct HfTaskFlow {
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
           if (!fillingHFcontainer) {
-            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
                                         triggerWeight * associatedWeight);
           } else {
-            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
+            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
                                         triggerWeight * associatedWeight);
           }
 
@@ -1487,18 +1554,19 @@ struct HfTaskFlow {
         for (std::size_t indexChannel = 0; indexChannel < channelSize; indexChannel++) {
 
           int channelId = 0;
-          getChannel(tracks2, indexChannel, channelId, fitType);
+          float amplitude = 0.;
+          getChannel(tracks2, indexChannel, channelId, fitType, amplitude);
           auto phi2 = getPhiFT0(channelId, fitType);
           auto eta2 = getEtaFT0(channelId, fitType);
           float deltaPhi = phi1 - phi2;
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
           if (!fillingHFcontainer) {
-            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-                                        triggerWeight * associatedWeight);
+            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+                                        amplitude * triggerWeight * associatedWeight);
           } else {
-            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
-                                        triggerWeight * associatedWeight);
+            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
+                                        amplitude * triggerWeight * associatedWeight);
           }
 
           // FILL QA PLOTS for associated particle
@@ -1545,6 +1613,7 @@ struct HfTaskFlow {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
+    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
     for (auto const& track1 : tracks1) {
@@ -1591,7 +1660,7 @@ struct HfTaskFlow {
           float deltaPhi = phi1 - phi2;
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
-          target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
 
           // FILL QA PLOTS for associated particle
@@ -1617,14 +1686,15 @@ struct HfTaskFlow {
         for (std::size_t indexChannel = 0; indexChannel < channelSize; indexChannel++) {
 
           int channelId = 0;
-          getChannel(tracks2, indexChannel, channelId, fitType);
+          float amplitude = 0.;
+          getChannel(tracks2, indexChannel, channelId, fitType, amplitude);
           auto phi2 = getPhiFT0(channelId, fitType);
           auto eta2 = getEtaFT0(channelId, fitType);
           float deltaPhi = phi1 - phi2;
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
-          target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-                                      triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+                                      amplitude * triggerWeight * associatedWeight);
 
           // FILL QA PLOTS for associated particle
           if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
@@ -1645,16 +1715,18 @@ struct HfTaskFlow {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
     auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
+    int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE FROM FT0A
     for (std::size_t indexChannelA = 0; indexChannelA < ft0as.channelA().size(); indexChannelA++) {
       loopCounter++;
       int channelIdA = 0;
-      getChannel(ft0as, indexChannelA, channelIdA, isFT0A);
+      float amplitude = 0.;
+      getChannel(ft0as, indexChannelA, channelIdA, isFT0A, amplitude);
       auto phiA = getPhiFT0(channelIdA, isFT0A);
       auto etaA = getEtaFT0(channelIdA, isFT0A);
 
-      target->getTriggerHist()->Fill(step, 0.f, multiplicity, posZ, triggerWeight);
+      target->getTriggerHist()->Fill(step, 0.f, multiplicity, posZ, amplitude * triggerWeight);
 
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         fillTriggerQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaA, phiA, 0.f);
@@ -1664,13 +1736,14 @@ struct HfTaskFlow {
       for (std::size_t indexChannelC = 0; indexChannelC < ft0cs.channelC().size(); indexChannelC++) {
 
         int channelIdC = 0;
-        getChannel(ft0cs, indexChannelC, channelIdC, isFT0C);
+        float amplitude = 0.;
+        getChannel(ft0cs, indexChannelC, channelIdC, isFT0C, amplitude);
         auto phiC = getPhiFT0(channelIdC, isFT0C);
         auto etaC = getEtaFT0(channelIdC, isFT0C);
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
 
-        target->getPairHist()->Fill(step, etaA - etaC, 0.f, 0.f, multiplicity, deltaPhi, posZ,
-                                    triggerWeight * associatedWeight);
+        target->getPairHist()->Fill(step, sampleIndex, etaA - etaC, 0.f, 0.f, multiplicity, deltaPhi, posZ,
+                                    amplitude * triggerWeight * associatedWeight);
 
         if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
           fillAssociatedQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaC, phiC);
@@ -2300,13 +2373,17 @@ struct HfTaskFlow {
 
   void processSameTpcFt0aChCh(FilteredCollisionsWSelMult::iterator const& collision,
                               FilteredTracksWDcaSel const& tracks,
-                              aod::FT0s const& ft0as)
+                              aod::FT0s const& ft0as,
+                              aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       registry.fill(HIST("Data/hNTracks"), tracks.size());
       const auto multiplicity = getMultiplicityEstimator(collision, true);
@@ -2327,13 +2404,17 @@ struct HfTaskFlow {
 
   void processSameTpcFt0aD0Ch(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelD0 const& candidates,
-                              aod::FT0s const& ft0as)
+                              aod::FT0s const& ft0as,
+                              aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2353,13 +2434,17 @@ struct HfTaskFlow {
 
   void processSameTpcFt0aLcCh(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelLc const& candidates,
-                              aod::FT0s const& ft0as)
+                              aod::FT0s const& ft0as,
+                              aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2379,13 +2464,17 @@ struct HfTaskFlow {
 
   void processSameMftFt0aChCh(FilteredCollisionsWSelMult::iterator const& collision,
                               FilteredMftTracks const& mftTracks,
-                              aod::FT0s const& ft0as)
+                              aod::FT0s const& ft0as,
+                              aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2402,13 +2491,17 @@ struct HfTaskFlow {
   void processSameMftFt0aChChReassociated(FilteredCollisionsWSelMult::iterator const& collision,
                                           soa::SmallGroups<aod::BestCollisionsFwd> const& reassociatedMftTracks,
                                           FilteredMftTracks const&,
-                                          aod::FT0s const& ft0as)
+                                          aod::FT0s const& ft0as,
+                                          aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2425,13 +2518,17 @@ struct HfTaskFlow {
   void processSameMftFt0aChChReassociated3d(FilteredCollisionsWSelMult::iterator const& collision,
                                             soa::SmallGroups<aod::BestCollisionsFwd3d> const& reassociatedMftTracks,
                                             FilteredMftTracks const&,
-                                            aod::FT0s const& ft0as)
+                                            aod::FT0s const& ft0as,
+                                            aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2448,13 +2545,17 @@ struct HfTaskFlow {
   void processSameMftFt0aChChNonAmbiguous(FilteredCollisionsWSelMult::iterator const& collision,
                                           soa::SmallGroups<aod::BestCollisionsFwd> const& reassociatedMftTracks,
                                           FilteredMftTracks const&,
-                                          aod::FT0s const& ft0as)
+                                          aod::FT0s const& ft0as,
+                                          aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2474,13 +2575,17 @@ struct HfTaskFlow {
 
   void processSameTpcFt0cChCh(FilteredCollisionsWSelMult::iterator const& collision,
                               FilteredTracksWDcaSel const& tracks,
-                              aod::FT0s const& ft0cs)
+                              aod::FT0s const& ft0cs,
+                              aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       registry.fill(HIST("Data/hNTracks"), tracks.size());
       const auto multiplicity = getMultiplicityEstimator(collision, true);
@@ -2501,13 +2606,17 @@ struct HfTaskFlow {
 
   void processSameTpcFt0cD0Ch(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelD0 const& candidates,
-                              aod::FT0s const& ft0cs)
+                              aod::FT0s const& ft0cs,
+                              aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2527,13 +2636,17 @@ struct HfTaskFlow {
 
   void processSameTpcFt0cLcCh(FilteredCollisionsWSelMult::iterator const& collision,
                               HfCandidatesSelLc const& candidates,
-                              aod::FT0s const& ft0cs)
+                              aod::FT0s const& ft0cs,
+                              aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
@@ -2552,13 +2665,17 @@ struct HfTaskFlow {
   // =====================================
 
   void processSameFt0aFt0cChCh(FilteredCollisionsWSelMult::iterator const& collision,
-                               aod::FT0s const&)
+                               aod::FT0s const&,
+                               aod::BCsWithTimestamps const&)
   {
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     if (collision.has_foundFT0()) {
+      loadGain(bc);
       const auto& ft0 = collision.foundFT0();
       const auto multiplicity = getMultiplicityEstimator(collision, true);
 
