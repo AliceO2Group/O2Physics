@@ -568,8 +568,8 @@ struct skimmerPrimaryMuon {
     // float min_chi2MatchMCHMFT = 1e+10, min_dr = 1e+10, min_distance_2d = 1e+10;
     float min_chi2MatchMCHMFT = 1e+10;
     std::tuple<int, int, int> tupleIds_at_min_chi2mftmch;
-    std::tuple<int, int, int> tupleIds_at_min_dr;
-    std::tuple<int, int, int> tupleIds_at_min_distance_2d;
+    // std::tuple<int, int, int> tupleIds_at_min_dr;
+    // std::tuple<int, int, int> tupleIds_at_min_distance_2d;
     for (const auto& muon_tmp : muons_per_MCHMID) {
       if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
         auto tupleId = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
