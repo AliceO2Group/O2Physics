@@ -158,7 +158,7 @@ struct H2fromLbFilter {
   {
     for (const auto& collision : collisions) // start loop over collisions
     {
-      LOG(info) << "Processing collision with ID: " << collision.globalIndex();
+      LOG(debug) << "Processing collision with ID: " << collision.globalIndex();
       if (mCurrentRun != collision.bc_as<o2::aod::BCsWithTimestamps>().runNumber()) { // If the run is new then we need to initialize the propagator field
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
@@ -188,16 +188,16 @@ struct H2fromLbFilter {
         // fillTriggerTable(keepEvent);
         continue;
       }
-      LOG(info) << "Accepted collision!";
+      LOG(debug) << "Accepted collision!";
       hProcessedEvents->Fill(4.5);
       QAHistos.fill(HIST("hVtxZ"), collision.posZ());
 
       // Loop over tracks
-      LOG(info) << "Trying the slice";
+      LOG(debug) << "Trying the slice";
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
-      LOG(info) << "Sliced!";
+      LOG(debug) << "Sliced!";
       for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
-        LOG(info) << "Processing track with ID: " << trackId.trackId();
+        LOG(debug) << "Processing track with ID: " << trackId.trackId();
         const auto& track = tracks.rawIteratorAt(trackId.trackId());
 
         std::array<float, 2> dca{track.dcaXY(), track.dcaZ()};
