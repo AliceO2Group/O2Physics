@@ -565,7 +565,8 @@ struct skimmerPrimaryMuon {
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
 
-    float min_chi2MatchMCHMFT = 1e+10, min_dr = 1e+10, min_distance_2d = 1e+10;
+    // float min_chi2MatchMCHMFT = 1e+10, min_dr = 1e+10, min_distance_2d = 1e+10;
+    float min_chi2MatchMCHMFT = 1e+10;
     std::tuple<int, int, int> tupleIds_at_min_chi2mftmch;
     std::tuple<int, int, int> tupleIds_at_min_dr;
     std::tuple<int, int, int> tupleIds_at_min_distance_2d;
