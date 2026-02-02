@@ -210,7 +210,11 @@ DECLARE_SOA_COLUMN(EtaPrimeP, hasEtaPrimeP, bool);   //! eta'P meson candidate (
 DECLARE_SOA_COLUMN(EtaPrimePP, hasEtaPrimePP, bool); //! eta'PP meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(EtaPrimed, hasEtaPrimed, bool);   //! eta'd meson candidate (3pi) in the collision
 
+// deuterons non prompt
+DECLARE_SOA_COLUMN(H2fromLb, hasH2fromLb, bool);   //! deuteron from Lb decay
+
 } // namespace filtering
+
 
 namespace decision
 {
@@ -362,6 +366,12 @@ DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HNMesonFilters", //!
 
 using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
 
+// beauty non prompt deuterons
+DECLARE_SOA_TABLE(H2fromLbFilters, "AOD", "H2LbFilters", //!
+                  filtering::H2fromLb);
+using H2fromLbFilter = H2fromLbFilters::iterator;
+
+
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
                   decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered0, decision::CefpTriggered1, decision::CefpSelected0, decision::CefpSelected1);
@@ -373,11 +383,11 @@ DECLARE_SOA_TABLE(BCRanges, "AOD", "BCRanges", //!
 using BCRange = BCRanges::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{15};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "DoublePhiFilters", "HeavyNeutralMesonFilters", "GlobalDimuonFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "LF2PhiFilters", "HNMesonFilters", "GlDimuonFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter", "o2-analysis-lf-doublephi-filter", "o2-analysis-heavy-neutral-meson-filter", "o2-analysis-em-global-dimuon-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters, DoublePhiFilters, HeavyNeutralMesonFilters, GlobalDimuonFilters> FiltersPack;
+constexpr int NumberOfFilters{16};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "DoublePhiFilters", "HeavyNeutralMesonFilters", "GlobalDimuonFilters", "H2fromLbFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "LF2PhiFilters", "HNMesonFilters", "GlDimuonFilters", "H2LbFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter", "o2-analysis-lf-doublephi-filter", "o2-analysis-heavy-neutral-meson-filter", "o2-analysis-em-global-dimuon-filter", "o2-analysis-h2-from-beauty-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters, DoublePhiFilters, HeavyNeutralMesonFilters, GlobalDimuonFilters, H2fromLbFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>
