@@ -280,16 +280,19 @@ struct BjetCentMultTask {
     return 0.5 * (getScaledFT0A(multFT0A) + getScaledFT0C(multFT0C));
   }
 
-  float getPercentile(const float scaledFT0M) {
+  float getPercentile(const float scaledFT0M)
+  {
     static const std::vector<float> x = {0.0, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0, 20.0};
     static const std::vector<float> y = {100.0, 90.0, 80.0, 70.0, 60.0, 50.0, 40.0, 30.0, 20.0, 10.0, 1.0, 0.1, 0.0};
 
-    if (scaledFT0M <= x.front()) return y.front();
-    if (scaledFT0M >= x.back()) return y.back();
+    if (scaledFT0M <= x.front())
+      return y.front();
+    if (scaledFT0M >= x.back())
+      return y.back();
 
     for (size_t i = 0; i < x.size() - 1; ++i) {
-      if (scaledFT0M >= x[i] && scaledFT0M < x[i+1]) {
-        float slope = (y[i+1] - y[i]) / (x[i+1] - x[i]);
+      if (scaledFT0M >= x[i] && scaledFT0M < x[i + 1]) {
+        float slope = (y[i + 1] - y[i]) / (x[i + 1] - x[i]);
         return y[i] + slope * (scaledFT0M - x[i]);
       }
     }
@@ -444,7 +447,6 @@ struct BjetCentMultTask {
         }
       }
     }
-
   }
 
   void processDummy(aod::Collision const&, aod::Tracks const&)
