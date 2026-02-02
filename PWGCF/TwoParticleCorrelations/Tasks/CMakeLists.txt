@@ -90,7 +90,7 @@ o2physics_add_dpl_workflow(flow-decorrelation
 
 o2physics_add_dpl_workflow(lambdacascadecorrelation
     SOURCES Lambdacascadecorrelation.cxx
-    PUBLIC_LINK_LIBRARIES 
-        O2Physics::AnalysisCore 
+    PUBLIC_LINK_LIBRARIES
+        O2Physics::AnalysisCore
         O2::Framework
     COMPONENT_NAME Analysis)

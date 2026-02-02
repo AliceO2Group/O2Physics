@@ -9,47 +9,51 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \file Lambdacascadecorrelation.cxx
-// \brief Correlation-balance functions of multistrange baryons
-// \author Oveis Sheibani <oveis.sheibani@cern.ch>
+/// \file Lambdacascadecorrelation.cxx
+/// \brief Correlation-balance functions of multistrange baryons
+/// \author Oveis Sheibani <oveis.sheibani@cern.ch>
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/inelGt.h"
+
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+
+#include "TDatabasePDG.h"
+#include "TPDGCode.h"
 #include <Math/Vector4D.h>
+#include <TFile.h>
 #include <TH2F.h>
 #include <TList.h>
 #include <TLorentzVector.h>
-#include <TProfile.h>
 #include <TMath.h>
+#include <TProfile.h>
+#include <TTree.h> // Required for TTree output
+
 #include <array>
 #include <cmath>
 #include <cstdlib>
-#include "TPDGCode.h"
-#include <string>
-#include "TDatabasePDG.h"
 #include <random>
+#include <string>
 #include <utility>
 #include <vector>
-#include <TFile.h>
-#include <TTree.h> // Required for TTree output
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,14 +62,13 @@ using namespace o2::constants::physics;
 using namespace o2::constants::math;
 using namespace o2::soa;
 
-//Zorro zorro;
+// Zorro zorro;
 
 // use parameters + cov mat non-propagated, aux info + (extension propagated)
 using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 using FullTracksExtIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
-
 
 //
 
@@ -84,8 +87,6 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults>;
 using MyCollisionsMult = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using MyCascades = soa::Filtered<aod::CascDataExtSelected>;
 using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
-
-
 
 namespace o2::aod
 {
@@ -1033,7 +1034,7 @@ struct LambdaTableProducer {
     histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
 
     // Fill Collision Table
-   // lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ());
+    // lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ());
     lambdaCollisionTable(cent, mult, collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ());
 
     // initialize v0track objects
@@ -1738,14 +1739,9 @@ struct LambdaR2Correlation {
 
   using LambdaCollisions = aod::LambdaCollisions;
   using LambdaTracks = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
-    
-    
-    
-    
 
-   // using MyCascades = aod::CascDataExt;   // ← NOT CascDatas. NEVER CascDatas.
-using MyCascades = soa::Filtered<aod::CascDataExt>;
-    
+  // using MyCascades = aod::CascDataExt;   // ← NOT CascDatas. NEVER CascDatas.
+  using MyCascades = soa::Filtered<aod::CascDataExt>;
 
   SliceCache cache;
   Partition<LambdaTracks> partPrimLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kLambda) && (aod::lambdatrackext::trueLambdaFlag == true) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
@@ -1793,9 +1789,6 @@ using MyCascades = soa::Filtered<aod::CascDataExt>;
         analyzePairs<kAntiLambdaAntiLambda, kRec, kSS, true>(antiLambdaSecdTracks, antiLambdaSecdTracks);
       }
     }
-      
-
-      
   }
 
   PROCESS_SWITCH(LambdaR2Correlation, processDataReco, "Process for Data and MCReco", true);
@@ -1854,15 +1847,11 @@ using MyCascades = soa::Filtered<aod::CascDataExt>;
   PROCESS_SWITCH(LambdaR2Correlation, processMCGen, "Process for MC Generated", false);
 };
 
-
-
-
 struct CascadeSelector {
-    
- //   Zorro zorro;
+
+  //   Zorro zorro;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB;
-    
 
   Produces<aod::CascadeFlags> cascflags;
 
@@ -2039,19 +2028,19 @@ struct CascadeSelector {
   template <typename TCollision>
   bool eventSelection(TCollision const& collision, bool fillHistos)
   {
-//    if (useTrigger) {
-//      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-//      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
-//      bool eventTrigger = zorro.isSelected(bc.globalBC());
-//      if (eventTrigger) {
-//        if (fillHistos)
-//          registry.fill(HIST("hTriggerQA"), 1);
-//      } else {
-//        if (fillHistos)
-//          registry.fill(HIST("hTriggerQA"), 0);
-//        return false;
-//      }
-//    }
+    //    if (useTrigger) {
+    //      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    //      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
+    //      bool eventTrigger = zorro.isSelected(bc.globalBC());
+    //      if (eventTrigger) {
+    //        if (fillHistos)
+    //          registry.fill(HIST("hTriggerQA"), 1);
+    //      } else {
+    //        if (fillHistos)
+    //          registry.fill(HIST("hTriggerQA"), 0);
+    //        return false;
+    //      }
+    //    }
     // fill event selection based on which selection criteria are applied and passed
     if (fillHistos)
       registry.fill(HIST("hEventSel"), 0);
@@ -2386,11 +2375,9 @@ struct CascadeSelector {
   PROCESS_SWITCH(CascadeSelector, processGenMC, "Process gen MC", false);
 }; // struct
 
-
-
 struct CascadeCorrelations {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  //OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+  // OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // Configurables
   Configurable<float> maxRapidity{"maxRapidity", 0.5, "|y| < maxRapidity"};
@@ -2445,7 +2432,7 @@ struct CascadeCorrelations {
       hEffOmegaPlus = static_cast<TH1D*>(effList->FindObject("hOmegaPlusEff"));
     }
 
-   // zorroSummary.setObject(zorro.getZorroSummary());
+    // zorroSummary.setObject(zorro.getZorroSummary());
 
     mCounter.mPdgDatabase = pdgDB.service;
     mCounter.mSelectPrimaries = true;
@@ -2567,17 +2554,17 @@ struct CascadeCorrelations {
 
   void processSameEvent(MyCollisionsMult::iterator const& collision, MyCascades const& Cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
-//    if (useTrigger) {
-//      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-//      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
-//      bool eventTrigger = zorro.isSelected(bc.globalBC());
-//      if (eventTrigger) {
-//        registry.fill(HIST("hTriggerQA"), 1);
-//      } else {
-//        registry.fill(HIST("hTriggerQA"), 0);
-//        return;
-//      }
-//    }
+    //    if (useTrigger) {
+    //      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    //      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
+    //      bool eventTrigger = zorro.isSelected(bc.globalBC());
+    //      if (eventTrigger) {
+    //        registry.fill(HIST("hTriggerQA"), 1);
+    //      } else {
+    //        registry.fill(HIST("hTriggerQA"), 0);
+    //        return;
+    //      }
+    //    }
 
     double weight;
     // Some QA on the cascades
@@ -2854,395 +2841,6 @@ struct CascadeCorrelations {
 }; // struct
 
 
-//struct LambdaXiCorrelation {
-//
-//  Configurable<float> maxY{"maxY", 0.5, "Max |y| for Lambda and Xi"};
-//  Configurable<bool> useEff{"useEff", false, "Apply Lambda efficiency correction"};
-//
-//  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-//
-//  // 1. Define Slicing Logic explicitly (Preslice objects).
-//  // This tells 'sliceBy' exactly which column to use for partitioning.
-//  using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
-//  Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
-//
-//  // Slicer for Lambdas: using LambdaCollisionId
-//  Preslice<GoodLambdas> lambdasPerCollision = aod::lambdatrack::lambdaCollisionId;
-//
-//  // Slicer for Cascades: using standard CollisionId
-//  Preslice<aod::CascDataExt> cascadesPerCollision = aod::cascdata::collisionId;
-//
-//  using LambdaCollisionsExt = aod::LambdaCollisions;
-//
-//  void init(InitContext const&)
-//  {
-//    const AxisSpec dphi{72, -PIHalf, 3 * PIHalf, "#Delta#varphi"};
-//    const AxisSpec dy{40, -2.0f, 2.0f, "#Delta y"};
-//    const AxisSpec cent{100, 0, 100, "Centrality (%)"};
-//
-//    histos.add("hDeltaPhiDeltaY",     ";#Delta#varphi;#Delta y",       kTH2F, {dphi, dy});
-//    histos.add("hDeltaPhiDeltaYCent", ";#Delta#varphi;#Delta y;cent",  kTH3F, {dphi, dy, cent});
-//  }
-//
-//  void process(LambdaCollisionsExt::iterator const& lambdacoll,
-//               GoodLambdas const& /*lambdas*/,
-//               aod::CascDataExt const& cascades,    // Base table (contains kinematics & collisionId)
-//               aod::CascadeFlags const& cascflags)  // Flags table (contains selection flag)
-//  {
-//    // 2. Slice tables using 'sliceBy' and the Preslice objects defined above.
-//    // 'sliceBy' performs a binary search on the data and DOES NOT require the auxiliary Index Table.
-//    // This prevents the runtime crash.
-//    auto lambdasInThisEvent = goodLambda->sliceBy(lambdasPerCollision, lambdacoll.globalIndex());
-//
-//    const int64_t refCollisionIndex = lambdacoll.refCollId();
-//
-//    auto cascadesInThisEvent = cascades.sliceBy(cascadesPerCollision, refCollisionIndex);
-//
-//    float cent = lambdacoll.cent();
-//
-//    // 3. Get an iterator to the start of the flags table.
-//    // We will use pointer/iterator arithmetic to access specific rows randomly.
-//    auto flagsStart = cascflags.begin();
-//
-//    for (const auto& lam : lambdasInThisEvent) {
-//      if (std::abs(lam.rap()) > maxY) continue;
-//      float wLam = useEff ? lam.corrFact() : 1.0f;
-//
-//      for (const auto& casc : cascadesInThisEvent) {
-//
-//        // 4. Access the flag using iterator arithmetic.
-//        // (start + index) gives us the row proxy, which has the .isSelected() method.
-//        // This bypasses the missing subscript operator on the Table object.
-//        if ((flagsStart + casc.globalIndex()).isSelected() == 0) continue;
-//
-//        //
-//        // Recalculate Xi Rapidity using the correct mass constant (MassXi0)
-//        float xiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, MassXi0);
-//        if (std::abs(xiY) > maxY) continue;
-//
-//        float dphi = RecoDecay::constrainAngle(casc.phi() - lam.phi(), -PIHalf);
-//        float dy   = xiY - lam.rap();
-//
-//        histos.fill(HIST("hDeltaPhiDeltaY"),     dphi, dy, wLam);
-//        histos.fill(HIST("hDeltaPhiDeltaYCent"), dphi, dy, cent, wLam);
-//      }
-//    }
-//  }
-//
-//  PROCESS_SWITCH(LambdaXiCorrelation, process, "Λ–Ξ correlation (minimal & working)", true);
-//};
-
-
-
-//struct LambdaXiCorrelation {
-//
-//  // Configurables
-//  Configurable<float> maxY{"maxY", 0.5, "Max |y| for Lambda and Xi"};
-//  Configurable<bool> useEff{"useEff", false, "Apply Lambda efficiency correction"};
-//
-//  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-//
-//  // Slicing Logic
-//  using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
-//  Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
-//  Preslice<GoodLambdas> lambdasPerCollision = aod::lambdatrack::lambdaCollisionId;
-//  Preslice<aod::CascDataExt> cascadesPerCollision = aod::cascdata::collisionId;
-//
-//  using LambdaCollisionsExt = aod::LambdaCollisions;
-//
-//  void init(InitContext const&)
-//  {
-//    // Axes Definition
-//    const AxisSpec dphi{72, -PIHalf, 3 * PIHalf, "#Delta#varphi"};
-//    const AxisSpec dy{40, -2.0f, 2.0f, "#Delta y"};
-//    const AxisSpec cent{100, 0, 100, "Centrality (%)"};
-//    const AxisSpec pt{100, 0, 10, "p_{T} (GeV/c)"};
-//    const AxisSpec eta{100, -1.0, 1.0, "#eta"};
-//    const AxisSpec rap{100, -1.0, 1.0, "y"};
-//    const AxisSpec phi{100, 0, TwoPI, "#varphi"};
-//    const AxisSpec massLam{100, 1.08, 1.15, "M_{p#pi} (GeV/c^{2})"};
-//    const AxisSpec massXi{100, 1.28, 1.36, "M_{#Lambda#pi} (GeV/c^{2})"};
-//
-//    // QA / Singles Histograms
-//    histos.add("Singles/Lambda/hPt",  "Lambda p_{T};p_{T};counts", kTH1F, {pt});
-//    histos.add("Singles/Lambda/hEta", "Lambda #eta;#eta;counts",   kTH1F, {eta});
-//    histos.add("Singles/Lambda/hPhi", "Lambda #varphi;#varphi;counts", kTH1F, {phi});
-//    histos.add("Singles/Lambda/hMass","Lambda Mass;Mass;counts",   kTH1F, {massLam});
-//
-//    histos.add("Singles/Xi/hPt",   "Xi p_{T};p_{T};counts", kTH1F, {pt});
-//    histos.add("Singles/Xi/hRap",  "Xi y;y;counts",         kTH1F, {rap});
-//    histos.add("Singles/Xi/hPhi",  "Xi #varphi;#varphi;counts", kTH1F, {phi});
-//    histos.add("Singles/Xi/hMass", "Xi Mass;Mass;counts",   kTH1F, {massXi});
-//
-//    // Pair Histograms
-//    histos.add("Pairs/hDeltaPhiDeltaY",     ";#Delta#varphi;#Delta y",       kTH2F, {dphi, dy});
-//    histos.add("Pairs/hDeltaPhiDeltaYCent", ";#Delta#varphi;#Delta y;cent",  kTH3F, {dphi, dy, cent});
-//  }
-//
-//  // --- Analysis Functions ---
-//
-//  template <typename T>
-//  void analyzeSinglesLambda(T const& tracks)
-//  {
-//    for (const auto& track : tracks) {
-//      if (std::abs(track.rap()) > maxY) continue;
-//
-//      float w = useEff ? track.corrFact() : 1.0f;
-//
-//      histos.fill(HIST("Singles/Lambda/hPt"), track.pt(), w);
-//      histos.fill(HIST("Singles/Lambda/hEta"), track.eta(), w);
-//      histos.fill(HIST("Singles/Lambda/hPhi"), track.phi(), w);
-//      histos.fill(HIST("Singles/Lambda/hMass"), track.mass(), w);
-//    }
-//  }
-//
-//  template <typename T, typename F>
-//  void analyzeSinglesXi(T const& cascades, F const& flagsStart)
-//  {
-//    for (const auto& casc : cascades) {
-//      if ((flagsStart + casc.globalIndex()).isSelected() == 0) continue;
-//
-//      float xiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, MassXi0);
-//      if (std::abs(xiY) > maxY) continue;
-//
-//      // Note: No efficiency loaded for Xi in this struct currently, weight = 1.0
-//      histos.fill(HIST("Singles/Xi/hPt"), casc.pt());
-//      histos.fill(HIST("Singles/Xi/hRap"), xiY);
-//      histos.fill(HIST("Singles/Xi/hPhi"), casc.phi());
-//      histos.fill(HIST("Singles/Xi/hMass"), casc.mXi());
-//    }
-//  }
-//
-//  template <typename L, typename C, typename F>
-//  void analyzePairs(L const& lambdas, C const& cascades, F const& flagsStart, float cent)
-//  {
-//    for (const auto& lam : lambdas) {
-//      if (std::abs(lam.rap()) > maxY) continue;
-//      float wLam = useEff ? lam.corrFact() : 1.0f;
-//
-//      for (const auto& casc : cascades) {
-//        if ((flagsStart + casc.globalIndex()).isSelected() == 0) continue;
-//
-//        float xiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, MassXi0);
-//        if (std::abs(xiY) > maxY) continue;
-//
-//        float dphi = RecoDecay::constrainAngle(casc.phi() - lam.phi(), -PIHalf);
-//        float dy   = xiY - lam.rap();
-//
-//        //
-//        histos.fill(HIST("Pairs/hDeltaPhiDeltaY"),     dphi, dy, wLam);
-//        histos.fill(HIST("Pairs/hDeltaPhiDeltaYCent"), dphi, dy, cent, wLam);
-//      }
-//    }
-//  }
-//
-//  // --- Processing Loop ---
-//
-//  void process(LambdaCollisionsExt::iterator const& lambdacoll,
-//               GoodLambdas const& /*lambdas*/,
-//               aod::CascDataExt const& cascades,
-//               aod::CascadeFlags const& cascflags)
-//  {
-//    // 1. Slicing
-//    auto lambdasInThisEvent = goodLambda->sliceBy(lambdasPerCollision, lambdacoll.globalIndex());
-//    const int64_t refCollisionIndex = lambdacoll.refCollId();
-//    auto cascadesInThisEvent = cascades.sliceBy(cascadesPerCollision, refCollisionIndex);
-//
-//    float cent = lambdacoll.cent();
-//    auto flagsStart = cascflags.begin();
-//
-//    // 2. Execute Analysis Modules
-//    analyzeSinglesLambda(lambdasInThisEvent);
-//    analyzeSinglesXi(cascadesInThisEvent, flagsStart);
-//    analyzePairs(lambdasInThisEvent, cascadesInThisEvent, flagsStart, cent);
-//  }
-//
-//  PROCESS_SWITCH(LambdaXiCorrelation, process, "Λ–Ξ correlation (modular)", true);
-//};
-
-
-//struct LambdaXiCorrelation {
-//
-//  // --- Configurables ---
-//  Configurable<float> maxY{"maxY", 0.5, "Max |y| for Lambda and Xi"};
-//  Configurable<bool> useEff{"useEff", false, "Apply Lambda efficiency correction"};
-//
-//  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-//
-//  // --- Data Slicing Definitions ---
-//  using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
-//  Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
-//
-//  Preslice<GoodLambdas> lambdasPerCollision = aod::lambdatrack::lambdaCollisionId;
-//  Preslice<aod::CascDataExt> cascadesPerCollision = aod::cascdata::collisionId;
-//
-//  using LambdaCollisionsExt = aod::LambdaCollisions;
-//
-//  enum { kLam = 0, kAntiLam = 1 };
-//  enum { kXiMin = 0, kXiPlu = 1 }; // Xi Minus, Xi Plus
-//
-//  void init(InitContext const&)
-//  {
-//    // --- Axis Definitions ---
-//    const AxisSpec dphi{72, -PIHalf, 3 * PIHalf, "#Delta#varphi"};
-//    const AxisSpec dy{40, -2.0f, 2.0f, "#Delta y"};
-//    // const AxisSpec cent{100, 0, 100, "Centrality (%)"}; // Unused
-//    const AxisSpec pt{100, 0, 10, "p_{T} (GeV/c)"};
-//    const AxisSpec eta{100, -1.0, 1.0, "#eta"};
-//    const AxisSpec rap{100, -1.0, 1.0, "y"};
-//    const AxisSpec phi{100, 0, TwoPI, "#varphi"};
-//    const AxisSpec massLam{100, 1.09, 1.14, "M_{p#pi} (GeV/c^{2})"};
-//    const AxisSpec massXi{100, 1.28, 1.36, "M_{#Lambda#pi} (GeV/c^{2})"};
-//    const AxisSpec radius{100, 0, 100, "Radius (cm)"};
-//    const AxisSpec cpa{100, 0.9, 1.0, "Cos(PA)"};
-//
-//    // --- Event Counter ---
-//    histos.add("Event/hEventCount", "Event Counter", kTH1F, {{1, 0, 1, "Count"}});
-//
-//    // --- Singles: Lambda ---
-//    histos.add("Singles/Lambda/hPt",     "Lambda p_{T}", kTH1F, {pt});
-//    histos.add("Singles/AntiLambda/hPt", "AntiLambda p_{T}", kTH1F, {pt});
-//
-//    histos.add("Singles/Lambda/hPtVsMass",     "Lambda p_{T} vs Mass", kTH2F, {massLam, pt});
-//    histos.add("Singles/AntiLambda/hPtVsMass", "AntiLambda p_{T} vs Mass", kTH2F, {massLam, pt});
-//
-//    // --- Singles: Xi (Cascades) ---
-//    histos.add("Singles/Xi/hRadius", "Xi Radius", kTH1F, {radius});
-//    histos.add("Singles/Xi/hCosPA",  "Xi CosPA",  kTH1F, {cpa});
-//
-//    histos.add("Singles/XiMinus/hPtVsMass", "Xi^{-} p_{T} vs Mass", kTH2F, {massXi, pt});
-//    histos.add("Singles/XiPlus/hPtVsMass",  "Xi^{+} p_{T} vs Mass", kTH2F, {massXi, pt});
-//
-//    histos.add("Singles/XiMinus/hRap", "Xi^{-} Rapidity", kTH1F, {rap});
-//    histos.add("Singles/XiPlus/hRap",  "Xi^{+} Rapidity", kTH1F, {rap});
-//
-//    // --- Pairs: Charge Separated ---
-//    histos.add("Pairs/Lam_XiM/hDeltaPhiDeltaY",     "L-Xi-;#Delta#varphi;#Delta y", kTH2F, {dphi, dy});
-//    histos.add("Pairs/Lam_XiP/hDeltaPhiDeltaY",     "L-Xi+;#Delta#varphi;#Delta y", kTH2F, {dphi, dy});
-//    histos.add("Pairs/AntiLam_XiM/hDeltaPhiDeltaY", "AL-Xi-;#Delta#varphi;#Delta y", kTH2F, {dphi, dy});
-//    histos.add("Pairs/AntiLam_XiP/hDeltaPhiDeltaY", "AL-Xi+;#Delta#varphi;#Delta y", kTH2F, {dphi, dy});
-//  }
-//
-//  // --- Analysis Modules ---
-//
-//  template <typename T>
-//  void analyzeSinglesLambda(T const& tracks)
-//  {
-//    for (const auto& track : tracks) {
-//      if (std::abs(track.rap()) > maxY) continue;
-//
-//      float w = useEff ? track.corrFact() : 1.0f;
-//      bool isAnti = (track.v0Type() == kAntiLambda);
-//
-//      if (!isAnti) {
-//        histos.fill(HIST("Singles/Lambda/hPt"), track.pt(), w);
-//        histos.fill(HIST("Singles/Lambda/hPtVsMass"), track.mass(), track.pt(), w);
-//      } else {
-//        histos.fill(HIST("Singles/AntiLambda/hPt"), track.pt(), w);
-//        histos.fill(HIST("Singles/AntiLambda/hPtVsMass"), track.mass(), track.pt(), w);
-//      }
-//    }
-//  }
-//
-//  template <typename T, typename F>
-//  void analyzeSinglesXi(T const& cascades, F const& flagsStart, float pvX, float pvY, float pvZ)
-//  {
-//    for (const auto& casc : cascades) {
-//      if ((flagsStart + casc.globalIndex()).isSelected() == 0) continue;
-//
-//      float xiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, MassXi0);
-//      if (std::abs(xiY) > maxY) continue;
-//
-//      // QA Plots
-//      histos.fill(HIST("Singles/Xi/hRadius"), casc.cascradius());
-//      histos.fill(HIST("Singles/Xi/hCosPA"),  casc.casccosPA(pvX, pvY, pvZ));
-//
-//      // Separate by Charge (Sign)
-//      if (casc.sign() < 0) {
-//         histos.fill(HIST("Singles/XiMinus/hPtVsMass"), casc.mXi(), casc.pt());
-//         histos.fill(HIST("Singles/XiMinus/hRap"), xiY);
-//      } else {
-//         histos.fill(HIST("Singles/XiPlus/hPtVsMass"), casc.mXi(), casc.pt());
-//         histos.fill(HIST("Singles/XiPlus/hRap"), xiY);
-//      }
-//    }
-//  }
-//
-//  template <typename L, typename C, typename F>
-//  void analyzePairs(L const& lambdas, C const& cascades, F const& flagsStart)
-//  {
-//    for (const auto& lam : lambdas) {
-//      if (std::abs(lam.rap()) > maxY) continue;
-//      float wLam = useEff ? lam.corrFact() : 1.0f;
-//      bool isAntiLam = (lam.v0Type() == kAntiLambda);
-//
-//      for (const auto& casc : cascades) {
-//        if ((flagsStart + casc.globalIndex()).isSelected() == 0) continue;
-//
-//        float xiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, MassXi0);
-//        if (std::abs(xiY) > maxY) continue;
-//
-//        float dphi = RecoDecay::constrainAngle(casc.phi() - lam.phi(), -PIHalf);
-//        float dy   = xiY - lam.rap();
-//
-//        bool isXiPlus = (casc.sign() > 0);
-//
-//        // Fill Specific Histogram based on charges
-//        if (!isAntiLam && !isXiPlus) {
-//             // Lambda (0) + Xi- (-)
-//             histos.fill(HIST("Pairs/Lam_XiM/hDeltaPhiDeltaY"), dphi, dy, wLam);
-//        }
-//        else if (!isAntiLam && isXiPlus) {
-//             // Lambda (0) + Xi+ (+)
-//             histos.fill(HIST("Pairs/Lam_XiP/hDeltaPhiDeltaY"), dphi, dy, wLam);
-//        }
-//        else if (isAntiLam && !isXiPlus) {
-//             // AntiLambda (1) + Xi- (-)
-//             histos.fill(HIST("Pairs/AntiLam_XiM/hDeltaPhiDeltaY"), dphi, dy, wLam);
-//        }
-//        else if (isAntiLam && isXiPlus) {
-//             // AntiLambda (1) + Xi+ (+)
-//             histos.fill(HIST("Pairs/AntiLam_XiP/hDeltaPhiDeltaY"), dphi, dy, wLam);
-//        }
-//      }
-//    }
-//  }
-//
-//  // --- Processing Loop ---
-//
-//  void process(LambdaCollisionsExt::iterator const& lambdacoll,
-//               GoodLambdas const& /*lambdas*/,
-//               aod::CascDataExt const& cascades,
-//               aod::CascadeFlags const& cascflags)
-//  {
-//    // 0. Fill Event Counter
-//    histos.fill(HIST("Event/hEventCount"), 0.5);
-//
-//    // 1. Slicing
-//    auto lambdasInThisEvent = goodLambda->sliceBy(lambdasPerCollision, lambdacoll.globalIndex());
-//    const int64_t refCollisionIndex = lambdacoll.refCollId();
-//    auto cascadesInThisEvent = cascades.sliceBy(cascadesPerCollision, refCollisionIndex);
-//
-//    // REMOVED: float cent = lambdacoll.cent(); -> Fixes unused variable warning
-//
-//    // Retrieve PV coordinates
-//    float pvX = lambdacoll.posX();
-//    float pvY = lambdacoll.posY();
-//    float pvZ = lambdacoll.posZ();
-//
-//    auto flagsStart = cascflags.begin();
-//
-//    // 2. Execute Analysis Modules
-//    analyzeSinglesLambda(lambdasInThisEvent);
-//    analyzeSinglesXi(cascadesInThisEvent, flagsStart, pvX, pvY, pvZ);
-//    analyzePairs(lambdasInThisEvent, cascadesInThisEvent, flagsStart);
-//  }
-//
-//  PROCESS_SWITCH(LambdaXiCorrelation, process, "Λ–Ξ correlation (Final)", true);
-//};
-
-
-
 struct LambdaXiCorrelation {
 
   // --- Configurables ---
@@ -3251,11 +2849,11 @@ struct LambdaXiCorrelation {
 
   // --- Outputs ---
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   // --- Data Slicing Definitions ---
   using GoodLambdas = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
   Partition<GoodLambdas> goodLambda = aod::lambdatrackext::trueLambdaFlag == true;
-  
+
   Preslice<GoodLambdas> lambdasPerCollision = aod::lambdatrack::lambdaCollisionId;
   Preslice<aod::CascDataExt> cascadesPerCollision = aod::cascdata::collisionId;
 
@@ -3265,24 +2863,25 @@ struct LambdaXiCorrelation {
   // R2 = (N_events * Pair_Yield) / (Single_Yield_1 * Single_Yield_2) - 1
   static TH2* calculateR2(TH2* hPairs, TH1* hSinglesTrig, TH1* hSinglesAssoc, double nEvents)
   {
-    if (!hPairs || !hSinglesTrig || !hSinglesAssoc || nEvents <= 0) return nullptr;
+    if (!hPairs || !hSinglesTrig || !hSinglesAssoc || nEvents <= 0)
+      return nullptr;
 
-    TH2* hR2 = (TH2*)hPairs->Clone(Form("%s_R2", hPairs->GetName()));
+    TH2* hR2 = reinterpret_cast<TH2*>(hPairs->Clone(Form("%s_R2", hPairs->GetName())));
     hR2->Reset();
 
     double nS1 = hSinglesTrig->Integral();
     double nS2 = hSinglesAssoc->Integral();
 
     if (nS1 > 0 && nS2 > 0) {
-       hR2->Add(hPairs);
-       hR2->Scale(nEvents / (nS1 * nS2));
-       
-       for(int i=1; i<=hR2->GetNbinsX(); i++) {
-         for(int j=1; j<=hR2->GetNbinsY(); j++) {
-            double content = hR2->GetBinContent(i, j);
-            hR2->SetBinContent(i, j, content - 1.0);
-         }
-       }
+      hR2->Add(hPairs);
+      hR2->Scale(nEvents / (nS1 * nS2));
+
+      for (int i = 1; i <= hR2->GetNbinsX(); i++) {
+        for (int j = 1; j <= hR2->GetNbinsY(); j++) {
+          double content = hR2->GetBinContent(i, j);
+          hR2->SetBinContent(i, j, content - 1.0);
+        }
+      }
     }
     return hR2;
   }
@@ -3300,35 +2899,35 @@ struct LambdaXiCorrelation {
     const AxisSpec cpa{100, 0.9, 1.0, "Cos(PA)"};
     const AxisSpec dca{100, 0.0, 5.0, "DCA (cm)"};
     const AxisSpec pvDca{100, -10.0, 10.0, "DCA to PV (cm)"};
-    
+
     // --- 2. Histograms ---
     histos.add("Event/hEventCount", "Event Counter", kTH1F, {{1, 0, 1, "Count"}});
 
     // Singles: Lambda
-    histos.add("Singles/Lambda/hPt",     "Lambda p_{T}", kTH1F, {pt});
+    histos.add("Singles/Lambda/hPt", "Lambda p_{T}", kTH1F, {pt});
     histos.add("Singles/AntiLambda/hPt", "AntiLambda p_{T}", kTH1F, {pt});
-    
-    histos.add("Singles/Lambda/hPtVsMass",     "Lambda p_{T} vs Mass", kTH2F, {massLam, pt});
+
+    histos.add("Singles/Lambda/hPtVsMass", "Lambda p_{T} vs Mass", kTH2F, {massLam, pt});
     histos.add("Singles/AntiLambda/hPtVsMass", "AntiLambda p_{T} vs Mass", kTH2F, {massLam, pt});
 
     // Singles: Xi & QA
     histos.add("QA/Xi/hRadius", "Xi Radius", kTH1F, {radius});
-    histos.add("QA/Xi/hCosPA",  "Xi CosPA",  kTH1F, {cpa});
-    histos.add("QA/Xi/hDCAV0Dau",   "DCA V0 Daughters", kTH1F, {dca});
+    histos.add("QA/Xi/hCosPA", "Xi CosPA", kTH1F, {cpa});
+    histos.add("QA/Xi/hDCAV0Dau", "DCA V0 Daughters", kTH1F, {dca});
     histos.add("QA/Xi/hDCACascDau", "DCA Casc Daughters", kTH1F, {dca});
-    histos.add("QA/Xi/hDCAV0ToPV",  "DCA V0 to PV", kTH1F, {pvDca});
+    histos.add("QA/Xi/hDCAV0ToPV", "DCA V0 to PV", kTH1F, {pvDca});
     histos.add("QA/Xi/hDCAPosToPV", "DCA Pos to PV", kTH1F, {pvDca});
     histos.add("QA/Xi/hDCANegToPV", "DCA Neg to PV", kTH1F, {pvDca});
-    histos.add("QA/Xi/hDCABachToPV","DCA Bach to PV",kTH1F, {pvDca});
-    
+    histos.add("QA/Xi/hDCABachToPV", "DCA Bach to PV", kTH1F, {pvDca});
+
     histos.add("Singles/XiMinus/hPtVsMass", "Xi^{-} p_{T} vs Mass", kTH2F, {massXi, pt});
-    histos.add("Singles/XiPlus/hPtVsMass",  "Xi^{+} p_{T} vs Mass", kTH2F, {massXi, pt});
+    histos.add("Singles/XiPlus/hPtVsMass", "Xi^{+} p_{T} vs Mass", kTH2F, {massXi, pt});
     histos.add("Singles/XiMinus/hRap", "Xi^{-} Rapidity", kTH1F, {rap});
-    histos.add("Singles/XiPlus/hRap",  "Xi^{+} Rapidity", kTH1F, {rap});
+    histos.add("Singles/XiPlus/hRap", "Xi^{+} Rapidity", kTH1F, {rap});
 
     // Pairs: Charge Separated (R2 Inputs)
-    histos.add("Pairs/Lam_XiM/hDeltaPhiDeltaY",     "L-Xi-", kTH2F, {dphi, dy});
-    histos.add("Pairs/Lam_XiP/hDeltaPhiDeltaY",     "L-Xi+", kTH2F, {dphi, dy});
+    histos.add("Pairs/Lam_XiM/hDeltaPhiDeltaY", "L-Xi-", kTH2F, {dphi, dy});
+    histos.add("Pairs/Lam_XiP/hDeltaPhiDeltaY", "L-Xi+", kTH2F, {dphi, dy});
     histos.add("Pairs/AntiLam_XiM/hDeltaPhiDeltaY", "AL-Xi-", kTH2F, {dphi, dy});
     histos.add("Pairs/AntiLam_XiP/hDeltaPhiDeltaY", "AL-Xi+", kTH2F, {dphi, dy});
   }
@@ -3339,8 +2938,9 @@ struct LambdaXiCorrelation {
   void analyzeSinglesLambda(T const& tracks)
   {
     for (const auto& track : tracks) {
-      if (std::abs(track.rap()) > maxY) continue;
-      
+      if (std::abs(track.rap()) > maxY)
+        continue;
+
       float w = useEff ? track.corrFact() : 1.0f;
       bool isAnti = (track.v0Type() == 1);
 
@@ -3358,14 +2958,16 @@ struct LambdaXiCorrelation {
   void analyzeSinglesXi(T const& cascades, F const& flagsStart, float pvX, float pvY, float pvZ)
   {
     for (const auto& casc : cascades) {
-      if ((flagsStart + casc.globalIndex()).isSelected() == 0) continue;
+      if ((flagsStart + casc.globalIndex()).isSelected() == 0)
+        continue;
 
       float xiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, MassXi0);
-      if (std::abs(xiY) > maxY) continue;
+      if (std::abs(xiY) > maxY)
+        continue;
 
       // QA Filling
       histos.fill(HIST("QA/Xi/hRadius"), casc.cascradius());
-      histos.fill(HIST("QA/Xi/hCosPA"),  casc.casccosPA(pvX, pvY, pvZ));
+      histos.fill(HIST("QA/Xi/hCosPA"), casc.casccosPA(pvX, pvY, pvZ));
       histos.fill(HIST("QA/Xi/hDCAV0Dau"), casc.dcaV0daughters());
       histos.fill(HIST("QA/Xi/hDCACascDau"), casc.dcacascdaughters());
       histos.fill(HIST("QA/Xi/hDCAV0ToPV"), casc.dcav0topv(pvX, pvY, pvZ));
@@ -3374,11 +2976,11 @@ struct LambdaXiCorrelation {
       histos.fill(HIST("QA/Xi/hDCABachToPV"), casc.dcabachtopv());
 
       if (casc.sign() < 0) {
-         histos.fill(HIST("Singles/XiMinus/hPtVsMass"), casc.mXi(), casc.pt());
-         histos.fill(HIST("Singles/XiMinus/hRap"), xiY);
+        histos.fill(HIST("Singles/XiMinus/hPtVsMass"), casc.mXi(), casc.pt());
+        histos.fill(HIST("Singles/XiMinus/hRap"), xiY);
       } else {
-         histos.fill(HIST("Singles/XiPlus/hPtVsMass"), casc.mXi(), casc.pt());
-         histos.fill(HIST("Singles/XiPlus/hRap"), xiY);
+        histos.fill(HIST("Singles/XiPlus/hPtVsMass"), casc.mXi(), casc.pt());
+        histos.fill(HIST("Singles/XiPlus/hRap"), xiY);
       }
     }
   }
@@ -3387,25 +2989,32 @@ struct LambdaXiCorrelation {
   void analyzePairs(L const& lambdas, C const& cascades, F const& flagsStart)
   {
     for (const auto& lam : lambdas) {
-      if (std::abs(lam.rap()) > maxY) continue;
+      if (std::abs(lam.rap()) > maxY)
+        continue;
       float wLam = useEff ? lam.corrFact() : 1.0f;
       bool isAntiLam = (lam.v0Type() == 1);
 
       for (const auto& casc : cascades) {
-        if ((flagsStart + casc.globalIndex()).isSelected() == 0) continue;
+        if ((flagsStart + casc.globalIndex()).isSelected() == 0)
+          continue;
 
         float xiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, MassXi0);
-        if (std::abs(xiY) > maxY) continue;
+        if (std::abs(xiY) > maxY)
+          continue;
 
         float dphi = RecoDecay::constrainAngle(casc.phi() - lam.phi(), -PIHalf);
-        float dy   = xiY - lam.rap();
-        
+        float dy = xiY - lam.rap();
+
         bool isXiPlus = (casc.sign() > 0);
 
-        if (!isAntiLam && !isXiPlus)      histos.fill(HIST("Pairs/Lam_XiM/hDeltaPhiDeltaY"), dphi, dy, wLam);
-        else if (!isAntiLam && isXiPlus)  histos.fill(HIST("Pairs/Lam_XiP/hDeltaPhiDeltaY"), dphi, dy, wLam);
-        else if (isAntiLam && !isXiPlus)  histos.fill(HIST("Pairs/AntiLam_XiM/hDeltaPhiDeltaY"), dphi, dy, wLam);
-        else if (isAntiLam && isXiPlus)   histos.fill(HIST("Pairs/AntiLam_XiP/hDeltaPhiDeltaY"), dphi, dy, wLam);
+        if (!isAntiLam && !isXiPlus)
+          histos.fill(HIST("Pairs/Lam_XiM/hDeltaPhiDeltaY"), dphi, dy, wLam);
+        else if (!isAntiLam && isXiPlus)
+          histos.fill(HIST("Pairs/Lam_XiP/hDeltaPhiDeltaY"), dphi, dy, wLam);
+        else if (isAntiLam && !isXiPlus)
+          histos.fill(HIST("Pairs/AntiLam_XiM/hDeltaPhiDeltaY"), dphi, dy, wLam);
+        else if (isAntiLam && isXiPlus)
+          histos.fill(HIST("Pairs/AntiLam_XiP/hDeltaPhiDeltaY"), dphi, dy, wLam);
       }
     }
   }
@@ -3435,20 +3044,16 @@ struct LambdaXiCorrelation {
   PROCESS_SWITCH(LambdaXiCorrelation, process, "Λ–Ξ correlation (Final Complete)", true);
 };
 
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-    return WorkflowSpec{
+  return WorkflowSpec{
 
+    adaptAnalysisTask<LambdaTableProducer>(cfgc),
+    adaptAnalysisTask<LambdaTracksExtProducer>(cfgc),
+    adaptAnalysisTask<LambdaR2Correlation>(cfgc),
+    adaptAnalysisTask<CascadeSelector>(cfgc),
+    adaptAnalysisTask<CascadeCorrelations>(cfgc),
+    adaptAnalysisTask<LambdaXiCorrelation>(cfgc)
 
-        adaptAnalysisTask<LambdaTableProducer>(cfgc),
-        adaptAnalysisTask<LambdaTracksExtProducer>(cfgc),
-         adaptAnalysisTask<LambdaR2Correlation>(cfgc),
-        adaptAnalysisTask<CascadeSelector>(cfgc),
-        adaptAnalysisTask<CascadeCorrelations>(cfgc),
-        adaptAnalysisTask<LambdaXiCorrelation>(cfgc)
-        
-    };
+  };
 }
- 
-
