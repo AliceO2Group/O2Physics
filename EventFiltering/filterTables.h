@@ -211,10 +211,9 @@ DECLARE_SOA_COLUMN(EtaPrimePP, hasEtaPrimePP, bool); //! eta'PP meson candidate 
 DECLARE_SOA_COLUMN(EtaPrimed, hasEtaPrimed, bool);   //! eta'd meson candidate (3pi) in the collision
 
 // deuterons non prompt
-DECLARE_SOA_COLUMN(H2fromLb, hasH2fromLb, bool);   //! deuteron from Lb decay
+DECLARE_SOA_COLUMN(H2fromLb, hasH2fromLb, bool); //! deuteron from Lb decay
 
 } // namespace filtering
-
 
 namespace decision
 {
@@ -370,7 +369,6 @@ using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
 DECLARE_SOA_TABLE(H2fromLbFilters, "AOD", "H2LbFilters", //!
                   filtering::H2fromLb);
 using H2fromLbFilter = H2fromLbFilters::iterator;
-
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
