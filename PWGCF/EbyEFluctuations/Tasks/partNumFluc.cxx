@@ -709,7 +709,7 @@ struct PartNumFluc {
   Configurable<bool> cfgFlagMcParticlePhysicalPrimary{"cfgFlagMcParticlePhysicalPrimary", false, "Flag of requiring physical primary MC particle"};
   Configurable<bool> cfgFlagMcParticleMomentum{"cfgFlagMcParticleMomentum", false, "Flag of using momentum of MC particle"};
 
-  Configurable<std::int32_t> cfgNCentralityBins{"cfgNCentralityBins", 20, "Number of centrality bins in fluctuation calculation"};
+  ConfigurableAxis cfgAxisCentrality{"cfgAxisCentrality", {VARIABLE_WIDTH, 0., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50., 55., 60., 65., 70., 75., 80., 85., 90.}, "Centrality axis in fluctuation calculation"};
   Configurable<std::int32_t> cfgNSubgroups{"cfgNSubgroups", 20, "Number of subgroups in fluctuation calculation"};
 
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -1064,13 +1064,14 @@ struct PartNumFluc {
       LOG(info) << "Enabling DCA QA.";
 
       AxisSpec asPt(200, 0., 2., "#it{p}_{T} (GeV/#it{c})");
+      AxisSpec asDca(400, -1., 1.);
 
-      hrQaDca.add("QaDca/hPtDcaXy_p", "", {HistType::kTH2D, {asPt, {400, -2., 2., "DCA_{#it{xy}} (cm)"}}});
-      hrQaDca.add("QaDca/hPtDcaXy_m", "", {HistType::kTH2D, {asPt, {400, -2., 2., "DCA_{#it{xy}} (cm)"}}});
+      hrQaDca.add("QaDca/hPtDcaXy_p", ";;DCA_{#it{xy}} (cm)", {HistType::kTH2D, {asPt, asDca}});
+      hrQaDca.add("QaDca/hPtDcaXy_m", ";;DCA_{#it{xy}} (cm)", {HistType::kTH2D, {asPt, asDca}});
       hrQaDca.add("QaDca/pPtDcaXy_p", ";;#LTDCA_{#it{xy}}#GT (cm)", {HistType::kTProfile, {asPt}});
       hrQaDca.add("QaDca/pPtDcaXy_m", ";;#LTDCA_{#it{xy}}#GT (cm)", {HistType::kTProfile, {asPt}});
-      hrQaDca.add("QaDca/hPtDcaZ_p", "", {HistType::kTH2D, {asPt, {400, -2., 2., "DCA_{#it{z}} (cm)"}}});
-      hrQaDca.add("QaDca/hPtDcaZ_m", "", {HistType::kTH2D, {asPt, {400, -2., 2., "DCA_{#it{z}} (cm)"}}});
+      hrQaDca.add("QaDca/hPtDcaZ_p", ";;DCA_{#it{z}} (cm)", {HistType::kTH2D, {asPt, asDca}});
+      hrQaDca.add("QaDca/hPtDcaZ_m", ";;DCA_{#it{z}} (cm)", {HistType::kTH2D, {asPt, asDca}});
       hrQaDca.add("QaDca/pPtDcaZ_p", ";;#LTDCA_{#it{z}}#GT (cm)", {HistType::kTProfile, {asPt}});
       hrQaDca.add("QaDca/pPtDcaZ_m", ";;#LTDCA_{#it{z}}#GT (cm)", {HistType::kTProfile, {asPt}});
     }
@@ -1122,16 +1123,18 @@ struct PartNumFluc {
     }
 
     if (cfgFlagQaPid.value || cfgFlagQaPidPi.value || cfgFlagQaPidKa.value || cfgFlagQaPidPr.value) {
-      AxisSpec asQaCentrality(20, 0., 100., "Centrality (%)");
-      AxisSpec asPOverQ(350, -3.5, 3.5, "#it{p}/#it{q} (GeV/#it{c})");
+      AxisSpec asQaCentrality({0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)");
       AxisSpec asPtOverQ(80, -2., 2., "#it{p}_{T}/#it{q} (GeV/#it{c})");
-      AxisSpec asEta(48, -1.2, 1.2, "#it{#eta}");
+      AxisSpec asEta(32, -0.8, 0.8, "#it{#eta}");
 
       if (cfgFlagQaPid.value) {
         LOG(info) << "Enabling PID QA.";
 
-        hrQaPid.add("QaPid/hCentralityPOverQEtaTpcLnDeDx", "", {HistType::kTHnSparseF, {asQaCentrality, asPOverQ, asEta, {240, 3., 9., "TPC ln(d#it{E}/d#it{x} (a.u.))"}}});
-        hrQaPid.add("QaPid/hCentralityPOverQEtaTofInverseBeta", "", {HistType::kTHnSparseF, {asQaCentrality, asPOverQ, asEta, {120, 0.5, 3.5, "TOF 1/#it{#beta}"}}});
+        AxisSpec asPOverQ(350, -3.5, 3.5, "#it{p}/#it{q} (GeV/#it{c})");
+        AxisSpec asEtaExtended(48, -1.2, 1.2, "#it{#eta}");
+
+        hrQaPid.add("QaPid/hCentralityPOverQEtaTpcLnDeDx", "", {HistType::kTHnSparseF, {asQaCentrality, asPOverQ, asEtaExtended, {240, 3., 9., "TPC ln(d#it{E}/d#it{x} (a.u.))"}}});
+        hrQaPid.add("QaPid/hCentralityPOverQEtaTofInverseBeta", "", {HistType::kTHnSparseF, {asQaCentrality, asPOverQ, asEtaExtended, {120, 0.5, 3.5, "TOF 1/#it{#beta}"}}});
       }
 
       if (cfgFlagQaPidPi.value || cfgFlagQaPidKa.value || cfgFlagQaPidPr.value) {
@@ -1183,7 +1186,7 @@ struct PartNumFluc {
 
     if (doprocessMc.value) {
       if (cfgFlagCalculationPurityPi.value || cfgFlagCalculationPurityKa.value || cfgFlagCalculationPurityPr.value) {
-        HistogramConfigSpec hcsCalculationPurity(HistType::kTProfile3D, {{20, 0., 100., "Centrality (%)"}, {40, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {48, -1.2, 1.2, "#it{#eta}"}});
+        HistogramConfigSpec hcsCalculationPurity(HistType::kTProfile3D, {{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {40, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {32, -0.8, 0.8, "#it{#eta}"}});
 
         if (cfgFlagCalculationPurityPi.value) {
           LOG(info) << "Enabling pion purity calculation.";
@@ -1216,7 +1219,7 @@ struct PartNumFluc {
 
     if (cfgFlagCalculationYieldPi.value || cfgFlagCalculationYieldKa.value || cfgFlagCalculationYieldPr.value) {
       AxisSpec asPt(40, 0., 2., "#it{p}_{T} (GeV/#it{c})");
-      HistogramConfigSpec hcsCalculationYield(HistType::kTHnSparseF, {{static_cast<std::int32_t>(std::llrint(std::ceil(cfgCutMaxAbsVertexZ.value))) * 2, std::floor(-cfgCutMaxAbsVertexZ.value), std::ceil(cfgCutMaxAbsVertexZ.value), "#it{V}_{#it{z}} (cm)"}, {20, 0., 100., "Centrality (%)"}, asPt, {48, -1.2, 1.2, "#it{#eta}"}, {180, 0., constants::math::TwoPI, "#it{#varphi} (rad)"}});
+      HistogramConfigSpec hcsCalculationYield(HistType::kTHnSparseF, {{static_cast<std::int32_t>(std::llrint(std::ceil(cfgCutMaxAbsVertexZ.value))) * 2, std::floor(-cfgCutMaxAbsVertexZ.value), std::ceil(cfgCutMaxAbsVertexZ.value), "#it{V}_{#it{z}} (cm)"}, {{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, asPt, {32, -0.8, 0.8, "#it{#eta}"}, {180, 0., constants::math::TwoPI, "#it{#varphi} (rad)"}});
 
       if (cfgFlagCalculationYieldPi.value) {
         LOG(info) << "Enabling pion yield calculation.";
@@ -1286,8 +1289,9 @@ struct PartNumFluc {
     }
 
     if (cfgFlagCalculationFluctuationCh.value || cfgFlagCalculationFluctuationKa.value || cfgFlagCalculationFluctuationPr.value) {
-      HistogramConfigSpec hcsCalculationFluctuation(HistType::kTH3D, {{cfgNCentralityBins.value, 0., 100., "Centrality (%)"}, {40, -0.5, 39.5}, {40, -0.5, 39.5}});
-      HistogramConfigSpec hcsFluctuationCalculator(HistType::kTH3D, {{cfgNCentralityBins.value, 0., 100., "Centrality (%)"}, {cfgNSubgroups.value, -0.5, cfgNSubgroups.value - 0.5, "Subgroup Index"}, {fluctuation_calculator_base::NOrderVectors, -0.5, fluctuation_calculator_base::NOrderVectors - 0.5, "Order Vector Index"}});
+      AxisSpec asCentrality(cfgAxisCentrality, "Centrality (%)");
+      HistogramConfigSpec hcsCalculationFluctuation(HistType::kTH3D, {asCentrality, {40, -0.5, 39.5}, {40, -0.5, 39.5}});
+      HistogramConfigSpec hcsFluctuationCalculator(HistType::kTH3D, {asCentrality, {cfgNSubgroups.value, -0.5, cfgNSubgroups.value - 0.5, "Subgroup Index"}, {fluctuation_calculator_base::NOrderVectors, -0.5, fluctuation_calculator_base::NOrderVectors - 0.5, "Order Vector Index"}});
 
       if (cfgFlagCalculationFluctuationCh.value) {
         holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.resize(nRunGroups);
@@ -1612,16 +1616,16 @@ struct PartNumFluc {
     return true;
   }
 
-  template <typename MP>
+  template <bool doProcessingMc, typename MP>
   bool isGoodMcParticle(const MP& mcParticle)
   {
-    if (cfgFlagMcParticlePhysicalPrimary.value && !mcParticle.isPhysicalPrimary()) {
+    if ((doProcessingMc || cfgFlagMcParticlePhysicalPrimary.value) && !mcParticle.isPhysicalPrimary()) {
       return false;
     }
     return true;
   }
 
-  template <typename MP>
+  template <bool doProcessingMc, typename MP>
   bool initMcParticle(const MP& mcParticle)
   {
     holderMcParticle.clear();
@@ -1630,7 +1634,7 @@ struct PartNumFluc {
     holderMcParticle.eta = mcParticle.eta();
     holderMcParticle.phi = mcParticle.phi();
 
-    if (!isGoodMcParticle(mcParticle)) {
+    if (!isGoodMcParticle<doProcessingMc>(mcParticle)) {
       return false;
     }
 
@@ -2411,7 +2415,7 @@ struct PartNumFluc {
 
       if ((cfgFlagCalculationYieldPi.value || cfgFlagCalculationYieldKa.value || cfgFlagCalculationYieldPr.value) || (cfgFlagCalculationFluctuationCh.value || cfgFlagCalculationFluctuationKa.value || cfgFlagCalculationFluctuationPr.value)) {
         for (const auto& mcParticle : mcParticles) {
-          if (!initMcParticle(mcParticle)) {
+          if (!initMcParticle<true>(mcParticle)) {
             continue;
           }
 
@@ -2519,7 +2523,7 @@ struct PartNumFluc {
           }
 
           const auto& mcParticle = track.template mcParticle_as<aod::McParticles>();
-          if (!mcParticle.has_mcCollision() || !initTrack<true, false>(track) || !initMcParticle(mcParticle)) {
+          if (!mcParticle.has_mcCollision() || !initTrack<true, false>(track) || !initMcParticle<false>(mcParticle)) {
             continue;
           }
 
