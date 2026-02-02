@@ -1185,7 +1185,6 @@ struct lambdapolsp {
           wgtvalue = 1.0;
         }
 
-        float desbinvalue = 0.0;
         if (LambdaTag) {
           Lambda = Proton + AntiPion;
           tagb = 0;
@@ -1410,8 +1409,6 @@ struct lambdapolsp {
       int taga = LambdaTag;
       int tagb = aLambdaTag;
       int tagc = K0sTag;
-
-      float desbinvalue = 0.0;
 
       if (analyzeK0s && K0sTag) {
         K0s = Pion + AntiPion;
