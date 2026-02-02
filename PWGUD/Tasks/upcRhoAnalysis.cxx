@@ -131,6 +131,7 @@ struct UpcRhoAnalysis {
   SGSelector sgSelector;
 
   const float pcEtaCut = 0.9; // physics coordination recommendation
+  const int nPions = 2; // only study dipion final states
   const std::vector<int> runNumbers = {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544911, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544991, 544992, 545004, 545008, 545009, 545041, 545042, 545044, 545047, 545060, 545062, 545063, 545064, 545066, 545086, 545103, 545117, 545171, 545184, 545185, 545210, 545222, 545223, 545246, 545249, 545262, 545289, 545291, 545294, 545295, 545296, 545311, 545312, 545332, 545345, 545367};
   AxisSpec runNumberAxis = {static_cast<int>(runNumbers.size()), 0.5, static_cast<double>(runNumbers.size()) + 0.5, "run number"};
 
@@ -459,9 +460,9 @@ struct UpcRhoAnalysis {
   {
     std::vector<std::pair<int8_t, std::array<uint8_t, 3>>> requiredITSHits{};
     requiredITSHits.push_back(std::make_pair(1, std::array<uint8_t, 3>{0, 1, 2})); // at least one hit in the innermost layer
-    constexpr uint8_t kBit = 1;
+    constexpr uint8_t KnBit = 1;
     for (const auto& itsRequirement : requiredITSHits) {
-      auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (kBit << requiredLayer); });
+      auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (KnBit << requiredLayer); });
 
       if ((itsRequirement.first == -1) && (hits > 0)) {
         return false; // no hits were required in specified layers
@@ -788,9 +789,9 @@ struct UpcRhoAnalysis {
     }
     rQC.fill(HIST("QC/tracks/trackSelections/hRemainingTracks"), cutTracks.size());
 
-    if (static_cast<int>(cutTracks.size()) != 2) // further consider only two pion systems
+    if (static_cast<int>(cutTracks.size()) != nPions) // further consider only two pion systems
       return;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < nPions; i++) {
       rQC.fill(HIST("QC/tracks/hSelectionCounter"), 15);
       rQC.fill(HIST("QC/tracks/hSelectionCounterPerRun"), 15, runIndex);
     }
