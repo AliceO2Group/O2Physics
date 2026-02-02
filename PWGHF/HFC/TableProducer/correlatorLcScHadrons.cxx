@@ -596,15 +596,15 @@ struct HfCorrelatorLcScHadrons {
     for (const auto& v0 : v0s) {
       auto posTrackV0 = v0.template posTrack_as<TrackType>();
       auto negTrackV0 = v0.template negTrack_as<TrackType>();
-  if(cfgV0.cfgIsCorrCollMatchV0 && ((v0.collisionId() != posTrackV0.collisionId()) || (v0.collisionId() != negTrackV0.collisionId()))){
-    continue;
-  }
+      if (cfgV0.cfgIsCorrCollMatchV0 && ((v0.collisionId() != posTrackV0.collisionId()) || (v0.collisionId() != negTrackV0.collisionId()))) {
+        continue;
+      }
 
-  if (std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
-    entryHadron(v0.mLambda(), posTrackV0.eta(), posTrackV0.pt() * posTrackV0.sign(), 0, 0, v0.pt());
-    entryTrkPID(posTrackV0.tpcNSigmaPr(), posTrackV0.tpcNSigmaKa(), posTrackV0.tpcNSigmaPi(), posTrackV0.tofNSigmaPr(), posTrackV0.tofNSigmaKa(), posTrackV0.tofNSigmaPi());
+      if (std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
+        entryHadron(v0.mLambda(), posTrackV0.eta(), posTrackV0.pt() * posTrackV0.sign(), 0, 0, v0.pt());
+        entryTrkPID(posTrackV0.tpcNSigmaPr(), posTrackV0.tpcNSigmaKa(), posTrackV0.tpcNSigmaPi(), posTrackV0.tofNSigmaPr(), posTrackV0.tofNSigmaKa(), posTrackV0.tofNSigmaPi());
 
-      if (isSelectedV0Daughter(posTrackV0, kProton) && isSelectedV0Daughter(negTrackV0, kPiPlus)) {
+        if (isSelectedV0Daughter(posTrackV0, kProton) && isSelectedV0Daughter(negTrackV0, kPiPlus)) {
           registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), posTrackV0.pt());
           registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
 
@@ -625,8 +625,8 @@ struct HfCorrelatorLcScHadrons {
         }
       }
       if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
-            entryHadron(v0.mAntiLambda(), negTrackV0.eta(), negTrackV0.pt() * negTrackV0.sign(), 0, 0, v0.pt());
-            entryTrkPID(negTrackV0.tpcNSigmaPr(), negTrackV0.tpcNSigmaKa(), negTrackV0.tpcNSigmaPi(), negTrackV0.tofNSigmaPr(), negTrackV0.tofNSigmaKa(), negTrackV0.tofNSigmaPi());
+        entryHadron(v0.mAntiLambda(), negTrackV0.eta(), negTrackV0.pt() * negTrackV0.sign(), 0, 0, v0.pt());
+        entryTrkPID(negTrackV0.tpcNSigmaPr(), negTrackV0.tpcNSigmaKa(), negTrackV0.tpcNSigmaPi(), negTrackV0.tofNSigmaPr(), negTrackV0.tofNSigmaKa(), negTrackV0.tofNSigmaPi());
 
         if (isSelectedV0Daughter(negTrackV0, kProton) && isSelectedV0Daughter(posTrackV0, kPiPlus)) {
           registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
