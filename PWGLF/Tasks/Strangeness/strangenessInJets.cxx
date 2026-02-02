@@ -80,6 +80,52 @@ using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, a
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
 
+struct ParticlePositionWithRespectToJet {
+  ParticlePositionWithRespectToJet(const float px, const float py, const float pz,
+                                   const TVector3& jet,
+                                   const TVector3& ue1,
+                                   const TVector3& ue2)
+  {
+    const TVector3 candidateDirection(px, py, pz);
+    const double deltaEtaJet = candidateDirection.Eta() - jet.Eta();
+    const double deltaPhiJet = getDeltaPhi(candidateDirection.Phi(), jet.Phi());
+    const double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+    const double deltaEtaUe1 = candidateDirection.Eta() - ue1.Eta();
+    const double deltaPhiUe1 = getDeltaPhi(candidateDirection.Phi(), ue1.Phi());
+    const double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+    const double deltaEtaUe2 = candidateDirection.Eta() - ue2.Eta();
+    const double deltaPhiUe2 = getDeltaPhi(candidateDirection.Phi(), ue2.Phi());
+    const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+    mInJet = deltaRjet < mJetRadius;
+    mInUE1 = deltaRue1 < mJetRadius;
+    mInUE2 = deltaRue2 < mJetRadius;
+  }
+  bool isInJet() const { return mInJet; }
+  bool isInUE1() const { return mInUE1; }
+  bool isInUE2() const { return mInUE2; }
+
+  static double mJetRadius;
+
+  // Delta phi calculation
+  static double getDeltaPhi(const double a1, const double a2)
+  {
+    const double phi1 = TVector2::Phi_0_2pi(a1);
+    const double phi2 = TVector2::Phi_0_2pi(a2);
+    const double diff = std::fabs(phi1 - phi2);
+    if (diff <= PI)
+      return diff;
+    if (diff > PI)
+      return TwoPI - diff;
+    return diff; // should not happen
+  }
+
+ private:
+  bool mInJet = false;
+  bool mInUE1 = false;
+  bool mInUE2 = false;
+};
+double ParticlePositionWithRespectToJet::mJetRadius = 0.0;
+
 struct StrangenessInJets {
 
   // Instantiate the CCDB service and API interface
@@ -406,51 +452,6 @@ struct StrangenessInJets {
         return false;
     }
   }
-
-  // Delta phi calculation
-  static double getDeltaPhi(const double a1, const double a2)
-  {
-    const double phi1 = TVector2::Phi_0_2pi(a1);
-    const double phi2 = TVector2::Phi_0_2pi(a2);
-    const double diff = std::fabs(phi1 - phi2);
-    if (diff <= PI)
-      return diff;
-    if (diff > PI)
-      return TwoPI - diff;
-    return diff; // should not happen
-  }
-
-  struct ParticlePositionWithRespectToJet {
-    ParticlePositionWithRespectToJet(const float px, const float py, const float pz,
-                                     const TVector3& jet,
-                                     const TVector3& ue1,
-                                     const TVector3& ue2)
-    {
-      const TVector3 candidateDirection(px, py, pz);
-      const double deltaEtaJet = candidateDirection.Eta() - jet.Eta();
-      const double deltaPhiJet = getDeltaPhi(candidateDirection.Phi(), jet.Phi());
-      const double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-      const double deltaEtaUe1 = candidateDirection.Eta() - ue1.Eta();
-      const double deltaPhiUe1 = getDeltaPhi(candidateDirection.Phi(), ue1.Phi());
-      const double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-      const double deltaEtaUe2 = candidateDirection.Eta() - ue2.Eta();
-      const double deltaPhiUe2 = getDeltaPhi(candidateDirection.Phi(), ue2.Phi());
-      const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
-      mInJet = deltaRjet < mJetRadius;
-      mInUE1 = deltaRue1 < mJetRadius;
-      mInUE2 = deltaRue2 < mJetRadius;
-    }
-    bool isInJet() const { return mInJet; }
-    bool isInUE1() const { return mInUE1; }
-    bool isInUE2() const { return mInUE2; }
-
-    static double mJetRadius;
-
-   private:
-    bool mInJet = false;
-    bool mInUE1 = false;
-    bool mInUE2 = false;
-  };
 
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
   bool isPhysicalPrimaryOrFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
@@ -1403,13 +1404,13 @@ struct StrangenessInJets {
         for (const auto& hadron : hadronMomentum) {
           // Compute distance of particles from jet and UE axes
           const double deltaEtaJet = hadron.first.Eta() - jetAxis.Eta();
-          const double deltaPhiJet = getDeltaPhi(hadron.first.Phi(), jetAxis.Phi());
+          const double deltaPhiJet = ParticlePositionWithRespectToJet::getDeltaPhi(hadron.first.Phi(), jetAxis.Phi());
           const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
           const double deltaEtaUe1 = hadron.first.Eta() - ueAxis1.Eta();
-          const double deltaPhiUe1 = getDeltaPhi(hadron.first.Phi(), ueAxis1.Phi());
+          const double deltaPhiUe1 = ParticlePositionWithRespectToJet::getDeltaPhi(hadron.first.Phi(), ueAxis1.Phi());
           const double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
           const double deltaEtaUe2 = hadron.first.Eta() - ueAxis2.Eta();
-          const double deltaPhiUe2 = getDeltaPhi(hadron.first.Phi(), ueAxis2.Phi());
+          const double deltaPhiUe2 = ParticlePositionWithRespectToJet::getDeltaPhi(hadron.first.Phi(), ueAxis2.Phi());
           const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
           // Select particles inside jet
