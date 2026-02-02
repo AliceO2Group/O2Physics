@@ -379,8 +379,9 @@ struct lambdaspincorrderived {
     double deta_pair = std::abs(deta1 - deta2);
     double dphi_pair = RecoDecay::constrainAngle(particle1.Phi() - particle2.Phi(), -TMath::Pi(), harmonicDphi);
 
-    double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_pair * dphi_pair);
+    // double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_pair * dphi_pair);
     double deltaRap = std::abs(particle1.Rapidity() - particle2.Rapidity());
+    double deltaR = TMath::Sqrt(deltaRap * deltaRap + dphi_pair * dphi_pair);
 
     double epsWeight1 = 1.0;
     double epsWeight2 = 1.0;
