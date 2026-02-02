@@ -20,6 +20,7 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/Zorro.h"
