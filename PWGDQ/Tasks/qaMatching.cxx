@@ -2316,11 +2316,12 @@ struct qaMatching {
   template <class C, class TMUON, class TMFT, class CMFT>
   void RunChi2Matching(C const& collisions,
                        TMUON const& muonTracks,
-                       TMFT const& /*mftTracks*/,
+                       TMFT const& mftTracks,
                        CMFT const& mftCovs,
                        std::string funcName,
                        float matchingPlaneZ,
                        int extrapMethod,
+                       const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                        const MatchingCandidates& matchingCandidates,
                        MatchingCandidates& newMatchingCandidates)
   {
@@ -2410,6 +2411,15 @@ struct qaMatching {
 
     for (auto& [mchIndex, globalTracksVector] : newMatchingCandidates) {
       std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+
+      int ranking = 1;
+      for (auto& candidate : globalTracksVector) {
+        const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
+
+        candidate.matchRanking = ranking;
+        candidate.matchType = GetMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        ranking += 1;
+      }
     }
   }
 
@@ -2419,6 +2429,7 @@ struct qaMatching {
                        TMFT const& mftTracks,
                        CMFT const& mftCovs,
                        std::string label,
+                       const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                        const MatchingCandidates& matchingCandidates,
                        MatchingCandidates& newMatchingCandidates)
   {
@@ -2442,15 +2453,16 @@ struct qaMatching {
     auto matchingPlaneZ = matchingPlanesZ[label];
     auto extrapMethod = matchingExtrapMethod[label];
 
-    RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, funcName, matchingPlaneZ, extrapMethod, matchingCandidates, newMatchingCandidates);
+    RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, funcName, matchingPlaneZ, extrapMethod, matchablePairs, matchingCandidates, newMatchingCandidates);
   }
 
   template <class C, class TMUON, class TMFT, class CMFT>
   void RunMLMatching(C const& collisions,
                      TMUON const& muonTracks,
-                     TMFT const& /*mftTracks*/,
+                     TMFT const& mftTracks,
                      CMFT const& mftCovs,
                      std::string label,
+                     const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                      const MatchingCandidates& matchingCandidates,
                      MatchingCandidates& newMatchingCandidates)
   {
@@ -2539,6 +2551,15 @@ struct qaMatching {
 
     for (auto& [mchIndex, globalTracksVector] : newMatchingCandidates) {
       std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+
+      int ranking = 1;
+      for (auto& candidate : globalTracksVector) {
+        const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
+
+        candidate.matchRanking = ranking;
+        candidate.matchType = GetMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        ranking += 1;
+      }
     }
   }
 
@@ -2558,7 +2579,7 @@ struct qaMatching {
     FillMatchingPlotsMC(collision, collisionInfo, muonTracks, mftTracks, collisionInfo.matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, fMatchingChi2ScoreMftMchLow, fChi2MatchingPlotter.get(), false);
     for (auto& [label, func] : matchingChi2Functions) {
       MatchingCandidates matchingCandidates;
-      RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchingCandidates, matchingCandidates);
+      RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
 
       auto* plotter = fMatchingPlotters.at(label).get();
       double matchingScoreCut = matchingScoreCuts.at(label);
@@ -2569,7 +2590,7 @@ struct qaMatching {
     // ML-based matching analysis
     for (auto& [label, mlResponse] : matchingMlResponses) {
       MatchingCandidates matchingCandidates;
-      RunMLMatching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchingCandidates, matchingCandidates);
+      RunMLMatching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
 
       auto* plotter = fMatchingPlotters.at(label).get();
       double matchingScoreCut = matchingScoreCuts.at(label);

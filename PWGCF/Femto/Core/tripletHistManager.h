@@ -383,13 +383,25 @@ class TripletHistManager
   float getQ3() const { return mQ3; }
 
  private:
+  ROOT::Math::PxPyPzEVector getqij(ROOT::Math::PtEtaPhiMVector const& pi, ROOT::Math::PtEtaPhiMVector const& pj)
+  {
+    // Convert to PxPyPzEVector to get proper Lorentz dot product
+    ROOT::Math::PxPyPzEVector vi(pi);
+    ROOT::Math::PxPyPzEVector vj(pj);
+
+    auto trackSum = vi + vj;
+    auto trackDifference = vi - vj;
+    double scaling = trackDifference.Dot(trackSum) / trackSum.Dot(trackSum);
+    return trackDifference - scaling * trackSum;
+  }
+
   float getQ3(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2, ROOT::Math::PtEtaPhiMVector const& part3)
   {
-    double q12 = -(part1 - part2).M2();
-    double q23 = -(part2 - part3).M2();
-    double q31 = -(part3 - part1).M2();
-    double q = q12 + q23 + q31;
-    return static_cast<float>(std::sqrt(std::max(0., q))); // protection if rounding error give a value below 0
+    auto q12 = getqij(part1, part2);
+    auto q23 = getqij(part2, part3);
+    auto q31 = getqij(part3, part1);
+    double q = q12.M2() + q23.M2() + q31.M2();
+    return static_cast<float>(std::sqrt(-q));
   }
 
   void initAnalysis(std::map<TripletHist, std::vector<o2::framework::AxisSpec>> const& Specs)

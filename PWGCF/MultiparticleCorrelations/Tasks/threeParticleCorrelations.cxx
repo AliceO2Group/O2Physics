@@ -76,6 +76,11 @@ struct ThreeParticleCorrelations {
   // Track filter parameters
   float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.3, protonPtMin = 0.6;
   float pionPtMid1 = 1.6, pionPtMid2 = 2.0, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 2.3;
+  struct : ConfigurableGroup {
+    std::string prefix = "TrackSelection";
+    Configurable<float> nSigmaTPCvar{"nSigmaTPCvar", 0.0, "Variation in the TPC nSigma"};
+    Configurable<float> nSigmaTOFvar{"nSigmaTOFvar", 0.0, "Variation in the TOF nSigma"};
+  } trackSelGroup;
 
   // RD filter parameters
   float dEtaMax = 0.05, dEtaMin = 0.023;
@@ -1089,21 +1094,21 @@ struct ThreeParticleCorrelations {
     }
 
     if (trackPID(track)[0] == pionID) { // Pions
-      if (std::abs(track.tpcNSigmaPi()) >= nSigma4) {
+      if (std::abs(track.tpcNSigmaPi()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
       if (track.pt() < pionPtMin) {
         return false;
       } else if (track.pt() > pionPtMin && track.pt() < pionPtMid1) {
-        if (std::abs(track.tofNSigmaPi()) >= nSigma4) {
+        if (std::abs(track.tofNSigmaPi()) >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > pionPtMid1 && track.pt() < pionPtMid2) {
-        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma2) {
+        if (track.tofNSigmaPi() <= -nSigma4 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaPi() >= nSigma2 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > pionPtMid2 && track.pt() < pionPtMax) {
-        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma0) {
+        if (track.tofNSigmaPi() <= -nSigma4 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaPi() >= nSigma0 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > pionPtMax) {
@@ -1111,21 +1116,21 @@ struct ThreeParticleCorrelations {
       }
 
     } else if (trackPID(track)[0] == kaonID) { // Kaons
-      if (std::abs(track.tpcNSigmaKa()) >= nSigma4) {
+      if (std::abs(track.tpcNSigmaKa()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
       if (track.pt() < kaonPtMin) {
         return false;
       } else if (track.pt() > kaonPtMin && track.pt() < kaonPtMid1) {
-        if (std::abs(track.tofNSigmaKa()) >= nSigma4) {
+        if (std::abs(track.tofNSigmaKa()) >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > kaonPtMid1 && track.pt() < kaonPtMid2) {
-        if (track.tofNSigmaKa() <= -nSigma1 || track.tofNSigmaKa() >= nSigma4) {
+        if (track.tofNSigmaKa() <= -nSigma1 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaKa() >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > kaonPtMid2 && track.pt() < kaonPtMax) {
-        if (track.tofNSigmaKa() <= nSigma0 || track.tofNSigmaKa() >= nSigma4) {
+        if (track.tofNSigmaKa() <= nSigma0 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaKa() >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > kaonPtMax) {
@@ -1133,17 +1138,17 @@ struct ThreeParticleCorrelations {
       }
 
     } else if (trackPID(track)[0] == protonID) { // Protons
-      if (std::abs(track.tpcNSigmaPr()) >= nSigma4) {
+      if (std::abs(track.tpcNSigmaPr()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
       if (track.pt() < protonPtMin) {
         return false;
       } else if (track.pt() > protonPtMin && track.pt() < protonPtMid) {
-        if (std::abs(track.tofNSigmaPr()) >= nSigma4) {
+        if (std::abs(track.tofNSigmaPr()) >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > protonPtMid) {
-        if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
+        if (track.tofNSigmaPr() <= -nSigma2 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaPr() >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       }
