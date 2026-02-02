@@ -2840,7 +2840,6 @@ struct CascadeCorrelations {
 
 }; // struct
 
-
 struct LambdaXiCorrelation {
 
   // --- Configurables ---
