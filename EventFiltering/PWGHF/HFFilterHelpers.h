@@ -30,14 +30,13 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "ReconstructionDataFormats/PID.h"
 
+#include "ReconstructionDataFormats/PID.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <MathUtils/BetheBlochAleph.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -46,6 +45,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
+#include <MathUtils/BetheBlochAleph.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -941,7 +941,7 @@ inline int16_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track
 /// \return true if track passes all cuts
 template <typename Atrack, typename SpeciesContainer, typename T1, typename T2>
 inline bool HfFilterHelper::isSelectedTrack4Corr(Atrack const& track, SpeciesContainer const mPIDspecies,
-                      T1 const maxTPC, T2 const maxTOF, float minPt, float maxPt, float ptThreshold, bool tofForced)
+                                                 T1 const maxTPC, T2 const maxTOF, float minPt, float maxPt, float ptThreshold, bool tofForced)
 {
   // Ensure size consistency
   if (mPIDspecies.value.size() != maxTPC.value.size() || mPIDspecies.value.size() != maxTOF.value.size()) {
@@ -953,19 +953,19 @@ inline bool HfFilterHelper::isSelectedTrack4Corr(Atrack const& track, SpeciesCon
     return false;
   }
 
-  if (track.pt() < minPt || track.pt() > maxPt){
+  if (track.pt() < minPt || track.pt() > maxPt) {
     return false;
   }
 
   for (size_t speciesIndex = 0; speciesIndex < mPIDspecies.value.size(); ++speciesIndex) {
     float nSigmaTPC;
     auto const& pid = mPIDspecies->at(speciesIndex);
-    
+
     nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
 
     if (track.pt() > ptThreshold && tofForced && !track.hasTOF())
       return false;
-    
+
     int parSpecies = -1;
     float tpcNCls = track.tpcNClsFound();
     float tpcPin = track.tpcInnerParam();
@@ -980,13 +980,12 @@ inline bool HfFilterHelper::isSelectedTrack4Corr(Atrack const& track, SpeciesCon
     } else {
       LOGF(fatal, "particle species is not defined in isSelectedTrack4Corr");
     }
-    
+
     // 2. Apply nSigmaTPC using selected calibration
     if (mTpcPidCalibrationOption == 1) {
       // Option 1: post-calibration → no sign dependence
       nSigmaTPC = getTPCPostCalib(tpcPin, tpcNCls, eta, nSigmaTPC, parSpecies);
-    
-    } 
+    }
     if (mTpcPidCalibrationOption == 2) {
       float dEdx = track.tpcSignal();
       // Option 2: spline calibration → charge-dependent
@@ -996,14 +995,14 @@ inline bool HfFilterHelper::isSelectedTrack4Corr(Atrack const& track, SpeciesCon
       } else {
         // Negative track
         if (pid == o2::track::PID::Proton) {
-           parSpecies = kAntiPr;
-         } else if (pid == o2::track::PID::Kaon) {
-           parSpecies = kAntiKa;
-         } else if (pid == o2::track::PID::Pion) {
-           parSpecies = kAntiPi;
-         } else {
-           LOGF(fatal, "particle species is not defined in isSelectedTrack4Corr");
-         }
+          parSpecies = kAntiPr;
+        } else if (pid == o2::track::PID::Kaon) {
+          parSpecies = kAntiKa;
+        } else if (pid == o2::track::PID::Pion) {
+          parSpecies = kAntiPi;
+        } else {
+          LOGF(fatal, "particle species is not defined in isSelectedTrack4Corr");
+        }
         nSigmaTPC = getTPCSplineCalib(tpcPin, dEdx, parSpecies);
       }
     }
@@ -1034,8 +1033,6 @@ inline bool HfFilterHelper::isSelectedTrack4Corr(Atrack const& track, SpeciesCon
   }
   return true; // Passed all checks
 }
-
-
 
 /// Basic selection of proton or deuteron candidates
 /// \param track is a track
@@ -1431,7 +1428,7 @@ inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeF
 template <typename T, typename H2>
 inline bool HfFilterHelper::selectionSigmaCForScPCorr(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const T& pTrackSoftPi, const float ptSigmaC, const int8_t isSelectedLc, H2 hMassVsPt, const int& activateQA, float mDeltaMassMinSigmaC, float mDeltaMassMaxSigmaC, float mPtMinSigmaC, float mPtMaxSigmaC)
 {
-  if (ptSigmaC < mPtMinSigmaC || ptSigmaC > mPtMaxSigmaC){
+  if (ptSigmaC < mPtMinSigmaC || ptSigmaC > mPtMaxSigmaC) {
     return false;
   }
   bool isSigmaCSelected{false};
@@ -1442,13 +1439,12 @@ inline bool HfFilterHelper::selectionSigmaCForScPCorr(const T& pTrackSameChargeF
     float invMassSigmaCToLcPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond, pTrackSoftPi}, massDausSigmaCToLcPKPi);
     float deltaMassPKPi = invMassSigmaCToLcPKPi - invMassLcToPKPi;
     isSigmaCSelected = (mDeltaMassMinSigmaC < deltaMassPKPi && deltaMassPKPi < mDeltaMassMaxSigmaC);
-    if(isSigmaCSelected){
-      if (activateQA){
-      hMassVsPt->Fill(ptSigmaC, deltaMassPKPi);
-    }
+    if (isSigmaCSelected) {
+      if (activateQA) {
+        hMassVsPt->Fill(ptSigmaC, deltaMassPKPi);
+      }
       return true;
     }
-
   }
   if (TESTBIT(isSelectedLc, 1)) {
     /// Lc->piKp case
@@ -1458,20 +1454,17 @@ inline bool HfFilterHelper::selectionSigmaCForScPCorr(const T& pTrackSameChargeF
     float deltaMassPiKP = invMassSigmaCToLcPiKP - invMassLcToPiKP;
 
     isSigmaCSelected = (mDeltaMassMinSigmaC < deltaMassPiKP && deltaMassPiKP < mDeltaMassMaxSigmaC);
-    if(isSigmaCSelected){
-      if (activateQA){
-      hMassVsPt->Fill(ptSigmaC, deltaMassPiKP);
-    }
+    if (isSigmaCSelected) {
+      if (activateQA) {
+        hMassVsPt->Fill(ptSigmaC, deltaMassPiKP);
+      }
       return true;
     }
-    
   }
 
   return isSigmaCSelected;
   /// TODO: add QA plot
 }
-
-
 
 /// Delta mass selection on SigmaC candidates
 template <int charge, typename T, typename H2>
