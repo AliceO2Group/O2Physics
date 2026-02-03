@@ -92,8 +92,11 @@ struct skimmerPrimaryMuon {
   Configurable<int> minNmuon{"minNmuon", 0, "min number of muon candidates per collision"};
   Configurable<float> maxDEta{"maxDEta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
   Configurable<float> maxDPhi{"maxDPhi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
+  Configurable<bool> cfgApplyPreselectionInBestMatch{"cfgApplyPreselectionInBestMatch", false, "flag to apply preselection in find best match function"};
   Configurable<float> cfgSlope_dr_chi2MatchMFTMCH{"cfgSlope_dr_chi2MatchMFTMCH", -0.15 / 30, "slope of chiMatchMCHMFT vs. dR"};
   Configurable<float> cfgIntercept_dr_chi2MatchMFTMCH{"cfgIntercept_dr_chi2MatchMFTMCH", 1e+10f, "intercept of chiMatchMCHMFT vs. dR"};
+  Configurable<float> cfgPeakPosition_chi2MatchMFTMCH{"cfgPeakPosition_chi2MatchMFTMCH", 0.f, "peak position of chiMatchMCHMFT distribution"}; // 2
+  Configurable<float> cfgPeakPosition_dr{"cfgPeakPosition_dr", 0.f, "peak position of dr distribution"};                                       // 0.01
 
   // for z shift for propagation
   Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift"};
@@ -308,6 +311,9 @@ struct skimmerPrimaryMuon {
     float etaMatchedMFTatMP = 999.f;
     float phiMatchedMFTatMP = 999.f;
 
+    float deta = 999.f;
+    float dphi = 999.f;
+
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
       // apply r-absorber cut here to minimize the number of calling propagateMuon.
       if (fwdtrack.rAtAbsorberEnd() < minRabsGL || maxRabs < fwdtrack.rAtAbsorberEnd()) {
@@ -389,6 +395,19 @@ struct skimmerPrimaryMuon {
         sigma_dcaXY = dcaXY / dcaXYinSigma;
       }
 
+      deta = etaMatchedMCHMID - eta;
+      dphi = phiMatchedMCHMID - phi;
+      o2::math_utils::bringToPMPi(dphi);
+
+      if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
+        return false;
+      }
+
+      float dr = std::sqrt(deta * deta + dphi * dphi);
+      if (cfgSlope_dr_chi2MatchMFTMCH * fwdtrack.chi2MatchMCHMFT() + cfgIntercept_dr_chi2MatchMFTMCH < dr) {
+        return false;
+      }
+
       if (refitGlobalMuon) {
         pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
       }
@@ -421,14 +440,6 @@ struct skimmerPrimaryMuon {
     }
 
     if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2() / ndf_mchmft, fwdtrack.trackType(), dcaXY)) {
-      return false;
-    }
-
-    float deta = etaMatchedMCHMID - eta;
-    float dphi = phiMatchedMCHMID - phi;
-    o2::math_utils::bringToPMPi(dphi);
-
-    if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
       return false;
     }
 
@@ -530,7 +541,8 @@ struct skimmerPrimaryMuon {
 
   std::unordered_map<int, int> map_mfttrackcovs;
   std::vector<std::tuple<int, int, int>> vec_min_chi2MatchMCHMFT; // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> chi2MatchMCHMFT;
-  std::vector<std::tuple<int, int, int>> vec_min_dr;              // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> dr;
+  // std::vector<std::tuple<int, int, int>> vec_min_dr;              // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> dr;
+  // std::vector<std::tuple<int, int, int>> vec_min_2d;              // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> dr + chi2MatchMCHMFT;
 
   template <bool isMC, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
   void findBestMatchPerMCHMID(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const&)
@@ -553,9 +565,11 @@ struct skimmerPrimaryMuon {
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
 
-    float min_chi2MatchMCHMFT = 1e+10, min_dr = 1e+10;
+    // float min_chi2MatchMCHMFT = 1e+10, min_dr = 1e+10, min_distance_2d = 1e+10;
+    float min_chi2MatchMCHMFT = 1e+10;
     std::tuple<int, int, int> tupleIds_at_min_chi2mftmch;
-    std::tuple<int, int, int> tupleIds_at_min_dr;
+    // std::tuple<int, int, int> tupleIds_at_min_dr;
+    // std::tuple<int, int, int> tupleIds_at_min_distance_2d;
     for (const auto& muon_tmp : muons_per_MCHMID) {
       if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
         auto tupleId = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
@@ -571,30 +585,39 @@ struct skimmerPrimaryMuon {
         float dphi = phiMatchedMCHMID - phi;
         o2::math_utils::bringToPMPi(dphi);
         float dr = std::sqrt(deta * deta + dphi * dphi);
-
         int ndf = 2 * (mchtrack.nClusters() + mfttrack.nClusters()) - 5;
+
+        if (cfgApplyPreselectionInBestMatch && cfgSlope_dr_chi2MatchMFTMCH * muon_tmp.chi2MatchMCHMFT() + cfgIntercept_dr_chi2MatchMFTMCH < dr) {
+          continue;
+        }
 
         fRegistry.fill(HIST("MFTMCHMID/hdR_Chi2MatchMCHMFT"), muon_tmp.chi2MatchMCHMFT(), dr);
         fRegistry.fill(HIST("MFTMCHMID/hdR_Chi2"), muon_tmp.chi2() / ndf, dr);
         fRegistry.fill(HIST("MFTMCHMID/hChi2_Chi2MatchMCHMFT"), muon_tmp.chi2MatchMCHMFT(), muon_tmp.chi2() / ndf);
-        if (cfgSlope_dr_chi2MatchMFTMCH * muon_tmp.chi2MatchMCHMFT() + cfgIntercept_dr_chi2MatchMFTMCH < dr) {
-          continue;
-        }
 
         // LOGF(info, "muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, muon_tmp.chi2MatchMCHMFT() = %f", muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId(), muon_tmp.chi2MatchMCHMFT());
-        if (0.f < muon_tmp.chi2MatchMCHMFT() && muon_tmp.chi2MatchMCHMFT() < min_chi2MatchMCHMFT) {
-          min_chi2MatchMCHMFT = muon_tmp.chi2MatchMCHMFT();
-          tupleIds_at_min_chi2mftmch = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
+
+        if (0.f < muon_tmp.chi2MatchMCHMFT() && std::sqrt(std::pow(muon_tmp.chi2MatchMCHMFT() - cfgPeakPosition_chi2MatchMFTMCH, 2)) < min_chi2MatchMCHMFT) {
+          min_chi2MatchMCHMFT = std::sqrt(std::pow(muon_tmp.chi2MatchMCHMFT() - cfgPeakPosition_chi2MatchMFTMCH, 2));
+          tupleIds_at_min_chi2mftmch = tupleId;
         }
 
-        if (dr < min_dr) {
-          min_dr = dr;
-          tupleIds_at_min_dr = tupleId;
-        }
+        // if (std::sqrt(std::pow(dr - cfgPeakPosition_dr, 2)) < min_dr) {
+        //   min_dr = std::sqrt(std::pow(dr - cfgPeakPosition_dr, 2));
+        //   tupleIds_at_min_dr = tupleId;
+        // }
+
+        // float distance_2d = std::sqrt(std::pow(muon_tmp.chi2MatchMCHMFT() - cfgPeakPosition_chi2MatchMFTMCH, 2) + std::pow(dr - cfgPeakPosition_dr, 2));
+        // if (distance_2d < min_distance_2d) {
+        //   min_distance_2d = distance_2d;
+        //   tupleIds_at_min_distance_2d = tupleId;
+        // }
       }
     }
     vec_min_chi2MatchMCHMFT.emplace_back(tupleIds_at_min_chi2mftmch);
-    vec_min_dr.emplace_back(tupleIds_at_min_dr);
+    // vec_min_dr.emplace_back(tupleIds_at_min_dr);
+    // vec_min_2d.emplace_back(tupleIds_at_min_distance_2d);
+
     // LOGF(info, "min: muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, muon_tmp.chi2MatchMCHMFT() = %f", std::get<0>(tupleIds_at_min), std::get<1>(tupleIds_at_min), std::get<2>(tupleIds_at_min), min_chi2MatchMCHMFT);
   }
 
@@ -609,7 +632,8 @@ struct skimmerPrimaryMuon {
   void processRec_SA(MyCollisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
 
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -680,15 +704,18 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_SA, "process reconstructed info", false);
 
   void processRec_TTCA(MyCollisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -767,8 +794,10 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_TTCA, "process reconstructed info", false);
 
@@ -779,7 +808,8 @@ struct skimmerPrimaryMuon {
     }
 
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -858,15 +888,18 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_TTCA_withMFTCov, "process reconstructed info", false);
 
   void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -939,15 +972,18 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_SA_SWT, "process reconstructed info only with standalone", false);
 
   void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -1028,8 +1064,10 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_TTCA_SWT, "process reconstructed info", false);
 
@@ -1039,7 +1077,8 @@ struct skimmerPrimaryMuon {
       map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
     }
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -1120,15 +1159,18 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_TTCA_SWT_withMFTCov, "process reconstructed info", false);
 
   void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -1202,15 +1244,18 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_SA, "process reconstructed and MC info", false);
 
   void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -1294,8 +1339,10 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_TTCA, "process reconstructed and MC info", false);
 
@@ -1305,7 +1352,8 @@ struct skimmerPrimaryMuon {
       map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
     }
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
-    vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_dr.reserve(fwdtracks.size());
+    // vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -1389,8 +1437,10 @@ struct skimmerPrimaryMuon {
     map_mfttrackcovs.clear();
     vec_min_chi2MatchMCHMFT.clear();
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
-    vec_min_dr.clear();
-    vec_min_dr.shrink_to_fit();
+    // vec_min_dr.clear();
+    // vec_min_dr.shrink_to_fit();
+    // vec_min_2d.clear();
+    // vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_TTCA_withMFTCov, "process reconstructed and MC with MFTCov info", false);
 
