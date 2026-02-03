@@ -865,6 +865,7 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_001, "AOD", "EMPRIMARYMU", 1, //!
                             // dynamic column
                             emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
                             emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
                             emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
                             emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
                             emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,

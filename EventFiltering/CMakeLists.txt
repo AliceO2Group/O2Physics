@@ -82,6 +82,11 @@ o2physics_add_dpl_workflow(mult-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(em-global-dimuon-filter
+    SOURCES PWGEM/globalDimuonFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::GlobalTracking
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(em-photon-filter
     SOURCES PWGEM/EMPhotonFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGEMPhotonMesonCore
@@ -102,7 +107,12 @@ o2physics_add_dpl_workflow(lf-f1proton-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
- o2physics_add_dpl_workflow(lf-doublephi-filter
+o2physics_add_dpl_workflow(lf-doublephi-filter
     SOURCES PWGLF/filterdoublephi.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(h2-from-beauty-filter
+    SOURCES PWGHF/H2fromLbFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)

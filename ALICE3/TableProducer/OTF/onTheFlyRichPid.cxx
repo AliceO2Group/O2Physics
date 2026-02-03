@@ -30,10 +30,10 @@
 /// \since  May 22, 2024
 ///
 
-#include "TableHelper.h"
-
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -83,9 +83,6 @@ struct OnTheFlyRichPid {
   // Necessary for LUTs
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  // master setting: magnetic field
-  Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
-
   // add rich-specific configurables here
   Configurable<int> bRichNumberOfSectors{"bRichNumberOfSectors", 21, "barrel RICH number of sectors"};
   Configurable<float> bRichPhotodetectorCentralModuleHalfLength{"bRichPhotodetectorCentralModuleHalfLength", 18.4 / 2.0, "barrel RICH photodetector central module half length (cm)"};
@@ -132,11 +129,12 @@ struct OnTheFlyRichPid {
   Configurable<float> bRichRefractiveIndexSector20{"bRichRefractiveIndexSector20", 1.03, "barrel RICH refractive index central(s)-20 and central(s)+20"}; // central(s)-20 and central(s)+20
   Configurable<float> bRICHPixelSize{"bRICHPixelSize", 0.1, "barrel RICH pixel size (cm)"};
   Configurable<float> bRichGapRefractiveIndex{"bRichGapRefractiveIndex", 1.000283, "barrel RICH gap refractive index"};
+  Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  // Track smearer (here used to get relative pt and eta uncertainties)
-  o2::delphes::DelphesO2TrackSmearer mSmearer;
+  // Track smearer array, one per geometry
+  std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
 
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -286,40 +284,69 @@ struct OnTheFlyRichPid {
     // std::cout << std::endl << std::endl;
   }
 
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
+    mGeoContainer.init(initContext);
+
+    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
+
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
-    if (magneticField.value < o2::constants::math::Epsilon) {
-      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", magneticField, false)) {
-        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
-      }
-      LOG(info) << "Bz = " << magneticField.value << " T";
-    }
+    for (int icfg = 0; icfg < nGeometries; ++icfg) {
+      const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+      mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
+      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
+      mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+      mSmearer[icfg]->setDownloadPath("RICHPID");
+      std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
+      for (const auto& entry : globalConfiguration) {
+        int pdg = 0;
+        if (entry.first.find("lut") != 0) {
+          continue;
+        }
+        if (entry.first.find("lutEl") != std::string::npos) {
+          pdg = kElectron;
+        } else if (entry.first.find("lutMu") != std::string::npos) {
+          pdg = kMuonMinus;
+        } else if (entry.first.find("lutPi") != std::string::npos) {
+          pdg = kPiPlus;
+        } else if (entry.first.find("lutKa") != std::string::npos) {
+          pdg = kKPlus;
+        } else if (entry.first.find("lutPr") != std::string::npos) {
+          pdg = kProton;
+        } else if (entry.first.find("lutDe") != std::string::npos) {
+          pdg = o2::constants::physics::kDeuteron;
+        } else if (entry.first.find("lutTr") != std::string::npos) {
+          pdg = o2::constants::physics::kTriton;
+        } else if (entry.first.find("lutHe3") != std::string::npos) {
+          pdg = o2::constants::physics::kHelium3;
+        } else if (entry.first.find("lutAl") != std::string::npos) {
+          pdg = o2::constants::physics::kAlpha;
+        }
 
-    // Load LUT for pt and eta smearing
-    if (flagIncludeTrackAngularRes && flagRICHLoadDelphesLUTs) {
-      mSmearer.setCcdbManager(ccdb.operator->());
-      auto loadLUT = [&](int pdg, const std::string& cfgNameToInherit) {
-        std::string lut = "none";
-        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, lut, false)) {
-          LOG(fatal) << "Could not get " << cfgNameToInherit << " from on-the-fly-tracker task";
+        std::string filename = entry.second;
+        if (pdg == 0) {
+          LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
         }
-        bool success = mSmearer.loadTable(pdg, lut.c_str());
-        if (!success && !lut.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lut;
+        LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
+        if (filename.empty()) {
+          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
         }
-      };
-      loadLUT(11, "lutEl");
-      loadLUT(13, "lutMu");
-      loadLUT(211, "lutPi");
-      loadLUT(321, "lutKa");
-      loadLUT(2212, "lutPr");
-      loadLUT(1000010020, "lutDe");
-      loadLUT(1000010030, "lutTr");
-      loadLUT(1000020030, "lutHe3");
-      loadLUT(1000020040, "lutAl");
+        // strip from leading/trailing spaces
+        filename.erase(0, filename.find_first_not_of(" "));
+        filename.erase(filename.find_last_not_of(" ") + 1);
+        if (filename.empty()) {
+          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+        }
+        bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
+        if (!success) {
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
+        }
+      }
     }
 
     if (doQAplots) {
@@ -691,7 +718,7 @@ struct OnTheFlyRichPid {
     return trackAngularResolution;
   }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::OTFLUTConfigId>::iterator const& collision,
                soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks,
                aod::McParticles const&,
                aod::McCollisions const&)
@@ -751,7 +778,7 @@ struct OnTheFlyRichPid {
       o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
 
       // float xPv = kErrorValue;
-      if (o2track.propagateToDCA(mcPvVtx, magneticField)) {
+      if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
         // xPv = o2track.getX();
       }
 
@@ -781,7 +808,7 @@ struct OnTheFlyRichPid {
       const float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), iSecor);
       bool flagReachesRadiator = false;
       if (projectiveRadiatorRadius > kErrorValue + 1.) {
-        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, magneticField);
+        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, mMagneticField);
       }
       /// DISCLAIMER: Exact extrapolation of angular resolution would require track propagation
       ///             to the RICH radiator (accounting sector inclination) in terms of (R,z).
@@ -794,7 +821,7 @@ struct OnTheFlyRichPid {
       // Now we calculate the expected Cherenkov angle following certain mass hypotheses
       // and the (imperfect!) reconstructed track parametrizations
       auto recoTrack = getTrackParCov(track);
-      if (recoTrack.propagateToDCA(pvVtx, magneticField)) {
+      if (recoTrack.propagateToDCA(pvVtx, mMagneticField)) {
         // xPv = recoTrack.getX();
       }
 
@@ -844,9 +871,9 @@ struct OnTheFlyRichPid {
           double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(recoTrack.getSigma1Pt2());
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagRICHLoadDelphesLUTs) {
-            if (mSmearer.hasTable(kParticlePdgs[ii])) {
-              ptResolution = mSmearer.getAbsPtRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
-              etaResolution = mSmearer.getAbsEtaRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+            if (mSmearer[collision.lutConfigId()]->hasTable(kParticlePdgs[ii])) {
+              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(kParticlePdgs[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
             }
           }
           // cout << endl <<  "Pt resolution: " << ptResolution << ", Eta resolution: " << etaResolution << endl << endl;

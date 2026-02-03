@@ -491,6 +491,10 @@ struct nucleiEbye {
       CandidateV0 candV0;
       candV0.pt = -999.f;
       candV0.eta = -999.f;
+      candV0.mass = -999.f;
+      candV0.cpa = -999.f;
+      candV0.dcav0daugh = -999.f;
+      candV0.dcav0pv = -999.f;
       candV0.globalIndexPos = -999;
       candV0.globalIndexNeg = -999;
       candidateV0s.push_back(candV0);

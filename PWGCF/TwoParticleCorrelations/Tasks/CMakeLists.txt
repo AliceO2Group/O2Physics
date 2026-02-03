@@ -82,3 +82,13 @@ o2physics_add_dpl_workflow(two-particle-correlation-pp
                            SOURCES twoParticleCorrelationPp.cxx
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-decorrelation
+                           SOURCES flowDecorrelation.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(eta-dihadron
+                           SOURCES etaDihadron.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)

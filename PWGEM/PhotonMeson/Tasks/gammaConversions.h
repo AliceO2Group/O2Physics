@@ -9,22 +9,35 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file gammaConversions.h
 /// \brief contains type definitions for gammaConversions.cxx
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
-#include "Framework/AnalysisTask.h"
+#ifndef PWGEM_PHOTONMESON_TASKS_GAMMACONVERSIONS_H_
+#define PWGEM_PHOTONMESON_TASKS_GAMMACONVERSIONS_H_
 
-using namespace o2::framework;
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-typedef std::map<std::string, HistPtr> mapStringHistPtr;
+#include <TH1.h>
+#include <TH2.h>
+
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+typedef std::map<std::string, o2::framework::HistPtr> mapStringHistPtr;
 
 // define this in order to have a constructor of the HistogramSpec which copies the name into the title and to have dataOnly flag
 struct MyHistogramSpec {
-  MyHistogramSpec(char const* const name_, char const* const title_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
+  MyHistogramSpec(char const* const name_, char const* const title_, o2::framework::HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
     : m{name_, title_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
-  MyHistogramSpec(char const* const name_, HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
+  MyHistogramSpec(char const* const name_, o2::framework::HistogramConfigSpec config_, bool callSumw2_ = false, bool dataOnly_ = false)
     : m{name_, name_, config_, callSumw2_}, fDataOnly(dataOnly_) {}
-  HistogramSpec m{};
+  o2::framework::HistogramSpec m{};
   bool fDataOnly{false};
 };
 
@@ -82,11 +95,11 @@ enum eV0HistoFlavor { kRec,
                       kRes };
 
 struct tV0Kind {
-  tV0Kind(std::string const& thePath) : mPath{thePath} {}
+  explicit tV0Kind(std::string const& thePath) : mPath{thePath} {}
 
   // todo: remove
   template <typename T>
-  void appendSuffixToTitleI(HistPtr& theHistPtr, std::string const* theSuffix)
+  void appendSuffixToTitleI(o2::framework::HistPtr& theHistPtr, std::string const* theSuffix)
   {
     auto lHisto = std::get<std::shared_ptr<T>>(theHistPtr);
     if (lHisto) {
@@ -98,7 +111,7 @@ struct tV0Kind {
   }
 
   // todo: bind tV0Kind to gammaConverions such that theOfficialRegistry and theCheckDataOnly are already known
-  void addHistosToOfficalRegistry(HistogramRegistry& theOfficialRegistry,
+  void addHistosToOfficalRegistry(o2::framework::HistogramRegistry& theOfficialRegistry,
                                   std::vector<MyHistogramSpec> const& theHistoDefinitions,
                                   std::string const* theSuffix = nullptr,
                                   bool theCheckDataOnly = false)
@@ -109,14 +122,14 @@ struct tV0Kind {
       }
       std::string lFullName(mPath + tHisto.m.name + (theSuffix ? *theSuffix : std::string("")));
       LOGF(info, "adding %s %d", lFullName, tHisto.fDataOnly);
-      HistPtr lHistPtr = theOfficialRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
+      o2::framework::HistPtr lHistPtr = theOfficialRegistry.add(lFullName.data(), tHisto.m.title.data(), tHisto.m.config);
       mContainer.insert(std::pair{tHisto.m.name, lHistPtr});
 
       // todo ugly: remove
       if (theSuffix) {
-        if (tHisto.m.config.type == kTH1F) {
+        if (tHisto.m.config.type == o2::framework::kTH1F) {
           appendSuffixToTitleI<TH1>(lHistPtr, theSuffix);
-        } else if (tHisto.m.config.type == kTH2F) {
+        } else if (tHisto.m.config.type == o2::framework::kTH2F) {
           appendSuffixToTitleI<TH2>(lHistPtr, theSuffix);
         }
       }
@@ -128,38 +141,40 @@ struct tV0Kind {
 };
 
 struct tMotherDirV0Kinds {
-  tMotherDirV0Kinds(std::string const& thePath) : mPath{thePath} {}
+  explicit tMotherDirV0Kinds(std::string const& thePath) : mPath{thePath} {}
   std::string mPath{""};
-  tV0Kind mV0Kind[4]{mPath + "Rec/", mPath + "MCTrue/", mPath + "MCVal/", mPath + "Res/"};
+  tV0Kind mV0Kind[4]{tV0Kind{mPath + "Rec/"}, tV0Kind{mPath + "MCTrue/"}, tV0Kind{mPath + "MCVal/"}, tV0Kind{mPath + "Res/"}};
 };
 
 struct tMotherDirRejMc {
-  tMotherDirRejMc(std::string const& thePath) : mPath{thePath} {}
+  explicit tMotherDirRejMc(std::string const& thePath) : mPath{thePath} {}
   std::string mPath{""};
-  tMotherDirV0Kinds mBeforeAfterRecCuts[2]{mPath + "beforeRecCuts/", mPath + "afterRecCuts/"};
+  tMotherDirV0Kinds mBeforeAfterRecCuts[2]{tMotherDirV0Kinds{mPath + "beforeRecCuts/"}, tMotherDirV0Kinds{mPath + "afterRecCuts/"}};
 };
 
 // for collision track v0
 struct tHistoFolderCTV {
-  tHistoFolderCTV(std::string const& thePath) : mPath{thePath} {}
+  explicit tHistoFolderCTV(std::string const& thePath) : mPath{thePath} {}
 
   std::string mPath{""};
   tV0Kind mSpecialHistos{mPath};
-  tMotherDirV0Kinds mBeforeAfterRecCuts[2]{mPath + "beforeRecCuts/",
-                                           mPath + "afterRecCuts/"};
+  tMotherDirV0Kinds mBeforeAfterRecCuts[2]{tMotherDirV0Kinds{mPath + "beforeRecCuts/"},
+                                           tMotherDirV0Kinds{mPath + "afterRecCuts/"}};
 
-  tMotherDirRejMc mRejectedByMc[2]{mPath + "rejectedByMc/kNoPhysicalPrimary/",
-                                   mPath + "rejectedByMc/kOutsideMCEtaAcc/"};
+  tMotherDirRejMc mRejectedByMc[2]{tMotherDirRejMc{mPath + "rejectedByMc/kNoPhysicalPrimary/"},
+                                   tMotherDirRejMc{mPath + "rejectedByMc/kOutsideMCEtaAcc/"}};
 };
 
 enum class eMcRejectedSaved { kNoPhysicalPrimary,
                               kOutsideMCEtaAcc };
 
 struct tHistoRegistry {
-  tHistoRegistry(std::string const& thePath) : mPath{thePath} {}
+  explicit tHistoRegistry(std::string const& thePath) : mPath{thePath} {}
 
   std::string mPath{""};
   tHistoFolderCTV mCollision{mPath + "Collision/"};
   tHistoFolderCTV mTrack{mPath + "Track/"};
   tHistoFolderCTV mV0{mPath + "V0/"};
 };
+
+#endif // PWGEM_PHOTONMESON_TASKS_GAMMACONVERSIONS_H_

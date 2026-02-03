@@ -86,9 +86,9 @@ constexpr std::array<histmanager::HistInfo<TwoTrackResonanceHist>, kTwoTrackReso
    {kPtVsMass, o2::framework::kTH2F, "hPtVsMass", "p_{T} vs invariant mass; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})"}}};
 
 template <typename T>
-std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
+std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>>{
+  return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
     {kPt, {confBinningAnalysis.pt}},
     {kEta, {confBinningAnalysis.eta}},
     {kPhi, {confBinningAnalysis.phi}},
@@ -99,7 +99,7 @@ std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>> makeTwoTrackRe
 template <typename T>
 auto makeTwoTrackResonanceQaHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>>{
+  return std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>>{
     {kPt, {confBinningAnalysis.pt}},
     {kEta, {confBinningAnalysis.eta}},
     {kPhi, {confBinningAnalysis.phi}},
@@ -115,24 +115,57 @@ constexpr char PrefixRho[] = "Rho0/";
 constexpr char PrefixPhi[] = "Phi/";
 constexpr char PrefixKstar[] = "Kstar0/";
 
-constexpr std::string_view AnalysisDir = "Kinematics/";
+constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 
-template <const char* resoPrefix, const char* posDauPrefix, const char* negDauPrefix, modes::Mode mode, modes::TwoTrackResonance reso>
+template <const char* resoPrefix,
+          const char* posDauPrefix,
+          const char* negDauPrefix,
+          modes::TwoTrackResonance reso>
 class TwoTrackResonanceHistManager
 {
  public:
   TwoTrackResonanceHistManager() = default;
   ~TwoTrackResonanceHistManager() = default;
 
+  // init analysis and mc
+  template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs,
+            T const& ConfResoSelection,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
     mHistogramRegistry = registry;
-    mPosDauManager.init(registry, PosDauSpecs);
-    mNegDauManager.init(registry, NegDauSpecs);
+    mPdgCode = std::abs(ConfResoSelection.pdgCodeAbs.value);
+
+    int posDauPdgCodeAbs = 0;
+    int negDauPdgCodeAbs = 0;
+    const int absCharge = 1;
+    const int signPlus = 1;
+    const int signMinus = -1;
+
+    if (mPdgCode == PDG_t::kRho770_0) {
+      posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+      negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+    } else if (mPdgCode == o2::constants::physics::Pdg::kPhi) {
+      posDauPdgCodeAbs = std::abs(PDG_t::kKPlus);
+      negDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
+    } else if (mPdgCode == o2::constants::physics::Pdg::kK0Star892) {
+      if (ConfResoSelection.sign.value > 0) {
+        posDauPdgCodeAbs = std::abs(PDG_t::kKPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+      } else {
+        mPdgCode = -1 * mPdgCode;
+        posDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+      }
+    } else {
+      LOG(fatal) << "PDG code for V0 has to be either Lambda or K0short";
+    }
+
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(ResoSpecs);
     }
@@ -141,35 +174,64 @@ class TwoTrackResonanceHistManager
     }
   }
 
-  template <typename T1, typename T2>
-  void enableOptionalHistograms(T1 const& PosDauConfBinningQa, T2 const& NegDauConfBinningQa)
-  {
-    mPosDauManager.enableOptionalHistograms(PosDauConfBinningQa);
-    mNegDauManager.enableOptionalHistograms(NegDauConfBinningQa);
-  }
-
-  template <typename T1, typename T2>
+  // init analysis and qa and mc
+  template <modes::Mode mode, typename T1, typename T2, typename T3>
   void init(o2::framework::HistogramRegistry* registry,
-            std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> ResoSpecs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> PosDauSpecs,
-            T1 const& PosDauConfBinningQa,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> NegDauSpecs,
-            T2 const& NegDauConfBinningQa)
+            std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> const& ResoSpecs,
+            T1 const& ConfResoSelection,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
+            T2 const& ConfPosDauBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs,
+            T3 const& ConfNegDauBinningQa)
   {
-    enableOptionalHistograms(PosDauConfBinningQa, NegDauConfBinningQa);
-    init(registry, ResoSpecs, PosDauSpecs, NegDauSpecs);
+    mHistogramRegistry = registry;
+    mPdgCode = std::abs(ConfResoSelection.pdgCodeAbs.value);
+
+    int posDauPdgCodeAbs = 0;
+    int negDauPdgCodeAbs = 0;
+    const int absCharge = 1;
+    const int signPlus = 1;
+    const int signMinus = -1;
+
+    if (mPdgCode == PDG_t::kRho770_0) {
+      posDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+      negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+    } else if (mPdgCode == o2::constants::physics::Pdg::kPhi) {
+      posDauPdgCodeAbs = std::abs(PDG_t::kKPlus);
+      negDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
+    } else if (mPdgCode == o2::constants::physics::Pdg::kK0Star892) {
+      if (ConfResoSelection.sign.value > 0) {
+        posDauPdgCodeAbs = std::abs(PDG_t::kKPlus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiMinus);
+      } else {
+        mPdgCode = -1 * mPdgCode;
+        posDauPdgCodeAbs = std::abs(PDG_t::kKMinus);
+        negDauPdgCodeAbs = std::abs(PDG_t::kPiPlus);
+      }
+    } else {
+      LOG(fatal) << "PDG code for TwoTrackResonance has to be either Rho, Phi or K^0*(892)";
+    }
+
+    mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs, ConfPosDauBinningQa);
+    mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs, ConfNegDauBinningQa);
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+      initAnalysis(ResoSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      initQa(ResoSpecs);
+    }
   }
 
-  template <typename T1, typename T2>
+  template <modes::Mode mode, typename T1, typename T2>
   void fill(T1 const& resonance, T2 const& tracks)
   {
     // this used to work, still under investigation
     // auto posDaughter = resonance.template posDau_as<T2>();
     // auto negDaughter = resonance.template negDau_as<T2>();
     auto posDaughter = tracks.rawIteratorAt(resonance.posDauId() - tracks.offset());
-    mPosDauManager.fill(posDaughter, tracks);
+    mPosDauManager.template fill<mode>(posDaughter, tracks);
     auto negDaughter = tracks.rawIteratorAt(resonance.negDauId() - tracks.offset());
-    mNegDauManager.fill(negDaughter, tracks);
+    mNegDauManager.template fill<mode>(negDaughter, tracks);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
       fillAnalysis(resonance);
     }
@@ -222,8 +284,9 @@ class TwoTrackResonanceHistManager
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-  trackhistmanager::TrackHistManager<posDauPrefix, mode> mPosDauManager;
-  trackhistmanager::TrackHistManager<negDauPrefix, mode> mNegDauManager;
+  trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
+  trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
+  int mPdgCode = 0;
 };
 }; // namespace twotrackresonancehistmanager
 }; // namespace o2::analysis::femto
