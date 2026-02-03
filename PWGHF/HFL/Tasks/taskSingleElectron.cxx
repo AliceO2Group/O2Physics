@@ -41,7 +41,6 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-enum PdgCode { kEta = 221, kOmega = 223, kEtaPrime = 331 };
 
 enum SourceType {
   NotElec = 0,      // not electron
@@ -84,44 +83,30 @@ struct HfTaskSingleElectron {
   Configurable<float> ptTrackMax{"ptTrackMax", 10., "max pt cut"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.5, "min pt cut"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "eta cut"};
-  Configurable<int> tpcNCrossedRowMin{"tpcNCrossedRowMin", 70,
-                                      "max of TPC n cluster crossed rows"};
-  Configurable<float> tpcNClsFoundOverFindableMin{
-      "tpcNClsFoundOverFindableMin", 0.8,
-      "min # of TPC found/findable clusters"};
-  Configurable<float> tpcChi2perNClMax{"tpcChi2perNClMax", 4.,
-                                       "min # of tpc chi2 per clusters"};
-  Configurable<int> itsIBClsMin{"itsIBClsMin", 3,
-                                "min # of its clusters in IB"};
-  Configurable<float> itsChi2perNClMax{"itsChi2perNClMax", 6.,
-                                       "min # of tpc chi2 per clusters"};
+  Configurable<int> tpcNCrossedRowMin{"tpcNCrossedRowMin", 70, "max of TPC n cluster crossed rows"};
+  Configurable<float> tpcNClsFoundOverFindableMin{"tpcNClsFoundOverFindableMin", 0.8, "min # of TPC found/findable clusters"};
+  Configurable<float> tpcChi2perNClMax{"tpcChi2perNClMax", 4., "min # of tpc chi2 per clusters"};
+  Configurable<int> itsIBClsMin{"itsIBClsMin", 3, "min # of its clusters in IB"};
+  Configurable<float> itsChi2perNClMax{"itsChi2perNClMax", 6., "min # of tpc chi2 per clusters"};
   Configurable<float> dcaxyMax{"dcaxyMax", 1., "max of track dca in xy"};
   Configurable<float> dcazMax{"dcazMax", 2., "max of track dca in z"};
   Configurable<float> tofNSigmaMax{"tofNSigmaMax", 3., "max of tof nsigma"};
   Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -1., "min of tpc nsigma"};
   Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 3., "max of tpc nsigma"};
 
-  Configurable<int> nBinsP{"nBinsP", 1500,
-                           "number of bins of particle momentum"};
+  Configurable<int> nBinsP{"nBinsP", 1500, "number of bins of particle momentum"};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
 
-  Configurable<int> tpcNSigmaHadronMax{"tpcNSigmaHadronMax", -3,
-                                       "max of tpc hadron nsigma"};
-  Configurable<int> tpcNSigmaHadronMin{"tpcNSigmaHadronMin", -5,
-                                       "min of tpc hadron nsigma"};
+  Configurable<int> tpcNSigmaHadronMax{"tpcNSigmaHadronMax", -3, "max of tpc hadron nsigma"};
+  Configurable<int> tpcNSigmaHadronMin{"tpcNSigmaHadronMin" , -5, "min of tpc hadron nsigma"};
 
   // SliceCache
   SliceCache cache;
 
   // using declarations
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using TracksEl =
-      soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension,
-                aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl,
-                aod::pidTPCFullEl>;
-  using McTracksEl =
-      soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl,
-                aod::pidTPCFullEl, aod::McTrackLabels>;
+  using TracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
+  using McTracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
 
   // Filter
   Filter collZFilter = nabs(aod::collision::posZ) < posZMax;
@@ -129,18 +114,13 @@ struct HfTaskSingleElectron {
   // Partition
 
   // ConfigurableAxis
-  ConfigurableAxis axisPtEl{
-      "axisPtEl",
-      {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f,  0.9f, 1.f,   1.1f,
-       1.2f,           1.3f, 1.4f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f,
-       2.75f,          3.f,  3.5f, 4.0f, 5.0f,  6.0f, 8.0f,  10.0f},
-      "electron pt bins"};
+  ConfigurableAxis axisPtEl{"axisPtEl", {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f, 2.75f, 3.f, 3.5f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f}, "electron pt bins"};
 
   // Histogram registry
-  HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histos{"histos"};
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+ {
     // AxisSpec
     const AxisSpec axisEvt{4, 0., 4., "nEvents"};
     const AxisSpec axisNCont{100, 0., 100., "nCont"};
@@ -155,10 +135,7 @@ struct HfTaskSingleElectron {
     histos.add("nEvents", "Number of events", kTH1D, {{1, 0., 1.}});
     histos.add("VtxZ", "VtxZ; cm; entries", kTH1D, {axisPosZ});
     histos.add("etaTrack", "etaTrack; #eta; entries", kTH1D, {axisEta});
-    histos.add("ptTrack",
-               "#it{p}_{T} distribution of selected tracks; #it{p}_{T} "
-               "(GeV/#it{c}); entries",
-               kTH1D, {axisPt});
+    histos.add("ptTrack", "#it{p}_{T} distribution of selected tracks; #it{p}_{T} (GeV/#it{c}); entries", kTH1D, {axisPt});
 
     // QA plots for trigger track selection
     histos.add("tpcNClsTrack", "tpcNClsTrack", kTH1D, {{200, 0, 200}});
@@ -184,7 +161,7 @@ struct HfTaskSingleElectron {
     histos.add("dcaCharm", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
     histos.add("dcaDalitz", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
     histos.add("dcaConv", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaHadron", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+	histos.add("dcaHadron", "", kTH2D, {{axisPtEl}, {axisTrackIp}});  
 
     // QA plots for MC
     histos.add("hPdgC", "", kTH1D, {{10001, -0.5, 10000.5}});
@@ -193,7 +170,9 @@ struct HfTaskSingleElectron {
     histos.add("hPdgCo", "", kTH1D, {{10001, -0.5, 10000.5}});
   }
 
-  template <typename TrackType> bool trackSel(const TrackType &track) {
+  template <typename TrackType>
+  bool trackSel(const TrackType& track)
+  {
     if ((track.pt() > ptTrackMax) || (track.pt() < ptTrackMin)) {
       return false;
     }
@@ -233,7 +212,8 @@ struct HfTaskSingleElectron {
   }
 
   template <typename TrackType>
-  int getElecSource(const TrackType &track, double &mpt, int &mpdg) {
+  int getElecSource(const TrackType& track, double& mpt, int& mpdg)
+  {
     auto mcpart = track.mcParticle();
     if (std::abs(mcpart.pdgCode()) != kElectron) {
       return NotElec;
@@ -246,34 +226,30 @@ struct HfTaskSingleElectron {
     int grmotherPt = -999;
     int ggrmotherPt = -999.; // mother, grand mother, grand grand mother pt
 
-    auto partMother =
-        mcpart.template mothers_as<aod::McParticles>(); // first mother particle
-                                                        // of electron
-    auto partMotherCopy = partMother; // copy of the first mother
-    auto mctrack = partMother;        // will change all the time
+    auto partMother = mcpart.template mothers_as<aod::McParticles>(); // first mother particle of electron
+    auto partMotherCopy = partMother;                                 // copy of the first mother
+    auto mctrack = partMother;                                        // will change all the time
 
     motherPt = partMother.front().pt();                 // first mother pt
     motherPdg = std::abs(partMother.front().pdgCode()); // first mother pdg
-    mpt = motherPt;   // copy of first mother pt
-    mpdg = motherPdg; // copy of first mother pdg
+    mpt = motherPt;                                     // copy of first mother pt
+    mpdg = motherPdg;                                   // copy of first mother pdg
 
     // check if electron from charm hadrons
-    if ((static_cast<int>(motherPdg / 100.) % 10) == kCharm ||
-        (static_cast<int>(motherPdg / 1000.) % 10) == kCharm) {
+    if ((static_cast<int>(motherPdg / 100.) % 10) == kCharm || (static_cast<int>(motherPdg / 1000.) % 10) == kCharm) {
 
       // iterate until B hadron is found as an ancestor
       while (partMother.size()) {
         mctrack = partMother.front().template mothers_as<aod::McParticles>();
         if (mctrack.size()) {
-          auto const &grmothersIdsVec = mctrack.front().mothersIds();
+          auto const& grmothersIdsVec = mctrack.front().mothersIds();
 
           if (grmothersIdsVec.empty()) {
             return DirectCharm;
           }
           grmotherPt = mctrack.front().pt();
           grmotherPdg = std::abs(mctrack.front().pdgCode());
-          if ((static_cast<int>(grmotherPdg / 100.) % 10) == kBottom ||
-              (static_cast<int>(grmotherPdg / 1000.) % 10) == kBottom) {
+          if ((static_cast<int>(grmotherPdg / 100.) % 10) == kBottom || (static_cast<int>(grmotherPdg / 1000.) % 10) == kBottom) {
             mpt = grmotherPt;
             mpdg = grmotherPdg;
             return BeautyCharm;
@@ -281,15 +257,12 @@ struct HfTaskSingleElectron {
         }
         partMother = mctrack;
       }
-    } else if ((static_cast<int>(motherPdg / 100.) % 10) == kBottom ||
-               (static_cast<int>(motherPdg / 1000.) % 10) ==
-                   kBottom) { // check if electron from beauty hadrons
+    } else if ((static_cast<int>(motherPdg / 100.) % 10) == kBottom || (static_cast<int>(motherPdg / 1000.) % 10) == kBottom) { // check if electron from beauty hadrons
       return DirectBeauty;
-    } else if (motherPdg ==
-               kGamma) { // check if electron from photon conversion
+    } else if (motherPdg == kGamma) { // check if electron from photon conversion
       mctrack = partMother.front().template mothers_as<aod::McParticles>();
       if (mctrack.size()) {
-        auto const &grmothersIdsVec = mctrack.front().mothersIds();
+        auto const& grmothersIdsVec = mctrack.front().mothersIds();
         if (grmothersIdsVec.empty()) {
           return DirectGamma;
         }
@@ -300,21 +273,21 @@ struct HfTaskSingleElectron {
         partMother = mctrack;
         mctrack = partMother.front().template mothers_as<aod::McParticles>();
         if (mctrack.size()) {
-          auto const &ggrmothersIdsVec = mctrack.front().mothersIds();
+          auto const& ggrmothersIdsVec = mctrack.front().mothersIds();
           if (ggrmothersIdsVec.empty()) {
             if (grmotherPdg == kPi0) {
               return GammaPi0;
             }
-            if (grmotherPdg == PdgCode::kEta) {
+            if (grmotherPdg == Pdg::kEta) {
               return GammaEta;
             }
-            if (grmotherPdg == PdgCode::kOmega) {
+            if (grmotherPdg == Pdg::kOmega) {
               return GammaOmega;
             }
-            if (grmotherPdg == kPhi) {
+            if (grmotherPdg == Pdg::kPhi) {
               return GammaPhi;
             }
-            if (grmotherPdg == PdgCode::kEtaPrime) {
+            if (grmotherPdg == Pdg::kEtaPrime) {
               return GammaEtaPrime;
             }
             if (grmotherPdg == kRho770_0) {
@@ -346,22 +319,22 @@ struct HfTaskSingleElectron {
             mpt = grmotherPt;
             return GammaPi0;
           }
-          if (grmotherPdg == PdgCode::kEta) {
+          if (grmotherPdg == Pdg::kEta) {
             mpdg = grmotherPdg;
             mpt = grmotherPt;
             return GammaEta;
           }
-          if (grmotherPdg == PdgCode::kOmega) {
+          if (grmotherPdg == Pdg::kOmega) {
             mpdg = grmotherPdg;
             mpt = grmotherPt;
             return GammaOmega;
           }
-          if (grmotherPdg == kPhi) {
+          if (grmotherPdg == Pdg::kPhi) {
             mpdg = grmotherPdg;
             mpt = grmotherPt;
             return GammaPhi;
           }
-          if (grmotherPdg == PdgCode::kEtaPrime) {
+          if (grmotherPdg == Pdg::kEtaPrime) {
             mpdg = grmotherPdg;
             mpt = grmotherPt;
             return GammaEtaPrime;
@@ -377,17 +350,17 @@ struct HfTaskSingleElectron {
     } else { // check if electron from Dalitz decays
       mctrack = partMother.front().template mothers_as<aod::McParticles>();
       if (mctrack.size()) {
-        auto const &grmothersIdsVec = mctrack.front().mothersIds();
+        auto const& grmothersIdsVec = mctrack.front().mothersIds();
         if (grmothersIdsVec.empty()) {
           static const std::map<int, SourceType> pdgToSource = {
-              {kPi0, Pi0},
-              {PdgCode::kEta, Eta},
-              {PdgCode::kOmega, Omega},
-              {kPhi, Phi},
-              {PdgCode::kEtaPrime, EtaPrime},
-              {kRho770_0, Rho0},
-              {kKPlus, Ke3},
-              {kK0Long, K0l}};
+            {kPi0, Pi0},
+            {Pdg::kEta, Eta},
+            {Pdg::kOmega, Omega},
+            {Pdg::kPhi, Phi},
+            {Pdg::kEtaPrime, EtaPrime},
+            {kRho770_0, Rho0},
+            {kKPlus, Ke3},
+            {kK0Long, K0l}};
 
           auto it = pdgToSource.find(motherPdg);
           if (it != pdgToSource.end()) {
@@ -419,16 +392,16 @@ struct HfTaskSingleElectron {
           mpdg = motherPdg;
           return Pi0;
         }
-        if (motherPdg == PdgCode::kEta) {
+        if (motherPdg == Pdg::kEta) {
           return Eta;
         }
-        if (motherPdg == PdgCode::kOmega) {
+        if (motherPdg == Pdg::kOmega) {
           return Omega;
         }
-        if (motherPdg == kPhi) {
+        if (motherPdg == Pdg::kPhi) {
           return Phi;
         }
-        if (motherPdg == PdgCode::kEtaPrime) {
+        if (motherPdg == Pdg::kEtaPrime) {
           return EtaPrime;
         }
         if (motherPdg == kRho770_0) {
@@ -447,8 +420,9 @@ struct HfTaskSingleElectron {
     return Else;
   }
 
-  void processData(soa::Filtered<MyCollisions>::iterator const &collision,
-                   TracksEl const &tracks) {
+  void processData(soa::Filtered<MyCollisions>::iterator const& collision,
+                   TracksEl const& tracks)
+  {
     float const flagAnalysedEvt = 0.5;
 
     if (!collision.sel8()) {
@@ -462,7 +436,7 @@ struct HfTaskSingleElectron {
     histos.fill(HIST("VtxZ"), collision.posZ());
     histos.fill(HIST("nEvents"), flagAnalysedEvt);
 
-    for (const auto &track : tracks) {
+    for (const auto& track : tracks) {
 
       if (!trackSel(track)) {
         continue;
@@ -476,8 +450,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("ptTrack"), track.pt());
 
       histos.fill(HIST("tpcNClsTrack"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("tpcFoundFindableTrack"),
-                  track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
       histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
       histos.fill(HIST("itsChi2Track"), track.itsChi2NCl());
@@ -493,19 +466,18 @@ struct HfTaskSingleElectron {
       }
       histos.fill(HIST("tofNSigPtQA"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("tpcNSigPAfterTofCut"), track.p(), track.tpcNSigmaEl());
-      histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(),
-                  track.tpcNSigmaEl());
+      histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
 
-      if (track.tpcNSigmaEl() < tpcNSigmaMin ||
-          track.tpcNSigmaEl() > tpcNSigmaMax) {
+      if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax) {
         continue;
       }
+  
+	  
+	  if (track.tpcNSigmaEl() < tpcNSigmaHadronMax && track.tpcNSigmaEl() > tpcNSigmaHadronMin){
+		
+	  histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
 
-      if (track.tpcNSigmaEl() < tpcNSigmaHadronMax &&
-          track.tpcNSigmaEl() > tpcNSigmaHadronMin) {
-
-        histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
-      }
+	  }
 
       histos.fill(HIST("tpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
 
@@ -514,8 +486,10 @@ struct HfTaskSingleElectron {
   }
   PROCESS_SWITCH(HfTaskSingleElectron, processData, "For real data", true);
 
-  void processMc(soa::Filtered<MyCollisions>::iterator const &collision,
-                 McTracksEl const &tracks, aod::McParticles const &) {
+  void processMc(soa::Filtered<MyCollisions>::iterator const& collision,
+                 McTracksEl const& tracks,
+                 aod::McParticles const&)
+  {
     float const flagAnalysedEvt = 0.5;
 
     if (!collision.sel8()) {
@@ -529,7 +503,7 @@ struct HfTaskSingleElectron {
     histos.fill(HIST("VtxZ"), collision.posZ());
     histos.fill(HIST("nEvents"), flagAnalysedEvt);
 
-    for (const auto &track : tracks) {
+    for (const auto& track : tracks) {
 
       if (!trackSel(track)) {
         continue;
@@ -539,8 +513,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("ptTrack"), track.pt());
 
       histos.fill(HIST("tpcNClsTrack"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("tpcFoundFindableTrack"),
-                  track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
       histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
       histos.fill(HIST("dcaXYTrack"), track.dcaXY());
@@ -573,29 +546,32 @@ struct HfTaskSingleElectron {
         histos.fill(HIST("dcaDalitz"), track.pt(), track.dcaXY());
       }
 
-      if (track.tpcNSigmaEl() < tpcNSigmaHadronMax &&
-          track.tpcNSigmaEl() > tpcNSigmaHadronMin)
-        histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
+
+	  if (track.tpcNSigmaEl() < tpcNSigmaHadronMax && track.tpcNSigmaEl() > tpcNSigmaHadronMin)
+	  histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
+
 
       if (std::abs(track.tofNSigmaEl()) > tofNSigmaMax) {
         continue;
       }
       histos.fill(HIST("tofNSigPtQA"), track.pt(), track.tofNSigmaEl());
-      histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(),
-                  track.tpcNSigmaEl());
+      histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
 
-      if (track.tpcNSigmaEl() < tpcNSigmaMin ||
-          track.tpcNSigmaEl() > tpcNSigmaMax) {
+      if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax) {
         continue;
       }
       histos.fill(HIST("tpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
 
       histos.fill(HIST("dcaTrack"), track.pt(), track.dcaXY());
+
+
     }
   }
   PROCESS_SWITCH(HfTaskSingleElectron, processMc, "For real data", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskSingleElectron>(cfgc)};
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<HfTaskSingleElectron>(cfgc)};
 }
