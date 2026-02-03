@@ -1555,7 +1555,7 @@ struct sigma0builder {
     histos.fill(HIST(MainDir[mode]) + HIST("/hKShortLifeTime"), fKShortLifeTime);
     histos.fill(HIST(MainDir[mode]) + HIST("/hKShortY"), v0.yK0Short());
     histos.fill(HIST(MainDir[mode]) + HIST("/hKShortMass"), v0.mK0Short());
-    histos.fill(HIST(MainDir[mode]) + HIST("/h2dMassK0SvsLambda"), v0.mK0Short(), v0.mK0Short());
+    histos.fill(HIST(MainDir[mode]) + HIST("/h2dMassK0SvsLambda"), v0.mK0Short(), v0.mLambda());
     histos.fill(HIST(MainDir[mode]) + HIST("/h2dMassK0SVsGamma"), v0.mK0Short(), v0.mGamma());
   }
 
