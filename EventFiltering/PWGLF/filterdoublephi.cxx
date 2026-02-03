@@ -29,12 +29,12 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/MathConstants.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
 #include <Framework/Configurable.h>
 
 #include <Math/GenVector/Boost.h>
@@ -61,9 +61,6 @@ struct filterdoublephi {
 
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<bool> isApplySel8{"isApplySel8", true, "Apply sel8 event selection"};
-  Configurable<bool> isApplyTimeFrame{"isApplyTimeFrame", false, "Apply Time Frame border selection"};
-  Configurable<bool> isApplyITSROF{"isApplyITSROF", false, "Apply ITS ROF border selection"};
   // Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 0.0f, "Accepted maximum Centrality"};
   // Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 100.0f, "Accepted minimum Centrality"};
   // track
@@ -106,7 +103,7 @@ struct filterdoublephi {
   Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
   // Histogram
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";; Number of events", 4, 0.0f, 4.0f)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";; Number of events", 3, 0.0f, 3.0f)};
   HistogramRegistry qaRegistry{"QAHistos", {
                                              {"hInvMassPhi", "hInvMassPhi", {HistType::kTH2F, {{40, 1.0f, 1.04f}, {100, 0.0f, 10.0f}}}},
                                              {"hInvMassDoublePhi", "hInvMassDoublePhi", {HistType::kTH2F, {{1000, 2.0f, 3.0f}, {100, 0.0f, 10.0f}}}},
@@ -120,9 +117,8 @@ struct filterdoublephi {
   void init(o2::framework::InitContext&)
   {
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "All events");
-    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Event selection");
-    hProcessedEvents->GetXaxis()->SetBinLabel(3, "Events with double Phi without sel.");
-    hProcessedEvents->GetXaxis()->SetBinLabel(4, aod::filtering::TriggerEventDoublePhi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events with double Phi without sel.");
+    hProcessedEvents->GetXaxis()->SetBinLabel(3, aod::filtering::TriggerEventDoublePhi::columnLabel());
   }
 
   template <typename T>
@@ -195,100 +191,75 @@ struct filterdoublephi {
     int Npostrack = 0;
     int Nnegtrack = 0;
     hProcessedEvents->Fill(0.5);
-
-    if (collision.posZ() > cfgCutVertex) {
-      return;
-    }
-
-    if (isApplySel8) {
-      if (!collision.sel8()) {
-        return;
-      }
-    } else {
-      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
-        return;
-      }
-    }
-
-    // Independent conditions
-    if (!isApplySel8 && isApplyTimeFrame && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      return;
-    }
-
-    if (!isApplySel8 && isApplyITSROF && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-      return;
-    }
-
-    hProcessedEvents->Fill(1.5);
-
-    auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    for (auto track1 : posThisColl) {
-      // track selection
-      if (!selectionTrack(track1)) {
-        continue;
-      }
-      // PID check
-      if (isPtdepPID1 && !selectionPID2(track1)) {
-        continue;
-      }
-      if (!isPtdepPID1 && !selectionPID(track1)) {
-        continue;
-      }
-      if (track1.pt() > 0.4 && track1.pt() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
-        continue;
-      }
-      Npostrack = Npostrack + 1;
-      qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), track1.tpcNSigmaKa(), track1.pt());
-      if (track1.hasTOF()) {
-        qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track1.tofNSigmaKa(), track1.pt());
-      }
-      auto track1ID = track1.globalIndex();
-      for (auto track2 : negThisColl) {
+    if (collision.sel8()) {
+      auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (auto track1 : posThisColl) {
         // track selection
-        if (!selectionTrack(track2)) {
+        if (!selectionTrack(track1)) {
           continue;
         }
         // PID check
-        if (isPtdepPID2 && !selectionPID2(track2)) {
+        if (isPtdepPID1 && !selectionPID2(track1)) {
           continue;
         }
-        if (!isPtdepPID2 && !selectionPID(track2)) {
+        if (!isPtdepPID1 && !selectionPID(track1)) {
           continue;
         }
-        if (track2.pt() > 0.4 && track2.pt() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
+        if (track1.pt() > 0.4 && track1.pt() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
           continue;
         }
-        if (Npostrack == 1) {
-          Nnegtrack = Nnegtrack + 1;
+        Npostrack = Npostrack + 1;
+        qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), track1.tpcNSigmaKa(), track1.pt());
+        if (track1.hasTOF()) {
+          qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track1.tofNSigmaKa(), track1.pt());
         }
-        auto track2ID = track2.globalIndex();
-        if (track2ID == track1ID) {
-          continue;
-        }
-        if (!selectionPair(track1, track2)) {
-          continue;
-        }
-        KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-        KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
-        PhiMesonMother = KaonPlus + KaonMinus;
-        if (PhiMesonMother.M() > minPhiMass && PhiMesonMother.M() < maxPhiMass) {
-          numberPhi = numberPhi + 1;
-          ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
-          ROOT::Math::PtEtaPhiMVector temp2(track2.pt(), track2.eta(), track2.phi(), massKa);
-          ROOT::Math::PtEtaPhiMVector temp3(PhiMesonMother.pt(), PhiMesonMother.eta(), PhiMesonMother.phi(), PhiMesonMother.M());
-          phiresonanced1.push_back(temp1);
-          phiresonanced2.push_back(temp2);
-          phiresonance.push_back(temp3);
-          Phid1Index.push_back(track1.globalIndex());
-          Phid2Index.push_back(track2.globalIndex());
-          qaRegistry.fill(HIST("hInvMassPhi"), PhiMesonMother.M(), PhiMesonMother.Pt());
+        auto track1ID = track1.globalIndex();
+        for (auto track2 : negThisColl) {
+          // track selection
+          if (!selectionTrack(track2)) {
+            continue;
+          }
+          // PID check
+          if (isPtdepPID2 && !selectionPID2(track2)) {
+            continue;
+          }
+          if (!isPtdepPID2 && !selectionPID(track2)) {
+            continue;
+          }
+          if (track2.pt() > 0.4 && track2.pt() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
+            continue;
+          }
+          if (Npostrack == 1) {
+            Nnegtrack = Nnegtrack + 1;
+          }
+          auto track2ID = track2.globalIndex();
+          if (track2ID == track1ID) {
+            continue;
+          }
+          if (!selectionPair(track1, track2)) {
+            continue;
+          }
+          KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+          KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+          PhiMesonMother = KaonPlus + KaonMinus;
+          if (PhiMesonMother.M() > minPhiMass && PhiMesonMother.M() < maxPhiMass) {
+            numberPhi = numberPhi + 1;
+            ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
+            ROOT::Math::PtEtaPhiMVector temp2(track2.pt(), track2.eta(), track2.phi(), massKa);
+            ROOT::Math::PtEtaPhiMVector temp3(PhiMesonMother.pt(), PhiMesonMother.eta(), PhiMesonMother.phi(), PhiMesonMother.M());
+            phiresonanced1.push_back(temp1);
+            phiresonanced2.push_back(temp2);
+            phiresonance.push_back(temp3);
+            Phid1Index.push_back(track1.globalIndex());
+            Phid2Index.push_back(track2.globalIndex());
+            qaRegistry.fill(HIST("hInvMassPhi"), PhiMesonMother.M(), PhiMesonMother.Pt());
+          }
         }
       }
-    }
-    // select collision
+    } // select collision
     if (numberPhi > 1 && Npostrack > 1 && Nnegtrack > 1 && (phiresonance.size() == phiresonanced1.size()) && (phiresonance.size() == phiresonanced2.size())) {
-      hProcessedEvents->Fill(2.5);
+      hProcessedEvents->Fill(1.5);
       for (auto if1 = phiresonance.begin(); if1 != phiresonance.end(); ++if1) {
         auto i5 = std::distance(phiresonance.begin(), if1);
         PhiVectorDummy = phiresonance.at(i5);
@@ -304,7 +275,7 @@ struct filterdoublephi {
       }
     }
     if (keepEventDoublePhi) {
-      hProcessedEvents->Fill(3.5);
+      hProcessedEvents->Fill(2.5);
     }
     tags(keepEventDoublePhi);
   } // process
