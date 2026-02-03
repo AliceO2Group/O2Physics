@@ -157,5 +157,5 @@ o2physics_add_dpl_workflow(check-mc-template
 
 o2physics_add_dpl_workflow(check-mc-pair-template
                     SOURCES checkMCPairTemplate.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore O2Physics::PWGEMDileptonUtils
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
