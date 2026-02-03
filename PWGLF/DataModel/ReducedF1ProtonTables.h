@@ -77,6 +77,31 @@ DECLARE_SOA_COLUMN(ProtonNsigmaTPC, protonNsigmaTPC, float);               //! P
 DECLARE_SOA_COLUMN(ProtonTOFHit, protonTOFHit, int);                       //! Proton TOF Hit
 DECLARE_SOA_COLUMN(ProtonNsigmaTOF, protonNsigmaTOF, float);               //! Proton TOF nsigma
 DECLARE_SOA_COLUMN(F1ProtonIndex, f1ProtonIndex, int64_t);                 //! F1 proton index
+DECLARE_SOA_COLUMN(PionTOF, pionTOF, float);                               //! Pion TOF
+DECLARE_SOA_COLUMN(PionDcaxy, pionDcaxy, float);                           //! Pion DCAxy
+DECLARE_SOA_COLUMN(PionDcaz, pionDcaz, float);                             //! Pion DCAz
+DECLARE_SOA_COLUMN(PionTPCNcls, pionTPCNcls, float);                       //! Pion TPC Ncls
+DECLARE_SOA_COLUMN(PionTPCNcrs, pionTPCNcrs, float);                       //! Pion TPC Ncrs
+DECLARE_SOA_COLUMN(KaonTOF, kaonTOF, float);                               //! Kaon TOF
+DECLARE_SOA_COLUMN(KaonDcaxy, kaonDcaxy, float);                           //! Kaon DCAxy
+DECLARE_SOA_COLUMN(KaonDcaz, kaonDcaz, float);                             //! Kaon DCAz
+DECLARE_SOA_COLUMN(KaonTPCNcls, kaonTPCNcls, float);                       //! Kaon TPC Ncls
+DECLARE_SOA_COLUMN(KaonTPCNcrs, kaonTPCNcrs, float);                       //! Kaon TPC Ncrs
+DECLARE_SOA_COLUMN(K0D1Dcaxy, k0D1Dcaxy, float);                           //! K0 daughter 1 DCAxy
+DECLARE_SOA_COLUMN(K0D1TPCNcls, k0D1TPCNcls, float);                       //! K0 daughter 1 TPC Ncls
+DECLARE_SOA_COLUMN(K0D1TPCNcrs, k0D1TPCNcrs, float);                       //! K0 daughter 1 TPC Ncrs
+DECLARE_SOA_COLUMN(K0D2Dcaxy, k0D2Dcaxy, float);                           //! K0 daughter 2 DCAxy
+DECLARE_SOA_COLUMN(K0D2TPCNcls, k0D2TPCNcls, float);                       //! K0 daughter 2 TPC Ncls
+DECLARE_SOA_COLUMN(K0D2TPCNcrs, k0D2TPCNcrs, float);                       //! K0 daughter 2 TPC Ncrs
+DECLARE_SOA_COLUMN(K0Cpa, k0Cpa, float);                                   //! K0 CPA
+DECLARE_SOA_COLUMN(K0Radius, k0Radius, float);                             //! K0 decay radius
+DECLARE_SOA_COLUMN(K0DcaDaughters, k0DcaDaughters, float);                 //! K0 DCA between daughters
+DECLARE_SOA_COLUMN(K0Dca, k0Dca, float);                                   //! K0 DCA to PV
+DECLARE_SOA_COLUMN(K0LifeTime, k0LifeTime, float);                         //! K0 proper lifetime
+DECLARE_SOA_COLUMN(ProtonDcaxy, protonDcaxy, float);                       //! Proton DCAxy
+DECLARE_SOA_COLUMN(ProtonDcaz, protonDcaz, float);                         //! Proton DCAz
+DECLARE_SOA_COLUMN(ProtonTPCNcls, protonTPCNcls, float);                   //! Proton TPC Ncls
+DECLARE_SOA_COLUMN(ProtonTPCNcrs, protonTPCNcrs, float);                   //! Proton TPC Ncrs
 } // namespace f1protondaughter
 DECLARE_SOA_TABLE(F1Tracks, "AOD", "F1TRACK",
                   o2::soa::Index<>,
@@ -104,7 +129,28 @@ DECLARE_SOA_TABLE(F1Tracks, "AOD", "F1TRACK",
                   f1protondaughter::F1PionIndex,
                   f1protondaughter::F1KaonIndex,
                   f1protondaughter::F1KshortPositiveIndex,
-                  f1protondaughter::F1KshortNegativeIndex);
+                  f1protondaughter::F1KshortNegativeIndex,
+                  f1protondaughter::PionTOF,
+                  f1protondaughter::PionDcaxy,
+                  f1protondaughter::PionDcaz,
+                  f1protondaughter::PionTPCNcls,
+                  f1protondaughter::PionTPCNcrs,
+                  f1protondaughter::KaonTOF,
+                  f1protondaughter::KaonDcaxy,
+                  f1protondaughter::KaonDcaz,
+                  f1protondaughter::KaonTPCNcls,
+                  f1protondaughter::KaonTPCNcrs,
+                  f1protondaughter::K0D1Dcaxy,
+                  f1protondaughter::K0D1TPCNcls,
+                  f1protondaughter::K0D1TPCNcrs,
+                  f1protondaughter::K0D2Dcaxy,
+                  f1protondaughter::K0D2TPCNcls,
+                  f1protondaughter::K0D2TPCNcrs,
+                  f1protondaughter::K0Cpa,
+                  f1protondaughter::K0Radius,
+                  f1protondaughter::K0DcaDaughters,
+                  f1protondaughter::K0Dca,
+                  f1protondaughter::K0LifeTime);
 using F1Track = F1Tracks::iterator;
 
 DECLARE_SOA_TABLE(ProtonTracks, "AOD", "PROTONTRACK",
@@ -117,7 +163,11 @@ DECLARE_SOA_TABLE(ProtonTracks, "AOD", "PROTONTRACK",
                   f1protondaughter::ProtonNsigmaTPC,
                   f1protondaughter::ProtonTOFHit,
                   f1protondaughter::ProtonNsigmaTOF,
-                  f1protondaughter::F1ProtonIndex);
+                  f1protondaughter::F1ProtonIndex,
+                  f1protondaughter::ProtonDcaxy,
+                  f1protondaughter::ProtonDcaz,
+                  f1protondaughter::ProtonTPCNcls,
+                  f1protondaughter::ProtonTPCNcrs);
 using ProtonTrack = ProtonTracks::iterator;
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_REDUCEDF1PROTONTABLES_H_

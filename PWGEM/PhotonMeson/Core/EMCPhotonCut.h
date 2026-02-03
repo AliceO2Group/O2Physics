@@ -32,6 +32,15 @@
 #include <vector>
 
 template <typename T>
+concept is_optional_table = o2::soa::is_table<T> || std::is_same_v<T, std::nullptr_t>;
+
+template <typename TPrimaries>
+static constexpr bool HasPrimaries = !std::is_same_v<TPrimaries, std::nullptr_t>;
+
+template <typename TSecondaries>
+static constexpr bool HasSecondaries = !std::is_same_v<TSecondaries, std::nullptr_t>;
+
+template <typename T>
 concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.deltaEta() } -> std::same_as<float>;
@@ -50,22 +59,26 @@ concept IsTrackContainer = o2::soa::is_table<T> && requires(T t) {
 };
 
 template <typename Cluster>
-concept HasTrackMatching = requires(Cluster cluster) {
-  // requires that the following are valid calls:
-  { cluster.deltaEta() } -> std::convertible_to<std::vector<float>>;
-  { cluster.deltaPhi() } -> std::convertible_to<std::vector<float>>;
-  { cluster.trackpt() } -> std::convertible_to<std::vector<float>>;
-  { cluster.trackp() } -> std::convertible_to<std::vector<float>>;
-};
+concept HasTrackMatching =
+  o2::soa::is_iterator<Cluster> &&
+  requires(Cluster cluster) {
+    // requires that the following are valid calls:
+    { cluster.deltaEta() } -> std::convertible_to<std::vector<float>>;
+    { cluster.deltaPhi() } -> std::convertible_to<std::vector<float>>;
+    { cluster.trackpt() } -> std::convertible_to<std::vector<float>>;
+    { cluster.trackp() } -> std::convertible_to<std::vector<float>>;
+  };
 
 template <typename Cluster>
-concept HasSecondaryMatching = requires(Cluster cluster) {
-  // requires that the following are valid calls:
-  { cluster.deltaEtaSec() } -> std::convertible_to<std::vector<float>>;
-  { cluster.deltaPhiSec() } -> std::convertible_to<std::vector<float>>;
-  { cluster.trackptSec() } -> std::convertible_to<std::vector<float>>;
-  { cluster.trackpSec() } -> std::convertible_to<std::vector<float>>;
-};
+concept HasSecondaryMatching =
+  o2::soa::is_iterator<Cluster> &&
+  requires(Cluster cluster) {
+    // requires that the following are valid calls:
+    { cluster.deltaEtaSec() } -> std::convertible_to<std::vector<float>>;
+    { cluster.deltaPhiSec() } -> std::convertible_to<std::vector<float>>;
+    { cluster.trackptSec() } -> std::convertible_to<std::vector<float>>;
+    { cluster.trackpSec() } -> std::convertible_to<std::vector<float>>;
+  };
 
 struct TrackMatchingParams {
   float a{0.01f};
