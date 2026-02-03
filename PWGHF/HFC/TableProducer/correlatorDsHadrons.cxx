@@ -759,24 +759,22 @@ struct HfCorrelatorDsHadrons {
             listDaughters.clear();
             RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
             int counterDaughters = 0;
+            // Assign Ds charge sign
             int chargeDs = 0;
+            if (particle.pdgCode() == kDS) {
+              chargeDs = 1;
+            } else {
+              chargeDs = -1;
+            }
+            // Find Ds daughters
             if (listDaughters.size() == NDaughtersDs) {
               for (const auto& dauIdx : listDaughters) {
                 // auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
                 auto daughI = groupedMcParticles.rawIteratorAt(dauIdx - groupedMcParticles.offset());
                 counterDaughters += 1;
-                if (counterDaughters == 1) {
-                  if (daughI.pdgCode() == kKPlus) {
-                    chargeDs = 1;
-                  } else {
-                    chargeDs = -1;
-                  }
-                }
                 prongsId[counterDaughters - 1] = daughI.globalIndex();
               }
             }
-
-            int numberOfCorrKaons = 0;
 
             // Ds Hadron correlation dedicated section
             for (const auto& particleAssoc : groupedMcParticles) {
@@ -792,46 +790,37 @@ struct HfCorrelatorDsHadrons {
               if (!particleAssoc.isPhysicalPrimary()) {
                 continue;
               }
-
-              if (isDsPrompt) {
-                registry.fill(HIST("hCorrAllPrimaryParticles"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                if (std::abs(particleAssoc.pdgCode()) == kPiPlus) {
-                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                  registry.fill(HIST("hCorrAllPrimaryPions"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                } else if (std::abs(particleAssoc.pdgCode()) == kKPlus) {
-                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                  registry.fill(HIST("hCorrAllPrimaryKaons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                } else if (std::abs(particleAssoc.pdgCode()) == kProton) {
-                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                  registry.fill(HIST("hCorrAllPrimaryProtons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+              if (pidTrkApplied) {
+                // MC truth match
+                if (trkPIDspecies->at(0) == o2::track::PID::Kaon && std::abs(particleAssoc.pdgCode()) != kKPlus) {
+                  continue;
                 }
-                if (pidTrkApplied) {
-                  if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKPlus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKMinus))) { // LS pairs
-                    registry.fill(HIST("hCorrKaonsLSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                    numberOfCorrKaons++;
-                  }
-                  if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKMinus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKPlus))) { // ULS pairs
-                    registry.fill(HIST("hCorrKaonsULSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                    numberOfCorrKaons++;
-                  }
+                if (trkPIDspecies->at(0) == o2::track::PID::Pion && std::abs(particleAssoc.pdgCode()) != kPiPlus) {
+                  continue;
+                }
+                if (trkPIDspecies->at(0) == o2::track::PID::Proton && std::abs(particleAssoc.pdgCode()) != kProton) {
+                  continue;
                 }
               }
 
+              int chargeParticle = 0;
+              if ((particleAssoc.pdgCode() == kElectron) || (particleAssoc.pdgCode() == kMuonMinus) || (particleAssoc.pdgCode() == kPiMinus) || (particleAssoc.pdgCode()) == kKMinus || (particleAssoc.pdgCode() == kProtonBar)) {
+                chargeParticle = -1;
+              } else {
+                chargeParticle = 1;
+              }
               // trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
               trackOrigin = RecoDecay::getCharmHadronOrigin(groupedMcParticles, particleAssoc, true);
               registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
               entryDsHadronPair(getDeltaPhi(particleAssoc.phi(), particle.phi()),
                                 particleAssoc.eta() - particle.eta(),
-                                particle.pt(),
-                                particleAssoc.pt(),
+                                particle.pt() * chargeDs,
+                                particleAssoc.pt() * chargeParticle,
                                 poolBin,
                                 0);
               entryDsHadronRecoInfo(MassDS, true, isDecayChan);
               entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
             } // end loop generated particles
-            if (numberOfCorrKaons == 0) {
-              registry.fill(HIST("hDsWoKaons"), numberOfCorrKaons);
-            }
           } // if statement for Ds selection
         } // end loop generated Ds
       } // end loop reconstructed collision
@@ -1095,12 +1084,38 @@ struct HfCorrelatorDsHadrons {
           if (!particleAssoc.isPhysicalPrimary()) {
             continue;
           }
+          if (pidTrkApplied) {
+            // MC truth match
+            if (trkPIDspecies->at(0) == o2::track::PID::Kaon && std::abs(particleAssoc.pdgCode()) != kKPlus) {
+              continue;
+            }
+            if (trkPIDspecies->at(0) == o2::track::PID::Pion && std::abs(particleAssoc.pdgCode()) != kPiPlus) {
+              continue;
+            }
+            if (trkPIDspecies->at(0) == o2::track::PID::Proton && std::abs(particleAssoc.pdgCode()) != kProton) {
+              continue;
+            }
+          }
+
+          int chargeDs = 0;
+          if (candidate.pdgCode() == kDS) {
+            chargeDs = 1;
+          } else {
+            chargeDs = -1;
+          }
+
+          int chargeParticle = 0;
+          if ((particleAssoc.pdgCode() == kElectron) || (particleAssoc.pdgCode() == kMuonMinus) || (particleAssoc.pdgCode() == kPiMinus) || (particleAssoc.pdgCode()) == kKMinus || (particleAssoc.pdgCode() == kProtonBar)) {
+            chargeParticle = -1;
+          } else {
+            chargeParticle = 1;
+          }
           int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
           bool isDsPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;
           entryDsHadronPair(getDeltaPhi(particleAssoc.phi(), candidate.phi()),
                             particleAssoc.eta() - candidate.eta(),
-                            candidate.pt(),
-                            particleAssoc.pt(),
+                            candidate.pt() * chargeDs,
+                            particleAssoc.pt() * chargeParticle,
                             poolBin,
                             0);
           entryDsHadronRecoInfo(MassDS, true, true);
