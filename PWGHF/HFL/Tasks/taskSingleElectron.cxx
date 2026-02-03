@@ -11,8 +11,7 @@
 ///
 /// \file taskSingleElectron.cxx
 /// \brief task for electrons from heavy-flavour hadron decays
-/// \author Jonghan Park (Jeonbuk National University)
-/// \author Seul I Jeong (Pusan National University)
+/// \author Jonghan Park (Jeonbuk National University), Seul I Jeong (Pusan National University)
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
