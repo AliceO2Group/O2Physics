@@ -41,7 +41,6 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 enum SourceType {
   NotElec = 0,      // not electron
   DirectCharm = 1,  // electrons from prompt charm hadrons
@@ -98,7 +97,7 @@ struct HfTaskSingleElectron {
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
 
   Configurable<int> tpcNSigmaHadronMax{"tpcNSigmaHadronMax", -3, "max of tpc hadron nsigma"};
-  Configurable<int> tpcNSigmaHadronMin{"tpcNSigmaHadronMin" , -5, "min of tpc hadron nsigma"};
+  Configurable<int> tpcNSigmaHadronMin{"tpcNSigmaHadronMin", -5, "min of tpc hadron nsigma"};
 
   // SliceCache
   SliceCache cache;
@@ -120,7 +119,7 @@ struct HfTaskSingleElectron {
   HistogramRegistry histos{"histos"};
 
   void init(InitContext const&)
- {
+  {
     // AxisSpec
     const AxisSpec axisEvt{4, 0., 4., "nEvents"};
     const AxisSpec axisNCont{100, 0., 100., "nCont"};
@@ -161,7 +160,7 @@ struct HfTaskSingleElectron {
     histos.add("dcaCharm", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
     histos.add("dcaDalitz", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
     histos.add("dcaConv", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
-	histos.add("dcaHadron", "", kTH2D, {{axisPtEl}, {axisTrackIp}});  
+    histos.add("dcaHadron", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
 
     // QA plots for MC
     histos.add("hPdgC", "", kTH1D, {{10001, -0.5, 10000.5}});
@@ -471,13 +470,11 @@ struct HfTaskSingleElectron {
       if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax) {
         continue;
       }
-  
-	  
-	  if (track.tpcNSigmaEl() < tpcNSigmaHadronMax && track.tpcNSigmaEl() > tpcNSigmaHadronMin){
-		
-	  histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
 
-	  }
+      if (track.tpcNSigmaEl() < tpcNSigmaHadronMax && track.tpcNSigmaEl() > tpcNSigmaHadronMin) {
+
+        histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
+      }
 
       histos.fill(HIST("tpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
 
@@ -546,10 +543,8 @@ struct HfTaskSingleElectron {
         histos.fill(HIST("dcaDalitz"), track.pt(), track.dcaXY());
       }
 
-
-	  if (track.tpcNSigmaEl() < tpcNSigmaHadronMax && track.tpcNSigmaEl() > tpcNSigmaHadronMin)
-	  histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
-
+      if (track.tpcNSigmaEl() < tpcNSigmaHadronMax && track.tpcNSigmaEl() > tpcNSigmaHadronMin)
+        histos.fill(HIST("dcaHadron"), track.pt(), track.dcaXY());
 
       if (std::abs(track.tofNSigmaEl()) > tofNSigmaMax) {
         continue;
@@ -563,8 +558,6 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("tpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
 
       histos.fill(HIST("dcaTrack"), track.pt(), track.dcaXY());
-
-
     }
   }
   PROCESS_SWITCH(HfTaskSingleElectron, processMc, "For real data", false);
