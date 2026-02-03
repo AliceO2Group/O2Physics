@@ -41,30 +41,30 @@ namespace o2::aod
 // new part
 namespace jetTFsubstructure
 {                                                                      //!
-DECLARE_SOA_COLUMN(JetPt, jetPt, std::vector<float>);                  //!
-DECLARE_SOA_COLUMN(JetEta, jetEta, std::vector<float>);                //!
-DECLARE_SOA_COLUMN(JetPhi, jetPhi, std::vector<float>);                //!
-DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>);    //!
-DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);          //!
-DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>);    //!
-DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);                  //!
-DECLARE_SOA_COLUMN(PtLeadingConstituent, ptLeadingConstituent, float); //!
-DECLARE_SOA_COLUMN(TauForm, tauForm, std::vector<float>);              //!
-
-DECLARE_SOA_COLUMN(Z, z, std::vector<float>);               //!
-DECLARE_SOA_COLUMN(Ptg, ptg, std::vector<float>);           //!
-DECLARE_SOA_COLUMN(Thetag, thetag, std::vector<float>);     //!
-DECLARE_SOA_COLUMN(Zg, zg, std::vector<float>);             //!
-DECLARE_SOA_COLUMN(TauFormg, tauFormg, std::vector<float>); //!
-                                                            //!
-} // namespace jetTFsubstructure
-
-// all tables have the same content (for now)
-DECLARE_SOA_TABLE(CJetTFSSs, "AOD", "CJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
-DECLARE_SOA_TABLE(CMCDJetTFSSs, "AOD", "CMCDJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
-DECLARE_SOA_TABLE(CMCPJetTFSSs, "AOD", "CMCPJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
-DECLARE_SOA_TABLE(CEWSJetTFSSs, "AOD", "CEWSJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
-
+  DECLARE_SOA_COLUMN(JetPt, jetPt, float);       //!
+  DECLARE_SOA_COLUMN(JetEta, jetEta, float);     //!
+  DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);     //!
+  DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>);    //!
+  DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);          //!
+  DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>);    //!
+  DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);                  //!
+  DECLARE_SOA_COLUMN(PtLeadingConstituent, ptLeadingConstituent, float); //!
+  DECLARE_SOA_COLUMN(TauForm, tauForm, std::vector<float>);              //!
+  
+  DECLARE_SOA_COLUMN(Z, z, std::vector<float>);               //!
+  DECLARE_SOA_COLUMN(Ptg, ptg, std::vector<float>);           //!
+  DECLARE_SOA_COLUMN(Thetag, thetag, std::vector<float>);     //!
+  DECLARE_SOA_COLUMN(Zg, zg, std::vector<float>);             //!
+  DECLARE_SOA_COLUMN(TauFormg, tauFormg, std::vector<float>); //!
+                                                              //!
+  } // namespace jetTFsubstructure
+  
+  // all tables have the same content (for now)
+  DECLARE_SOA_TABLE(CJetTFSSs, "AOD", "CJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
+  DECLARE_SOA_TABLE(CMCDJetTFSSs, "AOD", "CMCDJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
+  DECLARE_SOA_TABLE(CMCPJetTFSSs, "AOD", "CMCPJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
+  DECLARE_SOA_TABLE(CEWSJetTFSSs, "AOD", "CEWSJETTFSS", jetTFsubstructure::JetPt, jetTFsubstructure::JetPhi, jetTFsubstructure::JetEta, jetTFsubstructure::EnergyMother, jetTFsubstructure::PtLeading, jetTFsubstructure::PtSubLeading, jetTFsubstructure::Theta, jetTFsubstructure::PtLeadingConstituent, jetTFsubstructure::TauForm, jetTFsubstructure::Z, jetTFsubstructure::Ptg, jetTFsubstructure::Thetag, jetTFsubstructure::Zg, jetTFsubstructure::TauFormg);
+  
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_JETFORMATIONTIMERECLUSTERING_H_
