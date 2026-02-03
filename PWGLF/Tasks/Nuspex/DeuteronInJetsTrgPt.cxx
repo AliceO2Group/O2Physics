@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 27-01
+// Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 03-02-2026
 //
 // Executable : o2-analysis-lf-deuteron-in-jet-trg-pt
 
