@@ -21,8 +21,6 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetTagging.h"
 
-#include "Common/DataModel/Multiplicity.h"
-
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -109,7 +107,6 @@ struct JetTaggerHFQA {
   ConfigurableAxis binMass{"binMass", {50, 0, 10.f}, ""};
   ConfigurableAxis binSigmaLxy{"binSigmaLxy", {100, 0., 0.1}, ""};
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
-  ConfigurableAxis binMultScaledFT0M{"binMultScaledFT0M", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0M: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"};
 
   int numberOfJetFlavourSpecies = 6;
   std::vector<int> eventSelectionBits;
@@ -151,7 +148,6 @@ struct JetTaggerHFQA {
     AxisSpec axisSigmaLxy = {binSigmaLxy, "#sigma_{L_{XY}} [cm]"};
     AxisSpec axisSigmaLxyz = {binSigmaLxyz, "#sigma_{L_{XYZ}} [cm]"};
     AxisSpec axisFracSecPt = {100, 0, 1, "#frac{#Sigma#it{p}_{T}^{secondary track}}{#it{p}_{T, jet}}"};
-    AxisSpec axisMultScaledFT0M = {binMultScaledFT0M, "Multiplicity classes"};
 
     registry.add("h_collision_events", "data;mcd;mcp evnets", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     if (doprocessTracksDca) {
@@ -397,25 +393,6 @@ struct JetTaggerHFQA {
       registry.add("h2_taggedjet_pt_3prong_mass_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisMass}}});
       registry.add("h2_taggedjet_pt_3prong_mass_xyz_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisMass}}});
     }
-    if (doprocessSV3ProngDataMult) {
-      registry.add("h_event_mult", "", {HistType::kTH1F, {{axisMultScaledFT0M}}});
-      registry.add("h2_jet_pt_mult", "", {HistType::kTH2F, {{axisJetPt}, {axisMultScaledFT0M}}});
-      registry.add("h2_jet_eta_mult", "", {HistType::kTH2F, {{axisEta}, {axisMultScaledFT0M}}});
-      registry.add("h2_jet_phi_mult", "", {HistType::kTH2F, {{axisPhi}, {axisMultScaledFT0M}}});
-      if (fillGeneralSVQA) {
-        registry.add("h2_3prong_nprongs_mult", "", {HistType::kTH2F, {{axisNprongs}, {axisMultScaledFT0M}}});
-        registry.add("hn_jet_3prong_Sxy_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisMultScaledFT0M}}});
-        if (fillSVxyz) {
-          registry.add("hn_jet_3prong_Sxyz_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisMultScaledFT0M}}});
-        }
-      }
-      registry.add("hn_jet_3prong_Sxy_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMultScaledFT0M}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMultScaledFT0M}}});
-      if (fillSVxyz) {
-        registry.add("hn_jet_3prong_Sxyz_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMultScaledFT0M}}});
-        registry.add("hn_taggedjet_3prong_Sxyz_N1_mult", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMultScaledFT0M}}});
-      }
-    }
     if (doprocessSV2ProngMCD || doprocessSV2ProngMCDWeighted || doprocessSV2ProngMCPMCDMatched || doprocessSV2ProngMCPMCDMatchedWeighted) {
       if (!(doprocessIPsMCD || doprocessIPsMCDWeighted || doprocessIPsMCPMCDMatched || doprocessIPsMCPMCDMatchedWeighted) && !(doprocessJPMCD || doprocessJPMCDWeighted || doprocessJPMCPMCDMatched || doprocessJPMCPMCDMatchedWeighted) && !(doprocessSV3ProngMCD || doprocessSV3ProngMCDWeighted || doprocessSV3ProngMCPMCDMatched || doprocessSV3ProngMCPMCDMatchedWeighted)) {
         registry.add("h2_jet_pt_flavour", "", {HistType::kTH2F, {{axisJetPt}, {axisJetFlavour}}});
@@ -463,25 +440,6 @@ struct JetTaggerHFQA {
       registry.add("h3_taggedjet_pt_3prong_Sxyz_N1_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisSxyz}, {axisJetFlavour}}});
       registry.add("h3_taggedjet_pt_3prong_mass_N1_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisMass}, {axisJetFlavour}}});
       registry.add("h3_taggedjet_pt_3prong_mass_xyz_N1_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisMass}, {axisJetFlavour}}});
-    }
-    if (doprocessSV3ProngMCDMult || doprocessSV3ProngMCDMultWeighted || doprocessSV3ProngMCPMCDMatchedMult || doprocessSV3ProngMCPMCDMatchedMultWeighted) {
-      registry.add("h_event_mult", "", {HistType::kTH1F, {{axisMultScaledFT0M}}});
-      registry.add("h3_jet_pt_mult_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-      registry.add("h3_jet_eta_mult_flavour", "", {HistType::kTH3F, {{axisEta}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-      registry.add("h3_jet_phi_mult_flavour", "", {HistType::kTH3F, {{axisPhi}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-      if (fillGeneralSVQA) {
-        registry.add("h3_3prong_nprongs_mult_flavour", "", {HistType::kTH3F, {{axisNprongs}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-        registry.add("hn_jet_3prong_Sxy_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-        if (fillSVxyz) {
-          registry.add("hn_jet_3prong_Sxyz_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-        }
-      }
-      registry.add("hn_jet_3prong_Sxy_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-      if (fillSVxyz) {
-        registry.add("hn_jet_3prong_Sxyz_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-        registry.add("hn_taggedjet_3prong_Sxyz_N1_mult_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisMultScaledFT0M}, {axisJetFlavour}}});
-      }
     }
   }
 
@@ -544,21 +502,6 @@ struct JetTaggerHFQA {
       return false;
 
     return true;
-  }
-
-  float getScaledFT0A(const float multFT0A)
-  {
-    return multFT0A / meanFT0A;
-  }
-
-  float getScaledFT0C(const float multFT0C)
-  {
-    return multFT0C / meanFT0C;
-  }
-
-  float getScaledFT0M(const float multFT0A, const float multFT0C)
-  {
-    return 0.5 * (getScaledFT0A(multFT0A) + getScaledFT0C(multFT0C));
   }
 
   template <typename U, typename T, typename V, typename W, typename X>
@@ -1052,50 +995,6 @@ struct JetTaggerHFQA {
     }
   }
 
-  template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngDataMult(T const& collision, U const& jet, V const& /*prongs*/)
-  {
-    if (jet.template secondaryVertices_as<V>().size() < 1)
-      return;
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
-    registry.fill(HIST("h2_jet_pt_mult"), jet.pt(), scaledFT0M);
-    registry.fill(HIST("h2_jet_eta_mult"), jet.eta(), scaledFT0M);
-    registry.fill(HIST("h2_jet_phi_mult"), jet.phi(), scaledFT0M);
-    if (fillGeneralSVQA) {
-      registry.fill(HIST("h2_3prong_nprongs_mult"), jet.template secondaryVertices_as<V>().size(), scaledFT0M);
-      for (const auto& prong : jet.template secondaryVertices_as<V>()) {
-        registry.fill(HIST("hn_jet_3prong_Sxy_mult"), jet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), scaledFT0M);
-        if (fillSVxyz) {
-          registry.fill(HIST("hn_jet_3prong_Sxyz_mult"), jet.pt(), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), scaledFT0M);
-        }
-      }
-    }
-    bool checkSv = false;
-    auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, prongCuts->at(0), prongCuts->at(1), prongCuts->at(2), prongCuts->at(4), prongCuts->at(5), false, &checkSv);
-    if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
-      auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
-      auto massSV = bjetCand.m();
-      registry.fill(HIST("hn_jet_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, scaledFT0M);
-      if (jet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("hn_taggedjet_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, scaledFT0M);
-      }
-    }
-    if (fillSVxyz) {
-      checkSv = false;
-      auto bjetCandXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(jet, prongCuts->at(0), prongCuts->at(1), prongCuts->at(3), prongCuts->at(4), prongCuts->at(5), true, &checkSv);
-      if (checkSv && jettaggingutilities::svAcceptance(bjetCandXYZ, svDispersionMax)) {
-        auto maxSxyz = bjetCandXYZ.decayLength() / bjetCandXYZ.errorDecayLength();
-        auto massSV = bjetCandXYZ.m();
-        registry.fill(HIST("hn_jet_3prong_Sxyz_N1_mult"), jet.pt(), maxSxyz, massSV, scaledFT0M);
-        if (jet.isTagged(BJetTaggingMethod::SV3D)) {
-          registry.fill(HIST("hn_taggedjet_3prong_Sxyz_N1_mult"), jet.pt(), maxSxyz, massSV, scaledFT0M);
-        }
-      }
-    }
-  }
-
   template <typename T, typename U>
   void fillHistogramSV2ProngMCD(T const& mcdjet, U const& /*prongs*/, float eventWeight = 1.0)
   {
@@ -1203,54 +1102,6 @@ struct JetTaggerHFQA {
         if (mcdjet.isTagged(BJetTaggingMethod::SV3D)) {
           registry.fill(HIST("h3_taggedjet_pt_3prong_Sxyz_N1_flavour"), mcdjet.pt(), maxSxyz, origin, eventWeight);
           registry.fill(HIST("h3_taggedjet_pt_3prong_mass_xyz_N1_flavour"), mcdjet.pt(), massSV, origin, eventWeight);
-        }
-      }
-    }
-  }
-
-  template <typename T, typename U, typename V>
-  void fillHistogramSV3ProngMCDMult(T const& collision, U const& mcdjet, V const& /*prongs*/, float eventWeight = 1.0)
-  {
-    float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
-    if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
-      return;
-    }
-    auto origin = mcdjet.origin();
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
-    if (mcdjet.template secondaryVertices_as<V>().size() < 1)
-      return;
-    registry.fill(HIST("h3_jet_pt_mult_flavour"), mcdjet.pt(), scaledFT0M, origin, eventWeight);
-    registry.fill(HIST("h3_jet_eta_mult_flavour"), mcdjet.eta(), scaledFT0M, origin, eventWeight);
-    registry.fill(HIST("h3_jet_phi_mult_flavour"), mcdjet.phi(), scaledFT0M, origin, eventWeight);
-    if (fillGeneralSVQA) {
-      registry.fill(HIST("h3_3prong_nprongs_mult_flavour"), mcdjet.template secondaryVertices_as<V>().size(), scaledFT0M, origin, eventWeight);
-      for (const auto& prong : mcdjet.template secondaryVertices_as<V>()) {
-        registry.fill(HIST("hn_jet_3prong_Sxy_mult_flavour"), mcdjet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), scaledFT0M, origin, eventWeight);
-        if (fillSVxyz) {
-          registry.fill(HIST("hn_jet_3prong_Sxyz_mult_flavour"), mcdjet.pt(), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLength(), scaledFT0M, origin, eventWeight);
-        }
-      }
-    }
-    bool checkSv = false;
-    auto bjetCand = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, prongCuts->at(0), prongCuts->at(1), prongCuts->at(2), prongCuts->at(4), prongCuts->at(5), false, &checkSv);
-    if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
-      auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
-      auto massSV = bjetCand.m();
-      registry.fill(HIST("hn_jet_3prong_Sxy_N1_mult_flavour"), mcdjet.pt(), maxSxy, massSV, scaledFT0M, origin, eventWeight);
-      if (mcdjet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("hn_taggedjet_3prong_Sxy_N1_mult_flavour"), mcdjet.pt(), maxSxy, massSV, scaledFT0M, origin, eventWeight);
-      }
-    }
-    if (fillSVxyz) {
-      auto bjetCandXYZ = jettaggingutilities::jetFromProngMaxDecayLength<V>(mcdjet, prongCuts->at(0), prongCuts->at(1), prongCuts->at(3), prongCuts->at(4), prongCuts->at(5), true, &checkSv);
-      if (checkSv && jettaggingutilities::svAcceptance(bjetCandXYZ, svDispersionMax)) {
-        auto maxSxyz = bjetCandXYZ.decayLength() / bjetCandXYZ.errorDecayLength();
-        auto massSV = bjetCandXYZ.m();
-        registry.fill(HIST("hn_jet_3prong_Sxyz_N1_mult_flavour"), mcdjet.pt(), maxSxyz, massSV, scaledFT0M, origin, eventWeight);
-        if (mcdjet.isTagged(BJetTaggingMethod::SV3D)) {
-          registry.fill(HIST("hn_taggedjet_3prong_Sxyz_N1_mult_flavour"), mcdjet.pt(), maxSxyz, massSV, scaledFT0M, origin, eventWeight);
         }
       }
     }
@@ -1749,27 +1600,6 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngData, "Fill 3prong imformation for data jets", false);
 
-  void processSV3ProngDataMult(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, aod::DataSecondaryVertex3Prongs const& prongs)
-  {
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
-      return;
-    }
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
-    registry.fill(HIST("h_event_mult"), scaledFT0M);
-    for (auto const& jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
-        continue;
-      }
-      fillHistogramSV3ProngDataMult(collision, jet, prongs);
-    }
-  }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngDataMult, "Fill 3prong imformation for data jets", false);
-
   void processSV2ProngMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex2ProngIndices> const& mcdjets, aod::MCDSecondaryVertex2Prongs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
@@ -1941,104 +1771,6 @@ struct JetTaggerHFQA {
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCPMCDMatchedWeighted, "Fill 3prong imformation for mcd jets", false);
-
-  void processSV3ProngMCDMult(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
-  {
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
-      return;
-    }
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
-    registry.fill(HIST("h_event_mult"), scaledFT0M);
-    for (auto const& mcdjet : mcdjets) {
-      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
-        continue;
-      }
-      fillHistogramSV3ProngMCDMult(collision, mcdjet, prongs);
-    }
-  }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCDMult, "Fill 3prong imformation for mcd jets with multiplicity", false);
-
-  void processSV3ProngMCDMultWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
-  {
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
-      return;
-    }
-    if (collision.isOutlier()) {
-      return;
-    }
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
-    registry.fill(HIST("h_event_mult"), scaledFT0M);
-    for (auto const& mcdjet : mcdjets) {
-      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
-        continue;
-      }
-      fillHistogramSV3ProngMCDMult(collision, mcdjet, prongs, collision.weight());
-    }
-  }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCDMultWeighted, "Fill 3prong imformation for mcd jets with multiplicity weighted", false);
-
-  void processSV3ProngMCPMCDMatchedMult(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, aod::MCDSecondaryVertex3Prongs const& prongs)
-  {
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
-      return;
-    }
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
-    registry.fill(HIST("h_event_mult"), scaledFT0M);
-    for (auto const& mcdjet : mcdjets) {
-      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
-        continue;
-      }
-      if (!mcdjet.has_matchedJetGeo()) {
-        continue;
-      }
-      if (!doprocessSV3ProngMCDMult)
-        fillHistogramSV3ProngMCDMult(collision, mcdjet, prongs);
-    }
-  }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCPMCDMatchedMult, "Fill 3prong imformation for mcd jets matched with multiplicity", false);
-
-  void processSV3ProngMCPMCDMatchedMultWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionPIs, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, aod::MCDSecondaryVertex3Prongs const& prongs)
-  {
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
-      return;
-    }
-    if (collision.isOutlier()) {
-      return;
-    }
-    float multFT0A = collision.multFT0A();
-    float multFT0C = collision.multFT0C();
-    float scaledFT0M = getScaledFT0M(multFT0A, multFT0C);
-    registry.fill(HIST("h_event_mult"), scaledFT0M);
-    for (auto const& mcdjet : mcdjets) {
-      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
-        continue;
-      }
-      if (!mcdjet.has_matchedJetGeo()) {
-        continue;
-      }
-      if (!doprocessSV3ProngMCDMultWeighted)
-        fillHistogramSV3ProngMCDMult(collision, mcdjet, prongs, collision.weight());
-    }
-  }
-  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCPMCDMatchedMultWeighted, "Fill 3prong imformation for mcd jets matched with multiplicity weightd", false);
 };
 
 using JetTaggerQAChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>;

@@ -661,10 +661,6 @@ class VarManager : public TObject
     kMCCosChi_rec,
     kMCWeight_rec,
     kMCdeltaeta_rec,
-    kMCCosChi_randomPhi_trans_rec,
-    kMCWeight_randomPhi_trans_rec,
-    kMCCosChi_randomPhi_trans_gen,
-    kMCWeight_randomPhi_trans_gen,
 
     // MC mother particle variables
     kMCMotherPdgCode,
@@ -705,6 +701,7 @@ class VarManager : public TObject
     kMCVertexingTauxy,
     kVertexingLzProjected,
     kVertexingLxyProjected,
+    kVertexingLxyProjectedRecalculatePV,
     kVertexingLxyzProjected,
     kMCVertexingLzProjected,
     kMCVertexingLxyProjected,
@@ -712,6 +709,7 @@ class VarManager : public TObject
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
     kVertexingTauxyProjectedPoleJPsiMass,
+    kVertexingTauxyProjectedPoleJPsiMassRecalculatePV,
     kVertexingTauxyProjectedNs,
     kVertexingTauxyzProjected,
     kMCVertexingTauzProjected,
@@ -1240,7 +1238,8 @@ class VarManager : public TObject
     }
     return deltaPsi;
   }
-
+  template <typename T, typename T1>
+  static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
   template <typename T, typename C>
   static o2::track::TrackParCovFwd FwdToTrackPar(const T& track, const C& cov);
   template <typename T, typename C>
@@ -1280,7 +1279,7 @@ class VarManager : public TObject
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <int pairType, typename T, typename T1>
-  static void FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values = nullptr);
+  static void FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3);
   template <int pairType, typename T1, typename T2, typename T, typename T3>
   static void FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
@@ -1314,7 +1313,7 @@ class VarManager : public TObject
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename T1, typename T2>
-  static void FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values = nullptr, bool applyFitMass = false, float sidebandMass = 0.0f);
+  static void FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f);
   template <typename T1, typename T2>
   static void FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values = nullptr);
   template <typename T>
@@ -1562,6 +1561,43 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
   return kfpVertex;
 }
 
+template <typename T, typename T1>
+o2::dataformats::VertexBase VarManager::RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision)
+{
+  KFParticle trk0KF;
+  KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
+  trk0KF = KFParticle(kfpTrack0, -11 * track0.sign());
+  KFParticle trk1KF;
+  KFPTrack kfpTrack1 = createKFPTrackFromTrack(track1);
+  trk1KF = KFParticle(kfpTrack1, -11 * track1.sign());
+
+  KFParticle kVtx;
+  kVtx.Initialize();
+  kVtx.Parameter(0) = collision.posX();
+  kVtx.Parameter(1) = collision.posY();
+  kVtx.Parameter(2) = collision.posZ();
+  kVtx.Covariance(0) = collision.covXX();
+  kVtx.Covariance(1) = collision.covXY();
+  kVtx.Covariance(2) = collision.covYY();
+  kVtx.Covariance(3) = collision.covXZ();
+  kVtx.Covariance(4) = collision.covYZ();
+  kVtx.Covariance(5) = collision.covZZ();
+  kVtx.Chi2() = collision.chi2(); // FIX THIS! to be added in AliReducedEventInfo
+  kVtx.NDF() = 2 * collision.multNTracksPV() - 3;
+  // KFVertex kfpVertex(kVtx); // kfpVertex.Initialize();
+
+  if ((track0.flags() & o2::aod::track::PVContributor) > 0) {
+    trk0KF.SubtractFromVertex(kVtx); /*printf("track1 -> subtracting \n");*/
+  }
+  if ((track1.flags() & o2::aod::track::PVContributor) > 0) {
+    trk1KF.SubtractFromVertex(kVtx); /*printf("track2 -> subtracting \n");*/
+  }
+
+  o2::math_utils::Point3D<float> vtxXYZ(kVtx.Parameter(0), kVtx.Parameter(1), kVtx.Parameter(2));
+  std::array<float, 6> vtxCov{kVtx.Covariance(0), kVtx.Covariance(1), kVtx.Covariance(2), kVtx.Covariance(3), kVtx.Covariance(4), kVtx.Covariance(5)};
+  o2::dataformats::VertexBase primaryVertexRec = {std::move(vtxXYZ), std::move(vtxCov)};
+  return primaryVertexRec;
+}
 template <typename T, typename C>
 o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
@@ -3022,7 +3058,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
 }
 
 template <int pairType, typename T, typename T1>
-void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values)
+void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values, float Translow, float Transhigh)
 {
   // energy correlators
   float MassHadron;
@@ -3062,7 +3098,8 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   float randomPhi_toward = -o2::constants::math::PIHalf;
   float randomPhi_away = -o2::constants::math::PIHalf;
 
-  if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+  float deltaphitrans = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PI);
+  if ((deltaphitrans > -Transhigh * TMath::Pi() && deltaphitrans < -Translow * TMath::Pi()) || (deltaphitrans > Translow * TMath::Pi() && deltaphitrans < Transhigh * TMath::Pi())) {
     randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
@@ -3088,7 +3125,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
 template <int pairType, typename T1, typename T2, typename T, typename T3>
 void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values)
 {
-  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec] || fgUsedVars[kMCCosChi_randomPhi_trans_rec] || fgUsedVars[kMCWeight_randomPhi_trans_rec] || fgUsedVars[kMCCosChi_randomPhi_trans_gen] || fgUsedVars[kMCWeight_randomPhi_trans_gen]) {
+  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
     // energy correlators
     float MassHadron;
     if constexpr (pairType == kJpsiHadronMass) {
@@ -3111,31 +3148,6 @@ void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& 
     float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
     values[kMCWeight_rec] = E_boost_rec / v1_rec.M();
     values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
-
-    values[kMCCosChi_randomPhi_trans_rec] = -999.9f;
-    values[kMCCosChi_randomPhi_trans_gen] = -999.9f;
-
-    float randomPhi_trans_rec = -o2::constants::math::PIHalf;
-    float randomPhi_trans_gen = -o2::constants::math::PIHalf;
-
-    float deltaphi_rec = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
-    float deltaphi_gen = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PIHalf);
-
-    if ((deltaphi_rec > -0.5 * TMath::Pi() && deltaphi_rec < -1. / 3 * TMath::Pi()) || (deltaphi_rec > 4. / 3 * TMath::Pi() && deltaphi_rec < 1.5 * TMath::Pi()) || (deltaphi_rec > 1. / 3 * TMath::Pi() && deltaphi_rec < 2. / 3 * TMath::Pi())) {
-      randomPhi_trans_rec = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-
-      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_rec(v2_rec.pt(), v2_rec.eta(), randomPhi_trans_rec, o2::constants::physics::MassPionCharged);
-      values[kMCCosChi_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_randomPhi_trans_rec);
-      values[kMCWeight_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_randomPhi_trans_rec) / v1_rec.M();
-    }
-
-    if ((deltaphi_gen > -0.5 * TMath::Pi() && deltaphi_gen < -1. / 3 * TMath::Pi()) || (deltaphi_gen > 4. / 3 * TMath::Pi() && deltaphi_gen < 1.5 * TMath::Pi()) || (deltaphi_gen > 1. / 3 * TMath::Pi() && deltaphi_gen < 2. / 3 * TMath::Pi())) {
-      randomPhi_trans_gen = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
-
-      ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_gen(v2_gen.pt(), v2_gen.eta(), randomPhi_trans_gen, MassHadron);
-      values[kMCCosChi_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_randomPhi_trans_gen);
-      values[kMCWeight_randomPhi_trans_gen] = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_randomPhi_trans_gen) / v1_gen.M();
-    }
   }
 }
 
@@ -4167,6 +4179,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     }
 
     Vec3D secondaryVertex;
+    o2::dataformats::VertexBase primaryVertexNew;
 
     if constexpr (eventHasVtxCov) {
 
@@ -4189,6 +4202,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         v1 = {trackParVar0.getPt(), trackParVar0.getEta(), trackParVar0.getPhi(), m1};
         v2 = {trackParVar1.getPt(), trackParVar1.getEta(), trackParVar1.getPhi(), m2};
         v12 = v1 + v2;
+        primaryVertexNew = RecalculatePrimaryVertex(t1, t2, collision);
 
       } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
         // Get pca candidate from forward DCA fitter
@@ -4246,9 +4260,13 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()));
       values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py()) + ((secondaryVertex[2] - collision.posZ()) * v12.Pz());
       values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
+      values[kVertexingLxyProjectedRecalculatePV] = (secondaryVertex[0] - primaryVertexNew.getX()) * v12.Px() + (secondaryVertex[1] - primaryVertexNew.getY()) * v12.Py();
+      values[kVertexingLxyProjectedRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] / v12.Pt();
+
       values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.Pt());
       values[kVertexingTauxyProjectedPoleJPsiMass] = values[kVertexingLxyProjected] * o2::constants::physics::MassJPsi / (v12.Pt());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
+      values[kVertexingTauxyProjectedPoleJPsiMassRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] * o2::constants::physics::MassJPsi / (v12.Pt());
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / TMath::Abs(v12.Pz());
       values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
     }
@@ -5495,7 +5513,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
 }
 
 template <typename T1, typename T2>
-void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values, bool applyFitMass, float sidebandMass)
+void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass)
 {
   float dileptonmass = o2::constants::physics::MassJPsi;
   if (applyFitMass) {
@@ -5518,7 +5536,7 @@ void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, floa
     values[kEtaDau] = v2.eta();
     values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
 
-    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
+    float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PI);
     values[kCosChi_randomPhi_trans] = -999.9f;
     values[kCosChi_randomPhi_toward] = -999.9f;
     values[kCosChi_randomPhi_away] = -999.9f;
@@ -5531,7 +5549,7 @@ void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, floa
     float randomPhi_toward = -o2::constants::math::PIHalf;
     float randomPhi_away = -o2::constants::math::PIHalf;
 
-    if ((deltaphi > -0.5 * TMath::Pi() && deltaphi < -1. / 3 * TMath::Pi()) || (deltaphi > 4. / 3 * TMath::Pi() && deltaphi < 1.5 * TMath::Pi()) || (deltaphi > 1. / 3 * TMath::Pi() && deltaphi < 2. / 3 * TMath::Pi())) {
+    if ((deltaphi > -Transhigh * TMath::Pi() && deltaphi < -Translow * TMath::Pi()) || (deltaphi > Translow * TMath::Pi() && deltaphi < Transhigh * TMath::Pi())) {
       randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);

@@ -326,16 +326,16 @@ class V0PhotonCut : public TNamed
       std::vector<float> mlInputFeatures = mEmMlResponse->getInputFeatures(v0photoncandidate, pos, ele);
       if (mUse2DBinning) {
         if (mCentralityTypeMl == "CentFT0C") {
-          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0C(), mOutputML);
+          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0C(), mOutputML);
         } else if (mCentralityTypeMl == "CentFT0A") {
-          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0A(), mOutputML);
+          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0A(), mOutputML);
         } else if (mCentralityTypeMl == "CentFT0M") {
-          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), v0photoncandidate.GetCentFT0M(), mOutputML);
+          mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0M(), mOutputML);
         } else {
           LOG(fatal) << "Unsupported centTypePCMMl: " << mCentralityTypeMl << " , please choose from CentFT0C, CentFT0A, CentFT0M.";
         }
       } else {
-        mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.GetPt(), mOutputML);
+        mIsSelectedMl = mEmMlResponse->isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), mOutputML);
       }
       if (!mIsSelectedMl) {
         return false;
@@ -696,7 +696,7 @@ class V0PhotonCut : public TNamed
   float mCentFT0M{0.f};
   float mD_Bz{0.f};
   std::string mCcdbUrl{"http://alice-ccdb.cern.ch"};
-  std::string mCentralityTypeMl{"FT0C"};
+  std::string mCentralityTypeMl{"CentFT0C"};
   std::vector<int> mCutDirMl{std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}};
   std::vector<std::string> mModelPathsCCDB{std::vector<std::string>{"path_ccdb/BDT_PCM/"}};
   std::vector<std::string> mOnnxFileNames{std::vector<std::string>{"ModelHandler_onnx_PCM.onnx"}};

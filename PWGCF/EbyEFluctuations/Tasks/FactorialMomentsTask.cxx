@@ -532,8 +532,6 @@ struct FactorialMomentsTask {
     for (int iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
-      } else {
-        return;
       }
     }
 
@@ -589,8 +587,6 @@ struct FactorialMomentsTask {
     for (int iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
-      } else {
-        return;
       }
     }
     // Calculate the normalized factorial moments

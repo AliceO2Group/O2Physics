@@ -194,6 +194,9 @@ struct JetSpectraEseTask {
   static constexpr EventPlaneFiller PsiFillerEP = {true, true};
   static constexpr EventPlaneFiller PsiFillerEse = {true, false};
   static constexpr EventPlaneFiller PsiFillerFalse = {false, false};
+  TRandom3* fRndm = new TRandom3(0);
+  static constexpr int NumSubSmpl = 10;
+  std::array<std::shared_ptr<THnSparse>, NumSubSmpl> hSameSub;
 
   void init(o2::framework::InitContext&)
   {
@@ -206,6 +209,7 @@ struct JetSpectraEseTask {
       LOGF(info, "JetSpectraEseTask::init() - ESE Data Process");
       registry.add("eventQA/hEventCounter", "event status;event status;entries", {HistType::kTH1F, {{20, 0.0, 20.0}}});
       registry.add("eventQA/hCentralityAnalyzed", ";Centrality;entries", {HistType::kTH1F, {{centAxis}}});
+      registry.add("eventQA/hJetR", ";jet R;entries", {HistType::kTH1F, {{10, 0.0, 1.0}}});
       registry.add("trackQA/hRhoTrackCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
       registry.add("hJetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
       registry.add("hJetPt_bkgsub", "jet pT background sub;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
@@ -245,7 +249,23 @@ struct JetSpectraEseTask {
       registry.add("eventQA/hCentPhi", "centrality vs #rho(#varphi); centrality;  #rho(#varphi) ", {HistType::kTH2F, {{centAxis}, {210, -10.0, 200.0}}});
       registry.add("eventQA/hdPhiRhoPhi", "#varphi vs #rho(#varphi); #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, -o2::constants::math::PI, o2::constants::math::PI}, {210, -10.0, 200.0}}});
 
-      registry.add("thn_jethad_corr_same", "jet-had; centrality; #it{p}_{T,lead jet} - #rho_{local} * area_{jet} (GeV/#it{c}); #it{p}_{T,sublead jet} - #rho_{local} * area_{jet} (GeV/#it{c}); #it{p}_{T,track} (GeV/#it{c}); #Delta#eta; #Delta#phi; #Delta#phi to EP; #it{q}_{2}", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {jetPtAxis}, {trackPtAxis}, {detaAxis}, {dphiAxis}, {dPhiAxis}, {eseAxis}}});
+      registry.add("h3CentLeadjetdPhi", ";Centrality;#phi_{lead jet} - #Psi_{2};#it{q}_{2}", {HistType::kTH3F, {{centAxis}, {dphiAxis}, {eseAxis}}});
+      registry.add("h3CenttrPhiPsi2", ";Centrality;#phi_{track} - #Psi_{2};#it{q}_{2}", {HistType::kTH3F, {{centAxis}, {dphiAxis}, {eseAxis}}});
+
+      std::vector<o2::framework::AxisSpec> axes = {
+        {centAxis},
+        {jetPtAxis},
+        {jetPtAxis},
+        {trackPtAxis},
+        {detaAxis},
+        {dphiAxis},
+        {dPhiAxis},
+        {eseAxis}};
+      registry.add("thn_jethad_corr_same", "jet-had; centrality; #it{p}_{T,lead jet} - #rho_{local} * area_{jet} (GeV/#it{c}); #it{p}_{T,sublead jet} - #rho_{local} * area_{jet} (GeV/#it{c}); #it{p}_{T,track} (GeV/#it{c}); #Delta#eta; #Delta#phi; #Delta#phi to EP; #it{q}_{2}", {HistType::kTHnSparseF, axes});
+      for (int i = 0; i < NumSubSmpl; ++i) {
+        std::string n = fmt::format("subsamples/thn_jethad_corr_same_subsample{}", i);
+        hSameSub[i] = registry.add<THnSparse>(n, "same;...", o2::framework::HistType::kTHnSparseF, axes);
+      }
       registry.add("hNtrig", "", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {dPhiAxis}, {eseAxis}}});
 
       registry.add("trackQA/before/hTrackPt", "", {HistType::kTH2F, {{centAxis}, {trackPtAxis}}});
@@ -411,6 +431,8 @@ struct JetSpectraEseTask {
     registry.fill(HIST("eventQA/hRho"), centrality, collision.rho());
     registry.fill(HIST("eventQA/hCentralityAnalyzed"), centrality);
 
+    int lRndInd = fRndm->Integer(NumSubSmpl);
+
     using JetIter = typename TJets::iterator;
     JetIter leadingJet;
     JetIter subleadingJet;
@@ -430,6 +452,7 @@ struct JetSpectraEseTask {
       registry.fill(HIST("hJetPhi"), jet.phi());
       registry.fill(HIST("hJetArea"), jet.area());
       registry.fill(HIST("hJetAreaRho"), jet.area() * collision.rho());
+      registry.fill(HIST("eventQA/hJetR"), jet.r() / 100.0f);
 
       float dPhi{RecoDecay::constrainAngle(jet.phi() - psi.psi2, -o2::constants::math::PI)};
       registry.fill(HIST("hCentJetPtdPhiq2"), centrality, vCorr, dPhi, qPerc[0]);
@@ -468,7 +491,9 @@ struct JetSpectraEseTask {
     if ((fRequireDijetEvent) && (dijetEv.sub < subleadJetPtMin))
       return;
     registry.fill(HIST("eventQA/hEventCounter"), kSubLeadJetPtCut);
-    const auto leaddPhi = RecoDecay::constrainAngle(leadingJet.phi() - psi.psi2, -o2::constants::math::PI);
+    const auto& leadJet = *leadingJet;
+    const auto leaddPhi = RecoDecay::constrainAngle(leadJet.phi() - psi.psi2, -o2::constants::math::PI);
+    registry.fill(HIST("h3CentLeadjetdPhi"), centrality, leaddPhi, qPerc[0]);
 
     registry.fill(HIST("hNtrig"), centrality, dijetEv.lead, leaddPhi, qPerc[0]);
     for (auto const& track : tracks) {
@@ -480,9 +505,11 @@ struct JetSpectraEseTask {
       registry.fill(HIST("trackQA/after/hTrackPt"), centrality, track.pt());
       registry.fill(HIST("trackQA/after/hTrackEta"), centrality, track.eta());
       registry.fill(HIST("trackQA/after/hTrackPhi"), centrality, track.phi());
-      auto deta = track.eta() - leadingJet.eta();
-      auto dphi = RecoDecay::constrainAngle(track.phi() - leadingJet.phi(), -o2::constants::math::PIHalf);
+      auto deta = track.eta() - leadJet.eta();
+      auto dphi = RecoDecay::constrainAngle(track.phi() - leadJet.phi(), -o2::constants::math::PIHalf);
+      registry.fill(HIST("h3CenttrPhiPsi2"), centrality, RecoDecay::constrainAngle(track.phi() - psi.psi2, -o2::constants::math::PI), qPerc[0]);
       registry.fill(HIST("thn_jethad_corr_same"), centrality, dijetEv.lead, dijetEv.sub, track.pt(), deta, dphi, leaddPhi, qPerc[0]);
+      hSameSub[lRndInd]->Fill(centrality, dijetEv.lead, dijetEv.sub, track.pt(), deta, dphi, leaddPhi, qPerc[0]);
     }
   }
 
@@ -574,14 +601,15 @@ struct JetSpectraEseTask {
       if ((fRequireDijetEvent) && (dijetEv.sub < subleadJetPtMin))
         continue;
       registry.fill(HIST("eventQA/hEventCounterMixed"), kSubLeadJetPtCut);
-      const auto leaddPhi = RecoDecay::constrainAngle(leadingJet.phi() - psi.psi2, -o2::constants::math::PI);
+      const auto& leadJet = *leadingJet;
+      const auto leaddPhi = RecoDecay::constrainAngle(leadJet.phi() - psi.psi2, -o2::constants::math::PI);
 
       registry.fill(HIST("hNtrigMixed"), centrality, dijetEv.lead, leaddPhi, qPerc[0]);
       for (auto const& track : tracks2) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
-        auto deta = track.eta() - leadingJet.eta();
-        auto dphi = RecoDecay::constrainAngle(track.phi() - leadingJet.phi(), -o2::constants::math::PIHalf);
+        auto deta = track.eta() - leadJet.eta();
+        auto dphi = RecoDecay::constrainAngle(track.phi() - leadJet.phi(), -o2::constants::math::PIHalf);
         registry.fill(HIST("thn_jethad_corr_mixed"), centrality, dijetEv.lead, dijetEv.sub, track.pt(), deta, dphi, leaddPhi, qPerc[0]);
       }
     }
