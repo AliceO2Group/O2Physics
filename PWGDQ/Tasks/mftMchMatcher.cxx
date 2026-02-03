@@ -11,7 +11,7 @@
 //
 /// \file mftMchMatcher.cxx
 /// \brief MFT-MCH matching tool for data preparation
-
+//
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Common/CCDB/TriggerAliases.h"
@@ -410,7 +410,7 @@ struct mftMchMatcher {
     hMatchType->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(7, "decay (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(8, "fake (non leading)");
-}
+  }
 
   template <typename TMuons>
   void fillBestMuonMatches(TMuons const& muons)
