@@ -1,5 +1,5 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copdyright for details of the copyright holders.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
@@ -11,7 +11,7 @@
 //
 /// \file mftMchMatcher.cxx
 /// \brief MFT-MCH matching tool for data preparation
-//
+
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Common/CCDB/TriggerAliases.h"
@@ -399,7 +399,7 @@ struct mftMchMatcher {
       ccdbManager->get<TGeoManager>(geoPath);
     }
 
-    //int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
+    // int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
     AxisSpec matchTypeAxis = {static_cast<int>(kMatchTypeUndefined), 0, static_cast<double>(kMatchTypeUndefined), ""};
     auto hMatchType = std::get<std::shared_ptr<TH1>>(registry.add("matchType", "Match type", {HistType::kTH1F, {matchTypeAxis}}));
     hMatchType->GetXaxis()->SetBinLabel(1, "true (leading)");
