@@ -16,8 +16,8 @@
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/collisionCuts.h"
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
@@ -208,23 +208,23 @@ struct ResonanceInitializer {
   } SecondaryCuts;
 
   struct : ConfigurableGroup {
-  Configurable<bool> cfgGenMult05{"cfgGenMult05",true, "GenEvent: multiplicity in |eta| < 0.5"};
-  Configurable<bool> cfgGenMult10{"cfgGenMult10",false, "GenEvent: multiplicity in |eta| < 1.0"};
-  Configurable<bool> cfgGenMultPercentile{"cfgGenMultPercentile",false, "Inherit Centrality(Multiplicity) percentile from MC collision only using LF-mc-centrality task"};
+    Configurable<bool> cfgGenMult05{"cfgGenMult05", true, "GenEvent: multiplicity in |eta| < 0.5"};
+    Configurable<bool> cfgGenMult10{"cfgGenMult10", false, "GenEvent: multiplicity in |eta| < 1.0"};
+    Configurable<bool> cfgGenMultPercentile{"cfgGenMultPercentile", false, "Inherit Centrality(Multiplicity) percentile from MC collision only using LF-mc-centrality task"};
 
-  Configurable<bool> isZvtxcutGen{"isZvtxcutGen", true, "z-vertex cut for the GenCollision"};
-  Configurable<float> cutzvertexGen{"cutzvertexGen", 10.0f, "z-vertex cut for the GenCollision"};
-  Configurable<bool> checkIsTrueINELgt0{"checkIsTrueINELgt0", true, "Check true INEL>0 for the Gen. Collision"};
+    Configurable<bool> isZvtxcutGen{"isZvtxcutGen", true, "z-vertex cut for the GenCollision"};
+    Configurable<float> cutzvertexGen{"cutzvertexGen", 10.0f, "z-vertex cut for the GenCollision"};
+    Configurable<bool> checkIsTrueINELgt0{"checkIsTrueINELgt0", true, "Check true INEL>0 for the Gen. Collision"};
 
-  ConfigurableAxis ptAxisGen{"ptAxisGen", {400, 0.0f, 20.0f}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0.0f, +5000.0f}, "Number of charged particles"};
-  ConfigurableAxis impactParameterAxis{"impactParameterAxis", {500, 0, 50}, "IP (fm)"};
+    ConfigurableAxis ptAxisGen{"ptAxisGen", {400, 0.0f, 20.0f}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0.0f, +5000.0f}, "Number of charged particles"};
+    ConfigurableAxis impactParameterAxis{"impactParameterAxis", {500, 0, 50}, "IP (fm)"};
 
-  Configurable<bool> isDaughterCheck{"isDaughterCheck", 1, "Check if the mother has the correct daughters when it is considered"};
-  Configurable<float> cfgRapidityCutGen{"cfgRapidityCutGen", 0.5, "Rapidity cut for the truth particle"};
-  Configurable<int> pdgTruthMother{"pdgTruthMother", 3324, "pdgcode for the truth mother e.g. Xi(1530) (3324)"};
-  Configurable<int> pdgTruthDaughter1{"pdgTruthDaughter1", 3312, "pdgcode for the daughter 1, e.g. Xi- 3312"};
-  Configurable<int> pdgTruthDaughter2{"pdgTruthDaughter2", 211, "pdgcode for the daughter 2, e.g. pi+ 211"};
+    Configurable<bool> isDaughterCheck{"isDaughterCheck", 1, "Check if the mother has the correct daughters when it is considered"};
+    Configurable<float> cfgRapidityCutGen{"cfgRapidityCutGen", 0.5, "Rapidity cut for the truth particle"};
+    Configurable<int> pdgTruthMother{"pdgTruthMother", 3324, "pdgcode for the truth mother e.g. Xi(1530) (3324)"};
+    Configurable<int> pdgTruthDaughter1{"pdgTruthDaughter1", 3312, "pdgcode for the daughter 1, e.g. Xi- 3312"};
+    Configurable<int> pdgTruthDaughter2{"pdgTruthDaughter2", 211, "pdgcode for the daughter 2, e.g. pi+ 211"};
   } GenCuts;
   Configurable<bool> checkIsRecINELgt0{"checkIsRecINELgt0", true, "Check rec INEL>0 for the Rec. Collision"};
 
@@ -268,7 +268,7 @@ struct ResonanceInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
   using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
-  using ResoEvents001 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::MultsExtra,aod::PVMults>;
+  using ResoEvents001 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::MultsExtra, aod::PVMults>;
   using ResoRun2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoRun2EventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
@@ -994,8 +994,8 @@ struct ResonanceInitializer {
     // ------
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
-    std::vector<float> mothersPts = {-1.0f,-1.0f};
-    std::vector<float> mothersRaps = {-1.0f,-1.0f};
+    std::vector<float> mothersPts = {-1.0f, -1.0f};
+    std::vector<float> mothersRaps = {-1.0f, -1.0f};
     std::vector<int> daughters = {-1, -1};
     std::vector<int> daughterPDGs = {-1, -1};
     if (v0.has_mcParticle()) {
@@ -1107,13 +1107,13 @@ struct ResonanceInitializer {
     std::vector<int> motherPDGs = {-1, -1};
     std::vector<int> daughters = {-1, -1};
     std::vector<int> daughterPDGs = {-1, -1};
-    std::vector<float> mothersPts = {-1.0f,-1.0f};
-    std::vector<float> mothersRaps = {-1.0f,-1.0f};
+    std::vector<float> mothersPts = {-1.0f, -1.0f};
+    std::vector<float> mothersRaps = {-1.0f, -1.0f};
     if (casc.has_mcParticle()) {
       auto cascmc = casc.mcParticle();
       if (cascmc.has_mothers()) {
         mothers = getMothersIndeces(cascmc);
-        mothersPts = getMothersPt(cascmc); 
+        mothersPts = getMothersPt(cascmc);
         mothersRaps = getMothersRap(cascmc);
         motherPDGs = getMothersPDGCodes(cascmc);
       }
@@ -1186,7 +1186,7 @@ struct ResonanceInitializer {
     }
   }
 
-    template <typename TotalMCParts, typename MCCentGen, typename MCMultGen, typename MCIPGen,  typename evtType>
+  template <typename TotalMCParts, typename MCCentGen, typename MCMultGen, typename MCIPGen, typename evtType>
   void fillMCGenParticles(TotalMCParts const& mcParticles, MCCentGen const& Cent, MCMultGen const& MCMult, MCIPGen const& IP, evtType const& eventType)
   {
     for (auto const& mcPart : mcParticles) {
@@ -1209,7 +1209,7 @@ struct ResonanceInitializer {
           continue;
       }
       if (mcPart.pdgCode() > 0) // Consider INELt0 or INEL
-        qaRegistry.fill(HIST("EventGen/h5ResonanceTruth"), eventType, mcPart.pt(), Cent, MCMult,IP);
+        qaRegistry.fill(HIST("EventGen/h5ResonanceTruth"), eventType, mcPart.pt(), Cent, MCMult, IP);
       else
         qaRegistry.fill(HIST("EventGen/h5ResonanceTruthAnti"), eventType, mcPart.pt(), Cent, MCMult, IP);
 
@@ -1225,7 +1225,7 @@ struct ResonanceInitializer {
       centrality = centEst(mccol);
     else
       centrality = mccol.centRun2V0M();
-    
+
     // bool inVtx10 = (std::abs(mccol.mcCollision().posZ()) > 10.) ? false : true; -> Gen. level informations will be processed in processMCGen
     bool inVtx10 = (std::abs(mccol.posZ()) > 10.) ? false : true;
     bool isTrueINELgt0 = isTrueINEL0(mccol, mcparts);
@@ -1346,23 +1346,22 @@ struct ResonanceInitializer {
       qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("Phi", "#phi distribution", kTH1F, {{65, -0.1, 6.4}});
     }
-    
-    
+
     TString hNEventsMCLabels[4] = {"All", "z vrtx", "INEL", "INEL>0"};
-   if (doprocessMCgen){
+    if (doprocessMCgen) {
       AxisSpec centAxisGen = {binsCent, "Centrality (%)"};
       qaRegistry.add("EventGen/hNEventsMC", "EventGen/hNEventsMC", kTH1D, {{4, 0.0f, 4.0f}});
       for (int n = 1; n <= qaRegistry.get<TH1>(HIST("EventGen/hNEventsMC"))->GetNbinsX(); n++) {
-          qaRegistry.get<TH1>(HIST("EventGen/hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
+        qaRegistry.get<TH1>(HIST("EventGen/hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
-      qaRegistry.add("EventGen/h5ResonanceTruth", "EventGen/h5ResonanceTruth", kTHnSparseD, {{2, 0.0f, 2.0f}, GenCuts.ptAxisGen,centAxisGen,GenCuts.multNTracksAxis, GenCuts.impactParameterAxis});
+      qaRegistry.add("EventGen/h5ResonanceTruth", "EventGen/h5ResonanceTruth", kTHnSparseD, {{2, 0.0f, 2.0f}, GenCuts.ptAxisGen, centAxisGen, GenCuts.multNTracksAxis, GenCuts.impactParameterAxis});
       qaRegistry.add("EventGen/h5ResonanceTruthAnti", "EventGen/h5ResonanceTruthAnti", kTHnSparseD, {{2, 0.0f, 2.0f}, GenCuts.ptAxisGen, centAxisGen, GenCuts.multNTracksAxis, GenCuts.impactParameterAxis});
       qaRegistry.add("EventGen/hZCollisionGen", "EventGen/hZCollisionGen", kTH1D, {{100, -20.0f, 20.0f}});
 
       qaRegistry.add("EventGen/h4MultCent_genMC", "EventGen/h4MultCent_genMC", kTHnSparseD, {{2, 0.0f, 2.0f}, centAxisGen, GenCuts.multNTracksAxis, GenCuts.impactParameterAxis});
       qaRegistry.add("EventGen/h4MultCent_recMC", "EventGen/h4MultCent_recMC", kTHnSparseD, {{2, 0.0f, 2.0f}, centAxisGen, GenCuts.multNTracksAxis, GenCuts.impactParameterAxis});
       qaRegistry.add("EventGen/h2CentralityVsMultMC", "EventGen/h2CentralityVsMultMC", kTH2D, {centAxisGen, GenCuts.multNTracksAxis});
-   }
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
@@ -1427,7 +1426,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1453,7 +1452,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1480,7 +1479,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1507,7 +1506,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1533,7 +1532,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1563,10 +1562,10 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
     bool isRecINELgt0 = 0;
-    if(checkIsRecINELgt0)
+    if (checkIsRecINELgt0)
       isRecINELgt0 = collision.isInelGt0();
 
-    resoCollisions(collision.multNTracksPV(),collision.multNTracksPVeta1(),collision.multNTracksPVetaHalf(),collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, isRecINELgt0);
+    resoCollisions(collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, isRecINELgt0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1593,7 +1592,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1620,7 +1619,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1652,7 +1651,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1679,7 +1678,7 @@ struct ResonanceInitializer {
     // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1709,7 +1708,7 @@ struct ResonanceInitializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1738,7 +1737,7 @@ struct ResonanceInitializer {
     // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1771,31 +1770,33 @@ struct ResonanceInitializer {
     if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
-    
+
     float Cent = 100.5f;
 
     const auto mcId = collision.mcCollisionId();
     auto mcCollision = mcCollisions.iteratorAt(mcId);
     float impactpar = mcCollision.impactParameter();
     float mult = -1.0f;
-    if(GenCuts.cfgGenMultPercentile)
+    if (GenCuts.cfgGenMultPercentile)
       Cent = mcCollision.centFT0M();
     else
       Cent = centEst(collision);
-    
+
     bool isRecINELgt0 = 0;
-    if(checkIsRecINELgt0)
+    if (checkIsRecINELgt0)
       isRecINELgt0 = collision.isInelGt0();
-    
-    resoCollisions(collision.multNTracksPV(),collision.multNTracksPVeta1(),collision.multNTracksPVetaHalf(), collision.posX(), collision.posY(), collision.posZ(), Cent, dBz, isRecINELgt0);
+
+    resoCollisions(collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.posX(), collision.posY(), collision.posZ(), Cent, dBz, isRecINELgt0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
 
-    if(GenCuts.cfgGenMult05) mult = mcCollision.multMCNParticlesEta05();
-    else if (GenCuts.cfgGenMult10) mult = mcCollision.multMCNParticlesEta10();
+    if (GenCuts.cfgGenMult05)
+      mult = mcCollision.multMCNParticlesEta05();
+    else if (GenCuts.cfgGenMult10)
+      mult = mcCollision.multMCNParticlesEta10();
 
     fillMCCollision<false>(collision, mcParticles, impactpar, mult);
 
@@ -1812,16 +1813,16 @@ struct ResonanceInitializer {
     fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascMC, "Process for MC", false);
-  
-//  Following the discussions at the PAG meeting (https://indico.cern.ch/event/1583408/)
-//  we have introduced an auxiliary task that, when the resonanceInitializer.cxx is used,
-// Only consider N_rec / N_gen i.e. not consider level of N_gen at least once
+
+  //  Following the discussions at the PAG meeting (https://indico.cern.ch/event/1583408/)
+  //  we have introduced an auxiliary task that, when the resonanceInitializer.cxx is used,
+  // Only consider N_rec / N_gen i.e. not consider level of N_gen at least once
   void processMCgen(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras>::iterator const& mcCollision,
-                    aod::McParticles const& mcParticles,                
+                    aod::McParticles const& mcParticles,
                     const soa::SmallGroups<o2::soa::Join<ResoEvents001, aod::McCollisionLabels>>& collisions,
                     aod::BCsWithTimestamps const&)
   {
-     auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
 
     auto getCentGen = [&]() {
@@ -1866,19 +1867,19 @@ struct ResonanceInitializer {
       qaRegistry.fill(HIST("EventGen/hNEventsMC"), 3.5);
     }
 
-      bool atLeastOne = false;
-      int biggestNContribs = -1;
+    bool atLeastOne = false;
+    int biggestNContribs = -1;
 
     float centReco = 100.5f;
     for (const auto& collision : collisions) {
       if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
         continue;
-      if(!colCuts.isSelected(collision)) // Bug is appeared in colCuts-> double counting in event QA histo, will be fixed later
+      if (!colCuts.isSelected(collision)) // Bug is appeared in colCuts-> double counting in event QA histo, will be fixed later
         continue;
-        if (biggestNContribs < collision.multPVTotalContributors()) {
-          biggestNContribs = collision.multPVTotalContributors();
-          centReco = getCentReco(collision);
-        }
+      if (biggestNContribs < collision.multPVTotalContributors()) {
+        biggestNContribs = collision.multPVTotalContributors();
+        centReco = getCentReco(collision);
+      }
 
       atLeastOne = true;
     }
@@ -1889,16 +1890,14 @@ struct ResonanceInitializer {
     } else {
       fillMCGenParticles(mcParticles, centReco, mult, IP, evType);
       qaRegistry.fill(HIST("EventGen/h4MultCent_genMC"), evType, centReco, mult, IP);
-      qaRegistry.fill(HIST("EventGen/h2CentralityVsMultMC"),centReco, mult);
+      qaRegistry.fill(HIST("EventGen/h2CentralityVsMultMC"), centReco, mult);
     }
 
     if (atLeastOne) {
       qaRegistry.fill(HIST("EventGen/h4MultCent_recMC"), evType, centReco, mult, IP);
     }
-
   }
   PROCESS_SWITCH(ResonanceInitializer, processMCgen, "Process for MCGen", true);
-
 
   void processTrackV0CascMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                                 aod::McCollisions const&, ResoTracksMC const& tracks,
@@ -1909,7 +1908,7 @@ struct ResonanceInitializer {
     // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
