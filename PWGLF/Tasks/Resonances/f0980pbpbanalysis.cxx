@@ -99,14 +99,12 @@ struct F0980pbpbanalysis {
   // Track Selection Configurables
   Configurable<float> cfgTrackPtMin{"cfgTrackPtMin", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgTrackEtaMax{"cfgTrackEtaMax", 0.8, "Maximum pseudorapidiy for charged track"};
-  Configurable<float> cfgTrackDCArToPVcutMax{"cfgTrackDCArToPVcutMax", 0.5, "Maximum transverse DCA"};
-  Configurable<float> cfgTrackDCAzToPVcutMax{"cfgTrackDCAzToPVcutMax", 2.0, "Maximum longitudinal DCA"};
   Configurable<float> cfgTrackRapMin{"cfgTrackRapMin", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgTrackRapMax{"cfgTrackRapMax", 0.5, "Maximum rapidity for pair"};
 
-  Configurable<bool> cfgTrackIsPrimaryTrack{"cfgTrackIsPrimaryTrack", true, "Primary track selection"};
-  Configurable<bool> cfgTrackIsGlobalWoDCATrack{"cfgTrackIsGlobalWoDCATrack", true, "Global track selection without DCA"};
   Configurable<bool> cfgTrackIsPVContributor{"cfgTrackIsPVContributor", true, "PV contributor track selection"};
+  Configurable<bool> cfgTrackIsGlobalWoDCATrack{"cfgTrackIsGlobalWoDCATrack", true, "Global track selection without DCA"};
+  Configurable<bool> cfgTrackIsPrimaryTrack{"cfgTrackIsPrimaryTrack", true, "Primary track selection"};
 
   Configurable<double> cfgTrackNTPCCrossedRows{"cfgTrackNTPCCrossedRows", 70, "nCrossed TPC Rows"};
   Configurable<double> cfgTrackNFindableTPCClusters{"cfgTrackNFindableTPCClusters", 50, "nFindable TPC Clusters"};
@@ -114,6 +112,17 @@ struct F0980pbpbanalysis {
   Configurable<double> cfgTrackNTPCChi2{"cfgTrackNTPCChi2", 4.0, "nTPC Chi2 per Cluster"};
 
   Configurable<double> cfgTrackNITSChi2{"cfgTrackNITSChi2", 36.0, "nITS Chi2 per Cluster"};
+
+  Configurable<float> cfgTrackDCArToPVcutMax{"cfgTrackDCArToPVcutMax", 0.5, "Maximum transverse DCA"};
+  Configurable<float> cfgTrackDCAzToPVcutMax{"cfgTrackDCAzToPVcutMax", 2.0, "Maximum longitudinal DCA"};
+
+  Configurable<bool> cfgTrackDCArDepPTSel{"cfgTrackDCArDepPTSel", false, "Flag for pT dependent transverse DCA cut"}; // 7 - sigma cut
+  Configurable<float> cfgTrackDCArDepPTP0{"cfgTrackDCArDepPTP0", 0.004, "Coeff. of transverse DCA for p0"};
+  Configurable<float> cfgTrackDCArDepPTExp{"cfgTrackDCArDepPTExp", 0.013, "Coeff. of transverse DCA for power law term"};
+
+  Configurable<bool> cfgTrackDCAzDepPTSel{"cfgTrackDCAzDepPTSel", false, "Flag for pT dependent longitudinal DCA cut"}; // 7 - sigma cut
+  Configurable<float> cfgTrackDCAzDepPTP0{"cfgTrackDCAzDepPTP0", 0.004, "Coeff. of longitudinal DCA for p0"};
+  Configurable<float> cfgTrackDCAzDepPTExp{"cfgTrackDCAzDepPTExp", 0.013, "Coeff. of longitudinal DCA for power law term"};
 
   // PID Configurables
   Configurable<bool> cfgPIDUSETOF{"cfgPIDUSETOF", true, "TOF usage"};
@@ -294,6 +303,8 @@ struct F0980pbpbanalysis {
         if (!pass) {
           histos.fill(HIST("TrackQA/DCArToPv_BC"), obj.dcaXY());
           histos.fill(HIST("TrackQA/DCAzToPv_BC"), obj.dcaZ());
+          histos.fill(HIST("TrackQA/DCArVsPT_BC"), obj.pt(), obj.dcaXY());
+          histos.fill(HIST("TrackQA/DCAzVsPT_BC"), obj.pt(), obj.dcaZ());
           histos.fill(HIST("TrackQA/IsPrim_BC"), obj.isPrimaryTrack());
           histos.fill(HIST("TrackQA/IsGood_BC"), obj.isGlobalTrackWoDCA());
           histos.fill(HIST("TrackQA/IsPrimCont_BC"), obj.isPVContributor());
@@ -304,6 +315,8 @@ struct F0980pbpbanalysis {
         } else {
           histos.fill(HIST("TrackQA/DCArToPv_AC"), obj.dcaXY());
           histos.fill(HIST("TrackQA/DCAzToPv_AC"), obj.dcaZ());
+          histos.fill(HIST("TrackQA/DCArVsPT_AC"), obj.pt(), obj.dcaXY());
+          histos.fill(HIST("TrackQA/DCAzVsPT_AC"), obj.pt(), obj.dcaZ());
           histos.fill(HIST("TrackQA/IsPrim_AC"), obj.isPrimaryTrack());
           histos.fill(HIST("TrackQA/IsGood_AC"), obj.isGlobalTrackWoDCA());
           histos.fill(HIST("TrackQA/IsPrimCont_AC"), obj.isPVContributor());
@@ -417,16 +430,7 @@ struct F0980pbpbanalysis {
     if (std::abs(track.eta()) > cfgTrackEtaMax) {
       return 0;
     }
-    if (std::abs(track.dcaXY()) > cfgTrackDCArToPVcutMax) {
-      return 0;
-    }
-    if (std::abs(track.dcaZ()) > cfgTrackDCAzToPVcutMax) {
-      return 0;
-    }
     if (cfgTrackIsPVContributor && !track.isPVContributor()) {
-      return 0;
-    }
-    if (cfgTrackIsPrimaryTrack && !track.isPrimaryTrack()) {
       return 0;
     }
     if (cfgTrackIsGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
@@ -435,16 +439,37 @@ struct F0980pbpbanalysis {
     if (cfgTrackNTPCCrossedRows > 0 && track.tpcNClsCrossedRows() < cfgTrackNTPCCrossedRows) {
       return 0;
     }
-    if (cfgTrackNFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTrackNFindableTPCClusters) {
-      return 0;
-    }
-    if (cfgTrackNRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTrackNRowsOverFindable) {
-      return 0;
-    }
     if (cfgTrackNTPCChi2 > 0 && track.tpcChi2NCl() > cfgTrackNTPCChi2) {
       return 0;
     }
     if (cfgTrackNITSChi2 > 0 && track.itsChi2NCl() > cfgTrackNITSChi2) {
+      return 0;
+    }
+    if (cfgTrackDCArDepPTSel) {
+      if (std::abs(track.dcaXY()) > (cfgTrackDCArDepPTP0 + (cfgTrackDCArDepPTExp / track.pt()))) {
+        return 0;
+      }
+    } else {
+      if (std::abs(track.dcaXY()) > cfgTrackDCArToPVcutMax) {
+        return 0;
+      }
+    }
+    if (cfgTrackDCAzDepPTSel) {
+      if (std::abs(track.dcaZ()) > (cfgTrackDCAzDepPTP0 + (cfgTrackDCAzDepPTExp / track.pt()))) {
+        return 0;
+      }
+    } else {
+      if (std::abs(track.dcaZ()) > cfgTrackDCAzToPVcutMax) {
+        return 0;
+      }
+    }
+    if (cfgTrackIsPrimaryTrack && !track.isPrimaryTrack()) {
+      return 0;
+    }
+    if (cfgTrackNFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTrackNFindableTPCClusters) {
+      return 0;
+    }
+    if (cfgTrackNRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTrackNRowsOverFindable) {
       return 0;
     }
     return 1;
@@ -717,6 +742,8 @@ struct F0980pbpbanalysis {
     if (cfgQATrackCut) {
       histos.add("TrackQA/DCArToPv_BC", "", {HistType::kTH1F, {histAxisDCAz}});
       histos.add("TrackQA/DCAzToPv_BC", "", {HistType::kTH1F, {histAxisDCAz}});
+      histos.add("TrackQA/DCArVsPT_BC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAr}});
+      histos.add("TrackQA/DCAzVsPT_BC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAz}});
       histos.add("TrackQA/IsPrim_BC", "", kTH1F, {{2, -0.5, 1.5}});
       histos.add("TrackQA/IsGood_BC", "", kTH1F, {{2, -0.5, 1.5}});
       histos.add("TrackQA/IsPrimCont_BC", "", kTH1F, {{2, -0.5, 1.5}});
@@ -728,6 +755,8 @@ struct F0980pbpbanalysis {
       //
       histos.add("TrackQA/DCArToPv_AC", "", {HistType::kTH1F, {histAxisDCAz}});
       histos.add("TrackQA/DCAzToPv_AC", "", {HistType::kTH1F, {histAxisDCAz}});
+      histos.add("TrackQA/DCArVsPT_AC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAr}});
+      histos.add("TrackQA/DCAzVsPT_AC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAz}});
       histos.add("TrackQA/IsPrim_AC", "", kTH1F, {{2, -0.5, 1.5}});
       histos.add("TrackQA/IsGood_AC", "", kTH1F, {{2, -0.5, 1.5}});
       histos.add("TrackQA/IsPrimCont_AC", "", kTH1F, {{2, -0.5, 1.5}});
