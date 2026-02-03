@@ -299,8 +299,8 @@ struct globalDimuonFilter {
     for (const auto& muon_tmp : muons_per_MCHMID) {
       if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
         auto tupleId = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
-        auto mchtrack = muon_tmp.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
-        auto mfttrack = muon_tmp.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
+        // auto mchtrack = muon_tmp.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
+        // auto mfttrack = muon_tmp.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
 
         o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(muon_tmp, muon_tmp, collision, propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
         float eta = propmuonAtPV.getEta();
