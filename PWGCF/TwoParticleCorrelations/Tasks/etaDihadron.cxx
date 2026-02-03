@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file diHadronCor.cxx
+/// \file etaDihadron.cxx
 /// \brief di-hadron correlation for O-O, Pb-Pb collisions
-/// \author Zhiyong Lu (zhiyong.lu@cern.ch)
+/// \author Zhiyong Lu (zhiyong.lu@cern.ch), Martijn Laarhoven (martijn.laarhoven@cern.ch)
 /// \since  May/03/2025
 
 #include "PWGCF/Core/CorrelationContainer.h"
@@ -55,7 +55,7 @@ using namespace o2::framework::expressions;
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct DiHadronCor {
+struct EtaDihadron {
   Service<ccdb::BasicCCDBManager> ccdb;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVtxZ, float, 10.0f, "Accepted z-vertex range")
@@ -100,7 +100,6 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrder, bool, true, "enable trigger pT < associated pT cut")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrderInMixEvent, bool, true, "enable trigger pT < associated pT cut in mixed event")
-  O2_DEFINE_CONFIGURABLE(cfgUseCFStepAll, bool, true, "Filling kCFStepAll")
   O2_DEFINE_CONFIGURABLE(cfgSoloPtTrack, bool, false, "Skip trigger tracks that are alone in their pT bin for same process")
   O2_DEFINE_CONFIGURABLE(cfgSingleSoloPtTrack, bool, false, "Skip associated tracks that are alone in their pT bin for same process, works only if cfgSoloPtTrack is enabled")
   struct : ConfigurableGroup {
@@ -142,8 +141,8 @@ struct DiHadronCor {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
-  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt trigger axis for histograms"};
-  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt associated axis for histograms"};
+  ConfigurableAxis axisEtaTrigger{"axisEtaTrigger", {VARIABLE_WIDTH, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}, "eta trigger axis for histograms"};
+  ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {VARIABLE_WIDTH, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8}, "eta associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
@@ -271,8 +270,8 @@ struct DiHadronCor {
       registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
       registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
       registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
-      registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
-      registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
+      registry.add("pT", "pT", {HistType::kTH1D, {axisPt}});
+      registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPt}});
       registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("Nch_used", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}}); // histogram to see how many events are in the same and mixed event
       registry.add("Centrality", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
@@ -280,13 +279,13 @@ struct DiHadronCor {
       registry.add("Centrality_used", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}}); // histogram to see how many events are in the same and mixed event
       registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
       registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
-      registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+      registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEtaTrigger}}});
     }
     if (cfgSoloPtTrack && doprocessSame) {
-      registry.add("Nch_final_pt", "pT", {HistType::kTH1D, {axisPtTrigger}});
-      registry.add("Solo_tracks_trigger", "pT", {HistType::kTH1D, {axisPtTrigger}});
+      registry.add("Nch_final_eta", "eta", {HistType::kTH1D, {axisEtaTrigger}});
+      registry.add("Solo_tracks_trigger", "eta", {HistType::kTH1D, {axisEtaTrigger}});
       if (!cfgSingleSoloPtTrack) {
-        registry.add("Solo_tracks_assoc", "pT", {HistType::kTH1D, {axisPtAssoc}});
+        registry.add("Solo_tracks_assoc", "eta", {HistType::kTH1D, {axisEtaAssoc}});
       }
     }
 
@@ -308,8 +307,8 @@ struct DiHadronCor {
       registry.add("MCTrue/MCzVtx", "MCzVtx", {HistType::kTH1D, {axisVertex}});
       registry.add("MCTrue/MCPhi", "MCPhi", {HistType::kTH1D, {axisPhi}});
       registry.add("MCTrue/MCEta", "MCEta", {HistType::kTH1D, {axisEta}});
-      registry.add("MCTrue/MCpT", "MCpT", {HistType::kTH1D, {axisPtTrigger}});
-      registry.add("MCTrue/MCTrig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+      registry.add("MCTrue/MCpT", "MCpT", {HistType::kTH1D, {axisPt}});
+      registry.add("MCTrue/MCTrig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisEtaTrigger}}});
       registry.add("MCTrue/MCdeltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
       registry.add("MCTrue/MCdeltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
     }
@@ -325,8 +324,8 @@ struct DiHadronCor {
     LOGF(info, "Initializing correlation container");
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
-                                      {axisPtTrigger, "p_{T} (GeV/c)"},
-                                      {axisPtAssoc, "p_{T} (GeV/c)"},
+                                      {axisEtaTrigger, "#eta"},
+                                      {axisEtaAssoc, "#eta"},
                                       {axisDeltaPhi, "#Delta#varphi (rad)"},
                                       {axisDeltaEta, "#Delta#eta"}};
     std::vector<AxisSpec> effAxis = {
@@ -536,7 +535,7 @@ struct DiHadronCor {
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.eta(), eventWeight * triggerWeight);
       }
 
       for (auto const& track2 : tracks2) {
@@ -582,11 +581,11 @@ struct DiHadronCor {
         // fill the right sparse and histograms
         if (system == SameEvent) {
 
-          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track2.eta(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         } else if (system == MixedEvent) {
 
-          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track2.eta(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         }
       }
@@ -631,13 +630,13 @@ struct DiHadronCor {
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
 
-      registry.fill(HIST("Nch_final_pt"), track1.pt());
+      registry.fill(HIST("Nch_final_eta"), track1.eta());
 
       if (std::find(tracksSkipIndices.begin(), tracksSkipIndices.end(), track1.globalIndex()) != tracksSkipIndices.end()) {
-        registry.fill(HIST("Solo_tracks_trigger"), track1.pt());
+        registry.fill(HIST("Solo_tracks_trigger"), track1.eta());
         continue; // Skip the track1 if it is alone in pt bin
       }
-      registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
+      registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.eta(), eventWeight * triggerWeight);
 
       for (auto const& track2 : tracks2) {
 
@@ -652,7 +651,7 @@ struct DiHadronCor {
           continue;                  // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
         if (!cfgSingleSoloPtTrack) { // avoid skipping the second track if we only want one
           if (std::find(tracks2SkipIndices.begin(), tracks2SkipIndices.end(), track2.globalIndex()) != tracks2SkipIndices.end()) {
-            registry.fill(HIST("Solo_tracks_assoc"), track2.pt());
+            registry.fill(HIST("Solo_tracks_assoc"), track2.eta());
             continue; // Skip the track2 if it is alone in pt bin
           }
         }
@@ -683,7 +682,7 @@ struct DiHadronCor {
         }
 
         // fill the right sparse and histograms
-        same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+        same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track2.eta(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
       }
     }
@@ -704,7 +703,7 @@ struct DiHadronCor {
         continue;
 
       if (system == SameEvent && (doprocessMCSame || doprocessOntheflySame))
-        registry.fill(HIST("MCTrue/MCTrig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
+        registry.fill(HIST("MCTrue/MCTrig_hist"), fSampleIndex, posZ, track1.eta(), eventWeight * triggerWeight);
 
       for (auto const& track2 : tracks2) {
 
@@ -725,11 +724,11 @@ struct DiHadronCor {
 
         // fill the right sparse and histograms
         if (system == SameEvent) {
-          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track2.eta(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           if (doprocessMCSame || doprocessOntheflySame)
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         } else if (system == MixedEvent) {
-          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.eta(), track2.eta(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           if (doprocessMCMixed || doprocessOntheflyMixed)
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         }
@@ -840,7 +839,7 @@ struct DiHadronCor {
   {
     // Find the tracks that are alone in their pT bin
     tracksSkipIndices.clear();
-    static const std::vector<double>& ptBins = axisPtTrigger.value;
+    static const std::vector<double>& ptBins = axisPt.value;
     static const size_t nPtBins = ptBins.size() - 1;
 
     std::vector<int> numberOfTracksInBin(nPtBins, 0);
@@ -913,7 +912,7 @@ struct DiHadronCor {
       fillCorrelationsExcludeSoloTracks<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), getMagneticField(bc.timestamp()), cent, weightCent);
     }
   }
-  PROCESS_SWITCH(DiHadronCor, processSame, "Process same event", true);
+  PROCESS_SWITCH(EtaDihadron, processSame, "Process same event", true);
 
   // the process for filling the mixed events
   void processMixed(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::BCsWithTimestamps const&)
@@ -974,7 +973,7 @@ struct DiHadronCor {
     }
   }
 
-  PROCESS_SWITCH(DiHadronCor, processMixed, "Process mixed events", true);
+  PROCESS_SWITCH(EtaDihadron, processMixed, "Process mixed events", true);
 
   int getSpecies(int pdgCode)
   {
@@ -1027,7 +1026,7 @@ struct DiHadronCor {
       }
     }
   }
-  PROCESS_SWITCH(DiHadronCor, processMCEfficiency, "MC: Extract efficiencies", false);
+  PROCESS_SWITCH(EtaDihadron, processMCEfficiency, "MC: Extract efficiencies", false);
 
   void processMCSame(FilteredMcCollisions::iterator const& mcCollision, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
   {
@@ -1062,10 +1061,8 @@ struct DiHadronCor {
       }
     }
 
-    if (cfgUseCFStepAll) {
-      same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
-      fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
-    }
+    same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
+    fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
 
     if (collisions.size() == 0) {
       return;
@@ -1075,7 +1072,7 @@ struct DiHadronCor {
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
     fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
   }
-  PROCESS_SWITCH(DiHadronCor, processMCSame, "Process MC same event", false);
+  PROCESS_SWITCH(EtaDihadron, processMCSame, "Process MC same event", false);
 
   void processMCMixed(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
   {
@@ -1120,8 +1117,7 @@ struct DiHadronCor {
         eventWeight = 1.0f / it.currentWindowNeighbours();
       }
 
-      if (cfgUseCFStepAll)
-        fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
+      fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
 
       if (groupedCollisions.size() == 0) {
         continue;
@@ -1131,7 +1127,7 @@ struct DiHadronCor {
       fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
     }
   }
-  PROCESS_SWITCH(DiHadronCor, processMCMixed, "Process MC mixed events", false);
+  PROCESS_SWITCH(EtaDihadron, processMCMixed, "Process MC mixed events", false);
 
   void processOntheflySame(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -1154,15 +1150,13 @@ struct DiHadronCor {
       }
     }
 
-    if (cfgUseCFStepAll) {
-      same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
-      fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
-    }
+    same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
+    fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
 
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
     fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
   }
-  PROCESS_SWITCH(DiHadronCor, processOntheflySame, "Process on-the-fly same event", false);
+  PROCESS_SWITCH(EtaDihadron, processOntheflySame, "Process on-the-fly same event", false);
 
   void processOntheflyMixed(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1193,18 +1187,17 @@ struct DiHadronCor {
         eventWeight = 1.0f / it.currentWindowNeighbours();
       }
 
-      if (cfgUseCFStepAll)
-        fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
+      fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
 
       fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
     }
   }
-  PROCESS_SWITCH(DiHadronCor, processOntheflyMixed, "Process on-the-fly mixed events", false);
+  PROCESS_SWITCH(EtaDihadron, processOntheflyMixed, "Process on-the-fly mixed events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiHadronCor>(cfgc),
+    adaptAnalysisTask<EtaDihadron>(cfgc),
   };
 }
