@@ -348,6 +348,7 @@ struct TaskPi0FlowEMC {
     fEMCCut.SetClusterizer(emccuts.clusterDefinition);
     fEMCCut.SetUseTM(emccuts.cfgEMCUseTM.value);                // disables or enables TM
     fEMCCut.SetUseSecondaryTM(emccuts.emcUseSecondaryTM.value); // disables or enables secondary TM
+    fEMCCut.SetDoQA(emccuts.cfgEnableQA.value);
   }
 
   void definePCMCut()
@@ -1095,7 +1096,7 @@ struct TaskPi0FlowEMC {
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     EMBitFlags flags(clusters.size());
-    fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds, &registry);
 
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
@@ -1238,7 +1239,7 @@ struct TaskPi0FlowEMC {
   void processEMCalPCMC(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
 
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
