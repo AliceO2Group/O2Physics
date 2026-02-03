@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 // Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 27-01
-// 
+//
 // Executable : o2-analysis-lf-deuteron-in-jet-trg-pt
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
@@ -46,7 +46,7 @@
 #include <vector>
 
 using namespace o2;
-using namespace o2::framework; 
+using namespace o2::framework;
 using namespace o2::aod;
 using namespace o2::soa;
 using namespace o2::constants::math;
@@ -93,10 +93,10 @@ struct DeuteronInJetsTrgPt{
         Configurable<double> maxNsigmaTpc{"maxNsigmaTpc", +3.0, "Maximum nsigma TPC"};
         // Part relatuive to TOF
         Configurable<double> minNsigmaTof{"minNsigmaTof", -3.0, "Minimum nsigma TOF"};
-        Configurable<double> maxNsigmaTof{"maxNsigmaTof", +3.5, "Maximum nsigma TOF"};  
+        Configurable<double> maxNsigmaTof{"maxNsigmaTof", +3.5, "Maximum nsigma TOF"};
     } cfgTrackCut;
 
-    // Setting default selection criteria for events. May be changes when configuring the analysis. 
+    // Setting default selection criteria for events. May be changes when configuring the analysis.
     struct: o2::framework::ConfigurableGroup{
         std::string prefix{"cgfEventCut"};
         Configurable<double> zVtx{"zVtx", 10.0, "Maximum z vertex"};
@@ -106,7 +106,7 @@ struct DeuteronInJetsTrgPt{
     Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
     Configurable<std::string> triggerList{"triggerList", "fJetFullLowPt", "Trigger list"};
 
-    // Setting default selection criteria fr jet identification. May be changes when configuring the analysis. 
+    // Setting default selection criteria fr jet identification. May be changes when configuring the analysis.
     struct: o2::framework::ConfigurableGroup{
         std::string prefix{"cgfJetCut"};
         Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
@@ -146,7 +146,7 @@ struct DeuteronInJetsTrgPt{
 
         // Set default MC parametrization for ITS response
         if (cfgTrackCut.setMCDefaultItsParams) itsResponse.setMCDefaultParameters();
-        
+
         // Initialize random seed using high-resolution clock to ensure unique sequences across parallel Grid jobs
         auto time_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         mRand.SetSeed(time_seed);
@@ -299,11 +299,11 @@ struct DeuteronInJetsTrgPt{
         if (!track.hasTPC()) return false;
         if (track.tpcNClsCrossedRows() < MinTpcCr) return false;
         if (track.tpcChi2NCl() >= MaxChi2Tpc) return false;
-        
+
         return true;
     }
 
-    
+
     //Track selection for antinuclei
     template <typename AntinucleusTrack>
     bool passedTrackSelection(const AntinucleusTrack& track){
@@ -321,9 +321,9 @@ struct DeuteronInJetsTrgPt{
         if (!track.hasTPC()) return false;                                                   // Flag to check if track has a ITS match
         if (track.tpcNClsFound() < cfgTrackCut.TPCnClsMin) return false;                     // Minimum number of TPC cluster
         if (track.tpcNClsCrossedRows() < cfgTrackCut.TPCnCrossedRowsMin) return false;       // Minimum number of crossed rows in TPC
-        if (track.tpcChi2NCl() < cfgTrackCut.TPCchi2ClusMin) return false;                   // Minimum chi2 per cluster in TPC  
+        if (track.tpcChi2NCl() < cfgTrackCut.TPCchi2ClusMin) return false;                   // Minimum chi2 per cluster in TPC
         if (track.tpcChi2NCl() > cfgTrackCut.TPCchi2ClusMax) return false;                   // Maximum chi2 per cluster in TPC
-        if (track.tpcCrossedRowsOverFindableCls() < cfgTrackCut.Rtpc) return false;          // R_{TPC} > 0.8       
+        if (track.tpcCrossedRowsOverFindableCls() < cfgTrackCut.Rtpc) return false;          // R_{TPC} > 0.8
 
         return true;
     }
@@ -360,25 +360,25 @@ struct DeuteronInJetsTrgPt{
         }
 
         if (fjParticles.empty()) return;    // Reject empty events
-        
+
         // Cluster particles using the the anti-kT algorithm
         fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, cfgJetCut.rJet);     // Defining the algorithm to cluster, and the jet radius
         fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));     // Activate area evaluation, and set area evaluation method
         fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);      // Declare the will of applying clustering algorithm with area evaluation to the selected candidates
         std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
         auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], cfgJetCut.rJet);
-        
+
         // Loop over reco jets
         bool isAtLeastOneJetSelected = false;
         for (auto const& jet : jets){
 
             if ((std::fabs(jet.eta()) + cfgJetCut.rJet) > (cfgTrackCut.EtaMax - cfgJetCut.deltaEtaEdge)) continue;  // Jet must be fully contained in the acceptance
-            
+
             // Jet pt must be larger than threshold
             auto jetForSub = jet;
             fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
             if (jetMinusBkg.pt() < cfgJetCut.minJetPt) continue;      // Skip jets with pT < pT threshold
-          
+
             double normalizedJetArea = jet.area() / (PI * cfgJetCut.rJet * cfgJetCut.rJet);
             isAtLeastOneJetSelected = true;
 
@@ -409,18 +409,18 @@ struct DeuteronInJetsTrgPt{
                 // Fill DCA distribution for (anti)protons
                 if (track.sign() < 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("antiproton_dca_jet"), pt, dcaxy);
                 if (track.sign() > 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("proton_dca_jet"), pt, dcaxy);
-            
+
                 // Apply DCA selections
                 if (std::fabs(dcaxy) > cfgTrackCut.maxDcaxy || std::fabs(dcaz) > cfgTrackCut.maxDcaz) continue;
-                
+
                 // Particle identification using the ITS cluster size
                 bool passedItsPidProt(true), passedItsPidDeut(true);
                 double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
                 double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
 
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax)) passedItsPidProt = false; 
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax)) passedItsPidDeut = false; 
-                
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax)) passedItsPidProt = false;
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax)) passedItsPidDeut = false;
+
                 // Fill histograms for antimatter
                 if (track.sign()<0){
                     if (passedItsPidProt){
@@ -429,7 +429,7 @@ struct DeuteronInJetsTrgPt{
                     }
                     if (passedItsPidDeut){
                         registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold                
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                 }
                 // Fill histograms for matter
@@ -440,9 +440,9 @@ struct DeuteronInJetsTrgPt{
                     }
                     if (passedItsPidDeut){
                         registryData.fill(HIST("deuteron_jet_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("deuteron_jet_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold                
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("deuteron_jet_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
-                }    
+                }
             }   // End of loop over jet constituents
 
             // Loop over tracks in the UE
@@ -459,7 +459,7 @@ struct DeuteronInJetsTrgPt{
 
                 double maxConeRadius = coneRadius;
                 if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius) continue;       // Reject tracks that lie outside the maxConeRadius from both UE axes
-                
+
                 // Define variables
                 double nsigmaTPCPr = track.tpcNSigmaPr();
                 double nsigmaTOFPr = track.tofNSigmaPr();
@@ -472,18 +472,18 @@ struct DeuteronInJetsTrgPt{
                 // Fill DCA distribution for (anti)protons
                 if (track.sign() < 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("antiproton_dca_ue"), pt, dcaxy);
                 if (track.sign() > 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("proton_dca_ue"), pt, dcaxy);
-            
+
                 // Apply DCA selections
                 if (std::fabs(dcaxy) > cfgTrackCut.maxDcaxy || std::fabs(dcaz) > cfgTrackCut.maxDcaz) continue;
-                
+
                 // Particle identification using the ITS cluster size
                 bool passedItsPidProt(true), passedItsPidDeut(true);
                 double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
                 double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
 
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax)) passedItsPidProt = false; 
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax)) passedItsPidDeut = false; 
-                
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax)) passedItsPidProt = false;
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax)) passedItsPidDeut = false;
+
                 // Fill histograms for antimatter
                 if (track.sign()<0){
                     if (passedItsPidProt){
@@ -492,7 +492,7 @@ struct DeuteronInJetsTrgPt{
                     }
                     if (passedItsPidDeut){
                         registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold                
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                 }
                 // Fill histograms for matter
@@ -503,7 +503,7 @@ struct DeuteronInJetsTrgPt{
                     }
                     if (passedItsPidDeut){
                         registryData.fill(HIST("deuteron_ue_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("deuteron_ue_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold                
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("deuteron_ue_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                 }
             }
@@ -518,8 +518,3 @@ struct DeuteronInJetsTrgPt{
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc){
     return WorkflowSpec{adaptAnalysisTask<DeuteronInJetsTrgPt>(cfgc)};
 }
-
-
-
-
-
