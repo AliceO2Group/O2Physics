@@ -546,7 +546,7 @@ struct ResonanceModuleInitializer {
     colCuts.fillQA(collision);
     centrality = centEst(collision);
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz,0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -569,7 +569,7 @@ struct ResonanceModuleInitializer {
     colCuts.fillQARun2(collision);
     centrality = collision.centRun2V0M();
 
-    resoCollisions(0,0,0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz,0);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
