@@ -670,7 +670,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
       if (requireInel0OnMC && mcCollision.multMCNParticlesEta10() < 1) {
-          continue;
+        continue;
       }
       registryMC.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* all gen. events in INEL > 0*/);
 
@@ -1101,7 +1101,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryQC.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
       if (requireInel0OnMC && mcCollision.multMCNParticlesEta10() < 1) {
-          continue;
+        continue;
       }
 
       float centralityMC = 100.5f;
