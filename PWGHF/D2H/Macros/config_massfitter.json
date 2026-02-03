@@ -101,21 +101,24 @@
         0.9,
         1.6
     ],
-    "MassMin": [
+    "MassMin": 2.12,
+    "_MassMin": [
         2.12,
         2.12,
         2.12,
         2.12,
         2.12
     ],
-    "MassMax": [
+    "MassMax": 2.42,
+    "_MassMax": [
         2.42,
         2.42,
         2.42,
         2.42,
         2.42
     ],
-    "Rebin": [
+    "Rebin": 4,
+    "_Rebin": [
         4,
         4,
         4,
@@ -128,7 +131,8 @@
         "true: likelihood fit",
         "false: chi2 fit"
     ],
-    "BkgFunc": [
+    "BkgFunc": 2,
+    "_BkgFunc": [
         2,
         2,
         2,
@@ -144,7 +148,8 @@
         "5 for Poly3",
         "6 for NoBkg"
     ],
-    "SgnFunc": [
+    "SgnFunc": 0,
+    "_SgnFunc": [
         0,
         0,
         0,
