@@ -28,6 +28,9 @@
 //
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "ReconstructionDataFormats/PID.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -97,6 +100,7 @@ enum HfTriggers {
   kBtoJPsiPhi,
   kBtoJPsiPrKa,
   kBtoJPsiPi,
+  kSigmaCP,
   kNtriggersHF
 };
 
@@ -245,7 +249,7 @@ static const int nTotBeautyParts = static_cast<int>(kNBeautyParticles) + static_
 static const std::array<std::string, nTotBeautyParts> beautyParticleNames{"Bplus", "B0toDStar", "Bc", "B0", "Bs", "Lb", "Xib", "BplusToJPsi", "B0ToJPsi", "BsToJPsi", "LbToJPsi", "BcToJPsi"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
 static const std::array<std::string, 2> eventTitles = {"all", "rejected"};
-static const std::vector<std::string> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel(), filtering::HfSigmaCPPK::columnLabel(), filtering::HfSigmaC0K0::columnLabel(), filtering::HfPhotonCharm2P::columnLabel(), filtering::HfPhotonCharm3P::columnLabel(), filtering::HfSingleCharm2P::columnLabel(), filtering::HfSingleCharm3P::columnLabel(), filtering::HfSingleNonPromptCharm2P::columnLabel(), filtering::HfSingleNonPromptCharm3P::columnLabel(), filtering::HfCharmBarToXi2Bach::columnLabel(), filtering::HfPrCharm2P::columnLabel(), filtering::HfBtoJPsiKa::columnLabel(), filtering::HfBtoJPsiKstar::columnLabel(), filtering::HfBtoJPsiPhi::columnLabel(), filtering::HfBtoJPsiPrKa::columnLabel(), filtering::HfBtoJPsiPi::columnLabel()};
+static const std::vector<std::string> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel(), filtering::HfSigmaCPPK::columnLabel(), filtering::HfSigmaC0K0::columnLabel(), filtering::HfPhotonCharm2P::columnLabel(), filtering::HfPhotonCharm3P::columnLabel(), filtering::HfSingleCharm2P::columnLabel(), filtering::HfSingleCharm3P::columnLabel(), filtering::HfSingleNonPromptCharm2P::columnLabel(), filtering::HfSingleNonPromptCharm3P::columnLabel(), filtering::HfCharmBarToXi2Bach::columnLabel(), filtering::HfPrCharm2P::columnLabel(), filtering::HfBtoJPsiKa::columnLabel(), filtering::HfBtoJPsiKstar::columnLabel(), filtering::HfBtoJPsiPhi::columnLabel(), filtering::HfBtoJPsiPrKa::columnLabel(), filtering::HfBtoJPsiPi::columnLabel(), filtering::HfSigmaCP::columnLabel()};
 
 static const std::array<std::string, kNV0> v0Labels{"#gamma", "K_{S}^{0}", "#Lambda", "#bar{#Lambda}"};
 static const std::array<std::string, kNV0> v0Names{"Photon", "K0S", "Lambda", "AntiLambda"};
@@ -293,7 +297,7 @@ static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
 static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
 static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
-static const std::array<o2::framework::AxisSpec, kNCharmParticles + 23> massAxisC = {o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.75f, 2.25f}, o2::framework::AxisSpec{250, 2.05f, 2.55f}, o2::framework::AxisSpec{250, 2.25f, 2.75f}, o2::framework::AxisSpec{200, 0.139f, 0.159f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{240, 2.4f, 3.6f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}};
+static const std::array<o2::framework::AxisSpec, kNCharmParticles + 24> massAxisC = {o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.75f, 2.25f}, o2::framework::AxisSpec{250, 2.05f, 2.55f}, o2::framework::AxisSpec{250, 2.25f, 2.75f}, o2::framework::AxisSpec{200, 0.139f, 0.159f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{240, 2.4f, 3.6f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.14f, 0.26f}};
 static const std::array<o2::framework::AxisSpec, nTotBeautyParts> massAxisB = {o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 5.4f, 7.4f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.4f, 6.4f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{240, 5.8f, 7.0f}};
 
 // default values for configurables
@@ -625,6 +629,8 @@ class HfFilterHelper
   int16_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca);
   template <typename T1, typename T2, typename H2>
   bool isSelectedTrack4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hTPCPID, H2 hTOFPID, const int& trackSpecies);
+  template <typename Atrack, typename SpeciesContainer, typename T1, typename T2>
+  bool isSelectedTrack4Corr(Atrack const& track, SpeciesContainer const mPIDspecies, T1 const maxTPC, T2 const maxTOF, float minPt = 0.39, float maxPt = 4.6, float ptThreshold = 1.0, bool tofForced = false);
   template <typename T>
   int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg);
   template <typename T>
@@ -643,6 +649,8 @@ class HfFilterHelper
   int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <int charge, typename T, typename H2>
   int8_t isSelectedSigmaCInDeltaMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const T& pTrackSoftPi, const float ptSigmaC, const int8_t isSelectedLc, H2 hMassVsPt, const int& activateQA);
+  template <typename T, typename H2>
+  bool selectionSigmaCForScPCorr(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const T& pTrackSoftPi, const float ptSigmaC, const int8_t isSelectedLc, H2 hMassVsPt, const int& activateQA, float mDeltaMassMinSigmaC = 0.155, float mDeltaMassMaxSigmaC = 0.2, float mPtMinSigmaC = 4.99, float mPtMaxSigmaC = 12.0);
   template <typename T, typename H2>
   int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename V0, typename H2>
@@ -867,7 +875,7 @@ inline int16_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track
     return kRejected;
   }
 
-  if constexpr (whichTrigger == kSigmaCPPK || whichTrigger == kSigmaC0K0) {
+  if constexpr (whichTrigger == kSigmaCPPK || whichTrigger == kSigmaC0K0 || whichTrigger == kSigmaCP) {
 
     // SigmaC0,++ soft pion pt cut
     if (pT < mPtMinSoftPionForSigmaC || pT > mPtMaxSoftPionForSigmaC) {
@@ -921,6 +929,113 @@ inline int16_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track
 
   return retValue;
 }
+
+/// Basic selection of proton or deuteron candidates
+/// \param track is a track
+/// \param mPIDspecies is a vector of different particle species
+/// \param activateQA flag to activate the filling of QA histos
+/// \param maxTPC is a vector of max TPCnSigma for different particle species
+/// \param maxTOF is a vector of max TOFnSigma for different particle species
+/// \param hProtonTPCPID histo with NsigmaTPC vs. p
+/// \param hProtonTOFPID histo with NsigmaTOF vs. p
+/// \return true if track passes all cuts
+template <typename Atrack, typename SpeciesContainer, typename T1, typename T2>
+inline bool HfFilterHelper::isSelectedTrack4Corr(Atrack const& track, SpeciesContainer const mPIDspecies,
+                      T1 const maxTPC, T2 const maxTOF, float minPt, float maxPt, float ptThreshold, bool tofForced)
+{
+  // Ensure size consistency
+  if (mPIDspecies.value.size() != maxTPC.value.size() || mPIDspecies.value.size() != maxTOF.value.size()) {
+    LOGF(error, "Size of particle species and corresponding nSigma selection arrays should be the same");
+    return false; // Early exit on error
+  }
+
+  if (!track.isGlobalTrackWoDCA()) {
+    return false;
+  }
+
+  if (track.pt() < minPt || track.pt() > maxPt){
+    return false;
+  }
+
+  for (size_t speciesIndex = 0; speciesIndex < mPIDspecies.value.size(); ++speciesIndex) {
+    float nSigmaTPC;
+    auto const& pid = mPIDspecies->at(speciesIndex);
+    
+    nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
+
+    if (track.pt() > ptThreshold && tofForced && !track.hasTOF())
+      return false;
+    
+    int parSpecies = -1;
+    float tpcNCls = track.tpcNClsFound();
+    float tpcPin = track.tpcInnerParam();
+    float eta = track.eta();
+
+    if (pid == o2::track::PID::Proton) {
+      parSpecies = kPr;
+    } else if (pid == o2::track::PID::Kaon) {
+      parSpecies = kKa;
+    } else if (pid == o2::track::PID::Pion) {
+      parSpecies = kPi;
+    } else {
+      LOGF(fatal, "particle species is not defined in isSelectedTrack4Corr");
+    }
+    
+    // 2. Apply nSigmaTPC using selected calibration
+    if (mTpcPidCalibrationOption == 1) {
+      // Option 1: post-calibration → no sign dependence
+      nSigmaTPC = getTPCPostCalib(tpcPin, tpcNCls, eta, nSigmaTPC, parSpecies);
+    
+    } 
+    if (mTpcPidCalibrationOption == 2) {
+      float dEdx = track.tpcSignal();
+      // Option 2: spline calibration → charge-dependent
+      if (track.sign() > 0) {
+        // Positive track
+        nSigmaTPC = getTPCSplineCalib(tpcPin, dEdx, parSpecies);
+      } else {
+        // Negative track
+        if (pid == o2::track::PID::Proton) {
+           parSpecies = kAntiPr;
+         } else if (pid == o2::track::PID::Kaon) {
+           parSpecies = kAntiKa;
+         } else if (pid == o2::track::PID::Pion) {
+           parSpecies = kAntiPi;
+         } else {
+           LOGF(fatal, "particle species is not defined in isSelectedTrack4Corr");
+         }
+        nSigmaTPC = getTPCSplineCalib(tpcPin, dEdx, parSpecies);
+      }
+    }
+
+    if (speciesIndex == 0) { // First species logic
+
+      if (std::abs(nSigmaTPC) > maxTPC->at(speciesIndex)) {
+        return false; // TPC check failed
+      }
+      if (track.hasTOF()) {
+        auto nSigmaTOF = o2::aod::pidutils::tofNSigma(pid, track);
+        if (std::abs(nSigmaTOF) > maxTOF->at(speciesIndex)) {
+          return false; // TOF check failed
+        }
+      }
+    } else {                                                // Other species logic
+      if (std::abs(nSigmaTPC) < maxTPC->at(speciesIndex)) { // Check TPC nSigma  first
+        if (track.hasTOF()) {
+          auto nSigmaTOF = o2::aod::pidutils::tofNSigma(pid, track);
+          if (std::abs(nSigmaTOF) < maxTOF->at(speciesIndex)) {
+            return false; // Reject if both TPC and TOF are within thresholds
+          }
+        } else {
+          return false; // Reject if only TPC is within threshold and TOF is unavailable
+        }
+      }
+    }
+  }
+  return true; // Passed all checks
+}
+
+
 
 /// Basic selection of proton or deuteron candidates
 /// \param track is a track
@@ -1311,6 +1426,52 @@ inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeF
 
   return retValue;
 }
+
+/// Delta mass selection on SigmaC candidates for correlation
+template <typename T, typename H2>
+inline bool HfFilterHelper::selectionSigmaCForScPCorr(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const T& pTrackSoftPi, const float ptSigmaC, const int8_t isSelectedLc, H2 hMassVsPt, const int& activateQA, float mDeltaMassMinSigmaC, float mDeltaMassMaxSigmaC, float mPtMinSigmaC, float mPtMaxSigmaC)
+{
+  if (ptSigmaC < mPtMinSigmaC || ptSigmaC > mPtMaxSigmaC){
+    return false;
+  }
+  bool isSigmaCSelected{false};
+  if (TESTBIT(isSelectedLc, 0)) {
+    /// Lc->pKpi case
+    auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massKa, massPi});
+    std::array<float, 4> massDausSigmaCToLcPKPi{massProton, massKa, massPi, massPi};
+    float invMassSigmaCToLcPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond, pTrackSoftPi}, massDausSigmaCToLcPKPi);
+    float deltaMassPKPi = invMassSigmaCToLcPKPi - invMassLcToPKPi;
+    isSigmaCSelected = (mDeltaMassMinSigmaC < deltaMassPKPi && deltaMassPKPi < mDeltaMassMaxSigmaC);
+    if(isSigmaCSelected){
+      if (activateQA){
+      hMassVsPt->Fill(ptSigmaC, deltaMassPKPi);
+    }
+      return true;
+    }
+
+  }
+  if (TESTBIT(isSelectedLc, 1)) {
+    /// Lc->piKp case
+    auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massKa, massProton});
+    std::array<float, 4> massDausSigmaCToLcPiKP{massPi, massKa, massProton, massPi};
+    float invMassSigmaCToLcPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond, pTrackSoftPi}, massDausSigmaCToLcPiKP);
+    float deltaMassPiKP = invMassSigmaCToLcPiKP - invMassLcToPiKP;
+
+    isSigmaCSelected = (mDeltaMassMinSigmaC < deltaMassPiKP && deltaMassPiKP < mDeltaMassMaxSigmaC);
+    if(isSigmaCSelected){
+      if (activateQA){
+      hMassVsPt->Fill(ptSigmaC, deltaMassPiKP);
+    }
+      return true;
+    }
+    
+  }
+
+  return isSigmaCSelected;
+  /// TODO: add QA plot
+}
+
+
 
 /// Delta mass selection on SigmaC candidates
 template <int charge, typename T, typename H2>
