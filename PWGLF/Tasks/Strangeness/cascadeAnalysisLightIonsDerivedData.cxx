@@ -42,6 +42,8 @@
 #include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
