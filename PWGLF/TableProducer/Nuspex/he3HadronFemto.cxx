@@ -969,7 +969,7 @@ struct he3HadronFemto {
       const float correctedPtHe3 = correctPtHe3TrackedAsTriton(he3Hadcand.recoPtHe3(), he3Hadcand.pidtrkHe3);
       const float kstarGen = getkstar(he3Hadcand.momHe3MC, he3Hadcand.etaHe3MC, he3Hadcand.phiHe3MC, o2::constants::physics::MassHelium3, 1.,
                                       he3Hadcand.momHadMC, he3Hadcand.etaHadMC, he3Hadcand.phiHadMC, settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
-      const float kstarRec = getkstar(he3Hadcand.recoPtHe3(), he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(), o2::constants::physics::MassHelium3, 1.,
+      const float kstarRec = getkstar(correctedPtHe3, he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(), o2::constants::physics::MassHelium3, 1.,
                                       he3Hadcand.recoPtHad(), he3Hadcand.recoEtaHad(), he3Hadcand.recoPhiHad(), settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
       mQaRegistry.fill(HIST("hKstarRecVsKstarGen"), kstarGen, kstarRec);
     }
