@@ -1018,7 +1018,7 @@ struct HfCorrelatorDsHadrons {
         isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         // Ds Signal
         isDsSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK;
-        isDecayChan = candidate.flagMcDecayChanRec() == decayChannel;
+        isDecayChan = candidate.flagMcDecayChanRec() == channelsResonant[decayChannel];
         if (pAssoc.has_mcParticle()) {
           auto mcParticle = pAssoc.template mcParticle_as<aod::McParticles>();
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
