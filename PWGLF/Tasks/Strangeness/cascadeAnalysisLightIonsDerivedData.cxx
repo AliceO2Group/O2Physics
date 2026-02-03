@@ -991,7 +991,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.fill(HIST("number_of_events_mc_rec"), 9 /* Not at same bunch pile-up */);
       registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 9, centralityMcRec);
 
-      if (requireInel0 && collision.multNTracksPVeta1() < 1) {
+      if (requireInel0 && RecCol.multNTracksPVeta1() < 1) {
         continue;
       }
       registryMC.fill(HIST("number_of_events_mc_rec"), 10 /* INEL > 0 */);
