@@ -726,7 +726,7 @@ struct kstarInOO {
         if (lReso.M() < 0)
           continue;
 
-        fillMinv(MB, trk1, trk2, lReso, centrality, -1.0, IsMix, flip);
+        fillMinv(objectType::MB, trk1, trk2, lReso, centrality, -1.0, IsMix, flip);
       } // flip
     } // for
   } // TrackSlicing
@@ -747,7 +747,7 @@ struct kstarInOO {
         if (lReso.M() < 0)
           continue;
 
-        fillMinv(MB, trk1, trk2, lReso, centrality, -1.0, IsMix, flip);
+        fillMinv(objectType::MB, trk1, trk2, lReso, centrality, -1.0, IsMix, flip);
       } // flip
       //======================
       // Gen MC
@@ -859,7 +859,7 @@ struct kstarInOO {
   }
 
   template <typename TracksType, typename JetType>
-  ROOT::Math::PxPyPzMVector JetTrackSlicing(aod::JetCollision const& collision, TracksType const& jetTracks, const JetType& chargedjets, const bool IsMix, const bool QA)
+  void JetTrackSlicing(aod::JetCollision const& collision, TracksType const& jetTracks, const JetType& chargedjets, const bool IsMix, const bool QA)
   {
     //======================
     //| MinBias Event M_inv
@@ -874,7 +874,7 @@ struct kstarInOO {
         if (lResonance.M() < 0)
           continue;
 
-        fillMinv(MB, trk1, trk2, lResonance, centrality, -1.0, IsMix, flip);
+        fillMinv(objectType::MB, trk1, trk2, lResonance, centrality, -1.0, IsMix, flip);
 
         //======================
         //| Inside jets M_inv
@@ -902,11 +902,10 @@ struct kstarInOO {
         }
 
         if (jetFlag) {
-          fillMinv(Jets, trk1, trk2, lResonance, centrality, jetpt, IsMix, flip);
+          fillMinv(objectType::Jets, trk1, trk2, lResonance, centrality, jetpt, IsMix, flip);
         } // jetFlag
       } // flip
     } // Track
-    return {};
   } // JetTrackSlicing
 
   template <typename TracksType, typename JetType>
@@ -919,6 +918,9 @@ struct kstarInOO {
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(jetTracks, jetTracks))) {
       auto trk1 = track1.template track_as<TrackCandidatesMC>();
       auto trk2 = track2.template track_as<TrackCandidatesMC>();
+
+      if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
+        continue;
 
       for (bool flip : {false, true}) {
         auto lResonance = minvReconstruction(trk1, trk2, QA, flip);
@@ -959,98 +961,97 @@ struct kstarInOO {
         //======================
         //| MinBias True M_inv
         //======================
-        if (trk1.has_mcParticle() && trk2.has_mcParticle()) {
-          auto particle1 = trk1.mcParticle();
-          auto particle2 = trk2.mcParticle();
+        auto particle1 = trk1.mcParticle();
+        auto particle2 = trk2.mcParticle();
 
-          if (!particle1.has_mothers() || !particle2.has_mothers()) {
-            return {};
-          }
+        if (!particle1.has_mothers() || !particle2.has_mothers()) {
+          return {};
+        }
 
-          std::vector<int> mothers1{};
-          std::vector<int> mothers1PDG{};
-          for (auto& particle1_mom : particle1.template mothers_as<aod::McParticles>()) {
-            mothers1.push_back(particle1_mom.globalIndex());
-            mothers1PDG.push_back(particle1_mom.pdgCode());
-          }
+        std::vector<int> mothers1{};
+        std::vector<int> mothers1PDG{};
+        for (auto& particle1_mom : particle1.template mothers_as<aod::McParticles>()) {
+          mothers1.push_back(particle1_mom.globalIndex());
+          mothers1PDG.push_back(particle1_mom.pdgCode());
+        }
 
-          std::vector<int> mothers2{};
-          std::vector<int> mothers2PDG{};
-          for (auto& particle2_mom : particle2.template mothers_as<aod::McParticles>()) {
-            mothers2.push_back(particle2_mom.globalIndex());
-            mothers2PDG.push_back(particle2_mom.pdgCode());
-          }
+        std::vector<int> mothers2{};
+        std::vector<int> mothers2PDG{};
+        for (auto& particle2_mom : particle2.template mothers_as<aod::McParticles>()) {
+          mothers2.push_back(particle2_mom.globalIndex());
+          mothers2PDG.push_back(particle2_mom.pdgCode());
+        }
 
-          if (mothers1PDG[0] != 313)
-            return {}; // mother not K*0
-          if (mothers2PDG[0] != 313)
-            return {}; // mothers not K*0
+        if (mothers1PDG[0] != 313)
+          return {}; // mother not K*0
+        if (mothers2PDG[0] != 313)
+          return {}; // mothers not K*0
 
-          if (mothers1[0] != mothers2[0])
-            return {}; // Kaon and pion not from the same K*0
+        if (mothers1[0] != mothers2[0])
+          return {}; // Kaon and pion not from the same K*0
 
-          if (std::fabs(particle1.pdgCode()) != 211 && std::fabs(particle1.pdgCode()) != 321)
-            return {};
-          if (std::fabs(particle2.pdgCode()) != 211 && std::fabs(particle2.pdgCode()) != 321)
-            return {};
+        if (std::fabs(particle1.pdgCode()) != 211 && std::fabs(particle1.pdgCode()) != 321)
+          return {};
+        if (std::fabs(particle2.pdgCode()) != 211 && std::fabs(particle2.pdgCode()) != 321)
+          return {};
 
-          double track1_mass, track2_mass;
-          bool track1f{false}; // true means pion
+        double track1_mass, track2_mass;
+        bool track1f{false}; // true means pion
 
-          if (std::fabs(particle1.pdgCode()) == 211) {
-            track1f = true;
-            track1_mass = massPi;
+        if (std::fabs(particle1.pdgCode()) == 211) {
+          track1f = true;
+          track1_mass = massPi;
+        } else {
+          track1_mass = massKa;
+        }
+
+        if (std::fabs(particle2.pdgCode()) == 211) {
+          track2_mass = massPi;
+        } else {
+          track2_mass = massKa;
+        }
+
+        if (track1_mass == track2_mass) {
+          return {};
+        }
+        int mcindex1 = trk1.globalIndex();
+        int mcindex2 = trk2.globalIndex();
+        std::vector<int> mcMemory;
+
+        bool exists1 = std::find(mcMemory.begin(), mcMemory.end(), mcindex1) != mcMemory.end();
+        bool exists2 = std::find(mcMemory.begin(), mcMemory.end(), mcindex2) != mcMemory.end();
+        if (exists1 || exists2) {
+          return {};
+        } else {
+          mcMemory.push_back(trk1.globalIndex());
+          mcMemory.push_back(trk2.globalIndex());
+        }
+
+        ROOT::Math::PxPyPzMVector lTrueDaughter1, lTrueDaughter2, lTrueReso;
+        lTrueDaughter1 = ROOT::Math::PxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), track1_mass);
+        lTrueDaughter2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), track2_mass);
+        lTrueReso = lTrueDaughter1 + lTrueDaughter2;
+
+        auto mult = collision.centFT0C();
+        double conjugate = trk1.sign() * trk2.sign();
+        if (cfgJetMCHistos) {
+          histos.fill(HIST("hUSS_True_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
+          if (track1f) {
+            histos.fill(HIST("hUSS_PiK_True_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
           } else {
-            track1_mass = massKa;
+            histos.fill(HIST("hUSS_KPi_True_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
           }
+        }
 
-          if (std::fabs(particle2.pdgCode()) == 211) {
-            track2_mass = massPi;
-          } else {
-            track2_mass = massKa;
+        //===========================
+        // INSIDE REC True Closure
+        //===========================
+        if (jetFlag) {
+          if (conjugate < 0) {
+            histos.fill(HIST("hUSS_TrueRec_INSIDE_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
           }
+        }
 
-          if (track1_mass == track2_mass) {
-            return {};
-          }
-          int mcindex1 = trk1.globalIndex();
-          int mcindex2 = trk2.globalIndex();
-          std::vector<int> mcMemory;
-
-          bool exists1 = std::find(mcMemory.begin(), mcMemory.end(), mcindex1) != mcMemory.end();
-          bool exists2 = std::find(mcMemory.begin(), mcMemory.end(), mcindex2) != mcMemory.end();
-          if (exists1 || exists2) {
-            return {};
-          } else {
-            mcMemory.push_back(trk1.globalIndex());
-            mcMemory.push_back(trk2.globalIndex());
-          }
-
-          ROOT::Math::PxPyPzMVector lTrueDaughter1, lTrueDaughter2, lTrueReso;
-          lTrueDaughter1 = ROOT::Math::PxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), track1_mass);
-          lTrueDaughter2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), track2_mass);
-          lTrueReso = lTrueDaughter1 + lTrueDaughter2;
-
-          auto mult = collision.centFT0C();
-          double conjugate = trk1.sign() * trk2.sign();
-          if (cfgJetMCHistos) {
-            histos.fill(HIST("hUSS_True_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
-            if (track1f) {
-              histos.fill(HIST("hUSS_PiK_True_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
-            } else {
-              histos.fill(HIST("hUSS_KPi_True_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
-            }
-          }
-
-          //===========================
-          // INSIDE REC True Closure
-          //===========================
-          if (jetFlag) {
-            if (conjugate < 0) {
-              histos.fill(HIST("hUSS_TrueRec_INSIDE_MC"), mult, lTrueReso.Pt(), lTrueReso.M());
-            }
-          }
-        } // has_mcParticle
       } // filp
     } // Tracks loop
     return {};
@@ -1123,7 +1124,6 @@ struct kstarInOO {
         return;
       }
     }
-
     histos.fill(HIST("nEvents"), 2.5); // Events after event quality selection for Inclusive
 
     std::vector<double> jetpT{};
@@ -1155,7 +1155,6 @@ struct kstarInOO {
       if (!HasJets)
         return;
     }
-
     histos.fill(HIST("nEvents"), 3.5); // Has jets
 
     bool INELgt0 = false;
@@ -1313,7 +1312,6 @@ struct kstarInOO {
         mothers1PDG.push_back(particle1_mom.pdgCode());
       }
 
-      // std::cout<<mothers1PDG[0]<<std::endl;
       if (cfgJetMCHistos) {
         histos.fill(HIST("hMotherPdg1"), std::fabs(mothers1PDG[0]));
       }
@@ -1465,7 +1463,6 @@ struct kstarInOO {
     }
     if (!INELgt0)
       return;
-
     histos.fill(HIST("nEvents"), 1.5);
 
     TrackSlicing(collision, tracks, collision, tracks, false, true);
