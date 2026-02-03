@@ -9,18 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/spectraTOF.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -31,12 +36,15 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include "TPDGCode.h"
 #include <TF1.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TRandom.h>
 
+#include <algorithm>
 #include <cmath>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -52,6 +60,9 @@ struct MultiplicityPt {
 
   // Service
   Service<o2::framework::O2DatabasePDG> pdg;
+
+  // Add CCDB service for magnetic field
+  Service<ccdb::BasicCCDBManager> ccdb;
 
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -87,8 +98,16 @@ struct MultiplicityPt {
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
   Configurable<float> maxDcaZ{"maxDcaZ", 0.1f, "Additional cut on the maximum value of the DCA z"};
-  Configurable<float> minTPCNClsFound{"minTPCNClsFound", 100.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
+  Configurable<float> minTPCNClsFound{"minTPCNClsFound", 70.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   Configurable<int> min_ITS_nClusters{"min_ITS_nClusters", 5, "minimum number of found ITS clusters"};
+
+  // Phi cut parameters
+  Configurable<bool> applyPhiCut{"applyPhiCut", true, "Apply phi sector cut to remove problematic TPC regions"};
+  Configurable<float> pTthresholdPhiCut{"pTthresholdPhiCut", 2.0f, "pT threshold above which to apply phi cut"};
+  Configurable<double> phiCutLowParam1{"phiCutLowParam1", 0.119297, "First parameter for low phi cut"};
+  Configurable<double> phiCutLowParam2{"phiCutLowParam2", 0.000379693, "Second parameter for low phi cut"};
+  Configurable<double> phiCutHighParam1{"phiCutHighParam1", 0.16685, "First parameter for high phi cut"};
+  Configurable<double> phiCutHighParam2{"phiCutHighParam2", 0.00981942, "Second parameter for high phi cut"};
 
   // Basic track cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
@@ -97,10 +116,27 @@ struct MultiplicityPt {
   // Custom track cuts matching spectraTOF
   TrackSelection customTrackCuts;
 
+  // TF1 pointers for phi cuts
+  TF1* fphiCutLow = nullptr;
+  TF1* fphiCutHigh = nullptr;
+
   // Histogram Registry
   HistogramRegistry ue;
 
-  // Table definitions - EXACT spectraTOF approach
+  // ========================================================================
+  // CENTRALITY/MULTIPLICITY CLASSES - Using same bins as before for consistency
+  // ========================================================================
+  static constexpr int kCentralityClasses = 10;
+  static constexpr double CentClasses[kCentralityClasses + 1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
+
+  // Multiplicity percentile boundaries (computed on first pass)
+  std::vector<float> multPercentileboundaries;
+  bool percentilesComputed = false;
+
+  // Storage for multiplicity distribution (for percentile calculation)
+  std::vector<float> multiplicityValues;
+
+  // Table definitions - NO McCentFT0Ms dependency
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs>;
   using CollisionTableMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs>;
 
@@ -110,14 +146,14 @@ struct MultiplicityPt {
   using TrackTableMC = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-  // MC tables - EXACT spectraTOF approach
+  // MC tables - NO McCentFT0Ms
   using CollisionTableMCTrue = aod::McCollisions;
   using ParticleTableMC = aod::McParticles;
 
-  // Preslice for MC particles (like spectraTOF)
+  // Preslice for MC particles
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
-  // Multiplicity estimator enum (like spectraTOF)
+  // Multiplicity estimator enum
   enum MultCodes : int {
     kNoMultiplicity = 0,
     kMultFV0M = 1,
@@ -132,7 +168,7 @@ struct MultiplicityPt {
     kCentralityFV0A = 10
   };
 
-  // Particle species enum (from spectraTOF)
+  // Particle species enum
   enum ParticleSpecies : int {
     kPion = 0,
     kKaon = 1,
@@ -141,28 +177,245 @@ struct MultiplicityPt {
   };
 
   // PDG codes
-  static constexpr int PDGPion = 211;    // π⁺ PDG code
-  static constexpr int PDGKaon = 321;    // K⁺ PDG code
-  static constexpr int PDGProton = 2212; // p PDG code
+  static constexpr int PDGPion = 211;
+  static constexpr int PDGKaon = 321;
+  static constexpr int PDGProton = 2212;
 
   void processData(CollisionTableData::iterator const& collision,
-                   TrackTableData const& tracks);
+                   TrackTableData const& tracks,
+                   BCsRun3 const& bcs);
   PROCESS_SWITCH(MultiplicityPt, processData, "process data", false);
 
-  // MC processing - EXACT spectraTOF approach
+  // MC processing - First pass to build percentiles
+  void processPercentileCalibration(CollisionTableMCTrue const& mcCollisions,
+                                    ParticleTableMC const& particles);
+  PROCESS_SWITCH(MultiplicityPt, processPercentileCalibration, "Build multiplicity percentile calibration (run first)", false);
+
+  // MC processing - Main analysis
   void processMC(TrackTableMC const& tracks,
                  aod::McParticles const& particles,
                  CollisionTableMCTrue const& mcCollisions,
-                 CollisionTableMC const& collisions);
+                 CollisionTableMC const& collisions,
+                 BCsRun3 const& bcs);
   PROCESS_SWITCH(MultiplicityPt, processMC, "process MC", true);
 
-  // True MC processing - EXACT spectraTOF approach
+  // True MC processing
   void processTrue(CollisionTableMCTrue const& mcCollisions,
                    ParticleTableMC const& particles);
   PROCESS_SWITCH(MultiplicityPt, processTrue, "process true MC", true);
 
   // ========================================================================
-  // TRACK SELECTION FUNCTIONS - MATCHING spectraTOF
+  // MULTIPLICITY GETTER FUNCTIONS - Using raw charged particle count
+  // ========================================================================
+
+  // Count charged primaries in |eta| < 1.0
+  template <typename MCCollisionType>
+  int countChargedPrimaries(const MCCollisionType& mcCollision, const ParticleTableMC& particles) const
+  {
+    int nCharged = 0;
+    auto particlesInColl = particles.sliceBy(perMCCol, mcCollision.globalIndex());
+    for (const auto& p : particlesInColl) {
+      if (!p.isPhysicalPrimary())
+        continue;
+      auto pdgParticle = pdg->GetParticle(p.pdgCode());
+      if (!pdgParticle || pdgParticle->Charge() == 0.)
+        continue;
+      if (std::abs(p.eta()) < 1.0)
+        nCharged++;
+    }
+    return nCharged;
+  }
+
+  // For reconstructed collisions
+  template <typename CollisionType>
+  float getMultiplicity(const CollisionType& collision) const
+  {
+    switch (multiplicityEstimator.value) {
+      case kNoMultiplicity:
+        return 50.f;
+      case kMultFV0M:
+        return collision.multZeqFV0A();
+      case kMultFT0M:
+        return collision.multZeqFT0A() + collision.multZeqFT0C();
+      case kMultFDDM:
+        return collision.multZeqFDDA() + collision.multZeqFDDC();
+      case kMultTracklets:
+        return 0.f;
+      case kMultTPC:
+        return collision.multTPC();
+      case kMultNTracksPV:
+        return collision.multZeqNTracksPV();
+      case kMultNTracksPVeta1:
+        return collision.multNTracksPVeta1();
+      case kCentralityFT0C:
+      case kCentralityFT0M:
+      case kCentralityFV0A:
+        return collision.multZeqNTracksPV();
+      default:
+        return 0.f;
+    }
+  }
+
+  // For MC collisions - returns RAW multiplicity
+  template <typename MCCollisionType>
+  float getMultiplicityMC(const MCCollisionType& mcCollision, const ParticleTableMC& particles) const
+  {
+    return static_cast<float>(countChargedPrimaries(mcCollision, particles));
+  }
+
+  // Convert raw multiplicity to percentile
+  float multiplicityToPercentile(float rawMult) const
+  {
+    if (!percentilesComputed || multPercentileboundaries.empty()) {
+      // If percentiles not computed, return raw multiplicity
+      return rawMult;
+    }
+
+    // Find which percentile bin this multiplicity falls into
+    for (size_t i = 0; i < multPercentileboundaries.size() - 1; ++i) {
+      if (rawMult >= multPercentileboundaries[i] && rawMult < multPercentileboundaries[i + 1]) {
+        // Return the CENTER of the percentile bin
+        return CentClasses[i] + (CentClasses[i + 1] - CentClasses[i]) / 2.0;
+      }
+    }
+
+    // Handle edge cases
+    if (rawMult < multPercentileboundaries[0]) {
+      return CentClasses[0];
+    }
+    return CentClasses[kCentralityClasses];
+  }
+
+  // Get centrality class index from raw multiplicity
+  int getCentralityClass(float rawMult) const
+  {
+    if (!percentilesComputed || multPercentileboundaries.empty()) {
+      // Fallback: divide into equal bins
+      float maxMult = 150.0f; // Assumed maximum
+      int bin = static_cast<int>((rawMult / maxMult) * kCentralityClasses);
+      return std::min(bin, kCentralityClasses - 1);
+    }
+
+    // Use computed percentiles
+    for (int i = 0; i < kCentralityClasses; ++i) {
+      if (rawMult >= multPercentileboundaries[i] && rawMult < multPercentileboundaries[i + 1]) {
+        return i;
+      }
+    }
+
+    // Outside range
+    if (rawMult < multPercentileboundaries[0])
+      return 0;
+    return kCentralityClasses - 1;
+  }
+
+  // ========================================================================
+  // COMPUTE PERCENTILE BOUNDARIES
+  // ========================================================================
+  void computePercentileBoundaries()
+  {
+    if (multiplicityValues.empty()) {
+      LOG(warning) << "No multiplicity values to compute percentiles from!";
+      return;
+    }
+
+    // Sort multiplicity values
+    std::sort(multiplicityValues.begin(), multiplicityValues.end());
+
+    LOG(info) << "Computing percentile boundaries from " << multiplicityValues.size() << " events";
+
+    // Compute percentile boundaries
+    multPercentileboundaries.clear();
+    multPercentileboundaries.reserve(kCentralityClasses + 1);
+
+    for (int i = 0; i <= kCentralityClasses; ++i) {
+      float percentile = CentClasses[i];
+      size_t index = static_cast<size_t>(percentile / 100.0 * multiplicityValues.size());
+      if (index >= multiplicityValues.size()) {
+        index = multiplicityValues.size() - 1;
+      }
+      float boundary = multiplicityValues[index];
+      multPercentileboundaries.push_back(boundary);
+      LOG(info) << "Percentile " << percentile << "% -> Multiplicity >= " << boundary;
+    }
+
+    percentilesComputed = true;
+
+    LOG(info) << "=== Percentile Boundaries Computed ===";
+    for (int i = 0; i < kCentralityClasses; ++i) {
+      LOG(info) << "Class " << i << ": [" << CentClasses[i] << "%-" << CentClasses[i + 1]
+                << "%] = Mult [" << multPercentileboundaries[i] << "-" << multPercentileboundaries[i + 1] << ")";
+    }
+  }
+
+  // ========================================================================
+  // MAGNETIC FIELD FUNCTION
+  // ========================================================================
+  int getMagneticField(uint64_t timestamp)
+  {
+    static o2::parameters::GRPMagField* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
+  }
+
+  // ========================================================================
+  // PHI CUT FUNCTION
+  // ========================================================================
+  template <typename TrackType>
+  bool passedPhiCut(const TrackType& track, float magField) const
+  {
+    if (!applyPhiCut.value) {
+      return true;
+    }
+
+    if (track.pt() < pTthresholdPhiCut.value) {
+      return true;
+    }
+
+    float pt = track.pt();
+    float phi = track.phi();
+    int charge = track.sign();
+
+    if (magField < 0) {
+      phi = o2::constants::math::TwoPI - phi;
+    }
+    if (charge < 0) {
+      phi = o2::constants::math::TwoPI - phi;
+    }
+
+    phi += o2::constants::math::PI / 18.0f;
+    phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
+
+    if (phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  float getTransformedPhi(const float phi, const int charge, const float magField) const
+  {
+    float transformedPhi = phi;
+    if (magField < 0) {
+      transformedPhi = o2::constants::math::TwoPI - transformedPhi;
+    }
+    if (charge < 0) {
+      transformedPhi = o2::constants::math::TwoPI - transformedPhi;
+    }
+    transformedPhi += o2::constants::math::PI / 18.0f;
+    transformedPhi = std::fmod(transformedPhi, o2::constants::math::PI / 9.0f);
+    return transformedPhi;
+  }
+
+  // ========================================================================
+  // TRACK SELECTION FUNCTIONS
   // ========================================================================
 
   template <typename TrackType>
@@ -203,7 +456,7 @@ struct MultiplicityPt {
   }
 
   template <typename TrackType>
-  bool passesTrackSelection(TrackType const& track) const
+  bool passesTrackSelection(TrackType const& track, float magField = 0) const
   {
     if (track.eta() < cfgCutEtaMin.value || track.eta() > cfgCutEtaMax.value)
       return false;
@@ -214,11 +467,14 @@ struct MultiplicityPt {
     if (!passesCutWoDCA(track))
       return false;
 
+    if (applyPhiCut.value && !passedPhiCut(track, magField))
+      return false;
+
     return passesDCAxyCut(track);
   }
 
   // ========================================================================
-  // PID SELECTION FUNCTIONS - TPC ONLY (OLD NON-EXCLUSIVE METHOD)
+  // PID SELECTION FUNCTIONS
   // ========================================================================
 
   template <int species, typename TrackType>
@@ -234,19 +490,12 @@ struct MultiplicityPt {
       nsigmaTPC = track.tpcNSigmaPr();
     }
 
-    // TPC-only PID (works for all pT, but better at low pT < 1 GeV/c)
     return (std::abs(nsigmaTPC) < cfgCutNsigma.value);
   }
-
-  // ========================================================================
-  // EXCLUSIVE PID SELECTION - Returns best hypothesis for a track
-  // ========================================================================
 
   template <typename TrackType>
   int getBestPIDHypothesis(TrackType const& track) const
   {
-    // Return values: -1 = no ID, 0 = pion, 1 = kaon, 2 = proton
-
     float nsigmaPi = std::abs(track.tpcNSigmaPi());
     float nsigmaKa = std::abs(track.tpcNSigmaKa());
     float nsigmaPr = std::abs(track.tpcNSigmaPr());
@@ -272,7 +521,7 @@ struct MultiplicityPt {
   }
 
   // ========================================================================
-  // EVENT SELECTION FUNCTION - EXACT spectraTOF
+  // EVENT SELECTION FUNCTION
   // ========================================================================
 
   template <bool fillHistograms = false, typename CollisionType>
@@ -342,7 +591,7 @@ struct MultiplicityPt {
   }
 
   // ========================================================================
-  // PRIMARY SELECTION - MATCHING spectraTOF
+  // PRIMARY SELECTION
   // ========================================================================
 
   template <typename ParticleType>
@@ -366,7 +615,6 @@ struct MultiplicityPt {
     return true;
   }
 
-  // Particle-specific primary selection
   template <int species, typename ParticleType>
   bool isGoodPrimarySpecies(ParticleType const& particle) const
   {
@@ -397,7 +645,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 void MultiplicityPt::init(InitContext const&)
 {
   // ========================================================================
-  // CUSTOM TRACK CUTS INITIALIZATION - MATCHING spectraTOF
+  // CUSTOM TRACK CUTS INITIALIZATION
   // ========================================================================
 
   if (useCustomTrackCuts.value) {
@@ -420,6 +668,28 @@ void MultiplicityPt::init(InitContext const&)
   }
 
   // ========================================================================
+  // PHI CUT INITIALIZATION
+  // ========================================================================
+
+  if (applyPhiCut.value) {
+    fphiCutLow = new TF1("StandardPhiCutLow",
+                         Form("%f/x/x+pi/18.0-%f",
+                              phiCutLowParam1.value, phiCutLowParam2.value),
+                         0, 50);
+    fphiCutHigh = new TF1("StandardPhiCutHigh",
+                          Form("%f/x+pi/18.0+%f",
+                               phiCutHighParam1.value, phiCutHighParam2.value),
+                          0, 50);
+
+    LOGF(info, "=== Phi Cut Parameters ===");
+    LOGF(info, "Low cut: %.6f/x² + pi/18 - %.6f",
+         phiCutLowParam1.value, phiCutLowParam2.value);
+    LOGF(info, "High cut: %.6f/x + pi/18 + %.6f",
+         phiCutHighParam1.value, phiCutHighParam2.value);
+    LOGF(info, "Applied for pT > %.1f GeV/c", pTthresholdPhiCut.value);
+  }
+
+  // ========================================================================
   // AXIS DEFINITIONS
   // ========================================================================
 
@@ -433,23 +703,39 @@ void MultiplicityPt::init(InitContext const&)
     "pT bin limits"};
   AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
+  // Multiplicity axis - initially raw multiplicity, will represent percentiles after calibration
+  std::vector<double> centBins(CentClasses, CentClasses + kCentralityClasses + 1);
+  AxisSpec multAxis = {centBins, "Centrality/Multiplicity Class (%)"};
+
+  // Raw multiplicity axis for calibration
+  AxisSpec rawMultAxis = {150, 0, 150, "N_{ch} (|#eta| < 1.0)"};
+
   // ========================================================================
-  // HISTOGRAM REGISTRY - INCLUSIVE + PARTICLE-SPECIFIC
+  // HISTOGRAM REGISTRY
   // ========================================================================
 
-  // Event counting - EXACT spectraTOF approach
+  // Multiplicity distribution for percentile calibration
+  ue.add("Calibration/hRawMultiplicity", "Raw multiplicity distribution;N_{ch};Events",
+         HistType::kTH1D, {rawMultAxis});
+
+  // Event counting
   ue.add("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", HistType::kTH1D, {{10, 0.5, 10.5}});
   auto hColl = ue.get<TH1>(HIST("MC/GenRecoCollisions"));
   hColl->GetXaxis()->SetBinLabel(1, "Collisions generated");
   hColl->GetXaxis()->SetBinLabel(2, "Collisions reconstructed");
 
-  // CRITICAL: Complete event counting system
-  ue.add("hEventsAllGen", "All generated events", HistType::kTH1F, {{1, 0.5, 1.5}});
-  ue.add("hEventsPassPhysicsSelection", "Events passing physics selection", HistType::kTH1F, {{1, 0.5, 1.5}});
-  ue.add("hEventsReconstructable", "Physics-selected events with reconstruction", HistType::kTH1F, {{1, 0.5, 1.5}});
-  ue.add("hEventsSelectedReco", "Selected reconstructed events", HistType::kTH1F, {{1, 0.5, 1.5}});
+  // Event loss histograms
+  ue.add("MC/EventLoss/MultGenerated", "Generated events vs multiplicity",
+         HistType::kTH1D, {multAxis});
+  ue.add("MC/EventLoss/MultBadVertex", "Events with bad vertex vs multiplicity",
+         HistType::kTH1D, {multAxis});
+  ue.add("MC/EventLoss/MultPhysicsSelected", "Physics-selected events vs multiplicity",
+         HistType::kTH1D, {multAxis});
+  ue.add("MC/EventLoss/MultReconstructed", "Reconstructed events vs multiplicity",
+         HistType::kTH1D, {multAxis});
+  ue.add("MC/EventLoss/MultRecoSelected", "Reconstructed+selected events vs multiplicity",
+         HistType::kTH1D, {multAxis});
 
-  // Event loss breakdown histogram
   ue.add("hEventLossBreakdown", "Event loss breakdown", HistType::kTH1D, {{4, 0.5, 4.5}});
   auto hLoss = ue.get<TH1>(HIST("hEventLossBreakdown"));
   hLoss->GetXaxis()->SetBinLabel(1, "Physics selected");
@@ -461,34 +747,63 @@ void MultiplicityPt::init(InitContext const&)
   // INCLUSIVE CHARGED PARTICLE HISTOGRAMS
   // ========================================================================
 
-  // ALL generated primaries (before any physics selection)
   ue.add("Inclusive/hPtPrimGenAll", "All generated primaries (no cuts);#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtPrimGenAllVsMult", "All generated primaries vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
 
-  // Generated primaries AFTER physics selection
+  ue.add("Inclusive/hPtPrimBadVertex", "Generated primaries (bad vertex);#it{p}_{T} (GeV/#it{c});Counts",
+         HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtPrimBadVertexVsMult", "Generated primaries (bad vertex) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
+
   ue.add("Inclusive/hPtPrimGen", "Generated primaries (after physics selection);#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtPrimGenVsMult", "Generated primaries (after phys sel) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
 
-  // Tracking Efficiency
+  ue.add("Inclusive/hPtPrimRecoEv", "Generated primaries (reco events);#it{p}_{T} (GeV/#it{c});Counts",
+         HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtPrimRecoEvVsMult", "Generated primaries (reco events) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
+
+  ue.add("Inclusive/hPtPrimGoodEv", "Generated primaries (good events);#it{p}_{T} (GeV/#it{c});Counts",
+         HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtPrimGoodEvVsMult", "Generated primaries (good events) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
+
   ue.add("Inclusive/hPtNumEff", "Tracking efficiency numerator;#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtNumEffVsMult", "Tracking efficiency numerator vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
+
   ue.add("Inclusive/hPtDenEff", "Tracking efficiency denominator;#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtDenEffVsMult", "Tracking efficiency denominator vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
 
-  // Primary Fraction
   ue.add("Inclusive/hPtAllReco", "All reconstructed tracks;#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtAllRecoVsMult", "All reconstructed tracks vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
+
   ue.add("Inclusive/hPtPrimReco", "Reconstructed primaries;#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtPrimRecoVsMult", "Reconstructed primaries vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
+
   ue.add("Inclusive/hPtSecReco", "Reconstructed secondaries;#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtSecRecoVsMult", "Reconstructed secondaries vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
 
-  // Measured spectra
   ue.add("Inclusive/hPtMeasured", "All measured tracks;#it{p}_{T} (GeV/#it{c});Counts",
          HistType::kTH1D, {ptAxis});
+  ue.add("Inclusive/hPtMeasuredVsMult", "All measured tracks vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%)",
+         HistType::kTH2D, {ptAxis, multAxis});
 
   // ========================================================================
-  // PARTICLE-SPECIFIC HISTOGRAMS (Pions, Kaons, Protons)
+  // PARTICLE-SPECIFIC HISTOGRAMS
   // ========================================================================
 
   const std::array<std::string, kNSpecies> particleNames = {"Pion", "Kaon", "Proton"};
@@ -498,49 +813,117 @@ void MultiplicityPt::init(InitContext const&)
     const auto& name = particleNames[iSpecies];
     const auto& symbol = particleSymbols[iSpecies];
 
-    // Generated histograms
+    // 1D versions
     ue.add(Form("%s/hPtPrimGenAll", name.c_str()),
            Form("All generated %s (no cuts);#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
+           HistType::kTH1D, {ptAxis});
+
+    ue.add(Form("%s/hPtPrimBadVertex", name.c_str()),
+           Form("Generated %s (bad vertex);#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
 
     ue.add(Form("%s/hPtPrimGen", name.c_str()),
            Form("Generated %s (after physics selection);#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
 
+    ue.add(Form("%s/hPtPrimRecoEv", name.c_str()),
+           Form("Generated %s (reco events);#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
+           HistType::kTH1D, {ptAxis});
+
+    ue.add(Form("%s/hPtPrimGoodEv", name.c_str()),
+           Form("Generated %s (good events);#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
+           HistType::kTH1D, {ptAxis});
+
+    // 2D versions (vs multiplicity class)
+    ue.add(Form("%s/hPtPrimGenAllVsMult", name.c_str()),
+           Form("All generated %s vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
+
+    ue.add(Form("%s/hPtPrimBadVertexVsMult", name.c_str()),
+           Form("Generated %s (bad vertex) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
+
+    ue.add(Form("%s/hPtPrimGenVsMult", name.c_str()),
+           Form("Generated %s (after phys sel) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
+
+    ue.add(Form("%s/hPtPrimRecoEvVsMult", name.c_str()),
+           Form("Generated %s (reco events) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
+
+    ue.add(Form("%s/hPtPrimGoodEvVsMult", name.c_str()),
+           Form("Generated %s (good events) vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
+
     // Tracking efficiency
     ue.add(Form("%s/hPtNumEff", name.c_str()),
            Form("%s tracking efficiency numerator;#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
+    ue.add(Form("%s/hPtNumEffVsMult", name.c_str()),
+           Form("%s tracking eff numerator vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
 
     ue.add(Form("%s/hPtDenEff", name.c_str()),
            Form("%s tracking efficiency denominator;#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
+    ue.add(Form("%s/hPtDenEffVsMult", name.c_str()),
+           Form("%s tracking eff denominator vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
 
-    // Reconstructed histograms
+    // Primary fraction
     ue.add(Form("%s/hPtAllReco", name.c_str()),
            Form("All reconstructed %s;#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
+    ue.add(Form("%s/hPtAllRecoVsMult", name.c_str()),
+           Form("All reconstructed %s vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
 
     ue.add(Form("%s/hPtPrimReco", name.c_str()),
            Form("Reconstructed primary %s;#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
+    ue.add(Form("%s/hPtPrimRecoVsMult", name.c_str()),
+           Form("Reconstructed primary %s vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
 
     ue.add(Form("%s/hPtSecReco", name.c_str()),
            Form("Reconstructed secondary %s;#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
+    ue.add(Form("%s/hPtSecRecoVsMult", name.c_str()),
+           Form("Reconstructed secondary %s vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
 
     // Measured spectra
     ue.add(Form("%s/hPtMeasured", name.c_str()),
            Form("Measured %s;#it{p}_{T} (GeV/#it{c});Counts", symbol.c_str()),
            HistType::kTH1D, {ptAxis});
+    ue.add(Form("%s/hPtMeasuredVsMult", name.c_str()),
+           Form("Measured %s vs mult;#it{p}_{T} (GeV/#it{c});Mult Class (%%)", symbol.c_str()),
+           HistType::kTH2D, {ptAxis, multAxis});
 
-    // PID quality histograms - TPC ONLY
+    // PID quality
     if (enablePIDHistograms) {
       ue.add(Form("%s/hNsigmaTPC", name.c_str()),
              Form("TPC n#sigma %s;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", symbol.c_str()),
              HistType::kTH2D, {ptAxis, {200, -10, 10}});
     }
   }
+
+  // ========================================================================
+  // PHI CUT MONITORING
+  // ========================================================================
+
+  if (applyPhiCut.value) {
+    ue.add("PhiCut/hPtVsPhiPrimeBefore", "pT vs φ' before cut;p_{T} (GeV/c);φ'",
+           HistType::kTH2F, {{100, 0, 10}, {100, 0, 0.4}});
+    ue.add("PhiCut/hPtVsPhiPrimeAfter", "pT vs φ' after cut;p_{T} (GeV/c);φ'",
+           HistType::kTH2F, {{100, 0, 10}, {100, 0, 0.4}});
+    ue.add("PhiCut/hRejectionRate", "Track rejection rate by phi cut;p_{T} (GeV/c);Rejection Rate",
+           HistType::kTProfile, {{100, 0, 10}});
+  }
+
+  // ========================================================================
+  // EVENT SELECTION HISTOGRAM
+  // ========================================================================
 
   constexpr int nEvSelBins = 20;
   constexpr float evSelMin = 0.5f;
@@ -565,30 +948,92 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("hvtxZ", "Vertex Z (data);Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
   ue.add("hvtxZmc", "MC vertex Z;Vertex Z (cm);Events", HistType::kTH1F, {{40, -20.0, 20.0}});
 
-  LOG(info) << "Initialized MultiplicityPt task with EXCLUSIVE PID for INCLUSIVE + PARTICLE-SPECIFIC (Pi, K, p) analysis";
+  LOG(info) << "=== Initialized MultiplicityPt task with ON-THE-FLY PERCENTILE COMPUTATION ===";
+  LOG(info) << "Centrality classes: " << kCentralityClasses;
+  LOG(info) << "Multiplicity estimator: " << multiplicityEstimator.value;
+  LOG(info) << "IMPORTANT: Run processPercentileCalibration FIRST to build percentile boundaries!";
+  if (applyPhiCut.value) {
+    LOG(info) << "Phi cut ENABLED for pT > " << pTthresholdPhiCut.value << " GeV/c";
+  }
 }
 
 // ========================================================================
-// DATA PROCESSING - WITH EXCLUSIVE PID
+// PERCENTILE CALIBRATION PASS
 // ========================================================================
-void MultiplicityPt::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
+void MultiplicityPt::processPercentileCalibration(CollisionTableMCTrue const& mcCollisions,
+                                                  ParticleTableMC const& particles)
+{
+  LOG(info) << "=== PERCENTILE CALIBRATION PASS ===";
+  LOG(info) << "Processing " << mcCollisions.size() << " MC collisions";
+
+  multiplicityValues.clear();
+  multiplicityValues.reserve(mcCollisions.size());
+
+  for (const auto& mcCollision : mcCollisions) {
+    // Apply basic cuts
+    if (std::abs(mcCollision.posZ()) > cfgCutVertex.value)
+      continue;
+
+    auto particlesInCollision = particles.sliceBy(perMCCol, mcCollision.globalIndex());
+
+    // Apply INEL cuts
+    if (cfgINELCut.value == 1 && !o2::pwglf::isINELgt0mc(particlesInCollision, pdg))
+      continue;
+    if (cfgINELCut.value == 2 && !o2::pwglf::isINELgt1mc(particlesInCollision, pdg))
+      continue;
+
+    // Calculate multiplicity
+    float mcMult = getMultiplicityMC(mcCollision, particles);
+    multiplicityValues.push_back(mcMult);
+
+    ue.fill(HIST("Calibration/hRawMultiplicity"), mcMult);
+  }
+
+  // Compute percentile boundaries
+  computePercentileBoundaries();
+
+  LOG(info) << "=== PERCENTILE CALIBRATION COMPLETE ===";
+  LOG(info) << "Processed " << multiplicityValues.size() << " events";
+  LOG(info) << "Now run processMC and processTrue with these percentiles";
+}
+
+// ========================================================================
+// DATA PROCESSING
+// ========================================================================
+void MultiplicityPt::processData(CollisionTableData::iterator const& collision,
+                                 TrackTableData const& tracks,
+                                 BCsRun3 const& /*bcs*/)
 {
   if (!isEventSelected<true>(collision)) {
     return;
   }
   ue.fill(HIST("hvtxZ"), collision.posZ());
 
+  float magField = 0;
+  if (applyPhiCut.value) {
+    const auto& bc = collision.bc_as<BCsRun3>();
+    magField = getMagneticField(bc.timestamp());
+  }
+
   for (const auto& track : tracks) {
-    if (!passesTrackSelection(track)) {
+    if (applyPhiCut.value && track.pt() >= pTthresholdPhiCut.value) {
+      float phiPrime = getTransformedPhi(track.phi(), track.sign(), magField);
+      ue.fill(HIST("PhiCut/hPtVsPhiPrimeBefore"), track.pt(), phiPrime);
+    }
+
+    if (!passesTrackSelection(track, magField)) {
       continue;
     }
 
-    // Inclusive charged particle (always filled)
+    if (applyPhiCut.value && track.pt() >= pTthresholdPhiCut.value) {
+      float phiPrime = getTransformedPhi(track.phi(), track.sign(), magField);
+      ue.fill(HIST("PhiCut/hPtVsPhiPrimeAfter"), track.pt(), phiPrime);
+    }
+
     ue.fill(HIST("Inclusive/hPtMeasured"), track.pt());
     ue.fill(HIST("hEta"), track.eta());
     ue.fill(HIST("hPhi"), track.phi());
 
-    // Exclusive particle identification
     int bestSpecies = getBestPIDHypothesis(track);
 
     if (bestSpecies == kPion) {
@@ -611,29 +1056,53 @@ void MultiplicityPt::processData(CollisionTableData::iterator const& collision, 
 }
 
 // ========================================================================
-// MC PROCESSING - WITH FIXED PRIMARY FRACTION CALCULATION
+// MC PROCESSING - Using computed percentiles
 // ========================================================================
 void MultiplicityPt::processMC(TrackTableMC const& tracks,
                                aod::McParticles const& particles,
                                CollisionTableMCTrue const& mcCollisions,
-                               CollisionTableMC const& collisions)
+                               CollisionTableMC const& collisions,
+                               BCsRun3 const& /*bcs*/)
 {
+  if (!percentilesComputed) {
+    LOG(warning) << "Percentiles not computed yet! Run processPercentileCalibration first!";
+    LOG(warning) << "Using fallback linear binning for now...";
+  }
+
   LOG(info) << "=== DEBUG processMC START ===";
   LOG(info) << "MC collisions: " << mcCollisions.size();
   LOG(info) << "Reconstructed collisions: " << collisions.size();
 
-  // ========================================================================
-  // STEP 1: Identify which MC collisions are reconstructable
-  // ========================================================================
+  ue.fill(HIST("MC/GenRecoCollisions"), 1.f, mcCollisions.size());
+  ue.fill(HIST("MC/GenRecoCollisions"), 2.f, collisions.size());
 
-  std::set<int64_t> reconstructableMCCollisions;
+  std::set<int64_t> physicsSelectedMCCollisions;
+  std::set<int64_t> reconstructedMCCollisions;
+  std::set<int64_t> selectedMCCollisions;
 
+  std::map<int64_t, float> mcCollisionMultiplicity;
+  std::map<int64_t, float> mcCollisionPercentile;
+
+  // First pass: classify MC collisions
   for (const auto& mcCollision : mcCollisions) {
-    auto particlesInCollision = particles.sliceBy(perMCCol, mcCollision.globalIndex());
+    int64_t mcCollId = mcCollision.globalIndex();
+
+    float mcMult = getMultiplicityMC(mcCollision, particles);
+    mcCollisionMultiplicity[mcCollId] = mcMult;
+
+    // Convert to percentile
+    float percentile = multiplicityToPercentile(mcMult);
+    mcCollisionPercentile[mcCollId] = percentile;
+
+    ue.fill(HIST("MC/EventLoss/MultGenerated"), percentile);
+
+    auto particlesInCollision = particles.sliceBy(perMCCol, mcCollId);
 
     if (std::abs(mcCollision.posZ()) > cfgCutVertex.value) {
+      ue.fill(HIST("MC/EventLoss/MultBadVertex"), percentile);
       continue;
     }
+
     if (cfgINELCut.value == 1 && !o2::pwglf::isINELgt0mc(particlesInCollision, pdg)) {
       continue;
     }
@@ -641,17 +1110,13 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       continue;
     }
 
-    reconstructableMCCollisions.insert(mcCollision.globalIndex());
+    physicsSelectedMCCollisions.insert(mcCollId);
+    ue.fill(HIST("MC/EventLoss/MultPhysicsSelected"), percentile);
   }
 
-  LOG(info) << "DEBUG: Physics-selected MC collisions: " << reconstructableMCCollisions.size();
+  LOG(info) << "Physics-selected MC collisions: " << physicsSelectedMCCollisions.size();
 
-  // ========================================================================
-  // STEP 2: Track reconstruction outcomes
-  // ========================================================================
-
-  std::set<int64_t> reconstructedMCCollisions;
-  std::set<int64_t> selectedMCCollisions;
+  // Second pass: track reconstructed events
   std::set<int64_t> selectedCollisionIndices;
 
   for (const auto& collision : collisions) {
@@ -662,43 +1127,42 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
     const auto& mcCollision = collision.mcCollision_as<CollisionTableMCTrue>();
     int64_t mcCollId = mcCollision.globalIndex();
 
-    if (reconstructableMCCollisions.find(mcCollId) == reconstructableMCCollisions.end()) {
+    if (physicsSelectedMCCollisions.find(mcCollId) == physicsSelectedMCCollisions.end()) {
       continue;
     }
 
-    reconstructedMCCollisions.insert(mcCollId);
+    float percentile = mcCollisionPercentile[mcCollId];
+
+    if (reconstructedMCCollisions.find(mcCollId) == reconstructedMCCollisions.end()) {
+      reconstructedMCCollisions.insert(mcCollId);
+      ue.fill(HIST("MC/EventLoss/MultReconstructed"), percentile);
+    }
 
     if (isEventSelected<false>(collision)) {
-      selectedMCCollisions.insert(mcCollId);
+      if (selectedMCCollisions.find(mcCollId) == selectedMCCollisions.end()) {
+        selectedMCCollisions.insert(mcCollId);
+        ue.fill(HIST("MC/EventLoss/MultRecoSelected"), percentile);
+      }
       selectedCollisionIndices.insert(collision.globalIndex());
       ue.fill(HIST("hvtxZ"), collision.posZ());
     }
   }
 
-  auto hEventsReconstructable = ue.get<TH1>(HIST("hEventsReconstructable"));
-  auto hEventsSelectedReco = ue.get<TH1>(HIST("hEventsSelectedReco"));
+  LOG(info) << "Reconstructed MC collisions: " << reconstructedMCCollisions.size();
+  LOG(info) << "Selected MC collisions: " << selectedMCCollisions.size();
 
-  hEventsReconstructable->SetBinContent(1, reconstructedMCCollisions.size());
-  hEventsSelectedReco->SetBinContent(1, selectedMCCollisions.size());
+  int nPhysicsSelected = physicsSelectedMCCollisions.size();
+  int nReconstructed = reconstructedMCCollisions.size();
+  int nSelected = selectedMCCollisions.size();
 
-  int nReconstructableTotal = reconstructableMCCollisions.size();
-  int nReconstructableWithReco = reconstructedMCCollisions.size();
-  int nSelectedReco = selectedMCCollisions.size();
-
-  LOG(info) << "DEBUG: Reconstructed MC collisions: " << nReconstructableWithReco;
-  LOG(info) << "DEBUG: Selected MC collisions: " << nSelectedReco;
-
-  if (nReconstructableTotal > 0) {
-    ue.fill(HIST("hEventLossBreakdown"), 1, nReconstructableTotal);
-    ue.fill(HIST("hEventLossBreakdown"), 2, nReconstructableWithReco);
-    ue.fill(HIST("hEventLossBreakdown"), 3, nSelectedReco);
-    ue.fill(HIST("hEventLossBreakdown"), 4, (nSelectedReco * 100.0 / nReconstructableTotal));
+  if (nPhysicsSelected > 0) {
+    ue.fill(HIST("hEventLossBreakdown"), 1, nPhysicsSelected);
+    ue.fill(HIST("hEventLossBreakdown"), 2, nReconstructed);
+    ue.fill(HIST("hEventLossBreakdown"), 3, nSelected);
+    ue.fill(HIST("hEventLossBreakdown"), 4, (nSelected * 100.0 / nPhysicsSelected));
   }
 
-  // ========================================================================
-  // STEP 3: Process tracks with EXCLUSIVE PID - FIXED PRIMARY FRACTION
-  // ========================================================================
-
+  // Process tracks
   int totalTracksProcessed = 0;
   int tracksFromSelectedEvents = 0;
   int tracksPassingSelection = 0;
@@ -720,51 +1184,68 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
     }
     tracksFromSelectedEvents++;
 
-    if (!passesTrackSelection(track))
+    if (!collision.has_mcCollision())
       continue;
+
+    const auto& mcCollision = collision.mcCollision_as<CollisionTableMCTrue>();
+    float percentile = mcCollisionPercentile[mcCollision.globalIndex()];
+
+    float magField = 0;
+    if (applyPhiCut.value) {
+      const auto& bc = collision.bc_as<BCsRun3>();
+      magField = getMagneticField(bc.timestamp());
+    }
+
+    if (!passesTrackSelection(track, magField)) {
+      continue;
+    }
     tracksPassingSelection++;
 
-    // ========================================================================
-    // INCLUSIVE CHARGED PARTICLE ANALYSIS
-    // ========================================================================
-
+    // Inclusive charged particle
     ue.fill(HIST("Inclusive/hPtMeasured"), track.pt());
+    ue.fill(HIST("Inclusive/hPtMeasuredVsMult"), track.pt(), percentile);
     ue.fill(HIST("Inclusive/hPtAllReco"), track.pt());
+    ue.fill(HIST("Inclusive/hPtAllRecoVsMult"), track.pt(), percentile);
     ue.fill(HIST("hEta"), track.eta());
     ue.fill(HIST("hPhi"), track.phi());
 
-    // ========================================================================
-    // EFFICIENCY NUMERATOR: Fill based on TRUE particle type
-    // ========================================================================
-
+    // Efficiency numerator
     if (track.has_mcParticle()) {
       const auto& particle = track.mcParticle();
       int pdgCode = std::abs(particle.pdgCode());
 
       if (particle.isPhysicalPrimary()) {
         ue.fill(HIST("Inclusive/hPtNumEff"), particle.pt());
+        ue.fill(HIST("Inclusive/hPtNumEffVsMult"), particle.pt(), percentile);
         ue.fill(HIST("Inclusive/hPtPrimReco"), track.pt());
+        ue.fill(HIST("Inclusive/hPtPrimRecoVsMult"), track.pt(), percentile);
 
-        // Fill particle-specific efficiency numerator based on TRUE type
         if (pdgCode == PDGPion) {
           ue.fill(HIST("Pion/hPtNumEff"), particle.pt());
+          ue.fill(HIST("Pion/hPtNumEffVsMult"), particle.pt(), percentile);
         }
         if (pdgCode == PDGKaon) {
           ue.fill(HIST("Kaon/hPtNumEff"), particle.pt());
+          ue.fill(HIST("Kaon/hPtNumEffVsMult"), particle.pt(), percentile);
         }
         if (pdgCode == PDGProton) {
           ue.fill(HIST("Proton/hPtNumEff"), particle.pt());
+          ue.fill(HIST("Proton/hPtNumEffVsMult"), particle.pt(), percentile);
         }
       } else {
         ue.fill(HIST("Inclusive/hPtSecReco"), track.pt());
+        ue.fill(HIST("Inclusive/hPtSecRecoVsMult"), track.pt(), percentile);
       }
     }
 
+    // Identified particle analysis
     int bestSpecies = getBestPIDHypothesis(track);
 
     if (bestSpecies == kPion) {
       ue.fill(HIST("Pion/hPtMeasured"), track.pt());
+      ue.fill(HIST("Pion/hPtMeasuredVsMult"), track.pt(), percentile);
       ue.fill(HIST("Pion/hPtAllReco"), track.pt());
+      ue.fill(HIST("Pion/hPtAllRecoVsMult"), track.pt(), percentile);
       particleTracksIdentified[kPion]++;
 
       if (enablePIDHistograms) {
@@ -775,15 +1256,20 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         const auto& particle = track.mcParticle();
         if (particle.isPhysicalPrimary()) {
           ue.fill(HIST("Pion/hPtPrimReco"), track.pt());
+          ue.fill(HIST("Pion/hPtPrimRecoVsMult"), track.pt(), percentile);
           particleTracksPrimary[kPion]++;
         } else {
           ue.fill(HIST("Pion/hPtSecReco"), track.pt());
+          ue.fill(HIST("Pion/hPtSecRecoVsMult"), track.pt(), percentile);
           particleTracksSecondary[kPion]++;
         }
       }
+
     } else if (bestSpecies == kKaon) {
       ue.fill(HIST("Kaon/hPtMeasured"), track.pt());
+      ue.fill(HIST("Kaon/hPtMeasuredVsMult"), track.pt(), percentile);
       ue.fill(HIST("Kaon/hPtAllReco"), track.pt());
+      ue.fill(HIST("Kaon/hPtAllRecoVsMult"), track.pt(), percentile);
       particleTracksIdentified[kKaon]++;
 
       if (enablePIDHistograms) {
@@ -792,20 +1278,22 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
 
       if (track.has_mcParticle()) {
         const auto& particle = track.mcParticle();
-
-        // KEY FIX: Primary fraction of identified kaons
-        // A misidentified pion that is primary still contributes to primary fraction
         if (particle.isPhysicalPrimary()) {
           ue.fill(HIST("Kaon/hPtPrimReco"), track.pt());
+          ue.fill(HIST("Kaon/hPtPrimRecoVsMult"), track.pt(), percentile);
           particleTracksPrimary[kKaon]++;
         } else {
           ue.fill(HIST("Kaon/hPtSecReco"), track.pt());
+          ue.fill(HIST("Kaon/hPtSecRecoVsMult"), track.pt(), percentile);
           particleTracksSecondary[kKaon]++;
         }
       }
+
     } else if (bestSpecies == kProton) {
       ue.fill(HIST("Proton/hPtMeasured"), track.pt());
+      ue.fill(HIST("Proton/hPtMeasuredVsMult"), track.pt(), percentile);
       ue.fill(HIST("Proton/hPtAllReco"), track.pt());
+      ue.fill(HIST("Proton/hPtAllRecoVsMult"), track.pt(), percentile);
       particleTracksIdentified[kProton]++;
 
       if (enablePIDHistograms) {
@@ -814,22 +1302,24 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
 
       if (track.has_mcParticle()) {
         const auto& particle = track.mcParticle();
-
-        // KEY FIX: Primary fraction of identified protons
         if (particle.isPhysicalPrimary()) {
           ue.fill(HIST("Proton/hPtPrimReco"), track.pt());
+          ue.fill(HIST("Proton/hPtPrimRecoVsMult"), track.pt(), percentile);
           particleTracksPrimary[kProton]++;
         } else {
           ue.fill(HIST("Proton/hPtSecReco"), track.pt());
+          ue.fill(HIST("Proton/hPtSecRecoVsMult"), track.pt(), percentile);
           particleTracksSecondary[kProton]++;
         }
       }
     }
   }
+
   LOG(info) << "=== DEBUG TRACK COUNTING ===";
   LOG(info) << "Total tracks processed: " << totalTracksProcessed;
   LOG(info) << "Tracks from selected events: " << tracksFromSelectedEvents;
   LOG(info) << "Tracks passing selection: " << tracksPassingSelection;
+
   LOG(info) << "Pions identified: " << particleTracksIdentified[kPion]
             << ", primary: " << particleTracksPrimary[kPion]
             << ", secondary: " << particleTracksSecondary[kPion];
@@ -840,125 +1330,152 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
             << ", primary: " << particleTracksPrimary[kProton]
             << ", secondary: " << particleTracksSecondary[kProton];
 
-  // Calculate and log primary fractions
-  if (particleTracksIdentified[kPion] > 0) {
-    float pionPrimFrac = static_cast<float>(particleTracksPrimary[kPion]) / particleTracksIdentified[kPion];
-    LOG(info) << "Pion primary fraction: " << pionPrimFrac * 100.0 << "%";
-  }
-  if (particleTracksIdentified[kKaon] > 0) {
-    float kaonPrimFrac = static_cast<float>(particleTracksPrimary[kKaon]) / particleTracksIdentified[kKaon];
-    LOG(info) << "Kaon primary fraction: " << kaonPrimFrac * 100.0 << "%";
-  }
-  if (particleTracksIdentified[kProton] > 0) {
-    float protonPrimFrac = static_cast<float>(particleTracksPrimary[kProton]) / particleTracksIdentified[kProton];
-    LOG(info) << "Proton primary fraction: " << protonPrimFrac * 100.0 << "%";
-  }
-
   LOG(info) << "=== DEBUG processMC END ===";
 }
 
 // ========================================================================
-// TRUE MC PROCESSING - WITH PARTICLE-SPECIFIC SIGNAL LOSS
+// TRUE MC PROCESSING - Using computed percentiles
 // ========================================================================
 void MultiplicityPt::processTrue(CollisionTableMCTrue const& mcCollisions,
                                  ParticleTableMC const& particles)
 {
+  if (!percentilesComputed) {
+    LOG(warning) << "Percentiles not computed yet! Run processPercentileCalibration first!";
+  }
+
   LOG(info) << "=== DEBUG processTrue START ===";
   LOG(info) << "Number of MC collisions: " << mcCollisions.size();
 
-  int nPassPhysicsSelection = 0;
-  int nParticlesFilledAll = 0;
-  int nParticlesFilledAfterPS = 0;
+  int nAllGenerated = 0;
+  int nBadVertex = 0;
+  int nPhysicsSelected = 0;
 
   std::array<int, kNSpecies> particleCountAll = {0};
+  std::array<int, kNSpecies> particleCountBadVertex = {0};
   std::array<int, kNSpecies> particleCountAfterPS = {0};
 
   for (const auto& mcCollision : mcCollisions) {
-    // Count EVERY generated event
-    ue.fill(HIST("hEventsAllGen"), 1.0);
+    nAllGenerated++;
+
+    float mcMult = getMultiplicityMC(mcCollision, particles);
+    float percentile = multiplicityToPercentile(mcMult);
 
     ue.fill(HIST("hvtxZmc"), mcCollision.posZ());
     auto particlesInCollision = particles.sliceBy(perMCCol, mcCollision.globalIndex());
 
-    // ========================================================================
-    // Fill ALL generated primaries BEFORE physics selection
-    // ========================================================================
+    // Fill ALL generated primaries BEFORE any cuts
     for (const auto& particle : particlesInCollision) {
       if (isGoodPrimary(particle)) {
         ue.fill(HIST("Inclusive/hPtPrimGenAll"), particle.pt());
-        nParticlesFilledAll++;
+        ue.fill(HIST("Inclusive/hPtPrimGenAllVsMult"), particle.pt(), percentile);
       }
 
       if (isGoodPrimarySpecies<kPion>(particle)) {
         ue.fill(HIST("Pion/hPtPrimGenAll"), particle.pt());
+        ue.fill(HIST("Pion/hPtPrimGenAllVsMult"), particle.pt(), percentile);
         particleCountAll[kPion]++;
       }
 
       if (isGoodPrimarySpecies<kKaon>(particle)) {
         ue.fill(HIST("Kaon/hPtPrimGenAll"), particle.pt());
+        ue.fill(HIST("Kaon/hPtPrimGenAllVsMult"), particle.pt(), percentile);
         particleCountAll[kKaon]++;
       }
 
       if (isGoodPrimarySpecies<kProton>(particle)) {
         ue.fill(HIST("Proton/hPtPrimGenAll"), particle.pt());
+        ue.fill(HIST("Proton/hPtPrimGenAllVsMult"), particle.pt(), percentile);
         particleCountAll[kProton]++;
       }
     }
 
-    // ========================================================================
-    // Apply physics selection
-    // ========================================================================
-    if (std::abs(mcCollision.posZ()) > cfgCutVertex.value)
-      continue;
+    // Apply vertex cut
+    if (std::abs(mcCollision.posZ()) > cfgCutVertex.value) {
+      nBadVertex++;
 
+      for (const auto& particle : particlesInCollision) {
+        if (isGoodPrimary(particle)) {
+          ue.fill(HIST("Inclusive/hPtPrimBadVertex"), particle.pt());
+          ue.fill(HIST("Inclusive/hPtPrimBadVertexVsMult"), particle.pt(), percentile);
+        }
+
+        if (isGoodPrimarySpecies<kPion>(particle)) {
+          ue.fill(HIST("Pion/hPtPrimBadVertex"), particle.pt());
+          ue.fill(HIST("Pion/hPtPrimBadVertexVsMult"), particle.pt(), percentile);
+          particleCountBadVertex[kPion]++;
+        }
+
+        if (isGoodPrimarySpecies<kKaon>(particle)) {
+          ue.fill(HIST("Kaon/hPtPrimBadVertex"), particle.pt());
+          ue.fill(HIST("Kaon/hPtPrimBadVertexVsMult"), particle.pt(), percentile);
+          particleCountBadVertex[kKaon]++;
+        }
+
+        if (isGoodPrimarySpecies<kProton>(particle)) {
+          ue.fill(HIST("Proton/hPtPrimBadVertex"), particle.pt());
+          ue.fill(HIST("Proton/hPtPrimBadVertexVsMult"), particle.pt(), percentile);
+          particleCountBadVertex[kProton]++;
+        }
+      }
+      continue;
+    }
+
+    // Apply INEL cuts
     if (cfgINELCut.value == 1 && !o2::pwglf::isINELgt0mc(particlesInCollision, pdg))
       continue;
     if (cfgINELCut.value == 2 && !o2::pwglf::isINELgt1mc(particlesInCollision, pdg))
       continue;
 
-    // Count physics-selected events
-    ue.fill(HIST("hEventsPassPhysicsSelection"), 1.0);
-    nPassPhysicsSelection++;
+    nPhysicsSelected++;
 
-    // Fill primaries AFTER physics selection
+    // Fill primaries AFTER physics selection (denominator for efficiency)
     for (const auto& particle : particlesInCollision) {
       if (isGoodPrimary(particle)) {
         ue.fill(HIST("Inclusive/hPtDenEff"), particle.pt());
+        ue.fill(HIST("Inclusive/hPtDenEffVsMult"), particle.pt(), percentile);
         ue.fill(HIST("Inclusive/hPtPrimGen"), particle.pt());
-        nParticlesFilledAfterPS++;
+        ue.fill(HIST("Inclusive/hPtPrimGenVsMult"), particle.pt(), percentile);
       }
 
       if (isGoodPrimarySpecies<kPion>(particle)) {
         ue.fill(HIST("Pion/hPtDenEff"), particle.pt());
+        ue.fill(HIST("Pion/hPtDenEffVsMult"), particle.pt(), percentile);
         ue.fill(HIST("Pion/hPtPrimGen"), particle.pt());
+        ue.fill(HIST("Pion/hPtPrimGenVsMult"), particle.pt(), percentile);
         particleCountAfterPS[kPion]++;
       }
 
       if (isGoodPrimarySpecies<kKaon>(particle)) {
         ue.fill(HIST("Kaon/hPtDenEff"), particle.pt());
+        ue.fill(HIST("Kaon/hPtDenEffVsMult"), particle.pt(), percentile);
         ue.fill(HIST("Kaon/hPtPrimGen"), particle.pt());
+        ue.fill(HIST("Kaon/hPtPrimGenVsMult"), particle.pt(), percentile);
         particleCountAfterPS[kKaon]++;
       }
 
       if (isGoodPrimarySpecies<kProton>(particle)) {
         ue.fill(HIST("Proton/hPtDenEff"), particle.pt());
+        ue.fill(HIST("Proton/hPtDenEffVsMult"), particle.pt(), percentile);
         ue.fill(HIST("Proton/hPtPrimGen"), particle.pt());
+        ue.fill(HIST("Proton/hPtPrimGenVsMult"), particle.pt(), percentile);
         particleCountAfterPS[kProton]++;
       }
     }
   }
 
   LOG(info) << "=== DEBUG processTrue END ===";
-  LOG(info) << "All generated events: " << mcCollisions.size();
-  LOG(info) << "Passing physics selection: " << nPassPhysicsSelection;
-  LOG(info) << "Total primaries (before PS): " << nParticlesFilledAll;
-  LOG(info) << "Total primaries (after PS): " << nParticlesFilledAfterPS;
+  LOG(info) << "All generated events: " << nAllGenerated;
+  LOG(info) << "Events with bad vertex: " << nBadVertex;
+  LOG(info) << "Passing physics selection: " << nPhysicsSelected;
 
   LOG(info) << "=== PARTICLE-SPECIFIC STATISTICS ===";
   LOG(info) << "Pions - All: " << particleCountAll[kPion]
+            << ", Bad vertex: " << particleCountBadVertex[kPion]
             << ", After PS: " << particleCountAfterPS[kPion];
   LOG(info) << "Kaons - All: " << particleCountAll[kKaon]
+            << ", Bad vertex: " << particleCountBadVertex[kKaon]
             << ", After PS: " << particleCountAfterPS[kKaon];
   LOG(info) << "Protons - All: " << particleCountAll[kProton]
+            << ", Bad vertex: " << particleCountBadVertex[kProton]
             << ", After PS: " << particleCountAfterPS[kProton];
 }
