@@ -2398,6 +2398,7 @@ struct AnalysisAsymmetricPairing {
   Configurable<std::string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
   Configurable<std::string> fConfigPairCutsJSON{"cfgPairCutsJSON", "", "Additional list of pair cuts in JSON format"};
+  Configurable<bool> fConfigRemoveCollSplittingCandidates{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
   Configurable<bool> fConfigSkipAmbiguousIdCombinations{"cfgSkipAmbiguousIdCombinations", true, "Choose whether to skip pairs/triples which pass a stricter combination of cuts, e.g. KKPi triplets for D+ -> KPiPi"};
 
   Configurable<std::string> fConfigHistogramSubgroups{"cfgAsymmetricPairingHistogramsSubgroups", "barrel,vertexing", "Comma separated list of asymmetric-pairing histogram subgroups"};
@@ -2750,6 +2751,9 @@ struct AnalysisAsymmetricPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
+      if (fConfigRemoveCollSplittingCandidates.value && event.isEventSelected_bit(2)) {
+        continue;
+      }
       // Reset the fValues array
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
@@ -2922,6 +2926,9 @@ struct AnalysisAsymmetricPairing {
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (fConfigRemoveCollSplittingCandidates.value && event.isEventSelected_bit(2)) {
         continue;
       }
       // Reset the fValues array

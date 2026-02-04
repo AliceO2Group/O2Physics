@@ -2892,6 +2892,8 @@ struct AnalysisDileptonTrack {
           auto trackMC = track.mcParticle();
           // for the energy correlator analysis
           auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
+          std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
+          VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigOptions.fConfigApplyMassEC);
           VarManager::FillEnergyCorrelatorsMCUnfolding<VarManager::kJpsiHadronMass>(dilepton, track, motherParticle, trackMC, VarManager::fgValues);
           mcDecision = 0;
           isig = 0;
