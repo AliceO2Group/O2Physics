@@ -1241,19 +1241,19 @@ struct checkMCPairTemplate {
         }
       } else if (std::abs(pdgMotherC1) == kBS && std::abs(pdgMotherC2) == kBS) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0/uls/hs"), mass, pt, weight);
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0bar/uls/hs"), mass, pt, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0/lspp/hs"), mass, pt, weight);
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0bar/lspp/hs"), mass, pt, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0/lsmm/hs"), mass, pt, weight);
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0bar/lsmm/hs"), mass, pt, weight);
         }
       } else if (std::abs(pdgMotherC1) == kLambdaB0 && std::abs(pdgMotherC2) == kLambdaB0) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0/uls/hs"), mass, pt, weight);
+          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0bar/uls/hs"), mass, pt, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0/lspp/hs"), mass, pt, weight);
+          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0bar/lspp/hs"), mass, pt, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0/lsmm/hs"), mass, pt, weight);
+          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0bar/lsmm/hs"), mass, pt, weight);
         }
       } else if ((std::abs(pdgMotherC1) == kBPlus && std::abs(pdgMotherC2) == kB0) || (std::abs(pdgMotherC2) == kBPlus && std::abs(pdgMotherC1) == kB0)) {
         if (sign1 * sign2 < 0) { // ULS
@@ -1590,19 +1590,19 @@ struct checkMCPairTemplate {
         }
       } else if (std::abs(pdgMotherC1) == kBS && std::abs(pdgMotherC2) == kBS) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/bbbar/Bs0_Bs0/uls/hs"), mass, pt, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/bbbar/Bs0_Bs0bar/uls/hs"), mass, pt, pair_dca, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/bbbar/Bs0_Bs0/lspp/hs"), mass, pt, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/bbbar/Bs0_Bs0bar/lspp/hs"), mass, pt, pair_dca, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/bbbar/Bs0_Bs0/lsmm/hs"), mass, pt, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/bbbar/Bs0_Bs0bar/lsmm/hs"), mass, pt, pair_dca, weight);
         }
       } else if (std::abs(pdgMotherC1) == kLambdaB0 && std::abs(pdgMotherC2) == kLambdaB0) {
         if (sign1 * sign2 < 0) { // ULS
-          fRegistry.fill(HIST("Pair/bbbar/Lb0_Lb0/uls/hs"), mass, pt, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/bbbar/Lb0_Lb0bar/uls/hs"), mass, pt, pair_dca, weight);
         } else if (sign1 > 0 && sign2 > 0) { // LS++
-          fRegistry.fill(HIST("Pair/bbbar/Lb0_Lb0/lspp/hs"), mass, pt, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/bbbar/Lb0_Lb0bar/lspp/hs"), mass, pt, pair_dca, weight);
         } else if (sign1 < 0 && sign2 < 0) { // LS--
-          fRegistry.fill(HIST("Pair/bbbar/Lb0_Lb0/lsmm/hs"), mass, pt, pair_dca, weight);
+          fRegistry.fill(HIST("Pair/bbbar/Lb0_Lb0bar/lsmm/hs"), mass, pt, pair_dca, weight);
         }
       } else if ((std::abs(pdgMotherC1) == kBPlus && std::abs(pdgMotherC2) == kB0) || (std::abs(pdgMotherC2) == kBPlus && std::abs(pdgMotherC1) == kB0)) {
         if (sign1 * sign2 < 0) { // ULS
