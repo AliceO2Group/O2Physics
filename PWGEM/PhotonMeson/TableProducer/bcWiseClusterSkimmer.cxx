@@ -145,7 +145,7 @@ struct bcWiseClusterSkimmer {
   }
 
   /// \brief Process EMCAL clusters (either ambigous or unique)
-  template <typename Clusters>
+  template <o2::soa::is_table Clusters>
   void processClusters(Clusters const& clusters, const int bcID)
   {
     for (const auto& cluster : clusters) {
@@ -161,7 +161,7 @@ struct bcWiseClusterSkimmer {
     }
   }
 
-  template <typename Clusters>
+  template <o2::soa::is_table Clusters>
   void processClusterMCInfo(Clusters const& clusters, const int bcID, aod::McParticles const& mcParticles)
   {
     for (const auto& cluster : clusters) {
@@ -298,8 +298,8 @@ struct bcWiseClusterSkimmer {
       collisionTable(bcTable.lastIndex(), convertForStorage<int16_t>(collision.posZ(), kZVtx));
   }
 
-  template <typename TMCParticle, typename TMCParticles>
-  bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+  template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles>
+  bool isGammaGammaDecay(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)
@@ -311,8 +311,8 @@ struct bcWiseClusterSkimmer {
     return true;
   }
 
-  template <typename TMCParticle, typename TMCParticles>
-  bool isAccepted(TMCParticle mcParticle, TMCParticles mcParticles)
+  template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles>
+  bool isAccepted(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)
