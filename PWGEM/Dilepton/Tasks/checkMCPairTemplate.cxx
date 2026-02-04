@@ -61,7 +61,6 @@ using namespace o2::constants::physics;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils::pairutil;
-using namespace o2::aod::pwgem::dilepton::utils::pdgcodeconverterutil;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
@@ -1990,9 +1989,9 @@ struct checkMCPairTemplate {
     ROOT::Math::PtEtaPhiMVector v2(pt2, eta2, phi2, leptonM2);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float deta = v1.Eta() - v2.Eta();
-    float dphi = v1.Phi() - v2.Phi();
-    o2::math_utils::bringToPMPi(dphi);
+    // float deta = v1.Eta() - v2.Eta();
+    // float dphi = v1.Phi() - v2.Phi();
+    // o2::math_utils::bringToPMPi(dphi);
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (v12.Rapidity() < dielectroncuts.cfg_min_pair_y || dielectroncuts.cfg_max_pair_y < v12.Rapidity()) {
@@ -2013,22 +2012,22 @@ struct checkMCPairTemplate {
     int sign1 = -t1.pdgCode() / pdg_lepton;
     int sign2 = -t2.pdgCode() / pdg_lepton;
 
-    float aco = 1.f - std::fabs(dphi) / M_PI;
-    float asym = std::fabs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
-    float dphi_e_ee = v1.Phi() - v12.Phi();
-    o2::math_utils::bringToPMPi(dphi_e_ee);
-    dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1); // shift dphi in [-pi/2, +3pi/2] rad. after deta-dphi cut.
+    // float aco = 1.f - std::fabs(dphi) / M_PI;
+    // float asym = std::fabs(v1.Pt() - v2.Pt()) / (v1.Pt() + v2.Pt());
+    // float dphi_e_ee = v1.Phi() - v12.Phi();
+    // o2::math_utils::bringToPMPi(dphi_e_ee);
+    // dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf, 1); // shift dphi in [-pi/2, +3pi/2] rad. after deta-dphi cut.
 
-    std::array<float, 4> arrP1 = {static_cast<float>(v1.Px()), static_cast<float>(v1.Py()), static_cast<float>(v1.Pz()), leptonM1};
-    std::array<float, 4> arrP2 = {static_cast<float>(v2.Px()), static_cast<float>(v2.Py()), static_cast<float>(v2.Pz()), leptonM2};
-    float cos_thetaPol = 999, phiPol = 999.f;
-    if (cfgPolarizationFrame == 0) {
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrP1, arrP2, beamE1, beamE2, beamP1, beamP2, -t1.pdgCode() / pdg_lepton, cos_thetaPol, phiPol);
-    } else if (cfgPolarizationFrame == 1) {
-      o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrP1, arrP2, beamE1, beamE2, beamP1, beamP2, -t1.pdgCode() / pdg_lepton, cos_thetaPol, phiPol);
-    }
-    o2::math_utils::bringToPMPi(phiPol);
-    float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
+    // std::array<float, 4> arrP1 = {static_cast<float>(v1.Px()), static_cast<float>(v1.Py()), static_cast<float>(v1.Pz()), leptonM1};
+    // std::array<float, 4> arrP2 = {static_cast<float>(v2.Px()), static_cast<float>(v2.Py()), static_cast<float>(v2.Pz()), leptonM2};
+    // float cos_thetaPol = 999, phiPol = 999.f;
+    // if (cfgPolarizationFrame == 0) {
+    //   o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrP1, arrP2, beamE1, beamE2, beamP1, beamP2, -t1.pdgCode() / pdg_lepton, cos_thetaPol, phiPol);
+    // } else if (cfgPolarizationFrame == 1) {
+    //   o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrP1, arrP2, beamE1, beamE2, beamP1, beamP2, -t1.pdgCode() / pdg_lepton, cos_thetaPol, phiPol);
+    // }
+    // o2::math_utils::bringToPMPi(phiPol);
+    // float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
 
     if (!isInAcceptance<isSmeared>(t1) || !isInAcceptance<isSmeared>(t2)) {
       return false;
