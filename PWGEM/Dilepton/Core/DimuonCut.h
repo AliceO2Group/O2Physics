@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for dimuon selection
+// Class for dimuon selection // dummy comment
 //
 
 #ifndef PWGEM_DILEPTON_CORE_DIMUONCUT_H_
