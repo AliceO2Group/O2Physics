@@ -1220,6 +1220,115 @@ struct checkMCPairTemplate {
         }
       }
     }
+
+    if (dilepton_source_types[sourceId].find("bbbar") != std::string_view::npos && cfgFillSeparateBeautyHadronPairs) {
+      // (Hb->l) (Hb->l)combinations
+      if (std::abs(pdgMotherC1) == kBPlus && std::abs(pdgMotherC2) == kBPlus) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/Bplus_Bminus/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/Bplus_Bminus/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/Bplus_Bminus/lsmm/hs"), mass, pt, weight);
+        }
+      } else if (std::abs(pdgMotherC1) == kB0 && std::abs(pdgMotherC2) == kB0) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/B0_B0bar/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/B0_B0bar/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/B0_B0bar/lsmm/hs"), mass, pt, weight);
+        }
+      } else if (std::abs(pdgMotherC1) == kBS && std::abs(pdgMotherC2) == kBS) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Bs0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if (std::abs(pdgMotherC1) == kLambdaB0 && std::abs(pdgMotherC2) == kLambdaB0) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/Lb0_Lb0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if ((std::abs(pdgMotherC1) == kBPlus && std::abs(pdgMotherC2) == kB0) || (std::abs(pdgMotherC2) == kBPlus && std::abs(pdgMotherC1) == kB0)) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_B0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_B0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_B0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if ((std::abs(pdgMotherC1) == kBPlus && std::abs(pdgMotherC2) == kLambdaB0) || (std::abs(pdgMotherC2) == kBPlus && std::abs(pdgMotherC1) == kLambdaB0)) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_Lb0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_Lb0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_Lb0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if ((std::abs(pdgMotherC1) == kB0 && std::abs(pdgMotherC2) == kLambdaB0) || (std::abs(pdgMotherC2) == kB0 && std::abs(pdgMotherC1) == kLambdaB0)) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/B0_Lb0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/B0_Lb0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/B0_Lb0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if ((std::abs(pdgMotherC1) == kBPlus && std::abs(pdgMotherC2) == kBS) || (std::abs(pdgMotherC2) == kBPlus && std::abs(pdgMotherC1) == kBS)) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_Bs0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_Bs0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/Bpm_Bs0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if ((std::abs(pdgMotherC1) == kB0 && std::abs(pdgMotherC2) == kBS) || (std::abs(pdgMotherC2) == kB0 && std::abs(pdgMotherC1) == kBS)) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/B0_Bs0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/B0_Bs0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/B0_Bs0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if ((std::abs(pdgMotherC1) == kBS && std::abs(pdgMotherC2) == kLambdaB0) || (std::abs(pdgMotherC2) == kBS && std::abs(pdgMotherC1) == kLambdaB0)) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Lb0/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Lb0/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/Bs0_Lb0/lsmm/hs"), mass, pt, weight);
+        }
+      } else if (std::abs(pdgMotherC1) == kD0 && std::abs(pdgMotherC2) == kD0) { // (Hb->Hc->l) (Hb->Hc->l) combinations
+        if (sign1 * sign2 < 0) {                                                 // ULS
+          fRegistry.fill(HIST("Generated/bbbar/b2D02l_b2D02l/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/b2D02l_b2D02l/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/b2D02l_b2D02l/lsmm/hs"), mass, pt, weight);
+        }
+      } else if (std::abs(pdgMotherC1) == kDPlus && std::abs(pdgMotherC2) == kDPlus) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/b2Dpm2l_b2Dpm2l/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/b2Dpm2l_b2Dpm2l/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/b2Dpm2l_b2Dpm2l/lsmm/hs"), mass, pt, weight);
+        }
+      } else if (std::abs(pdgMotherC1) == kLambdaCPlus && std::abs(pdgMotherC2) == kLambdaCPlus) {
+        if (sign1 * sign2 < 0) { // ULS
+          fRegistry.fill(HIST("Generated/bbbar/b2Lcpm2l_b2Lcpm2l/uls/hs"), mass, pt, weight);
+        } else if (sign1 > 0 && sign2 > 0) { // LS++
+          fRegistry.fill(HIST("Generated/bbbar/b2Lcpm2l_b2Lcpm2l/lspp/hs"), mass, pt, weight);
+        } else if (sign1 < 0 && sign2 < 0) { // LS--
+          fRegistry.fill(HIST("Generated/bbbar/b2Lcpm2l_b2Lcpm2l/lsmm/hs"), mass, pt, weight);
+        }
+      }
+    }
   }
 
   template <int sourceId>
@@ -2094,16 +2203,16 @@ struct checkMCPairTemplate {
           fillGenHistograms<15>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // c2l_c2l
           break;
         case static_cast<int>(EM_HFeeType::kBe_Be):
-          fillGenHistograms<16>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), weight); // b2l_b2l
+          fillGenHistograms<16>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2l_b2l
           break;
         case static_cast<int>(EM_HFeeType::kBCe_BCe):
-          fillGenHistograms<17>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), weight); // b2c2l_b2c2l
+          fillGenHistograms<17>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2c2l_b2c2l
           break;
         case static_cast<int>(EM_HFeeType::kBCe_Be_SameB):
-          fillGenHistograms<18>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), weight); // b2c2l_b2l_sameb
+          fillGenHistograms<18>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2c2l_b2l_sameb
           break;
         case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):
-          fillGenHistograms<19>(sign1, sign2, 0, 0, v12.M(), v12.Pt(), weight); // b2c2l_b2l_diffb
+          fillGenHistograms<19>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2c2l_b2l_diffb
           break;
         default:
           break;
