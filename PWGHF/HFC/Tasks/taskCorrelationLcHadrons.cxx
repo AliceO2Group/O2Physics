@@ -738,7 +738,7 @@ struct HfTaskCorrelationLcHadrons {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptLcNonPromptHadronMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
               if (pairEntry.signalStatus() != 0) {
                 registry.fill(HIST("hCorrel2DVsPtSignalRegionTrueNonPromptLcNonPromptHadronMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
-              }              
+              }
             }
           }
         }
