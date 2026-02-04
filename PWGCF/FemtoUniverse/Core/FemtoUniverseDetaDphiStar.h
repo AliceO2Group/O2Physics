@@ -213,7 +213,7 @@ class FemtoUniverseDetaDphiStar
   }
 
   ///  Check if pair is close or not
-  template <typename Part, typename Parts>
+  template <bool V0V0rect = true, typename Part, typename Parts>
   bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield, uint8_t ChosenEventType)
   {
     magfield = lmagfield;
@@ -307,8 +307,9 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        // if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
-        if ((dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
+        if (V0V0rect && (dphiAvg > cutDeltaPhiStarMin) && (dphiAvg < cutDeltaPhiStarMax) && (deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) {
+          pass = true;
+        } else if (!V0V0rect && std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
           pass = true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -321,7 +322,6 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
-
     } else if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kCascade && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
       /// Cascade-Cascade combination
       if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kCascade || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kCascade) {
@@ -361,7 +361,6 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
-
     } else if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
       /// Track-Cascade combination
       if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kCascade) {
@@ -398,7 +397,6 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
-
     } else if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kV0 && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
       /// V0-Cascade combination
       if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kV0 || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kCascade) {
@@ -438,7 +436,6 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
-
     } else if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
       /// Track-D0 combination
       // check if provided particles are in agreement with the class instantiation
@@ -913,7 +910,7 @@ class FemtoUniverseDetaDphiStar
     double afsi1b = deltaphiconstFD * magfield * charge2 * chosenRadii / part2.pt();
     double dphis = 0.0;
 
-    if (std::abs(afsi0b) < 1.0 && std::abs(afsi0b) < 1.0) {
+    if (std::abs(afsi0b) < 1.0 && std::abs(afsi1b) < 1.0) {
       dphis = part2.phi() - part1.phi() + std::asin(afsi1b) - std::asin(afsi0b);
     }
     return dphis;

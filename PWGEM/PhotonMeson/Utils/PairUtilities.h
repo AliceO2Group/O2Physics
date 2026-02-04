@@ -52,8 +52,8 @@ bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const
 {
   bool is_g1_selected = false;
   bool is_g2_selected = false;
-  is_g1_selected = cut1.template IsSelected<U1>(g1);
-  is_g2_selected = cut2.template IsSelected<U2>(g2);
+  is_g1_selected = cut1.template IsSelected<TG1, U1>(g1);
+  is_g2_selected = cut2.template IsSelected<TG2, U2>(g2);
   return (is_g1_selected && is_g2_selected);
 }
 

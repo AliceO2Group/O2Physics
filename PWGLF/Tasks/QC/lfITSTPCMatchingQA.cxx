@@ -18,7 +18,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -112,9 +112,9 @@ struct lfmatchingqa {
     float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
 
     // compute custom tpcNsigmaDeu and tpcNsigmaHe3
-    double expBetheDeu{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / constants::physics::MassDeuteron), cfgBetheBlochParams->get("d", "p0"), cfgBetheBlochParams->get("d", "p1"), cfgBetheBlochParams->get("d", "p2"), cfgBetheBlochParams->get("d", "p3"), cfgBetheBlochParams->get("d", "p4"))};
+    double expBetheDeu{common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / constants::physics::MassDeuteron), cfgBetheBlochParams->get("d", "p0"), cfgBetheBlochParams->get("d", "p1"), cfgBetheBlochParams->get("d", "p2"), cfgBetheBlochParams->get("d", "p3"), cfgBetheBlochParams->get("d", "p4"))};
     double expSigmaDeu{expBetheDeu * cfgBetheBlochParams->get("d", "resolution")};
-    double expBetheHe3{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / constants::physics::MassHelium3), cfgBetheBlochParams->get("He3", "p0"), cfgBetheBlochParams->get("He3", "p1"), cfgBetheBlochParams->get("He3", "p2"), cfgBetheBlochParams->get("He3", "p3"), cfgBetheBlochParams->get("He3", "p4"))};
+    double expBetheHe3{common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / constants::physics::MassHelium3), cfgBetheBlochParams->get("He3", "p0"), cfgBetheBlochParams->get("He3", "p1"), cfgBetheBlochParams->get("He3", "p2"), cfgBetheBlochParams->get("He3", "p3"), cfgBetheBlochParams->get("He3", "p4"))};
     double expSigmaHe3{expBetheHe3 * cfgBetheBlochParams->get("He3", "resolution")};
     auto tpcNSigmaDeu = static_cast<float>((track.tpcSignal() - expBetheDeu) / expSigmaDeu);
     auto tpcNSigmaHe3 = static_cast<float>((track.tpcSignal() - expBetheHe3) / expSigmaHe3);

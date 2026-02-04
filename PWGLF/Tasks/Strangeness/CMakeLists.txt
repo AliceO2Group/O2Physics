@@ -41,12 +41,12 @@ o2physics_add_dpl_workflow(v0postprocessing
 
 o2physics_add_dpl_workflow(cascadecorrelations
     SOURCES cascadecorrelations.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(non-prompt-cascade
     SOURCES nonPromptCascade.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsVertexing
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsVertexing O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(k0mixedevents
@@ -76,7 +76,7 @@ o2physics_add_dpl_workflow(cascpostprocessing
 
 o2physics_add_dpl_workflow(hstrangecorrelation
     SOURCES hStrangeCorrelation.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(sigmaanalysis
@@ -89,6 +89,11 @@ o2physics_add_dpl_workflow(phik0shortanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(phi-strange-correlation
+    SOURCES phiStrangeCorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lambdapolarization
     SOURCES lambdapolarization.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -96,6 +101,11 @@ o2physics_add_dpl_workflow(lambdapolarization
 
 o2physics_add_dpl_workflow(lambdapolsp
     SOURCES lambdapolsp.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdak0seff
+    SOURCES lambdak0seff.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -112,12 +122,12 @@ o2physics_add_dpl_workflow(cascpolsp
 if(FastJet_FOUND)
 o2physics_add_dpl_workflow(strangeness-in-jets
     SOURCES strangenessInJets.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(strangeness-in-jets-ions
     SOURCES strangenessInJetsIons.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(sjet-tree-creator
@@ -148,12 +158,12 @@ o2physics_add_dpl_workflow(lambdak0sflattenicity
 
 o2physics_add_dpl_workflow(lambdalambda
     SOURCES lambdalambda.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdajetpolarization
     SOURCES lambdaJetpolarization.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdaspincorrderived
@@ -163,7 +173,7 @@ o2physics_add_dpl_workflow(lambdaspincorrderived
 
 o2physics_add_dpl_workflow(strangenessderivedbinnedinfo
     SOURCES strangenessderivedbinnedinfo.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdatwopartpolarization
@@ -178,5 +188,10 @@ o2physics_add_dpl_workflow(cascadeanalysislightions
 
 o2physics_add_dpl_workflow(strange-casc-track
     SOURCES strangeCascTrack.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(zdccalderived
+    SOURCES zdccalderived.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

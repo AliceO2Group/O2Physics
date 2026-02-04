@@ -25,6 +25,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 
 #include <string>
+#include <vector>
 
 namespace o2::common::core
 {
@@ -89,6 +90,10 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
           value = option.defaultValue.get<ValueType>();
           if (verbose) {
             if constexpr (!std::is_same_v<ValueType, o2::framework::LabeledArray<float>>) {
+              LOG(info) << "   Found option '" << optName << " of type LabeledArray<float>";
+            } else if constexpr (!std::is_same_v<ValueType, std::vector<std::string>>) {
+              LOG(info) << "   Found option '" << optName << " of type vector<string>";
+            } else {
               LOG(info) << "   Found option '" << optName << "' with value '" << value << "'";
             }
             found = true;

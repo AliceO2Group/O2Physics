@@ -90,6 +90,8 @@ class FemtoUniverseContainer
     mHistogramRegistry->add((folderName + "/DeltaEtaDeltaPhi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2F, {phiAxis, etaAxis});
     if (use3dplots) {
       mHistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
+      mHistogramRegistry->add((folderName + "/relPairkstarkTMult").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, kTAxis, multAxis3D});
+      mHistogramRegistry->add((folderName + "/relPairkTPtPart1PtPart2").c_str(), ("; #it{k}_{T} (GeV/#it{c}^{2}); #it{p}_{T,1} (GeV/#it{c}^{2}); #it{p}_{T,2} (GeV/#it{c}^{2})"), kTH3F, {kTAxis, {375, 0., 7.5}, {375, 0., 7.5}});
     }
   }
 
@@ -198,6 +200,8 @@ class FemtoUniverseContainer
     mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), deltaPhi, deltaEta, weight);
     if (use3dplots) {
       mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult, weight);
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarkTMult"), femtoObs, kT, mult, weight);
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkTPtPart1PtPart2"), kT, part1.pt(), part2.pt());
     }
   }
 

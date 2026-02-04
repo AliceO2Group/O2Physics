@@ -171,6 +171,7 @@ struct nucleiInJets {
   ConfigurableAxis binsMassDe{"binsMassDe", {180, -1.8, 1.8f}, ""};
   ConfigurableAxis binsMassTr{"binsMassTr", {250, -2.5, 2.5f}, ""};
   ConfigurableAxis binsMassHe{"binsMassHe", {300, -3., 3.f}, ""};
+  ConfigurableAxis ptAxisConf{"ptAxisConf", {50, 0., 5.f}, ""};
 
   ConfigurableAxis binsPtZHe{"binsPtZHe", {VARIABLE_WIDTH, 0.5, 0.625, 0.75, 0.875, 1.0, 1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2.0, 2.25, 2.5, 3.0, 3.5, 4.0}, ""};
 
@@ -221,7 +222,8 @@ struct nucleiInJets {
     if (doprocessJetTracksData && doprocessJetTracksDataLfPid) {
       LOGP(fatal, "only one process function should be enabled!!!");
     }
-    const AxisSpec PtAxis = {100, 0, 10.0};
+    jetHist.print();
+    // const AxisSpec PtAxis = {100, 0, 10.0};
     const AxisSpec PtJetAxis = {100, 0, 100.0};
     const AxisSpec MultAxis = {100, 0, 100};
     const AxisSpec dRAxis = {100, 0, 3.6};
@@ -238,6 +240,7 @@ struct nucleiInJets {
     const AxisSpec massDeAxis{binsMassDe, ""};
     const AxisSpec massTrAxis{binsMassTr, ""};
     const AxisSpec massHeAxis{binsMassHe, ""};
+    const AxisSpec PtAxis{ptAxisConf, ""};
 
     jetHist.add("hNEvents", "hNEvents", {HistType::kTH1D, {{6, 0.f, 6.f}}});
     jetHist.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
@@ -434,14 +437,26 @@ struct nucleiInJets {
     /////////////
     // perp cone
     /////////////
-    jetHist.add<TH2>("tracks/perpCone/proton/h2TofNsigmaProtonVsPt", "h2TofNsigmaProtonVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracks/perpCone/antiProton/h2TofNsigmaantiProtonVsPt", "h2TofNsigmaantiProtonVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracks/perpCone/deuteron/h2TofNsigmaDeuteronVsPt", "h2TofNsigmaDeuteronVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracks/perpCone/antiDeuteron/h2TofNsigmaantiDeuteronVsPt", "h2TofNsigmaantiDeuteronVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracks/perpCone/triton/h2TofNsigmaTritonVsPt", "h2TofNsigmaTritonVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracks/perpCone/antiTriton/h2TofNsigmaantiTritonVsPt", "h2TofNsigmaantiTritonVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracks/perpCone/helium/h2TofNsigmaHeliumVsPt", "h2TofNsigmaHeliumVsPt; TofNsigma; #it{p}_{T}/z (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracks/perpCone/antiHelium/h2TofNsigmaantiHeliumVsPt", "h2TofNsigmaantiHeliumVsPt; TofNsigma; #it{p}_{T}/z (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
+    // 3D TOF NSigma histograms with jet pt
+    jetHist.add<TH3>("tracks/perpCone/proton/h3TofNsigmaProtonVsPtVsJetPt", "h3TofNsigmaProtonVsPtVsJetPt; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiProton/h3TofNsigmaantiProtonVsPtVsJetPt", "h3TofNsigmaantiProtonVsPtVsJetPt; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/deuteron/h3TofNsigmaDeuteronVsPtVsJetPt", "h3TofNsigmaDeuteronVsPtVsJetPt; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiDeuteron/h3TofNsigmaantiDeuteronVsPtVsJetPt", "h3TofNsigmaantiDeuteronVsPtVsJetPt; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/triton/h3TofNsigmaTritonVsPtVsJetPt", "h3TofNsigmaTritonVsPtVsJetPt; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiTriton/h3TofNsigmaantiTritonVsPtVsJetPt", "h3TofNsigmaantiTritonVsPtVsJetPt; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/helium/h3TofNsigmaHeliumVsPtVsJetPt", "h3TofNsigmaHeliumVsPtVsJetPt; TofNsigma; #it{p}_{T}/z (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiHelium/h3TofNsigmaantiHeliumVsPtVsJetPt", "h3TofNsigmaantiHeliumVsPtVsJetPt; TofNsigma; #it{p}_{T}/z (GeV); jet #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+
+    // 3D TOF NSigma histograms with background subtracted jet pt
+    jetHist.add<TH3>("tracks/perpCone/proton/h3TofNsigmaProtonVsPtVsJetPtBkgSub", "h3TofNsigmaProtonVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiProton/h3TofNsigmaantiProtonVsPtVsJetPtBkgSub", "h3TofNsigmaantiProtonVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/deuteron/h3TofNsigmaDeuteronVsPtVsJetPtBkgSub", "h3TofNsigmaDeuteronVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiDeuteron/h3TofNsigmaantiDeuteronVsPtVsJetPtBkgSub", "h3TofNsigmaantiDeuteronVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/triton/h3TofNsigmaTritonVsPtVsJetPtBkgSub", "h3TofNsigmaTritonVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiTriton/h3TofNsigmaantiTritonVsPtVsJetPtBkgSub", "h3TofNsigmaantiTritonVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T} (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/helium/h3TofNsigmaHeliumVsPtVsJetPtBkgSub", "h3TofNsigmaHeliumVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T}/z (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiHelium/h3TofNsigmaantiHeliumVsPtVsJetPtBkgSub", "h3TofNsigmaantiHeliumVsPtVsJetPtBkgSub; TofNsigma; #it{p}_{T}/z (GeV); jet #it{p}_{T} (Bkg Sub) (GeV)", HistType::kTH3F, {{100, -5, 5}, {50, 0., 5.}, {PtJetAxis}});
+
     //////////////////////////////////////////////
     //               outside jet
     //////////////////////////////////////////////
@@ -455,13 +470,21 @@ struct nucleiInJets {
     jetHist.add<TH2>("tracks/antiTriton/h3PtVsantiTritonNSigmaTPC", "pT(#barTr}) vs NSigmaTPC (#bar{Tr});  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;", HistType::kTH2F, {{PtAxis}, {200, -10, 10}});
 
     jetHist.add<TH3>("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJet", "pT(p) vs NSigmaTPC (p) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJetBkgSub", "pT(p) vs NSigmaTPC (p) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
     jetHist.add<TH3>("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJet", "pT(#bar{p}) vs NSigmaTPC (#bar{p}) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJetBkgSub", "pT(#bar{p}) vs NSigmaTPC (#bar{p}) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
     jetHist.add<TH3>("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJet", "pT(d) vs NSigmaTPC (d) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJetBkgSub", "pT(d) vs NSigmaTPC (d) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
     jetHist.add<TH3>("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJet", "pT(#bar{d}) vs NSigmaTPC (#bar{d}) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJetBkgSub", "pT(#bar{d}) vs NSigmaTPC (#bar{d}) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
     jetHist.add<TH3>("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJet", "pT(He) vs NSigmaTPC (He) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJetBkgSub", "pT(He) vs NSigmaTPC (He) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
     jetHist.add<TH3>("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJet", "pT(#bar{He}) vs NSigmaTPC (#bar{He}) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJetBkgSub", "pT(#bar{He}) vs NSigmaTPC (#bar{He}) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
     jetHist.add<TH3>("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJet", "pT(Tr) vs NSigmaTPC (Tr) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJetBkgSub", "pT(Tr) vs NSigmaTPC (Tr) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
     jetHist.add<TH3>("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJet", "pT(#bar{Tr}) vs NSigmaTPC (#bar{Tr}) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
+    jetHist.add<TH3>("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJetBkgSub", "pT(#bar{Tr}) vs NSigmaTPC (#bar{Tr}) vs jet pT BkgSub;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T} BkgSub", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
 
     if (cEnableProtonQA) {
       jetHist.add<TH2>("tracks/proton/dca/after/hDCAxyVsPtProton", "DCAxy vs Pt (p)", HistType::kTH2F, {{dcaxyAxis}, {PtAxis}});
@@ -541,9 +564,9 @@ struct nucleiInJets {
     // tracksInc/dcaxy/rec histograms for each particle type
     std::vector<std::string> particles = {"proton", "antiProton", "deuteron", "antiDeuteron", "triton", "antiTriton", "helium", "antiHelium"};
     for (const auto& particle : particles) {
-      jetHist.add<TH3>(("tracksInc/dcaxy/rec/" + particle + "/tpcPtVsDcaxy3D").c_str(), "pT vs Dcaxy vs Centrality", HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0, 100}, dcaxyAxis});
-      jetHist.add<TH3>(("tracksInc/dcaxy/rec/" + particle + "/tpcPtVsDcaxy3DPIDVeto").c_str(), "pT vs Dcaxy vs Centrality (PID Veto)", HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0, 100}, dcaxyAxis});
-      jetHist.add<TH3>(("tracksInc/dcaxy/rec/" + particle + "/tpcPtVsDcaxy3DPIDTOF").c_str(), "pT vs Dcaxy vs Centrality (PID TOF)", HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0, 100}, dcaxyAxis});
+      jetHist.add<TH3>(("tracksInc/dcaxy/rec/" + particle + "/tpcPtVsDcaxy3D").c_str(), "pT vs Dcaxy vs Centrality", HistType::kTH3F, {{PtAxis}, {100, 0, 100}, dcaxyAxis});
+      jetHist.add<TH3>(("tracksInc/dcaxy/rec/" + particle + "/tpcPtVsDcaxy3DPIDVeto").c_str(), "pT vs Dcaxy vs Centrality (PID Veto)", HistType::kTH3F, {{PtAxis}, {100, 0, 100}, dcaxyAxis});
+      jetHist.add<TH3>(("tracksInc/dcaxy/rec/" + particle + "/tpcPtVsDcaxy3DPIDTOF").c_str(), "pT vs Dcaxy vs Centrality (PID TOF)", HistType::kTH3F, {{PtAxis}, {100, 0, 100}, dcaxyAxis});
     }
 
     if (isMC) {
@@ -557,10 +580,10 @@ struct nucleiInJets {
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(6, "OccupancySel");
 
       jetHist.add<TH2>("recInc/vertexZ", "vertexZ (inclusive)", HistType::kTH2F, {{vzAxis}, {CentAxis}});
-      jetHist.add<TH3>("recInc/pt/PtParticleTypeTPC", "Pt vs ParticleType vs Centrality (TPC)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
-      jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOF", "Pt vs ParticleType vs Centrality (TPC+TOF)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
-      jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOFVeto", "Pt vs ParticleType vs Centrality (TPC+TOF Veto)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
-      jetHist.add<TH3>("genInc/pt/PtParticleType", "Pt vs ParticleType vs Centrality (gen)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("recInc/pt/PtParticleTypeTPC", "Pt vs ParticleType vs Centrality (TPC)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOF", "Pt vs ParticleType vs Centrality (TPC+TOF)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOFVeto", "Pt vs ParticleType vs Centrality (TPC+TOF Veto)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("genInc/pt/PtParticleType", "Pt vs ParticleType vs Centrality (gen)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
 
       // Event and signal loss analysis histograms (inclusive)
       jetHist.add("eventLoss/hEventStatistics", "Event Statistics for Loss Analysis", kTH1F, {{10, 0.f, 10.f}});
@@ -574,16 +597,16 @@ struct nucleiInJets {
       jetHist.get<TH1>(HIST("eventLoss/hEventStatistics"))->GetXaxis()->SetBinLabel(8, "EvSelPassedRecINELgt0");
 
       // Signal loss histograms (only the ones that are actually used)
-      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_INELgt0", "Generated Particles p_{T} vs #eta vs Centrality", HistType::kTH3F, {{100, 0.f, 10.f}, {100, -1.5f, 1.5f}, {100, 0, 100}});
-      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticleTypeVsPtVsCent_INELgt0", "Generated Particle Type vs p_{T} vs Centrality", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
-      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_TrueINELgt0", "Generated Particles p_{T} vs #eta vs Centrality (INEL>0)", HistType::kTH3F, {{100, 0.f, 10.f}, {100, -1.5f, 1.5f}, {100, 0, 100}});
-      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticleTypeVsPtVsCent_TrueINELgt0", "Generated Particle Type vs p_{T} vs Centrality (INEL>0)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_INELgt0", "Generated Particles p_{T} vs #eta vs Centrality", HistType::kTH3F, {{PtAxis}, {100, -1.5f, 1.5f}, {100, 0, 100}});
+      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticleTypeVsPtVsCent_INELgt0", "Generated Particle Type vs p_{T} vs Centrality", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticlesPtVsEtaVsCent_TrueINELgt0", "Generated Particles p_{T} vs #eta vs Centrality (INEL>0)", HistType::kTH3F, {{PtAxis}, {100, -1.5f, 1.5f}, {100, 0, 100}});
+      jetHist.add<TH3>("eventLoss/signalLoss/h3GenParticleTypeVsPtVsCent_TrueINELgt0", "Generated Particle Type vs p_{T} vs Centrality (INEL>0)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
 
-      jetHist.add<TH3>("recInc/eff/tpcTrack3D", "Pt vs ParticleType vs Centrality (tpc)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
-      jetHist.add<TH3>("recInc/eff/tpcTofTrack3D", "Pt vs ParticleType vs Centrality (tpc-tof)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("recInc/eff/tpcTrack3D", "Pt vs ParticleType vs Centrality (tpc)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
+      jetHist.add<TH3>("recInc/eff/tpcTofTrack3D", "Pt vs ParticleType vs Centrality (tpc-tof)", HistType::kTH3F, {{PtAxis}, {14, -7, 7}, {100, 0, 100}});
 
-      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3D", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}});            // pt, parttype, cent, dcaxy, partOrigin
-      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}}); // pt, parttype, cent, dcaxy, partOrigin
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3D", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{PtAxis}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}});            // pt, parttype, cent, dcaxy, partOrigin
+      jetHist.add<THnSparse>("recInc/dcaxy/rec/tpcPtVsDcaxy3DPIDselected", "pT(p) vs ParticleType (p) vs Dcaxy", HistType::kTHnSparseF, {{PtAxis}, {14, -7, 7}, {100, 0, 100}, dcaxyAxis, {4, 0, 4}}); // pt, parttype, cent, dcaxy, partOrigin
 
       // inside jet
       jetHist.add<TH3>("tracks/mc/proton/h3PtVsProtonNSigmaTPCVsPtJet_jet", "pT(p) vs NSigmaTPC (p) vs jet pT;  #it{p}_{T} (GeV/#it{c}; NSigmaTPC;  p^{jet}_{T}", HistType::kTH3F, {{PtAxis}, {200, -10, 10}, {PtJetAxis}});
@@ -653,10 +676,10 @@ struct nucleiInJets {
       }
 
       // PartilceJet-constituents
-      jetHist.add<TH3>("mcpJet/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("mcpJet/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
       // detectorJet-constituents
-      jetHist.add<TH3>("mcdJet/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
-      jetHist.add<TH2>("mcdJet/pt/perpCone/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{100, 0.f, 10.f}, {14, -7, 7}});
+      jetHist.add<TH3>("mcdJet/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH2>("mcdJet/pt/perpCone/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
 
       jetHist.add<TH1>("mcpJet/hJetPt", "Pt (jet)", HistType::kTH1F, {{100, 0.f, 50.f}});
       jetHist.add<TH1>("mcpJet/hJetEta", "Eta (jet)", HistType::kTH1F, {{100, 1.5, 1.5}});
@@ -679,25 +702,25 @@ struct nucleiInJets {
       /////////
       jetHist.add<TH1>("recmatched/hRecJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
       jetHist.add<TH1>("recmatched/hGenJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
-      jetHist.add<TH3>("recmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("recmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
 
-      jetHist.add<TH3>("eff/recmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/mcC/pt/PtParticleType", "Pt (pt, rec) vs Pt (pt, true) vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/mcCSpectra/pt/PtParticleType", "Pt (pt) vs Pt (pt, true) vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPC", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTOF", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPCTOF", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPCTOFVeto", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/mcC/pt/PtParticleType", "Pt (pt, rec) vs Pt (pt, true) vs particletype", HistType::kTH3D, {{PtAxis}, {PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/mcCSpectra/pt/PtParticleType", "Pt (pt) vs Pt (pt, true) vs particletype", HistType::kTH3D, {{PtAxis}, {PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPC", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTOF", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPCTOF", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/pt/PtParticleTypeTPCTOFVeto", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
 
-      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/perpCone/mcC/pt/PtParticleType", "Pt (rec) vs Pt (true) vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/perpCone/mcCSpectra/pt/PtParticleType", "Pt (rec) vs Pt (true) vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPC", "Pt (p) vs particletype", HistType::kTH2D, {{100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTOF", "Pt (p) vs particletype", HistType::kTH2D, {{100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOF", "Pt (p) vs particletype", HistType::kTH2D, {{100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto", "Pt (p) vs particletype", HistType::kTH2D, {{100, 0.f, 10.f}, {14, -7, 7}});
-      jetHist.add<TH3>("eff/recmatched/gen/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
-      jetHist.add<TH2>("eff/recmatched/gen/perpCone/pt/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{100, 0.f, 10.f}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/perpCone/mcC/pt/PtParticleType", "Pt (rec) vs Pt (true) vs particletype", HistType::kTH3D, {{PtAxis}, {PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/perpCone/mcCSpectra/pt/PtParticleType", "Pt (rec) vs Pt (true) vs particletype", HistType::kTH3D, {{PtAxis}, {PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPC", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTOF", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOF", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/perpCone/pt/PtParticleTypeTPCTOFVeto", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
+      jetHist.add<TH3>("eff/recmatched/gen/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH2>("eff/recmatched/gen/perpCone/pt/PtParticleType", "Pt (p) vs particletype", HistType::kTH2D, {{PtAxis}, {14, -7, 7}});
       // gen matched
       jetHist.add<TH2>("genmatched/hRecMatchedJetPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH2F, {{100, 0., 100.}, {400, -20., 20.}});
       jetHist.add<TH2>("genmatched/hRecMatchedVsGenJetPt", "matched jet pT (Rec level);#it{p}_{T,jet det}; #it{p}_{T,jet part} (GeV/#it{c})", HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}});
@@ -712,8 +735,9 @@ struct nucleiInJets {
       jetHist.add<TH1>("genmatched/hRecJetWithGenPt", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
       jetHist.add<TH1>("genmatched/hGenJetPtMatched", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
       jetHist.add<TH1>("genmatched/leadingJet/hGenJetPtMatched", "matched jet pT (Rec level);#it{p}_{T,jet part} (GeV/#it{c}); #it{p}_{T,jet part} - #it{p}_{T,jet det}", HistType::kTH1F, {{100, 0., 100.}});
-      jetHist.add<TH3>("genmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{100, 0.f, 10.f}, {2, 0, 2}, {14, -7, 7}});
+      jetHist.add<TH3>("genmatched/pt/PtParticleType", "Pt (p) vs jetflag vs particletype", HistType::kTH3D, {{PtAxis}, {2, 0, 2}, {14, -7, 7}});
     }
+    jetHist.print();
   }
 
   template <typename BCType>
@@ -847,17 +871,18 @@ struct nucleiInJets {
     if (addTOFplots && trk.hasTOF()) {
       jetHist.fill(HIST("tracks/h2TOFbetaVsP"), trk.p() / (1.f * trk.sign()), trk.beta());
     }
+
+    // Calculate background subtracted jet pt (needed for both jetFlag and perpCone)
+    float jetArea = M_PI * cfgjetR * cfgjetR;
+    float jetPtBkgSub = jetPt;
+    if (backgroundRho > 0) {
+      jetPtBkgSub = jetPt - backgroundRho * jetArea;
+    }
+
     if (jetFlag) {
       jetHist.fill(HIST("tracks/h2TPCsignVsTPCmomentum_Jet"), trk.tpcInnerParam() / (1.f * trk.sign()), trk.tpcSignal());
       if (addTOFplots && trk.hasTOF()) {
         jetHist.fill(HIST("tracks/h2TOFbetaVsP_Jet"), trk.p() / (1.f * trk.sign()), trk.beta());
-      }
-
-      // Calculate background subtracted jet pt
-      float jetArea = M_PI * cfgjetR * cfgjetR;
-      float jetPtBkgSub = jetPt;
-      if (backgroundRho > 0) {
-        jetPtBkgSub = jetPt - backgroundRho * jetArea;
       }
 
       if (trk.sign() > 0) { // particle info
@@ -1191,19 +1216,19 @@ struct nucleiInJets {
               jetHist.fill(HIST("tracks/antiProton/h3TpcNsigmaTofNsigmaantiProtonVsPt_jet"), trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
-              jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmassantiDeuteronVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt_jet"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
+              jetHist.fill(HIST("tracks/antiDeuteron/h3TOFmassantiDeuteronVsPtVsJetPt_jet"), massTOF, trk.pt(), jetPt);
+              jetHist.fill(HIST("tracks/antiDeuteron/h3TOFmass2antiDeuteronVsPtVsJetPt_jet"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt(), jetPt);
               jetHist.fill(HIST("tracks/antiDeuteron/h2TofNsigmaantiDeuteronVsPt_jet"), trk.tofNSigmaDe(), trk.pt());
               jetHist.fill(HIST("tracks/antiDeuteron/h3TpcNsigmaTofNsigmaantiDeuteronVsPt_jet"), trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
-              jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt_jet"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
+              jetHist.fill(HIST("tracks/antiTriton/h3TOFmassantiTritonVsPtVsJetPt_jet"), massTOF, trk.pt(), jetPt);
+              jetHist.fill(HIST("tracks/antiTriton/h3TOFmass2antiTritonVsPtVsJetPt_jet"), massTOF * massTOF - MassTriton * MassTriton, trk.pt(), jetPt);
               jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt_jet"), trk.tofNSigmaTr(), trk.pt());
             }
             if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
-              jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt_jet"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt_jet"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
+              jetHist.fill(HIST("tracks/antiHelium/h3TOFmassantiHeliumVsPtVsJetPt_jet"), massTOF, trk.pt() / 2.0, jetPt);
+              jetHist.fill(HIST("tracks/antiHelium/h3TOFmass2antiHeliumVsPtVsJetPt_jet"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt() / 2.0, jetPt);
               jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt_jet"), trk.tofNSigmaHe(), trk.pt());
             }
           }
@@ -1241,47 +1266,82 @@ struct nucleiInJets {
         // perpCone
         if (jetFlagPerpCone && isWithLeadingJet) {
           if (useTOFNsigmaPreSel && trk.hasTOF()) {
-            if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF)
+            if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF) {
               jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt); // Pr
-            if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF)
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
+            }
+            if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF) {
               jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
-            if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF)
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
+            }
+            if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF) {
               jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt); // He
-            if (std::abs(trk.tofNSigmaTr()) < cfgnTPCPIDTrTOF)
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
+            }
+            if (std::abs(trk.tofNSigmaTr()) < cfgnTPCPIDTrTOF) {
               jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt); // Tr
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
+            }
           } else if (!useTOFNsigmaPreSel && !useTOFVeto) {
             jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt);     // Pr
             jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
             jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt);     // He
             jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt);     // Tr
+            // Background subtracted versions
+            if (backgroundRho > 0) {
+              jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
+              jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
+              jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
+              jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
+            }
           } else if (!useTOFNsigmaPreSel && useTOFVeto) {
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF) {
                 jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt); // Pr
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt); // Pr
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/proton/h3PtVsProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
             }
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF) {
                 jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/deuteron/h3PtVsDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
             }
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF) {
                 jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt); // He
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt); // He
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/helium/h3PtVsHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
             }
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaTr()) < cfgnTPCPIDTrTOF) {
                 jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt); // Tr
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt); // Tr
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/triton/h3PtVsTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
             }
           }
         }
@@ -1324,29 +1384,45 @@ struct nucleiInJets {
               jetHist.fill(HIST("tracks/proton/h2TOFmassProtonVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/proton/h2TOFmass2ProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt());
               jetHist.fill(HIST("tracks/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/proton/h2TofNsigmaProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/proton/h3TofNsigmaProtonVsPtVsJetPt"), trk.tofNSigmaPr(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/proton/h3TofNsigmaProtonVsPtVsJetPtBkgSub"), trk.tofNSigmaPr(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracks/deuteron/h2TOFmassDeuteronVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/deuteron/h2TOFmass2DeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
               jetHist.fill(HIST("tracks/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/deuteron/h2TofNsigmaDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/deuteron/h3TofNsigmaDeuteronVsPtVsJetPt"), trk.tofNSigmaDe(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/deuteron/h3TofNsigmaDeuteronVsPtVsJetPtBkgSub"), trk.tofNSigmaDe(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
             if (std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/triton/h2TOFmassTritonVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
               jetHist.fill(HIST("tracks/triton/h2TofNsigmaTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/triton/h2TofNsigmaTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/triton/h3TofNsigmaTritonVsPtVsJetPt"), trk.tofNSigmaTr(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/triton/h3TofNsigmaTritonVsPtVsJetPtBkgSub"), trk.tofNSigmaTr(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
             if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
               jetHist.fill(HIST("tracks/helium/h2TofNsigmaHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/helium/h2TofNsigmaHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/helium/h3TofNsigmaHeliumVsPtVsJetPt"), trk.tofNSigmaHe(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/helium/h3TofNsigmaHeliumVsPtVsJetPtBkgSub"), trk.tofNSigmaHe(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
           }
         } // tof info
@@ -1359,47 +1435,82 @@ struct nucleiInJets {
         if (jetFlagPerpCone && isWithLeadingJet) {
           // antiparticle info
           if (useTOFNsigmaPreSel && trk.hasTOF()) {
-            if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF)
+            if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF) {
               jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt); // Pr
-            if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF)
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
+            }
+            if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF) {
               jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
-            if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF)
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
+            }
+            if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF) {
               jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt); // He
-            if (std::abs(trk.tofNSigmaTr()) < cfgnTPCPIDTrTOF)
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
+            }
+            if (std::abs(trk.tofNSigmaTr()) < cfgnTPCPIDTrTOF) {
               jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt); // Tr
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
+            }
           } else if (!useTOFNsigmaPreSel && !useTOFVeto) {
             jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt);     // Pr
             jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
             jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt);     // He
             jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt);     // Tr
+            // Background subtracted versions
+            if (backgroundRho > 0) {
+              jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
+              jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
+              jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
+              jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
+            }
           } else if (!useTOFNsigmaPreSel && useTOFVeto) {
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaPr()) < cfgnTPCPIDPrTOF) {
                 jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt); // Pr
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaPr(), jetPt); // Pr
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiProton/h3PtVsantiProtonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaPr(), jetPtBkgSub);
             }
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaDe()) < cfgnTPCPIDDeTOF) {
                 jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaDe(), jetPt); // De
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3PtVsantiDeuteronNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaDe(), jetPtBkgSub);
             }
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaHe()) < cfgnTPCPIDHeTOF) {
                 jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt); // He
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaHe(), jetPt); // He
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiHelium/h3PtVsantiHeliumNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaHe(), jetPtBkgSub);
             }
             if (trk.hasTOF()) {
               if (std::abs(trk.tofNSigmaTr()) < cfgnTPCPIDTrTOF) {
                 jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt); // Tr
+                if (backgroundRho > 0)
+                  jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
               }
             } else {
               jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJet"), trk.pt(), trk.tpcNSigmaTr(), jetPt); // Tr
+              if (backgroundRho > 0)
+                jetHist.fill(HIST("tracks/perpCone/antiTriton/h3PtVsantiTritonNSigmaTPCVsPtJetBkgSub"), trk.pt(), trk.tpcNSigmaTr(), jetPtBkgSub);
             }
           }
         }
@@ -1442,29 +1553,45 @@ struct nucleiInJets {
               jetHist.fill(HIST("tracks/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - MassProton * MassProton, trk.pt());
               jetHist.fill(HIST("tracks/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/antiProton/h3TofNsigmaantiProtonVsPtVsJetPt"), trk.tofNSigmaPr(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/antiProton/h3TofNsigmaantiProtonVsPtVsJetPtBkgSub"), trk.tofNSigmaPr(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
               jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
               jetHist.fill(HIST("tracks/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3TofNsigmaantiDeuteronVsPtVsJetPt"), trk.tofNSigmaDe(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h3TofNsigmaantiDeuteronVsPtVsJetPtBkgSub"), trk.tofNSigmaDe(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
             if (std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
               jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/antiTriton/h2TofNsigmaantiTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/antiTriton/h3TofNsigmaantiTritonVsPtVsJetPt"), trk.tofNSigmaTr(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/antiTriton/h3TofNsigmaantiTritonVsPtVsJetPtBkgSub"), trk.tofNSigmaTr(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
             if (std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
               jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
-              if (jetFlagPerpCone && isWithLeadingJet)
-                jetHist.fill(HIST("tracks/perpCone/antiHelium/h2TofNsigmaantiHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
+              if (jetFlagPerpCone && isWithLeadingJet) {
+                jetHist.fill(HIST("tracks/perpCone/antiHelium/h3TofNsigmaantiHeliumVsPtVsJetPt"), trk.tofNSigmaHe(), trk.pt(), jetPt);
+                if (backgroundRho > 0) {
+                  jetHist.fill(HIST("tracks/perpCone/antiHelium/h3TofNsigmaantiHeliumVsPtVsJetPtBkgSub"), trk.tofNSigmaHe(), trk.pt(), jetPtBkgSub);
+                }
+              }
             }
           }
         }

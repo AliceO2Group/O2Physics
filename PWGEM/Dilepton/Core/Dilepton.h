@@ -31,6 +31,7 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
 #include "Tools/ML/MlResponse.h"
 
@@ -48,7 +49,6 @@
 #include "MathUtils/Utils.h"
 
 #include "Math/Vector4D.h"
-#include "TH1D.h"
 #include "TString.h"
 
 #include <algorithm>
@@ -56,7 +56,6 @@
 #include <iterator>
 #include <map>
 #include <random>
-#include <ranges>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -74,9 +73,6 @@ using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerBits>;
-using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
-
 using MyElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronsPrefilterBitDerived>;
 using MyElectron = MyElectrons::iterator;
 using FilteredMyElectrons = soa::Filtered<MyElectrons>;
@@ -89,7 +85,6 @@ using FilteredMyMuon = FilteredMyMuons::iterator;
 
 using MyEMH_electron = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
 using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMFwdTrack>;
-using MyEMH_pair = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, std::tuple<int, int, int, int, EMPair>>;
 
 template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, typename TEMH, typename... Types>
 struct Dilepton {
@@ -105,23 +100,19 @@ struct Dilepton {
   Configurable<std::string> spresoHistName{"spresoHistName", "h1_R2_FT0M_BPos_BNeg", "histogram name of SP resolution file"};
 
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kHFll:5"};
-  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
+  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
+  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
-  Configurable<int> ndepthDDAcc{"ndepthDDAcc", 10000, "depth for event mixing for data-driven acc. in polarization"};
+  Configurable<int> ndepth{"ndepth", 1000, "depth for event mixing"};
   Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
-  Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
-  // Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
-  // Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
   Configurable<bool> cfgUseSignedDCA{"cfgUseSignedDCA", false, "flag to use signs in the DCA calculation"};
@@ -169,6 +160,9 @@ struct Dilepton {
     Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -298,12 +292,16 @@ struct Dilepton {
   } dimuoncuts;
 
   struct : ConfigurableGroup {
-    std::string prefix = "accBins";
-    ConfigurableAxis ConfMllAccBins{"ConfMllAccBins", {40, 0, 4}, "mll bins for acceptance for plarization"};
-    ConfigurableAxis ConfPtllAccBins{"ConfPtllAccBins", {100, 0, 10}, "pTll bins for acceptance for plarization"};
-    ConfigurableAxis ConfEtallAccBins{"ConEtallAccBins", {30, -1.5f, 1.5f}, "etall bins for acceptance for plarization"};   // pair pseudo-rapidity
-    ConfigurableAxis ConfPhillAccBins{"ConPhillAccBins", {36, 0.f, 2 * M_PI}, "phill bins for acceptance for plarization"}; // pair pseudo-rapidity
-  } accBins;
+    std::string prefix = "zorroGroup";
+    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name. 1 trigger per 1 task."}; // 1 trigger per 1 task
+    o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+    Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  } zorroGroup;
+
+  Zorro zorro;
+  int mToIidx = 0;
+  int mTOICounter = 0;
+  int mATCounter = 0;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   // o2::ccdb::CcdbApi ccdbApi;
@@ -320,10 +318,6 @@ struct Dilepton {
   std::vector<float> zvtx_bin_edges;
   std::vector<float> ep_bin_edges;
   std::vector<float> occ_bin_edges;
-  std::vector<float> mll_bin_edges;
-  std::vector<float> ptll_bin_edges;
-  std::vector<float> etall_bin_edges;
-  std::vector<float> phill_bin_edges;
 
   int nmod = -1; // this is for flow analysis
   float leptonM1 = 0.f;
@@ -341,6 +335,9 @@ struct Dilepton {
   {
     mRunNumber = 0;
     d_bz = 0;
+    mToIidx = 0;
+    mTOICounter = 0;
+    mATCounter = 0;
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -420,84 +417,6 @@ struct Dilepton {
     emh_pos = new TEMH(ndepth);
     emh_neg = new TEMH(ndepth);
 
-    if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) { // only for polarization
-
-      emh_pair_uls = new MyEMH_pair(ndepthDDAcc);
-      emh_pair_lspp = new MyEMH_pair(ndepthDDAcc);
-      emh_pair_lsmm = new MyEMH_pair(ndepthDDAcc);
-
-      if (accBins.ConfMllAccBins.value[0] == VARIABLE_WIDTH) {
-        mll_bin_edges = std::vector<float>(accBins.ConfMllAccBins.value.begin(), accBins.ConfMllAccBins.value.end());
-        mll_bin_edges.erase(mll_bin_edges.begin());
-        for (const auto& edge : mll_bin_edges) {
-          LOGF(info, "VARIABLE_WIDTH: mll_bin_edges = %f", edge);
-        }
-      } else {
-        int nbins = static_cast<int>(accBins.ConfMllAccBins.value[0]);
-        float xmin = static_cast<float>(accBins.ConfMllAccBins.value[1]);
-        float xmax = static_cast<float>(accBins.ConfMllAccBins.value[2]);
-        mll_bin_edges.resize(nbins + 1);
-        for (int i = 0; i < nbins + 1; i++) {
-          mll_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-          LOGF(info, "FIXED_WIDTH: mll_bin_edges[%d] = %f", i, mll_bin_edges[i]);
-        }
-      }
-
-      if (accBins.ConfPtllAccBins.value[0] == VARIABLE_WIDTH) {
-        ptll_bin_edges = std::vector<float>(accBins.ConfPtllAccBins.value.begin(), accBins.ConfPtllAccBins.value.end());
-        ptll_bin_edges.erase(ptll_bin_edges.begin());
-        for (const auto& edge : ptll_bin_edges) {
-          LOGF(info, "VARIABLE_WIDTH: ptll_bin_edges = %f", edge);
-        }
-      } else {
-        int nbins = static_cast<int>(accBins.ConfPtllAccBins.value[0]);
-        float xmin = static_cast<float>(accBins.ConfPtllAccBins.value[1]);
-        float xmax = static_cast<float>(accBins.ConfPtllAccBins.value[2]);
-        ptll_bin_edges.resize(nbins + 1);
-        for (int i = 0; i < nbins + 1; i++) {
-          ptll_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-          LOGF(info, "FIXED_WIDTH: ptll_bin_edges[%d] = %f", i, ptll_bin_edges[i]);
-        }
-      }
-
-      if (accBins.ConfEtallAccBins.value[0] == VARIABLE_WIDTH) {
-        etall_bin_edges = std::vector<float>(accBins.ConfEtallAccBins.value.begin(), accBins.ConfEtallAccBins.value.end());
-        etall_bin_edges.erase(etall_bin_edges.begin());
-        for (const auto& edge : etall_bin_edges) {
-          LOGF(info, "VARIABLE_WIDTH: etall_bin_edges = %f", edge);
-        }
-      } else {
-        int nbins = static_cast<int>(accBins.ConfEtallAccBins.value[0]);
-        float xmin = static_cast<float>(accBins.ConfEtallAccBins.value[1]);
-        float xmax = static_cast<float>(accBins.ConfEtallAccBins.value[2]);
-        etall_bin_edges.resize(nbins + 1);
-        for (int i = 0; i < nbins + 1; i++) {
-          etall_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-          LOGF(info, "FIXED_WIDTH: etall_bin_edges[%d] = %f", i, etall_bin_edges[i]);
-        }
-      }
-
-      if (accBins.ConfPhillAccBins.value[0] == VARIABLE_WIDTH) {
-        phill_bin_edges = std::vector<float>(accBins.ConfPhillAccBins.value.begin(), accBins.ConfPhillAccBins.value.end());
-        phill_bin_edges.erase(phill_bin_edges.begin());
-        for (const auto& edge : phill_bin_edges) {
-          LOGF(info, "VARIABLE_WIDTH: phill_bin_edges = %f", edge);
-        }
-      } else {
-        int nbins = static_cast<int>(accBins.ConfPhillAccBins.value[0]);
-        float xmin = static_cast<float>(accBins.ConfPhillAccBins.value[1]);
-        float xmax = static_cast<float>(accBins.ConfPhillAccBins.value[2]);
-        phill_bin_edges.resize(nbins + 1);
-        for (int i = 0; i < nbins + 1; i++) {
-          phill_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-          LOGF(info, "FIXED_WIDTH: phill_bin_edges[%d] = %f", i, phill_bin_edges[i]);
-        }
-      }
-
-      std::random_device seed_gen;
-      engine = std::mt19937(seed_gen());
-    }
-
     DefineEMEventCut();
     addhistograms();
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -512,17 +431,18 @@ struct Dilepton {
 
     fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
 
+    if (doprocessTriggerAnalysis) {
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
+      fRegistry.add("Event/trigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                  // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hScaler", "trigger counter before DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                            // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hSelection", "trigger counter after DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                          // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedTrigger", Form("analysed trigger %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true); // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedToI", Form("analysed ToI %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true);         // extend X range in Run 4/5
+    }
+
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
-    }
-    if (doprocessTriggerAnalysis) {
-      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value.data());
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", cfg_swt_name.value.data()), kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
-      hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
-      hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
+      fRegistry.add("Event/norm/hZvtx", "hZvtx;Z_{vtx} (cm)", kTH1D, {{100, -50, +50}}, false);
     }
     if (doprocessBC) {
       auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{6, -0.5f, 5.5f}});
@@ -535,7 +455,7 @@ struct Dilepton {
     }
   }
 
-  template <typename TCollision>
+  template <bool isTriggerAnalysis, typename TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
@@ -574,6 +494,24 @@ struct Dilepton {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kG";
     }
+
+    // zorro
+    if constexpr (isTriggerAnalysis) {
+      zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
+      mToIidx = zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value)[0];
+      zorro.populateHistRegistry(fRegistry, collision.runNumber());
+
+      uint64_t nInspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
+      uint64_t nScalers = zorro.getScalers()->GetBinContent(zorro.getScalers()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      uint64_t nSelections = zorro.getSelections()->GetBinContent(zorro.getSelections()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      LOGF(info, "run number %d: total inspected TVX events = %llu, scalers = %llu, selections = %llu", collision.runNumber(), nInspectedTVX, nScalers, nSelections);
+
+      fRegistry.fill(HIST("Event/trigger/hInspectedTVX"), collision.runNumber(), nInspectedTVX);
+      fRegistry.fill(HIST("Event/trigger/hScaler"), collision.runNumber(), nScalers);
+      fRegistry.fill(HIST("Event/trigger/hSelection"), collision.runNumber(), nSelections);
+    }
+
     mRunNumber = collision.runNumber();
     fDielectronCut.SetTrackPhiPositionRange(dielectroncuts.cfg_min_phiposition_track, dielectroncuts.cfg_max_phiposition_track, dielectroncuts.cfgRefR, d_bz, dielectroncuts.cfg_mirror_phi_track);
 
@@ -604,13 +542,6 @@ struct Dilepton {
     delete emh_neg;
     emh_neg = 0x0;
 
-    delete emh_pair_uls;
-    emh_pair_uls = 0x0;
-    delete emh_pair_lspp;
-    emh_pair_lspp = 0x0;
-    delete emh_pair_lsmm;
-    emh_pair_lsmm = 0x0;
-
     used_trackIds_per_col.clear();
     used_trackIds_per_col.shrink_to_fit();
     map_mixed_eventId_to_globalBC.clear();
@@ -620,7 +551,7 @@ struct Dilepton {
 
   void addhistograms()
   {
-    const std::string qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
+    const std::string qvec_det_names[7] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg", "FV0A"};
 
     std::string mass_axis_title = "m_{ll} (GeV/c^{2})";
     std::string pair_pt_axis_title = "p_{T,ll} (GeV/c)";
@@ -717,11 +648,6 @@ struct Dilepton {
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
-
-      fRegistry.add("Pair/mix/uls/hsAcc", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_cos_theta, axis_phi, axis_quadmom}, true);
-      fRegistry.addClone("Pair/mix/uls/hsAcc", "Pair/mix/lspp/hsAcc");
-      fRegistry.addClone("Pair/mix/uls/hsAcc", "Pair/mix/lsmm/hsAcc");
-
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
       const AxisSpec axis_dphi_ee{36, -M_PI / 2., 3. / 2. * M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"}; // for kHFll
       const AxisSpec axis_deta_ee{40, -2., 2., "#Delta#eta = #eta_{l1} - #eta_{l2}"};
@@ -1076,18 +1002,20 @@ struct Dilepton {
       std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
       std::array<float, 2> q3btot = {collision.q3xbtot(), collision.q3ybtot()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
+      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
-        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg},                                                 // 2nd harmonics
-        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg},                                                 // 3rd harmonics
+        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
+        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
+        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg, q2fv0a},                                                         // 2nd harmonics
+        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg, q3fv0a},                                                         // 3rd harmonics
       };
 
       if constexpr (ev_id == 0) {
@@ -1131,54 +1059,6 @@ struct Dilepton {
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-      }
-
-      if constexpr (ev_id == 0) { // same event
-        int mbin = lower_bound(mll_bin_edges.begin(), mll_bin_edges.end(), v12.M()) - mll_bin_edges.begin() - 1;
-        if (mbin < 0) {
-          mbin = 0;
-        } else if (static_cast<int>(mll_bin_edges.size()) - 2 < mbin) {
-          mbin = static_cast<int>(mll_bin_edges.size()) - 2;
-        }
-
-        int ptbin = lower_bound(ptll_bin_edges.begin(), ptll_bin_edges.end(), v12.Pt()) - ptll_bin_edges.begin() - 1;
-        if (ptbin < 0) {
-          ptbin = 0;
-        } else if (static_cast<int>(ptll_bin_edges.size()) - 2 < ptbin) {
-          ptbin = static_cast<int>(ptll_bin_edges.size()) - 2;
-        }
-
-        int etabin = lower_bound(etall_bin_edges.begin(), etall_bin_edges.end(), v12.Eta()) - etall_bin_edges.begin() - 1;
-        if (etabin < 0) {
-          etabin = 0;
-        } else if (static_cast<int>(etall_bin_edges.size()) - 2 < etabin) {
-          etabin = static_cast<int>(etall_bin_edges.size()) - 2;
-        }
-
-        float phi12 = v12.Phi();
-        o2::math_utils::bringTo02Pi(phi12);
-        int phibin = lower_bound(phill_bin_edges.begin(), phill_bin_edges.end(), phi12) - phill_bin_edges.begin() - 1;
-        if (phibin < 0) {
-          phibin = 0;
-        } else if (static_cast<int>(phill_bin_edges.size()) - 2 < phibin) {
-          phibin = static_cast<int>(phill_bin_edges.size()) - 2;
-        }
-
-        auto key_df_collision = std::make_pair(ndf, collision.globalIndex());
-        float phi12_tmp = v12.Phi();
-        o2::math_utils::bringTo02Pi(phi12_tmp);
-        EMPair empair = EMPair(v12.Pt(), v12.Eta(), phi12_tmp, v12.M(), t1.sign() + t2.sign());
-        empair.setPositiveLegPxPyPzM(arrD[0], arrD[1], arrD[2], leptonM1);
-        // empair.setNegativeLegPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), leptonM2);
-        empair.setPairDCA(pair_dca);
-        auto pair_tmp = std::make_tuple(mbin, ptbin, etabin, phibin, empair);
-        if (t1.sign() * t2.sign() < 0) { // ULS
-          emh_pair_uls->AddTrackToEventPool(key_df_collision, pair_tmp);
-        } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-          emh_pair_lspp->AddTrackToEventPool(key_df_collision, pair_tmp);
-        } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-          emh_pair_lsmm->AddTrackToEventPool(key_df_collision, pair_tmp);
-        }
       }
 
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
@@ -1256,7 +1136,7 @@ struct Dilepton {
   }
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  // Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -1294,9 +1174,6 @@ struct Dilepton {
 
   TEMH* emh_pos = nullptr;
   TEMH* emh_neg = nullptr;
-  MyEMH_pair* emh_pair_uls = nullptr;
-  MyEMH_pair* emh_pair_lspp = nullptr;
-  MyEMH_pair* emh_pair_lsmm = nullptr;
 
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
@@ -1307,17 +1184,12 @@ struct Dilepton {
   void runPairing(TCollisions const& collisions, TLeptons const& posTracks, TLeptons const& negTracks, TPresilce const& perCollision, TCut const& cut, TAllTracks const& tracks)
   {
     for (const auto& collision : collisions) {
-      initCCDB(collision);
+      initCCDB<isTriggerAnalysis>(collision);
+
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       float centrality = centralities[cfgCentEstimator];
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
-      }
-
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
       }
 
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
@@ -1326,20 +1198,22 @@ struct Dilepton {
       std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
       std::array<float, 2> q3btot = {collision.q3xbtot(), collision.q3ybtot()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
-      const float eventplanes_2_for_mix[6] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg()};
+      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
+      const float eventplanes_2_for_mix[7] = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg(), collision.ep2fv0a()};
       float ep2 = eventplanes_2_for_mix[cfgEP2Estimator_for_Mix];
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
-        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg},                                                 // 2nd harmonics
-        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg},                                                 // 3rd harmonics
+        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
+        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
+        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg, q2fv0a},                                                         // 2nd harmonics
+        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg, q3fv0a},                                                         // 3rd harmonics
       };
 
       if (nmod == 2) {
@@ -1363,6 +1237,29 @@ struct Dilepton {
 
       if (nmod > 0 && !isGoodQvector(qvectors)) {
         continue;
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+          continue;
+        }
+
+        auto swt_bitset = zorro.getLastResult();         // this has to be called after zorro::isSelected
+        auto TOIcounter = zorro.getTOIcounters()[0];     // this has to be called after zorro::isSelected
+        auto ATcounter = zorro.getATcounters()[mToIidx]; // this has to be called after zorro::isSelected
+
+        if (swt_bitset.test(mToIidx)) {
+          while (ATcounter > mATCounter) {
+            mATCounter++;
+            fRegistry.fill(HIST("Event/trigger/hAnalysedTrigger"), collision.runNumber());
+          }
+
+          while (TOIcounter > mTOICounter) {
+            fRegistry.fill(HIST("Event/trigger/hAnalysedToI"), collision.runNumber());
+            mTOICounter++; // always incremented by 1 in zorro!!
+          }
+          // LOGF(info, "collision.globalIndex() = %d, collision.globalBC() = %llu, mTOICounter = %d, mATcounter = %d", collision.globalIndex(), collision.globalBC(), mTOICounter, mATCounter);
+        }
       }
 
       if (nmod == 2) {
@@ -1502,185 +1399,10 @@ struct Dilepton {
         }
       } // end of loop over mixed event pool
 
-      if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) { // only for polarization
-        auto selected_pairs_uls_in_this_event = emh_pair_uls->GetTracksPerCollision(key_df_collision);
-        auto selected_pairs_lspp_in_this_event = emh_pair_lspp->GetTracksPerCollision(key_df_collision);
-        auto selected_pairs_lsmm_in_this_event = emh_pair_lsmm->GetTracksPerCollision(key_df_collision);
-        auto collisionIds_in_mixing_pool = emh_pair_uls->GetCollisionIdsFromEventPool(key_bin);
-        float weight = 1.f;
-
-        for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool) {
-          auto pairs_uls_from_event_pool = emh_pair_uls->GetTracksPerCollision(mix_dfId_collisionId);
-          auto pairs_lspp_from_event_pool = emh_pair_lspp->GetTracksPerCollision(mix_dfId_collisionId);
-          auto pairs_lsmm_from_event_pool = emh_pair_lsmm->GetTracksPerCollision(mix_dfId_collisionId);
-
-          for (const auto& pair1 : selected_pairs_uls_in_this_event) { // ULS mix
-            auto empair1 = std::get<4>(pair1);
-            auto v_pos = empair1.getPositiveLeg(); // pt, eta, phi, M
-            // auto v_neg = empair1.getNegativeLeg(); // pt, eta, phi, M
-            auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1};
-
-            int mbin = lower_bound(mll_bin_edges.begin(), mll_bin_edges.end(), empair1.mass()) - mll_bin_edges.begin() - 1;
-            if (mbin < 0) {
-              mbin = 0;
-            } else if (static_cast<int>(mll_bin_edges.size()) - 2 < mbin) {
-              mbin = static_cast<int>(mll_bin_edges.size()) - 2;
-            }
-
-            int ptbin = lower_bound(ptll_bin_edges.begin(), ptll_bin_edges.end(), empair1.pt()) - ptll_bin_edges.begin() - 1;
-            if (ptbin < 0) {
-              ptbin = 0;
-            } else if (static_cast<int>(ptll_bin_edges.size()) - 2 < ptbin) {
-              ptbin = static_cast<int>(ptll_bin_edges.size()) - 2;
-            }
-
-            int etabin = lower_bound(etall_bin_edges.begin(), etall_bin_edges.end(), empair1.eta()) - etall_bin_edges.begin() - 1;
-            if (etabin < 0) {
-              etabin = 0;
-            } else if (static_cast<int>(etall_bin_edges.size()) - 2 < etabin) {
-              etabin = static_cast<int>(etall_bin_edges.size()) - 2;
-            }
-
-            int phibin = lower_bound(phill_bin_edges.begin(), phill_bin_edges.end(), empair1.phi()) - phill_bin_edges.begin() - 1;
-            if (phibin < 0) {
-              phibin = 0;
-            } else if (static_cast<int>(phill_bin_edges.size()) - 2 < phibin) {
-              phibin = static_cast<int>(phill_bin_edges.size()) - 2;
-            }
-
-            for (const auto& pair2 : std::views::filter(pairs_uls_from_event_pool, [&mbin, &ptbin, &etabin, &phibin](std::tuple<int, int, int, int, EMPair> t) { return std::get<0>(t) == mbin && std::get<1>(t) == ptbin && std::get<2>(t) == etabin && std::get<3>(t) == phibin; })) {
-              auto empair2 = std::get<4>(pair2);
-              auto arrM = std::array<float, 4>{static_cast<float>(empair2.px()), static_cast<float>(empair2.py()), static_cast<float>(empair2.pz()), static_cast<float>(empair2.mass())};
-
-              float cos_thetaPol = 999, phiPol = 999.f;
-              if (cfgPolarizationFrame == 0) {
-                o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-              } else if (cfgPolarizationFrame == 1) {
-                o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-              }
-              o2::math_utils::bringToPMPi(phiPol);
-              float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
-              fRegistry.fill(HIST("Pair/mix/uls/hsAcc"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-            }
-          } // end of ULS
-
-          for (const auto& pair1 : selected_pairs_lspp_in_this_event) { // LS++
-            auto empair1 = std::get<4>(pair1);
-            auto v_pos = empair1.getPositiveLeg(); // pt, eta, phi, M
-            // auto v_neg = empair1.getNegativeLeg(); // pt, eta, phi, M
-            // auto arrD = +1 * v_pos.Pt() > +1 * v_neg.Pt() ? std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1} : std::array<float, 4>{static_cast<float>(v_neg.Px()), static_cast<float>(v_neg.Py()), static_cast<float>(v_neg.Pz()), leptonM2};
-            auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1};
-
-            int mbin = lower_bound(mll_bin_edges.begin(), mll_bin_edges.end(), empair1.mass()) - mll_bin_edges.begin() - 1;
-            if (mbin < 0) {
-              mbin = 0;
-            } else if (static_cast<int>(mll_bin_edges.size()) - 2 < mbin) {
-              mbin = static_cast<int>(mll_bin_edges.size()) - 2;
-            }
-
-            int ptbin = lower_bound(ptll_bin_edges.begin(), ptll_bin_edges.end(), empair1.pt()) - ptll_bin_edges.begin() - 1;
-            if (ptbin < 0) {
-              ptbin = 0;
-            } else if (static_cast<int>(ptll_bin_edges.size()) - 2 < ptbin) {
-              ptbin = static_cast<int>(ptll_bin_edges.size()) - 2;
-            }
-
-            int etabin = lower_bound(etall_bin_edges.begin(), etall_bin_edges.end(), empair1.eta()) - etall_bin_edges.begin() - 1;
-            if (etabin < 0) {
-              etabin = 0;
-            } else if (static_cast<int>(etall_bin_edges.size()) - 2 < etabin) {
-              etabin = static_cast<int>(etall_bin_edges.size()) - 2;
-            }
-
-            int phibin = lower_bound(phill_bin_edges.begin(), phill_bin_edges.end(), empair1.phi()) - phill_bin_edges.begin() - 1;
-            if (phibin < 0) {
-              phibin = 0;
-            } else if (static_cast<int>(phill_bin_edges.size()) - 2 < phibin) {
-              phibin = static_cast<int>(phill_bin_edges.size()) - 2;
-            }
-
-            for (const auto& pair2 : std::views::filter(pairs_lspp_from_event_pool, [&mbin, &ptbin, &etabin, &phibin](std::tuple<int, int, int, int, EMPair> t) { return std::get<0>(t) == mbin && std::get<1>(t) == ptbin && std::get<2>(t) == etabin && std::get<3>(t) == phibin; })) {
-              auto empair2 = std::get<4>(pair2);
-              auto arrM = std::array<float, 4>{static_cast<float>(empair2.px()), static_cast<float>(empair2.py()), static_cast<float>(empair2.pz()), static_cast<float>(empair2.mass())};
-
-              float cos_thetaPol = 999, phiPol = 999.f;
-              if (cfgPolarizationFrame == 0) {
-                o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-              } else if (cfgPolarizationFrame == 1) {
-                o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-              }
-              o2::math_utils::bringToPMPi(phiPol);
-              float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
-              fRegistry.fill(HIST("Pair/mix/lspp/hsAcc"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-            }
-          } // end of LS++
-
-          for (const auto& pair1 : selected_pairs_lsmm_in_this_event) { // LS++
-            auto empair1 = std::get<4>(pair1);
-            auto v_pos = empair1.getPositiveLeg(); // pt, eta, phi, M
-            // auto v_neg = empair1.getNegativeLeg(); // pt, eta, phi, M
-            // auto arrD = -1 * v_pos.Pt() > -1 * v_neg.Pt() ? std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1} : std::array<float, 4>{static_cast<float>(v_neg.Px()), static_cast<float>(v_neg.Py()), static_cast<float>(v_neg.Pz()), leptonM2};
-            auto arrD = std::array<float, 4>{static_cast<float>(v_pos.Px()), static_cast<float>(v_pos.Py()), static_cast<float>(v_pos.Pz()), leptonM1};
-
-            int mbin = lower_bound(mll_bin_edges.begin(), mll_bin_edges.end(), empair1.mass()) - mll_bin_edges.begin() - 1;
-            if (mbin < 0) {
-              mbin = 0;
-            } else if (static_cast<int>(mll_bin_edges.size()) - 2 < mbin) {
-              mbin = static_cast<int>(mll_bin_edges.size()) - 2;
-            }
-
-            int ptbin = lower_bound(ptll_bin_edges.begin(), ptll_bin_edges.end(), empair1.pt()) - ptll_bin_edges.begin() - 1;
-            if (ptbin < 0) {
-              ptbin = 0;
-            } else if (static_cast<int>(ptll_bin_edges.size()) - 2 < ptbin) {
-              ptbin = static_cast<int>(ptll_bin_edges.size()) - 2;
-            }
-
-            int etabin = lower_bound(etall_bin_edges.begin(), etall_bin_edges.end(), empair1.eta()) - etall_bin_edges.begin() - 1;
-            if (etabin < 0) {
-              etabin = 0;
-            } else if (static_cast<int>(etall_bin_edges.size()) - 2 < etabin) {
-              etabin = static_cast<int>(etall_bin_edges.size()) - 2;
-            }
-
-            int phibin = lower_bound(phill_bin_edges.begin(), phill_bin_edges.end(), empair1.phi()) - phill_bin_edges.begin() - 1;
-            if (phibin < 0) {
-              phibin = 0;
-            } else if (static_cast<int>(phill_bin_edges.size()) - 2 < phibin) {
-              phibin = static_cast<int>(phill_bin_edges.size()) - 2;
-            }
-
-            for (const auto& pair2 : std::views::filter(pairs_lsmm_from_event_pool, [&mbin, &ptbin, &etabin, &phibin](std::tuple<int, int, int, int, EMPair> t) { return std::get<0>(t) == mbin && std::get<1>(t) == ptbin && std::get<2>(t) == etabin && std::get<3>(t) == phibin; })) {
-              auto empair2 = std::get<4>(pair2);
-              auto arrM = std::array<float, 4>{static_cast<float>(empair2.px()), static_cast<float>(empair2.py()), static_cast<float>(empair2.pz()), static_cast<float>(empair2.mass())};
-
-              float cos_thetaPol = 999, phiPol = 999.f;
-              if (cfgPolarizationFrame == 0) {
-                o2::aod::pwgem::dilepton::utils::pairutil::getAngleCS(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-              } else if (cfgPolarizationFrame == 1) {
-                o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(arrM, arrD, beamE1, beamE2, beamP1, beamP2, cos_thetaPol, phiPol);
-              }
-              o2::math_utils::bringToPMPi(phiPol);
-              float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
-              fRegistry.fill(HIST("Pair/mix/lsmm/hsAcc"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-            }
-          } // end of LS++
-
-        } // end of loop over mixed event pool
-
-      } // end of if polarization
-
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) {
         map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_neg->AddCollisionIdAtLast(key_bin, key_df_collision);
-
-        if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) { // only for polarization
-          emh_pair_uls->AddCollisionIdAtLast(key_bin, key_df_collision);
-          emh_pair_lspp->AddCollisionIdAtLast(key_bin, key_df_collision);
-          emh_pair_lsmm->AddCollisionIdAtLast(key_bin, key_df_collision);
-        }
-
       } // end of if pair exist
 
     } // end of collision loop
@@ -1733,17 +1455,17 @@ struct Dilepton {
     passed_pairIds.reserve(posTracks.size() * negTracks.size());
 
     for (const auto& collision : collisions) {
-      initCCDB(collision);
+      initCCDB<isTriggerAnalysis>(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
-      }
+      // if constexpr (isTriggerAnalysis) { // don't call this here. this causes double counting.
+      //   if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+      //     continue;
+      //   }
+      // }
 
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
@@ -1751,18 +1473,20 @@ struct Dilepton {
       std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
       std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
       std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
       std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
       std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
       std::array<float, 2> q3ft0c = {collision.q3xft0c(), collision.q3yft0c()};
       std::array<float, 2> q3btot = {collision.q3xbtot(), collision.q3ybtot()};
       std::array<float, 2> q3bpos = {collision.q3xbpos(), collision.q3ybpos()};
       std::array<float, 2> q3bneg = {collision.q3xbneg(), collision.q3ybneg()};
+      std::array<float, 2> q3fv0a = {collision.q3xfv0a(), collision.q3yfv0a()};
 
       std::vector<std::vector<std::array<float, 2>>> qvectors = {
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
-        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
-        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg},                                                 // 2nd harmonics
-        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg},                                                 // 3rd harmonics
+        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 0th harmonics
+        {{999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}, {999.f, 999.f}}, // 1st harmonics
+        {q2ft0m, q2ft0a, q2ft0c, q2btot, q2bpos, q2bneg, q2fv0a},                                                         // 2nd harmonics
+        {q3ft0m, q3ft0a, q3ft0c, q3btot, q3bpos, q3bneg, q3fv0a},                                                         // 3rd harmonics
       };
 
       if (!fEMEventCut.IsSelected(collision)) {
@@ -1852,8 +1576,7 @@ struct Dilepton {
   }
   PROCESS_SWITCH(Dilepton, processAnalysis, "run dilepton analysis", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, aod::EMSWTriggerInfos const& cefpinfos, aod::EMSWTriggerATCounters const& countersAT, aod::EMSWTriggerTOICounters const& countersTOI, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisions const& collisions, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
@@ -1870,37 +1593,16 @@ struct Dilepton {
     }
     map_weight.clear();
     ndf++;
-
-    // for nomalization
-    int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value);
-    for (const auto& counter : countersAT) {
-      if (counter.isAnalyzed_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 0);
-      }
-    }
-    for (const auto& counter : countersTOI) {
-      if (counter.isAnalyzedToI_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 1);
-      }
-    }
-
-    for (const auto& info : cefpinfos) {
-      fRegistry.fill(HIST("NormTrigger/hInspectedTVX"), info.runNumber(), info.nInspectedTVX());
-      fRegistry.fill(HIST("NormTrigger/hScalers"), info.runNumber(), info.nScalers()[emswtId]);
-      fRegistry.fill(HIST("NormTrigger/hSelections"), info.runNumber(), info.nSelections()[emswtId]);
-    }
   }
   PROCESS_SWITCH(Dilepton, processTriggerAnalysis, "run dilepton analysis on triggered data", false);
 
-  Filter collisionFilter_centrality_norm = cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax;
-  using FilteredNormInfos = soa::Filtered<aod::EMEventNormInfos>;
-
-  void processNorm(FilteredNormInfos const& collisions)
+  void processNorm(aod::EMEventNormInfos const& collisions)
   {
     for (const auto& collision : collisions) {
       if (collision.centFT0C() < cfgCentMin || cfgCentMax < collision.centFT0C()) {
         continue;
       }
+      fRegistry.fill(HIST("Event/norm/hZvtx"), collision.posZ());
 
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {

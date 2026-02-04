@@ -70,6 +70,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   Produces<o2::aod::HfDplusPars> rowCandidatePar;
   Produces<o2::aod::HfDplusParEs> rowCandidateParE;
   Produces<o2::aod::HfDplusSels> rowCandidateSel;
+  Produces<o2::aod::HfDplusDaugs> rowCandidateDaugs;
   Produces<o2::aod::HfDplusMls> rowCandidateMl;
   Produces<o2::aod::HfDplusIds> rowCandidateId;
   Produces<o2::aod::HfDplusMcs> rowCandidateMc;
@@ -79,6 +80,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
+  Configurable<bool> fillCandidateDaugs{"fillCandidateDaugs", false, "Fill candidate daughter parameters"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
@@ -190,6 +192,24 @@ struct HfDerivedDataCreatorDplusToPiKPi {
     if (fillCandidateSel) {
       rowCandidateSel(
         BIT(candFlag));
+    }
+    if (fillCandidateDaugs) {
+      rowCandidateDaugs(
+        candidate.pt(),
+        candidate.chi2PCA(),
+        candidate.decayLength(),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.pxProng1(),
+        candidate.pyProng1(),
+        candidate.pzProng1(),
+        candidate.pxProng2(),
+        candidate.pyProng2(),
+        candidate.pzProng2(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa1(),
+        candidate.tpcTofNSigmaPi2());
     }
     if (fillCandidateMl) {
       rowCandidateMl(

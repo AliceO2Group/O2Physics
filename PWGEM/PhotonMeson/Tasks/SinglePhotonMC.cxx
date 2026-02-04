@@ -8,11 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
-// This code loops over photon candidate and fill histograms
-//    Please write to: daiki.sekihata@cern.ch
+
+/// \file SinglePhotonMC.cxx
+/// \brief HeadThis code loops over photon candidate and fill histograms
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #include "EMPhotonEventCut.h"
 
@@ -53,7 +52,7 @@ using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -252,7 +251,7 @@ struct SinglePhotonMC {
   {
     bool is_selected = false;
     if constexpr (photontype == EMDetType::kPCM) {
-      is_selected = cut1.template IsSelected<MyMCV0Legs>(g1);
+      is_selected = cut1.template IsSelected<decltype(g1), MyMCV0Legs>(g1);
     } else if constexpr (photontype == EMDetType::kPHOS) {
       is_selected = cut1.template IsSelected<int>(g1); // dummy, because track matching is not ready.
       //} else if constexpr (photontype == EMDetType::kEMC) {

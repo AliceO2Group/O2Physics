@@ -49,8 +49,11 @@
 
 #include <THnSparse.h>
 
+#include <Rtypes.h>
+
 #include <algorithm> // std::min
 #include <array>
+#include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -605,100 +608,95 @@ struct HfTaskD0 {
         const auto& zdc = bcForUPC.zdc();
         zdcEnergyZNA = zdc.energyCommonZNA();
         zdcEnergyZNC = zdc.energyCommonZNC();
-      }
-
-      // Fill QA histograms using the UPC BC for both FIT and ZDC
-      if (hasZdc) {
-        registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
         registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
-        registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
       }
 
-      if (hf_upc::isSingleSidedGap(gap)) {
-        const auto thisCollId = collision.globalIndex();
-        const auto& groupedD0Candidates = candidates.sliceBy(candD0PerCollision, thisCollId);
+      registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+      registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
 
-        // Calculate occupancy and interaction rate if needed
-        float occ{-1.f};
-        float ir{-1.f};
-        if (storeOccupancyAndIR && occEstimator != OccupancyEstimator::None) {
-          occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
-          ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
+      const auto thisCollId = collision.globalIndex();
+      const auto& groupedD0Candidates = candidates.sliceBy(candD0PerCollision, thisCollId);
+
+      // Calculate occupancy and interaction rate if needed
+      float occ{-1.f};
+      float ir{-1.f};
+      if (storeOccupancyAndIR && occEstimator != OccupancyEstimator::None) {
+        occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+        ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
+      }
+
+      for (const auto& candidate : groupedD0Candidates) {
+        if (yCandRecoMax >= 0. && std::abs(HfHelper::yD0(candidate)) > yCandRecoMax) {
+          continue;
         }
 
-        for (const auto& candidate : groupedD0Candidates) {
-          if (yCandRecoMax >= 0. && std::abs(HfHelper::yD0(candidate)) > yCandRecoMax) {
-            continue;
+        const float massD0 = HfHelper::invMassD0ToPiK(candidate);
+        const float massD0bar = HfHelper::invMassD0barToKPi(candidate);
+        const auto ptCandidate = candidate.pt();
+
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          registry.fill(HIST("hMass"), massD0, ptCandidate);
+          registry.fill(HIST("hMassFinerBinning"), massD0, ptCandidate);
+          registry.fill(HIST("hMassVsPhi"), massD0, ptCandidate, candidate.phi());
+        }
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          registry.fill(HIST("hMass"), massD0bar, ptCandidate);
+          registry.fill(HIST("hMassFinerBinning"), massD0bar, ptCandidate);
+          registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
+        }
+
+        // Fill THnSparse with structure matching histogram axes: [mass, pt, (mlScores if FillMl), rapidity, d0Type, (cent if storeCentrality), (occ, ir if storeOccupancyAndIR), gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC]
+        auto fillTHnData = [&](float mass, int d0Type) {
+          // Pre-calculate vector size to avoid reallocations
+          constexpr int NAxesBase = 12;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC
+          constexpr int NAxesMl = FillMl ? 3 : 0;             // 3 ML scores if FillMl
+          int const nAxesCent = storeCentrality ? 1 : 0;      // centrality if storeCentrality
+          int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
+          int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR;
+
+          std::vector<double> valuesToFill;
+          valuesToFill.reserve(nAxesTotal);
+
+          // Fill values in order matching histogram axes
+          valuesToFill.push_back(static_cast<double>(mass));
+          valuesToFill.push_back(static_cast<double>(ptCandidate));
+          if constexpr (FillMl) {
+            valuesToFill.push_back(candidate.mlProbD0()[0]);
+            valuesToFill.push_back(candidate.mlProbD0()[1]);
+            valuesToFill.push_back(candidate.mlProbD0()[2]);
           }
-
-          const float massD0 = HfHelper::invMassD0ToPiK(candidate);
-          const float massD0bar = HfHelper::invMassD0barToKPi(candidate);
-          const auto ptCandidate = candidate.pt();
-
-          if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hMass"), massD0, ptCandidate);
-            registry.fill(HIST("hMassFinerBinning"), massD0, ptCandidate);
-            registry.fill(HIST("hMassVsPhi"), massD0, ptCandidate, candidate.phi());
+          valuesToFill.push_back(static_cast<double>(HfHelper::yD0(candidate)));
+          valuesToFill.push_back(static_cast<double>(d0Type));
+          if (storeCentrality) {
+            valuesToFill.push_back(centrality);
           }
-          if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hMass"), massD0bar, ptCandidate);
-            registry.fill(HIST("hMassFinerBinning"), massD0bar, ptCandidate);
-            registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
+          if (storeOccupancyAndIR) {
+            valuesToFill.push_back(occ);
+            valuesToFill.push_back(ir);
           }
+          valuesToFill.push_back(static_cast<double>(gap));
+          valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
+          valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
+          valuesToFill.push_back(static_cast<double>(fitInfo.ampFV0A));
+          valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDA));
+          valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
+          valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
+          valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
 
-          // Fill THnSparse with structure matching histogram axes: [mass, pt, (mlScores if FillMl), rapidity, d0Type, (cent if storeCentrality), (occ, ir if storeOccupancyAndIR), gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC]
-          auto fillTHnData = [&](float mass, int d0Type) {
-            // Pre-calculate vector size to avoid reallocations
-            constexpr int NAxesBase = 12;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC
-            constexpr int NAxesMl = FillMl ? 3 : 0;             // 3 ML scores if FillMl
-            int const nAxesCent = storeCentrality ? 1 : 0;      // centrality if storeCentrality
-            int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
-            int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR;
-
-            std::vector<double> valuesToFill;
-            valuesToFill.reserve(nAxesTotal);
-
-            // Fill values in order matching histogram axes
-            valuesToFill.push_back(static_cast<double>(mass));
-            valuesToFill.push_back(static_cast<double>(ptCandidate));
-            if constexpr (FillMl) {
-              valuesToFill.push_back(candidate.mlProbD0()[0]);
-              valuesToFill.push_back(candidate.mlProbD0()[1]);
-              valuesToFill.push_back(candidate.mlProbD0()[2]);
-            }
-            valuesToFill.push_back(static_cast<double>(HfHelper::yD0(candidate)));
-            valuesToFill.push_back(static_cast<double>(d0Type));
-            if (storeCentrality) {
-              valuesToFill.push_back(centrality);
-            }
-            if (storeOccupancyAndIR) {
-              valuesToFill.push_back(occ);
-              valuesToFill.push_back(ir);
-            }
-            valuesToFill.push_back(static_cast<double>(gap));
-            valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));
-            valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0C));
-            valuesToFill.push_back(static_cast<double>(fitInfo.ampFV0A));
-            valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDA));
-            valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
-            valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
-            valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
-
-            if constexpr (FillMl) {
-              registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
-            } else {
-              registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
-            }
-          };
-
-          if (candidate.isSelD0() >= selectionFlagD0) {
-            fillTHnData(massD0, SigD0);
-            fillTHnData(massD0, candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
+          if constexpr (FillMl) {
+            registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
+          } else {
+            registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
           }
-          if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            fillTHnData(massD0bar, SigD0bar);
-            fillTHnData(massD0bar, candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar);
-          }
+        };
+
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          fillTHnData(massD0, SigD0);
+          fillTHnData(massD0, candidate.isSelD0bar() ? ReflectedD0 : PureSigD0);
+        }
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          fillTHnData(massD0bar, SigD0bar);
+          fillTHnData(massD0bar, candidate.isSelD0() ? ReflectedD0bar : PureSigD0bar);
         }
       }
     }

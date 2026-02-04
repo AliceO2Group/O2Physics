@@ -170,6 +170,7 @@ struct PidDiHadron {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisNsigmaITS{"axisNsigmaITS", {80, -5, 5}, "nsigmaITS axis"};
+  ConfigurableAxis axisTpcSignal{"axisTpcSignal", {250, 0, 250}, "dEdx axis for TPC"};
 
   Configurable<LabeledArray<int>> cfgUseEventCuts{"cfgUseEventCuts", {LongArrayInt[0], 15, 1, {"Filtered Events", "Sel8", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kNoCollInTimeRangeStandard", "kIsGoodITSLayersAll", "kNoCollInRofStandard", "kNoHighMultCollInPrevRof", "Occupancy", "Multcorrelation", "T0AV0ACut", "kIsVertexITSTPC", "kTVXinTRD"}, {"EvCuts"}}, "Labeled array (int) for various cuts on resonances"};
   Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
@@ -183,8 +184,10 @@ struct PidDiHadron {
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using FilteredMcTracks = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using V0TrackCandidate = aod::V0Datas;
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -355,7 +358,7 @@ struct PidDiHadron {
       massAxisReso = {resoSwitchVals[kMassBins][iPhi], resoCutVals[kMassMin][iPhi], resoCutVals[kMassMax][iPhi], "M_{K^{+}K^{-}} (GeV/c^{2})"};
 
     // Event Counter
-    if ((doprocessSame || doprocessSameReso) && cfgUseAdditionalEventCut) {
+    if ((doprocessSame || doprocessSameReso || doprocessMC) && cfgUseAdditionalEventCut) {
       histos.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{15, -0.5, 14.5}}});
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFilteredEvents + 1, "Filtered event");
       histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAfterSel8 + 1, "After sel8");
@@ -498,6 +501,9 @@ struct PidDiHadron {
             histos.add("TofItsNsigma_before", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPt}}});
             histos.add("TofItsNsigma_after", "", {HistType::kTHnSparseD, {{axisNsigmaITS, axisNsigmaTOF, axisPt}}});
           }
+
+          histos.add("TpcdEdx_ptwise", "", {HistType::kTH2D, {{axisTpcSignal, axisPt}}});
+          histos.add("TpcdEdx_ptwise_afterCut", "", {HistType::kTH2D, {{axisTpcSignal, axisPt}}});
         }
       }
 
@@ -507,6 +513,19 @@ struct PidDiHadron {
     }
     if (doprocessMixed || doprocessMixedReso) {
       histos.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
+    }
+    if (doprocessMC) {
+      histos.add("hNsigmaPionTruePositives", "hNsigmaPionTruePositives", {HistType::kTH1D, {axisPt}});     // Fraction of particles that are pions and selected as pions
+      histos.add("hNsigmaKaonTruePositives", "hNsigmaKaonTruePositives", {HistType::kTH1D, {axisPt}});     // Fraction of particles that are kaons and selected as kaons
+      histos.add("hNsigmaProtonTruePositives", "hNsigmaProtonTruePositives", {HistType::kTH1D, {axisPt}}); // Fraction of particles that are protons and selected as protons
+
+      histos.add("hNsigmaPionSelected", "hNsigmaPionSelected", {HistType::kTH1D, {axisPt}});
+      histos.add("hNsigmaKaonSelected", "hNsigmaKaonSelected", {HistType::kTH1D, {axisPt}});
+      histos.add("hNsigmaProtonSelected", "hNsigmaProtonSelected", {HistType::kTH1D, {axisPt}});
+
+      histos.add("hNsigmaPionTrue", "hNsigmaPionTrue", {HistType::kTH1D, {axisPt}});     // All true pions from MC
+      histos.add("hNsigmaKaonTrue", "hNsigmaKaonTrue", {HistType::kTH1D, {axisPt}});     // All true kaons from MC
+      histos.add("hNsigmaProtonTrue", "hNsigmaProtonTrue", {HistType::kTH1D, {axisPt}}); // All true protons from MC
     }
 
     histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -835,11 +854,17 @@ struct PidDiHadron {
           histos.fill(HIST("TofItsNsigma_before"), itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
       }
 
+      if (cfgGetNsigmaQA)
+        histos.fill(HIST("TpcdEdx_ptwise"), track1.tpcSignal(), track1.pt());
+
       if (cfgPIDParticle && getNsigmaPID(track1) != cfgPIDParticle)
         continue; // if PID is selected, check if the track has the right PID
 
       if (cfgGetNsigmaQA)
         fillNsigmaAfterCut(track1, cfgPIDParticle);
+
+      if (cfgGetNsigmaQA)
+        histos.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.tpcSignal(), track1.pt());
 
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
@@ -1457,6 +1482,66 @@ struct PidDiHadron {
     }
   }
   PROCESS_SWITCH(PidDiHadron, processMixedReso, "Process mixed events", true);
+
+  void processMC(FilteredCollisions::iterator const& collision, FilteredMcTracks const& tracksmc, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  {
+    float cent = -1.;
+    if (!cfgCentTableUnavailable)
+      cent = getCentrality(collision);
+    if (cfgUseAdditionalEventCut && !selectionEvent(collision, tracksmc.size(), cent, true))
+      return;
+
+    if (cfgSelCollByNch && (tracksmc.size() < cfgCutMultMin || tracksmc.size() >= cfgCutMultMax)) {
+      return;
+    }
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+      return;
+    }
+
+    // loop over all tracks
+    for (auto const& track : tracksmc) {
+
+      if (!trackSelected(track))
+        continue;
+
+      int pidIndex = getNsigmaPID(track);
+
+      // Fill Counts for selection through Nsigma cuts
+      if (pidIndex == kPions)
+        histos.fill(HIST("hNsigmaPionSelected"), track.pt());
+      if (pidIndex == kKaons)
+        histos.fill(HIST("hNsigmaKaonSelected"), track.pt());
+      if (pidIndex == kProtons)
+        histos.fill(HIST("hNsigmaProtonSelected"), track.pt());
+
+      // Check the PDG code for the particles (MC truth) and match with analysed Nsigma PID
+      if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kPiPlus) {
+        histos.fill(HIST("hNsigmaPionTrue"), track.pt());
+
+        if (pidIndex == kPions) {
+          histos.fill(HIST("hNsigmaPionTruePositives"), track.pt());
+        }
+      } // Pion condition
+
+      if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kKPlus) {
+        histos.fill(HIST("hNsigmaKaonTrue"), track.pt());
+
+        if (pidIndex == kKaons) {
+          histos.fill(HIST("hNsigmaKaonTruePositives"), track.pt());
+        }
+      } // Kaon condition
+
+      if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kProton) {
+        histos.fill(HIST("hNsigmaProtonTrue"), track.pt());
+
+        if (pidIndex == kProtons) {
+          histos.fill(HIST("hNsigmaProtonTruePositives"), track.pt());
+        }
+      } // Proton condition
+
+    } // end of tracks MC loop
+  } // end of process MC
+  PROCESS_SWITCH(PidDiHadron, processMC, "Process Monte Carlo", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

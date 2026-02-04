@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file gammaTables.h
+/// \brief This header provides the table definitions for the soft photon and neutral meson tables
+/// \author D. Sekihata, daiki.sekihata@cern.ch; Marvin Hemmer (marvin.hemmer@cern.ch) - Goethe University Frankfurt
+
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -17,6 +21,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
@@ -128,7 +133,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { ret
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
-DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float px, float py, float pz) -> float { return std::tan(M_PI_2 - 2 * std::atan(std::exp(-RecoDecay::eta(std::array{px, py, pz})))); });
+DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float px, float py, float pz) -> float { return std::tan(o2::constants::math::PIHalf - 2 * std::atan(std::exp(-RecoDecay::eta(std::array{px, py, pz})))); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -566,22 +571,30 @@ DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! numbe
 
 namespace emccluster
 {
-DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                                                   //!
-DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                            //! cluster core energy (GeV)
-DECLARE_SOA_COLUMN(Time, time, float);                                                                                        //! cluster time (ns)
-DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                                 //! flag to mark cluster as exotic
-DECLARE_SOA_COLUMN(Definition, definition, int);                                                                              //! cluster definition, see EMCALClusterDefinition.h
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track);                                                                                 //! TrackIds
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, std::vector<float>);                                                                   //! phi values of the matched tracks
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, std::vector<float>);                                                                   //! eta values of the matched tracks
-DECLARE_SOA_COLUMN(TrackP, trackp, std::vector<float>);                                                                       //! momentum values of the matched tracks
-DECLARE_SOA_COLUMN(TrackPt, trackpt, std::vector<float>);                                                                     //! pt values of the matched tracks
-DECLARE_SOA_COLUMN(DeltaPhiSec, deltaPhiSec, std::vector<float>);                                                             //! phi values of the matched secondary tracks
-DECLARE_SOA_COLUMN(DeltaEtaSec, deltaEtaSec, std::vector<float>);                                                             //! eta values of the matched secondary tracks
-DECLARE_SOA_COLUMN(TrackPSec, trackpSec, std::vector<float>);                                                                 //! momentum values of the matched secondary tracks
-DECLARE_SOA_COLUMN(TrackPtSec, trackptSec, std::vector<float>);                                                               //! pt values of the matched secondary tracks
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m = 0) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                                                             //!
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                                      //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(Time, time, float);                                                                                                  //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                                           //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(Definition, definition, int);                                                                                        //! cluster definition, see EMCALClusterDefinition.h
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track);                                                                                           //! TrackIds
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, std::vector<float>);                                                                             //! phi values of the matched tracks
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, std::vector<float>);                                                                             //! eta values of the matched tracks
+DECLARE_SOA_COLUMN(TrackP, trackp, std::vector<float>);                                                                                 //! momentum values of the matched tracks
+DECLARE_SOA_COLUMN(TrackPt, trackpt, std::vector<float>);                                                                               //! pt values of the matched tracks
+DECLARE_SOA_COLUMN(DeltaPhiSec, deltaPhiSec, std::vector<float>);                                                                       //! phi values of the matched secondary tracks
+DECLARE_SOA_COLUMN(DeltaEtaSec, deltaEtaSec, std::vector<float>);                                                                       //! eta values of the matched secondary tracks
+DECLARE_SOA_COLUMN(TrackPSec, trackpSec, std::vector<float>);                                                                           //! momentum values of the matched secondary tracks
+DECLARE_SOA_COLUMN(TrackPtSec, trackptSec, std::vector<float>);                                                                         //! pt values of the matched secondary tracks
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m = 0) -> float { return std::sqrt(e * e - m * m) / std::cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
 } // namespace emccluster
+
+namespace emctm
+{
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float); //! phi values of the matched tracks
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float); //! eta values of the matched tracks
+DECLARE_SOA_COLUMN(TrackP, trackp, float);     //! momentum values of the matched tracks
+DECLARE_SOA_COLUMN(TrackPt, trackpt, float);   //! pt values of the matched tracks
+} // namespace emctm
 DECLARE_SOA_TABLE_VERSIONED(SkimEMCClusters_000, "AOD", "SKIMEMCCLUSTER", 0, //! table of skimmed EMCal clusters
                             o2::soa::Index<>, skimmedcluster::CollisionId, emccluster::Definition, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
                             skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::DeltaPhi,
@@ -596,6 +609,24 @@ DECLARE_SOA_TABLE_VERSIONED(SkimEMCClusters_001, "AOD", "SKIMEMCCLUSTER", 1, //!
 
 using SkimEMCClusters = SkimEMCClusters_001;
 using SkimEMCCluster = SkimEMCClusters_001::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(EmEmcClusters_000, "AOD", "EMEMCCLUSTER", 0, //! table of skimmed EMCal clusters
+                            o2::soa::Index<>, skimmedcluster::CollisionId, emccluster::Definition, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
+                            skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
+
+using EmEmcClusters = EmEmcClusters_000;
+using EmEmcCluster = EmEmcClusters_000::iterator;
+
+namespace trackmatching
+{
+DECLARE_SOA_INDEX_COLUMN(EmEmcCluster, emEmcCluster); //!
+} // namespace trackmatching
+
+DECLARE_SOA_TABLE(EmEmcMTracks, "AOD", "EMEMCMTRACK", //!
+                  trackmatching::EmEmcClusterId, emctm::DeltaPhi, emctm::DeltaEta, emctm::TrackP, emctm::TrackPt);
+
+DECLARE_SOA_TABLE(EmEmcMSTracks, "AOD", "EMEMCMSTRACK", //!
+                  trackmatching::EmEmcClusterId, emctm::DeltaPhi, emctm::DeltaEta, emctm::TrackP, emctm::TrackPt);
 
 DECLARE_SOA_TABLE(EMCEMEventIds, "AOD", "EMCEMEVENTID", emccluster::EMEventId); // To be joined with SkimEMCClusters table at analysis level.
 // iterators
@@ -614,10 +645,10 @@ DECLARE_SOA_COLUMN(CellZ, cellz, int);                                          
 // DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);                                      //! phi of the matched track
 // DECLARE_SOA_COLUMN(TrackP, trackp, float);                                          //! momentum of the matched track
 // DECLARE_SOA_COLUMN(TrackPt, trackpt, float);                                        //! pt of the matched track
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m = 0) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m = 0) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m = 0) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float x, float y, float z, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(x, y) / RecoDecay::sqrtSumOfSquares(x, y, z) * sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float e, float x, float y, float z, float m = 0) -> float { return x / RecoDecay::sqrtSumOfSquares(x, y, z) * std::sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float e, float x, float y, float z, float m = 0) -> float { return y / RecoDecay::sqrtSumOfSquares(x, y, z) * std::sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float e, float x, float y, float z, float m = 0) -> float { return z / RecoDecay::sqrtSumOfSquares(x, y, z) * std::sqrt(e * e - m * m); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float x, float y, float z, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(x, y) / RecoDecay::sqrtSumOfSquares(x, y, z) * std::sqrt(e * e - m * m); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float x, float y, float z) -> float { return RecoDecay::eta(std::array{x, y, z}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float x, float y) -> float { return RecoDecay::phi(x, y); });
 } // namespace phoscluster
