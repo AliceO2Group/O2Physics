@@ -26,6 +26,7 @@
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -74,6 +75,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod::pid_tpc_tof_utils;
+using namespace o2::aod::rctsel;
 using namespace o2::aod::track;
 using namespace o2::constants::math;
 using namespace o2::framework;
@@ -193,14 +195,19 @@ struct HfTaskFlow {
     std::string prefix = "ConfigCollision_group";
     Configurable<bool> isApplyGoodItsLayersAll{"isApplyGoodItsLayersAll", false, "Enable GoodITSLayersAll"};
     Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
-    Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
-    Configurable<int> maxMultiplicity{"maxMultiplicity", 300, "maximum multiplicity selection for collision"};
-    Configurable<int> minMultiplicity{"minMultiplicity", 0, "minimum multiplicity selection for collision"};
-    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, ""};
     Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, ""};
     Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, ""};
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, ""};
+    Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
+    Configurable<int> maxMultiplicity{"maxMultiplicity", 300, "maximum multiplicity selection for collision"};
+    Configurable<int> minMultiplicity{"minMultiplicity", 0, "minimum multiplicity selection for collision"};
+    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
+    Configurable<std::string> setRCTFlagCheckerLabel{"setRCTFlagCheckerLabel", "CBT_muon_global", "Evt sel: RCT flag checker label"};
+    Configurable<bool> requireRCTFlagCheckerLimitAcceptanceAsBad{"requireRCTFlagCheckerLimitAcceptanceAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+    Configurable<bool> requireZDCCheck{"requireZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<std::string> rctFlagCheckerLabel{"rctFlagCheckerLabel", "CBT_fw", "Evt sel: RCT flag checker label"};
     Configurable<float> zVertexMax{"zVertexMax", 10.0f, "Accepted z-vertex range"};
   } configCollision;
 
@@ -273,6 +280,7 @@ struct HfTaskFlow {
   o2::ft0::Geometry ft0Det;
   o2::fv0::Geometry* fv0Det{};
   std::vector<float> cstFT0RelGain{};
+  RCTFlagsChecker rctChecker;
 
   // =========================
   //      using declarations : DATA
@@ -445,12 +453,13 @@ struct HfTaskFlow {
     LOGF(info, "Offset for FT0C: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY(), (*offsetFT0)[1].getZ());
     LOGF(info, "Offset for FV0-left: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY(), (*offsetFV0)[0].getZ());
     LOGF(info, "Offset for FV0-right: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY(), (*offsetFV0)[1].getZ());
-
     fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
 
     //  =========================
     //      Event histograms
     //  =========================
+
+    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
 
     registry.add("Data/hVtxZ", "v_{z} (cm)", {HistType::kTH1D, {configAxis.axisVertex}});
     registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
@@ -498,18 +507,21 @@ struct HfTaskFlow {
 
     if (doprocessSameTpcTpcChCh) {
       addHistograms<Data, TpcTpc, ChPartChPart>();
+
       sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
       mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
     }
 
     if (doprocessSameTpcTpcD0Ch) {
       addHistograms<Data, TpcTpc, D0ChPart>();
+
       sameEventHf.setObject(new CorrelationContainer("sameEventHf", "sameEventHf", corrAxis, effAxis, hfUserAxis));
       mixedEventHf.setObject(new CorrelationContainer("mixedEventHf", "mixedEventHf", corrAxis, effAxis, hfUserAxis));
     }
 
     if (doprocessSameTpcTpcLcCh) {
       addHistograms<Data, TpcTpc, LcChPart>();
+
       sameEventHf.setObject(new CorrelationContainer("sameEventHf", "sameEventHf", corrAxis, effAxis, hfUserAxis));
       mixedEventHf.setObject(new CorrelationContainer("mixedEventHf", "mixedEventHf", corrAxis, effAxis, hfUserAxis));
     }
@@ -935,6 +947,9 @@ struct HfTaskFlow {
       return false;
     }
     if (configCollision.isApplyGoodItsLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+    if (configCollision.requireRCTFlagChecker && !rctChecker(collision)) {
       return false;
     }
 
