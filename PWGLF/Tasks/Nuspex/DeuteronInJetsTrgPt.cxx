@@ -9,39 +9,38 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 03-02-2026
+// Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 04-02-2026
 //
 // Executable : o2-analysis-lf-deuteron-in-jet-trg-pt
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
+
+#include <TRandom3.h>
+#include <TVector2.h>
+#include <TVector3.h>
 
 #include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/GhostedAreaSpec.hh>
 #include <fastjet/PseudoJet.hh>
-
-#include "CCDB/BasicCCDBManager.h"
-
-#include <TRandom3.h>
-#include <TVector2.h>
-#include <TVector3.h>
 
 #include <vector>
 
@@ -56,8 +55,7 @@ using namespace o2::constants::physics;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using SelectedTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
-
-struct DeuteronInJetsTrgPt{
+struct DeuteronInJetsTrgPt {
     // Histogram registry for data
     HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -65,7 +63,7 @@ struct DeuteronInJetsTrgPt{
     TRandom3 mRand;
 
     // Setting default selection criteria to select tracks. May be changed when configuring the analysis.
-    struct: o2::framework::ConfigurableGroup{
+    struct : o2::framework::ConfigurableGroup {
         std::string prefix{"cfgTrackCut"};
         // General specific
         Configurable<bool> requirePvContributor{"requirePvContributor", false, "Require that the track is a PV contributor"};
@@ -97,7 +95,7 @@ struct DeuteronInJetsTrgPt{
     } cfgTrackCut;
 
     // Setting default selection criteria for events. May be changes when configuring the analysis.
-    struct: o2::framework::ConfigurableGroup{
+    struct : o2::framework::ConfigurableGroup{
         std::string prefix{"cgfEventCut"};
         Configurable<double> zVtx{"zVtx", 10.0, "Maximum z vertex"};
     } cfgEvCut;
@@ -107,7 +105,7 @@ struct DeuteronInJetsTrgPt{
     Configurable<std::string> triggerList{"triggerList", "fJetFullLowPt", "Trigger list"};
 
     // Setting default selection criteria fr jet identification. May be changes when configuring the analysis.
-    struct: o2::framework::ConfigurableGroup{
+    struct : o2::framework::ConfigurableGroup{
         std::string prefix{"cgfJetCut"};
         Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
         Configurable<double> rJet{"rJet", 0.3, "Jet parameter R"};
@@ -132,27 +130,31 @@ struct DeuteronInJetsTrgPt{
     // Initiliaze ITS PID Rensponse object
     o2::aod::ITSResponse itsResponse;
 
-    void initCCDB(aod::BCsWithTimestamps::iterator const& bc){
-        if (cfgSkimmedProcessing){
+    void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+    {
+        if (cfgSkimmedProcessing) {
             zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
             zorro.populateHistRegistry(registryData, bc.runNumber());
         }
     }
 
     // Set all configuration to allow task working
-    void init(InitContext const&){
+    void init(InitContext const&)
+    {
         // Set summary object if processing skimmed data
-        if (cfgSkimmedProcessing) zorroSummary.setObject(zorro.getZorroSummary());
+        if (cfgSkimmedProcessing)
+            zorroSummary.setObject(zorro.getZorroSummary());
 
         // Set default MC parametrization for ITS response
-        if (cfgTrackCut.setMCDefaultItsParams) itsResponse.setMCDefaultParameters();
+        if (cfgTrackCut.setMCDefaultItsParams)
+            itsResponse.setMCDefaultParameters();
 
         // Initialize random seed using high-resolution clock to ensure unique sequences across parallel Grid jobs
         auto time_seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         mRand.SetSeed(time_seed);
 
         // Histrograms for real data
-        if (doprocessData){
+        if (doprocessData) {
             registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{4, 0, 4, "counter"}});   // Event counters
             registryData.add("settingData", "settingData", HistType::kTH2F, {{100, 0.0, 50.0, "min #it{p}^{jet}_{T} [GeV/#it{c}]"}, {20, 0.0, 1.0, "#it{R}_{jet}"}});   // Configuration
             registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});   // Jet effective area over piR^2
@@ -191,7 +193,8 @@ struct DeuteronInJetsTrgPt{
     }
 
     // Compute two transverse directions orthogonal to vector p (useful for UE evaluation)
-    void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2){
+    void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2)
+    {
         // Get momentum components
         double px = p.X();
         double py = p.Y();
@@ -205,27 +208,27 @@ struct DeuteronInJetsTrgPt{
 
         // Case 1: vector along z-axis -> undefined perpendiculars
         if (px == 0 && py == 0) {
-        u1.SetXYZ(0, 0, 0);
-        u2.SetXYZ(0, 0, 0);
-        return;
+            u1.SetXYZ(0, 0, 0);
+            u2.SetXYZ(0, 0, 0);
+            return;
         }
 
         // Case 2: px = 0 -> avoid division by zero
         if (px == 0 && py != 0) {
-        double ux = std::sqrt(py2 - pz4 / py2);
-        double uy = -pz2 / py;
-        u1.SetXYZ(ux, uy, pz);
-        u2.SetXYZ(-ux, uy, pz);
-        return;
+            double ux = std::sqrt(py2 - pz4 / py2);
+            double uy = -pz2 / py;
+            u1.SetXYZ(ux, uy, pz);
+            u2.SetXYZ(-ux, uy, pz);
+            return;
         }
 
         // Case 3: py = 0 -> avoid division by zero
         if (py == 0 && px != 0) {
-        double ux = -pz2 / px;
-        double uy = std::sqrt(px2 - pz4 / px2);
-        u1.SetXYZ(ux, uy, pz);
-        u2.SetXYZ(ux, -uy, pz);
-        return;
+            double ux = -pz2 / px;
+            double uy = std::sqrt(px2 - pz4 / px2);
+            u1.SetXYZ(ux, uy, pz);
+            u2.SetXYZ(ux, -uy, pz);
+            return;
         }
 
         // General case: solve quadratic for perpendicular vectors
@@ -236,9 +239,9 @@ struct DeuteronInJetsTrgPt{
 
         // Invalid or degenerate solutions
         if (delta < 0 || a == 0) {
-        u1.SetXYZ(0, 0, 0);
-        u2.SetXYZ(0, 0, 0);
-        return;
+            u1.SetXYZ(0, 0, 0);
+            u2.SetXYZ(0, 0, 0);
+            return;
         }
 
         // Solution 1
@@ -253,7 +256,8 @@ struct DeuteronInJetsTrgPt{
     }
 
     // Compute delta phi
-    double getDeltaPhi(double a1, double a2){
+    double getDeltaPhi(double a1, double a2)
+    {
         double deltaPhi(0);
         double phi1 = TVector2::Phi_0_2pi(a1);
         double phi2 = TVector2::Phi_0_2pi(a2);
@@ -269,14 +273,16 @@ struct DeuteronInJetsTrgPt{
 
     // Find ITS hit
     template <typename TrackIts>
-    bool hasITShit(const TrackIts& track, int layer){
+    bool hasITShit(const TrackIts& track, int layer)
+    {
         int ibit = layer - 1;
         return (track.itsClusterMap() & (1 << ibit));
     }
 
     // Track selection criteria for creating jets
     template <typename JetTrack>
-    bool passedTrackSelectionForJetReconstruction(const JetTrack& track){
+    bool passedTrackSelectionForJetReconstruction(const JetTrack& track)
+    {
         static constexpr int MinTpcCr = 70;
         static constexpr double MaxChi2Tpc = 4.0;
         static constexpr double MaxChi2Its = 36.0;
@@ -287,18 +293,28 @@ struct DeuteronInJetsTrgPt{
         static constexpr double DcazMaxTrack = 2.0;
 
         // General part
-        if (std::fabs(track.eta()) > cfgTrackCut.EtaMax) return false;
-        if (track.pt() < MinPtTrack) return false;
-        if (std::fabs(track.dcaXY()) > (DcaxyMaxTrackPar0 + DcaxyMaxTrackPar1 / std::pow(track.pt(), DcaxyMaxTrackPar2))) return false;     // DCAxy cut
-        if (std::fabs(track.dcaZ()) > DcazMaxTrack) return false;       // DCAz cut
+        if (std::fabs(track.eta()) > cfgTrackCut.EtaMax)
+            return false;
+        if (track.pt() < MinPtTrack)
+            return false;
+        if (std::fabs(track.dcaXY()) > (DcaxyMaxTrackPar0 + DcaxyMaxTrackPar1 / std::pow(track.pt(), DcaxyMaxTrackPar2)))
+            return false; // DCAxy cut
+        if (std::fabs(track.dcaZ()) > DcazMaxTrack)
+            return false; // DCAz cut
         // Part relative to ITS
-        if (!track.hasITS()) return false;
-        if ((!hasITShit(track, 1)) && (!hasITShit(track, 2)) && (!hasITShit(track, 3))) return false;       // Has Inner Barrel hit
-        if (track.itsChi2NCl() >= MaxChi2Its) return false;
+        if (!track.hasITS())
+            return false;
+        if ((!hasITShit(track, 1)) && (!hasITShit(track, 2)) && (!hasITShit(track, 3)))
+            return false; // Has Inner Barrel hit
+        if (track.itsChi2NCl() >= MaxChi2Its)
+            return false;
         // Part relative to TPC
-        if (!track.hasTPC()) return false;
-        if (track.tpcNClsCrossedRows() < MinTpcCr) return false;
-        if (track.tpcChi2NCl() >= MaxChi2Tpc) return false;
+        if (!track.hasTPC())
+            return false;
+        if (track.tpcNClsCrossedRows() < MinTpcCr)
+            return false;
+        if (track.tpcChi2NCl() >= MaxChi2Tpc)
+            return false;
 
         return true;
     }
@@ -306,30 +322,44 @@ struct DeuteronInJetsTrgPt{
 
     //Track selection for antinuclei
     template <typename AntinucleusTrack>
-    bool passedTrackSelection(const AntinucleusTrack& track){
-
+    bool passedTrackSelection(const AntinucleusTrack& track)
+    {
         // General part
-        if (cfgTrackCut.requirePvContributor && !(track.isPVContributor())) return false;   // Flag to check if the track contributed to the collision vertex fit
-        if (std::fabs(track.eta()) > cfgTrackCut.EtaMax) return false;     // Eta
-        if (track.pt() < cfgTrackCut.minPt) return false;
+        if (cfgTrackCut.requirePvContributor && !(track.isPVContributor()))
+            return false; // Flag to check if the track contributed to the collision vertex fit
+        if (std::fabs(track.eta()) > cfgTrackCut.EtaMax)
+            return false; // Eta
+        if (track.pt() < cfgTrackCut.minPt)
+            return false;
         // Part relative to ITS
-        if (!track.hasITS()) return false;                              // Flag to check if track has a ITS match
-        if ((!hasITShit(track, 1)) && (!hasITShit(track, 2)) && (!hasITShit(track, 3))) return false;       // Require IB hit
-        if (track.itsNCls() < cfgTrackCut.ITSnClusMin) return false;                        // Minimum number of ITS cluster
-        if (track.itsChi2NCl() > cfgTrackCut.ITSchi2ClusMax) return false;                  // Minimum chi2 per cluster in ITS
+        if (!track.hasITS())
+            return false; // Flag to check if track has a ITS match
+        if ((!hasITShit(track, 1)) && (!hasITShit(track, 2)) && (!hasITShit(track, 3)))
+            return false; // Require IB hit
+        if (track.itsNCls() < cfgTrackCut.ITSnClusMin)
+            return false; // Minimum number of ITS cluster
+        if (track.itsChi2NCl() > cfgTrackCut.ITSchi2ClusMax)
+            return false; // Minimum chi2 per cluster in ITS
         // Part relative to TPC
-        if (!track.hasTPC()) return false;                                                   // Flag to check if track has a ITS match
-        if (track.tpcNClsFound() < cfgTrackCut.TPCnClsMin) return false;                     // Minimum number of TPC cluster
-        if (track.tpcNClsCrossedRows() < cfgTrackCut.TPCnCrossedRowsMin) return false;       // Minimum number of crossed rows in TPC
-        if (track.tpcChi2NCl() < cfgTrackCut.TPCchi2ClusMin) return false;                   // Minimum chi2 per cluster in TPC
-        if (track.tpcChi2NCl() > cfgTrackCut.TPCchi2ClusMax) return false;                   // Maximum chi2 per cluster in TPC
-        if (track.tpcCrossedRowsOverFindableCls() < cfgTrackCut.Rtpc) return false;          // R_{TPC} > 0.8
+        if (!track.hasTPC())
+            return false; // Flag to check if track has a ITS match
+        if (track.tpcNClsFound() < cfgTrackCut.TPCnClsMin)
+            return false; // Minimum number of TPC cluster
+        if (track.tpcNClsCrossedRows() < cfgTrackCut.TPCnCrossedRowsMin)
+            return false; // Minimum number of crossed rows in TPC
+        if (track.tpcChi2NCl() < cfgTrackCut.TPCchi2ClusMin)
+            return false; // Minimum chi2 per cluster in TPC
+        if (track.tpcChi2NCl() > cfgTrackCut.TPCchi2ClusMax)
+            return false; // Maximum chi2 per cluster in TPC
+        if (track.tpcCrossedRowsOverFindableCls() < cfgTrackCut.Rtpc)
+            return false; // R_{TPC} > 0.8
 
         return true;
     }
 
 
-    void processData(SelectedCollisions::iterator const& collision, SelectedTracks const& tracks, aod::BCsWithTimestamps const&){
+    void processData(SelectedCollisions::iterator const& collision, SelectedTracks const& tracks, aod::BCsWithTimestamps const&)
+    {
         // Event counter before event selection
         registryData.fill(HIST("number_of_events_data"),0.5);
         registryData.fill(HIST("settingData"), cfgJetCut.minJetPt.value, cfgJetCut.rJet.value);
@@ -339,19 +369,22 @@ struct DeuteronInJetsTrgPt{
         initCCDB(bc);
 
         // If skimmed processing is enabled, aplly Zorro trigger selection
-        if (cfgSkimmedProcessing && !zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC())) return;
+        if (cfgSkimmedProcessing && !zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC()))
+            return;
         registryData.fill(HIST("number_of_events_data"), 1.5);
 
         // Apply standard event selection
-        if (!collision.sel8() || std::fabs(collision.posZ()) >= cfgEvCut.zVtx) return;
+        if (!collision.sel8() || std::fabs(collision.posZ()) >= cfgEvCut.zVtx)
+            return;
         registryData.fill(HIST("number_of_events_data"), 2.5);  // Save number of collisions that passed standard selections
 
         // loop over reco tracks
         int id(-1);
         std::vector<fastjet::PseudoJet> fjParticles;
-        for (auto const& track : tracks){
+        for (auto const& track : tracks) {
             id++;
-            if (!passedTrackSelectionForJetReconstruction(track)) continue;     // Skip tracks that not satisfy tracking selection criteria
+            if (!passedTrackSelectionForJetReconstruction(track))
+                continue; // Skip tracks that not satisfy tracking selection criteria
 
             // 4-momentum representation of a particle
             fastjet::PseudoJet fourMomentum(track.px(),track.py(), track.pz(), track.energy(MassPionCharged));
@@ -359,25 +392,28 @@ struct DeuteronInJetsTrgPt{
             fjParticles.emplace_back(fourMomentum);
         }
 
-        if (fjParticles.empty()) return;    // Reject empty events
+        if (fjParticles.empty())
+            return; // Reject empty events
 
         // Cluster particles using the the anti-kT algorithm
-        fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, cfgJetCut.rJet);     // Defining the algorithm to cluster, and the jet radius
-        fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));     // Activate area evaluation, and set area evaluation method
-        fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);      // Declare the will of applying clustering algorithm with area evaluation to the selected candidates
+        fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, cfgJetCut.rJet);             // Defining the algorithm to cluster, and the jet radius
+        fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0)); // Activate area evaluation, and set area evaluation method
+        fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);                        // Declare the will of applying clustering algorithm with area evaluation to the selected candidates
         std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
         auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], cfgJetCut.rJet);
 
         // Loop over reco jets
         bool isAtLeastOneJetSelected = false;
-        for (auto const& jet : jets){
+        for (auto const& jet : jets) {
 
-            if ((std::fabs(jet.eta()) + cfgJetCut.rJet) > (cfgTrackCut.EtaMax - cfgJetCut.deltaEtaEdge)) continue;  // Jet must be fully contained in the acceptance
+            if ((std::fabs(jet.eta()) + cfgJetCut.rJet) > (cfgTrackCut.EtaMax - cfgJetCut.deltaEtaEdge))
+                continue; // Jet must be fully contained in the acceptance
 
             // Jet pt must be larger than threshold
             auto jetForSub = jet;
             fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-            if (jetMinusBkg.pt() < cfgJetCut.minJetPt) continue;      // Skip jets with pT < pT threshold
+            if (jetMinusBkg.pt() < cfgJetCut.minJetPt)
+                continue; // Skip jets with pT < pT threshold
 
             double normalizedJetArea = jet.area() / (PI * cfgJetCut.rJet * cfgJetCut.rJet);
             isAtLeastOneJetSelected = true;
@@ -387,15 +423,17 @@ struct DeuteronInJetsTrgPt{
             TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
             TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
             getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
-            if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) continue;   // Skip not valid orthogonal cones
+            if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0)
+                continue; // Skip not valid orthogonal cones
 
-            registryData.fill(HIST("jetEffectiveAreaOverPiR2"), normalizedJetArea);   // Fill histogram with jet effective area / piR^2
-            std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();       // Get jet constituents
+            registryData.fill(HIST("jetEffectiveAreaOverPiR2"), normalizedJetArea); // Fill histogram with jet effective area / piR^2
+            std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();   // Get jet constituents
 
             // Loop over constituents
-            for (const auto& particle : jetConstituents){
-                auto const& track = tracks.iteratorAt(particle.user_index());       // Get the corresponding track
-                if (!passedTrackSelection(track)) continue;     // Apply track selection criteria
+            for (const auto& particle : jetConstituents) {
+                auto const& track = tracks.iteratorAt(particle.user_index()); // Get the corresponding track
+                if (!passedTrackSelection(track))
+                    continue; // Apply track selection criteria
 
                 // Define variables
                 double nsigmaTPCPr = track.tpcNSigmaPr();
@@ -407,47 +445,57 @@ struct DeuteronInJetsTrgPt{
                 double dcaz = track.dcaZ();
 
                 // Fill DCA distribution for (anti)protons
-                if (track.sign() < 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("antiproton_dca_jet"), pt, dcaxy);
-                if (track.sign() > 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("proton_dca_jet"), pt, dcaxy);
+                if (track.sign() < 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz)
+                    registryData.fill(HIST("antiproton_dca_jet"), pt, dcaxy);
+                if (track.sign() > 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz)
+                    registryData.fill(HIST("proton_dca_jet"), pt, dcaxy);
 
                 // Apply DCA selections
-                if (std::fabs(dcaxy) > cfgTrackCut.maxDcaxy || std::fabs(dcaz) > cfgTrackCut.maxDcaz) continue;
+                if (std::fabs(dcaxy) > cfgTrackCut.maxDcaxy || std::fabs(dcaz) > cfgTrackCut.maxDcaz)
+                    continue;
 
                 // Particle identification using the ITS cluster size
                 bool passedItsPidProt(true), passedItsPidDeut(true);
                 double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
                 double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
 
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax)) passedItsPidProt = false;
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax)) passedItsPidDeut = false;
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax))
+                    passedItsPidProt = false;
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax))
+                    passedItsPidDeut = false;
 
                 // Fill histograms for antimatter
-                if (track.sign()<0){
-                    if (passedItsPidProt){
+                if (track.sign() < 0) {
+                    if (passedItsPidProt) {
                         registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
-                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
-                    if (passedItsPidDeut){
+                    if (passedItsPidDeut) {
                         registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                 }
                 // Fill histograms for matter
-                if (track.sign()>0){
-                    if (passedItsPidProt){
+                if (track.sign() > 0) {
+                    if (passedItsPidProt) {
                         registryData.fill(HIST("proton_jet_tpc"), pt, nsigmaTPCPr);
-                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("proton_jet_tof"), pt, nsigmaTOFPr);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("proton_jet_tof"), pt, nsigmaTOFPr); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
-                    if (passedItsPidDeut){
+                    if (passedItsPidDeut) {
                         registryData.fill(HIST("deuteron_jet_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("deuteron_jet_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("deuteron_jet_tof"), pt, nsigmaTOFDe); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                 }
-            }   // End of loop over jet constituents
+            } // End of loop over jet constituents
 
             // Loop over tracks in the UE
-            for (auto const& track : tracks){
-                if (!passedTrackSelection(track)) continue; // Apply track selection criteria
+            for (auto const& track : tracks) {
+                if (!passedTrackSelection(track))
+                    continue; // Apply track selection criteria
 
                 // Calculate the angular distance between the track and the UE axes in eta-phi space
                 double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
@@ -458,7 +506,8 @@ struct DeuteronInJetsTrgPt{
                 double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
                 double maxConeRadius = coneRadius;
-                if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius) continue;       // Reject tracks that lie outside the maxConeRadius from both UE axes
+                if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
+                    continue; // Reject tracks that lie outside the maxConeRadius from both UE axes
 
                 // Define variables
                 double nsigmaTPCPr = track.tpcNSigmaPr();
@@ -470,51 +519,62 @@ struct DeuteronInJetsTrgPt{
                 double dcaz = track.dcaZ();
 
                 // Fill DCA distribution for (anti)protons
-                if (track.sign() < 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("antiproton_dca_ue"), pt, dcaxy);
-                if (track.sign() > 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz) registryData.fill(HIST("proton_dca_ue"), pt, dcaxy);
+                if (track.sign() < 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz)
+                    registryData.fill(HIST("antiproton_dca_ue"), pt, dcaxy);
+                if (track.sign() > 0 && std::fabs(dcaz) < cfgTrackCut.maxDcaz)
+                    registryData.fill(HIST("proton_dca_ue"), pt, dcaxy);
 
                 // Apply DCA selections
-                if (std::fabs(dcaxy) > cfgTrackCut.maxDcaxy || std::fabs(dcaz) > cfgTrackCut.maxDcaz) continue;
+                if (std::fabs(dcaxy) > cfgTrackCut.maxDcaxy || std::fabs(dcaz) > cfgTrackCut.maxDcaz)
+                    continue;
 
                 // Particle identification using the ITS cluster size
                 bool passedItsPidProt(true), passedItsPidDeut(true);
                 double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
                 double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
 
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax)) passedItsPidProt = false;
-                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax)) passedItsPidDeut = false;
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidProt && (nSigmaITSprot < cfgTrackCut.nSigmaItsMin || nSigmaITSprot > cfgTrackCut.nSigmaItsMax))
+                    passedItsPidProt = false;
+                if (cfgTrackCut.applyItsPid && pt < cfgTrackCut.ptMaxItsPidDeut && (nSigmaITSdeut < cfgTrackCut.nSigmaItsMin || nSigmaITSdeut > cfgTrackCut.nSigmaItsMax))
+                    passedItsPidDeut = false;
 
                 // Fill histograms for antimatter
-                if (track.sign()<0){
-                    if (passedItsPidProt){
+                if (track.sign() < 0) {
+                    if (passedItsPidProt) {
                         registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
-                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
-                    if (passedItsPidDeut){
+                    if (passedItsPidDeut) {
                         registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                 }
                 // Fill histograms for matter
-                if (track.sign()>0){
+                if (track.sign() > 0) {
                     if (passedItsPidProt){
                         registryData.fill(HIST("proton_ue_tpc"), pt, nsigmaTPCPr);
-                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("proton_ue_tof"), pt, nsigmaTOFPr);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCPr > cfgTrackCut.minNsigmaTpc && nsigmaTPCPr < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("proton_ue_tof"), pt, nsigmaTOFPr); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                     if (passedItsPidDeut){
                         registryData.fill(HIST("deuteron_ue_tpc"), pt, nsigmaTPCDe);
-                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF()) registryData.fill(HIST("deuteron_ue_tof"), pt, nsigmaTOFDe);        // requiring that track candidate in TOF have nisgma in TPC < threshold
+                        if (nsigmaTPCDe > cfgTrackCut.minNsigmaTpc && nsigmaTPCDe < cfgTrackCut.maxNsigmaTpc && track.hasTOF())
+                            registryData.fill(HIST("deuteron_ue_tof"), pt, nsigmaTOFDe); // requiring that track candidate in TOF have nisgma in TPC < threshold
                     }
                 }
             }
         }
 
         // Event counter: events with at least one jet selected
-        if (isAtLeastOneJetSelected) registryData.fill(HIST("number_of_events_data"), 3.5);
+        if (isAtLeastOneJetSelected)
+            registryData.fill(HIST("number_of_events_data"), 3.5);
     }
     PROCESS_SWITCH(DeuteronInJetsTrgPt, processData, "Process Data", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc){
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
     return WorkflowSpec{adaptAnalysisTask<DeuteronInJetsTrgPt>(cfgc)};
 }
