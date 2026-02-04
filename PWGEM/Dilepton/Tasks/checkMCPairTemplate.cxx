@@ -1908,16 +1908,16 @@ struct checkMCPairTemplate {
             fillRecHistograms<15>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // c2l_c2l
             break;
           case static_cast<int>(EM_HFeeType::kBe_Be):
-            fillRecHistograms<16>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), pair_dca, weight); // b2l_b2l
+            fillRecHistograms<16>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // b2l_b2l
             break;
           case static_cast<int>(EM_HFeeType::kBCe_BCe):
-            fillRecHistograms<17>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), pair_dca, weight); // b2c2l_b2c2l
+            fillRecHistograms<17>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // b2c2l_b2c2l
             break;
           case static_cast<int>(EM_HFeeType::kBCe_Be_SameB):
-            fillRecHistograms<18>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), pair_dca, weight); // b2c2l_b2l_sameb
+            fillRecHistograms<18>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // b2c2l_b2l_sameb
             break;
           case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):
-            fillRecHistograms<19>(t1.sign(), t2.sign(), 0, 0, v12.M(), v12.Pt(), pair_dca, weight); // b2c2l_b2l_diffb
+            fillRecHistograms<19>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // b2c2l_b2l_diffb
             break;
           default:
             break;
