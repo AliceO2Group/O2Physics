@@ -1159,12 +1159,11 @@ struct GammaJetTreeProducer {
   /// \param storedColIndex The stored collision index
   /// \param jet The jet to process
   /// \param tracks The tracks collection
-  /// \return The global index of the stored jet, or -1 if jet was not stored (below pT threshold)
   template <typename T, typename U>
-  int64_t fillChargedJetTable(int32_t storedColIndex, T const& jet, U const& /*tracks*/)
+  void fillChargedJetTable(int32_t storedColIndex, T const& jet, U const& /*tracks*/)
   {
     if (jet.pt() < jetPtMin) {
-      return -1;
+      return;
     }
     ushort nconst = 0;
     float leadingTrackPt = 0;
@@ -1179,7 +1178,6 @@ struct GammaJetTreeProducer {
     chargedJetsTable(storedColIndex, jet.pt(), jet.eta(), jet.phi(), jet.r(), jet.energy(), jet.mass(), jet.area(), leadingTrackPt, perpconerho, nconst);
     mHistograms.fill(HIST("chjetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
     mHistograms.fill(HIST("chjetPt"), jet.pt());
-    return chargedJetsTable.lastIndex();
   }
 
   /// \brief Fills the substructure table with z and theta values for each splitting in the jet
@@ -1187,7 +1185,7 @@ struct GammaJetTreeProducer {
   /// \param jet The jet to process
   /// \param tracks The tracks collection
   template <typename T, typename U>
-  void fillSubstructureTable(int64_t jetGlobalIndex, T const& jet, U const& /*tracks*/)
+  void fillSubstructureTable(int32_t storedColIndex, T const& jet, U const& /*tracks*/)
   {
     // adjust settings according to the jet radius
     jetReclusterer.jetR = jet.r() / 100.0;
@@ -1199,7 +1197,7 @@ struct GammaJetTreeProducer {
     jetReclustered.clear();
     jetConstituents.clear();
 
-    if (jet.pt() < jetPtMin || jetGlobalIndex < 0) {
+    if (jet.pt() < jetPtMin) {
       return;
     }
     for (auto& jetConstituent : jet.template tracks_as<U>()) {
@@ -1234,7 +1232,7 @@ struct GammaJetTreeProducer {
 
     // Fill one row per jet with all splittings stored as vectors
     // Pass the jet's global index to associate this substructure entry with the jet
-    jetSubstructuresTable(jetGlobalIndex, energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
+    jetSubstructuresTable(storedColIndex, energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }
 
   Filter jetCuts = aod::jet::pt > jetPtMin;
@@ -1255,11 +1253,11 @@ struct GammaJetTreeProducer {
     // loop over charged jets
     for (const auto& jet : chargedJets) {
       // Fill jet table and get the stored jet's global index
-      int64_t jetGlobalIndex = fillChargedJetTable(storedColIndex, jet, tracks);
+      fillChargedJetTable(storedColIndex, jet, tracks);
 
       // Fill substructure table if enabled and jet was stored
-      if (calculateJetSubstructure && jetGlobalIndex >= 0) {
-        fillSubstructureTable(jetGlobalIndex, jet, tracks);
+      if (calculateJetSubstructure) {
+        fillSubstructureTable(storedColIndex, jet, tracks);
       }
     }
   }
@@ -1398,11 +1396,11 @@ struct GammaJetTreeProducer {
     // loop over charged jets
     for (const auto& jet : chargedJets) {
       // Fill jet table and get the stored jet's global index
-      int64_t jetGlobalIndex = fillChargedJetTable(storedColIndex, jet, tracks);
+      fillChargedJetTable(storedColIndex, jet, tracks);
 
       // Fill substructure table if enabled and jet was stored
-      if (calculateJetSubstructure && jetGlobalIndex >= 0) {
-        fillSubstructureTable(jetGlobalIndex, jet, tracks);
+      if (calculateJetSubstructure) {
+        fillSubstructureTable(storedColIndex, jet, tracks);
       }
 
       // Fill Matching information

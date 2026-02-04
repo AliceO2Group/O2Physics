@@ -961,7 +961,7 @@ struct AnalysisMuonSelection {
 
     for (auto& assoc : assocs) {
       auto event = assoc.template reducedevent_as<TEvents>();
-      if (!event.isEventSelected_bit(0)) {
+      if (!event.has_reducedMCevent() || !event.isEventSelected_bit(0)) { // condition on reducedMCevent to avoid rec. events with no generated event
         muonSel(0);
         continue;
       }
@@ -1824,7 +1824,7 @@ struct AnalysisSameEventPairing {
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 
     for (auto& event : events) {
-      if (!event.isEventSelected_bit(0)) {
+      if (!event.has_reducedMCevent() || !event.isEventSelected_bit(0)) { // condition on reducedMCevent to avoid rec. events with no generated event
         continue;
       }
       uint8_t evSel = event.isEventSelected_raw();
