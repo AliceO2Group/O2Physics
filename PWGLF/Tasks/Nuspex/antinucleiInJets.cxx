@@ -3824,9 +3824,9 @@ struct AntinucleiInJets {
         for (int j = 0; j < nBins; j++) {
           double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
 
-          registryCorr.fill(HIST("q1d_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (static_cast<double>)(nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]), multiplicity);
-          registryCorr.fill(HIST("q1p_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (static_cast<double>)(nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
-          registryCorr.fill(HIST("q1d_q1p_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, (static_cast<double>)(nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
+          registryCorr.fill(HIST("q1d_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, static_cast<double>(nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]), multiplicity);
+          registryCorr.fill(HIST("q1p_square_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, static_cast<double>(nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
+          registryCorr.fill(HIST("q1d_q1p_fullEvent_CoalescenceCorr"), ptAcenteri, ptAcenterj, static_cast<double>(nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]), multiplicity);
         }
       }
     }
