@@ -186,8 +186,8 @@ struct HfCorrelatorHfeHadrons {
   }
 
   // Electron-hadron Correlation
-  template <bool isMc, typename TracksType, typename ElectronType, typename CollisionType, typename BcType, typename McParticles>
-  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&, McParticles const&)
+  template <bool IsMc, typename TracksType, typename ElectronType, typename CollisionType, typename BcType, typename McParticlesType>
+  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&, McParticlesType const&)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
@@ -215,7 +215,7 @@ struct HfCorrelatorHfeHadrons {
         }
 
         // Mc rec hadron efficiency
-        if constexpr (isMc) {
+        if constexpr (IsMc) {
           if (hTrack.has_mcParticle()) {
             auto mcParticle = hTrack.template mcParticle_as<aod::McParticles>();
             if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
@@ -227,19 +227,15 @@ struct HfCorrelatorHfeHadrons {
 
               registry.fill(HIST("hptHadronMcRecPrimary"), hTrack.pt());
 
-              if (std::abs(mcParticle.pdgCode()) != kElectron) {
+              if (std::abs(mcParticle.pdgCode()) == kElectron) {
                 registry.fill(HIST("hMCRecptEleHadron"), hTrack.pt());
-              }
-              if (std::abs(mcParticle.pdgCode()) != kMuonMinus) {
+              } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
                 registry.fill(HIST("hMCRecptMuonHadron"), hTrack.pt());
-              }
-              if (std::abs(mcParticle.pdgCode()) != kPiPlus) {
+              } else if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
                 registry.fill(HIST("hMCRecptPionHadron"), hTrack.pt());
-              }
-              if (std::abs(mcParticle.pdgCode()) != kKPlus) {
+              } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
                 registry.fill(HIST("hMCRecptKaonHadron"), hTrack.pt());
-              }
-              if (std::abs(mcParticle.pdgCode()) != kProton) {
+              } else if (std::abs(mcParticle.pdgCode()) == kProton) {
                 registry.fill(HIST("hMCRecptProtonHadron"), hTrack.pt());
               }
             }
@@ -467,19 +463,15 @@ struct HfCorrelatorHfeHadrons {
 
         registry.fill(HIST("hMCgenptHadronprimary"), particleMc.pt());
 
-        if (std::abs(particleMc.pdgCode()) != kElectron) {
+        if (std::abs(particleMc.pdgCode()) == kElectron) {
           registry.fill(HIST("hMCgenptEleHadron"), particleMc.pt());
-        }
-        if (std::abs(particleMc.pdgCode()) != kMuonMinus) {
+        } else if (std::abs(particleMc.pdgCode()) == kMuonMinus) {
           registry.fill(HIST("hMCgenptMuonHadron"), particleMc.pt());
-        }
-        if (std::abs(particleMc.pdgCode()) != kPiPlus) {
+        } else if (std::abs(particleMc.pdgCode()) == kPiPlus) {
           registry.fill(HIST("hMCgenptPionHadron"), particleMc.pt());
-        }
-        if (std::abs(particleMc.pdgCode()) != kKPlus) {
+        } else if (std::abs(particleMc.pdgCode()) == kKPlus) {
           registry.fill(HIST("hMCgenptKaonHadron"), particleMc.pt());
-        }
-        if (std::abs(particleMc.pdgCode()) != kProton) {
+        } else if (std::abs(particleMc.pdgCode()) == kProton) {
           registry.fill(HIST("hMCgenptProtonHadron"), particleMc.pt());
         }
       }
