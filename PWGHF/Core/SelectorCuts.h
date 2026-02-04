@@ -755,7 +755,7 @@ static const std::vector<std::string> labelsCutVar = {"pT Ka from Omegac"};
 
 namespace hf_cuts_xic_to_xi_pi
 {
-static constexpr int NBinsPt = 11;
+static constexpr int NBinsPt = 12;
 static constexpr int NCutVars = 28;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
@@ -771,22 +771,24 @@ constexpr double BinsPt[NBinsPt + 1] = {
   10.0,
   12.0,
   16.0,
-  24.0};
+  24.0,
+  50.0};
 
 const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
-constexpr double Cuts[NBinsPt][NCutVars] = {{0.2, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 0 < pt < 1 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 1 < pt < 2 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 2 < pt < 3 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 3 < pt < 4 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 4 < pt < 5 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 5 < pt < 6 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 6 < pt < 8 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 8 < pt < 10 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 10 < pt < 12 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 12 < pt < 16 */
-                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4}}; /* 16 < pt < 24 */
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.2, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 0 < pt < 1 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 1 < pt < 2 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 2 < pt < 3 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 3 < pt < 4 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 4 < pt < 5 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 5 < pt < 6 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 6 < pt < 8 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 8 < pt < 10 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 10 < pt < 12 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 12 < pt < 16 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 16 < pt < 24 */
+                                            {0.5, 0.97, 0.97, 0.99, 0.99, 2.0, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4}}; /* 24 < pt < 50 -> Implemented just for test*/
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -800,14 +802,16 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 7",
   "pT bin 8",
   "pT bin 9",
-  "pT bin 10"};
+  "pT bin 10",
+  "pT bin 11"};
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"ptPiFromCharmBaryon", "cosPACasc", "cosPAV0", "cosPaCascToXic", "cosPaV0ToCasc",
-                                                      "dcaCharmBaryonDau", "dcaCascDau", "dcaV0Dau", "dcaXYToPvCascDau", "dcaXYToPvV0Dau0", "dcaXYToPvV0Dau1", "kfDcaXYPiFromXic", "kfDcaXYCascToPv",
-                                                      "chi2GeoXic", "chi2GeoCasc", "chi2GeoV0",
-                                                      "chi2TopoXicToPv", "chi2TopoPiFromXicToPv", "chi2TopoCascToPv", "chi2TopoV0ToPv", "chi2TopoV0ToCasc", "chi2TopoCascToXic",
-                                                      "cascldl", "v0ldl", "decayLenXYXic", "decayLenXYCasc", "decayLenXYLambda", "cTauXic"};
+                                                      "dcaCharmBaryonDau", "dcaCascDau", "dcaV0Dau", "dcaXYToPvCascDau", "dcaXYToPvV0Dau0",
+                                                      "dcaXYToPvV0Dau1", "kfDcaXYPiFromXic", "kfDcaXYCascToPv", "chi2GeoXic", "chi2GeoCasc",
+                                                      "chi2GeoV0", "chi2TopoXicToPv", "chi2TopoPiFromXicToPv", "chi2TopoCascToPv", "chi2TopoV0ToPv",
+                                                      "chi2TopoV0ToCasc", "chi2TopoCascToXic", "cascldl", "v0ldl", "decayLenXYXic",
+                                                      "decayLenXYCasc", "decayLenXYLambda", "cTauXic"};
 } // namespace hf_cuts_xic_to_xi_pi
 
 namespace hf_cuts_xic_to_p_k_pi
@@ -858,93 +862,6 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "pT p", "pT K", "pT Pi", "chi2PCA", "decay length", "cos pointing angle", "decLengthXY", "normDecLXY", "ct", "impParXY"};
 } // namespace hf_cuts_xic_to_p_k_pi
-
-namespace hf_cuts_to_xi_pi
-{
-static constexpr int NBinsPt = 13;
-static constexpr int NCutVars = 26;
-// default values for the pT bin edges (can be used to configure histogram axis)
-// offset by 1 from the bin numbers in cuts array
-constexpr double BinsPt[NBinsPt + 1] = {
-  0.,
-  1.,
-  2.,
-  3.,
-  4.,
-  5.,
-  6.,
-  7.,
-  8.,
-  9.,
-  10.,
-  11.,
-  12.,
-  20.};
-auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
-
-// default values for the cuts
-constexpr double Cuts[NBinsPt][NCutVars] = {
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-  {2.0, 3.1, 0.01, 0.01, 0.2, 0.15, 1.0, 1.0, 2.0, 0.06, 0.06, 0.04, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.0, 10.0, 0.97, 0.97, 0.6, 1.2, 1.0, 0.8},
-};
-
-// row labels
-static const std::vector<std::string> labelsPt = {
-  "pT bin 0",
-  "pT bin 1",
-  "pT bin 2",
-  "pT bin 3",
-  "pT bin 4",
-  "pT bin 5",
-  "pT bin 6",
-  "pT bin 7",
-  "pT bin 8",
-  "pT bin 9",
-  "pT bin 10",
-  "pT bin 11",
-  "pT bin 12"};
-
-// column labels
-static const std::vector<std::string> labelsCutVar = {
-  "mCharmBaryonMin",
-  "mCharmBaryonMax",
-  "massWindowCascade",
-  "massWindowV0", // Invariant mass
-  "ptCharmBachelorMin",
-  "ptBachelorMin", // pt of daughter
-  "dcaCascDauMax",
-  "dcaV0DauMax",
-  "dcaCharmBaryonDauMax", // dca between daughters
-  "dcaxyV0PosDauToPvMin",
-  "dcaxyV0NegDauToPvMin",
-  "dcaxyBachToPvMin", // DCAXY(impact parameter)
-  "impactParXYCharmBachelorMin",
-  "impactParXYCharmBachelorMax",
-  "impactParZCharmBachelorMin",
-  "impactParZCharmBachelorMax", // DCAXY(impact parameter)
-  "impactParXYCascMin",
-  "impactParXYCascMax",
-  "impactParZCascMin",
-  "impactParZCascMax", // DCAXY(impact parameter)
-  "cosPaCascMin",
-  "cosPaV0Min", // CosPa
-  "radiusCascMin",
-  "radiusV0Min", // radius
-  "etaTrackLFDauMax",
-  "etaTrackCharmBachMax" // eta cut to daughter tracks
-};
-} // namespace hf_cuts_to_xi_pi
 
 namespace hf_cuts_xic_to_xi_pi_pi
 {

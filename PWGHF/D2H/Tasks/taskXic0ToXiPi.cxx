@@ -165,6 +165,15 @@ struct HfTaskXic0ToXiPi {
       registry.add("hMassVsPtVsYVsCentVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithCent);
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"))->Sumw2();
       registry.get<THnSparse>(HIST("hMassVsPtVsYVsCentVsPtPion"))->Sumw2();
+    } else {
+      const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
+      const AxisSpec thnAxisPtPion{thnConfigAxisPtPion, "Pt of Pion from Xic0."};
+      std::vector<AxisSpec> const axesWithBdtWithoutCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisPtPion, thnConfigAxisNumPvContr};
+      std::vector<AxisSpec> const axesWithoutCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisPtPion, thnConfigAxisNumPvContr};
+      registry.add("hBdtScoreVsMassVsPtVsYVsPtPion", "Thn for Xic0 candidates with BDT&Cent&pTpi", HistType::kTHnSparseD, axesWithBdtWithoutCent);
+      registry.add("hMassVsPtVsYVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithoutCent);
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsPtPion"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMassVsPtVsYVsPtPion"))->Sumw2();
     }
   }
 
@@ -192,22 +201,41 @@ struct HfTaskXic0ToXiPi {
     double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
     double const ptPiFromXic = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
     if constexpr (ApplyMl) {
-      registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
-                    candidate.mlProbToXiPi()[0],
-                    candidate.invMassCharmBaryon(),
-                    ptXic,
-                    yCharmBaryon,
-                    centrality,
-                    ptPiFromXic,
-                    numPvContributors);
+      if constexpr (UseCentrality) {
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
+                      candidate.mlProbToXiPi()[0],
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      centrality,
+                      ptPiFromXic,
+                      numPvContributors);
+      } else {
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsPtPion"),
+                      candidate.mlProbToXiPi()[0],
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      ptPiFromXic,
+                      numPvContributors);
+      }
     } else {
-      registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
-                    candidate.invMassCharmBaryon(),
-                    ptXic,
-                    yCharmBaryon,
-                    centrality,
-                    ptPiFromXic,
-                    numPvContributors);
+      if constexpr (UseCentrality) {
+        registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      centrality,
+                      ptPiFromXic,
+                      numPvContributors);
+      } else {
+        registry.fill(HIST("hMassVsPtVsYVsPtPion"),
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      ptPiFromXic,
+                      numPvContributors);
+      }
     }
   }
 
@@ -348,7 +376,7 @@ struct HfTaskXic0ToXiPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi with KFParticle", true);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi with KFParticle", false);
 
   void processDataWithDCAFitterMl(Xic0CandsMl const& candidates,
                                   CollisionsWithEvSels const& collisions)
