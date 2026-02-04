@@ -834,7 +834,6 @@ struct SpectraKinkPiKa {
         v0.SetCoordinates(mothTrack.px(), mothTrack.py(), mothTrack.pz(), o2::constants::physics::MassKaonCharged);
 
         double radiusxy = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
-        //	std::cout<<"radius check:     "<<radiusxy<<std::endl;
         if (radiusxy < minradius || radiusxy > maxradius)
           continue;
         if (dradiusCrossrow && (mothTrack.tpcNClsFound() > (-31.67 + ((11.0 / 12.0) * radiusxy)) || mothTrack.tpcNClsFound() < (-85.5 + ((65.0 / 95.0) * radiusxy))))
