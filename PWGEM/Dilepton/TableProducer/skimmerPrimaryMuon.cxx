@@ -65,6 +65,7 @@ struct skimmerPrimaryMuon {
 
   Produces<aod::EMPrimaryMuons> emprimarymuons;
   Produces<aod::EMPrimaryMuonsCov> emprimarymuonscov;
+  Produces<aod::EMPrimaryMuonsMatchMC> emprimarymuonsmatchmc;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -313,6 +314,7 @@ struct skimmerPrimaryMuon {
 
     float deta = 999.f;
     float dphi = 999.f;
+    bool isCorrectMatchMFTMCH = true; // by default, it is true. it is evaluated for global muons in MC.
 
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
       // apply r-absorber cut here to minimize the number of calling propagateMuon.
@@ -329,9 +331,13 @@ struct skimmerPrimaryMuon {
       auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
 
       if constexpr (isMC) {
-        if (!mfttrack.has_mcParticle()) {
+        if (!mfttrack.has_mcParticle() || !mchtrack.has_mcParticle() || !fwdtrack.has_mcParticle()) {
           return false;
         }
+        // auto mcParticle_MFTMCHMID = fwdtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MCHMID
+        auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
+        auto mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
+        isCorrectMatchMFTMCH = static_cast<bool>(mcParticle_MCHMID.globalIndex() == mcParticle_MFT.globalIndex());
       }
 
       nClustersMFT = mfttrack.nClusters();
@@ -474,6 +480,8 @@ struct skimmerPrimaryMuon {
       // <X,PHI>       <Y,PHI>         <PHI,PHI>     <TANL,PHI>      <INVQPT,PHI>
       // <X,TANL>      <Y,TANL>       <PHI,TANL>     <TANL,TANL>     <INVQPT,TANL>
       // <X,INVQPT>   <Y,INVQPT>     <PHI,INVQPT>   <TANL,INVQPT>   <INVQPT,INVQPT>
+
+      emprimarymuonsmatchmc(isCorrectMatchMFTMCH);
 
       if (fillQAHistograms) {
         fRegistry.fill(HIST("hMuonType"), fwdtrack.trackType());
@@ -1166,7 +1174,7 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_TTCA_SWT_withMFTCov, "process reconstructed info", false);
 
-  void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&)
+  void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
     // vec_min_dr.reserve(fwdtracks.size());
@@ -1251,7 +1259,7 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_SA, "process reconstructed and MC info", false);
 
-  void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::McParticles const&)
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
     // vec_min_dr.reserve(fwdtracks.size());
@@ -1346,7 +1354,7 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_TTCA, "process reconstructed and MC info", false);
 
-  void processMC_TTCA_withMFTCov(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::MFTTracksCov const& mftCovs)
+  void processMC_TTCA_withMFTCov(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, MyFwdTracksMC const& fwdtracks, MFTTracksMC const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::MFTTracksCov const& mftCovs, aod::McParticles const&)
   {
     for (const auto& mfttrackConv : mftCovs) {
       map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
