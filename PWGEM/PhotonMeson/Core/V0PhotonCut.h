@@ -16,6 +16,7 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
+#include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
@@ -192,6 +193,21 @@ class V0PhotonCut : public TNamed
     kRequireTPCTOF,
     kNCuts
   };
+
+  /// \brief check if given v0 photon survives all cuts
+  /// \param flags EMBitFlags where results will be stored
+  /// \param v0s v0 photon table to check
+  template <o2::soa::is_table TV0, typename TLeg>
+  void AreSelectedRunning(EMBitFlags& flags, TV0 const& v0s) const
+  {
+    size_t iV0 = 0;
+    for (const auto& v0 : v0s) {
+      if (!IsSelected<decltype(v0), TLeg>(v0)) {
+        flags.set(iV0);
+      }
+      ++iV0;
+    }
+  }
 
   template <o2::soa::is_iterator TV0, typename TLeg>
   bool IsSelected(TV0 const& v0) const
