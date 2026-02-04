@@ -127,8 +127,6 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
   ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {7, -1.5, 5.5}, "axis for UPC gap type (see TrueGap enum in o2::aod::sgselector)"};
   ConfigurableAxis thnConfigAxisFT0{"thnConfigAxisFT0", {1001, -1.5, 999.5}, "axis for FT0 amplitude (a.u.)"};
-  ConfigurableAxis thnConfigAxisFV0A{"thnConfigAxisFV0A", {2001, -1.5, 1999.5}, "axis for FV0-A amplitude (a.u.)"};
-  ConfigurableAxis thnConfigAxisFDD{"thnConfigAxisFDD", {200, 0., 4000.}, "axis for FDD amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisZN{"thnConfigAxisZN", {510, -1.5, 49.5}, "axis for ZN energy (a.u.)"};
   ConfigurableAxis thnConfigAxisZNTime{"thnConfigAxisZNTime", {200, -10, 10}, "axis for ZN energy (a.u.)"};
   HistogramRegistry registry{"registry", {}};
