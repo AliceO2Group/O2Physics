@@ -53,6 +53,7 @@ struct JetDerivedDataWriter {
     Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
     Configurable<float> trackPtSelectionMin{"trackPtSelectionMin", 0.15, "only save tracks that have a pT larger than this pT"};
     Configurable<float> trackEtaSelectionMax{"trackEtaSelectionMax", 0.9, "only save tracks that have an eta smaller than this eta"};
+    Configurable<bool> savePartonLevelInfo{"savePartonLevelInfo", true, "save parton level info at MCP level"};
 
     Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   } config;
@@ -239,6 +240,7 @@ struct JetDerivedDataWriter {
       Produces<aod::StoredJDielectronCollisionIds> storedDielectronCollisionIdsTable;
       Produces<aod::StoredDielectrons> storedDielectronsTable;
       Produces<aod::StoredJDielectronIds> storedDielectronIdsTable;
+      Produces<aod::StoredDielectronsAll> storedDielectronsAllTable;
       Produces<aod::StoredJDielectronMcCollisions> storedDielectronMcCollisionsTable;
       Produces<aod::StoredJDielectronMcCollisionIds> storedDielectronMcCollisionIdsTable;
       Produces<aod::StoredJDielectronMcRCollDummys> storedDielectronMcRCollDummysTable;
@@ -284,7 +286,7 @@ struct JetDerivedDataWriter {
   template <typename T>
   bool trackSelection(T const& track)
   {
-    if (config.performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept. This includes also the track pT selction.
+    if (config.performTrackSelection && !(track.trackSel() & ~((1 << jetderiveddatautilities::JTrackSel::trackSign) | (1 << jetderiveddatautilities::JTrackSel::notBadMcTrack)))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept. This includes also the track pT selction.
       return false;
     }
     if (track.pt() < config.trackPtSelectionMin || std::abs(track.eta()) > config.trackEtaSelectionMax) {
@@ -432,7 +434,7 @@ struct JetDerivedDataWriter {
   std::vector<int32_t> lcMcCollisionMapping;
   std::vector<int32_t> b0McCollisionMapping;
   std::vector<int32_t> bplusMcCollisionMapping;
-  std::vector<int32_t> dielectronMcCollisionMapping;
+  // std::vector<int32_t> dielectronMcCollisionMapping;
 
   void processBCs(soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionSelections> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs)
   {
@@ -444,7 +446,7 @@ struct JetDerivedDataWriter {
       if (collision.isCollisionSelected()) {
         auto bc = collision.bc_as<soa::Join<aod::JBCs, aod::JBCPIs>>();
         if (std::find(bcIndicies.begin(), bcIndicies.end(), bc.globalIndex()) == bcIndicies.end()) {
-          products.storedJBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), bc.alias_raw(), bc.selection_raw());
+          products.storedJBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), bc.alias_raw(), bc.selection_raw(), bc.rct_raw());
           products.storedJBCParentIndexTable(bc.bcId());
           bcIndicies.push_back(bc.globalIndex());
           bcMapping[bc.globalIndex()] = products.storedJBCsTable.lastIndex();
@@ -459,12 +461,32 @@ struct JetDerivedDataWriter {
     collisionMapping.clear();
     collisionMapping.resize(collisions.size(), -1);
 
+    std::vector<float> amplitudesFV0;
+    std::vector<float> amplitudesFT0A;
+    std::vector<float> amplitudesFT0C;
+    std::vector<float> amplitudesFDDA;
+    std::vector<float> amplitudesFDDC;
+
     for (auto const& collision : collisions) {
       if (collision.isCollisionSelected()) {
-
-        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.eventSel(), collision.alias_raw(), collision.triggerSel());
+        amplitudesFV0.clear();
+        amplitudesFT0A.clear();
+        amplitudesFT0C.clear();
+        amplitudesFDDA.clear();
+        amplitudesFDDC.clear();
+        auto amplitudesFV0Span = collision.amplitudesFV0();
+        auto amplitudesFT0ASpan = collision.amplitudesFT0A();
+        auto amplitudesFT0CSpan = collision.amplitudesFT0C();
+        auto amplitudesFDDASpan = collision.amplitudesFDDA();
+        auto amplitudesFDDCSpan = collision.amplitudesFDDC();
+        std::copy(amplitudesFV0Span.begin(), amplitudesFV0Span.end(), std::back_inserter(amplitudesFV0));
+        std::copy(amplitudesFT0ASpan.begin(), amplitudesFT0ASpan.end(), std::back_inserter(amplitudesFT0A));
+        std::copy(amplitudesFT0CSpan.begin(), amplitudesFT0CSpan.end(), std::back_inserter(amplitudesFT0C));
+        std::copy(amplitudesFDDASpan.begin(), amplitudesFDDASpan.end(), std::back_inserter(amplitudesFDDA));
+        std::copy(amplitudesFDDCSpan.begin(), amplitudesFDDCSpan.end(), std::back_inserter(amplitudesFDDC));
+        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.alias_raw(), collision.eventSel(), collision.rct_raw(), collision.triggerSel());
         collisionMapping[collision.globalIndex()] = products.storedJCollisionsTable.lastIndex();
-        products.storedJCollisionMcInfosTable(collision.weight(), collision.subGeneratorId());
+        products.storedJCollisionMcInfosTable(collision.weight(), collision.getSubGeneratorId());
         products.storedJCollisionsParentIndexTable(collision.collisionId());
         if (doprocessBCs) {
           products.storedJCollisionsBunchCrossingIndexTable(bcMapping[collision.bcId()]);
@@ -626,7 +648,7 @@ struct JetDerivedDataWriter {
         products.productsDielectron.storedDielectronCollisionIdsTable(collisionMapping[collision.globalIndex()]);
       }
       for (const auto& DielectronCandidate : DielectronCandidates) {
-        jetdqutilities::fillDielectronCandidateTable(DielectronCandidate, products.productsDielectron.storedDielectronCollisionsTable.lastIndex(), products.productsDielectron.storedDielectronsTable);
+        jetdqutilities::fillDielectronCandidateTable(DielectronCandidate, products.productsDielectron.storedDielectronCollisionsTable.lastIndex(), products.productsDielectron.storedDielectronsTable, products.productsDielectron.storedDielectronsAllTable);
         products.productsDielectron.storedDielectronIdsTable(collisionMapping[collision.globalIndex()], trackMapping[DielectronCandidate.prong0Id()], trackMapping[DielectronCandidate.prong1Id()]);
       }
     }
@@ -639,7 +661,7 @@ struct JetDerivedDataWriter {
     mcCollisionMapping.resize(mcCollisions.size(), -1);
     for (auto const& mcCollision : mcCollisions) {
       if (mcCollision.isMcCollisionSelected()) {
-        products.storedJMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFV0A(), mcCollision.centFT0A(), mcCollision.centFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.subGeneratorId(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard());
+        products.storedJMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), mcCollision.rct_raw(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         products.storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
         mcCollisionMapping[mcCollision.globalIndex()] = products.storedJMcCollisionsTable.lastIndex();
       }
@@ -664,24 +686,30 @@ struct JetDerivedDataWriter {
         for (auto particle : particlesPerMcCollision) {
 
           std::vector<int32_t> mothersIds;
-          if (particle.has_mothers()) {
-            auto mothersIdTemps = particle.mothersIds();
-            for (auto mothersIdTemp : mothersIdTemps) {
-              mothersIds.push_back(particleMapping[mothersIdTemp]);
-            }
-          }
           int daughtersIds[2] = {-1, -1};
-          auto i = 0;
-          if (particle.has_daughters()) {
-            for (auto daughterId : particle.daughtersIds()) {
-              if (i > 1) {
-                break;
+          if (config.savePartonLevelInfo) {
+            if (particle.has_mothers()) {
+              auto mothersIdTemps = particle.mothersIds();
+              for (auto mothersIdTemp : mothersIdTemps) {
+                mothersIds.push_back(particleMapping[mothersIdTemp]);
               }
-              daughtersIds[i] = particleMapping[daughterId];
-              i++;
+            }
+            if (particle.has_daughters()) {
+              auto i = 0;
+              for (auto daughterId : particle.daughtersIds()) {
+                if (i > 1) {
+                  break;
+                }
+                daughtersIds[i] = particleMapping[daughterId];
+                i++;
+              }
+            }
+          } else {
+            if (!particle.isPhysicalPrimary()) { // add outgoing partons exclusion here later
+              continue;
             }
           }
-          products.storedJMcParticlesTable(mcCollisionMapping[mcCollision.globalIndex()], o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersIds, daughtersIds);
+          products.storedJMcParticlesTable(mcCollisionMapping[mcCollision.globalIndex()], o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.statusCode(), particle.flags(), mothersIds, daughtersIds);
           products.storedJParticlesParentIndexTable(particle.mcParticleId());
         }
       }
@@ -884,8 +912,8 @@ struct JetDerivedDataWriter {
             DielectronMothersIds.push_back(particleMapping[DielectronMother.globalIndex()]);
           }
         }
-        auto i = 0;
         if (DielectronParticle.has_daughters()) {
+          auto i = 0;
           for (auto const& DielectronDaughter : DielectronParticle.template daughters_as<aod::JMcParticles>()) {
             if (i > 1) {
               break;
@@ -908,14 +936,14 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processColllisonsMcCollisionLabel, "write out collision mcCollision label output tables", false);
 
-  void processTracksMcParticleLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JTracks, aod::JMcTrackLbs> const& tracks)
+  void processTracksMcParticleLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JTracks, aod::JMcTrackLbs> const& tracks, aod::JMcParticles const&)
   {
     if (collision.isCollisionSelected()) {
       for (const auto& track : tracks) {
         if (!trackSelection(track)) {
           continue;
         }
-        if (track.has_mcParticle()) {
+        if (track.has_mcParticle() && (config.savePartonLevelInfo || track.mcParticle().isPhysicalPrimary())) {
           products.storedJMcTracksLabelTable(particleMapping[track.mcParticleId()]);
         } else {
           products.storedJMcTracksLabelTable(-1);
@@ -925,12 +953,18 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processTracksMcParticleLabel, "write out track mcParticle label output tables", false);
 
-  void processClusterMcLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JClusters, aod::JMcClusterLbs> const& clusters)
+  void processClusterMcLabel(soa::Join<aod::JCollisions, aod::JCollisionSelections>::iterator const& collision, soa::Join<aod::JClusters, aod::JMcClusterLbs> const& clusters, aod::JMcParticles const& particles)
   {
     if (collision.isCollisionSelected()) {
       for (const auto& cluster : clusters) {
         std::vector<int32_t> clusterStoredJParticleIDs;
         for (const auto& clusterParticleId : cluster.mcParticlesIds()) {
+          if (!config.savePartonLevelInfo) {
+            const auto& particle = particles.iteratorAt(clusterParticleId);
+            if (!particle.isPhysicalPrimary()) {
+              continue;
+            }
+          }
           clusterStoredJParticleIDs.push_back(particleMapping[clusterParticleId]);
         }
         std::vector<float> amplitudeA;

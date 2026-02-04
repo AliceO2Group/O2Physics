@@ -19,28 +19,34 @@
 
 // O2 includes
 
-#include <string>
-#include <vector>
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGLF/DataModel/spectraTOF.h"
+
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/StaticFor.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGLF/DataModel/spectraTOF.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "Common/Core/RecoDecay.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include "TPDGCode.h"
+
+#include <string>
+#include <vector>
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
@@ -71,6 +77,8 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCBeauty; // Decay Length
 std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCNotHF;  // Decay Length in the MC for particles from not a HF
 
 std::array<std::shared_ptr<TH2>, NpCharge> hPtNumTOFMatchWithPIDSignalPrm; // Pt distribution of particles with a hit in the TOF and a compatible signal
+
+std::array<std::array<std::shared_ptr<TH3>, NpCharge>, 3> hMCpdg_nsigmaTPC; // 2D array of nsigmaTPC histograms [Selection: pi,K,p][True PDG: 18 species]
 
 // Spectra task
 struct tofSpectra {
@@ -578,6 +586,13 @@ struct tofSpectra {
       histos.add("MC/Multiplicity", "MC multiplicity", kTH1D, {multAxis});
       histos.add("MC/MultiplicityMCINELgt0", "MC multiplicity", kTH1D, {multAxis});
       histos.add("MC/MultiplicityMCINELgt1", "MC multiplicity", kTH1D, {multAxis});
+    }
+    if (doprocessTrackMCLabels) {
+      for (int par = 2; par <= 4; par++) {
+        for (int i = 0; i < NpCharge; i++) {
+          hMCpdg_nsigmaTPC[par - 2][i] = histos.add<TH3>(Form("test_mclabels/nsigmatpc/%s/%s/pdg_%i", (i < Np) ? "pos" : "neg", pN[par], PDGs[i % Np]), Form("True %s (%i) in %s selection", pTCharge[i], PDGs[i], (i < Np) ? pTCharge[par] : pTCharge[par + Np]), kTH3D, {ptAxis, nsigmaTPCAxisOccupancy, multAxis});
+        }
+      }
     }
 
     hMultiplicityvsPercentile = histos.add<TH2>("Mult/vsPercentile", "Multiplicity vs percentile", HistType::kTH2D, {{150, 0, 150}, {100, 0, 100, "Track multiplicity"}});
@@ -2779,6 +2794,44 @@ struct tofSpectra {
     }
   }
   PROCESS_SWITCH(tofSpectra, processMCgen_RecoEvs, "process generated MC (reconstructed events)", false);
+  void processTrackMCLabels(CollisionCandidates::iterator const& collisions,
+                            soa::Join<TrackCandidates,
+                                      aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
+                            aod::McTrackLabels const& mcTrackLabels, aod::McParticles const& mcParticles)
+  {
+    const float multiplicity = getMultiplicity(collisions);
+    for (const auto& track : tracks) {
+      if (!track.has_collision()) {
+        continue;
+      }
+      const auto& collision = track.collision_as<CollisionCandidates>();
+      if (!isEventSelected<false, false>(collision)) {
+        continue;
+      }
+      if (!isTrackSelected<true>(track, collision)) {
+        continue;
+      }
+      const auto& mcLabel = mcTrackLabels.iteratorAt(track.globalIndex());
+      const auto& mcParticle = mcParticles.iteratorAt(mcLabel.mcParticleId());
+      int pdgCode = mcParticle.pdgCode();
+      static_for<2, 4>([&](auto par) {
+        const auto& nsigmaTPCpar = o2::aod::pidutils::tpcNSigma<par>(track);
+        bool isTPCpar = std::abs(nsigmaTPCpar) < trkselOptions.cfgCutNsigma;
+        // Precompute rapidity values to avoid redundant calculations
+        double rapiditypar = std::abs(track.rapidity(PID::getMass(par)));
+        // TPC Selection and histogram filling
+        if (isTPCpar && rapiditypar <= trkselOptions.cfgCutY) {
+          static_for<0, 17>([&](auto i) {
+            if (pdgCode == PDGs[i]) {
+              hMCpdg_nsigmaTPC[par - 2][i]->Fill(track.pt(), nsigmaTPCpar, multiplicity);
+            }
+          });
+        }
+      });
+    }
+  }
+  PROCESS_SWITCH(tofSpectra, processTrackMCLabels, "Fill track histograms using MC matched PDG labels", false);
 
 }; // end of spectra task
 

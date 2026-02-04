@@ -1,2 +1,5 @@
 syntaxError
 unknownMacro
+missingIncludeSystem
+missingInclude
+unusedStructMember:*.h

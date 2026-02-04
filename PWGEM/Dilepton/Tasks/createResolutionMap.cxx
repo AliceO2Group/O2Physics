@@ -16,6 +16,7 @@
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
@@ -46,6 +47,8 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -79,13 +82,15 @@ struct CreateResolutionMap {
   ConfigurableAxis ConfEtaCBGenBins{"ConfEtaCBGenBins", {30, -1.5, +1.5}, "gen. eta bins at midrapidity for output histograms"};
   ConfigurableAxis ConfEtaFWDGenBins{"ConfEtaFWDGenBins", {40, -5.5, -1.5}, "gen. eta bins at forward rapidity for output histograms"};
   ConfigurableAxis ConfPhiGenBins{"ConfPhiGenBins", {36, 0, 2.f * M_PI}, "gen. phi bins at forward rapidity for output histograms"};
-  ConfigurableAxis ConfPhiPositionCBGenBins{"ConfPhiPositionCBGenBins", {VARIABLE_WIDTH, 2.3 - M_PI, 0.85, 2.3, 0.85 + M_PI, 2.3 + M_PI}, "gen. phi psotion bins at forward rapidity for output histograms"}; // default is adjusted at R = 0.50 m
-  ConfigurableAxis ConfPhiPositionFWDGenBins{"ConfPhiPositionFWDGenBins", {1, 0, 2 * M_PI}, "gen. phi psotion bins at forward rapidity for output histograms"};
+  // ConfigurableAxis ConfPhiPositionCBGenBins{"ConfPhiPositionCBGenBins", {VARIABLE_WIDTH, 2.3 - M_PI, 0.85, 2.3, 0.85 + M_PI, 2.3 + M_PI}, "gen. phi psotion bins at forward rapidity for output histograms"}; // default is adjusted at R = 0.50 m
+  // ConfigurableAxis ConfPhiPositionFWDGenBins{"ConfPhiPositionFWDGenBins", {1, 0, 2 * M_PI}, "gen. phi psotion bins at forward rapidity for output histograms"};
   Configurable<float> cfgRefR{"cfgRefR", 0.50, "ref. radius (m) for calculating phi position"}; // 0.50 +/- 0.06 can be syst. unc.
 
-  ConfigurableAxis ConfRelDeltaPtBins{"ConfRelDeltaPtBins", {200, -1.f, +1.f}, "rel. dpt for output histograms"};
-  ConfigurableAxis ConfDeltaEtaCBBins{"ConfDeltaEtaCBBins", {200, -0.5f, +0.5f}, "deta bins for output histograms"};
-  ConfigurableAxis ConfDeltaEtaFWDBins{"ConfDeltaEtaFWDBins", {200, -0.5f, +0.5f}, "deta bins for output histograms"};
+  ConfigurableAxis ConfRelDeltaPtCBBins{"ConfRelDeltaPtCBBins", {200, -1.f, +1.f}, "rel. dpt for output histograms at midrapidity"};
+  ConfigurableAxis ConfRelDeltaPtFWDBins{"ConfRelDeltaPtFWDBins", {200, -1.f, +1.f}, "rel. dpt for output histograms at fwd rapidity"};
+
+  ConfigurableAxis ConfDeltaEtaCBBins{"ConfDeltaEtaCBBins", {200, -0.5f, +0.5f}, "deta bins for output histograms at midrapidity"};
+  ConfigurableAxis ConfDeltaEtaFWDBins{"ConfDeltaEtaFWDBins", {200, -0.5f, +0.5f}, "deta bins for output histograms at fwd rapidity"};
   ConfigurableAxis ConfDeltaPhiBins{"ConfDeltaPhiBins", {200, -0.5f, +0.5f}, "dphi bins for output histograms"};
 
   Configurable<bool> cfgFillTHnSparse{"cfgFillTHnSparse", true, "fill THnSparse for output"};
@@ -152,10 +157,11 @@ struct CreateResolutionMap {
     Configurable<float> cfg_max_eta_track_gl{"cfg_max_eta_track_gl", -1.5, "max eta for global muon track"};
     Configurable<int> cfg_min_ncluster_mft{"cfg_min_ncluster_mft", 5, "min ncluster MFT"};
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
-    Configurable<float> cfg_max_chi2_sa{"cfg_max_chi2_sa", 1e+10, "max chi2 for standalone muon track"};
-    Configurable<float> cfg_max_chi2_gl{"cfg_max_chi2_gl", 40, "max chi2 for standalone muon track"};
-    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
-    Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
+    Configurable<float> cfg_max_chi2_sa{"cfg_max_chi2_sa", 1e+10, "max chi2/ndf for standalone muon track"};
+    Configurable<float> cfg_max_chi2_gl{"cfg_max_chi2_gl", 4, "max chi2/ndf for global muon track"};
+    Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+10, "max chi2/ndf for MFTsa track"};
+    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2/ndf for MFT-MCH matching"};
+    Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2/ndf for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy_gl{"cfg_max_dcaxy_gl", 0.1, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs_sa{"cfg_min_rabs_sa", 17.6, "min Radius at the absorber end for standalone muon track"};
     Configurable<float> cfg_max_rabs_sa{"cfg_max_rabs_sa", 89.5, "max Radius at the absorber end for standalone muon track"};
@@ -167,9 +173,12 @@ struct CreateResolutionMap {
     Configurable<float> cfg_max_reldpt{"cfg_max_reldpt", 1e+10f, "max. relative dpt between MFT-MCH-MID and MCH-MID"};
     Configurable<float> cfg_max_deta{"cfg_max_deta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
     Configurable<float> cfg_max_dphi{"cfg_max_dphi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
+    Configurable<float> cfg_max_detaMP{"cfg_max_detaMP", 1e+10f, "max. deta between MFT and MCH-MID at matching plane"};
+    Configurable<float> cfg_max_dphiMP{"cfg_max_dphiMP", 1e+10f, "max. dphi between MFT and MCH-MID at matching plane"};
     Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
     Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to require MFT hit map"};
     Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{4}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
+    Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   } muoncuts;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -180,18 +189,19 @@ struct CreateResolutionMap {
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber = 0;
-  float d_bz;
+  float mBzMFT = 0;
+  float d_bz = 0;
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   o2::dataformats::VertexBase mVtx;
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
-  std::vector<float> phiPosition_bin_edges;
+  // std::vector<float> phiPosition_bin_edges;
 
   ~CreateResolutionMap()
   {
-    phiPosition_bin_edges.clear();
-    phiPosition_bin_edges.shrink_to_fit();
+    // phiPosition_bin_edges.clear();
+    // phiPosition_bin_edges.shrink_to_fit();
   }
 
   void init(o2::framework::InitContext&)
@@ -215,36 +225,38 @@ struct CreateResolutionMap {
 
     mRunNumber = 0;
     d_bz = 0;
+    mBzMFT = 0;
 
-    if (ConfPhiPositionCBGenBins.value[0] == VARIABLE_WIDTH) {
-      phiPosition_bin_edges = std::vector<float>(ConfPhiPositionCBGenBins.value.begin(), ConfPhiPositionCBGenBins.value.end());
-      phiPosition_bin_edges.erase(phiPosition_bin_edges.begin());
-      // for (const auto& edge : phiPosition_bin_edges) {
-      //   LOGF(info, "VARIABLE_WIDTH: phiPosition_bin_edges = %f", edge);
-      // }
-    } else { // FIXED bin width
-      int nbins = static_cast<int>(ConfPhiPositionCBGenBins.value[0]);
-      float xmin = static_cast<float>(ConfPhiPositionCBGenBins.value[1]);
-      float xmax = static_cast<float>(ConfPhiPositionCBGenBins.value[2]);
-      phiPosition_bin_edges.resize(nbins + 1);
-      for (int i = 0; i < nbins + 1; i++) {
-        phiPosition_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
-        // LOGF(info, "FIXED_WIDTH: phiPosition_bin_edges[%d] = %f", i, phiPosition_bin_edges[i]);
-      }
-    }
+    // if (ConfPhiPositionCBGenBins.value[0] == VARIABLE_WIDTH) {
+    //   phiPosition_bin_edges = std::vector<float>(ConfPhiPositionCBGenBins.value.begin(), ConfPhiPositionCBGenBins.value.end());
+    //   phiPosition_bin_edges.erase(phiPosition_bin_edges.begin());
+    //   // for (const auto& edge : phiPosition_bin_edges) {
+    //   //   LOGF(info, "VARIABLE_WIDTH: phiPosition_bin_edges = %f", edge);
+    //   // }
+    // } else { // FIXED bin width
+    //   int nbins = static_cast<int>(ConfPhiPositionCBGenBins.value[0]);
+    //   float xmin = static_cast<float>(ConfPhiPositionCBGenBins.value[1]);
+    //   float xmax = static_cast<float>(ConfPhiPositionCBGenBins.value[2]);
+    //   phiPosition_bin_edges.resize(nbins + 1);
+    //   for (int i = 0; i < nbins + 1; i++) {
+    //     phiPosition_bin_edges[i] = (xmax - xmin) / (nbins)*i + xmin;
+    //     // LOGF(info, "FIXED_WIDTH: phiPosition_bin_edges[%d] = %f", i, phiPosition_bin_edges[i]);
+    //   }
+    // }
 
     const AxisSpec axis_cent{ConfCentBins, "centrality (%)"};
     const AxisSpec axis_pt_gen{ConfPtGenBins, "p_{T,l}^{gen} (GeV/c)"};
     const AxisSpec axis_eta_cb_gen{ConfEtaCBGenBins, "#eta_{l}^{gen}"};
     const AxisSpec axis_eta_fwd_gen{ConfEtaFWDGenBins, "#eta_{l}^{gen}"};
     const AxisSpec axis_phi_gen{ConfPhiGenBins, "#varphi_{l}^{gen} (rad.)"};
-    const AxisSpec axis_dpt{ConfRelDeltaPtBins, "(p_{T,l}^{gen} - p_{T,l}^{rec})/p_{T,l}^{gen}"};
+    const AxisSpec axis_dpt_cb{ConfRelDeltaPtCBBins, "(p_{T,l}^{gen} - p_{T,l}^{rec})/p_{T,l}^{gen}"};
+    const AxisSpec axis_dpt_fwd{ConfRelDeltaPtFWDBins, "(p_{T,l}^{gen} - p_{T,l}^{rec})/p_{T,l}^{gen}"};
     const AxisSpec axis_deta_cb{ConfDeltaEtaCBBins, "#eta_{l}^{gen} - #eta_{l}^{rec}"};
     const AxisSpec axis_deta_fwd{ConfDeltaEtaFWDBins, "#eta_{l}^{gen} - #eta_{l}^{rec}"};
     const AxisSpec axis_dphi{ConfDeltaPhiBins, "#varphi_{l}^{gen} - #varphi_{l}^{rec} (rad.)"};
     const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true sign"};
-    const AxisSpec axis_phiPositionCB_gen{ConfPhiPositionCBGenBins, Form("#varphi^{*, gen} (rad.) at r_{xy} = %3.2f m", cfgRefR.value)};
-    const AxisSpec axis_phiPositionFWD_gen{ConfPhiPositionFWDGenBins, "#varphi^{*, gen} (rad.)"};
+    // const AxisSpec axis_phiPositionCB_gen{ConfPhiPositionCBGenBins, Form("#varphi^{*, gen} (rad.) at r_{xy} = %3.2f m", cfgRefR.value)};
+    // const AxisSpec axis_phiPositionFWD_gen{ConfPhiPositionFWDGenBins, "#varphi^{*, gen} (rad.)"};
 
     // registry.add("Event/Electron/hImpPar_Centrality", "true imapact parameter vs. estimated centrality;impact parameter (fm);centrality (%)", kTH2F, {{200, 0, 20}, {110, 0, 110}}, true);
     // registry.add("Event/Electron/hImpPar_Centrality", "true imapact parameter vs. estimated centrality;impact parameter (fm);centrality (%)", kTH2F, {{200, 0, 20}, {110, 0, 110}}, true);
@@ -254,14 +266,14 @@ struct CreateResolutionMap {
     if (cfgFillTH2) {
       registry.add("Electron/hPt", "rec. p_{T,e};p_{T,e} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
       registry.add("Electron/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{e} (rad.);#eta_{e}", kTH2F, {{90, 0, 2 * M_PI}, {100, -5, +5}}, false);
-      registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
+      registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt_cb}}, true);
       registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta_cb}}, true);
       registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
       registry.add("Electron/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
 
       registry.add("StandaloneMuon/hPt", "rec. p_{T,#mu};p_{T,#mu} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
       registry.add("StandaloneMuon/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{#mu} (rad.);#eta_{#mu}", kTH2F, {{90, 0, 2 * M_PI}, {100, -5, +5}}, false);
-      registry.add("StandaloneMuon/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
+      registry.add("StandaloneMuon/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt_fwd}}, true);
       registry.add("StandaloneMuon/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta_fwd}}, true);
       registry.add("StandaloneMuon/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
       registry.add("StandaloneMuon/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
@@ -269,9 +281,9 @@ struct CreateResolutionMap {
     }
 
     if (cfgFillTHnSparse) {
-      registry.add("Electron/hs_reso", "9D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_phiPositionCB_gen, axis_charge_gen, axis_dpt, axis_deta_cb, axis_dphi}, true);
-      registry.add("StandaloneMuon/hs_reso", "9D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_phiPositionFWD_gen, axis_charge_gen, axis_dpt, axis_deta_fwd, axis_dphi}, true);
-      registry.add("GlobalMuon/hs_reso", "9D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_phiPositionFWD_gen, axis_charge_gen, axis_dpt, axis_deta_fwd, axis_dphi}, true);
+      registry.add("Electron/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_charge_gen, axis_dpt_cb, axis_deta_cb, axis_dphi}, true);
+      registry.add("StandaloneMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt_fwd, axis_deta_fwd, axis_dphi}, true);
+      registry.add("GlobalMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt_fwd, axis_deta_fwd, axis_dphi}, true);
     }
   }
 
@@ -305,7 +317,8 @@ struct CreateResolutionMap {
         ccdb->get<TGeoManager>(geoPath);
       }
       o2::mch::TrackExtrap::setField();
-      return;
+      mBzMFT = d_bz;
+      LOGF(info, "Bz at center of MFT = %f kZG manually", mBzMFT);
     }
 
     auto run3grp_timestamp = bc.timestamp();
@@ -334,7 +347,6 @@ struct CreateResolutionMap {
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
-    mRunNumber = bc.runNumber();
 
     // std::map<string, string> metadata;
     // auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
@@ -346,6 +358,11 @@ struct CreateResolutionMap {
       ccdb->get<TGeoManager>(geoPath);
     }
     o2::mch::TrackExtrap::setField();
+    const double centerMFT[3] = {0, 0, -61.4};
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    mBzMFT = field->getBz(centerMFT); // Get field at centre of MFT
+    LOGF(info, "Bz at center of MFT = %f kZG", mBzMFT);
+    mRunNumber = bc.runNumber();
   }
 
   template <typename TCollision>
@@ -518,8 +535,8 @@ struct CreateResolutionMap {
     return true;
   }
 
-  template <typename TCollision, typename TMuon>
-  void fillMuon(TCollision const& collision, TMuon const& muon, const float centrality)
+  template <bool withMFTCov, typename TCollision, typename TMuon, typename TMFTTracksCov>
+  void fillMuon(TCollision const& collision, TMuon const& muon, TMFTTracksCov const& mftCovs, const float centrality)
   {
     auto mcparticle = muon.template mcParticle_as<aod::McParticles>();
     if (std::abs(mcparticle.pdgCode()) != 13 || !(mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator())) {
@@ -532,33 +549,41 @@ struct CreateResolutionMap {
       return;
     }
 
+    if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(muon.globalIndex(), muon.matchMCHTrackId(), muon.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
+      return;
+    }
+
     if (muon.chi2MatchMCHMID() < 0.f) { // this should never happen. only for protection.
       return;
     }
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(muon, collision, propagationPoint::kToVertex);
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(muon, collision, propagationPoint::kToDCA);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(muon, muon, collision, propagationPoint::kToVertex, muoncuts.matchingZ, mBzMFT);
 
     float pt = propmuonAtPV.getPt();
     float eta = propmuonAtPV.getEta();
     float phi = propmuonAtPV.getPhi();
     o2::math_utils::bringTo02Pi(phi);
 
-    float dcaX = propmuonAtDCA.getX() - collision.posX();
-    float dcaY = propmuonAtDCA.getY() - collision.posY();
+    float dcaX = propmuonAtPV.getX() - collision.posX();
+    float dcaY = propmuonAtPV.getY() - collision.posY();
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
 
     float rAtAbsorberEnd = muon.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
-    float pDCA = muon.p() * dcaXY;
+    float pDCA = propmuonAtPV.getP() * dcaXY;
     int nClustersMFT = 0;
     float ptMatchedMCHMID = propmuonAtPV.getPt();
     float etaMatchedMCHMID = propmuonAtPV.getEta();
     float phiMatchedMCHMID = propmuonAtPV.getPhi();
     o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
 
+    float etaMatchedMCHMIDatMP = 999.f;
+    float phiMatchedMCHMIDatMP = 999.f;
+    float etaMatchedMFTatMP = 999.f;
+    float phiMatchedMFTatMP = 999.f;
+
     if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
       // mcparticle for global MFT-MCH-MID is identical to mcparticle of MCH-MID track. If not, mismatch.
-      const auto& mchtrack = muon.template matchMCHTrack_as<MyFwdTracks>(); // MCH-MID
-      const auto& mfttrack = muon.template matchMFTTrack_as<MyMFTTracks>(); // MFTsa
+      auto mchtrack = muon.template matchMCHTrack_as<MyFwdTracks>(); // MCH-MID
+      auto mfttrack = muon.template matchMFTTrack_as<MyMFTTracks>(); // MFTsa
       if (!mchtrack.has_mcParticle() || !mfttrack.has_mcParticle()) {
         return;
       }
@@ -571,36 +596,77 @@ struct CreateResolutionMap {
         return;
       }
 
-      o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToVertex);
+      o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToVertex, muoncuts.matchingZ, mBzMFT);
       ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
       etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
       phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
       o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
-      o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToDCA);
-      float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
-      float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
-      float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
-      pDCA = mchtrack.p() * dcaXY_Matched;
+
+      // o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, muoncuts.matchingZ, mBzMFT);
+      // float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
+      // float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
+      // float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
+      // pDCA = mchtrack.p() * dcaXY_Matched;
+      pDCA = propmuonAtPV.getP() * dcaXY;
+
       nClustersMFT = mfttrack.nClusters();
+      float chi2mft = mfttrack.chi2() / (2.f * nClustersMFT - 5.f);
 
       if (nClustersMFT < muoncuts.cfg_min_ncluster_mft) {
         return;
       }
+
+      if (chi2mft < 0.f || muoncuts.cfg_max_chi2mft < chi2mft) {
+        return;
+      }
+
       if (muon.chi2MatchMCHMFT() > muoncuts.cfg_max_matching_chi2_mftmch) {
         return;
       }
-      if (muoncuts.refitGlobalMuon) {
-        eta = mfttrack.eta();
-        phi = mfttrack.phi();
+
+      if constexpr (withMFTCov) {
+        auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, muoncuts.matchingZ, mBzMFT); // propagated to matching plane
+        o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwd(mfttrack, mfttrackcov);                                               // values at innermost update
+        mftsaAtMP.propagateToZhelix(muoncuts.matchingZ, mBzMFT);                                                                      // propagated to matching plane
+        etaMatchedMFTatMP = mftsaAtMP.getEta();
+        phiMatchedMFTatMP = mftsaAtMP.getPhi();
+        etaMatchedMCHMIDatMP = muonAtMP.getEta();
+        phiMatchedMCHMIDatMP = muonAtMP.getPhi();
+        o2::math_utils::bringTo02Pi(phiMatchedMCHMIDatMP);
+        o2::math_utils::bringTo02Pi(phiMatchedMFTatMP);
+
+        o2::track::TrackParCovFwd mftsa = getTrackParCovFwd(mfttrack, mfttrackcov);                                                // values at innermost update
+        o2::dataformats::GlobalFwdTrack globalMuonRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuonAtPV_Matched, mftsa); // this is track at IU.
+        auto globalMuonAtPV = o2::aod::fwdtrackutils::propagateTrackParCovFwd(globalMuonRefit, muon.trackType(), collision, propagationPoint::kToVertex, muoncuts.matchingZ, mBzMFT);
+        pt = globalMuonAtPV.getPt();
+        eta = globalMuonAtPV.getEta();
+        phi = globalMuonAtPV.getPhi();
         o2::math_utils::bringTo02Pi(phi);
+        dcaX = globalMuonAtPV.getX() - collision.posX();
+        dcaY = globalMuonAtPV.getY() - collision.posY();
+        dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+      }
+
+      if (muoncuts.refitGlobalMuon) {
         pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
       }
 
       float dpt = (ptMatchedMCHMID - pt) / pt;
+      if (std::fabs(dpt) > muoncuts.cfg_max_reldpt) {
+        return;
+      }
       float deta = etaMatchedMCHMID - eta;
       float dphi = phiMatchedMCHMID - phi;
       o2::math_utils::bringToPMPi(dphi);
-      if (std::sqrt(std::pow(deta / muoncuts.cfg_max_deta, 2) + std::pow(dphi / muoncuts.cfg_max_dphi, 2)) > 1.f || std::fabs(dpt) > muoncuts.cfg_max_reldpt) {
+      if (std::sqrt(std::pow(deta / muoncuts.cfg_max_deta, 2) + std::pow(dphi / muoncuts.cfg_max_dphi, 2)) > 1.f) {
+        return;
+      }
+
+      float detaMP = etaMatchedMCHMIDatMP - etaMatchedMFTatMP;
+      float dphiMP = phiMatchedMCHMIDatMP - phiMatchedMFTatMP;
+      o2::math_utils::bringToPMPi(dphiMP);
+      if (std::sqrt(std::pow(detaMP / muoncuts.cfg_max_detaMP, 2) + std::pow(dphiMP / muoncuts.cfg_max_dphiMP, 2)) > 1.f) {
         return;
       }
 
@@ -614,10 +680,16 @@ struct CreateResolutionMap {
       }
 
     } else if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
-      o2::dataformats::GlobalFwdTrack propmuonAtRabs = propagateMuon(muon, collision, propagationPoint::kToRabs); // this is necessary only for MuonStandaloneTrack
+      o2::dataformats::GlobalFwdTrack propmuonAtRabs = propagateMuon(muon, muon, collision, propagationPoint::kToRabs, muoncuts.matchingZ, mBzMFT); // this is necessary only for MuonStandaloneTrack
       float xAbs = propmuonAtRabs.getX();
       float yAbs = propmuonAtRabs.getY();
       rAtAbsorberEnd = std::sqrt(xAbs * xAbs + yAbs * yAbs); // Redo propagation only for muon tracks // propagation of MFT tracks alredy done in reconstruction
+
+      o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(muon, muon, collision, propagationPoint::kToDCA, muoncuts.matchingZ, mBzMFT);
+      dcaX = propmuonAtDCA.getX() - collision.posX();
+      dcaY = propmuonAtDCA.getY() - collision.posY();
+      dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+      pDCA = muon.p() * dcaXY;
     } else {
       return;
     }
@@ -635,7 +707,7 @@ struct CreateResolutionMap {
         return;
       }
       if (cfgFillTHnSparse) {
-        registry.fill(HIST("StandaloneMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), 1.f, -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
+        registry.fill(HIST("StandaloneMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
       }
 
       if (cfgFillTH2) {
@@ -654,7 +726,7 @@ struct CreateResolutionMap {
         return;
       }
       if (cfgFillTHnSparse) {
-        registry.fill(HIST("GlobalMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), 1.f, -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
+        registry.fill(HIST("GlobalMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
       }
       if (cfgFillTH2) {
         registry.fill(HIST("GlobalMuon/hPt"), pt);
@@ -727,6 +799,7 @@ struct CreateResolutionMap {
   SliceCache cache;
   Preslice<aod::TracksIU> perCollision_mid = o2::aod::track::collisionId;
   Preslice<aod::FwdTracks> perCollision_fwd = o2::aod::fwdtrack::collisionId;
+  PresliceUnsorted<aod::FwdTracks> fwdtracksPerMCHTrack = aod::fwdtrack::matchMCHTrackId;
 
   using MyCollisions = Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using MyCollision = MyCollisions::iterator;
@@ -777,15 +850,15 @@ struct CreateResolutionMap {
     float phi = trackParCov.getPhi();
     o2::math_utils::bringTo02Pi(phi);
 
-    float phiPosition = mcparticle.phi() + std::asin(-0.30282 * (-mcparticle.pdgCode() / 11) * (d_bz * 0.1) * cfgRefR / (2.f * mcparticle.pt()));
-    phiPosition = RecoDecay::constrainAngle(phiPosition, phiPosition_bin_edges[0], 1U);
+    // float phiPosition = mcparticle.phi() + std::asin(-0.30282 * (-mcparticle.pdgCode() / 11) * (d_bz * 0.1) * cfgRefR / (2.f * mcparticle.pt()));
+    // phiPosition = RecoDecay::constrainAngle(phiPosition, phiPosition_bin_edges[0], 1U);
 
     if (!isSelectedTrackWithKine(track, pt, eta, trackParCov.getTgl(), dcaXY, dcaZ)) {
       return;
     }
 
     if (cfgFillTHnSparse) {
-      registry.fill(HIST("Electron/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), phiPosition, -mcparticle.pdgCode() / 11, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
+      registry.fill(HIST("Electron/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 11, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
     }
     if (cfgFillTH2) {
       registry.fill(HIST("Electron/hPt"), pt);
@@ -798,6 +871,34 @@ struct CreateResolutionMap {
         registry.fill(HIST("Electron/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
       }
     }
+  }
+
+  std::vector<std::tuple<int, int, int>> vec_min_chi2MatchMCHMFT; // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> chi2MatchMCHMFT;
+  template <typename TMuons>
+  void findBestMatchPerMCHMID(TMuons const& muons)
+  {
+    vec_min_chi2MatchMCHMFT.reserve(muons.size());
+    for (const auto& muon : muons) {
+      if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
+        const auto& muons_per_MCHMID = muons.sliceBy(fwdtracksPerMCHTrack, muon.globalIndex());
+        // LOGF(info, "stanadalone: muon.globalIndex() = %d, muon.chi2MatchMCHMFT() = %f", muon.globalIndex(), muon.chi2MatchMCHMFT());
+        // LOGF(info, "muons_per_MCHMID.size() = %d", muons_per_MCHMID.size());
+
+        float min_chi2MatchMCHMFT = 1e+10;
+        std::tuple<int, int, int> tupleIds_at_min;
+        for (const auto& muon_tmp : muons_per_MCHMID) {
+          if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+            // LOGF(info, "muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, muon_tmp.chi2MatchMCHMFT() = %f", muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId(), muon_tmp.chi2MatchMCHMFT());
+            if (0.f < muon_tmp.chi2MatchMCHMFT() && muon_tmp.chi2MatchMCHMFT() < min_chi2MatchMCHMFT) {
+              min_chi2MatchMCHMFT = muon_tmp.chi2MatchMCHMFT();
+              tupleIds_at_min = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
+            }
+          }
+        }
+        vec_min_chi2MatchMCHMFT.emplace_back(tupleIds_at_min);
+        // LOGF(info, "min: muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, muon_tmp.chi2MatchMCHMFT() = %f", std::get<0>(tupleIds_at_min), std::get<1>(tupleIds_at_min), std::get<2>(tupleIds_at_min), min_chi2MatchMCHMFT);
+      }
+    } // end of muon loop
   }
 
   void processElectronSA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
@@ -877,6 +978,7 @@ struct CreateResolutionMap {
 
   void processMuonSA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFwdTracks const& fwdtracks, MyMFTTracks const&, aod::McCollisions const&, aod::McParticles const&)
   {
+    findBestMatchPerMCHMID(fwdtracks);
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -904,16 +1006,19 @@ struct CreateResolutionMap {
         if (cfgEventGeneratorType >= 0 && mccollision_from_mctrack.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
-        fillMuon(collision, muon, centrality);
+        fillMuon<false>(collision, muon, nullptr, centrality);
       } // end of standalone muon loop
 
     } // end of collision loop
+    vec_min_chi2MatchMCHMFT.clear();
+    vec_min_chi2MatchMCHMFT.shrink_to_fit();
   }
   PROCESS_SWITCH(CreateResolutionMap, processMuonSA, "create resolution map for muon at forward rapidity", true);
 
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
-  void processMuonTTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFwdTracks const&, MyMFTTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::McCollisions const&, aod::McParticles const&)
+  void processMuonTTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFwdTracks const& fwdtracks, MyMFTTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::McCollisions const&, aod::McParticles const&)
   {
+    findBestMatchPerMCHMID(fwdtracks);
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -941,11 +1046,57 @@ struct CreateResolutionMap {
         if (cfgEventGeneratorType >= 0 && mccollision_from_mctrack.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
-        fillMuon(collision, muon, centrality);
+        fillMuon<false>(collision, muon, nullptr, centrality);
       } // end of fwdtrack loop
     } // end of collision loop
+    vec_min_chi2MatchMCHMFT.clear();
+    vec_min_chi2MatchMCHMFT.shrink_to_fit();
   }
   PROCESS_SWITCH(CreateResolutionMap, processMuonTTCA, "create resolution map for muon at forward rapidity", false);
+
+  std::unordered_map<int, int> map_mfttrackcovs;
+  void processMuonTTCA_withMFTCov(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFwdTracks const& fwdtracks, MyMFTTracks const&, aod::MFTTracksCov const& mftCovs, aod::FwdTrackAssoc const& fwdtrackIndices, aod::McCollisions const&, aod::McParticles const&)
+  {
+    for (const auto& mfttrackConv : mftCovs) {
+      map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
+    }
+    findBestMatchPerMCHMID(fwdtracks);
+
+    for (const auto& collision : collisions) {
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+
+      if (!isSelectedEvent(collision)) {
+        continue;
+      }
+
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      float centrality = std::array{collision.centFT0M(), collision.centFT0A(), collision.centFT0C()}[cfgCentEstimator];
+      // auto mccollision = collision.template mcCollision_as<aod::McCollisions>();
+      // registry.fill(HIST("Event/Muon/hImpPar_Centrality"), mccollision.impactParameter(), centrality);
+
+      auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
+        auto muon = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
+        if (!muon.has_mcParticle()) {
+          continue;
+        }
+        auto mctrack = muon.template mcParticle_as<aod::McParticles>();
+        auto mccollision_from_mctrack = mctrack.template mcCollision_as<aod::McCollisions>();
+        if (cfgEventGeneratorType >= 0 && mccollision_from_mctrack.getSubGeneratorId() != cfgEventGeneratorType) {
+          continue;
+        }
+        fillMuon<true>(collision, muon, mftCovs, centrality);
+      } // end of fwdtrack loop
+    } // end of collision loop
+    map_mfttrackcovs.clear();
+    vec_min_chi2MatchMCHMFT.clear();
+    vec_min_chi2MatchMCHMFT.shrink_to_fit();
+  }
+  PROCESS_SWITCH(CreateResolutionMap, processMuonTTCA_withMFTCov, "create resolution map for muon at forward rapidity", false);
 
   void processGen(aod::McCollisions const& mcCollisions)
   {

@@ -35,6 +35,7 @@
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -50,7 +51,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> confEtaMax{"confEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
   /// Particle 1
-  Configurable<int32_t> confPDGCodePartOne{"confPDGCodePartOne", 2212, "Particle 1 - PDG code"};
+  Configurable<int> confPDGCodePartOne{"confPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<bool> confNoPDGPartOne{"confNoPDGPartOne", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart1{"confPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> confPtHighPart1{"confPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
@@ -64,7 +65,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
 
   /// Particle 2
   Configurable<bool> confIsSame{"confIsSame", false, "Pairs of the same particle"};
-  Configurable<int32_t> confPDGCodePartTwo{"confPDGCodePartTwo", 333, "Particle 2 - PDG code"};
+  Configurable<int> confPDGCodePartTwo{"confPDGCodePartTwo", 333, "Particle 2 - PDG code"};
   Configurable<bool> confNoPDGPartTwo{"confNoPDGPartTwo", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart2{"confPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> confPtHighPart2{"confPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
@@ -82,6 +83,10 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
   /// The configurables need to be passed to an std::vector
   int vPIDPartOne, vPIDPartTwo;
   std::vector<float> kNsigma;
+
+  // D0/D0bar options
+  Configurable<bool> confActiveD0OriginCheck{"confActiveD0OriginCheck", false, "If true - calculate correlation for D0/D0bar mesons with a given origin"};
+  Configurable<int8_t> confD0OriginFlag{"confD0OriginFlag", 1, "D0/D0bar origin: 0 - none, 1 - prompt, 2 - non-prompt"};
 
   /// particle part
   ConfigurableAxis confTempFitVarpTBins{"confTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
@@ -164,12 +169,18 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
       if (!confNoPDGPartOne && part.tempFitVar() != confPDGCodePartOne) {
         continue;
       }
+      if (static_cast<int>(part.tempFitVar()) == static_cast<int>(Pdg::kD0) && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
+        continue;
+      }
       trackHistoPartOne.fillQA<isMC, false>(part);
     }
 
     if (!confIsSame) {
       for (auto const& part : groupPartsTwo) {
         if (!confNoPDGPartTwo && part.tempFitVar() != confPDGCodePartTwo) {
+          continue;
+        }
+        if (static_cast<int>(part.tempFitVar()) == static_cast<int>(Pdg::kD0) && confActiveD0OriginCheck && part.mLambda() != confD0OriginFlag) {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, false>(part);
@@ -183,13 +194,15 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if ((!confNoPDGPartOne && p2.tempFitVar() != confPDGCodePartOne) || (!confNoPDGPartTwo && p1.tempFitVar() != confPDGCodePartTwo)) {
+        if ((!confNoPDGPartOne && static_cast<int>(p1.tempFitVar()) != confPDGCodePartOne) || (!confNoPDGPartTwo && static_cast<int>(p2.tempFitVar()) != confPDGCodePartTwo)) {
           continue;
         }
-        if (swpart)
+
+        if (swpart) {
           sameEventCont.setPair<isMC>(p1, p2, multCol, confUse3D);
-        else
+        } else {
           sameEventCont.setPair<isMC>(p2, p1, multCol, confUse3D);
+        }
 
         swpart = !swpart;
       }
@@ -244,7 +257,7 @@ struct FemtoUniversePairTaskTrackTrackMcTruth {
     fNeventsProcessed++;
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      if ((!confNoPDGPartOne && p2.tempFitVar() != confPDGCodePartOne) || (!confNoPDGPartTwo && p1.tempFitVar() != confPDGCodePartTwo)) {
+      if ((!confNoPDGPartOne && static_cast<int>(p1.tempFitVar()) != confPDGCodePartOne) || (!confNoPDGPartTwo && static_cast<int>(p2.tempFitVar()) != confPDGCodePartTwo)) {
         continue;
       }
       if (swpart)

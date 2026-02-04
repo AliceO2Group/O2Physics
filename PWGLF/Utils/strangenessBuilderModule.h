@@ -1384,7 +1384,8 @@ class BuilderModule
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
+          // if track cannot be uniquely identified with a collision or cannot be assigned to a collision at all (collisionId = -1), do not attempt to move the TPC track and move on
+          if (!posTrack.has_collision() || !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -1397,7 +1398,8 @@ class BuilderModule
           negTrackPar.setPID(o2::track::PID::Electron);
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
-          if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
+          // if track cannot be uniquely identified with a collision or cannot be assigned to a collision at all (collisionId = -1), do not attempt to move the TPC track and move on
+          if (!negTrack.has_collision() || !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -1634,7 +1636,7 @@ class BuilderModule
               //      code that is agnostic with respect to the joinability of
               //      V0Cores and V0MCCores (always dereference -> safe)
               if (baseOpts.mEnabledTables[kV0CoreMCLabels]) {
-                products.v0CoreMCLabels(iv0); // interlink index
+                products.v0CoreMCLabels(products.v0mccores.lastIndex()); // interlink index
                 histos.fill(HIST("hTableBuildingStatistics"), kV0CoreMCLabels);
               }
             }
@@ -2403,12 +2405,14 @@ class BuilderModule
       return; // don't do if no request for cascades in place or findable mode used
     }
     int nCascades = 0;
+    std::vector<int> traCascIndices(cascadeList.size(), -1);
     // Loops over all V0s in the time frame
     histos.fill(HIST("hInputStatistics"), kStoredTraCascCores, cascadeTracks.size());
     for (const auto& cascadeTrack : cascadeTracks) {
       // Get tracks and generate candidate
-      if (!cascadeTrack.has_track())
+      if (!cascadeTrack.has_track()) {
         continue; // safety (should be fine but depends on future stratrack dev)
+      }
 
       auto const& strangeTrack = cascadeTrack.template track_as<TTracks>();
 
@@ -2433,8 +2437,6 @@ class BuilderModule
                                             baseOpts.mEnabledTables[kCascBBs],
                                             cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
                                             baseOpts.mEnabledTables[kCascCovs])) {
-        products.tracascdataLink(-1);
-        interlinks.cascadeToTraCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
 
@@ -2474,9 +2476,7 @@ class BuilderModule
         histos.fill(HIST("hTableBuildingStatistics"), kStoredTraCascCores);
 
         // interlink always produced if base core table generated
-        products.tracascdataLink(products.tracascdata.lastIndex());
-        interlinks.traCascCoreToCascades.push_back(cascade.globalIndex());
-        interlinks.cascadeToTraCascCores.push_back(products.tracascdata.lastIndex());
+        traCascIndices[cascade.globalIndex()] = products.tracascdata.lastIndex();
       }
       if (baseOpts.mEnabledTables[kCascCovs]) {
         std::array<float, o2::track::kLabCovMatSize> traCovMat = {0.};
@@ -2502,6 +2502,10 @@ class BuilderModule
         } // enabled tables check
       } // constexpr requires mcParticles check
     } // end loop over cascades
+
+    for (std::size_t icascade = 0; icascade < cascadeList.size(); icascade++) {
+      products.tracascdataLink(traCascIndices[icascade]);
+    }
     LOGF(debug, "Tracked cascades in DF: %i, tracked cascades built: %i", cascadeTracks.size(), nCascades);
   }
 

@@ -1,0 +1,615 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+///
+/// \file longrangecorrDerived.cxx
+///
+/// \brief task for long range correlation analysis based on derived table
+/// \author Abhi Modak (abhi.modak@cern.ch)
+/// \since November 05, 2025
+
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+#include "PWGUD/Core/SGSelector.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DetectorsCommonDataFormats/AlignParam.h"
+#include "FT0Base/Geometry.h"
+#include "FV0Base/Geometry.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <TComplex.h>
+#include <TH1F.h>
+#include <TMath.h>
+#include <TPDGCode.h>
+
+#include <chrono>
+#include <cstdio>
+#include <experimental/type_traits>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::aod::track;
+using namespace o2::aod::fwdtrack;
+using namespace o2::aod::evsel;
+using namespace o2::constants::math;
+
+struct LongrangecorrDerived {
+
+  SliceCache cache;
+  SGSelector sgSelector;
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<int> cfgNmixedevent{"cfgNmixedevent", 5, "how many events are mixed"};
+  Configurable<int> cfgPidMask{"cfgPidMask", 0, "Selection bitmask for the TPC particle"};
+  Configurable<int> cfgV0Mask{"cfgV0Mask", 0, "Selection bitmask for the V0 particle"};
+  Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
+  Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
+
+  Configurable<float> cfgFv0Cut{"cfgFv0Cut", 50.0f, "FV0A threshold"};
+  Configurable<float> cfgFt0aCut{"cfgFt0aCut", 100.0f, "FT0A threshold"};
+  Configurable<float> cfgFt0cCut{"cfgFt0cCut", 50.0f, "FT0C threshold"};
+  Configurable<float> cfgZdcCut{"cfgZdcCut", 0.1f, "ZDC threshold"};
+  Configurable<int> cfgGapSideCut{"cfgGapSideCut", 0, "Gap-side A=0, C=1, AC = 2, No Gap = -1, All events = 3"};
+
+  Configurable<bool> isApplyAmpCut{"isApplyAmpCut", false, "Enable FT0 amplitude cut"};
+  Configurable<float> cfgLowAmpCut{"cfgLowAmpCut", 2.0f, "Low FT0 amplitude cut"};
+
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 15, 25, 50, 60, 1000}, "multiplicity axis"};
+  ConfigurableAxis axisPhi{"axisPhi", {96, 0, TwoPI}, "#phi axis"};
+  ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt assoc axis for histograms"};
+  ConfigurableAxis axisVtxZ{"axisVtxZ", {40, -20, 20}, "vertex axis"};
+  ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {96, 3.5, 4.9}, "#eta assoc axis"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -6, -2}, "delta eta axis for histograms"};
+  ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0}, "invariant mass axis"};
+  ConfigurableAxis axisInvMassQA{"axisInvMassQA", {20, 0.45, 0.55}, "invariant mass axis for QA"};
+  ConfigurableAxis axisAmplitude{"axisAmplitude", {5000, 0, 10000}, "FT0 amplitude"};
+  ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 1000}, "Mixing bins - multiplicity"};
+  ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
+
+  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
+  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
+  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
+
+  OutputObj<CorrelationContainer> same{"sameEvent"};
+  OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+
+  using CollsTable = aod::CollLRTables;
+  using TrksTable = aod::TrkLRTables;
+  using MftTrksTable = aod::MftTrkLRTables;
+  using Ft0aTrksTable = aod::Ft0aLRTables;
+  using Ft0cTrksTable = aod::Ft0cLRTables;
+  using MftbestTrksTable = aod::MftBestTrkLRTables;
+  using V0TrksTable = aod::V0TrkLRTables;
+
+  using UpcCollsTable = soa::Join<aod::UpcCollLRTables, aod::UpcSgCollLRTables, aod::ZdcLRTables>;
+  using TrksUpcTable = aod::TrkLRUpcTables;
+  using MftTrksUpcTable = aod::MftTrkLRUpcTables;
+  using Ft0aTrksUpcTable = aod::Ft0aLRUpcTables;
+  using Ft0cTrksUpcTable = aod::Ft0cLRUpcTables;
+  using MftbestTrksUpcTable = aod::MftBestTrkLRUpcTables;
+  using V0TrksUpcTable = aod::V0TrkLRUpcTables;
+
+  Preslice<TrksTable> perColTpc = aod::lrcorrtrktable::collLRTableId;
+  Preslice<MftTrksTable> perColMft = aod::lrcorrtrktable::collLRTableId;
+  Preslice<MftbestTrksTable> perColMftbest = aod::lrcorrtrktable::collLRTableId;
+  Preslice<Ft0aTrksTable> perColFt0a = aod::lrcorrtrktable::collLRTableId;
+  Preslice<Ft0cTrksTable> perColFt0c = aod::lrcorrtrktable::collLRTableId;
+  Preslice<V0TrksTable> perColV0 = aod::lrcorrtrktable::collLRTableId;
+
+  Preslice<TrksUpcTable> perUpcColTpc = aod::lrcorrtrktable::upcCollLRTableId;
+  Preslice<MftTrksUpcTable> perUpcColMft = aod::lrcorrtrktable::upcCollLRTableId;
+  Preslice<MftbestTrksUpcTable> perUpcColMftbest = aod::lrcorrtrktable::upcCollLRTableId;
+  Preslice<Ft0aTrksUpcTable> perUpcColFt0a = aod::lrcorrtrktable::upcCollLRTableId;
+  Preslice<Ft0cTrksUpcTable> perUpcColFt0c = aod::lrcorrtrktable::upcCollLRTableId;
+  Preslice<V0TrksUpcTable> perUpcColV0 = aod::lrcorrtrktable::upcCollLRTableId;
+
+  void init(InitContext const&)
+  {
+    std::vector<AxisSpec> corrAxis = {{axisVtxZ, "z-vtx (cm)"},
+                                      {axisMultiplicity, "multiplicity"},
+                                      {axisPtTrigger, "p_{T} (GeV/c)"},
+                                      {axisPtAssoc, "p_{T} (GeV/c)"},
+                                      {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                      {axisDeltaEta, "#Delta#eta"}};
+    std::vector<AxisSpec> effAxis = {{axisVertexEfficiency, "z-vtx (cm)"},
+                                     {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                     {axisEtaEfficiency, "#eta"}};
+    std::vector<AxisSpec> userAxis = {{axisInvMass, "m (GeV/c^2)"}};
+
+    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
+    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
+
+    histos.add("hMultiplicity", "hMultiplicity", kTH1D, {axisMultiplicity});
+    histos.add("hCentrality", "hCentrality", kTH1D, {axisMultiplicity});
+    histos.add("hVertexZ", "hVertexZ", kTH1D, {axisVtxZ});
+
+    histos.add("hGapSide", "hGapSide", kTH1I, {{5, -0.5, 4.5}});
+    histos.add("hTrueGapSide", "hTrueGapSide", kTH1I, {{6, -1.5, 4.5}});
+    histos.add("hTrueGapSide_AfterSel", "hTrueGapSide_AfterSel", kTH1I, {{6, -1.5, 4.5}});
+
+    histos.add("Trig_eta", "Trig_eta", kTH1D, {axisEtaTrig});
+    histos.add("Trig_phi", "Trig_phi", kTH1D, {axisPhi});
+    histos.add("Trig_etavsphi", "Trig_etavsphi", kTH2D, {axisPhi, axisEtaTrig});
+    histos.add("Trig_pt", "Trig_pt", kTH1D, {axisPtTrigger});
+    histos.add("Trig_invMass", "Trig_invMass", kTH1D, {axisInvMassQA});
+    histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {axisVtxZ, axisMultiplicity, axisPtTrigger, axisInvMass});
+
+    histos.add("Assoc_eta", "Assoc_eta", kTH1D, {axisEtaAssoc});
+    histos.add("Assoc_phi", "Assoc_phi", kTH1D, {axisPhi});
+    histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {axisPhi, axisEtaAssoc});
+    histos.add("Assoc_pt", "Assoc_pt", kTH1D, {axisPtAssoc});
+    histos.add("Assoc_amp", "Assoc_amp", kTH1D, {axisAmplitude});
+
+    histos.add("deltaEta_deltaPhi_same", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
+    histos.add("deltaEta_deltaPhi_mixed", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
+  }
+
+  template <typename TCollision>
+  void fillCollQA(TCollision const& col)
+  {
+    histos.fill(HIST("hMultiplicity"), col.multiplicity());
+    if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+      histos.fill(HIST("hCentrality"), col.centrality());
+    }
+    histos.fill(HIST("hVertexZ"), col.zvtx());
+  }
+
+  template <typename TTrack>
+  void fillTrigTrackQA(TTrack const& track)
+  {
+    histos.fill(HIST("Trig_etavsphi"), track.phi(), track.eta());
+    histos.fill(HIST("Trig_eta"), track.eta());
+    histos.fill(HIST("Trig_phi"), track.phi());
+    histos.fill(HIST("Trig_pt"), track.pt());
+    if constexpr (std::experimental::is_detected<HasInvMass, TTrack>::value) {
+      histos.fill(HIST("Trig_invMass"), track.invMass());
+    }
+  }
+
+  template <typename TTrack>
+  void fillAssocTrackQA(TTrack const& track)
+  {
+    histos.fill(HIST("Assoc_etavsphi"), track.phi(), track.eta());
+    histos.fill(HIST("Assoc_eta"), track.eta());
+    histos.fill(HIST("Assoc_phi"), track.phi());
+    if constexpr (std::experimental::is_detected<HasFt0, TTrack>::value) {
+      histos.fill(HIST("Assoc_amp"), track.amplitude());
+    } else {
+      histos.fill(HIST("Assoc_pt"), track.pt());
+    }
+  }
+
+  template <bool fillHist = true, typename CheckCol>
+  bool isUpcEventSelected(CheckCol const& col)
+  {
+    if constexpr (fillHist) {
+      histos.fill(HIST("hGapSide"), col.gapSide());
+    }
+    int truegapSide = sgSelector.trueGap(col, cfgFv0Cut, cfgFt0aCut, cfgFt0cCut, cfgZdcCut);
+    if constexpr (fillHist) {
+      histos.fill(HIST("hTrueGapSide"), truegapSide);
+    }
+    if (truegapSide != cfgGapSideCut)
+      return false;
+    if constexpr (fillHist) {
+      histos.fill(HIST("hTrueGapSide_AfterSel"), truegapSide);
+    }
+    return true;
+  }
+
+  template <class T>
+  using HasTpcTrack = decltype(std::declval<T&>().trackType());
+  template <class T>
+  using HasV0Track = decltype(std::declval<T&>().v0Type());
+  template <class T>
+  using HasInvMass = decltype(std::declval<T&>().invMass());
+  template <class T>
+  using HasUpc = decltype(std::declval<T&>().gapSide());
+  template <class T>
+  using HasFt0 = decltype(std::declval<T&>().channelID());
+  template <class T>
+  using HasCent = decltype(std::declval<T&>().centrality());
+
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
+  void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
+  {
+    for (auto const& triggerTrack : triggers) {
+      if constexpr (std::experimental::is_detected<HasTpcTrack, typename TTriggers::iterator>::value) {
+        if (cfgPidMask != 0 && (cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u)
+          continue;
+      } else if constexpr (std::experimental::is_detected<HasV0Track, typename TTriggers::iterator>::value) {
+        if (cfgV0Mask != 0 && (cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
+          continue;
+      }
+      if (!mixing) {
+        fillTrigTrackQA(triggerTrack);
+        if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
+          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight);
+        } else {
+          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight);
+        }
+      }
+      for (auto const& assoTrack : assocs) {
+        if constexpr (std::experimental::is_detected<HasFt0, typename TAssocs::iterator>::value) {
+          if (isApplyAmpCut && (assoTrack.amplitude() < cfgLowAmpCut))
+            continue;
+        }
+        float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - assoTrack.phi(), -PIHalf);
+        float deltaEta = triggerTrack.eta() - assoTrack.eta();
+        if (!mixing) {
+          fillAssocTrackQA(assoTrack);
+          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta);
+        } else {
+          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta);
+        }
+        if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
+          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight);
+        } else {
+          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight);
+        }
+      } // associated tracks
+    } // trigger tracks
+  } // fill correlation
+
+  template <typename TCollision, typename TTriggers, typename TAssocs>
+  void processSame(TCollision const& col, TTriggers const& triggers, TAssocs const& assocs)
+  {
+    if (std::abs(col.zvtx()) >= cfgVtxCut) {
+      return;
+    }
+    fillCollQA(col);
+    auto multiplicity = 1.0f;
+    if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+      if (isUseCentEst)
+        multiplicity = col.centrality();
+      else
+        multiplicity = col.multiplicity();
+    } else {
+      multiplicity = col.multiplicity();
+    }
+    fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.zvtx(), multiplicity, 1.0);
+  } // process same
+
+  template <typename TCollision, typename... TrackTypes>
+  void processMixed(TCollision const& cols, TrackTypes&&... tracks)
+  {
+    auto getMultiplicity = [this](auto& col) {
+      if constexpr (std::experimental::is_detected<HasUpc, TCollision>::value) {
+        if (!isUpcEventSelected<false>(col)) {
+          return -1.0f;
+        }
+      } else {
+        (void)this;
+      }
+      auto multiplicity = 1.0f;
+      if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+        if (isUseCentEst)
+          multiplicity = col.centrality();
+        else
+          multiplicity = col.multiplicity();
+      } else {
+        multiplicity = col.multiplicity();
+      }
+      return multiplicity;
+    };
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::lrcorrcolltable::Zvtx, decltype(getMultiplicity)>;
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {axisVtxZME, axisMultME}, true};
+    auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
+    using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
+    using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
+    Pair<TCollision, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgNmixedevent, -1, cols, tracksTuple, &cache};
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [col1, tracks1, col2, tracks2] = *it;
+      if constexpr (std::experimental::is_detected<HasUpc, TCollision>::value) {
+        if (!isUpcEventSelected<false>(col1) || !isUpcEventSelected<false>(col2)) {
+          continue;
+        }
+      }
+      float eventweight = 1.0f / it.currentWindowNeighbours();
+      auto multiplicity = 1.0f;
+      if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
+        if (isUseCentEst)
+          multiplicity = col1.centrality();
+        else
+          multiplicity = col1.multiplicity();
+      } else {
+        multiplicity = col1.multiplicity();
+      }
+      fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.zvtx(), multiplicity, eventweight);
+    } // pair loop
+  } // process mixed
+
+  void processTpcft0aSE(CollsTable::iterator const& col, TrksTable const& tracks, Ft0aTrksTable const& ft0as)
+  {
+    processSame(col, tracks, ft0as);
+  }
+
+  void processTpcft0cSE(CollsTable::iterator const& col, TrksTable const& tracks, Ft0cTrksTable const& ft0cs)
+  {
+    processSame(col, tracks, ft0cs);
+  }
+
+  void processTpcmftSE(CollsTable::iterator const& col, TrksTable const& tracks, MftTrksTable const& mfts)
+  {
+    processSame(col, tracks, mfts);
+  }
+
+  void processMftft0aSE(CollsTable::iterator const& col, MftTrksTable const& mfts, Ft0aTrksTable const& ft0as)
+  {
+    processSame(col, mfts, ft0as);
+  }
+
+  void processV0ft0aSE(CollsTable::iterator const& col, V0TrksTable const& tracks, Ft0aTrksTable const& ft0as)
+  {
+    processSame(col, tracks, ft0as);
+  }
+
+  void processV0mftSE(CollsTable::iterator const& col, V0TrksTable const& tracks, MftTrksTable const& mfts)
+  {
+    processSame(col, tracks, mfts);
+  }
+
+  void processTpcmftbestSE(CollsTable::iterator const& col, TrksTable const& tracks, MftbestTrksTable const& mfts)
+  {
+    processSame(col, tracks, mfts);
+  }
+
+  void processMftbestft0aSE(CollsTable::iterator const& col, MftbestTrksTable const& mfts, Ft0aTrksTable const& ft0as)
+  {
+    processSame(col, mfts, ft0as);
+  }
+
+  void processV0mftbestSE(CollsTable::iterator const& col, V0TrksTable const& tracks, MftbestTrksTable const& mfts)
+  {
+    processSame(col, tracks, mfts);
+  }
+
+  void processTpcft0aME(CollsTable const& cols, TrksTable const& tracks, Ft0aTrksTable const& ft0as)
+  {
+    processMixed(cols, tracks, ft0as);
+  }
+
+  void processTpcft0cME(CollsTable const& cols, TrksTable const& tracks, Ft0cTrksTable const& ft0cs)
+  {
+    processMixed(cols, tracks, ft0cs);
+  }
+
+  void processTpcmftME(CollsTable const& cols, TrksTable const& tracks, MftTrksTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  void processMftft0aME(CollsTable const& cols, MftTrksTable const& mfts, Ft0aTrksTable const& ft0as)
+  {
+    processMixed(cols, mfts, ft0as);
+  }
+
+  void processV0ft0aME(CollsTable const& cols, V0TrksTable const& tracks, Ft0aTrksTable const& ft0as)
+  {
+    processMixed(cols, tracks, ft0as);
+  }
+
+  void processV0mftME(CollsTable const& cols, V0TrksTable const& tracks, MftTrksTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  void processTpcmftbestME(CollsTable const& cols, TrksTable const& tracks, MftbestTrksTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  void processMftbestft0aME(CollsTable const& cols, MftbestTrksTable const& mfts, Ft0aTrksTable const& ft0as)
+  {
+    processMixed(cols, mfts, ft0as);
+  }
+
+  void processV0mftbestME(CollsTable const& cols, V0TrksTable const& tracks, MftbestTrksTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  void processUpcTpcft0aSE(UpcCollsTable::iterator const& col, TrksUpcTable const& tracks, Ft0aTrksUpcTable const& ft0as)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, tracks, ft0as);
+  }
+
+  void processUpcTpcft0cSE(UpcCollsTable::iterator const& col, TrksUpcTable const& tracks, Ft0cTrksUpcTable const& ft0cs)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, tracks, ft0cs);
+  }
+
+  void processUpcTpcmftSE(UpcCollsTable::iterator const& col, TrksUpcTable const& tracks, MftTrksUpcTable const& mfts)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, tracks, mfts);
+  }
+
+  void processUpcMftft0aSE(UpcCollsTable::iterator const& col, MftTrksUpcTable const& mfts, Ft0aTrksUpcTable const& ft0as)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, mfts, ft0as);
+  }
+
+  void processUpcV0ft0aSE(UpcCollsTable::iterator const& col, V0TrksUpcTable const& tracks, Ft0aTrksUpcTable const& ft0as)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, tracks, ft0as);
+  }
+
+  void processUpcV0mftSE(UpcCollsTable::iterator const& col, V0TrksUpcTable const& tracks, MftTrksUpcTable const& mfts)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, tracks, mfts);
+  }
+
+  void processUpcTpcmftbestSE(UpcCollsTable::iterator const& col, TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, tracks, mfts);
+  }
+
+  void processUpcMftbestft0aSE(UpcCollsTable::iterator const& col, MftbestTrksUpcTable const& mfts, Ft0aTrksUpcTable const& ft0as)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, mfts, ft0as);
+  }
+
+  void processUpcV0mftbestSE(UpcCollsTable::iterator const& col, V0TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
+  {
+    if (!isUpcEventSelected<true>(col)) {
+      return;
+    }
+    processSame(col, tracks, mfts);
+  }
+
+  void processUpcTpcft0aME(UpcCollsTable const& cols, TrksUpcTable const& tracks, Ft0aTrksUpcTable const& ft0as)
+  {
+    processMixed(cols, tracks, ft0as);
+  }
+
+  void processUpcTpcft0cME(UpcCollsTable const& cols, TrksUpcTable const& tracks, Ft0cTrksUpcTable const& ft0cs)
+  {
+    processMixed(cols, tracks, ft0cs);
+  }
+
+  void processUpcTpcmftME(UpcCollsTable const& cols, TrksUpcTable const& tracks, MftTrksUpcTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  void processUpcMftft0aME(UpcCollsTable const& cols, MftTrksUpcTable const& mfts, Ft0aTrksUpcTable const& ft0as)
+  {
+    processMixed(cols, mfts, ft0as);
+  }
+
+  void processUpcV0ft0aME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, Ft0aTrksUpcTable const& ft0as)
+  {
+    processMixed(cols, tracks, ft0as);
+  }
+
+  void processUpcV0mftME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, MftTrksUpcTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  void processUpcTpcmftbestME(UpcCollsTable const& cols, TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  void processUpcMftbestft0aME(UpcCollsTable const& cols, MftbestTrksUpcTable const& mfts, Ft0aTrksUpcTable const& ft0as)
+  {
+    processMixed(cols, mfts, ft0as);
+  }
+
+  void processUpcV0mftbestME(UpcCollsTable const& cols, V0TrksUpcTable const& tracks, MftbestTrksUpcTable const& mfts)
+  {
+    processMixed(cols, tracks, mfts);
+  }
+
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aSE, "same event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aME, "mixed event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcft0cSE, "same event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcft0cME, "mixed event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftSE, "same event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftME, "mixed event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMftft0aSE, "same event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMftft0aME, "mixed event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0ft0aSE, "same event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0ft0aME, "mixed event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0mftSE, "same event V0 vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0mftME, "mixed event V0 vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftbestSE, "same event TPC vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processTpcmftbestME, "mixed event TPC vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMftbestft0aSE, "same event best MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMftbestft0aME, "mixed event best MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestSE, "same event V0 vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestME, "mixed event V0 vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0aSE, "same UPC event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0aME, "mixed UPC event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0cSE, "same UPC event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0cME, "mixed UPC event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcmftSE, "same UPC event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcmftME, "mixed UPC event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcMftft0aSE, "same UPC event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcMftft0aME, "mixed UPC event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0ft0aSE, "same UPC event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0ft0aME, "mixed UPC event V0 vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftSE, "same UPC event V0 vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftME, "mixed UPC event V0 vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcmftbestSE, "same UPC event TPC vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcmftbestME, "mixed UPC event TPC vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcMftbestft0aSE, "same UPC event best MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcMftbestft0aME, "mixed UPC event best MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftbestSE, "same UPC event V0 vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftbestME, "mixed UPC event V0 vs best MFT", false);
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<LongrangecorrDerived>(cfgc)};
+}

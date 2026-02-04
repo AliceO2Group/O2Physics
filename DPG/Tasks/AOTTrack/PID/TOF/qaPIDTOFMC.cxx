@@ -15,13 +15,13 @@
 /// \brief  Task to produce QA output of the PID with TOF running on the MC e.g. to compute purity.
 ///
 
-// O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -54,6 +54,7 @@ std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMC;
 std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCprm;
 std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCstr;
 std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCmat;
+std::array<std::shared_ptr<TH2>, NpNp> hNSigmaMCgoodmatch;
 
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTime;
 std::array<std::shared_ptr<TH2>, NpNp> hDeltaMCEvTimeTrueGoodEv;
@@ -277,6 +278,7 @@ struct pidTofQaMc {
     const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[massID])};
 
     hNSigmaMC[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMC/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+    hNSigmaMCgoodmatch[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCgoodmatch/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
     if (checkPrimaries) {
       hNSigmaMCprm[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCprm/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
       hNSigmaMCstr[mcID * Np + massID] = histos.add<TH2>(Form("nsigmaMCstr/%s/%s", pName[mcID], pName[massID]), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
@@ -647,6 +649,12 @@ struct pidTofQaMc {
     const float nsigmaMassID = o2::aod::pidutils::tofNSigma<massID>(track);
 
     hNSigmaMC[mcID * Np + massID]->Fill(track.pt(), nsigmaMassID);
+    if (track.hasTOF() && track.mcMask() & (0x1 << 15)) {
+      // Bad match
+    } else {
+      // Good match
+      hNSigmaMCgoodmatch[mcID * Np + massID]->Fill(track.pt(), nsigmaMassID);
+    }
     if (checkPrimaries) {
       if (!particle.isPhysicalPrimary()) {
         if (particle.getProcess() == 4) {

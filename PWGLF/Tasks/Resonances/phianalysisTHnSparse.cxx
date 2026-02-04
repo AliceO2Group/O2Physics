@@ -18,7 +18,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -68,7 +69,9 @@ struct PhianalysisTHnSparse {
     Configurable<float> dcaXY{"dcaXY", 1.0f, "Cut: Maximal value of tracks DCA XY."};
     Configurable<float> dcaZ{"dcaZ", 1.0f, "Cut: Maximal value of tracks DCA Z."};
     Configurable<bool> globalTrack{"globalTrack", false, "Use global track selection."};
+    Configurable<bool> inelGrater0{"inelGrater0", true, "Select events with INEL>0."};
     Configurable<int> tpcNClsFound{"tpcNClsFound", 70, "Cut: Minimal value of found TPC clasters"};
+    Configurable<float> vzCut{"vzCut", 10.0f, "Cut: Maximal value of Z vertex position."};
   } cut;
 
   struct : ConfigurableGroup {
@@ -100,13 +103,23 @@ struct PhianalysisTHnSparse {
 
   // rotational
   Configurable<int> numberofRotations{"numberofRotations", 1, "Number of rotations for rotational background estimation."};
+  Configurable<int> startingAngle{"startingAngle", 0, "Starting angle for rotational background estimation."};
+
+  // other axes
+  ConfigurableAxis axisNch{"axisNch", {1000, 0.0f, +1000.0f}, "Number of charged particles."};
+  ConfigurableAxis axisResolutionPt{"axisResolutionPt", {1001, -1.0f, +1.0f}, "Resolution of Pt."};
+  ConfigurableAxis axisResolutionPtPhi{"axisResolutionPtPhi", {1001, -0.01f, +0.01f}, "Resolution of Pt and Phi."};
+  ConfigurableAxis axisResolutionMass{"axisResolutionMass", {1001, -0.01f, +0.01f}, "Resolution of Mass."};
+  ConfigurableAxis axisResolutionVz{"axisResolutionVz", {1001, -3.0f, +3.0f}, "Resolution of Vz."};
+  ConfigurableAxis massShiftAxis{"massShiftAxis", {1001, -0.02f, 0.02f}, "Mass correction axis."};
 
   // Axes specifications
   AxisSpec posZaxis = {400, -20., 20., "V_{z} (cm)"};
-  AxisSpec dcaXYaxis = {800, -2.0, 2.0, "DCA_{xy} (cm)"};
-  AxisSpec dcaZaxis = {800, -2.0, 2.0, "DCA_{z} (cm)"};
+  AxisSpec dcaXYaxis = {1000, -1.0, 1.0, "DCA_{xy} (cm)"};
+  AxisSpec dcaZaxis = {1000, -1.0, 1.0, "DCA_{z} (cm)"};
   AxisSpec etaQAaxis = {1000, -1.0, 1.0, "#eta"};
   AxisSpec tpcNClsFoundQAaxis = {110, 50., 160., "tpcNClsFound"};
+  AxisSpec massShiftRelAxis = {101, -0.03f, 0.03f, ""};
 
   HistogramRegistry registry{"registry"};
   o2::analysis::rsn::Output* rsnOutput = nullptr;
@@ -116,31 +129,34 @@ struct PhianalysisTHnSparse {
   int n = 0;
   float massPos = o2::track::PID::getMass(3);
   float massNeg = o2::track::PID::getMass(3);
+  int pion = 2;
+  int kaon = 3;
+  int proton = 4;
   double* pointPair = nullptr;
   double* pointSys = nullptr;
-  ROOT::Math::PxPyPzMVector d1, d2, mother;
-  bool produceTrue, produceLikesign, produceQA, produceStats, produceRotational, dataQA, MCTruthQA, globalTrack, tpcPidOnly = false;
+  ROOT::Math::PxPyPzMVector d1, d2, mother, motherGen;
+  bool produceTrue, produceLikesign, produceQA, produceStats, produceRotational, dataQA, MCTruthQA, globalTrack, inelGrater0, tpcPidOnly = false;
   float tpcnSigmaPos = 100.0f;
   float tpcnSigmaNeg = 100.0f;
   float combinedNSigma = 100.0f;
   float ptTOFThreshold = 0.5f;
   int tpcNClsFound = 70;
   int dauSize = 2;
-
+  float vzCut = 10.0f;
   rsn::MixingType mixingType = rsn::MixingType::none;
 
-  float vzCut = 10.0f;
   Filter triggerFilter = (o2::aod::evsel::sel8 == true);
   Filter vtxFilter = (nabs(o2::aod::collision::posZ) < vzCut);
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Ms>;
   using EventCandidate = EventCandidates::iterator;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTOFFullKa>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
-  using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>>;
-  using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTOFFullKa, aod::McTrackLabels>;
+  using EventCandidatesMC = soa::Join<EventCandidates, aod::McCollisionLabels>;
+  using TrackCandidatesMC = soa::Join<TrackCandidates, aod::McTrackLabels>;
 
-  using EventCandidatesMCGen = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>;
+  using EventCandidatesMCGen = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Ms, aod::McCollisionLabels>;
+  using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
   using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
@@ -191,9 +207,11 @@ struct PhianalysisTHnSparse {
     tpcnSigmaNeg = static_cast<float>(cut.tpcnSigmaNeg);
     tpcNClsFound = static_cast<int>(cut.tpcNClsFound);
     globalTrack = static_cast<bool>(cut.globalTrack);
+    inelGrater0 = static_cast<bool>(cut.inelGrater0);
     combinedNSigma = static_cast<float>(cut.combinedNSigma);
     tpcPidOnly = static_cast<bool>(cut.tpcPidOnly);
     ptTOFThreshold = static_cast<float>(cut.ptTOFThreshold);
+    vzCut = static_cast<float>(cut.vzCut);
 
     pointPair = new double[static_cast<int>(o2::analysis::rsn::PairAxisType::unknown)];
     pointSys = new double[static_cast<int>(o2::analysis::rsn::SystematicsAxisType::unknown)];
@@ -206,6 +224,7 @@ struct PhianalysisTHnSparse {
     LOGF(info, "produceStats: %s", produceStats ? "true" : "false");
     LOGF(info, "produceTrue: %s", static_cast<bool>(produce.produceTrue) ? "true" : "false");
     LOGF(info, "produceLikesign: %s", static_cast<bool>(produce.produceLikesign) ? "true" : "false");
+    LOGF(info, "produceRotational: %s", static_cast<bool>(produce.produceRotational) ? "true" : "false");
     LOGF(info, "eventMixing: %s", static_cast<std::string>(produce.eventMixing).c_str());
     LOGF(info, "daughterPos: %d (PDG: %d)", static_cast<int>(daughterPos), static_cast<int>(daughterPosPDG));
     LOGF(info, "daughterNeg: %d (PDG: %d)", static_cast<int>(daughterNeg), static_cast<int>(daughterNegPDG));
@@ -221,10 +240,13 @@ struct PhianalysisTHnSparse {
     LOGF(info, "dcaXY: %.2f", static_cast<float>(cut.dcaXY));
     LOGF(info, "dcaZ: %.2f", static_cast<float>(cut.dcaZ));
     LOGF(info, "globalTrack: %s", globalTrack ? "true" : "false");
+    LOGF(info, "inelGrater0: %s", inelGrater0 ? "true" : "false");
     LOGF(info, "tpcNClsFound: %d", tpcNClsFound);
+    LOGF(info, "vzCut: %.2f", vzCut);
     LOGF(info, "mixingType: %d", static_cast<int>(mixingType));
     LOGF(info, "numberofMixedEvents: %d", static_cast<int>(numberofMixedEvents));
     LOGF(info, "numberofRotations: %d", static_cast<int>(numberofRotations));
+    LOGF(info, "startingAngle: %d", static_cast<int>(startingAngle));
     LOGF(info, "sparseAxes: ");
     for (const auto& axis : static_cast<std::vector<std::string>>(sparseAxes)) {
       LOGF(info, "  %s", axis.c_str());
@@ -237,16 +259,18 @@ struct PhianalysisTHnSparse {
 
     if (produceQA) {
       // Event QA
-      registry.add("QAEvent/hSelection", "Event selection statistics", kTH1D, {{3, 0.0f, 3.0f}});
+      registry.add("QAEvent/hSelection", "Event selection statistics", kTH1D, {{4, 0.0f, 4.0f}});
       auto hEvent = registry.get<TH1>(HIST("QAEvent/hSelection"));
-      hEvent->GetXaxis()->SetBinLabel(1, "Full event statistics");
-      hEvent->GetXaxis()->SetBinLabel(2, "Events with at least one #phi candidate");
-      hEvent->GetXaxis()->SetBinLabel(3, "#phi candidates");
+
+      hEvent->GetXaxis()->SetBinLabel(1, "all events");
+      hEvent->GetXaxis()->SetBinLabel(2, "Events passing trigger sel8");
+      hEvent->GetXaxis()->SetBinLabel(3, "Events passing |V_{z}| cut");
+      hEvent->GetXaxis()->SetBinLabel(4, "Events passing INEL>0 cut");
       hEvent->SetMinimum(0.1);
 
       registry.add("QAEvent/hVtxZ", "Vertex position along the z-axis", kTH1F, {posZaxis});
       registry.add("QAEvent/hCent", "Distribution of multiplicity percentile", kTH1F, {{101, 0., 101.}});
-      registry.add("QAEvent/hMult", "Multiplicity (amplitude of non-zero channels in the FV0A + FV0C) ", kTH1F, {{300, 0., 30000.}});
+      registry.add("QAEvent/hMult", "Multiplicity (amplitude of non-zero channels in the FT0A + FT0C) ", kTH1F, {{300, 0., 30000.}});
 
       // Track QA
       registry.add("QATrack/hSelection", "Tracks statistics", kTH1D, {{9, 0.0f, 9.0f}});
@@ -269,49 +293,51 @@ struct PhianalysisTHnSparse {
       registry.add("QATrack/hDCAz", "Distribution of DCA_{z} of K^{+} and K^{-}", kTH1F, {dcaZaxis});
       registry.add("QATrack/hPt", "Distribution of p_{T} of K^{+} and K^{-}", kTH1F, {ptaxis});
 
-      // TPC PID
-      registry.add("QATrack/hTPCnSigma", "Distribution of TPC nSigma of K^{+} and K^{-}", kTH1F, {{200, -10, 10}});
+      // Phi candidate QA
+      registry.add("QAPhi/hRapidity", "Rapidity distribution of #Phi candidates", kTH1F, {{200, -1, 1}});
+      registry.add("QAPhi/hEta", "Pseudorapidity distribution of #Phi candidates", kTH1F, {{200, -1, 1}});
+      registry.add("QAPhi/hdPhi", "Azimuthal distribution (#Delta#phi) of #Phi candidates", kTH1F, {{100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+      auto hdPhi = registry.get<TH1>(HIST("QAPhi/hdPhi"));
+      hdPhi->GetXaxis()->SetTitle("#Delta#phi (rad)");
 
-      registry.add("QATrack/h2TPCnSigma", "", kTH2F, {{200, -10, 10}, {200, -10, 10}});
-      auto h2TPCnSigma = registry.get<TH2>(HIST("QATrack/h2TPCnSigma"));
-      h2TPCnSigma->GetXaxis()->SetTitle("n#sigma_{TPC} K^{+}");
-      h2TPCnSigma->GetYaxis()->SetTitle("n#sigma_{TPC} K^{-}");
+      registry.add("QAPhi/h2dPhiPt", "Azimuthal distribution (#Delta#phi) of #Phi candidates vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+      auto h2dPhiPt = registry.get<TH2>(HIST("QAPhi/h2dPhiPt"));
+      h2dPhiPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+      h2dPhiPt->GetYaxis()->SetTitle("#Delta#phi (rad)");
 
-      registry.add("QATrack/h2TPCnSigmaPt", "", kTH2F, {ptaxis, {200, -10, 10}});
-      auto h2TPCnSigmaPt = registry.get<TH2>(HIST("QATrack/h2TPCnSigmaPt"));
-      h2TPCnSigmaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
-      h2TPCnSigmaPt->GetYaxis()->SetTitle("n#sigma_{TPC} K^{#pm}");
+      registry.add("QAPhi/hTheta", "Polar distribution of #Phi candidates", kTH1F, {{100, 0.0f, o2::constants::math::PI}});
+      auto hTheta = registry.get<TH1>(HIST("QAPhi/hTheta"));
+      hTheta->GetXaxis()->SetTitle("#theta (rad)");
 
-      // TOF PID
-      registry.add("QATrack/hTOFnSigma", "Distribution of TOF nSigma of K^{+} and K^{-}", kTH1F, {{200, -10, 10}});
+      registry.add("QAPhi/h2dThetaPt", "Polar distribution (#Delta#theta) of #Phi candidates vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
 
-      registry.add("QATrack/h2TOFnSigma", "", kTH2F, {{200, -10, 10}, {200, -10, 10}});
-      auto h2TOFnSigma = registry.get<TH2>(HIST("QATrack/h2TOFnSigma"));
-      h2TOFnSigma->GetXaxis()->SetTitle("n#sigma_{TOF} K^{+}");
-      h2TOFnSigma->GetYaxis()->SetTitle("n#sigma_{TOF} K^{-}");
+      auto h2dThetaPt = registry.get<TH2>(HIST("QAPhi/h2dThetaPt"));
+      h2dThetaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+      h2dThetaPt->GetYaxis()->SetTitle("#Delta#theta (rad)");
 
-      registry.add("QATrack/h2TOFnSigmaPt", "", kTH2F, {ptaxis, {200, -10, 10}});
-      auto h2TOFnSigmaPt = registry.get<TH2>(HIST("QATrack/h2TOFnSigmaPt"));
-      h2TOFnSigmaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
-      h2TOFnSigmaPt->GetYaxis()->SetTitle("n#sigma_{TOF} K^{#pm}");
+      // Rotational background QA
+      if (produceRotational) {
+        registry.add("QARotational/hRapidity", "Rapidity distribution of #Phi candidates from rotational background", kTH1F, {{200, -1, 1}});
+        registry.add("QARotational/hEta", "Pseudorapidity distribution of #Phi candidates from rotational background", kTH1F, {{200, -1, 1}});
+        registry.add("QARotational/hdPhi", "Rotational background: Azimuthal distribution (#Delta#phi)", kTH1F, {{100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+        auto hRPhi = registry.get<TH1>(HIST("QARotational/hdPhi"));
+        hRPhi->GetXaxis()->SetTitle("#Delta#phi");
 
-      // MC Truth
-      if (static_cast<bool>(produce.produceTrue)) {
-        registry.add("QAMC/Truth/hMCEvent", "MC Truth Event statistics", kTH1F, {{1, 0.0f, 1.0f}});
-        auto hMCEventTruth = registry.get<TH1>(HIST("QAMC/Truth/hMCEvent"));
-        hMCEventTruth->GetXaxis()->SetBinLabel(1, "Full MC Truth event statistics");
-        hMCEventTruth->SetMinimum(0.1);
+        registry.add("QARotational/h2dPhiPt", "Rotational background: Azimuthal distribution (#Delta#phi) vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::TwoPI, o2::constants::math::TwoPI}});
+        auto hR2dPhiPt = registry.get<TH2>(HIST("QARotational/h2dPhiPt"));
+        hR2dPhiPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+        hR2dPhiPt->GetYaxis()->SetTitle("#Delta#phi");
 
-        registry.add("QAMC/hInvMassTrueFalse", "", kTH1F, {invAxis}); // not written events in True distribution due to repetition of mothers??
+        registry.add("QARotational/hTheta", "Rotational background: Polar distribution (#theta)", kTH1F, {{100, 0.0f, o2::constants::math::PI}});
+        auto hRdTheta = registry.get<TH1>(HIST("QARotational/hTheta"));
+        hRdTheta->GetXaxis()->SetTitle("#theta (rad)");
 
-        // MC Gen
-        registry.add("QAMC/Gen/hMCEvent", "MC Gen Event statistics", kTH1F, {{3, 0.0f, 3.0f}});
-        auto hMCEventGen = registry.get<TH1>(HIST("QAMC/Gen/hMCEvent"));
-        hMCEventGen->GetXaxis()->SetBinLabel(1, "Full McCollision statistics");
-        hMCEventGen->GetXaxis()->SetBinLabel(2, "McCollision V_{z} cut");
-        hMCEventGen->GetXaxis()->SetBinLabel(3, "collisions");
-        hMCEventGen->SetMinimum(0.1);
+        registry.add("QARotational/h2dThetaPt", "Rotational background: Polar distribution (#Delta#theta) vs p_{T}", kTH2F, {ptaxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+        auto hR2dThetaPt = registry.get<TH2>(HIST("QARotational/h2dThetaPt"));
+        hR2dThetaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+        hR2dThetaPt->GetYaxis()->SetTitle("#Delta#theta");
       }
+
       // Mixing QA
       if (mixingType != rsn::MixingType::none) {
         registry.add("QAMixing/hSelection", "Event mixing selection statistics", kTH1D, {{1, 0.0f, 1.0f}});
@@ -334,12 +360,135 @@ struct PhianalysisTHnSparse {
         hEMTvz->GetXaxis()->SetTitle("1.Event V_{z}");
         hEMTvz->GetYaxis()->SetTitle("2.Event V_{z}");
       }
-    }
 
-    pointSys[static_cast<int>(o2::analysis::rsn::SystematicsAxisType::ncl)] = tpcNClsFound;
-    rsnOutput->fillSystematics(pointSys);
+      // PID QA
+      // TPC
+      registry.add("QAPID/hTPCnSigma", "Distribution of TPC nSigma of K^{+} and K^{-}", kTH1F, {{200, -10, 10}});
+      auto hTPCnSigma = registry.get<TH1>(HIST("QAPID/hTPCnSigma"));
+      hTPCnSigma->GetXaxis()->SetTitle("n#sigma_{TPC} K^{#pm}");
+
+      registry.add("QAPID/h2TPCnSigma", "", kTH2F, {{200, -10, 10}, {200, -10, 10}});
+      auto h2TPCnSigma = registry.get<TH2>(HIST("QAPID/h2TPCnSigma"));
+      h2TPCnSigma->GetXaxis()->SetTitle("n#sigma_{TPC} K^{+}");
+      h2TPCnSigma->GetYaxis()->SetTitle("n#sigma_{TPC} K^{-}");
+
+      registry.add("QAPID/h2TPCnSigmaPt", "", kTH2F, {ptaxis, {200, -10, 10}});
+      auto h2TPCnSigmaPt = registry.get<TH2>(HIST("QAPID/h2TPCnSigmaPt"));
+      h2TPCnSigmaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+      h2TPCnSigmaPt->GetYaxis()->SetTitle("n#sigma_{TPC} K^{#pm}");
+
+      // TOF
+      registry.add("QAPID/hTOFnSigma", "Distribution of TOF nSigma of K^{+} and K^{-}", kTH1F, {{200, -10, 10}});
+      auto hTOFnSigma = registry.get<TH1>(HIST("QAPID/hTOFnSigma"));
+      hTOFnSigma->GetXaxis()->SetTitle("n#sigma_{TOF} K^{#pm}");
+
+      registry.add("QAPID/h2TOFnSigma", "", kTH2F, {{200, -10, 10}, {200, -10, 10}});
+      auto h2TOFnSigma = registry.get<TH2>(HIST("QAPID/h2TOFnSigma"));
+      h2TOFnSigma->GetXaxis()->SetTitle("n#sigma_{TOF} K^{+}");
+      h2TOFnSigma->GetYaxis()->SetTitle("n#sigma_{TOF} K^{-}");
+
+      registry.add("QAPID/h2TOFnSigmaPt", "", kTH2F, {ptaxis, {200, -10, 10}});
+      auto h2TOFnSigmaPt = registry.get<TH2>(HIST("QAPID/h2TOFnSigmaPt"));
+      h2TOFnSigmaPt->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+      h2TOFnSigmaPt->GetYaxis()->SetTitle("n#sigma_{TOF} K^{#pm}");
+
+      // MC
+      if (static_cast<bool>(produce.produceTrue)) {
+        // Rec
+        registry.add("QAMC/Rec/hSelection", "MC Rec Event statistics", kTH1F, {{5, 0.0f, 5.0f}});
+        auto hMCEventTruth = registry.get<TH1>(HIST("QAMC/Rec/hSelection"));
+        hMCEventTruth->GetXaxis()->SetBinLabel(1, "Full MC Rec event statistics");
+        hMCEventTruth->GetXaxis()->SetBinLabel(2, "MC Rec events passing sel8 cut");
+        hMCEventTruth->GetXaxis()->SetBinLabel(3, "MC Rec events passing V_{z} cut");
+        hMCEventTruth->GetXaxis()->SetBinLabel(4, "MC Rec events with V_{z} cut and INEL>0");
+        hMCEventTruth->GetXaxis()->SetBinLabel(5, "Reconstructed #Phi candidates matched to true #Phi");
+        hMCEventTruth->SetMinimum(0.1);
+
+        registry.add("QAMC/Rec/hInvMassTrueFalse", "", kTH1F, {invAxis}); // not written events in True distribution due to repetition of mothers
+
+        // Gen
+        registry.add("QAMC/Gen/hSelection", "MC Gen Event statistics", kTH1F, {{4, 0.0f, 4.0f}});
+        auto hMCEventGen = registry.get<TH1>(HIST("QAMC/Gen/hSelection"));
+        hMCEventGen->GetXaxis()->SetBinLabel(1, "Full MC Gen event statistics");
+        hMCEventGen->GetXaxis()->SetBinLabel(2, "MC Gen events within V_{z} cut");
+        hMCEventGen->GetXaxis()->SetBinLabel(3, "MC Gen events with V_{z} cut and INEL>0");
+        hMCEventGen->GetXaxis()->SetBinLabel(4, "Generated #Phi candidates");
+        hMCEventGen->SetMinimum(0.1);
+
+        // Resolution
+        registry.add("Factors/h2ResolutionVz", "Resolution of collision V_{z}", kTH2F, {vzaxis, axisResolutionVz});
+        auto hResVz = registry.get<TH2>(HIST("Factors/h2ResolutionVz"));
+        hResVz->GetXaxis()->SetTitle("V_{z}^{rec} (cm)");
+        hResVz->GetYaxis()->SetTitle("#DeltaV_{z} = V_{z}^{rec} - V_{z}^{gen} (cm)");
+        registry.add("Factors/h2ResolutionPt", "Resolution of charged particles p_{T}", kTH2F, {ptaxis, axisResolutionPt});
+        auto hResPt = registry.get<TH2>(HIST("Factors/h2ResolutionPt"));
+
+        hResPt->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+        hResPt->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
+        registry.add("Factors/h2ResolutionPtPhi", "p_{T} resolution vs p_{T}^{rec}", kTH2F, {ptaxis, axisResolutionPtPhi});
+        auto hResPtPhi = registry.get<TH2>(HIST("Factors/h2ResolutionPtPhi"));
+        hResPtPhi->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+        hResPtPhi->GetYaxis()->SetTitle("#Deltap_{T} = p_{T}^{rec} - p_{T}^{gen} (GeV/c)");
+
+        registry.add("Factors/h2MassResolution", "Mass resolution vs p_{T}^{rec}", kTH2F, {ptaxis, axisResolutionMass});
+        auto hResMass = registry.get<TH2>(HIST("Factors/h2MassResolution"));
+        hResMass->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+        hResMass->GetYaxis()->SetTitle("#Deltam = m^{gen}_{KK} - m^{rec}_{KK} (GeV/c^{2})");
+
+        registry.add("Factors/h2MassShift", "Mass shift vs p_{T}^{rec}", kTH2F, {ptaxis, massShiftAxis});
+        auto hResMassGen = registry.get<TH2>(HIST("Factors/h2MassShift"));
+        hResMassGen->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+        hResMassGen->GetYaxis()->SetTitle("#Deltam = m^{gen}_{#phi} - m^{gen}_{KK} (GeV/c^{2})");
+
+        registry.add("Factors/h2MassShiftRel", "Relative mass shift vs p_{T}^{rec}", kTH2F, {ptaxis, massShiftRelAxis});
+        auto hMassCorr = registry.get<TH2>(HIST("Factors/h2MassShiftRel"));
+        hMassCorr->GetXaxis()->SetTitle("p_{T}^{rec} (GeV/c)");
+        hMassCorr->GetYaxis()->SetTitle("m^{gen}_{#phi} - m^{gen}_{KK}/m^{gen}_{#phi}");
+      }
+    }
+    // Factors
+    registry.add("Factors/hCentralityVsMultMC", "Event centrality vs MC multiplicity", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
+    registry.add("Factors/hCentralityVsMult", "Event centrality vs multiplicity", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
+    registry.add("Factors/hEventCentrality", "Event centrality", kTH1F, {{101, 0, 101}});
+    registry.add("Factors/hNrecInGen", "Number of collisions in MC", kTH1F, {{3, -0.5, 2.5}});
+    registry.add("Factors/hGenEvents", "Generated events", HistType::kTH2F, {{axisNch}, {4, 0, 4}});
+    auto hGenEvents = registry.get<TH2>(HIST("Factors/hGenEvents"));
+    hGenEvents->GetYaxis()->SetBinLabel(1, "All generated events");
+    hGenEvents->GetYaxis()->SetBinLabel(2, "Generated events passing V_{z} cut");
+    hGenEvents->GetYaxis()->SetBinLabel(3, "Generated events passing INEL>0");
+    hGenEvents->GetYaxis()->SetBinLabel(4, "Generated events with at least one reconstructed event");
+    registry.add("Factors/h2dGenPhi", "Centrality vs p_{T}", kTH2D, {{101, 0.0f, 101.0f}, ptaxis});
+    registry.add("Factors/h3dGenPhiVsMultMCVsCentrality", "MC multiplicity vs centrality vs p_{T}", kTH3D, {axisNch, {101, 0.0f, 101.0f}, ptaxis});
   }
 
+  template <typename T>
+  float tpcNsigma(const T& track)
+  {
+    float tpcNsigma = 0.0f;
+    int particleType = (track.sign() > 0) ? static_cast<int>(daughterPos) : static_cast<int>(daughterNeg);
+
+    if (particleType == pion)
+      tpcNsigma = track.tpcNSigmaPi();
+    else if (particleType == kaon)
+      tpcNsigma = track.tpcNSigmaKa();
+    else if (particleType == proton)
+      tpcNsigma = track.tpcNSigmaPr();
+    return tpcNsigma;
+  }
+  template <typename T>
+  float tofNsigma(const T& track)
+  {
+    float tofNsigma = 0.0f;
+    int particleType = (track.sign() > 0) ? static_cast<int>(daughterPos) : static_cast<int>(daughterNeg);
+
+    if (particleType == pion)
+      tofNsigma = track.tofNSigmaPi();
+    else if (particleType == kaon)
+      tofNsigma = track.tofNSigmaKa();
+    else if (particleType == proton)
+      tofNsigma = track.tofNSigmaPr();
+    return tofNsigma;
+  }
   template <typename T>
   bool selectedTrack(const T& track, bool isPositive)
   {
@@ -368,10 +517,10 @@ struct PhianalysisTHnSparse {
     // PID selection: TPC-only for pt < threshold value, TPC+TOF for pt >= threshold value and have TOF, else TPC-only
     float nSigmaCut = isPositive ? tpcnSigmaPos : tpcnSigmaNeg;
     if (track.pt() < ptTOFThreshold || !track.hasTOF() || tpcPidOnly) {
-      if (std::abs(track.tpcNSigmaKa()) >= nSigmaCut)
+      if (std::abs(tpcNsigma(track)) >= nSigmaCut)
         return false;
     } else {
-      if (std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa()) >= combinedNSigma)
+      if (std::sqrt(tpcNsigma(track) * tpcNsigma(track) + tofNsigma(track) * tofNsigma(track)) >= combinedNSigma)
         return false;
     }
     if (produceQA && dataQA)
@@ -407,15 +556,16 @@ struct PhianalysisTHnSparse {
     return true;
   }
   template <typename T>
-  bool selectedPair(ROOT::Math::PxPyPzMVector& mother, const T& track1, const T& track2)
+  ROOT::Math::PxPyPzMVector calculateMother(const T& track1, const T& track2)
   {
     d1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPos);
     d2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massNeg);
-    mother = d1 + d2;
-
+    return d1 + d2;
+  }
+  bool seletectedMother(const ROOT::Math::PxPyPzMVector& mother)
+  {
     if (std::abs(mother.Rapidity()) > static_cast<float>(cut.rapidity))
       return false;
-
     return true;
   }
   template <typename T>
@@ -430,7 +580,6 @@ struct PhianalysisTHnSparse {
     float centrality = collision.centFT0M();
     return centrality;
   }
-
   double* fillPointPair(double im, double pt, double mu, double ce, double ns1, double ns2, double eta, double y, double vz, double mum, double cem, double vzm)
   {
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = im;
@@ -453,22 +602,50 @@ struct PhianalysisTHnSparse {
   {
     auto posDaughters = positive->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDaughters = negative->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    n = 0;
-    if (produceQA) {
+
+    int nch = 0;
+
+    if (produceQA)
       registry.fill(HIST("QAEvent/hSelection"), 0.5);
+
+    if (!collision.sel8())
+      return;
+
+    if (produceQA)
+      registry.fill(HIST("QAEvent/hSelection"), 1.5);
+
+    if (std::abs(collision.posZ()) > vzCut)
+      return;
+
+    if (produceQA)
+      registry.fill(HIST("QAEvent/hSelection"), 2.5);
+
+    if (inelGrater0 && !collision.isInelGt0())
+      return;
+
+    registry.fill(HIST("Factors/hEventCentrality"), collision.centFT0M());
+
+    if (produceQA) {
+      registry.fill(HIST("QAEvent/hSelection"), 3.5);
       registry.fill(HIST("QAEvent/hVtxZ"), collision.posZ());
       registry.fill(HIST("QAEvent/hMult"), getMultiplicity(collision));
       registry.fill(HIST("QAEvent/hCent"), getCentrality(collision));
+
       if (produceStats) {
         dataQA = true;
         for (const auto& track : posDaughters) {
+          if (track.isPrimaryTrack() && std::abs(track.eta()) >= static_cast<float>(cut.etatrack))
+            nch++;
           selectedTrack(track, true);
         }
         for (const auto& track : negDaughters) {
+          if (track.isPrimaryTrack() && std::abs(track.eta()) >= static_cast<float>(cut.etatrack))
+            nch++;
           selectedTrack(track, false);
         }
         dataQA = false;
       }
+      registry.fill(HIST("Factors/hCentralityVsMult"), getCentrality(collision), nch);
     }
 
     if (static_cast<int>(verbose.verboselevel) > 0 && static_cast<int>(verbose.refresh) > 0 && collision.globalIndex() % static_cast<int>(verbose.refresh) == static_cast<int>(verbose.refreshIndex))
@@ -481,24 +658,25 @@ struct PhianalysisTHnSparse {
       if (!selectedTrack(track2, false)) // track2 is negative
         continue;
 
-      if (!selectedPair(mother, track1, track2))
+      mother = calculateMother(track1, track2);
+      if (!seletectedMother(mother))
         continue;
 
       if (produceQA) {
-        registry.fill(HIST("QATrack/h2TPCnSigma"), track1.tpcNSigmaKa(), track2.tpcNSigmaKa());
-        registry.fill(HIST("QATrack/h2TPCnSigmaPt"), track1.pt(), track1.tpcNSigmaKa());
-        registry.fill(HIST("QATrack/h2TPCnSigmaPt"), track2.pt(), track2.tpcNSigmaKa());
+        registry.fill(HIST("QAPID/h2TPCnSigma"), tpcNsigma(track1), tpcNsigma(track2));
+        registry.fill(HIST("QAPID/h2TPCnSigmaPt"), track1.pt(), tpcNsigma(track1));
+        registry.fill(HIST("QAPID/h2TPCnSigmaPt"), track2.pt(), tpcNsigma(track2));
 
-        registry.fill(HIST("QATrack/h2TOFnSigma"), track1.tofNSigmaKa(), track2.tofNSigmaKa());
-        registry.fill(HIST("QATrack/h2TOFnSigmaPt"), track1.pt(), track1.tofNSigmaKa());
-        registry.fill(HIST("QATrack/h2TOFnSigmaPt"), track2.pt(), track2.tofNSigmaKa());
+        registry.fill(HIST("QAPID/h2TOFnSigma"), tofNsigma(track1), tofNsigma(track2));
+        registry.fill(HIST("QAPID/h2TOFnSigmaPt"), track1.pt(), tofNsigma(track1));
+        registry.fill(HIST("QAPID/h2TOFnSigmaPt"), track2.pt(), tofNsigma(track2));
 
-        registry.fill(HIST("QATrack/hTPCnSigma"), track1.tpcNSigmaKa());
-        registry.fill(HIST("QATrack/hTPCnSigma"), track2.tpcNSigmaKa());
+        registry.fill(HIST("QAPID/hTPCnSigma"), tpcNsigma(track1));
+        registry.fill(HIST("QAPID/hTPCnSigma"), tpcNsigma(track2));
         if (track1.hasTOF())
-          registry.fill(HIST("QATrack/hTOFnSigma"), track1.tofNSigmaKa());
+          registry.fill(HIST("QAPID/hTOFnSigma"), tofNsigma(track1));
         if (track2.hasTOF())
-          registry.fill(HIST("QATrack/hTOFnSigma"), track2.tofNSigmaKa());
+          registry.fill(HIST("QAPID/hTOFnSigma"), tofNsigma(track2));
 
         registry.fill(HIST("QATrack/hEta"), track1.eta());
         registry.fill(HIST("QATrack/hEta"), track2.eta());
@@ -512,14 +690,21 @@ struct PhianalysisTHnSparse {
         registry.fill(HIST("QATrack/hTPCNClsFound"), track2.tpcNClsFound());
         registry.fill(HIST("QATrack/hRapidity"), track1.rapidity(massPos));
         registry.fill(HIST("QATrack/hRapidity"), track2.rapidity(massNeg));
+
+        registry.fill(HIST("QAPhi/hRapidity"), mother.Rapidity());
+        registry.fill(HIST("QAPhi/hEta"), mother.Eta());
+        registry.fill(HIST("QAPhi/hdPhi"), track1.phi() - track2.phi());
+        registry.fill(HIST("QAPhi/h2dPhiPt"), mother.Pt(), track1.phi() - track2.phi());
+        registry.fill(HIST("QAPhi/hTheta"), mother.Theta());
+        registry.fill(HIST("QAPhi/h2dThetaPt"), mother.Pt(), d1.Theta() - d2.Theta());
       }
 
       pointPair = fillPointPair(mother.M(),
                                 mother.Pt(),
                                 getMultiplicity(collision),
                                 getCentrality(collision),
-                                track1.tpcNSigmaKa(),
-                                track2.tpcNSigmaKa(),
+                                tpcNsigma(track1),
+                                tpcNsigma(track2),
                                 mother.Eta(),
                                 mother.Rapidity(),
                                 collision.posZ(),
@@ -528,12 +713,39 @@ struct PhianalysisTHnSparse {
                                 0);
       rsnOutput->fillUnlikepm(pointPair);
 
-      if (produceQA) {
-        registry.fill(HIST("QAEvent/hSelection"), 2.5);
-        if (n == 0)
-          registry.fill(HIST("QAEvent/hSelection"), 1.5);
+      if (produceRotational) {
+        for (int i = 1; i <= static_cast<int>(numberofRotations); i++) {
+          float starting = static_cast<float>(startingAngle) * TMath::DegToRad();
+          float angle = starting + i * ((o2::constants::math::TwoPI - 2 * starting) / (static_cast<int>(numberofRotations) + 1));
+          float px2new = track2.px() * std::cos(angle) - track2.py() * std::sin(angle);
+          float py2new = track2.px() * std::sin(angle) + track2.py() * std::cos(angle);
+          d2 = ROOT::Math::PxPyPzMVector(px2new, py2new, track2.pz(), massNeg);
+          mother = d1 + d2;
+
+          if (produceQA) {
+            registry.fill(HIST("QARotational/hRapidity"), mother.Rapidity());
+            registry.fill(HIST("QARotational/hEta"), mother.Eta());
+            registry.fill(HIST("QARotational/hdPhi"), d1.Phi() - d2.Phi());
+            registry.fill(HIST("QARotational/h2dPhiPt"), mother.Pt(), d1.Phi() - d2.Phi());
+            registry.fill(HIST("QARotational/hTheta"), mother.Theta());
+            registry.fill(HIST("QARotational/h2dThetaPt"), mother.Pt(), d1.Theta() - d2.Theta());
+          }
+          pointPair = fillPointPair(mother.M(),
+                                    mother.Pt(),
+                                    getMultiplicity(collision),
+                                    getCentrality(collision),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
+                                    mother.Eta(),
+                                    mother.Rapidity(),
+                                    collision.posZ(),
+                                    0,
+                                    0,
+                                    0);
+
+          rsnOutput->fillRotationpm(pointPair);
+        }
       }
-      n = n + 1;
     }
 
     if (produceLikesign) {
@@ -544,7 +756,8 @@ struct PhianalysisTHnSparse {
         if (!selectedTrack(track2, true)) // both positive
           continue;
 
-        if (!selectedPair(mother, track1, track2))
+        mother = calculateMother(track1, track2);
+        if (!seletectedMother(mother))
           continue;
 
         if (static_cast<int>(verbose.verboselevel) > 1)
@@ -554,8 +767,8 @@ struct PhianalysisTHnSparse {
                                   mother.Pt(),
                                   getMultiplicity(collision),
                                   getCentrality(collision),
-                                  track1.tpcNSigmaKa(),
-                                  track2.tpcNSigmaKa(),
+                                  tpcNsigma(track1),
+                                  tpcNsigma(track2),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   collision.posZ(),
@@ -572,7 +785,8 @@ struct PhianalysisTHnSparse {
         if (!selectedTrack(track2, false)) // both negative
           continue;
 
-        if (!selectedPair(mother, track1, track2))
+        mother = calculateMother(track1, track2);
+        if (!seletectedMother(mother))
           continue;
 
         if (static_cast<int>(verbose.verboselevel) > 1)
@@ -582,8 +796,8 @@ struct PhianalysisTHnSparse {
                                   mother.Pt(),
                                   getMultiplicity(collision),
                                   getCentrality(collision),
-                                  track1.tpcNSigmaKa(),
-                                  track2.tpcNSigmaKa(),
+                                  tpcNsigma(track1),
+                                  tpcNsigma(track2),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   collision.posZ(),
@@ -594,55 +808,21 @@ struct PhianalysisTHnSparse {
         rsnOutput->fillLikemm(pointPair);
       }
     }
-
-    if (produceRotational) {
-      for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughters, negDaughters))) {
-
-        if (!selectedTrack(track1, true))
-          continue;
-        if (!selectedTrack(track2, false))
-          continue;
-
-        d1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPos);
-        d2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massNeg);
-        mother = d1 + d2;
-
-        if (std::abs(mother.Rapidity()) > static_cast<float>(cut.rapidity))
-          continue;
-
-        for (int i = 1; i <= static_cast<int>(numberofRotations); i++) {
-          float angle = i * (360.0f / (static_cast<int>(numberofRotations) + 1));
-          float px2new = track2.px() * std::cos(angle * TMath::DegToRad()) - track2.py() * std::sin(angle * TMath::DegToRad());
-          float py2new = track2.px() * std::sin(angle * TMath::DegToRad()) + track2.py() * std::cos(angle * TMath::DegToRad());
-          d2 = ROOT::Math::PxPyPzMVector(px2new, py2new, track2.pz(), massNeg);
-          mother = d1 + d2;
-
-          pointPair = fillPointPair(mother.M(),
-                                    mother.Pt(),
-                                    getMultiplicity(collision),
-                                    getCentrality(collision),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
-                                    mother.Eta(),
-                                    mother.Rapidity(),
-                                    collision.posZ(),
-                                    0,
-                                    0,
-                                    0);
-
-          rsnOutput->fillRotationpm(pointPair);
-        }
-      }
-    }
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processData, "Process Event for Data", true);
 
-  void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& /*tracks*/, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+  void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!static_cast<bool>(produce.produceTrue))
       return;
 
-    registry.fill(HIST("QAMC/Truth/hMCEvent"), 0.5);
+    registry.fill(HIST("QAMC/Rec/hSelection"), 0.5);
+
+    if (!collision.sel8())
+      return;
+
+    if (produceQA)
+      registry.fill(HIST("QAMC/Rec/hSelection"), 1.5);
 
     auto posDaughtersMC = positiveMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDaughtersMC = negativeMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -651,6 +831,27 @@ struct PhianalysisTHnSparse {
       if (static_cast<int>(verbose.verboselevel) > 0)
         LOGF(warning, "No MC collision for this collision, skip...");
       return;
+    }
+    auto mcCollision = collision.mcCollision();
+    registry.fill(HIST("Factors/h2ResolutionVz"), collision.posZ(), (collision.posZ() - mcCollision.posZ()));
+
+    if (std::abs(mcCollision.posZ()) > vzCut)
+      return;
+
+    if (produceQA)
+      registry.fill(HIST("QAMC/Rec/hSelection"), 2.5);
+
+    if (inelGrater0 && !collision.isInelGt0())
+      return;
+
+    if (produceQA)
+      registry.fill(HIST("QAMC/Rec/hSelection"), 3.5);
+
+    for (const auto& track : tracks) {
+      if (track.has_mcParticle()) {
+        auto mctrack = track.mcParticle();
+        registry.fill(HIST("Factors/h2ResolutionPt"), track.pt(), (track.pt() - mctrack.pt()));
+      }
     }
 
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDaughtersMC, negDaughtersMC))) {
@@ -696,26 +897,29 @@ struct PhianalysisTHnSparse {
           if (std::abs(mothertrack1.pdgCode()) != motherPDG)
             continue;
 
-          if (static_cast<int>(verbose.verboselevel) > 1) {
-            LOGF(info, "True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
-            LOGF(info, "%d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, mctrack1.px(), mctrack1.py(), mctrack1.pz(), mctrack2.px(), mctrack2.py(), mctrack2.pz());
-          }
-
-          if (!selectedPair(mother, mctrack1, mctrack2))
+          mother = calculateMother(track1, track2);
+          motherGen = calculateMother(mctrack1, mctrack2);
+          if (!seletectedMother(mother))
             continue;
 
           if (n > 0) {
             if (produceQA)
-              registry.fill(HIST("QAMC/hInvMassTrueFalse"), mother.M());
+              registry.fill(HIST("QAMC/Rec/hInvMassTrueFalse"), mother.M());
             continue;
+          }
+
+          if (static_cast<int>(verbose.verboselevel) > 1) {
+            LOGF(info, "Collision: %ld True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", collision.globalIndex(), n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
+            LOGF(info, "Track %d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, track1.px(), track1.py(), track1.pz(), track2.px(), track2.py(), track2.pz());
+            LOGF(info, "mcTrack %d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, mctrack1.px(), mctrack1.py(), mctrack1.pz(), mctrack2.px(), mctrack2.py(), mctrack2.pz());
           }
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(collision),
                                     getCentrality(collision),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     collision.posZ(),
@@ -723,7 +927,38 @@ struct PhianalysisTHnSparse {
                                     0,
                                     0);
 
+          if (produceQA)
+            registry.fill(HIST("QAMC/Rec/hSelection"), 4.5);
+
+          auto phiP = mothertrack1.p();
+          auto phiE = mothertrack1.e();
+          auto massGen = std::sqrt(phiE * phiE - phiP * phiP);
+
+          registry.fill(HIST("Factors/h2ResolutionPtPhi"), mother.Pt(), (mother.Pt() - mothertrack1.pt()));
+          registry.fill(HIST("Factors/h2MassResolution"), mother.Pt(), (motherGen.M() - mother.M()));
+          registry.fill(HIST("Factors/h2MassShift"), mother.Pt(), (massGen - motherGen.M()));
+          registry.fill(HIST("Factors/h2MassShiftRel"), mother.Pt(), (massGen - motherGen.M()) / massGen);
+
+          if (static_cast<int>(verbose.verboselevel) > 1)
+            LOGF(info, "mother.M()=%f, motherGen.M()=%f, massGen =%f", mother.M(), motherGen.M(), massGen);
+
           rsnOutput->fillUnliketrue(pointPair);
+
+          pointPair = fillPointPair(motherGen.M(),
+                                    motherGen.Pt(),
+                                    getMultiplicity(collision),
+                                    getCentrality(collision),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
+                                    motherGen.Eta(),
+                                    motherGen.Rapidity(),
+                                    collision.posZ(),
+                                    0,
+                                    0,
+                                    0);
+
+          rsnOutput->fillUnlikegenOld(pointPair);
+
           n++;
         }
       }
@@ -731,31 +966,30 @@ struct PhianalysisTHnSparse {
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processTrue, "Process Event for MC reconstruction.", false);
 
-  void processGen(aod::McCollision const& mcCollision, soa::SmallGroups<EventCandidatesMCGen> const& collisions, LabeledTracks const& /*particles*/, aod::McParticles const& mcParticles)
+  void processGen(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMCGen> const& collisions, LabeledTracks const& /*particles*/, aod::McParticles const& mcParticles)
   {
+    if (!static_cast<bool>(produce.produceTrue))
+      return;
 
     if (produceQA)
-      registry.fill(HIST("QAMC/Gen/hMCEvent"), 0.5);
+      registry.fill(HIST("QAMC/Gen/hSelection"), 0.5);
 
     if (std::abs(mcCollision.posZ()) > vzCut)
       return;
 
     if (produceQA)
-      registry.fill(HIST("QAMC/Gen/hMCEvent"), 1.5);
+      registry.fill(HIST("QAMC/Gen/hSelection"), 1.5);
+
+    if (inelGrater0 && !mcCollision.isInelGt0())
+      return;
+
+    if (produceQA)
+      registry.fill(HIST("QAMC/Gen/hSelection"), 2.5);
 
     if (collisions.size() == 0)
       return;
 
     for (const auto& collision : collisions) {
-      if (produceQA)
-        registry.fill(HIST("QAMC/Gen/hMCEvent"), 2.5);
-
-      if (!collision.has_mcCollision()) {
-        if (static_cast<int>(verbose.verboselevel) > 0)
-          LOGF(warning, "No McCollision for this collision, skip...");
-        return;
-      }
-
       auto centralityGen = getCentrality(collision);
       auto multiplicityGen = getMultiplicity(collision);
 
@@ -801,13 +1035,15 @@ struct PhianalysisTHnSparse {
                                     0);
 
           rsnOutput->fillUnlikegen(pointPair);
+          if (produceQA)
+            registry.fill(HIST("QAMC/Gen/hSelection"), 3.5);
         }
       }
     }
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processGen, "Process MC Generated.", false);
 
-  void processMixed(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixed(soa::Filtered<EventCandidates> const& collisions, TrackCandidates const& tracks)
   {
     if (mixingType == rsn::MixingType::none)
       return;
@@ -843,15 +1079,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false)) // track2 is negative
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
@@ -869,15 +1106,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false)) // track2 is negative
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
@@ -913,15 +1151,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false)) // track2 is negative
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
@@ -940,15 +1179,16 @@ struct PhianalysisTHnSparse {
           if (!selectedTrack(track2, false))
             continue;
 
-          if (!selectedPair(mother, track1, track2))
+          mother = calculateMother(track1, track2);
+          if (!seletectedMother(mother))
             continue;
 
           pointPair = fillPointPair(mother.M(),
                                     mother.Pt(),
                                     getMultiplicity(c1),
                                     getCentrality(c1),
-                                    track1.tpcNSigmaKa(),
-                                    track2.tpcNSigmaKa(),
+                                    tpcNsigma(track1),
+                                    tpcNsigma(track2),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
@@ -962,6 +1202,68 @@ struct PhianalysisTHnSparse {
     }
   }
   PROCESS_SWITCH(PhianalysisTHnSparse, processMixed, "Process Mixing Event.", false);
+
+  void processFactors(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMCGen> const& collisions, LabeledTracks const& /*particles*/, aod::McParticles const& mcParticles)
+  {
+    registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 0.5);
+
+    if (std::abs(mcCollision.posZ()) > vzCut)
+      return;
+
+    registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 1.5);
+
+    if (inelGrater0 && !mcCollision.isInelGt0())
+      return;
+
+    registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 2.5);
+
+    float centrality = 100.5f;
+    for (auto const& collision : collisions) {
+      centrality = collision.centFT0M();
+    }
+
+    registry.fill(HIST("Factors/hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta08());
+    registry.fill(HIST("Factors/hNrecInGen"), collisions.size());
+
+    for (const auto& particle : mcParticles) {
+
+      if (std::abs(particle.y()) > static_cast<float>(cut.rapidity))
+        continue;
+
+      if (particle.pdgCode() == motherPDG) {
+
+        auto daughters = particle.daughters_as<aod::McParticles>();
+        if (daughters.size() != dauSize)
+          continue;
+
+        auto daup = false;
+        auto daun = false;
+
+        for (const auto& dau : daughters) {
+          if (dau.pdgCode() == daughterPosPDG) {
+            daup = true;
+            d1 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massPos);
+          } else if (dau.pdgCode() == -daughterNegPDG) {
+            daun = true;
+            d2 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massNeg);
+          }
+        }
+        if (!daup || !daun)
+          continue;
+
+        mother = d1 + d2;
+
+        registry.fill(HIST("Factors/h2dGenPhi"), centrality, mother.Pt());
+        registry.fill(HIST("Factors/h3dGenPhiVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta08(), centrality, mother.Pt());
+      }
+    }
+
+    if (collisions.size() == 0)
+      return;
+
+    registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 3.5);
+  }
+  PROCESS_SWITCH(PhianalysisTHnSparse, processFactors, "Process to obtain normalization factors from MC.", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

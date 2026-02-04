@@ -81,6 +81,12 @@ void DimuonCut::SetChi2(float min, float max)
   mMaxChi2 = max;
   LOG(info) << "Dimuon Cut, set chi2 range: " << mMinChi2 << " - " << mMaxChi2;
 }
+void DimuonCut::SetChi2MFT(float min, float max)
+{
+  mMinChi2MFT = min;
+  mMaxChi2MFT = max;
+  LOG(info) << "Dimuon Cut, set chi2mft range: " << mMinChi2MFT << " - " << mMaxChi2MFT;
+}
 void DimuonCut::SetMatchingChi2MCHMFT(float min, float max)
 {
   mMinMatchingChi2MCHMFT = min;
@@ -140,4 +146,11 @@ void DimuonCut::SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float
   LOG(info) << "Dimuon Cut, set max rel. dpt between MFT-MCH-MID and associated MCH-MID: " << mMaxReldPtwrtMCHMID;
   LOG(info) << "Dimuon Cut, set max deta between MFT-MCH-MID and associated MCH-MID: " << mMaxdEtawrtMCHMID;
   LOG(info) << "Dimuon Cut, set max dphi between MFT-MCH-MID and associated MCH-MID: " << mMaxdPhiwrtMCHMID;
+}
+void DimuonCut::SetSlopeAndInterceptDRvsChi2MCHMFT(float slope, float intercept)
+{
+  mSlope_dr_chi2MatchMFTMCH = slope;
+  mIntercept_dr_chi2MatchMFTMCH = intercept;
+  LOG(info) << "Dimuon Cut, set slope between dr and chi2MCHMFT: " << mSlope_dr_chi2MatchMFTMCH;
+  LOG(info) << "Dimuon Cut, set intercept between dr and chi2MCHMFT: " << mIntercept_dr_chi2MatchMFTMCH;
 }

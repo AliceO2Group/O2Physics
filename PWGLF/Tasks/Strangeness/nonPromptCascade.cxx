@@ -9,41 +9,48 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "MathUtils/BetheBlochAleph.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Vertex.h"
+
+#include "Math/Vector4D.h"
+#include "TDatabasePDG.h"
+#include "THnSparse.h"
+#include "TParticlePDG.h"
+#include "TTree.h"
+
 #include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "Math/Vector4D.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 // #include "PWGHF/Core/PDG.h"
+#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -121,10 +128,10 @@ struct NPCascCandidate {
   float bachPionTOFNSigma;
   bool sel8;
   float multFT0C;
-  float multFT0A;
+  float multFV0A;
   float multFT0M;
   float centFT0C;
-  float centFT0A;
+  float centFV0A;
   float centFT0M;
   int multNTracksGlobal;
   uint32_t toiMask;
@@ -177,8 +184,9 @@ struct NonPromptCascadeTask {
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
-  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::MultsGlobal>;
-  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
+  using TracksWithLabel = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
@@ -201,7 +209,12 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
-  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
+
+  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult,fHighFt0Mult", "Triggers of interest, comma separated for Zorro"};
+
+  Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
+  Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
+  Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -213,16 +226,11 @@ struct NonPromptCascadeTask {
   o2::vertexing::DCAFitterN<2> mDCAFitter;
   std::array<int, 2> mProcessCounter = {0, 0}; // {Tracked, All}
   std::map<uint64_t, uint32_t> mToiMap;
-  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunMultVsCent;
-  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunMultVsCentZoom;
-  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCent;
-  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCentZoom;
+  //
+  HistogramRegistry mRegistryMults{"Multhistos"};
+  HistogramRegistry mRegistrydNdeta{"dNdetahistos"};
 
-  AxisSpec multAxis = {10000, 0, 10000, "Multiplicity FT0M"};
-  AxisSpec centAxis = {2021, -0.025, 101.025, "Centrality"};
-  AxisSpec centAxisZoom = {2000, -0.0025, 10.0025, "Centrality"};
-  AxisSpec multAxisZoom = {7000, 3000, 10000, "Multiplicity FT0M"};
-  AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
+  //
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -243,7 +251,7 @@ struct NonPromptCascadeTask {
     }
   }
 
-  void init(InitContext const&)
+  void init(InitContext& context)
   {
     mZorroSummary.setObject(mZorro.getZorroSummary());
     mCCDB->setURL(ccdbUrl);
@@ -264,14 +272,76 @@ struct NonPromptCascadeTask {
     std::array<std::string, 7> cutsNames{"# candidates", "hasTOF", "nClusTPC", "nSigmaTPCbach", "nSigmaTPCprotontrack", "nSigmaTPCpiontrack", "cosPA"};
     auto cutsOmega{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{cutsNames.size(), -0.5, -0.5 + cutsNames.size()}, {125, 1.650, 1.700}}))};
     auto cutsXi{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsXi", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.296, 1.346}}))};
-    mRegistry.add("hMultVsCent", "hMultVsCent", HistType::kTH2F, {centAxis, multAxis});
-    mRegistry.add("hMultVsCentZoom", "hMultVsCentZoom", HistType::kTH2F, {centAxisZoom, multAxisZoom});
-    mRegistry.add("hNTracksVsCent", "hNTracksVsCent", HistType::kTH2F, {centAxis, nTracksAxis});
-    mRegistry.add("hNTracksVsCentZoom", "hNTracksVsCentZoom", HistType::kTH2F, {centAxisZoom, nTracksAxis});
-
     for (size_t iBin{0}; iBin < cutsNames.size(); ++iBin) {
       cutsOmega->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
       cutsXi->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
+    }
+    //
+    int nBinsMult = cfgMaxMult;
+    int nBinsMultFV0 = cfgMaxMultFV0;
+
+    AxisSpec multAxis = {nBinsMult, 0, cfgMaxMult, "Multiplicity FT0M"};
+    AxisSpec multAxisFV0 = {nBinsMultFV0, 0, cfgMaxMultFV0, "Multiplicity FV0"};
+    AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
+    AxisSpec nTracksAxisMC = {100, 0., 100., "NTracksMC"};
+    std::vector<double> centBinning;
+    std::vector<double> multBinning;
+    std::vector<double> trackBinning;
+    std::vector<double> runsBinning;
+    double cent = -0.0;
+    while (cent < 100) {
+      if (cent < 0.1) {
+        centBinning.push_back(cent);
+        cent += 0.01;
+      } else if (cent < 1) {
+        centBinning.push_back(cent);
+        cent += 0.1;
+      } else {
+        centBinning.push_back(cent);
+        cent += 1;
+      }
+    }
+    double ntracks = 0;
+    while (ntracks < 100) {
+      trackBinning.push_back(ntracks);
+      ntracks++;
+    }
+    double run = 550367 - 0.5;
+    for (int i = 0; i < 9000; i++) {
+      runsBinning.push_back(run);
+      run++;
+    }
+    AxisSpec centAxisFT0M{centBinning, "Centrality FT0M (%)"};
+    AxisSpec centAxisFV0{centBinning, "Centrality FV0 (%)"};
+    AxisSpec trackAxisMC{trackBinning, "NTracks MC"};
+    AxisSpec trackAxis{trackBinning, "NTracks Global Reco"};
+    AxisSpec runsAxis{runsBinning, "Run Number"};
+
+    mRegistryMults.add("hCentMultsRuns", "hCentMultsRuns", HistType::kTHnSparseF, {centAxisFT0M, multAxis, centAxisFV0, multAxisFV0, nTracksAxis, runsAxis});
+    //
+    // dN/deta
+    //
+    bool runMCdNdeta = context.options().get<bool>("processdNdetaMC");
+    // std::cout << "runMCdNdeta: " << runMCdNdeta << std::endl;
+    if (runMCdNdeta) {
+      std::vector<double> ptBins;
+      std::vector<std::string> tokens = o2::utils::Str::tokenize(cfgPtEdgesdNdeta, ',');
+      for (auto const& pts : tokens) {
+        double pt = 0;
+        try {
+          pt = std::stof(pts);
+        } catch (...) {
+          LOG(error) << "Wrong cfgPtEdgesdNdeta string:" << cfgPtEdgesdNdeta << std::endl;
+        }
+        ptBins.push_back(pt);
+      }
+      AxisSpec ptAxisMC{ptBins, "pT MC"};
+      AxisSpec ptAxisReco{ptBins, "pT Reco"};
+
+      // multMeasured, multMC, ptMeasured, ptMC
+      mRegistrydNdeta.add("hdNdetaRM/hdNdetaRM", "hdNdetaRM", HistType::kTHnSparseF, {nTracksAxisMC, nTracksAxis, ptAxisMC, ptAxisReco});
+      mRegistrydNdeta.add("hdNdetaRM/hdNdetaRMNotInRecoCol", "hdNdetaRMNotInRecoCol", HistType::kTHnSparseF, {nTracksAxisMC, ptAxisMC});
+      mRegistrydNdeta.add("hdNdetaRM/hdNdetaRMNotInRecoTrk", "hdNdetaRMNotInRecoTrk", HistType::kTHnSparseF, {nTracksAxisMC, ptAxisMC});
     }
   }
 
@@ -334,29 +404,18 @@ struct NonPromptCascadeTask {
       }
     }
   }
-  void fillMultHistos(const auto& collisions)
+  template <typename CollisionType>
+  void fillMultHistos(CollisionType const& collisions)
   {
     // std::cout << "Filling mult histos" << std::endl;
     for (const auto& coll : collisions) {
-      std::string histNameMvC = "mult/hMultVsCent_run" + std::to_string(mRunNumber);
-      std::string histNameMvCZ = "mult/hMultVsCentZoom_run" + std::to_string(mRunNumber);
-      std::string histNameTvC = "mult/hNTracksVsCent_run" + std::to_string(mRunNumber);
-      std::string histNameTvCZ = "mult/hNTracksVsCentZoom_run" + std::to_string(mRunNumber);
-      if (!mHistsPerRunMultVsCent.contains(histNameMvC)) {
-        mHistsPerRunMultVsCent[histNameMvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvC.c_str(), histNameMvC.c_str(), HistType::kTH2F, {centAxis, multAxis}));
-        mHistsPerRunMultVsCentZoom[histNameMvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvCZ.c_str(), histNameMvCZ.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
-        mHistsPerRunNtracktVsCent[histNameTvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvC.c_str(), histNameTvC.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
-        mHistsPerRunNtracktVsCentZoom[histNameTvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvCZ.c_str(), histNameTvCZ.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
-      }
-      mHistsPerRunMultVsCent[histNameMvC]->Fill(coll.centFT0M(), coll.multFT0M());
-      mHistsPerRunMultVsCentZoom[histNameMvCZ]->Fill(coll.centFT0M(), coll.multFT0M());
-      mHistsPerRunNtracktVsCent[histNameTvC]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-      mHistsPerRunNtracktVsCentZoom[histNameTvCZ]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-      // run integrated histos
-      mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
-      mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
-      mRegistry.fill(HIST("hNTracksVsCent"), coll.centFT0M(), (float)coll.multNTracksGlobal());
-      mRegistry.fill(HIST("hNTracksVsCentZoom"), coll.centFT0M(), coll.multNTracksGlobal());
+      float centFT0M = coll.centFT0M();
+      float multFT0M = coll.multFT0M();
+      float centFV0A = coll.centFV0A();
+      float multFV0A = coll.multFV0A();
+      float multNTracks = coll.multNTracksGlobal();
+      float run = mRunNumber;
+      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, centFV0A, multFV0A, multNTracks, run);
     }
   };
 
@@ -579,7 +638,7 @@ struct NonPromptCascadeTask {
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachelor.hasTOF(),
-                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(), collision.multFT0M(), collision.centFT0C(), collision.centFT0A(), collision.centFT0M(), collision.multNTracksGlobal(), toiMask, collision.selection_bit(aod::evsel::kNoSameBunchPileup)});
+                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFV0A(), collision.multFT0M(), collision.centFT0C(), collision.centFV0A(), collision.centFT0M(), collision.multNTracksGlobal(), toiMask, collision.selection_bit(aod::evsel::kNoSameBunchPileup)});
     }
   }
 
@@ -599,7 +658,7 @@ struct NonPromptCascadeTask {
                                   c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
                                   c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                   c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                  c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
+                                  c.sel8, c.multFT0C, c.multFV0A, c.multFT0M, c.centFT0C, c.centFV0A, c.centFT0M, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
     }
   }
 
@@ -635,7 +694,7 @@ struct NonPromptCascadeTask {
                                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC, c.protonTPCNSigma,
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M,
+                                c.sel8, c.multFT0C, c.multFV0A, c.multFT0M, c.centFT0C, c.centFV0A, c.centFT0M,
                                 particle.pt(), particle.eta(), particle.phi(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                                 particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
                                 mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters, c.multNTracksGlobal, c.toiMask, c.noSameBunchPileup);
@@ -678,6 +737,7 @@ struct NonPromptCascadeTask {
   {
     fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, gCandidatesNT);
     fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
+    fillMultHistos<CollisionCandidatesRun3MC>(collisions);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesMC, "process cascades: MC analysis", false);
 
@@ -691,7 +751,6 @@ struct NonPromptCascadeTask {
       auto fromHF = isFromHF(p);
       int pdgCodeMom = p.has_mothers() ? p.template mothers_as<aod::McParticles>()[0].pdgCode() : 0;
       auto mcCollision = p.template mcCollision_as<aod::McCollisions>();
-
       int motherDecayDaughters{0};
       if (fromHF[0] || fromHF[1]) {
         auto mom = p.template mothers_as<aod::McParticles>()[0];
@@ -704,7 +763,6 @@ struct NonPromptCascadeTask {
           }
         }
       }
-
       NPCTableGen(p.pt(), p.eta(), p.phi(), p.pdgCode(), pdgCodeMom, mcCollision.posX() - p.vx(), mcCollision.posY() - p.vy(), mcCollision.posZ() - p.vz(), fromHF[0], fromHF[1], motherDecayDaughters);
     }
   }
@@ -727,12 +785,192 @@ struct NonPromptCascadeTask {
                            aod::BCsWithTimestamps const&)
   {
     mProcessCounter[1]++;
-    fillMultHistos(collisions);
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
+    fillMultHistos<CollisionCandidatesRun3>(collisions);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
+
+  // colls : Join<aod::Collisions, ...>
+  // tracks: Join<aod::Tracks, aod::McTrackLabels>
+  // mcCollisions: aod::McCollisions
+  // mcParticles : aod::McParticles
+
+  void processdNdetaMC(CollisionCandidatesRun3MC const& colls,
+                       aod::McCollisions const& mcCollisions,
+                       aod::McParticles const& mcParticles,
+                       TracksWithLabel const& tracks)
+  {
+    //-------------------------------------------------------------
+    // MC mult for all MC coll
+    //--------------------------------------------------------------
+    std::vector<int> mcMult(mcCollisions.size(), 0);
+    for (auto const& mcp : mcParticles) {
+      int mcid = mcp.mcCollisionId();
+      if (mcid < 0 || mcid >= (int)mcMult.size())
+        continue;
+
+      // apply your primary/eta/charge definition here
+      if (!mcp.isPhysicalPrimary())
+        continue;
+      if (std::abs(mcp.eta()) > 0.5f)
+        continue;
+      int q = 0;
+      if (auto pdg = TDatabasePDG::Instance()->GetParticle(mcp.pdgCode())) {
+        q = int(std::round(pdg->Charge() / 3.0));
+      }
+      if (q == 0)
+        continue;
+
+      ++mcMult[mcid];
+    }
+
+    // ------------------------------------------------------------
+    // Build mapping: (aod::Collisions row id used by tracks.collisionId())
+    //              -> dense index in 'colls' (0..colls.size()-1)
+    // We assume col.globalIndex() refers to the original aod::Collisions row.
+    // ------------------------------------------------------------
+    int maxCollRowId = -1;
+    for (auto const& trk : tracks) {
+      maxCollRowId = std::max(maxCollRowId, (int)trk.collisionId());
+    }
+    std::vector<int> collRowIdToDense(maxCollRowId + 1, -1);
+
+    int dense = 0;
+    for (auto const& col : colls) {
+      const int collRowId = col.globalIndex(); // row id in aod::Collisions
+      if (collRowId >= 0 && collRowId < (int)collRowIdToDense.size()) {
+        collRowIdToDense[collRowId] = dense;
+      }
+      ++dense;
+    }
+
+    // ------------------------------------------------------------
+    // Reco multiplicity per *dense collision index in colls*
+    // ------------------------------------------------------------
+    std::vector<int> recoMultDense(colls.size(), 0);
+    for (auto const& trk : tracks) {
+      if (std::abs(trk.eta()) > 0.5f) {
+        continue;
+      }
+      const int collRowId = trk.collisionId();
+      if (collRowId < 0 || collRowId >= (int)collRowIdToDense.size()) {
+        continue;
+      }
+      const int dIdx = collRowIdToDense[collRowId];
+      if (dIdx >= 0) {
+        ++recoMultDense[dIdx];
+      }
+    }
+
+    // ------------------------------------------------------------
+    // MC bookkeeping: index by ROW INDEX (0..size-1), not globalIndex()
+    // ------------------------------------------------------------
+    std::vector<char> isReco(mcParticles.size(), 0);
+    std::vector<float> isRecoMult(mcParticles.size(), 0.f);
+    std::vector<char> mcReconstructed(mcCollisions.size(), 0);
+
+    // Optional cache of MC multiplicity per MC collision
+    std::vector<float> mcMultCache(mcCollisions.size(), -1.f);
+
+    // ------------------------------------------------------------
+    // Single pass over tracks: fill RM for tracks whose collision is in colls
+    // ------------------------------------------------------------
+    for (auto const& trk : tracks) {
+      // Accept reco track
+      if (std::abs(trk.eta()) > 0.5f) {
+        continue;
+      }
+
+      // Map track's collision row id -> dense colls index
+      const int collRowId = trk.collisionId();
+      if (collRowId < 0 || collRowId >= (int)collRowIdToDense.size()) {
+        continue;
+      }
+      const int dIdx = collRowIdToDense[collRowId];
+      if (dIdx < 0) {
+        continue; // this track's collision is not in our 'colls' view
+      }
+
+      // Get the collision row (dense index in colls view)
+      auto col = colls.rawIteratorAt(dIdx);
+
+      // MC collision id (row index in aod::McCollisions)
+      const int mcCollId = col.mcCollisionId();
+      if (mcCollId < 0 || mcCollId >= (int)mcCollisions.size()) {
+        continue;
+      }
+      mcReconstructed[mcCollId] = 1;
+
+      // MC particle id (row index in aod::McParticles)
+      const int mcPid = trk.mcParticleId();
+      if (mcPid < 0 || mcPid >= (int)mcParticles.size()) {
+        continue;
+      }
+
+      // MC multiplicity for that MC collision (cache)
+      float mult = mcMultCache[mcCollId];
+      if (mult < 0.f) {
+        std::vector<float> tmp;
+        mult = mcMult[mcCollId];
+        mcMultCache[mcCollId] = mult;
+      }
+
+      auto mcPar = mcParticles.rawIteratorAt(mcPid);
+
+      // Apply the same acceptance as in MC multiplicity definition
+      if (!mcPar.isPhysicalPrimary()) {
+        continue;
+      }
+      if (std::abs(mcPar.eta()) > 0.5f) {
+        continue;
+      }
+
+      int q = 0;
+      if (auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcPar.pdgCode())) {
+        q = int(std::round(pdgEntry->Charge() / 3.0));
+      }
+      if (q == 0) {
+        continue;
+      }
+
+      // Mark reconstructed MC particle (now that it truly passed & matched)
+      isReco[mcPid] = 1;
+      isRecoMult[mcPid] = mult;
+
+      const float multReco = col.multNTracksGlobal(); // or recoMultDense[dIdx]
+      const float ptReco = trk.pt();
+      const float ptMC = mcPar.pt();
+
+      mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
+    }
+
+    // ------------------------------------------------------------
+    // MC particles with no reco track (iterate by row index)
+    // ------------------------------------------------------------
+    for (int pid = 0; pid < (int)mcParticles.size(); ++pid) {
+      if (!isReco[pid]) {
+        auto mcp = mcParticles.rawIteratorAt(pid);
+        mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"), isRecoMult[pid], mcp.pt());
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Unreconstructed MC collisions (iterate by row index)
+    // ------------------------------------------------------------
+    for (int mcid = 0; mcid < (int)mcCollisions.size(); ++mcid) {
+      if (!mcReconstructed[mcid]) {
+        std::vector<float> mcptvec;
+        const int mult = mcMult[mcid];
+        for (auto const& pt : mcptvec) {
+          mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoCol"), mult, pt);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(NonPromptCascadeTask, processdNdetaMC, "process mc dN/deta", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -8,32 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
-// This code produces photon data tables.
-//    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
-#include <vector>
-#include <algorithm>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
+/// \file createPCM.cxx
+/// \brief This code produces photon data tables.
+/// \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+//
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <algorithm>
+#include <array>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -159,7 +166,7 @@ struct createPCM {
       d_bz = d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -242,7 +249,7 @@ struct createPCM {
 
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
-    float recalculatedVtxR = std::sqrt(pow(xyz[0], 2) + pow(xyz[1], 2));
+    float recalculatedVtxR = std::sqrt(std::pow(xyz[0], 2) + std::pow(xyz[1], 2));
     // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
     if (recalculatedVtxR > std::min(pos.x(), ele.x()) + margin_r && (pos.x() > 1.f && ele.x() > 1.f)) {
       return false;
@@ -329,10 +336,10 @@ struct createPCM {
   template <typename TTrack>
   bool isSelected(TTrack const& track)
   {
-    if (track.pt() < minpt || abs(track.eta()) > maxeta) {
+    if (track.pt() < minpt || std::abs(track.eta()) > maxeta) {
       return false;
     }
-    if (abs(track.dcaXY()) < dcamin || dcamax < abs(track.dcaXY())) {
+    if (std::abs(track.dcaXY()) < dcamin || dcamax < std::abs(track.dcaXY())) {
       return false;
     }
     if (!track.hasITS() && !track.hasTPC()) {
@@ -357,7 +364,7 @@ struct createPCM {
         return false;
       }
 
-      if (abs(track.z() / track.x() - track.tgl()) > 0.5) {
+      if (std::abs(track.z() / track.x() - track.tgl()) > 0.5) {
         return false;
       }
 
@@ -402,8 +409,8 @@ struct createPCM {
       initCCDB(bc);
       // registry.fill(HIST("hEventCounter"), 1);
 
-      int32_t min_sw = std::max(int64_t(0), collision.globalIndex());
-      int32_t max_sw = std::min(int64_t(min_sw + nsw), int64_t(collisions.size()));
+      int32_t min_sw = std::max(static_cast<int64_t>(0), collision.globalIndex());
+      int32_t max_sw = std::min(static_cast<int64_t>(min_sw + nsw), static_cast<int64_t>(collisions.size()));
 
       // LOGF(info, "orphan_posTracks.size() = %d, orphan_negTracks.size() = %d", orphan_posTracks.size(), orphan_negTracks.size());
       negTracks_sw.reserve(max_sw - min_sw);
@@ -419,9 +426,9 @@ struct createPCM {
       }
       // LOGF(info, "min_sw = %d , max_sw = %d , collision.globalIndex() = %d , n posTracks_sw = %d , n negTracks_sw = %d", min_sw, max_sw, collision.globalIndex(), npos, nneg);
 
-      for (auto& negTracks_coll : negTracks_sw) {
-        for (auto& posTracks_coll : posTracks_sw) {
-          for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
+      for (const auto& negTracks_coll : negTracks_sw) {
+        for (const auto& posTracks_coll : posTracks_sw) {
+          for (const auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
             if (!isSelected(ele) || !isSelected(pos)) {
               continue;
             }
@@ -443,9 +450,9 @@ struct createPCM {
               //     collision_in_sw.globalIndex(), ele.collisionId(), pos.collisionId(), ele.globalIndex(), pos.globalIndex());
               fillV0Table(collision_in_sw, ele, pos, false);
             } // end of searching window loop
-          }   // end of pairing loop
-        }     // end of pos track loop in sw
-      }       // end of pos track loop in sw
+          } // end of pairing loop
+        } // end of pos track loop in sw
+      } // end of pos track loop in sw
 
       // LOGF(info, "possible number of V0 = %d", cospa_map.size());
       std::map<std::pair<uint32_t, uint32_t>, bool> used_pair_map;
@@ -522,7 +529,7 @@ struct createPCM {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   void processTrkCollAsso(aod::TrackAssoc const& trackIndices, FullTracksExtIU const&, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -530,7 +537,7 @@ struct createPCM {
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
       // LOGF(info,"%d tracks in collision %d", trackIdsThisCollision.size(), collision.globalIndex());
-      for (auto& [eleId, posId] : combinations(CombinationsStrictlyUpperIndexPolicy(trackIdsThisCollision, trackIdsThisCollision))) {
+      for (const auto& [eleId, posId] : combinations(CombinationsStrictlyUpperIndexPolicy(trackIdsThisCollision, trackIdsThisCollision))) {
         auto ele = eleId.track_as<FullTracksExtIU>();
         auto pos = posId.track_as<FullTracksExtIU>();
         // LOGF(info,"eleId = %d , posId = %d", ele.globalIndex(), pos.globalIndex());
@@ -550,7 +557,7 @@ struct createPCM {
         }
       }
     } // end of collision loop
-  }   // end of process
+  } // end of process
   PROCESS_SWITCH(createPCM, processTrkCollAsso, "create V0s with track-to-collision associator", false);
 };
 

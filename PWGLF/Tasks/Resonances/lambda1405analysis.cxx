@@ -18,7 +18,8 @@
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

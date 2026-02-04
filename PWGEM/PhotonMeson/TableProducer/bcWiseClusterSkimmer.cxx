@@ -77,6 +77,7 @@ struct bcWiseClusterSkimmer {
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
   Configurable<bool> cfgStoreMu{"cfgStoreMu", false, "Calculate and store mu (probablity of a TVX collision in the BC) per BC. Otherwise fill with 0"};
   Configurable<bool> cfgStoreTime{"cfgStoreTime", false, "Calculate and store time since the start of fill. Otherwise fill with 0"};
+  Configurable<bool> cfgOnlyCheckFirstTrueContributor{"cfgOnlyCheckFirstTrueContributor", false, "When storing MC cluster info only count as true if the leading contributor is from pi0/eta"};
   ConfigurableAxis cfgMultiplicityBinning{"cfgMultiplicityBinning", {1000, 0, 10000}, "Binning used for the binning of the number of particles in the event"};
 
   aod::rctsel::RCTFlagsChecker isFT0EMCGoodRCTChecker{aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad};
@@ -144,7 +145,7 @@ struct bcWiseClusterSkimmer {
   }
 
   /// \brief Process EMCAL clusters (either ambigous or unique)
-  template <typename Clusters>
+  template <o2::soa::is_table Clusters>
   void processClusters(Clusters const& clusters, const int bcID)
   {
     for (const auto& cluster : clusters) {
@@ -160,14 +161,14 @@ struct bcWiseClusterSkimmer {
     }
   }
 
-  template <typename Clusters>
+  template <o2::soa::is_table Clusters>
   void processClusterMCInfo(Clusters const& clusters, const int bcID, aod::McParticles const& mcParticles)
   {
     for (const auto& cluster : clusters) {
       float clusterInducerEnergy = 0.;
       int32_t mesonMCIndex = -1;
-      if (cluster.amplitudeA().size() > 0) {
-        int clusterInducerId = cluster.mcParticleIds()[0];
+      for (size_t i = 0; i < cluster.amplitudeA().size(); i++) {
+        int clusterInducerId = cluster.mcParticleIds()[i];
         auto clusterInducer = mcParticles.iteratorAt(clusterInducerId);
         clusterInducerEnergy = clusterInducer.e();
         int daughterId = aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(clusterInducer, mcParticles, std::vector<int>{111, 221});
@@ -176,6 +177,10 @@ struct bcWiseClusterSkimmer {
           if (mcParticles.iteratorAt(mesonMCIndex).pt() < cfgMinPtGen)
             mesonMCIndex = -1;
         }
+        if (mesonMCIndex != -1)
+          break;
+        if (cfgOnlyCheckFirstTrueContributor)
+          break;
       }
       bool isEta = false;
       if (mesonMCIndex >= 0) {
@@ -293,8 +298,8 @@ struct bcWiseClusterSkimmer {
       collisionTable(bcTable.lastIndex(), convertForStorage<int16_t>(collision.posZ(), kZVtx));
   }
 
-  template <typename TMCParticle, typename TMCParticles>
-  bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+  template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles>
+  bool isGammaGammaDecay(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)
@@ -306,8 +311,8 @@ struct bcWiseClusterSkimmer {
     return true;
   }
 
-  template <typename TMCParticle, typename TMCParticles>
-  bool isAccepted(TMCParticle mcParticle, TMCParticles mcParticles)
+  template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles>
+  bool isAccepted(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
   {
     auto daughtersIds = mcParticle.daughtersIds();
     if (daughtersIds.size() != 2)
@@ -376,10 +381,10 @@ struct bcWiseClusterSkimmer {
           bool isFromWD = (aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcCollision, mcParticle, mcParticles)) > 0;
 
           if (mcParticle.pdgCode() == 111) {
-            mcpi0Table(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+            mcpi0Table(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapPi0Index[mcParticle.globalIndex()] = static_cast<int32_t>(mcpi0Table.lastIndex());
           } else if (mcParticle.pdgCode() == 221) {
-            mcetaTable(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+            mcetaTable(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapEtaIndex[mcParticle.globalIndex()] = static_cast<int32_t>(mcetaTable.lastIndex());
           }
         }

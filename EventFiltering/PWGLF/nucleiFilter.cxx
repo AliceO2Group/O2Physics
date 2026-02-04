@@ -20,7 +20,8 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -28,7 +29,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsTOF/ParameterContainers.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -310,7 +311,7 @@ struct nucleiFilter {
 
     auto getNsigma = [&](const auto& track, int iN, int iC) {
       float fixTPCrigidity{(cfgFixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
-      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
+      double expBethe{common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
       double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
       return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
     };

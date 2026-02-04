@@ -106,6 +106,9 @@ struct FemtoUniverseProducerMCTruthTask {
     Configurable<float> confEtaFilterCut{"confEtaFilterCut", 0.8, "Eta cut for the filtering tracks"};
   } ConfFilteringTracks;
 
+  // D0/D0bar cuts
+  Configurable<float> yD0CandGenMax{"yD0CandGenMax", 0.5, "Rapidity cut for the D0/D0bar mesons"};
+
   FemtoUniverseCollisionSelection colCuts;
   FemtoUniverseTrackSelection trackCuts;
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
@@ -162,8 +165,6 @@ struct FemtoUniverseProducerMCTruthTask {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
 
-      if (particle.eta() < -ConfFilteringTracks.confEtaFilterCut || particle.eta() > ConfFilteringTracks.confEtaFilterCut)
-        continue;
       if (particle.pt() < ConfFilteringTracks.confPtLowFilterCut || particle.pt() > ConfFilteringTracks.confPtHighFilterCut)
         continue;
 
@@ -186,6 +187,24 @@ struct FemtoUniverseProducerMCTruthTask {
         }
         if (!pass)
           continue;
+      }
+
+      // check if D0/D0bar mesons pass the rapidity cut
+      // if pass then saving the orgin of D0/D0bar
+      // check if tracks (besides D0/D0bar) pass pseudorapidity cut
+      int8_t origin = -99;
+      if (std::abs(particle.pdgCode()) == Pdg::kD0) {
+        if (std::abs(particle.y()) > yD0CandGenMax) {
+          continue;
+        } else {
+          origin = RecoDecay::getCharmHadronOrigin(tracks, particle);
+        }
+      } else {
+        if (std::abs(particle.eta()) > ConfFilteringTracks.confEtaFilterCut) {
+          continue;
+        } else {
+          origin = -99;
+        }
       }
 
       /// check if we end-up with the correct final state using MC info
@@ -216,8 +235,8 @@ struct FemtoUniverseProducerMCTruthTask {
                   pdgCode,
                   pdgCode,
                   childIDs,
-                  0,
-                  0);
+                  origin,
+                  -999.);
     }
   }
 

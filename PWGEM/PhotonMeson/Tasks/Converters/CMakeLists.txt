@@ -18,3 +18,8 @@ o2physics_add_dpl_workflow(electron-from-dalitz-converter1
                   SOURCES electronFromDalitzConverter1.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skim-emc-cluste-converter
+                  SOURCES skimEmcClusterConverter.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)

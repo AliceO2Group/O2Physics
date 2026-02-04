@@ -90,7 +90,6 @@ struct QAHistograms {
   std::shared_ptr<TH2> TPChisto;
   std::shared_ptr<TH2> TOFhisto;
 
-  Filter signFilter = o2::aod::singletrackselector::sign == _sign;
   Filter pFilter = o2::aod::singletrackselector::p > _min_P&& o2::aod::singletrackselector::p < _max_P;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < _eta;
 
@@ -198,7 +197,8 @@ struct QAHistograms {
     }
 
     for (const auto& track : tracks) {
-
+      if (track.sign() != _sign)
+        continue;
       if (_removeSameBunchPileup && !track.template singleCollSel_as<ColsType>().isNoSameBunchPileup())
         continue;
       if (_requestGoodZvtxFT0vsPV && !track.template singleCollSel_as<ColsType>().isGoodZvtxFT0vsPV())

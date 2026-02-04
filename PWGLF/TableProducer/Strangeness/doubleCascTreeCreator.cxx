@@ -9,37 +9,37 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <utility>
-#include <random>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
+#include "PWGLF/DataModel/LFDoubleCascTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "DCAFitter/DCAFitterN.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGLF/DataModel/LFDoubleCascTables.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include "TDatabasePDG.h"
+
+#include <random>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -92,7 +92,7 @@ struct doubleCascTreeCreator {
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
 
   // binning of (anti)lambda mass QA histograms
-  ConfigurableAxis massOmegaAxis{"massLambdaAxis", {400, o2::constants::physics::MassOmegaMinus - 0.05f, o2::constants::physics::MassOmegaMinus + 0.035}, "binning for the Omega invariant-mass"};
+  ConfigurableAxis massOmegaAxis{"massOmegaAxis", {400, o2::constants::physics::MassOmegaMinus - 0.05f, o2::constants::physics::MassOmegaMinus + 0.05}, "binning for the Omega invariant-mass"};
   ConfigurableAxis massXiAxis{"massXiAxis", {400, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
@@ -100,11 +100,11 @@ struct doubleCascTreeCreator {
   ConfigurableAxis momAxis{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
 
   Configurable<float> cascPtMin{"cascPtMin", 1.f, "minimum (anti)casc pT (GeV/c)"};
-  Configurable<float> cascPtMax{"cascPtMax", 4.f, "maximum (anti)casc pT (GeV/c)"};
+  Configurable<float> cascPtMax{"cascPtMax", 5.f, "maximum (anti)casc pT (GeV/c)"};
 
   Configurable<float> minNCrossedRows{"minNCrossedRows", 100, "Minimum number of crossed TPC rows"};
   Configurable<float> minNITSClus{"minNITSClus", 0., "Minimum number of ITS clusters"};
-  Configurable<float> minNTPCClus{"minNTPCClus", 100, "Minimum number of TPC clusters"};
+  Configurable<float> minNTPCClus{"minNTPCClus", 80, "Minimum number of TPC clusters"};
   Configurable<float> maxNSharedTPCClus{"maxNSharedTPCClus", 5, "Maximum number of shared TPC clusters"};
 
   Configurable<double> minCascCosPA{"minCascCosPA", 0.99f, "Minimum cosine of the pointing angle of the cascade"};
@@ -159,8 +159,10 @@ struct doubleCascTreeCreator {
 
     // event QA
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-    histos.add<TH2>("QA/massXi", ";#it{p}_{T} (GeV/#it{c});#it{M}(#Lambda + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massXiAxis});
-    histos.add<TH2>("QA/massOmega", ";#it{p}_{T} (GeV/#it{c});#it{M}(#Omega + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massOmegaAxis});
+    histos.add<TH2>("QA/massXi1", ";#it{p}_{T} (GeV/#it{c});#it{M}(#Lambda + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massXiAxis});
+    histos.add<TH2>("QA/massOmega1", ";#it{p}_{T} (GeV/#it{c});#it{M}(#Omega + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massOmegaAxis});
+    histos.add<TH2>("QA/massXi2", ";#it{p}_{T} (GeV/#it{c});#it{M}(#Lambda + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massXiAxis});
+    histos.add<TH2>("QA/massOmega2", ";#it{p}_{T} (GeV/#it{c});#it{M}(#Omega + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massOmegaAxis});
   }
 
   template <class C, class T>
@@ -210,7 +212,7 @@ struct doubleCascTreeCreator {
   };
 
   template <class T>
-  bool doubleOmegaMass(T const&, FullCascades::iterator const& casc1, FullCascades::iterator const& casc2)
+  float doubleOmegaMass(T const&, FullCascades::iterator const& casc1, FullCascades::iterator const& casc2)
   {
     // the fake omega decay is the one with the smaller radius
     auto& fakeOmega = casc1.cascradius() < casc2.cascradius() ? casc1 : casc2;
@@ -222,7 +224,7 @@ struct doubleCascTreeCreator {
     float momTot[3] = {momKaon[0] + momLambda[0] + realOmega.px(), momKaon[1] + momLambda[1] + realOmega.py(), momKaon[2] + momLambda[2] + realOmega.pz()};
     float eK = std::sqrt(o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged + momKaon[0] * momKaon[0] + momKaon[1] * momKaon[1] + momKaon[2] * momKaon[2]);
     float eL = std::sqrt(o2::constants::physics::MassLambda0 * o2::constants::physics::MassLambda0 + momLambda[0] * momLambda[0] + momLambda[1] * momLambda[1] + momLambda[2] * momLambda[2]);
-    float eO = std::sqrt(o2::constants::physics::MassOmegaMinus * o2::constants::physics::MassOmegaMinus + momTot[0] * momTot[0] + momTot[1] * momTot[1] + momTot[2] * momTot[2]);
+    float eO = std::sqrt(o2::constants::physics::MassOmegaMinus * o2::constants::physics::MassOmegaMinus + realOmega.px() * realOmega.px() + realOmega.py() * realOmega.py() + realOmega.pz() * realOmega.pz());
     float eTot = eK + eL + eO;
     float mass = std::sqrt(eTot * eTot - momTot[0] * momTot[0] - momTot[1] * momTot[1] - momTot[2] * momTot[2]);
     return mass;
@@ -237,10 +239,14 @@ struct doubleCascTreeCreator {
       if (!isSelectedCasc(collision, tracks, casc1)) {
         continue;
       }
+      histos.fill(HIST("QA/massXi1"), casc1.pt(), casc1.mXi());
+      histos.fill(HIST("QA/massOmega1"), casc1.pt(), casc1.mOmega());
       for (auto& casc2 : cascades) {
         if (!isSelectedCasc(collision, tracks, casc2)) {
           continue;
         }
+        histos.fill(HIST("QA/massXi2"), casc2.pt(), casc2.mXi());
+        histos.fill(HIST("QA/massOmega2"), casc2.pt(), casc2.mOmega());
 
         if (casc1.posTrackId() == casc2.posTrackId() || casc1.posTrackId() == casc2.negTrackId() || casc1.bachelorId() == casc2.bachelorId()) {
           continue;

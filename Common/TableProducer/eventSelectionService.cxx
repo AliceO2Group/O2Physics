@@ -188,20 +188,20 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   LOGF(info, "Event selection autoconfiguring from metadata. Availability of info for Run 2/3 is %i", hasRunInfo);
   if (!hasRunInfo) {
-    LOGF(info, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
-    LOGF(info, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
-    LOGF(info, "You should instead make sure the metadata is read in correctly.");
+    LOGF(warn, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
+    LOGF(warn, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
+    LOGF(warn, "You should instead make sure the metadata is read in correctly.");
     return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
   } else {
     LOGF(info, "Metadata successfully read in. Is this Run 3? %i - will self-configure.", isRun3);
     if (isRun3) {
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
     } else {
-      LOGF(info, "******************************************************************");
-      LOGF(info, " Event selection service self-configuring for Run 2.");
-      LOGF(info, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
-      LOGF(info, " If this fails, please use event-selection-service-run2 instead.");
-      LOGF(info, "******************************************************************");
+      LOGF(warn, "******************************************************************");
+      LOGF(warn, " Event selection service self-configuring for Run 2.");
+      LOGF(warn, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
+      LOGF(warn, " If this fails, please use event-selection-service-run2 instead.");
+      LOGF(warn, "******************************************************************");
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
     }
   }

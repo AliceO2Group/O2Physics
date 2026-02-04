@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FemtoDreamDetaDphiStar.h
+/// \file femtoDreamDetaDphiStar.h
 /// \brief FemtoDreamDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
@@ -36,13 +36,6 @@ namespace femtoDream
 /// \brief Class to check particles for the close pair rejection.
 /// \tparam partOne Type of particle 1 (Track/V0/Cascade/...)
 /// \tparam partTwo Type of particle 2 (Track/V0/Cascade/...)
-
-enum ProngCharmHadron {
-  Prong0 = 0,
-  Prong1 = 1,
-  Prong2 = 2,
-  Nprongs = 3
-};
 
 template <o2::aod::femtodreamparticle::ParticleType partOne, o2::aod::femtodreamparticle::ParticleType partTwo>
 class FemtoDreamDetaDphiStar
@@ -118,8 +111,14 @@ class FemtoDreamDetaDphiStar
         }
       }
     }
-    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
-      for (int i = 0; i < Nprongs; i++) {
+    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron3Prong || mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron2Prong)) {
+      int nProng = 0;
+      if (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron3Prong)
+        nProng = 3;
+      if (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron2Prong)
+        nProng = 2;
+
+      for (int i = 0; i < nProng; i++) {
         std::string dirName = static_cast<std::string>(dirNames[2]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -139,6 +138,25 @@ class FemtoDreamDetaDphiStar
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
       for (int i = 0; i < 3; i++) {
         std::string dirName = static_cast<std::string>(dirNames[3]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        if (plotForEveryRadii) {
+          for (int j = 0; j < 9; j++) {
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+          }
+        }
+        if (fillQA) {
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+        }
+      }
+    }
+    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kReso) {
+
+      for (int i = 0; i < 4; i++) {
+        std::string dirName = static_cast<std::string>(dirNames[4]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -191,7 +209,7 @@ class FemtoDreamDetaDphiStar
       }
       if (sameCharge) {
         if (atWhichRadiiToSelect == 1) {
-          if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             return true;
           } else {
             if (Q3 == 999) {
@@ -204,7 +222,7 @@ class FemtoDreamDetaDphiStar
             return false;
           }
         } else if (atWhichRadiiToSelect == 0) {
-          if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             return true;
           } else {
             if (Q3 == 999) {
@@ -217,7 +235,7 @@ class FemtoDreamDetaDphiStar
             return false;
           }
         } else if (atWhichRadiiToSelect == 2) {
-          if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             return true;
           } else {
             if (Q3 == 999) {
@@ -236,6 +254,93 @@ class FemtoDreamDetaDphiStar
         return false;
       }
 
+    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kReso) {
+      /// V0-Reso combination
+      // check if provided particles are in agreement with the class instantiation
+      if ((part1.partType() != o2::aod::femtodreamparticle::ParticleType::kV0 && part1.partType() != o2::aod::femtodreamparticle::ParticleType::kV0K0Short) ||
+          (part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTOF_NegdaughTPC &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoPosdaughTPC_NegdaughTPC &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTOF_NegdaughTPC &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTOF &&
+           part2.partType() != o2::aod::femtodreamparticle::ParticleType::kResoKStarPosdaughTPC_NegdaughTPC)) {
+        LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide kV0, kResoPosdaughTOF_NegdaughTOF, kResoPosdaughTOF_NegdaughTPC, kResoPosdaughTPC_NegdaughTOF, kResoPosdaughTPC_NegdaughTPC candidates.";
+        return false;
+      }
+
+      bool pass = false;
+      int nhist = 0;
+      for (int i = 0; i < 2; i++) {
+        int indexOfDaughterPart1, indexOfDaughterPart2;
+        for (int j = 0; j < 2; j++) {
+          if (isMixedEventLambda) {
+            indexOfDaughterPart1 = part1.globalIndex() - 2 + i;
+            indexOfDaughterPart2 = part2.globalIndex() - 2 + j;
+          } else {
+            indexOfDaughterPart1 = part1.index() - 2 + i;
+            indexOfDaughterPart2 = part2.index() - 2 + j;
+          }
+
+          auto daughterPart1 = particles.begin() + indexOfDaughterPart1;
+          auto daughterPart2 = particles.begin() + indexOfDaughterPart2;
+          auto deta = daughterPart1.eta() - daughterPart2.eta();
+          auto dphi_AT_PV = daughterPart1.phi() - daughterPart2.phi();
+          auto dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(daughterPart1, radiiTPC) - PhiAtSpecificRadiiTPC(daughterPart2, radiiTPC);
+          bool sameCharge = false;
+          auto dphiAvg = AveragePhiStar(*daughterPart1, *daughterPart2, nhist, &sameCharge);
+          if (Q3 == 999) {
+            histdetadpi[nhist][0]->Fill(deta, dphiAvg);
+            histdetadpi[nhist][2]->Fill(deta, dphi_AT_PV);
+            if (fillQA) {
+              histdetadpi_eta[nhist]->Fill(deta, dphiAvg, daughterPart1.eta(), daughterPart2.eta());
+              histdetadpi_phi[nhist]->Fill(deta, dphiAvg, daughterPart1.phi(), daughterPart2.phi());
+            }
+          }
+          if (sameCharge) {
+            if (atWhichRadiiToSelect == 1) {
+              if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
+                pass = true;
+              } else {
+                if (Q3 == 999) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                } else if (Q3 < upperQ3LimitForPlotting) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                }
+              }
+            } else if (atWhichRadiiToSelect == 0) {
+              if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
+                pass = true;
+              } else {
+                if (Q3 == 999) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                } else if (Q3 < upperQ3LimitForPlotting) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                }
+              }
+            } else if (atWhichRadiiToSelect == 2) {
+              if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
+                pass = true;
+              } else {
+                if (Q3 == 999) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                } else if (Q3 < upperQ3LimitForPlotting) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                }
+              }
+            }
+          }
+          nhist += 1;
+        }
+      }
+      return pass;
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       /// Track-V0 combination
       // check if provided particles are in agreement with the class instantiation
@@ -275,7 +380,7 @@ class FemtoDreamDetaDphiStar
         }
         if (sameCharge) {
           if (atWhichRadiiToSelect == 1) {
-            if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -287,7 +392,7 @@ class FemtoDreamDetaDphiStar
               }
             }
           } else if (atWhichRadiiToSelect == 0) {
-            if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -299,7 +404,7 @@ class FemtoDreamDetaDphiStar
               }
             }
           } else if (atWhichRadiiToSelect == 2) {
-            if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -352,7 +457,7 @@ class FemtoDreamDetaDphiStar
           }
           if (sameCharge) {
             if (atWhichRadiiToSelect == 1) {
-              if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -364,7 +469,7 @@ class FemtoDreamDetaDphiStar
                 }
               }
             } else if (atWhichRadiiToSelect == 0) {
-              if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -376,7 +481,7 @@ class FemtoDreamDetaDphiStar
                 }
               }
             } else if (atWhichRadiiToSelect == 2) {
-              if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -394,50 +499,25 @@ class FemtoDreamDetaDphiStar
       }
 
       return pass;
-    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
+    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron3Prong || mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadronDstar)) { // to be fixed for Dstar
       // check if provided particles are in agreement with the class instantiation
-      if (part2.candidateSelFlag() < o2::aod::fdhf::lcToPKPi) {
+      if (!part2.candidateSelFlag()) {
         LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide Charm Hadron candidates.";
         return false;
       }
 
       bool pass = false;
 
-      for (int i = 0; i < Nprongs; ++i) {
+      for (int i = 0; i < 3; ++i) {
         double deta, dphiAvg, dphi_AT_PV, dphi_AT_SpecificRadii, daughterEta, daughterPhi;
         bool sameCharge = false;
-        daughterEta = -999.;
-        daughterPhi = -999.;
+        daughterEta = part2.prong2Eta();
+        daughterPhi = part2.prong2Phi();
+        deta = part1.eta() - daughterEta;
+        dphi_AT_PV = part1.phi() - daughterPhi;
+        dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 2>(part2, radiiTPC);
+        dphiAvg = AveragePhiStar<true>(part1, part2, 2, &sameCharge);
 
-        switch (i) {
-          case Prong0:
-            daughterEta = part2.prong0Eta();
-            daughterPhi = part2.prong0Phi();
-            deta = part1.eta() - daughterEta;
-            dphi_AT_PV = part1.phi() - daughterPhi;
-            dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 0>(part2, radiiTPC);
-            dphiAvg = AveragePhiStar<true>(part1, part2, 0, &sameCharge);
-            // histdetadpi[0][0]->Fill(deta, dphiAvg);
-            break;
-          case Prong1:
-            daughterEta = part2.prong1Eta();
-            daughterPhi = part2.prong1Phi();
-            deta = part1.eta() - daughterEta;
-            dphi_AT_PV = part1.phi() - daughterPhi;
-            dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 1>(part2, radiiTPC);
-            dphiAvg = AveragePhiStar<true>(part1, part2, 1, &sameCharge);
-            // histdetadpi[1][0]->Fill(deta, dphiAvg);
-            break;
-          case Prong2:
-            daughterEta = part2.prong2Eta();
-            daughterPhi = part2.prong2Phi();
-            deta = part1.eta() - daughterEta;
-            dphi_AT_PV = part1.phi() - daughterPhi;
-            dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 2>(part2, radiiTPC);
-            dphiAvg = AveragePhiStar<true>(part1, part2, 2, &sameCharge);
-            // histdetadpi[2][0]->Fill(deta, dphiAvg);
-            break;
-        }
         if (Q3 == 999) {
           histdetadpi[i][0]->Fill(deta, dphiAvg);
           histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
@@ -455,7 +535,7 @@ class FemtoDreamDetaDphiStar
         }
 
         if (atWhichRadiiToSelect == 1) {
-          if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             pass = true;
           } else {
             if (Q3 == 999) {
@@ -467,7 +547,7 @@ class FemtoDreamDetaDphiStar
             }
           }
         } else if (atWhichRadiiToSelect == 0) {
-          if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             pass = true;
           } else {
             if (Q3 == 999) {
@@ -479,7 +559,84 @@ class FemtoDreamDetaDphiStar
             }
           }
         } else if (atWhichRadiiToSelect == 2) {
-          if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
+            pass = true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            }
+          }
+        }
+      }
+
+      return pass;
+
+    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron2Prong) {
+      // check if provided particles are in agreement with the class instantiation
+      if (!part2.candidateSelFlag()) {
+        LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide Charm Hadron candidates.";
+        return false;
+      }
+
+      bool pass = false;
+
+      for (int i = 0; i < 2; ++i) {
+        double deta, dphiAvg, dphi_AT_PV, dphi_AT_SpecificRadii, daughterEta, daughterPhi;
+        bool sameCharge = false;
+        daughterEta = part2.prong1Eta();
+        daughterPhi = part2.prong1Phi();
+        deta = part1.eta() - daughterEta;
+        dphi_AT_PV = part1.phi() - daughterPhi;
+        dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 1>(part2, radiiTPC);
+        dphiAvg = AveragePhiStar<true>(part1, part2, 1, &sameCharge);
+        // histdetadpi[1][0]->Fill(deta, dphiAvg);
+
+        if (Q3 == 999) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughterEta);
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughterPhi);
+          }
+        } else if (Q3 < upperQ3LimitForPlotting) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughterEta);
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughterPhi);
+          }
+        }
+
+        if (atWhichRadiiToSelect == 1) {
+          if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
+            pass = true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            }
+          }
+        } else if (atWhichRadiiToSelect == 0) {
+          if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
+            pass = true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            }
+          }
+        } else if (atWhichRadiiToSelect == 2) {
+          if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             pass = true;
           } else {
             if (Q3 == 999) {
@@ -534,7 +691,7 @@ class FemtoDreamDetaDphiStar
         }
         if (sameCharge) {
           if (atWhichRadiiToSelect == 1) {
-            if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -547,7 +704,7 @@ class FemtoDreamDetaDphiStar
             }
 
           } else if (atWhichRadiiToSelect == 0) {
-            if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -559,7 +716,7 @@ class FemtoDreamDetaDphiStar
               }
             }
           } else if (atWhichRadiiToSelect == 2) {
-            if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -583,7 +740,7 @@ class FemtoDreamDetaDphiStar
  private:
   HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
   HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
-  static constexpr std::string_view dirNames[4] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kCharmHadron/", "kTrack_kCascade/"};
+  static constexpr std::string_view dirNames[5] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kCharmHadron/", "kTrack_kCascade/", "kV0_kReso/"};
 
   static constexpr std::string_view histNameSEorME[3] = {"_SEandME", "_SE", "_ME"};
 
@@ -674,27 +831,25 @@ class FemtoDreamDetaDphiStar
   float PhiAtSpecificRadiiTPC(const T& part, float radii)
   {
     int charge = 0;
-    float phi0, pt;
+    float phi0 = 0.f;
+    float pt = 0.f;
+
     if constexpr (isHF) {
-      switch (prong) {
-        case Prong0:
-          charge = part.charge(); // charge calculation according to 3-prong decay, Lc^+ --> P^+ + K^- + pi^+
-          phi0 = part.prong0Phi();
-          pt = part.prong0Pt();
-          break;
-        case Prong1:
-          charge = -part.charge();
-          phi0 = part.prong1Phi();
-          pt = part.prong1Pt();
-          break;
-        case Prong2:
-          charge = part.charge();
-          phi0 = part.prong2Phi();
-          pt = part.prong2Pt();
-          break;
-        default:
-          // Handle invalid prong value if necessary
-          break;
+      static_assert(prong == 0 || prong == 1 || prong == 2,
+                    "PhiAtSpecificRadiiTPC: invalid prong index for HF");
+
+      if constexpr (prong == 0) {
+        charge = part.charge();
+        phi0 = part.prong0Phi();
+        pt = part.prong0Pt();
+      } else if constexpr (prong == 1) {
+        charge = -part.charge();
+        phi0 = part.prong1Phi();
+        pt = part.prong1Pt();
+      } else if constexpr (prong == 2) {
+        charge = part.charge();
+        phi0 = part.prong2Phi();
+        pt = part.prong2Pt();
       }
     } else {
       phi0 = part.phi();
@@ -732,42 +887,42 @@ class FemtoDreamDetaDphiStar
   int PhiAtRadiiTPCForHF(const T& part, std::vector<float>& tmpVec, int prong)
   {
     int charge = 0;
-    float pt = -999.;
-    float phi0 = -999.;
-    switch (prong) {
-      case Prong0:
-        pt = part.prong0Pt();
-        phi0 = part.prong0Phi();
+    if constexpr (mPartTwoType == o2::aod::femtodreamparticle::kCharmHadron3Prong) {
+      if (prong == 0 || prong == 2) {
         charge = part.charge();
-        break;
-      case Prong1:
-        pt = part.prong1Pt();
-        phi0 = part.prong1Phi();
+      } else if (prong == 1) {
         charge = -part.charge();
-        break;
-      case Prong2:
-        pt = part.prong2Pt();
-        phi0 = part.prong2Phi();
-        charge = part.charge();
-        break;
-      default:
-        // Handle invalid prong value
-        break;
-    }
-    for (size_t i = 0; i < 9; i++) {
-      if (runOldVersion) {
-        tmpVec.push_back(phi0 - std::asin(0.3 * charge * 0.1 * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
+      } else {
+        return 0;
       }
-      if (!runOldVersion) {
-        auto arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
-        // for very low pT particles, this value goes outside of range -1 to 1 at at large tpc radius; asin fails
-        if (std::fabs(arg) < 1) {
-          tmpVec.push_back(phi0 - std::asin(0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
-        } else {
-          tmpVec.push_back(999);
+      for (size_t i = 0; i < 9; ++i) {
+        if (prong == 0) {
+          tmpVec.push_back(PhiAtSpecificRadiiTPC<true, 0>(part, tmpRadiiTPC[i]));
+        } else if (prong == 1) {
+          tmpVec.push_back(PhiAtSpecificRadiiTPC<true, 1>(part, tmpRadiiTPC[i]));
+        } else { // prong == 2
+          tmpVec.push_back(PhiAtSpecificRadiiTPC<true, 2>(part, tmpRadiiTPC[i]));
+        }
+      }
+
+    } else {
+      if (prong == 0) {
+        charge = part.charge();
+      } else if (prong == 1) {
+        charge = -part.charge();
+      } else {
+        return 0;
+      }
+
+      for (size_t i = 0; i < 9; ++i) {
+        if (prong == 0) {
+          tmpVec.push_back(PhiAtSpecificRadiiTPC<true, 0>(part, tmpRadiiTPC[i]));
+        } else { // prong == 1
+          tmpVec.push_back(PhiAtSpecificRadiiTPC<true, 1>(part, tmpRadiiTPC[i]));
         }
       }
     }
+
     return charge;
   }
 

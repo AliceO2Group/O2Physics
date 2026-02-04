@@ -35,7 +35,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StaticFor.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "TableHelper.h"
 
 using namespace o2;
@@ -510,9 +510,9 @@ struct lfTpcPid {
       corr = params.postCorrectionFun->Eval(track.tpcInnerParam());
     }
     if (params.isSimple) {
-      return o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) + corr;
+      return o2::common::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) + corr;
     }
-    return params.mip * o2::tpc::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp) + corr;
+    return params.mip * o2::common::BetheBlochAleph(track.tpcInnerParam() * invmass, params.bb1, params.bb2, params.bb3, params.bb4, params.bb5) * std::pow(charge, params.exp) + corr;
   }
 
   template <o2::track::PID::ID id, typename T>
@@ -694,8 +694,8 @@ struct lfTpcPid {
           bb = BetheBlochNeg##Particle(trk);                                                        \
           expSigma = BetheBlochResNeg##Particle(trk, bb);                                           \
         }                                                                                           \
-        aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - bb) / expSigma,    \
-                                                              tablePID##Particle);                  \
+        aod::pidtpc_tiny::binning::packInTable((trk.tpcSignal() - bb) / expSigma,                   \
+                                               tablePID##Particle);                                 \
       }                                                                                             \
     }                                                                                               \
   }                                                                                                 \

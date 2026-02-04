@@ -45,6 +45,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 // Candidate creation =====================================================================
 
@@ -54,25 +55,25 @@ struct HfTaskMiniCandidateCreator2Prong {
   Produces<aod::HfTCand2ProngBase> rowCandidateBase;
 
   // vertexing parameters
-  Configurable<float> magneticField{"magneticField", 5., "magnetic field [kG]"};
-  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<float> magneticField{"magneticField", 5.f, "magnetic field [kG]"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "Create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
-  Configurable<float> maxR{"maxR", 200., "reject PCA's above this radius"};
-  Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
+  Configurable<float> maxR{"maxR", 200.f, "Reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4.f, "Reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3f, "Stop iterations if largest change of any X is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9f, "Stop iterations if chi2/chi2old > this"};
 
-  o2::vertexing::DCAFitterN<2> fitter; // 2-prong vertex fitter
-  double massPiK{0.};
-  double massKPi{0.};
+  o2::vertexing::DCAFitterN<2> fitter{}; // 2-prong vertex fitter
 
   using TracksWithCov = soa::Join<Tracks, TracksCov>;
 
-  OutputObj<TH1F> hMass{TH1F("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
-    // Configure the vertexer
+    registry.add("hMass", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+
+    // Configure the vertexer.
     fitter.setBz(magneticField);
     fitter.setPropagateToPCA(propagateToPCA);
     fitter.setMaxR(maxR);
@@ -88,27 +89,25 @@ struct HfTaskMiniCandidateCreator2Prong {
   {
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
-      auto track0 = rowTrackIndexProng2.prong0_as<TracksWithCov>();
-      auto track1 = rowTrackIndexProng2.prong1_as<TracksWithCov>();
-      auto trackParVarPos1 = getTrackParCov(track0);
-      auto trackParVarNeg1 = getTrackParCov(track1);
-      auto collision = track0.collision();
+      const auto& track0{rowTrackIndexProng2.prong0_as<TracksWithCov>()};
+      const auto& track1{rowTrackIndexProng2.prong1_as<TracksWithCov>()};
+      const auto trackParVarPos1{getTrackParCov(track0)};
+      const auto trackParVarNeg1{getTrackParCov(track1)};
+      const auto& collision{track0.collision()};
 
       // reconstruct the 2-prong secondary vertex
       if (fitter.process(trackParVarPos1, trackParVarNeg1) == 0) {
         continue;
       }
+      // get secondary vertex
       const auto& secondaryVertex = fitter.getPCACandidate();
-      auto trackParVar0 = fitter.getTrack(0);
-      auto trackParVar1 = fitter.getTrack(1);
-
       // get track momenta
-      std::array<float, 3> pVec0;
-      std::array<float, 3> pVec1;
-      trackParVar0.getPxPyPzGlo(pVec0);
-      trackParVar1.getPxPyPzGlo(pVec1);
+      std::array<float, 3> pVec0{};
+      std::array<float, 3> pVec1{};
+      fitter.getTrack(0).getPxPyPzGlo(pVec0);
+      fitter.getTrack(1).getPxPyPzGlo(pVec1);
 
-      // fill candidate table rows
+      // fill candidate table row
       rowCandidateBase(collision.globalIndex(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
@@ -118,11 +117,11 @@ struct HfTaskMiniCandidateCreator2Prong {
 
       // fill histograms
       // calculate invariant masses
-      auto arrayMomenta = std::array{pVec0, pVec1};
-      massPiK = RecoDecay::m(arrayMomenta, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
-      massKPi = RecoDecay::m(arrayMomenta, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
-      hMass->Fill(massPiK);
-      // hMass->Fill(massKPi);
+      const std::array arrayMomenta{pVec0, pVec1};
+      const auto massPiK{RecoDecay::m(arrayMomenta, std::array{MassPiPlus, MassKPlus})};
+      registry.fill(HIST("hMass"), massPiK);
+      // const auto massKPi{RecoDecay::m(arrayMomenta, std::array{MassKPlus, MassPiPlus})};
+      // registry.fill(HIST("hMass"), massKPi);
     }
   }
 };
@@ -140,19 +139,18 @@ struct HfTaskMiniCandidateCreator2ProngExpressions {
 struct HfTaskMiniCandidateSelectorD0 {
   Produces<aod::HfTSelD0> hfSelD0Candidate;
 
-  Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<float> ptCandMin{"ptCandMin", 0.f, "Min. candidate pT [GeV/c] "};
+  Configurable<float> ptCandMax{"ptCandMax", 50.f, "Max. candidate pT [GeV/c]"};
   // TPC
-  Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<float> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
-  Configurable<float> nSigmaTpc{"nSigmaTpc", 3., "Nsigma cut on TPC only"};
+  Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15f, "Min. track pT for TPC PID [GeV/c]"};
+  Configurable<float> ptPidTpcMax{"ptPidTpcMax", 5.f, "Max. track pT for TPC PID [GeV/c]"};
+  Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 3.f, "Max. TPC N_sigma"};
   // topological cuts
-  Configurable<float> cpaMin{"cpaMin", 0.98, "Min. cosine of pointing angle"};
-  Configurable<float> massWindow{"massWindow", 0.4, "Half-width of the invariant-mass window"};
+  Configurable<float> cpaMin{"cpaMin", 0.98f, "Min. cosine of pointing angle"};
+  Configurable<float> massWindow{"massWindow", 0.4f, "Half-width of the invariant-mass window [Gev/c^2]"};
 
-  HfHelper hfHelper;
-  TrackSelectorPi selectorPion;
-  TrackSelectorKa selectorKaon;
+  TrackSelectorPi selectorPion{};
+  TrackSelectorKa selectorKaon{};
 
   using TracksWithPid = soa::Join<Tracks,
                                   aod::pidTPCFullPi, aod::pidTPCFullKa,
@@ -161,7 +159,7 @@ struct HfTaskMiniCandidateSelectorD0 {
   void init(InitContext const&)
   {
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
-    selectorPion.setRangeNSigmaTpc(-nSigmaTpc, nSigmaTpc);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
     selectorKaon = selectorPion;
   }
 
@@ -193,11 +191,11 @@ struct HfTaskMiniCandidateSelectorD0 {
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > massWindow) {
+      if (std::abs(HfHelper::invMassD0ToPiK(candidate) - MassD0) > massWindow) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > massWindow) {
+      if (std::abs(HfHelper::invMassD0barToKPi(candidate) - MassD0) > massWindow) {
         return false;
       }
     }
@@ -214,19 +212,19 @@ struct HfTaskMiniCandidateSelectorD0 {
       int statusD0 = 0;
       int statusD0bar = 0;
 
-      auto trackPos = candidate.prong0_as<TracksWithPid>(); // positive daughter
-      auto trackNeg = candidate.prong1_as<TracksWithPid>(); // negative daughter
-
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar);
         continue;
       }
 
-      // conjugate-dependent topological selection for D0
-      bool topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
-      // conjugate-dependent topological selection for D0bar
-      bool topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
+      // conjugate-dependent topological selection
+      const auto& trackPos = candidate.prong0_as<TracksWithPid>(); // positive daughter
+      const auto& trackNeg = candidate.prong1_as<TracksWithPid>(); // negative daughter
+      // D0 hypothesis
+      const auto topolD0 = selectionTopolConjugate(candidate, trackPos, trackNeg);
+      // D0bar hypothesis
+      const auto topolD0bar = selectionTopolConjugate(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar);
@@ -234,10 +232,10 @@ struct HfTaskMiniCandidateSelectorD0 {
       }
 
       // track-level PID selection
-      int pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
-      int pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
-      int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
-      int pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
+      const auto pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
+      const auto pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
+      const auto pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+      const auto pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
 
       int pidD0 = -1;
       int pidD0bar = -1;
@@ -286,13 +284,9 @@ struct HfTaskMiniD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection flag for D0 bar"};
 
-  HfHelper hfHelper;
-
   Partition<soa::Join<aod::HfTCand2Prong, aod::HfTSelD0>> selectedD0Candidates = aod::hf_selcandidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_selcandidate_d0::isSelD0bar >= selectionFlagD0bar;
 
-  HistogramRegistry registry{
-    "registry",
-    {}};
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
@@ -308,10 +302,10 @@ struct HfTaskMiniD0 {
   {
     for (const auto& candidate : selectedD0Candidates) {
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate));
+        registry.fill(HIST("hMass"), HfHelper::invMassD0ToPiK(candidate));
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate));
+        registry.fill(HIST("hMass"), HfHelper::invMassD0barToKPi(candidate));
       }
       registry.fill(HIST("hPtCand"), candidate.pt());
       registry.fill(HIST("hCpaVsPtCand"), candidate.cpa(), candidate.pt());

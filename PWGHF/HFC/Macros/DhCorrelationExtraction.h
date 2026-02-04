@@ -37,121 +37,121 @@ class DhCorrelationExtraction : public TObject
                       kDplusKpipi,
                       kDsToKKPi,
                       kDStarD0pi };
-  enum selectAnalysisType { kSE,
+  enum SelectAnalysisType { kSE,
                             kME };
-  enum selectInvMassRegion { kSign,
+  enum SelectInvMassRegion { kSign,
                              kSideb };
-  enum selectDmesonOrigin { kPrompt,
+  enum SelectDmesonOrigin { kPrompt,
                             kFD };
-  enum selectParticleType { kPrimaryPart,
+  enum SelectParticleType { kPrimaryPart,
                             kAllPart };
 
   DhCorrelationExtraction(); // default constructor
   DhCorrelationExtraction(const DhCorrelationExtraction& source);
-  virtual ~DhCorrelationExtraction();
+  ~DhCorrelationExtraction() override;
 
   /// Methods to set the input configuration
   // Input files, directories and histograms
-  Bool_t SetDmesonSpecie(DmesonSpecie k);
-  void SetInputFilenameMass(TString filenameMass) { fFileNameMass = filenameMass; }
-  void SetInputFilenameSE(TString filenameSE) { fFileNameSE = filenameSE; }
-  void SetInputFilenameME(TString filenameME) { fFileNameME = filenameME; }
-  void SetInputFilenameSecPart(TString filenameSecPart) { fFileSecPartName = filenameSecPart; }
-  void SetInputFilenameBiasBtoD(TString filenamePromptMcRec, TString filenameNonPromptMcRec)
+  Bool_t setDmesonSpecie(DmesonSpecie k);
+  void setInputFilenameMass(TString filenameMass) { fFileNameMass = filenameMass; }
+  void setInputFilenameSe(TString filenameSE) { fFileNameSE = filenameSE; }
+  void setInputFilenameMe(TString filenameME) { fFileNameME = filenameME; }
+  void setInputFilenameSecPart(TString filenameSecPart) { fFileSecPartName = filenameSecPart; }
+  void setInputFilenameBiasBtoD(TString filenamePromptMcRec, TString filenameNonPromptMcRec)
   {
     fFilePromptMcRecName = filenamePromptMcRec;
     fFileNonPromptMcRecName = filenameNonPromptMcRec;
   }
-  void SetDirNameSE(TString dirNameSE) { fDirNameSE = dirNameSE; }
-  void SetDirNameME(TString dirNameME) { fDirNameME = dirNameME; }
-  void SetDirNameSecPart(TString dirNameSecPart) { fDirSecPartName = dirNameSecPart; }
-  void SetMassHistoNameSgn(TString massHistoNameSgn) { fMassHistoNameSgn = massHistoNameSgn; }
-  void SetMassHistoNameBkg(TString massHistoNameBkg) { fMassHistoNameBkg = massHistoNameBkg; }
-  void SetMassHistoNameSBs(TString massHistoNameSBs) { fMassHistoNameSBs = massHistoNameSBs; }
-  void SetSECorrelHistoSignalName(TString correlNameSigSE) { fSECorrelSignalRegionName = correlNameSigSE; }
-  void SetSECorrelHistoSidebandName(TString correlNameSbSE) { fSECorrelSidebandsName = correlNameSbSE; }
-  void SetSECorrelHistoSidebandLeftName(TString correlNameSbSE) { fSECorrelSidebandLeftName = correlNameSbSE; }
-  void SetSECorrelHistoSidebandRightName(TString correlNameSbSE) { fSECorrelSidebandRightName = correlNameSbSE; }
-  void SetMECorrelHistoSignalName(TString correlNameSigME) { fMECorrelSignalRegionName = correlNameSigME; }
-  void SetMECorrelHistoSidebandName(TString correlNameSbME) { fMECorrelSidebandsName = correlNameSbME; }
-  void SetMECorrelHistoSidebandLeftName(TString correlNameSbME) { fMECorrelSidebandLeftName = correlNameSbME; }
-  void SetMECorrelHistoSidebandRightName(TString correlNameSbME) { fMECorrelSidebandRightName = correlNameSbME; }
-  void SetHistoSecPartName(TString histoPrimaryPartName, TString histoAllPartName)
+  void setDirNameSe(TString dirNameSE) { fDirNameSE = dirNameSE; }
+  void setDirNameMe(TString dirNameME) { fDirNameME = dirNameME; }
+  void setDirNameSecPart(TString dirNameSecPart) { fDirSecPartName = dirNameSecPart; }
+  void setMassHistoNameSgn(TString massHistoNameSgn) { fMassHistoNameSgn = massHistoNameSgn; }
+  void setMassHistoNameBkg(TString massHistoNameBkg) { fMassHistoNameBkg = massHistoNameBkg; }
+  void setMassHistoNameSBs(TString massHistoNameSBs) { fMassHistoNameSBs = massHistoNameSBs; }
+  void setSeCorrelHistoSignalName(TString correlNameSigSE) { fSECorrelSignalRegionName = correlNameSigSE; }
+  void setSeCorrelHistoSidebandName(TString correlNameSbSE) { fSECorrelSidebandsName = correlNameSbSE; }
+  void setSeCorrelHistoSidebandLeftName(TString correlNameSbSE) { fSECorrelSidebandLeftName = correlNameSbSE; }
+  void setSeCorrelHistoSidebandRightName(TString correlNameSbSE) { fSECorrelSidebandRightName = correlNameSbSE; }
+  void setMeCorrelHistoSignalName(TString correlNameSigME) { fMECorrelSignalRegionName = correlNameSigME; }
+  void setMeCorrelHistoSidebandName(TString correlNameSbME) { fMECorrelSidebandsName = correlNameSbME; }
+  void setMeCorrelHistoSidebandLeftName(TString correlNameSbME) { fMECorrelSidebandLeftName = correlNameSbME; }
+  void setMeCorrelHistoSidebandRightName(TString correlNameSbME) { fMECorrelSidebandRightName = correlNameSbME; }
+  void setHistoSecPartName(TString histoPrimaryPartName, TString histoAllPartName)
   {
     fHistoPrimaryPartName = histoPrimaryPartName;
     fHistoAllPartName = histoAllPartName;
   }
-  void SetInputFilenameFDTemplate(TString filenameFDTemplate) { fFileFDTemplateName = filenameFDTemplate; }
-  void SetInputFilenameFDPromptFrac(TString filenameFDPromptFrac) { fFileFDPromptFracName = filenameFDPromptFrac; }
-  void SetInputHistoNameFDTemplatePrompt(TString hNameFDTemplatePrompt) { fHistoFDTemplatePromptName = hNameFDTemplatePrompt; }
-  void SetInputHistoNameFDTemplateNonPrompt(TString hNameFDTemplateNonPrompt) { fHistoFDTemplateNonPromptName = hNameFDTemplateNonPrompt; }
-  void SetInputHistoNameFDPromptFrac(TString hNameFDPromptFrac) { fHistoFDPromptFracName = hNameFDPromptFrac; }
+  void setInputFilenameFdTemplate(TString filenameFDTemplate) { fFileFDTemplateName = filenameFDTemplate; }
+  void setInputFilenameFdPromptFrac(TString filenameFDPromptFrac) { fFileFDPromptFracName = filenameFDPromptFrac; }
+  void setInputHistoNameFdTemplatePrompt(TString hNameFDTemplatePrompt) { fHistoFDTemplatePromptName = hNameFDTemplatePrompt; }
+  void setInputHistoNameFdTemplateNonPrompt(TString hNameFDTemplateNonPrompt) { fHistoFDTemplateNonPromptName = hNameFDTemplateNonPrompt; }
+  void setInputHistoNameFdPromptFrac(TString hNameFDPromptFrac) { fHistoFDPromptFracName = hNameFDPromptFrac; }
 
   // Input conditions: PtCand, PtHad, PoolBins
-  void SetNpools(Int_t npools) { fNpools = npools; }
-  void SetCorrectPoolsSeparately(Bool_t usePools) { fCorrectPoolsSeparately = usePools; }
-  void SetDeltaEtaRange(Double_t etaLow = -1., Double_t etaHigh = 1)
+  void setNpools(Int_t npools) { fNpools = npools; }
+  void setCorrectPoolsSeparately(Bool_t usePools) { fCorrectPoolsSeparately = usePools; }
+  void setDeltaEtaRange(Double_t etaLow = -1., Double_t etaHigh = 1)
   {
     fDeltaEtaMin = etaLow;
     fDeltaEtaMax = etaHigh;
   }
-  void SetSubtractSoftPiInMEdistr(Bool_t subtractSoftPiME) { fSubtractSoftPiME = subtractSoftPiME; }
-  void SetBkgScaleFactor(Double_t scaleFactor) { fBkgScaleFactor = scaleFactor; }
-  void SetSignalYieldforNorm(Double_t sgnYield) { fSgnYieldNorm = sgnYield; }
-  void SetBkgYield(Double_t bkgYield) { fBkgYield = bkgYield; }
-  void SetSBYield(Double_t SBYield) { fSBYield = SBYield; }
-  void SetRebin2DcorrelHisto(Int_t rebinDeltaEta, Int_t rebinDeltaPhi)
+  void setSubtractSoftPiInMEdistr(Bool_t subtractSoftPiME) { fSubtractSoftPiME = subtractSoftPiME; }
+  void setBkgScaleFactor(Double_t scaleFactor) { fBkgScaleFactor = scaleFactor; }
+  void setSignalYieldforNorm(Double_t sgnYield) { fSgnYieldNorm = sgnYield; }
+  void setBkgYield(Double_t bkgYield) { fBkgYield = bkgYield; }
+  void setSbYield(Double_t sbYield) { fSBYield = sbYield; }
+  void setRebin2DcorrelHisto(Int_t rebinDeltaEta, Int_t rebinDeltaPhi)
   {
     fRebinAxisDeltaEta = rebinDeltaEta;
     fRebinAxisDeltaPhi = rebinDeltaPhi;
   }
-  void SetRebinOptions(Bool_t rebinAngCorr, Bool_t rebinFDCorr, Bool_t rebinSecPart)
+  void setRebinOptions(Bool_t rebinAngCorr, Bool_t rebinFDCorr, Bool_t rebinSecPart)
   {
     fRebinAngCorr = rebinAngCorr;
     fRebinFDCorr = rebinFDCorr;
     fRebinSecPart = rebinSecPart;
   }
-  void GetSignalAndBackgroundForNorm(Double_t PtCandMin, Double_t PtCandMax);
-  void NormalizeMEplot(TH2D*& histoME, TH2D*& histoMEsoftPi);
-  void SetDebugLevel(Int_t debug) { fDebug = debug; }
-  void SetDividedSidebands(Bool_t dividedSideb, Bool_t useSidebLeft, Bool_t useSidebRight)
+  void getSignalAndBackgroundForNorm(Double_t ptCandMin, Double_t ptCandMax);
+  void normalizeMePlot(TH2D*& histoME, TH2D*& histoMEsoftPi) const;
+  void setDebugLevel(Int_t debug) { fDebug = debug; }
+  void setDividedSidebands(Bool_t dividedSideb, Bool_t useSidebLeft, Bool_t useSidebRight)
   {
     fSidebandDivided = dividedSideb;
     fUseSidebLeft = useSidebLeft;
     fUseSidebRight = useSidebRight;
   }
-  void SetFDSubtraction(Bool_t subtractFD) { fFDsubtraction = subtractFD; }
-  void SetSecPartContamination(Bool_t secPartContamination) { fSecPartContamination = secPartContamination; }
-  void SetCorrBiasBtoD(Bool_t corrbiasBtoD) { fCorrBiasBtoD = corrbiasBtoD; }
-  void SetBinCandAndHad(Int_t binCand, Int_t binHad)
+  void setFdSubtraction(Bool_t subtractFD) { fFDsubtraction = subtractFD; }
+  void setSecPartContamination(Bool_t secPartContamination) { fSecPartContamination = secPartContamination; }
+  void setCorrBiasBtoD(Bool_t corrbiasBtoD) { fCorrBiasBtoD = corrbiasBtoD; }
+  void setBinCandAndHad(Int_t binCand, Int_t binHad)
   {
     fBinPtCand = binCand;
     fBinPtHad = binHad;
   }
 
   /// Analysis methods
-  TH2D* GetCorrelHisto(Int_t SEorME, Int_t SorSB, Int_t pool, Double_t PtCandMin, Double_t PtCandMax, Double_t PtHadMin, Double_t PtHadMax);
-  TH2D* GetFDTemplateHisto(Int_t PromptOrFD, Double_t PtCandMin, Double_t PtCandMax, Double_t PtHadMin, Double_t PtHadMax);
-  TH1D* GetCorrelHistoSecondaryPart(Int_t PrimaryPart, Double_t PtCandMin, Double_t PtCandMax, Double_t PtHadMin, Double_t PtHadMax);
-  TH1D* ReflectCorrHistogram(TH1D*& histo);
-  TH1D* ReflectHistoRun2(TH1D* h, Double_t scale);
-  TH1D* EvaluateMCClosModulations(Double_t PtCandMin, Double_t PtCandMax, Double_t PtHadMin, Double_t PtHadMax);
-  Double_t GetFDPromptFrac(Double_t PtCandMin, Double_t PtCandMax, Double_t PtHadMin, Double_t PtHadMax);
-  Double_t CalculateBaseline(TH1D*& histo, Bool_t totalRange = kTRUE, Bool_t reflected = kFALSE);
-  Double_t CalculateBaselineError(TH1D*& histo, Bool_t totalRange = kTRUE, Bool_t reflected = kFALSE);
-  Bool_t ReadInputSEandME();
-  Bool_t ReadInputInvMass();
-  Bool_t ReadInputFDSubtr();
-  Bool_t ReadInputSecondaryPartContamination();
-  Bool_t ExtractCorrelations(Double_t PtCandMin, Double_t PtCandMax, Double_t PtHadMin, Double_t PtHadMax, TString codeName);
-  TH1D* GetCorrectedCorrHisto() { return fCorrectedCorrHisto; }
-  TH1D* GetCorrectedCorrHisto_BaselineSubtr() { return fCorrectedCorrHisto_BaselineSubtr; }
-  TH1D* GetCorrectedCorrHisto_Reflected() { return fCorrectedCorrHisto_Reflected; }
-  TH1D* GetCorrectedCorrHisto_Reflected_BaselineSubtr() { return fCorrectedCorrHisto_Reflected_BaselineSubtr; }
+  TH2D* getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t pool, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax);
+  TH2D* getFdTemplateHisto(Int_t promptOrFd, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax);
+  TH1D* getCorrelHistoSecondaryPart(Int_t primaryPart, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax);
+  TH1D* reflectCorrHistogram(TH1D*& histo);
+  TH1D* reflectHistoRun2(TH1D* h, Double_t scale);
+  TH1D* evaluateMcClosModulations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax);
+  Double_t getFdPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax);
+  Double_t calculateBaseline(TH1D*& histo, Bool_t totalRange = kTRUE, Bool_t reflected = kFALSE);
+  Double_t calculateBaselineError(TH1D*& histo, Bool_t totalRange = kTRUE, Bool_t reflected = kFALSE);
+  Bool_t readInputSeAndMe();
+  Bool_t readInputInvMass();
+  Bool_t readInputFdSubtr();
+  Bool_t readInputSecondaryPartContamination();
+  Bool_t extractCorrelations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax, TString codeName);
+  TH1D* getCorrectedCorrHisto() { return fCorrectedCorrHisto; }
+  TH1D* getCorrectedCorrHistoBaselineSubtr() { return fCorrectedCorrHistoBaselineSubtr; }
+  TH1D* getCorrectedCorrHistoReflected() { return fCorrectedCorrHistoReflected; }
+  TH1D* getCorrectedCorrHistoReflectedBaselineSubtr() { return fCorrectedCorrHistoReflectedBaselineSubtr; }
 
   /// Histogram style
-  void SetTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, Style_t markerStyle = kFullCircle, Color_t markerColor = kRed + 1, Double_t markerSize = 1.4, Color_t lineColor = kRed + 1, Int_t lineWidth = 3, Float_t hTitleXaxisOffset = 1.0, Float_t hTitleYaxisOffset = 1.0, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Bool_t centerXaxisTitle = false, Bool_t centerYaxisTitle = false);
-  void SetTH2HistoStyle(TH2D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, TString hZaxisTitle, Float_t hTitleXaxisOffset = 1.8, Float_t hTitleYaxisOffset = 1.8, Float_t hTitleZaxisOffset = 1.2, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hTitleZaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Float_t hLabelZaxisSize = 0.060, Bool_t centerXaxisTitle = true, Bool_t centerYaxisTitle = true);
+  void setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, Style_t markerStyle = kFullCircle, Color_t markerColor = kRed + 1, Double_t markerSize = 1.4, Color_t lineColor = kRed + 1, Int_t lineWidth = 3, Float_t hTitleXaxisOffset = 1.0, Float_t hTitleYaxisOffset = 1.0, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Bool_t centerXaxisTitle = false, Bool_t centerYaxisTitle = false);
+  void setTH2HistoStyle(TH2D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, TString hZaxisTitle, Float_t hTitleXaxisOffset = 1.8, Float_t hTitleYaxisOffset = 1.8, Float_t hTitleZaxisOffset = 1.2, Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hTitleZaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060, Float_t hLabelZaxisSize = 0.060, Bool_t centerXaxisTitle = true, Bool_t centerYaxisTitle = true);
 
  private:
   TFile* fFileMass;         // File containing the mass histograms
@@ -168,10 +168,10 @@ class DhCorrelationExtraction : public TObject
   TDirectoryFile* fDirME;      // TDirectory for ME info
   TDirectoryFile* fDirSecPart; // TDirectory for seondary particle correction
 
-  TH1D* fCorrectedCorrHisto;                         // Corrected correlation histogram
-  TH1D* fCorrectedCorrHisto_BaselineSubtr;           // Corrected correlation histogram with baseline subtracion
-  TH1D* fCorrectedCorrHisto_Reflected;               // Corrected correlation histogram relected in azimuth
-  TH1D* fCorrectedCorrHisto_Reflected_BaselineSubtr; // Corrected correlation histogram reflected in azimuth with baseline subtraction
+  TH1D* fCorrectedCorrHisto;                       // Corrected correlation histogram
+  TH1D* fCorrectedCorrHistoBaselineSubtr;          // Corrected correlation histogram with baseline subtracion
+  TH1D* fCorrectedCorrHistoReflected;              // Corrected correlation histogram relected in azimuth
+  TH1D* fCorrectedCorrHistoReflectedBaselineSubtr; // Corrected correlation histogram reflected in azimuth with baseline subtraction
 
   DmesonSpecie fDmesonSpecies;           // D meson specie
   TString fDmesonLabel;                  // D meson label

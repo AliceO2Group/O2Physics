@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(decay3bodybuilder
     SOURCES decay3bodybuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2::TOFBase O2Physics::EventFilteringUtils O2::DetectorsVertexing
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2::TOFBase O2::DetectorsVertexing O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyhefour-builder
@@ -86,7 +86,7 @@ o2physics_add_dpl_workflow(tr-he-analysis
 
 o2physics_add_dpl_workflow(reduced3body-creator
     SOURCES reduced3bodyCreator.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::EventFilteringUtils O2::TOFBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::TOFBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-flow-trees
@@ -102,4 +102,14 @@ o2physics_add_dpl_workflow(hyperkink-reco-task
 o2physics_add_dpl_workflow(he3-lambda-analysis
     SOURCES he3LambdaAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-antineutron-cex
+    SOURCES nucleiAntineutronCex.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(particle-composition-correction
+    SOURCES particleCompositionCorrection.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)

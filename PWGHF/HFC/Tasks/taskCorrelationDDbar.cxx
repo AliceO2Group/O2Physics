@@ -76,37 +76,37 @@ const TString stringMCReco = "MC reco - D,Dbar candidates ";
 // definition of vectors for standard ptbin and invariant mass configurables
 const int npTBinsCorrelations = 8;
 const double pTBinsCorrelations[npTBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
-auto pTBinsCorrelations_v = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + npTBinsCorrelations + 1};
+const auto pTBinsCorrelationsV = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + npTBinsCorrelations + 1};
 const double signalRegionInnerDefault[npTBinsCorrelations] = {1.810, 1.810, 1.810, 1.810, 1.810, 1.810, 1.810, 1.810};
 const double signalRegionOuterDefault[npTBinsCorrelations] = {1.922, 1.922, 1.922, 1.922, 1.922, 1.922, 1.922, 1.922};
 const double sidebandLeftInnerDefault[npTBinsCorrelations] = {1.642, 1.642, 1.642, 1.642, 1.642, 1.642, 1.642, 1.642};
 const double sidebandLeftOuterDefault[npTBinsCorrelations] = {1.754, 1.754, 1.754, 1.754, 1.754, 1.754, 1.754, 1.754};
 const double sidebandRightInnerDefault[npTBinsCorrelations] = {1.978, 1.978, 1.978, 1.978, 1.978, 1.978, 1.978, 1.978};
 const double sidebandRightOuterDefault[npTBinsCorrelations] = {2.090, 2.090, 2.090, 2.090, 2.090, 2.090, 2.090, 2.090};
-auto signalRegionInner_v = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + npTBinsCorrelations};
-auto signalRegionOuter_v = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + npTBinsCorrelations};
-auto sidebandLeftInner_v = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + npTBinsCorrelations};
-auto sidebandLeftOuter_v = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + npTBinsCorrelations};
-auto sidebandRightInner_v = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
-auto sidebandRightOuter_v = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
+const auto signalRegionInnerV = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + npTBinsCorrelations};
+const auto signalRegionOuterV = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + npTBinsCorrelations};
+const auto sidebandLeftInnerV = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + npTBinsCorrelations};
+const auto sidebandLeftOuterV = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + npTBinsCorrelations};
+const auto sidebandRightInnerV = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
+const auto sidebandRightOuterV = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
 const int npTBinsEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::NBinsPt;
 const double efficiencyDmesonDefault[npTBinsEfficiency] = {};
-auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsEfficiency};
+const auto efficiencyDmesonV = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsEfficiency};
 
 struct HfTaskCorrelationDDbar {
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_d0_to_pi_k (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelationsV}, "pT bin limits for correlation plots"};
   // pT bins for effiencies: same as above
   Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for efficiency"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
-  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
-  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
-  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInner_v}, "Inner values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D meson specie under study"};
+  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInnerV}, "Inner values of signal region vs pT"};
+  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuterV}, "Outer values of signal region vs pT"};
+  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInnerV}, "Inner values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuterV}, "Outer values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInnerV}, "Inner values of right sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuterV}, "Outer values of right sideband vs pT"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmesonV}, "Efficiency values for D meson specie under study"};
 
   HistogramRegistry registry{
     "registry",
@@ -171,7 +171,7 @@ struct HfTaskCorrelationDDbar {
   void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
-    int nBinspTaxis = binsPtCorrelations->size() - 1;
+    int const nBinspTaxis = binsPtCorrelations->size() - 1;
     const double* valuespTaxis = binsPtCorrelations->data();
 
     for (int i = 2; i <= 3; i++) {
@@ -246,18 +246,18 @@ struct HfTaskCorrelationDDbar {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      double deltaPhi = pairEntry.deltaPhi();
-      double deltaEta = pairEntry.deltaEta();
-      double ptD = pairEntry.ptD();
-      double ptDbar = pairEntry.ptDbar();
-      double massD = pairEntry.mD();
-      double massDbar = pairEntry.mDbar();
+      double const deltaPhi = pairEntry.deltaPhi();
+      double const deltaEta = pairEntry.deltaEta();
+      double const ptD = pairEntry.ptD();
+      double const ptDbar = pairEntry.ptDbar();
+      double const massD = pairEntry.mD();
+      double const massDbar = pairEntry.mDbar();
 
-      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
+      int const pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
+      int const pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptD)) * efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptDbar)));
       }
 
@@ -303,18 +303,18 @@ struct HfTaskCorrelationDDbar {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      double deltaPhi = pairEntry.deltaPhi();
-      double deltaEta = pairEntry.deltaEta();
-      double ptD = pairEntry.ptD();
-      double ptDbar = pairEntry.ptDbar();
-      double massD = pairEntry.mD();
-      double massDbar = pairEntry.mDbar();
+      double const deltaPhi = pairEntry.deltaPhi();
+      double const deltaEta = pairEntry.deltaEta();
+      double const ptD = pairEntry.ptD();
+      double const ptDbar = pairEntry.ptDbar();
+      double const massD = pairEntry.mD();
+      double const massDbar = pairEntry.mDbar();
 
-      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
+      int const pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
+      int const pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptD)) * efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptDbar)));
       }
 
@@ -450,10 +450,10 @@ struct HfTaskCorrelationDDbar {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      double deltaPhi = pairEntry.deltaPhi();
-      double deltaEta = pairEntry.deltaEta();
-      double ptD = pairEntry.ptD();
-      double ptDbar = pairEntry.ptDbar();
+      double const deltaPhi = pairEntry.deltaPhi();
+      double const deltaEta = pairEntry.deltaEta();
+      double const ptD = pairEntry.ptD();
+      double const ptDbar = pairEntry.ptDbar();
 
       // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsPtCorrelations, ptD) == -1 || o2::analysis::findBin(binsPtCorrelations, ptDbar) == -1) {

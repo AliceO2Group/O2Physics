@@ -188,8 +188,6 @@ struct HfTaskLbReduced {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
-
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsLc = soa::Join<HfRed3Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedPidDau2s>;
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
@@ -388,19 +386,19 @@ struct HfTaskLbReduced {
   /// \param withLbMl is the flag to enable the filling with ML scores for the Lb candidate
   /// \param candidate is the Lb candidate
   /// \param candidatesLc is the table with Lc candidates
-  template <bool doMc, bool withDecayTypeCheck, bool withLcMl, bool withLbMl, typename Cand, typename CandsLc>
+  template <bool DoMc, bool WithDecayTypeCheck, bool WithLcMl, bool WithLbMl, typename Cand, typename CandsLc>
   void fillCand(Cand const& candidate,
                 CandsLc const&)
   {
     auto ptCandLb = candidate.pt();
-    auto invMassLb = hfHelper.invMassLbToLcPi(candidate);
+    auto invMassLb = HfHelper::invMassLbToLcPi(candidate);
     auto candLc = candidate.template prong0_as<CandsLc>();
     auto ptLc = candidate.ptProng0();
     auto invMassLc = candLc.invMassHypo0() > 0 ? candLc.invMassHypo0() : candLc.invMassHypo1();
     // TODO: here we are assuming that only one of the two hypotheses is filled, to be checked
-    std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
-    std::array<float, 3> posSvLc{candLc.xSecondaryVertex(), candLc.ySecondaryVertex(), candLc.zSecondaryVertex()};
-    std::array<float, 3> momLc{candLc.pVector()};
+    std::array<float, 3> const posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+    std::array<float, 3> const posSvLc{candLc.xSecondaryVertex(), candLc.ySecondaryVertex(), candLc.zSecondaryVertex()};
+    std::array<float, 3> const momLc{candLc.pVector()};
     auto cospLc = RecoDecay::cpa(posPv, posSvLc, momLc);
     auto cospXyLc = RecoDecay::cpaXY(posPv, posSvLc, momLc);
     auto decLenLc = RecoDecay::distance(posPv, posSvLc);
@@ -409,16 +407,16 @@ struct HfTaskLbReduced {
     int8_t flagMcMatchRec = 0;
     int8_t flagWrongCollision = 0;
     bool isSignal = false;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
       isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiPi);
     }
 
     if (fillHistograms) {
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         if (isSignal) {
-          registry.fill(HIST("hMassRecSig"), ptCandLb, hfHelper.invMassLbToLcPi(candidate));
+          registry.fill(HIST("hMassRecSig"), ptCandLb, HfHelper::invMassLbToLcPi(candidate));
           registry.fill(HIST("hPtProng0RecSig"), ptCandLb, candidate.ptProng0());
           registry.fill(HIST("hPtProng1RecSig"), ptCandLb, candidate.ptProng1());
           registry.fill(HIST("hImpParProdRecSig"), ptCandLb, candidate.impactParameterProduct());
@@ -430,25 +428,25 @@ struct HfTaskLbReduced {
           registry.fill(HIST("hCospRecSig"), ptCandLb, candidate.cpa());
           registry.fill(HIST("hCospXyRecSig"), ptCandLb, candidate.cpaXY());
           registry.fill(HIST("hEtaRecSig"), ptCandLb, candidate.eta());
-          registry.fill(HIST("hRapidityRecSig"), ptCandLb, hfHelper.yLb(candidate));
+          registry.fill(HIST("hRapidityRecSig"), ptCandLb, HfHelper::yLb(candidate));
           registry.fill(HIST("hinvMassLcRecSig"), ptLc, invMassLc);
           registry.fill(HIST("hDecLengthLcRecSig"), ptLc, decLenLc);
           registry.fill(HIST("hDecLengthXyLcRecSig"), ptLc, decLenXyLc);
           registry.fill(HIST("hCospLcRecSig"), ptLc, cospLc);
           registry.fill(HIST("hCospXyLcRecSig"), ptLc, cospXyLc);
-          if constexpr (withDecayTypeCheck) {
+          if constexpr (WithDecayTypeCheck) {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiPi, invMassLb, ptCandLb);
           }
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMlScoreBkgLcRecSig"), ptLc, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptLcRecSig"), ptLc, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptLcRecSig"), ptLc, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withLbMl) {
+          if constexpr (WithLbMl) {
             registry.fill(HIST("hMlScoreSigLbRecSig"), ptCandLb, candidate.mlProbLbToLcPi());
           }
         } else if (fillBackground) {
-          registry.fill(HIST("hMassRecBg"), ptCandLb, hfHelper.invMassLbToLcPi(candidate));
+          registry.fill(HIST("hMassRecBg"), ptCandLb, HfHelper::invMassLbToLcPi(candidate));
           registry.fill(HIST("hPtProng0RecBg"), ptCandLb, candidate.ptProng0());
           registry.fill(HIST("hPtProng1RecBg"), ptCandLb, candidate.ptProng1());
           registry.fill(HIST("hImpParProdRecBg"), ptCandLb, candidate.impactParameterProduct());
@@ -460,21 +458,21 @@ struct HfTaskLbReduced {
           registry.fill(HIST("hCospRecBg"), ptCandLb, candidate.cpa());
           registry.fill(HIST("hCospXyRecBg"), ptCandLb, candidate.cpaXY());
           registry.fill(HIST("hEtaRecBg"), ptCandLb, candidate.eta());
-          registry.fill(HIST("hRapidityRecBg"), ptCandLb, hfHelper.yLb(candidate));
+          registry.fill(HIST("hRapidityRecBg"), ptCandLb, HfHelper::yLb(candidate));
           registry.fill(HIST("hinvMassLcRecBg"), ptLc, invMassLc);
           registry.fill(HIST("hDecLengthLcRecBg"), ptLc, decLenLc);
           registry.fill(HIST("hDecLengthXyLcRecBg"), ptLc, decLenXyLc);
           registry.fill(HIST("hCospLcRecBg"), ptLc, cospLc);
           registry.fill(HIST("hCospXyLcRecBg"), ptLc, cospXyLc);
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMlScoreBkgLcRecBg"), ptLc, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptLcRecBg"), ptLc, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptLcRecBg"), ptLc, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withLbMl) {
+          if constexpr (WithLbMl) {
             registry.fill(HIST("hMlScoreSigLbRecBg"), ptCandLb, candidate.mlProbLbToLcPi());
           }
-        } else if constexpr (withDecayTypeCheck) {
+        } else if constexpr (WithDecayTypeCheck) {
           if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK)) { // Lb → Lc+ K- → (pK-π+) K-
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK, invMassLb, ptCandLb);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi)) { // // B0 → D- π+ → (π- K+ π-) π+
@@ -498,40 +496,40 @@ struct HfTaskLbReduced {
         registry.fill(HIST("hCosp"), ptCandLb, candidate.cpa());
         registry.fill(HIST("hCospXy"), ptCandLb, candidate.cpaXY());
         registry.fill(HIST("hEta"), ptCandLb, candidate.eta());
-        registry.fill(HIST("hRapidity"), ptCandLb, hfHelper.yLb(candidate));
+        registry.fill(HIST("hRapidity"), ptCandLb, HfHelper::yLb(candidate));
         registry.fill(HIST("hinvMassLc"), ptLc, invMassLc);
         registry.fill(HIST("hDecLengthLc"), ptLc, decLenLc);
         registry.fill(HIST("hDecLengthXyLc"), ptLc, decLenXyLc);
         registry.fill(HIST("hCospLc"), ptLc, cospLc);
         registry.fill(HIST("hCospXyLc"), ptLc, cospXyLc);
 
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           registry.fill(HIST("hMlScoreBkgLc"), ptLc, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptLc"), ptLc, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptLc"), ptLc, candidate.prong0MlScoreNonprompt());
         }
-        if constexpr (withLbMl) {
+        if constexpr (WithLbMl) {
           registry.fill(HIST("hMlScoreSigLb"), ptCandLb, candidate.mlProbLbToLcPi());
         }
       }
     }
     if (fillSparses) {
-      if constexpr (withLcMl) {
+      if constexpr (WithLcMl) {
         if (isSignal) {
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, decLenLc, cospLc);
           }
         } else if (fillBackground) {
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, decLenLc, cospLc);
           }
         }
       } else {
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           registry.fill(HIST("hMassPtCutVars"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
         } else {
           registry.fill(HIST("hMassPtCutVars"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, decLenLc, cospLc);
@@ -539,24 +537,24 @@ struct HfTaskLbReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptLc * 1000. - static_cast<int64_t>(ptLc * 1000);
-      if (flagMcMatchRec != 0 || (((doMc && fillBackground) || !doMc) && (ptCandLb >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
+      float const pseudoRndm = ptLc * 1000. - static_cast<int64_t>(ptLc * 1000);
+      if (flagMcMatchRec != 0 || (((DoMc && fillBackground) || !DoMc) && (ptCandLb >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
         float candidateMlScoreSig = -1;
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
           prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
         }
-        if constexpr (withLbMl) {
+        if constexpr (WithLbMl) {
           candidateMlScoreSig = candidate.mlProbLbToLcPi();
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
 
         float ptMother = -1.;
-        if constexpr (doMc) {
+        if constexpr (DoMc) {
           ptMother = candidate.ptMother();
         }
 
@@ -566,7 +564,7 @@ struct HfTaskLbReduced {
           ptCandLb,
           candidate.eta(),
           candidate.phi(),
-          hfHelper.yLb(candidate),
+          HfHelper::yLb(candidate),
           candidate.cpa(),
           candidate.cpaXY(),
           candidate.chi2PCA(),
@@ -617,7 +615,7 @@ struct HfTaskLbReduced {
           flagWrongCollision,
           ptMother);
 
-        if constexpr (withDecayTypeCheck) {
+        if constexpr (WithDecayTypeCheck) {
           hfRedLbMcCheck(
             flagMcMatchRec,
             flagWrongCollision,
@@ -649,7 +647,7 @@ struct HfTaskLbReduced {
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> yProngs = {particle.yProng0(), particle.yProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     if (fillHistograms) {
       registry.fill(HIST("hPtProng0Gen"), ptParticle, ptProngs[0]);
@@ -681,7 +679,7 @@ struct HfTaskLbReduced {
                    TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, false>(candidate, candidatesLc);
@@ -694,7 +692,7 @@ struct HfTaskLbReduced {
                            TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, true, false>(candidate, candidatesLc);
@@ -707,7 +705,7 @@ struct HfTaskLbReduced {
                            TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<false, false, false, true>(candidate, candidatesLc);
@@ -722,7 +720,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, false>(candidate, candidatesLc);
@@ -742,7 +740,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, false>(candidate, candidatesLc);
@@ -762,7 +760,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, true, false>(candidate, candidatesLc);
@@ -782,7 +780,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, true, false>(candidate, candidatesLc);
@@ -802,7 +800,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, false, false, true>(candidate, candidatesLc);
@@ -822,7 +820,7 @@ struct HfTaskLbReduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(HfHelper::yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       fillCand<true, true, false, true>(candidate, candidatesLc);

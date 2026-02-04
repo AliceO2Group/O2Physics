@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for dalitz ee selection
-//
+/// \file EMCPhotonCut.cxx
+/// \brief header of class for dalitz ee cuts.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_DALITZEECUT_H_
 #define PWGEM_PHOTONMESON_CORE_DALITZEECUT_H_
@@ -19,21 +19,20 @@
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
-#include "Tools/ML/MlResponse.h"
-#include "Tools/ML/model.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+#include <TNamed.h>
 
-#include "Math/Vector4D.h"
-#include "TNamed.h"
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <functional>
 #include <set>
-#include <string>
 #include <utility>
-#include <vector>
 
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
@@ -74,13 +73,9 @@ class DalitzEECut : public TNamed
     kTPConly = 1,
   };
 
-  template <typename T = int, typename TPair>
-  bool IsSelected(TPair const& pair) const
+  template <o2::soa::is_iterator TTrack1, o2::soa::is_iterator TTrack2>
+  bool IsSelected(TTrack1 const& t1, TTrack2 const& t2, float bz) const
   {
-    auto t1 = std::get<0>(pair);
-    auto t2 = std::get<1>(pair);
-    float bz = std::get<2>(pair);
-
     if (!IsSelectedTrack(t1) || !IsSelectedTrack(t2)) {
       return false;
     }
@@ -92,7 +87,7 @@ class DalitzEECut : public TNamed
     return true;
   }
 
-  template <typename TTrack1, typename TTrack2>
+  template <o2::soa::is_iterator TTrack1, o2::soa::is_iterator TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
@@ -114,7 +109,7 @@ class DalitzEECut : public TNamed
     return true;
   }
 
-  template <bool isML = false, typename TTrack, typename TCollision = int>
+  template <bool isML = false, o2::soa::is_iterator TTrack, typename TCollision = int>
   bool IsSelectedTrack(TTrack const& track, TCollision const& = 0) const
   {
     if (!track.hasITS()) {
@@ -200,7 +195,7 @@ class DalitzEECut : public TNamed
     return true;
   }
 
-  template <typename T>
+  template <o2::soa::is_iterator T>
   bool PassPID(T const& track) const
   {
     switch (mPIDScheme) {
@@ -218,7 +213,7 @@ class DalitzEECut : public TNamed
     }
   }
 
-  template <typename T>
+  template <o2::soa::is_iterator T>
   bool PassTPConly(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
@@ -226,7 +221,7 @@ class DalitzEECut : public TNamed
     return is_el_included_TPC && is_pi_excluded_TPC;
   }
 
-  template <typename T>
+  template <o2::soa::is_iterator T>
   bool PassTOFif(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
@@ -235,7 +230,7 @@ class DalitzEECut : public TNamed
     return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
-  template <typename T>
+  template <o2::soa::is_iterator T>
   bool IsSelectedTrack(T const& track, const DalitzEECuts& cut) const
   {
     switch (cut) {
@@ -361,7 +356,7 @@ class DalitzEECut : public TNamed
   float mMinTPCNsigmaPi{0}, mMaxTPCNsigmaPi{0};
   float mMinTOFNsigmaEl{-1e+10}, mMaxTOFNsigmaEl{+1e+10};
 
-  ClassDef(DalitzEECut, 1);
+  ClassDef(DalitzEECut, 2);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_DALITZEECUT_H_

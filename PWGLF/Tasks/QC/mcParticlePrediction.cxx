@@ -191,7 +191,7 @@ struct mcParticlePrediction {
     const AxisSpec axisImpactParameter{binsImpactParameter, "Impact parameter (fm)"};
     const AxisSpec axisMultiplicity{binsMultiplicity, "Multiplicity (undefined)"};
     const AxisSpec axisMultiplicityReco{binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
-    const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITSIB"};
+    const AxisSpec axisMultiplicityRecoITS{binsMultiplicityReco, "Multiplicity Reco. ITSIB"};
     const AxisSpec axisMultiplicityGenV0s{100, 0, 100, "K0s gen"};
     const AxisSpec axisMultiplicityRecoV0s{20, 0, 20, "K0s reco"};
     const AxisSpec axisBCID{o2::constants::lhc::LHCMaxBunches, -0.5, -0.5 + o2::constants::lhc::LHCMaxBunches, "BC ID in orbit"};

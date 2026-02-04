@@ -58,14 +58,15 @@ namespace o2::aod
 namespace jetInfo
 {
 // DECLARE_SOA_INDEX_COLUMN(JetIndex, jetindex); //! The jet index
-DECLARE_SOA_COLUMN(JetpT, jetpt, float);       //! jet pT
-DECLARE_SOA_COLUMN(JetEta, jeteta, float);     //! jet eta
-DECLARE_SOA_COLUMN(JetPhi, jetphi, float);     //! jet phi
-DECLARE_SOA_COLUMN(NTracks, nTracks, int16_t); //! number of charged tracks inside the jet
-DECLARE_SOA_COLUMN(NSV, nSV, int16_t);         //! Number of secondary vertices in the jet
-DECLARE_SOA_COLUMN(JetMass, mass, float);      //! The jet mass
-DECLARE_SOA_COLUMN(JetFlavor, jetFl, int16_t); //! The jet flavor (b, c, or lf)
-DECLARE_SOA_COLUMN(JetR, jetR, int16_t);       //! The jet radius
+DECLARE_SOA_COLUMN(JetpT, jetpt, float);                   //! jet pT
+DECLARE_SOA_COLUMN(JetEta, jeteta, float);                 //! jet eta
+DECLARE_SOA_COLUMN(JetPhi, jetphi, float);                 //! jet phi
+DECLARE_SOA_COLUMN(NTracks, nTracks, int16_t);             //! number of charged tracks inside the jet
+DECLARE_SOA_COLUMN(NSV, nSV, int16_t);                     //! Number of secondary vertices in the jet
+DECLARE_SOA_COLUMN(JetMass, mass, float);                  //! The jet mass
+DECLARE_SOA_COLUMN(JetFlavor, jetFl, int16_t);             //! The jet flavor (b, c, or lf)
+DECLARE_SOA_COLUMN(JetR, jetR, int16_t);                   //! The jet radius
+DECLARE_SOA_COLUMN(JetEventWeight, jetEventWeight, float); //! The jet event weight for pTHat weighting
 } // namespace jetInfo
 
 DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAM",
@@ -80,6 +81,12 @@ DECLARE_SOA_TABLE(bjetParams, "AOD", "BJETPARAM",
                   jetInfo::JetR);
 
 using bjetParam = bjetParams::iterator;
+
+DECLARE_SOA_TABLE(bjetParamsExtra, "AOD", "BJETPARAMSEXTRA",
+                  // o2::soa::Index<>,
+                  jetInfo::JetEventWeight);
+
+using bjetParamExtra = bjetParamsExtra::iterator;
 
 namespace trackInfo
 {
@@ -192,6 +199,7 @@ DECLARE_SOA_TABLE(bjetConstituents, "AOD", "BJETCONSTIT",
 struct BJetTreeCreator {
 
   Produces<aod::bjetParams> bjetParamsTable;
+  Produces<aod::bjetParamsExtra> bjetParamsExtraTable;
   Produces<aod::bjetTracksParams> bjetTracksParamsTable;
   Produces<aod::bjetTracksParamsExtra> bjetTracksExtraTable;
   Produces<aod::bjetSVParams> bjetSVParamsTable;
@@ -230,6 +238,10 @@ struct BJetTreeCreator {
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
 
+  Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
+  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
+
   Configurable<float> maxConstSV{"maxConstSV", 999.0, "maximum number of SVs to be stored in the table"};
 
   Configurable<float> svReductionFactor{"svReductionFactor", 1.0, "factor for how many SVs to keep"};
@@ -237,6 +249,7 @@ struct BJetTreeCreator {
 
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
 
+  Configurable<bool> produceSVTree{"produceSVTree", true, "produce the SV-correlated jet TTree”"};
   Configurable<bool> produceTree{"produceTree", true, "produce the jet TTree"};
 
   Configurable<float> vtxRes{"vtxRes", 0.01, "Vertex position resolution (cluster size) for GNN vertex predictions (cm)"};
@@ -407,7 +420,7 @@ struct BJetTreeCreator {
       double energySV = candSV.e();
 
       if (svIndices.size() < (svReductionFactor * myJet.template tracks_as<AnyTracks>().size()) && svIndices.size() < maxConstSV) {
-        if (produceTree) {
+        if (produceSVTree) {
           bjetSVParamsTable(bjetParamsTable.lastIndex() + 1, candSV.pt(), deltaRJetSV, massSV, energySV / myJet.energy(), candSV.impactParameterXY(), candSV.cpa(), candSV.chi2PCA(), candSV.dispersion(), candSV.decayLengthXY(), candSV.errorDecayLengthXY(), candSV.decayLength(), candSV.errorDecayLength());
         }
         svIndices.push_back(bjetSVParamsTable.lastIndex());
@@ -433,6 +446,42 @@ struct BJetTreeCreator {
         }
       }
     }
+  }
+
+  template <typename AnyTracks, typename AnalysisJet>
+  bool isAcceptedJet(AnalysisJet const& jet)
+  {
+
+    if (jetAreaFractionMin > -98.0) {
+      if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+        return false;
+      }
+    }
+    bool checkConstituentPt = true;
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      checkConstituentPt = false;
+    }
+
+    if (checkConstituentPt) {
+      bool isMinLeadingConstituent = !checkConstituentMinPt;
+      bool isMaxLeadingConstituent = true;
+
+      for (const auto& constituent : jet.template tracks_as<AnyTracks>()) {
+        double pt = constituent.pt();
+
+        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+          isMinLeadingConstituent = true;
+        }
+        if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
+          isMaxLeadingConstituent = false;
+        }
+      }
+      return isMinLeadingConstituent && isMaxLeadingConstituent;
+    }
+
+    return true;
   }
 
   using TrackLabelMap = std::unordered_map<std::string, std::vector<int>>;
@@ -605,8 +654,8 @@ struct BJetTreeCreator {
   }
   PROCESS_SWITCH(BJetTreeCreator, processDataJets, "jet information in Data", false);
 
-  using MCDJetTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::MCDSecondaryVertex3ProngIndices, aod::ChargedMCDetectorLevelJetEventWeights>>;
-  using MCPJetTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights>>;
+  using MCDJetTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::MCDSecondaryVertex3ProngIndices>>;
+  using MCPJetTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
   using FilteredCollisionMCD = soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>;
 
   Preslice<aod::JMcParticles> mcParticlesPerCollision = aod::jmcparticle::mcCollisionId;
@@ -617,6 +666,8 @@ struct BJetTreeCreator {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
     }
+
+    float eventWeight = collision.weight();
 
     registry.fill(HIST("h_vertexZ"), collision.posZ());
 
@@ -637,7 +688,6 @@ struct BJetTreeCreator {
         continue;
       }
 
-      float eventWeight = analysisJet.eventWeight();
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (analysisJet.pt() > pTHatMaxMCD * pTHat) {
         continue;
@@ -704,12 +754,13 @@ struct BJetTreeCreator {
       if (produceTree) {
         bjetConstituentsTable(bjetParamsTable.lastIndex() + 1, indicesTracks, indicesSVs);
         bjetParamsTable(analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), indicesTracks.size(), nSVs, analysisJet.mass(), jetFlavor, analysisJet.r());
+        bjetParamsExtraTable(eventWeight);
       }
     }
   }
   PROCESS_SWITCH(BJetTreeCreator, processMCJets, "jet information in MC", false);
 
-  using MCDJetTableNoSV = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetFlavourDef, aod::ChargedMCDetectorLevelJetEventWeights>>;
+  using MCDJetTableNoSV = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetFlavourDef>>;
   using JetParticleswID = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
 
   void processMCJetsForGNN(FilteredCollisionMCD::iterator const& collision, aod::JMcCollisions const&, MCDJetTableNoSV const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticleswID const& MCParticles, OriginalTracks const& origTracks, aod::McParticles const& origParticles)
@@ -723,22 +774,15 @@ struct BJetTreeCreator {
       return;
     }
 
-    registry.fill(HIST("h_vertexZ"), collision.posZ(), collision.weight());
+    float eventWeight = collision.weight();
+
+    registry.fill(HIST("h_vertexZ"), collision.posZ(), eventWeight);
 
     auto const mcParticlesPerColl = MCParticles.sliceBy(mcParticlesPerCollision, collision.mcCollisionId());
     auto const mcPJetsPerColl = MCPjets.sliceBy(mcpJetsPerCollision, collision.mcCollisionId());
 
     for (const auto& analysisJet : MCDjets) {
-
-      bool jetIncluded = false;
-      for (const auto& jetR : jetRadiiValues) {
-        if (analysisJet.r() == static_cast<int>(jetR * 100)) {
-          jetIncluded = true;
-          break;
-        }
-      }
-
-      if (!jetIncluded) {
+      if (!isAcceptedJet<JetTracksMCDwID>(analysisJet)) {
         continue;
       }
 
@@ -750,8 +794,6 @@ struct BJetTreeCreator {
       if ((jetFlavor != JetTaggingSpecies::charm && jetFlavor != JetTaggingSpecies::beauty) && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
         continue;
       }
-
-      float eventWeight = analysisJet.eventWeight();
 
       //+
       TrackLabelMap trkLabels{{"trkVtxIndex", {}}, {"trkOrigin", {}}};
@@ -792,8 +834,9 @@ struct BJetTreeCreator {
   Filter mccollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
   using FilteredCollisionMCP = soa::Filtered<aod::JMcCollisions>;
 
-  void processMCTruthJets(FilteredCollisionMCP::iterator const& /*collision*/, MCPJetTable const& MCPjets, aod::JetParticles const& MCParticles)
+  void processMCTruthJets(FilteredCollisionMCP::iterator const& collision, MCPJetTable const& MCPjets, aod::JetParticles const& MCParticles)
   {
+    float eventWeight = collision.weight();
 
     for (const auto& mcpjet : MCPjets) {
 
@@ -809,7 +852,6 @@ struct BJetTreeCreator {
         continue;
       }
 
-      float eventWeight = mcpjet.eventWeight();
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
         continue;

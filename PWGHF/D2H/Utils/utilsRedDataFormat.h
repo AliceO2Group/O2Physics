@@ -33,11 +33,11 @@ namespace o2::hf_evsel
 /// \tparam useEvSel use information from the EvSel table
 /// \tparam centEstimator centrality estimator
 /// \param collision collision to test against the selection criteria
-template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
-void checkEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& zvtxAndSel8CollAndSoftTrig, int& allSelColl, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
+template <bool UseEvSel, o2::hf_centrality::CentralityEstimator CentEstimator, typename BCs, typename Coll>
+o2::hf_evsel::HfCollisionRejectionMask getEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& zvtxAndSel8CollAndSoftTrig, int& allSelColl, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
 {
   float centrality{-1.f};
-  const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<useEvSel, o2::hf_centrality::CentralityEstimator::None, BCs>(collision, centrality, ccdb, registry);
+  const o2::hf_evsel::HfCollisionRejectionMask rejectionMask = hfEvSel.getHfCollisionRejectionMask<UseEvSel, o2::hf_centrality::CentralityEstimator::None, BCs>(collision, centrality, ccdb, registry);
   if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) {
     sel8Coll++;
   }
@@ -53,6 +53,7 @@ void checkEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, 
   if (rejectionMask == 0) {
     allSelColl++;
   }
+  return rejectionMask;
 }
 } // namespace o2::hf_evsel
 
@@ -63,7 +64,7 @@ namespace o2::pid_tpc_tof_utils
 template <typename T1>
 float getTpcTofNSigmaPi1(const T1& prong1)
 {
-  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  float const defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   bool hasTpc = prong1.hasTPC();
   bool hasTof = prong1.hasTOF();
@@ -87,7 +88,7 @@ float getTpcTofNSigmaPi1(const T1& prong1)
 template <typename T1>
 float getTpcTofNSigmaSoftPi(const T1& prongSoftPi)
 {
-  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  float const defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   bool hasTpc = prongSoftPi.hasTPC();
   bool hasTof = prongSoftPi.hasTOF();
@@ -112,7 +113,7 @@ float getTpcTofNSigmaSoftPi(const T1& prongSoftPi)
 template <typename T1>
 float getTpcTofNSigmaKa1(const T1& prong1)
 {
-  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  float const defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   bool hasTpc = prong1.hasTPC();
   bool hasTof = prong1.hasTOF();

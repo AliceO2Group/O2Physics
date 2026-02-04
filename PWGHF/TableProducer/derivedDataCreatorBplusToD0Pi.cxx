@@ -17,6 +17,7 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
@@ -92,7 +93,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  HfHelper hfHelper;
   SliceCache cache;
   static constexpr double Mass{o2::constants::physics::MassBPlus};
 
@@ -210,7 +210,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.pyProng1(),
         candidate.pzProng1(),
         candidate.errorImpactParameter1(),
-        hfHelper.cosThetaStarBplus(candidate),
+        HfHelper::cosThetaStarBplus(candidate),
         ct);
     }
     if (fillCandidateSel) {
@@ -239,7 +239,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     }
   }
 
-  template <bool isMl, bool isMc, bool onlyBkg, bool onlySig, typename CollType, typename CandType, typename CandCharmType>
+  template <bool IsMl, bool IsMc, bool OnlyBkg, bool OnlySig, typename CollType, typename CandType, typename CandCharmType>
   void processCandidates(CollType const& collisions,
                          Partition<CandType>& candidates,
                          CandCharmType const&,
@@ -247,7 +247,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
                          aod::BCs const&)
   {
     // Fill collision properties
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (confDerData.fillMcRCollId) {
         rowsCommon.matchedCollisions.clear();
       }
@@ -261,7 +261,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCand);
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         mcCollisionHasMcParticles = confDerData.fillMcRCollId && collision.has_mcCollision() && rowsCommon.hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
@@ -270,7 +270,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         continue;
       }
       LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowsCommon.rowCollBase.lastIndex() + 1);
-      rowsCommon.fillTablesCollision<isMc>(collision);
+      rowsCommon.fillTablesCollision<IsMc>(collision);
 
       // Fill candidate properties
       rowsCommon.reserveTablesCandidates(sizeTableCand);
@@ -281,31 +281,31 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateMlD0, fillCandidateMlD0, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
       }
       int8_t flagMcRec = 0, origin = 0;
       for (const auto& candidate : candidatesThisColl) {
-        if constexpr (isMl) {
+        if constexpr (IsMl) {
           if (!TESTBIT(candidate.isSelBplusToD0Pi(), aod::SelectionStep::RecoMl)) {
             continue;
           }
         }
-        if constexpr (isMc) {
+        if constexpr (IsMc) {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
-          if constexpr (onlyBkg) {
+          if constexpr (OnlyBkg) {
             if (std::abs(flagMcRec) == DecayChannelMain::BplusToD0Pi) {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
             }
           }
-          if constexpr (onlySig) {
+          if constexpr (OnlySig) {
             if (std::abs(flagMcRec) != DecayChannelMain::BplusToD0Pi) {
               continue;
             }
@@ -313,18 +313,18 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         }
         auto prongCharm = candidate.template prong0_as<CandCharmType>();
         auto prongBachelor = candidate.template prong1_as<TracksWPid>();
-        double ct = hfHelper.ctBplus(candidate);
-        double y = hfHelper.yBplus(candidate);
-        float massBplusToD0Pi = hfHelper.invMassBplusToD0Pi(candidate);
+        double const ct = HfHelper::ctBplus(candidate);
+        double const y = HfHelper::yBplus(candidate);
+        float const massBplusToD0Pi = HfHelper::invMassBplusToD0Pi(candidate);
         float mlScoreBplusToD0Pi{-1.f};
         std::vector<float> mlScoresD0;
-        bool isD0 = prongBachelor.sign() < 0;
+        bool const isD0 = prongBachelor.sign() < 0;
         if (isD0) { // is D0
           std::copy(prongCharm.mlProbD0().begin(), prongCharm.mlProbD0().end(), std::back_inserter(mlScoresD0));
         } else { // is D0bar
           std::copy(prongCharm.mlProbD0bar().begin(), prongCharm.mlProbD0bar().end(), std::back_inserter(mlScoresD0));
         }
-        if constexpr (isMl) {
+        if constexpr (IsMl) {
           mlScoreBplusToD0Pi = candidate.mlProbBplusToD0Pi();
         }
         // flag = 0 for D0 pi-, flag = 1 for D0bar pi+

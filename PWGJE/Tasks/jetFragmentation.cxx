@@ -15,7 +15,6 @@
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 
 #include "JetDerivedDataUtilities.h"
-#include "RecoDecay.h"
 
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
@@ -23,13 +22,14 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -64,6 +64,8 @@ struct JetFragmentation {
   Configurable<std::string> trackSel{"trackSel", "globalTracks", "choose track selection"};
   Configurable<int> nV0Classes{"nV0Classes", 2, "Must be 2 or 4! Number of V0 signal/bkg classes"};
   Configurable<bool> doCorrectionWithTracks{"doCorrectionWithTracks", false, "add tracks during background subtraction"};
+  Configurable<bool> fillHistsInclusiveV0s{"fillHistsInclusiveV0s", true, "Fill hists for inclusive V0s"};
+  Configurable<bool> fillHistsJets{"fillHistsJets", true, "Fill hists for jets"};
 
   Configurable<std::vector<float>> ptBinsK0S{"ptBinsK0S", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0}, "K0S pt Vals"};
   Configurable<std::vector<float>> ptBinsLambda{"ptBinsLambda", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0}, "Lambda pt Vals"};
@@ -184,7 +186,7 @@ struct JetFragmentation {
 
     AxisSpec ptJetRelDiffAxis = {binPtRelDiff, "(#it{p}_{T}^{jet, det} - #it{p}_{T}^{jet, part})/#it{p}_{T, jet}^{part}"};
     AxisSpec ptTrackRelDiffAxis = {binPtRelDiff, "(#it{p}_{T}^{track, det} - #it{p}_{T}^{track, part})/#it{p}_{T, track}^{part}"};
-    AxisSpec zRelDiffAxis = {binZRelDiff, "(#it{p}_{T}^{jet, det} - #it{p}_{T}^{jet, part})/#it{p}_{T, jet}^{part}"};
+    AxisSpec zRelDiffAxis = {binZRelDiff, "(#it{z}^{det} - #it{z}^{part})/#it{z}^{part}"};
 
     AxisSpec v0PtAxis = {binV0Pt, "#it{p}_{T}^{V0}"};
     AxisSpec v0PtRatioAxis = {binPtRatio, "#it{p}_{T}^{V0, det}/#it{p}_{T, V0}^{part}"};
@@ -776,7 +778,9 @@ struct JetFragmentation {
 
       registry.add("matching/jets/V0/jetPtnV0MatchednK0SnLambdanAntiLambda", "jet Pt, nV0 matched, nK0S nLambdan AntiLambda", HistType::kTHnSparseD, {detJetPtAxis, v0Count, v0Count, v0Count, v0Count}, true);
       registry.add("matching/jets/V0/partJetPtV0PtDetPt", "V0PartPtDetPt", HistType::kTH3D, {partJetPtAxis, v0partPtAxis, v0detPtAxis}, true);
-      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt", "V0PartPtRatioRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRatioAxis, v0PtRelDiffAxis}, true);
+      // registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt", "V0PartPtRatioRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRatioAxis, v0PtRelDiffAxis}, true);
+      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0PtRelDiffPt", "V0PartPtRelDiffPt", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, v0partPtAxis, v0PtRelDiffAxis}, true);
+      registry.add("matching/jets/V0/partJetPtDetJetPtPartV0ZRelDiffZ", "V0PartPtRelDiffZ", HistType::kTHnSparseD, {partJetPtAxis, detJetPtAxis, partZAxis, zRelDiffAxis}, true);
 
       // Matching - Matched V0s
       registry.add("matching/jets/V0/matchDetJetPtV0TrackProjPartJetPtV0TrackProj", "Matched", HistType::kTHnSparseD, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis}, true);
@@ -1097,7 +1101,7 @@ struct JetFragmentation {
   // Implementation of background subtraction at runtime
   // ---------------------------------------------------
 
-  int getPtBin(float pt, std::vector<float> ptBins)
+  int getPtBin(float pt, const std::vector<float>& ptBins)
   {
     if (pt < ptBins.at(0))
       return -1;
@@ -1212,7 +1216,7 @@ struct JetFragmentation {
     return v;
   }
   // Return the probability associated with a given outcome
-  double stateWeight(std::vector<int> state, std::vector<std::vector<double>> weights)
+  double stateWeight(const std::vector<int>& state, const std::vector<std::vector<double>>& weights)
   {
     double w = 1.;
     for (uint32_t ip = 0; ip < state.size(); ip++) {
@@ -1222,7 +1226,7 @@ struct JetFragmentation {
   }
   // Return the corrected values for z and ptjet for a given state
   // Scale values by the fraction of jet momentum carried by removed V0s
-  std::vector<double> correctedValues(std::vector<int> state, std::vector<double> values)
+  std::vector<double> correctedValues(const std::vector<int>& state, const std::vector<double>& values)
   {
     // Assumes values = (z1, z2, ..., zn, ptjet)
     std::vector<double> v(values);
@@ -1249,7 +1253,7 @@ struct JetFragmentation {
   // Return the corrected values for z and ptjet for a given state
   // Take into account tracks that would have been included in the jet regardless of the V0s
   template <typename T, typename U, typename V>
-  std::vector<double> correctedValuesPlusTracks(std::vector<int> state, V const& jet)
+  std::vector<double> correctedValuesPlusTracks(const std::vector<int>& state, V const& jet)
   {
     int ip = 0;
     double ptToSubtract = 0., ptToAdd = 0.;
@@ -1706,7 +1710,7 @@ struct JetFragmentation {
     registry.fill(HIST("data/V0/nV0sEventAccWeighted"), nV0s);
   }
   template <typename C, typename J>
-  void fillDataV0sInJetWeighted(C const& coll, J const& jet, std::vector<int> state, std::vector<double> values, double weight)
+  void fillDataV0sInJetWeighted(C const& coll, J const& jet, const std::vector<int>& state, const std::vector<double>& values, double weight)
   {
     double jetpt = values[values.size() - 1];
     int ip = 0;
@@ -2207,7 +2211,9 @@ struct JetFragmentation {
     registry.fill(HIST("matching/jets/V0/matchDetJetPtV0TrackProjPartJetPtV0TrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0Pt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetPt"), partJet.pt(), particle.pt(), detJet.pt(), weight);
-    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    // registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), v0.pt() / particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), (v0.pt() - particle.pt()) / particle.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0ZRelDiffZ"), partJet.pt(), detJet.pt(), partTrackProj, (detTrackProj - partTrackProj) / partTrackProj, weight);
 
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0PtCtauLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauLambda, weight);
     registry.fill(HIST("matching/jets/V0/partJetPtV0PtDetJetPtV0PtCtauAntiLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauAntiLambda, weight);
@@ -2734,8 +2740,14 @@ struct JetFragmentation {
 
     registry.fill(HIST("data/hEvents"), 1.5);
     registry.fill(HIST("data/V0/nV0sEvent"), V0s.size());
-    fillDataV0sInclusive(coll, V0s);
-    fillDataV0sInclusiveWeighted(coll, V0s);
+
+    if (fillHistsInclusiveV0s) {
+      fillDataV0sInclusive(coll, V0s);
+      fillDataV0sInclusiveWeighted(coll, V0s);
+    }
+
+    if (!fillHistsJets)
+      return;
 
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax))
@@ -2822,9 +2834,14 @@ struct JetFragmentation {
     registry.fill(HIST("matching/V0/nV0sEvent"), V0s.size());
     registry.fill(HIST("matching/V0/nV0sEventWeighted"), V0s.size(), weight);
 
-    fillMcdV0sInclusive(coll, V0s, weight);
-    fillMcpV0sInclusive(pV0s, weight);
-    fillMatchingV0sInclusive<aod::JetTracksMCD, aod::JetParticles>(coll, V0s, pV0s, weight);
+    if (fillHistsInclusiveV0s) {
+      fillMcdV0sInclusive(coll, V0s, weight);
+      fillMcpV0sInclusive(pV0s, weight);
+      fillMatchingV0sInclusive<aod::JetTracksMCD, aod::JetParticles>(coll, V0s, pV0s, weight);
+    }
+
+    if (!fillHistsJets)
+      return;
 
     for (const auto& detJet : v0jetsMCD) {
       if (!jetfindingutilities::isInEtaAcceptance(detJet, -99., -99., v0EtaMin, v0EtaMax))

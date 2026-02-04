@@ -20,12 +20,15 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -75,7 +78,8 @@ struct TreeCreatorElectronMLDDA {
   HistogramRegistry registry{
     "registry",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      {"Event/hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      {"Event/hNumContrib", "Number of contributors to PV;N_{contrib}^{PV};Entries", {HistType::kTH1F, {{65001, -0.5f, 65000.5f}}}},
       {"V0/hAP", "Armenteros Podolanski", {HistType::kTH2F, {{200, -1.f, +1.f}, {250, 0, 0.25}}}},
       {"V0/hXY_Gamma", "photon conversion point in XY;X (cm);Y (cm)", {HistType::kTH2F, {{400, -100, +100}, {400, -100, +100}}}},
       {"V0/hMassGamma_Rxy", "V0 mass gamma", {HistType::kTH2F, {{200, 0, 100}, {100, 0, 0.1}}}},
@@ -122,6 +126,13 @@ struct TreeCreatorElectronMLDDA {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz_input", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+
+  // for zorro
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fHighTrackMult,fHighFt0cFv0Mult", "comma-separated software trigger names"};
+  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+  Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  Configurable<bool> cfgUseZorro{"cfgUseZorro", false, "flag to analyze software-triggered data"};
 
   Configurable<float> downscaling_electron_highP{"downscaling_electron_highP", 1.1, "down scaling factor to store electron at high p"};
   Configurable<float> downscaling_pion_highP{"downscaling_pion_highP", 1.1, "down scaling factor to store pion at high p"};
@@ -167,6 +178,8 @@ struct TreeCreatorElectronMLDDA {
     Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   struct : ConfigurableGroup {
@@ -287,6 +300,8 @@ struct TreeCreatorElectronMLDDA {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::DCA mDcaInfoCov;
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  ctpRateFetcher mRateFetcher;
+  Zorro zorro;
 
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
@@ -323,6 +338,13 @@ struct TreeCreatorElectronMLDDA {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (cfgUseZorro) {
+      zorro.setCCDBpath(ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(bcMarginForSoftwareTrigger); // this does nothing.
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
+      zorro.populateHistRegistry(registry, bc.runNumber());
     }
 
     // load matLUT for this timestamp
@@ -592,7 +614,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TCollision, typename TTrack>
-  void fillTrackTable(TCollision const& collision, TTrack const& track, const uint8_t pidlabel)
+  void fillTrackTable(TCollision const& collision, TTrack const& track, const uint8_t pidlabel, const float hadronicRate)
   {
     if (store_ele_band_only && !isElectron(track)) {
       return;
@@ -654,7 +676,7 @@ struct TreeCreatorElectronMLDDA {
     }
 
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
-      emprimarytracks(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
+      emprimarytracks(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), hadronicRate,
                       trackParCov.getP(), trackParCov.getTgl(), track.sign(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(), track.tpcNClsPID(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
@@ -762,6 +784,7 @@ struct TreeCreatorElectronMLDDA {
 
   Filter collisionFilter_track_occupancy = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_ft0c_occupancy = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::evsel::sel8 == true;
   using filteredMyCollisions = soa::Filtered<MyCollisions>;
 
@@ -777,7 +800,7 @@ struct TreeCreatorElectronMLDDA {
   {
     stored_trackIds.reserve(tracks.size());
     for (const auto& collision : collisions) {
-      registry.fill(HIST("hEventCounter"), 1.0); // all
+      registry.fill(HIST("Event/hEventCounter"), 1.0); // all
 
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -786,10 +809,17 @@ struct TreeCreatorElectronMLDDA {
         continue;
       }
 
+      if (cfgUseZorro && !zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) {
+        continue;
+      }
+
       if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
-      registry.fill(HIST("hEventCounter"), 2.0); // selected
+      registry.fill(HIST("Event/hEventCounter"), 2.0); // selected
+      registry.fill(HIST("Event/hNumContrib"), collision.numContrib());
+
+      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3; // kHz
 
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
       for (const auto& v0 : v0s_coll) {
@@ -825,7 +855,7 @@ struct TreeCreatorElectronMLDDA {
                 if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
                   registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.tpcInnerParam(), neg.tpcSignal());
                   registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.tpcInnerParam(), neg.beta());
-                  fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
+                  fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion), hadronicRate);
                 }
               }
               if (isPion(pos) && isSelectedV0Leg(collision, pos) && isPionTightTOFreq(neg) && isSelectedV0LegTight(collision, neg)) {
@@ -833,7 +863,7 @@ struct TreeCreatorElectronMLDDA {
                 if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
                   registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
                   registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.tpcInnerParam(), pos.beta());
-                  fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
+                  fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion), hadronicRate);
                 }
               }
             } // end of K0S
@@ -843,7 +873,7 @@ struct TreeCreatorElectronMLDDA {
             if (isProton(pos) && isSelectedV0Leg(collision, pos) && isPionTight(neg) && isSelectedV0LegTight(collision, neg)) {
               registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
               if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
-                fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
+                fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton), hadronicRate);
                 registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.tpcInnerParam(), pos.tpcSignal());
                 registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.tpcInnerParam(), pos.beta());
               }
@@ -851,7 +881,7 @@ struct TreeCreatorElectronMLDDA {
             if (isPionTight(pos) && isSelectedV0LegTight(collision, pos) && isProton(neg) && isSelectedV0Leg(collision, neg)) {
               registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
               if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
-                fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
+                fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton), hadronicRate);
                 registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.tpcInnerParam(), neg.tpcSignal());
                 registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.tpcInnerParam(), neg.beta());
               }
@@ -865,7 +895,7 @@ struct TreeCreatorElectronMLDDA {
           registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
           if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
             registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-            fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
+            fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron), hadronicRate);
             registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.tpcInnerParam(), neg.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_El"), neg.tpcInnerParam(), neg.beta());
           }
@@ -876,7 +906,7 @@ struct TreeCreatorElectronMLDDA {
           registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
           if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
             registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-            fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
+            fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron), hadronicRate);
             registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.tpcInnerParam(), pos.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_El"), pos.tpcInnerParam(), pos.beta());
           }
@@ -966,7 +996,7 @@ struct TreeCreatorElectronMLDDA {
           if (cascadecuts.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadecuts.cfg_max_mass_Omega) { // select Omega candidates
             registry.fill(HIST("V0/hTPCdEdx_P_Ka"), bachelor.tpcInnerParam(), bachelor.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_Ka"), bachelor.tpcInnerParam(), bachelor.beta());
-            fillTrackTable(collision, bachelor, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kKaon));
+            fillTrackTable(collision, bachelor, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kKaon), hadronicRate);
           }
         }
       } // end of cascade loop

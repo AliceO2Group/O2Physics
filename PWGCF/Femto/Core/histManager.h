@@ -26,6 +26,13 @@ namespace o2::analysis::femto
 namespace histmanager
 {
 
+// plot level for secondaries during mc processing
+enum SecondaryPlotLevel {
+  kSecondaryPlotLevel1 = 1,
+  kSecondaryPlotLevel2 = 2,
+  kSecondaryPlotLevel3 = 3
+};
+
 template <typename Hist>
 struct HistInfo {
   Hist hist;
@@ -35,47 +42,43 @@ struct HistInfo {
 };
 
 template <typename EnumType, typename ArrayType>
-constexpr o2::framework::HistType GetHistType(EnumType variable, const ArrayType& array)
+constexpr o2::framework::HistType getHistType(EnumType variable, const ArrayType& array)
 {
-  for (const auto& entry : array) {
-    if (entry.hist == variable) {
-      return entry.histtype;
-    }
-  }
-  return o2::framework::kUndefinedHist;
+  const auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
+    return entry.hist == variable;
+  });
+
+  return it != array.end() ? it->histtype : o2::framework::kUndefinedHist;
 }
 
 template <typename EnumType, typename ArrayType>
-constexpr std::string_view GetHistName(EnumType variable, const ArrayType& array)
+constexpr std::string_view getHistName(EnumType variable, const ArrayType& array)
 {
-  for (const auto& entry : array) {
-    if (entry.hist == variable) {
-      return entry.histname;
-    }
-  }
-  return ""; // Return an empty string or a default name if not found
+  auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
+    return entry.hist == variable;
+  });
+
+  return (it != array.end()) ? it->histname : std::string_view{};
 }
 
 template <typename EnumType, typename ArrayType>
-constexpr std::string GetHistNamev2(EnumType variable, const ArrayType& array)
+std::string getHistNameV2(EnumType variable, const ArrayType& array)
 {
-  for (const auto& entry : array) {
-    if (entry.hist == variable) {
-      return std::string(entry.histname);
-    }
-  }
-  return std::string(""); // Return an empty string or a default name if not found
+  auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
+    return entry.hist == variable;
+  });
+
+  return (it != array.end()) ? std::string(it->histname) : std::string{};
 }
 
 template <typename EnumType, typename ArrayType>
-constexpr const char* GetHistDesc(EnumType variable, const ArrayType& array)
+constexpr const char* getHistDesc(EnumType variable, const ArrayType& array)
 {
-  for (const auto& entry : array) {
-    if (entry.hist == variable) {
-      return entry.histdesc.data();
-    }
-  }
-  return ""; // Return an empty string or a default description if not found
+  auto it = std::find_if(array.begin(), array.end(), [=](const auto& entry) {
+    return entry.hist == variable;
+  });
+
+  return it != array.end() ? it->histdesc.data() : "";
 }
 } // namespace histmanager
 } // namespace o2::analysis::femto

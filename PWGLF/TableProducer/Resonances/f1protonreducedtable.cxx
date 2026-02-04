@@ -14,39 +14,43 @@
 ///
 /// \author Sourav Kundu, sourav.kundu@cern.ch
 
-#include <Framework/Configurable.h>
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
-#include <TMath.h>
-#include <fairlogger/Logger.h>
-#include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
-
-#include <iostream>
-#include <iterator>
-#include <string>
-#include <vector>
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/ReducedF1ProtonTables.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/DataModel/PIDResponseITS.h"
+#include "MathUtils/BetheBlochAleph.h"
+#include <Framework/Configurable.h>
+
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
+#include <TDatabasePDG.h> // FIXME
+#include <TMath.h>
+#include <TPDGCode.h> // FIXME
+
+#include <fairlogger/Logger.h>
+
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,8 +70,14 @@ struct f1protonreducedtable {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // Configs for events
-  Configurable<bool> ConfEvtSelectZvtx{"ConfEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
-  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+
+  /// Event selection
+  struct : ConfigurableGroup {
+    std::string prefix = std::string("EventSel");
+    Configurable<bool> ConfEvtSelectZvtx{"ConfEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
+    Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<bool> ConfEvtSel8{"ConfEvtSel8", true, "Event selection sel8"};
+  } EventSel;
 
   // event spherocity calculation
   Configurable<int> trackSphDef{"trackSphDef", 0, "Spherocity Definition: |pT| = 1 -> 0, otherwise -> 1"};
@@ -181,7 +191,10 @@ struct f1protonreducedtable {
   template <typename T>
   bool isSelectedEvent(T const& col)
   {
-    if (ConfEvtSelectZvtx && std::abs(col.posZ()) > ConfEvtZvtx) {
+    if (EventSel.ConfEvtSelectZvtx && std::abs(col.posZ()) > EventSel.ConfEvtZvtx) {
+      return false;
+    }
+    if (EventSel.ConfEvtSel8 && !col.sel8()) {
       return false;
     }
     return true;
@@ -261,7 +274,7 @@ struct f1protonreducedtable {
   template <typename T>
   double updatePID(T const& track, double bgScaling, std::vector<double> BB)
   {
-    double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), BB[0], BB[1], BB[2], BB[3], BB[4]);
+    double expBethe = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), BB[0], BB[1], BB[2], BB[3], BB[4]);
     double expSigma = expBethe * BB[5];
     return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }
@@ -494,7 +507,7 @@ struct f1protonreducedtable {
   Filter dcaFilter = nabs(aod::track::dcaXY) < ConfTrkDCAxyMaxF1Proton && nabs(aod::track::dcaZ) < ConfTrkDCAzMaxF1Proton;
 
   // using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-  using EventCandidates = aod::Collisions;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels>;
   using ResoV0s = aod::V0Datas;
   using PrimaryTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                          aod::pidTPCFullPi, aod::pidTOFFullPi,
@@ -543,12 +556,16 @@ struct f1protonreducedtable {
     std::vector<int> PionTOFHitFinal = {};
     std::vector<float> PionTPC = {};
     std::vector<float> PionTPCFinal = {};
+    std::vector<float> PionTOFNsigma = {};
+    std::vector<float> PionTOFNsigmaFinal = {};
 
     // keep TOF Hit of kaon
     std::vector<int> KaonTOFHit = {};
     std::vector<int> KaonTOFHitFinal = {};
     std::vector<float> KaonTPC = {};
     std::vector<float> KaonTPCFinal = {};
+    std::vector<float> KaonTOFNsigma = {};
+    std::vector<float> KaonTOFNsigmaFinal = {};
     std::vector<float> KaonTPCPionHypo = {};
     std::vector<float> KaonTPCPionHypoFinal = {};
 
@@ -557,6 +574,68 @@ struct f1protonreducedtable {
 
     // keep status of F1 signal unlike or wrong sign
     std::vector<float> f1signal = {};
+
+    // keep track dcaxy
+    std::vector<float> PionDcaxy = {};
+    std::vector<float> KaonDcaxy = {};
+    std::vector<float> ProtonDcaxy = {};
+    std::vector<float> K0D1Dcaxy = {};
+    std::vector<float> K0D2Dcaxy = {};
+
+    // keep track ncls
+    std::vector<float> PionTPCNcls = {};
+    std::vector<float> KaonTPCNcls = {};
+    std::vector<float> ProtonTPCNcls = {};
+    std::vector<float> K0D1TPCNcls = {};
+    std::vector<float> K0D2TPCNcls = {};
+
+    // keep track ncrs
+    std::vector<float> PionTPCNcrs = {};
+    std::vector<float> KaonTPCNcrs = {};
+    std::vector<float> ProtonTPCNcrs = {};
+    std::vector<float> K0D1TPCNcrs = {};
+    std::vector<float> K0D2TPCNcrs = {};
+
+    // keep track dcaz
+    std::vector<float> PionDcaz = {};
+    std::vector<float> KaonDcaz = {};
+    std::vector<float> ProtonDcaz = {};
+
+    // keep v0 topology
+    std::vector<float> K0Cpa = {};
+    std::vector<float> K0radius = {};
+    std::vector<float> K0DcaBetweenDaughters = {};
+    std::vector<float> K0Dca = {};
+    std::vector<float> K0LifeTime = {};
+
+    // keep track dcaxy
+    std::vector<float> PionDcaxyFinal = {};
+    std::vector<float> KaonDcaxyFinal = {};
+    std::vector<float> K0D1DcaxyFinal = {};
+    std::vector<float> K0D2DcaxyFinal = {};
+
+    // keep track ncls
+    std::vector<float> PionTPCNclsFinal = {};
+    std::vector<float> KaonTPCNclsFinal = {};
+    std::vector<float> K0D1TPCNclsFinal = {};
+    std::vector<float> K0D2TPCNclsFinal = {};
+
+    // keep track ncrs
+    std::vector<float> PionTPCNcrsFinal = {};
+    std::vector<float> KaonTPCNcrsFinal = {};
+    std::vector<float> K0D1TPCNcrsFinal = {};
+    std::vector<float> K0D2TPCNcrsFinal = {};
+
+    // keep track dcaz
+    std::vector<float> PionDcazFinal = {};
+    std::vector<float> KaonDcazFinal = {};
+
+    // keep v0 topology
+    std::vector<float> K0CpaFinal = {};
+    std::vector<float> K0radiusFinal = {};
+    std::vector<float> K0DcaBetweenDaughtersFinal = {};
+    std::vector<float> K0DcaFinal = {};
+    std::vector<float> K0LifeTimeFinal = {};
 
     // Prepare vectors for different species
     std::vector<ROOT::Math::PtEtaPhiMVector> protons, kaons, pions, kshorts, f1resonance, f1resonanced1, f1resonanced2, f1resonanced3;
@@ -636,7 +715,14 @@ struct f1protonreducedtable {
             pions.push_back(temp);
             PionIndex.push_back(track.globalIndex());
             PionCharge.push_back(track.sign());
+
+            PionDcaxy.push_back(std::abs(track.dcaXY()));
+            PionDcaz.push_back(std::abs(track.dcaZ()));
+            PionTPCNcls.push_back(std::abs(track.tpcNClsFound()));
+            PionTPCNcrs.push_back(std::abs(track.tpcNClsCrossedRows()));
+
             auto PionTOF = 0;
+            auto nSigmaPionTOF = -999;
             if (track.sign() > 0) {
               qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaP[0], track.pt());
               PionTPC.push_back(nTPCSigmaP[0]);
@@ -647,9 +733,11 @@ struct f1protonreducedtable {
             }
             if (track.hasTOF()) {
               qaRegistry.fill(HIST("hNsigmaPtpionTOF"), track.tofNSigmaPi(), track.pt());
+              nSigmaPionTOF = track.tofNSigmaPi();
               PionTOF = 1;
             }
             PionTOFHit.push_back(PionTOF);
+            PionTOFNsigma.push_back(nSigmaPionTOF);
           }
 
           if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1]) && (itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) < 3.0)) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]) && (itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track) < 3.0))) {
@@ -657,7 +745,14 @@ struct f1protonreducedtable {
             kaons.push_back(temp);
             KaonIndex.push_back(track.globalIndex());
             KaonCharge.push_back(track.sign());
+
+            KaonDcaxy.push_back(std::abs(track.dcaXY()));
+            KaonDcaz.push_back(std::abs(track.dcaZ()));
+            KaonTPCNcls.push_back(std::abs(track.tpcNClsFound()));
+            KaonTPCNcrs.push_back(std::abs(track.tpcNClsCrossedRows()));
+
             auto KaonTOF = 0;
+            auto nSigmaKaonTOF = -999.0;
             if (track.sign() > 0) {
               qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], nTPCSigmaP[0], track.pt());
               KaonTPC.push_back(nTPCSigmaP[1]);
@@ -671,8 +766,10 @@ struct f1protonreducedtable {
             if (track.hasTOF()) {
               qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track.tofNSigmaKa(), track.pt());
               KaonTOF = 1;
+              nSigmaKaonTOF = track.tofNSigmaKa();
             }
             KaonTOFHit.push_back(KaonTOF);
+            KaonTOFNsigma.push_back(nSigmaKaonTOF);
           }
 
           if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2]) && (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < 3.0)) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]) && (itsResponse.nSigmaITS<o2::track::PID::Proton>(track) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Proton>(track) < 3.0))) {
@@ -680,6 +777,12 @@ struct f1protonreducedtable {
             protons.push_back(temp);
             ProtonIndex.push_back(track.globalIndex());
             ProtonCharge.push_back(track.sign());
+
+            ProtonDcaxy.push_back(std::abs(track.dcaXY()));
+            ProtonDcaz.push_back(std::abs(track.dcaZ()));
+            ProtonTPCNcls.push_back(std::abs(track.tpcNClsFound()));
+            ProtonTPCNcrs.push_back(std::abs(track.tpcNClsCrossedRows()));
+
             if (track.sign() > 0) {
               qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaP[2], track.pt());
               ProtonTPCNsigma.push_back(nTPCSigmaP[2]);
@@ -694,7 +797,7 @@ struct f1protonreducedtable {
               ProtonTOFHit.push_back(1);
             }
             if (!track.hasTOF()) {
-              ProtonTOFNsigma.push_back(999.0);
+              ProtonTOFNsigma.push_back(-999.0);
               ProtonTOFHit.push_back(0);
             }
           }
@@ -726,6 +829,20 @@ struct f1protonreducedtable {
           kshorts.push_back(temp);
           KshortPosDaughIndex.push_back(postrack.globalIndex());
           KshortNegDaughIndex.push_back(negtrack.globalIndex());
+
+          K0D1Dcaxy.push_back(std::abs(postrack.dcaXY()));
+          K0D1TPCNcls.push_back(std::abs(postrack.tpcNClsFound()));
+          K0D1TPCNcrs.push_back(std::abs(postrack.tpcNClsCrossedRows()));
+
+          K0D2Dcaxy.push_back(std::abs(negtrack.dcaXY()));
+          K0D2TPCNcls.push_back(std::abs(negtrack.tpcNClsFound()));
+          K0D2TPCNcrs.push_back(std::abs(negtrack.tpcNClsCrossedRows()));
+
+          K0Cpa.push_back(std::abs(v0.v0cosPA()));
+          K0radius.push_back(std::abs(v0.v0radius()));
+          K0DcaBetweenDaughters.push_back(std::abs(v0.dcaV0daughters()));
+          K0LifeTime.push_back(std::abs(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass()));
+          K0Dca.push_back(std::abs(v0.dcav0topv()));
         }
 
         if (pions.size() != 0 && kaons.size() != 0 && kshorts.size() != 0) {
@@ -774,11 +891,36 @@ struct f1protonreducedtable {
                 F1KaonIndex.push_back(KaonIndex.at(i2));
                 F1KshortDaughterPositiveIndex.push_back(KshortPosDaughIndex.at(i3));
                 F1KshortDaughterNegativeIndex.push_back(KshortNegDaughIndex.at(i3));
-                PionTOFHitFinal.push_back(PionTOFHit.at(i1)); // Pion TOF Hit
-                KaonTOFHitFinal.push_back(KaonTOFHit.at(i2)); // Kaon TOF Hit
-                PionTPCFinal.push_back(PionTPC.at(i1));       // Pion TPC
-                KaonTPCFinal.push_back(KaonTPC.at(i2));       // Kaon TPC
+                PionTOFHitFinal.push_back(PionTOFHit.at(i1));           // Pion TOF Hit
+                KaonTOFHitFinal.push_back(KaonTOFHit.at(i2));           // Kaon TOF Hit
+                PionTPCFinal.push_back(PionTPC.at(i1));                 // Pion TPC
+                KaonTPCFinal.push_back(KaonTPC.at(i2));                 // Kaon TPC
                 KaonTPCPionHypoFinal.push_back(KaonTPCPionHypo.at(i2)); // Kaon TPC
+
+                // Fill variable for systematic
+
+                PionTOFNsigmaFinal.push_back(PionTOFNsigma.at(i1));
+                PionDcaxyFinal.push_back(PionDcaxy.at(i1));
+                PionDcazFinal.push_back(PionDcaz.at(i1));
+                PionTPCNcrsFinal.push_back(PionTPCNcrs.at(i1));
+                PionTPCNclsFinal.push_back(PionTPCNcls.at(i1));
+                KaonTOFNsigmaFinal.push_back(KaonTOFNsigma.at(i2));
+                KaonDcaxyFinal.push_back(KaonDcaxy.at(i2));
+                KaonDcazFinal.push_back(KaonDcaz.at(i2));
+                KaonTPCNcrsFinal.push_back(KaonTPCNcrs.at(i2));
+                KaonTPCNclsFinal.push_back(KaonTPCNcls.at(i2));
+                K0D1DcaxyFinal.push_back(K0D1Dcaxy.at(i3));
+                K0D1TPCNcrsFinal.push_back(K0D1TPCNcrs.at(i3));
+                K0D1TPCNclsFinal.push_back(K0D1TPCNcls.at(i3));
+                K0D2DcaxyFinal.push_back(K0D2Dcaxy.at(i3));
+                K0D2TPCNcrsFinal.push_back(K0D2TPCNcrs.at(i3));
+                K0D2TPCNclsFinal.push_back(K0D2TPCNcls.at(i3));
+                K0CpaFinal.push_back(K0Cpa.at(i3));
+                K0radiusFinal.push_back(K0radius.at(i3));
+                K0DcaBetweenDaughtersFinal.push_back(K0DcaBetweenDaughters.at(i3));
+                K0DcaFinal.push_back(K0Dca.at(i3));
+                K0LifeTimeFinal.push_back(K0LifeTime.at(i3));
+
                 if (pairsign > 0) {
                   qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
                   numberF1 = numberF1 + 1;
@@ -835,13 +977,13 @@ struct f1protonreducedtable {
           F1d1dummy = f1resonanced1.at(i5);
           F1d2dummy = f1resonanced2.at(i5);
           F1d3dummy = f1resonanced3.at(i5);
-          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), PionTPCFinal.at(i5), KaonTPCFinal.at(i5), KaonTPCPionHypoFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5));
+          f1track(indexEvent, f1signal.at(i5), F1VectorDummy.Px(), F1VectorDummy.Py(), F1VectorDummy.Pz(), F1d1dummy.Px(), F1d1dummy.Py(), F1d1dummy.Pz(), F1d2dummy.Px(), F1d2dummy.Py(), F1d2dummy.Pz(), F1d3dummy.Px(), F1d3dummy.Py(), F1d3dummy.Pz(), PionTOFHitFinal.at(i5), KaonTOFHitFinal.at(i5), PionTPCFinal.at(i5), KaonTPCFinal.at(i5), KaonTPCPionHypoFinal.at(i5), F1VectorDummy.M(), f1kaonkshortmass.at(i5), F1PionIndex.at(i5), F1KaonIndex.at(i5), F1KshortDaughterPositiveIndex.at(i5), F1KshortDaughterNegativeIndex.at(i5), PionTOFNsigmaFinal.at(i5), PionDcaxyFinal.at(i5), PionDcazFinal.at(i5), PionTPCNclsFinal.at(i5), PionTPCNcrsFinal.at(i5), KaonTOFNsigmaFinal.at(i5), KaonDcaxyFinal.at(i5), KaonDcazFinal.at(i5), KaonTPCNclsFinal.at(i5), KaonTPCNcrsFinal.at(i5), K0D1DcaxyFinal.at(i5), K0D1TPCNclsFinal.at(i5), K0D1TPCNcrsFinal.at(i5), K0D2DcaxyFinal.at(i5), K0D2TPCNclsFinal.at(i5), K0D2TPCNcrsFinal.at(i5), K0CpaFinal.at(i5), K0radiusFinal.at(i5), K0DcaBetweenDaughtersFinal.at(i5), K0DcaFinal.at(i5), K0LifeTimeFinal.at(i5));
         }
         //// Fill track table for proton//////////////////
         for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
           auto i6 = std::distance(protons.begin(), iproton);
           ProtonVectorDummy2 = protons.at(i6);
-          protontrack(indexEvent, ProtonCharge.at(i6), ProtonVectorDummy2.Px(), ProtonVectorDummy2.Py(), ProtonVectorDummy2.Pz(), ProtonTPCNsigma.at(i6), ProtonTOFHit.at(i6), ProtonTOFNsigma.at(i6), ProtonIndex.at(i6));
+          protontrack(indexEvent, ProtonCharge.at(i6), ProtonVectorDummy2.Px(), ProtonVectorDummy2.Py(), ProtonVectorDummy2.Pz(), ProtonTPCNsigma.at(i6), ProtonTOFHit.at(i6), ProtonTOFNsigma.at(i6), ProtonIndex.at(i6), ProtonDcaxy.at(i6), ProtonDcaz.at(i6), ProtonTPCNcls.at(i6), ProtonTPCNcrs.at(i6));
         }
       }
     }

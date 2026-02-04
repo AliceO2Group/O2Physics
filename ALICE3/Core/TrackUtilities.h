@@ -27,6 +27,43 @@
 namespace o2::upgrade
 {
 
+/// Struct to store mc info for the otf decayer
+struct OTFParticle {
+  int mPdgCode;
+  float mE;
+  float mVx, mVy, mVz;
+  float mPx, mPy, mPz;
+  bool mIsAlive;
+
+  // Setters
+  void setIsAlive(bool isAlive) { mIsAlive = isAlive; }
+  void setPDG(int pdg) { mPdgCode = pdg; }
+  void setVxVyVz(float vx, float vy, float vz)
+  {
+    mVx = vx;
+    mVy = vy;
+    mVz = vz;
+  }
+  void setPxPyPzE(float px, float py, float pz, float e)
+  {
+    mPx = px;
+    mPy = py;
+    mPz = pz;
+    mE = e;
+  }
+
+  // Getters
+  int pdgCode() const { return mPdgCode; }
+  int isAlive() const { return mIsAlive; }
+  float vx() const { return mVx; }
+  float vy() const { return mVy; }
+  float vz() const { return mVz; }
+  float px() const { return mPx; }
+  float py() const { return mPy; }
+  float pz() const { return mPz; }
+  float e() const { return mE; }
+};
+
 /// Function to convert a TLorentzVector into a perfect Track
 /// \param charge particle charge (integer)
 /// \param particle the particle to convert (TLorentzVector)
@@ -56,6 +93,20 @@ void convertTLorentzVectorToO2Track(int pdgCode,
     charge = pdgInfo->Charge() / 3;
   }
   convertTLorentzVectorToO2Track(charge, particle, productionVertex, o2track);
+}
+
+/// Function to convert a OTFParticle into a perfect Track
+/// \param particle the particle to convert (OTFParticle)
+/// \param o2track the address of the resulting TrackParCov
+/// \param pdg the pdg service
+template <typename PdgService>
+void convertOTFParticleToO2Track(const OTFParticle& particle,
+                                 o2::track::TrackParCov& o2track,
+                                 const PdgService& pdg)
+{
+  static TLorentzVector tlv;
+  tlv.SetPxPyPzE(particle.px(), particle.py(), particle.pz(), particle.e());
+  convertTLorentzVectorToO2Track(particle.pdgCode(), tlv, {particle.vx(), particle.vy(), particle.vz()}, o2track, pdg);
 }
 
 /// Function to convert a McParticle into a perfect Track

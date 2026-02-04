@@ -17,7 +17,6 @@
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -27,8 +26,6 @@
 #include <Framework/Logger.h>
 
 #include <TPDGCode.h>
-
-#include <Rtypes.h>
 
 #include <cmath>
 #include <cstddef>
@@ -59,11 +56,11 @@ Region getRegion(T const deltaPhi)
 {
   if (std::abs(deltaPhi) < PhiTowardMax) {
     return Toward;
-  } else if (deltaPhi > PhiAwayMin && deltaPhi < PhiAwayMax) {
-    return Away;
-  } else {
-    return Transverse;
   }
+  if (deltaPhi > PhiAwayMin && deltaPhi < PhiAwayMax) {
+    return Away;
+  }
+  return Transverse;
 }
 
 // Pair Sign Calculation
@@ -99,8 +96,9 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
     auto const& pid = mPIDspecies->at(speciesIndex);
     auto nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
 
-    if (tofForced && !track.hasTOF())
+    if (tofForced && !track.hasTOF()) {
       return false;
+    }
 
     if (speciesIndex == 0) { // First species logic
       if (std::abs(nSigmaTPC) > maxTPC->at(speciesIndex)) {
@@ -139,14 +137,14 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 /// @param[out] massCand Mass of the matched candidate is set here, if a valid match is found
 ///
 /// @return `true` if candidate matches expected PDG and decay flag, and mass is set; `false` otherwise
-template <bool isScCandidate, typename McParticleType>
+template <bool IsScCandidate, typename McParticleType>
 bool matchCandAndMass(McParticleType const& particle, double& massCand)
 {
   const auto pdgCand = std::abs(particle.pdgCode());
   const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
 
   // Validate PDG code based on candidate type
-  if (isScCandidate) {
+  if (IsScCandidate) {
     if (!(pdgCand == o2::constants::physics::Pdg::kSigmaC0 ||
           pdgCand == o2::constants::physics::Pdg::kSigmaCPlusPlus ||
           pdgCand == o2::constants::physics::Pdg::kSigmaCStar0 ||
@@ -161,22 +159,22 @@ bool matchCandAndMass(McParticleType const& particle, double& massCand)
 
   // Map decay type to mass
   switch (matchGenFlag) {
-    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::Sc0ToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaC0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStar0ToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCStar0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi): {
-      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScplusplusToPKPiPi: {
+      massCand = o2::constants::physics::MassSigmaCPlusPlus;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi): {
+    case o2::hf_decay::hf_cand_sigmac::DecayChannelMain::ScStarPlusPlusToPKPiPi: {
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
     }

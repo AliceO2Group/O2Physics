@@ -9,6 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(Converters)
 
 o2physics_add_dpl_workflow(tree-creator-electron-ml
                     SOURCES treeCreatorElectronML.cxx
@@ -17,7 +18,12 @@ o2physics_add_dpl_workflow(tree-creator-electron-ml
 
 o2physics_add_dpl_workflow(tree-creator-electron-ml-dda
                     SOURCES treeCreatorElectronMLDDA.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-muon-ml
+                    SOURCES treeCreatorMuonML.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-primary-electron
@@ -38,6 +44,11 @@ o2physics_add_dpl_workflow(skimmer-primary-muon
 o2physics_add_dpl_workflow(skimmer-primary-track
                     SOURCES skimmerPrimaryTrack.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-primary-mfttrack
+                    SOURCES skimmerPrimaryMFTTrack.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(create-emevent-dilepton
@@ -62,6 +73,21 @@ o2physics_add_dpl_workflow(event-selection
 
 o2physics_add_dpl_workflow(filter-eoi
                     SOURCES filterEoI.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dielectron-producer
+                    SOURCES dielectronProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dimuon-producer
+                    SOURCES dimuonProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qvector-dummy-otf
+                    SOURCES qVectorDummyOTF.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

@@ -17,6 +17,7 @@
 
 #include "PWGHF/Core/HfMlResponseXicToXiPiPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -92,7 +93,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;
-  std::vector<float> outputMlXicToXiPiPi = {};
+  std::vector<float> outputMlXicToXiPiPi;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
@@ -276,10 +277,7 @@ struct HfCandidateSelectorXicToXiPiPi {
                      bool const useTpcPidOnly)
   {
     if (useTpcPidOnly) {
-      if ((statusPidPi0 != TrackSelectorPID::Accepted && statusPidPi0 != TrackSelectorPID::NotApplicable) || (statusPidPi1 != TrackSelectorPID::Accepted && statusPidPi1 != TrackSelectorPID::NotApplicable) || (statusPidPiXi != TrackSelectorPID::Accepted && statusPidPiXi != TrackSelectorPID::NotApplicable) || (statusPidPrLam != TrackSelectorPID::Accepted && statusPidPrLam != TrackSelectorPID::NotApplicable) || (statusPidPiLam != TrackSelectorPID::Accepted && statusPidPiLam != TrackSelectorPID::NotApplicable)) {
-        return false;
-      }
-      return true;
+      return (statusPidPi0 == TrackSelectorPID::Accepted || statusPidPi0 == TrackSelectorPID::NotApplicable) && (statusPidPi1 == TrackSelectorPID::Accepted || statusPidPi1 == TrackSelectorPID::NotApplicable) && (statusPidPiXi == TrackSelectorPID::Accepted || statusPidPiXi == TrackSelectorPID::NotApplicable) && (statusPidPrLam == TrackSelectorPID::Accepted || statusPidPrLam == TrackSelectorPID::NotApplicable) && (statusPidPiLam == TrackSelectorPID::Accepted || statusPidPiLam == TrackSelectorPID::NotApplicable);
     }
     if (statusPidPi0 == TrackSelectorPID::Rejected || statusPidPi1 == TrackSelectorPID::Rejected || statusPidPiXi == TrackSelectorPID::Rejected || statusPidPrLam == TrackSelectorPID::Rejected || statusPidPiLam == TrackSelectorPID::Rejected) {
       return false;
@@ -292,7 +290,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   /// \param statusXicToXiPiPi Flag to store selection status as defined in hf_sel_candidate_xic::XicToXiPiPiSelectionStep
   /// \param isMatchedSignal   Flag to indicate if the candidate is matched to a genereated XiCplus MC particle
   /// \return true if Xic candidate passes all selections, otherwise false
-  template <bool isMc, typename XicCandidate>
+  template <bool IsMc, typename XicCandidate>
   bool isSelectedXicToXiPiPiCandidateWoMl(XicCandidate const& hfCandXic,
                                           TracksExtraWPid const&,
                                           int& statusXicToXiPiPi,
@@ -300,7 +298,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   {
     // Successful reconstruction
     SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTotal); // RecoTotal = 0 --> statusXicToXiPiPi += 1
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), All);
       } else {
@@ -318,7 +316,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     auto trackV0NegDau = hfCandXic.template negTrack_as<TracksExtraWPid>();
 
     if (fillQAHistograms) {
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hEtaPi0FromXicRecSig"), trackPi0.eta());
           registry.fill(HIST("hEtaPi1FromXicRecSig"), trackPi1.eta());
@@ -389,11 +387,11 @@ struct HfCandidateSelectorXicToXiPiPi {
 
     // check whether candidate is in analyzed pT range
     auto ptCandXic = hfCandXic.pt();
-    int pTBin = findBin(binsPt, ptCandXic);
+    int const pTBin = findBin(binsPt, ptCandXic);
     if (pTBin == -1) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), Pt);
       } else {
@@ -407,7 +405,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(hfCandXic.invMassXicPlus() - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), Mass);
       } else {
@@ -421,7 +419,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(hfCandXic.y(o2::constants::physics::MassXiCPlus)) > cuts->get(pTBin, "y")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), Rapidity);
       } else {
@@ -435,7 +433,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(hfCandXic.eta()) > cuts->get(pTBin, "eta")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), Eta);
       } else {
@@ -449,7 +447,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(trackPi0.eta()) > cuts->get(pTBin, "eta Pi from XicPlus") || std::abs(trackPi1.eta()) > cuts->get(pTBin, "eta Pi from XicPlus")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), EtaPionFromXicPlus);
       } else {
@@ -463,7 +461,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(trackPiFromXi.eta()) > cuts->get(pTBin, "eta Xi Daughters") || std::abs(trackV0PosDau.eta()) > cuts->get(pTBin, "eta Xi Daughters") || std::abs(trackV0NegDau.eta()) > cuts->get(pTBin, "eta Xi Daughters")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), EtaXiDaughters);
       } else {
@@ -477,7 +475,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") || hfCandXic.ptProng2() < cuts->get(pTBin, "pT Pi1") || (hfCandXic.ptProng1() + hfCandXic.ptProng2()) < cuts->get(pTBin, "pT Pi0 + Pi1")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), PtPionFromXicPlus);
       } else {
@@ -491,7 +489,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.chi2PCA() > cuts->get(pTBin, "chi2SV")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), Chi2SV);
       } else {
@@ -505,7 +503,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.decayLength() < cuts->get(pTBin, "min decay length") || hfCandXic.decayLengthXY() < cuts->get(pTBin, "min decay length XY")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), MinDecayLength);
       } else {
@@ -519,7 +517,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.invMassXiPi0() > cuts->get(pTBin, "max inv mass Xi-Pi0") || hfCandXic.invMassXiPi1() > cuts->get(pTBin, "max inv mass Xi-Pi1")) {
       return false;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), MaxInvMassXiPiPairs);
       } else {
@@ -542,7 +540,7 @@ struct HfCandidateSelectorXicToXiPiPi {
           !isSelectedTrackTpcQuality(trackV0NegDau, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         return false;
       }
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
         } else {
@@ -557,7 +555,7 @@ struct HfCandidateSelectorXicToXiPiPi {
           !isSelectedTrackTpcQuality(trackPi1, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         return false;
       }
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
         } else {
@@ -572,7 +570,7 @@ struct HfCandidateSelectorXicToXiPiPi {
           (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
         return false;
       }
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), ItsTrackQualityPiFromCharm);
         } else {
@@ -585,7 +583,7 @@ struct HfCandidateSelectorXicToXiPiPi {
       // Successful track quality selection
       SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTrackQuality); // RecoTrackQuality = 2 --> statusXicToXiPiPi += 4
     } else {
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
           registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
@@ -606,11 +604,11 @@ struct HfCandidateSelectorXicToXiPiPi {
     //                PID selection               //
     ////////////////////////////////////////////////
     if (usePid) {
-      TrackSelectorPID::Status statusPidPi0 = TrackSelectorPID::NotApplicable;
-      TrackSelectorPID::Status statusPidPi1 = TrackSelectorPID::NotApplicable;
-      TrackSelectorPID::Status statusPidPiXi = TrackSelectorPID::NotApplicable;
-      TrackSelectorPID::Status statusPidPrLam = TrackSelectorPID::NotApplicable;
-      TrackSelectorPID::Status statusPidPiLam = TrackSelectorPID::NotApplicable;
+      TrackSelectorPID::Status statusPidPi0;
+      TrackSelectorPID::Status statusPidPi1;
+      TrackSelectorPID::Status statusPidPiXi;
+      TrackSelectorPID::Status statusPidPrLam;
+      TrackSelectorPID::Status statusPidPiLam;
 
       // assign proton and pion hypothesis to V0 daughters
       auto trackPr = trackV0PosDau;
@@ -640,7 +638,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // Successful PID selection
       SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoPID); // RecoPID = 3 --> statusXicToXiPiPi += 8
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
         } else {
@@ -650,7 +648,7 @@ struct HfCandidateSelectorXicToXiPiPi {
         registry.fill(HIST("hSelCandidates"), PidSelected);
       }
     } else {
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         if (isMatchedSignal) {
           registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
         } else {
@@ -668,13 +666,13 @@ struct HfCandidateSelectorXicToXiPiPi {
   /// \param hfCandXic         Xic candidate
   /// \param statusXicToXiPiPi Flag to store selection status as defined in hf_sel_candidate_xic::XicToXiPiPiSelectionStep
   /// \param isMatchedSignal   Flag to indicate if the candidate is matched to a genereated XiCplus MC particle
-  template <bool isMc, typename XicCandidate>
+  template <bool IsMc, typename XicCandidate>
   void isBdtSelected(XicCandidate const& hfCandXic,
                      int& statusXicToXiPiPi,
                      bool const isMatchedSignal = false)
   {
     bool isSelectedMlXicToXiPiPi = false;
-    float ptCandXic = hfCandXic.pt();
+    float const ptCandXic = hfCandXic.pt();
 
     std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
     isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
@@ -687,7 +685,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
     // Successful ML selection
     SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl); // RecoML = 4 --> statusXicToXiPiPi += 16
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
       } else {

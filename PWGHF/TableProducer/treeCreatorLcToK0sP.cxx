@@ -18,6 +18,7 @@
 /// \author Daniel Samitz <daniel.samitz@cern.ch>
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -36,12 +37,12 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
 namespace o2::aod
 {
@@ -242,8 +243,6 @@ struct HfTreeCreatorLcToK0sP {
 
   constexpr static float UndefValueFloat = -999.f;
 
-  HfHelper hfHelper;
-
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP>>;
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
@@ -266,7 +265,7 @@ struct HfTreeCreatorLcToK0sP {
     constexpr int IndexFirstClass{0};
     constexpr int IndexSecondClass{1};
     constexpr int IndexThirdClass{2};
-    if (mlScores.size() == 0) {
+    if (mlScores.empty()) {
       return; // when candidateSelectorLcK0sP rejects a candidate by "usual", non-ML cut, the ml score vector remains empty
     }
     mlScoreFirstClass = mlScores.at(IndexFirstClass);
@@ -307,8 +306,8 @@ struct HfTreeCreatorLcToK0sP {
         candidate.mAntiLambda(),
         candidate.mK0Short(),
         candidate.mGamma(),
-        hfHelper.ctV0K0s(candidate),
-        hfHelper.ctV0Lambda(candidate),
+        HfHelper::ctV0K0s(candidate),
+        HfHelper::ctV0Lambda(candidate),
         candidate.dcaV0daughters(),
         candidate.ptV0Pos(),
         candidate.ptV0Neg(),
@@ -316,15 +315,15 @@ struct HfTreeCreatorLcToK0sP {
         candidate.dcapostopv(),
         bach.tpcNSigmaPr(),
         bach.tofNSigmaPr(),
-        hfHelper.invMassLcToK0sP(candidate),
+        HfHelper::invMassLcToK0sP(candidate),
         candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
-        hfHelper.ctLc(candidate),
+        HfHelper::ctLc(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yLc(candidate),
-        hfHelper.eLc(candidate),
+        HfHelper::yLc(candidate),
+        HfHelper::eLc(candidate),
         flagMc,
         originMcRec,
         mlScoreFirstClass,
@@ -373,8 +372,8 @@ struct HfTreeCreatorLcToK0sP {
         candidate.mAntiLambda(),
         candidate.mK0Short(),
         candidate.mGamma(),
-        hfHelper.ctV0K0s(candidate),
-        hfHelper.ctV0Lambda(candidate),
+        HfHelper::ctV0K0s(candidate),
+        HfHelper::ctV0Lambda(candidate),
         candidate.dcaV0daughters(),
         candidate.pxpos(),
         candidate.pypos(),
@@ -388,16 +387,16 @@ struct HfTreeCreatorLcToK0sP {
         candidate.dcanegtopv(),
         bach.tpcNSigmaPr(),
         bach.tofNSigmaPr(),
-        hfHelper.invMassLcToK0sP(candidate),
+        HfHelper::invMassLcToK0sP(candidate),
         candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
-        hfHelper.ctLc(candidate),
+        HfHelper::ctLc(candidate),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yLc(candidate),
-        hfHelper.eLc(candidate),
+        HfHelper::yLc(candidate),
+        HfHelper::eLc(candidate),
         flagMc,
         originMcRec,
         mlScoreFirstClass,
@@ -448,11 +447,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       const int flag = candidate.flagMcMatchRec();
 
-      if (fillOnlySignal && flag != 0) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
-      } else if (fillOnlyBackground && flag == 0) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
-      } else {
+      if ((fillOnlySignal && flag != 0) || (fillOnlyBackground && flag == 0) || (!fillOnlySignal && !fillOnlyBackground)) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
       }
     }
@@ -503,7 +498,7 @@ struct HfTreeCreatorLcToK0sP {
       auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
       ++iCand;
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
+      double const pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, 0, 0, candidateMlScore);
       }

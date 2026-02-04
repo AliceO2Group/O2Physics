@@ -16,197 +16,144 @@
 #ifndef PWGCF_FEMTO_CORE_PAIRPROCESSHELPERS_H_
 #define PWGCF_FEMTO_CORE_PAIRPROCESSHELPERS_H_
 
+#include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/ASoAHelpers.h"
-
-#include <random>
 
 namespace o2::analysis::femto
 {
 namespace pairprocesshelpers
 {
 
-// process same event for identical tracks
-template <typename T1,
-          typename T2,
-          typename T3,
-          typename T4,
-          typename T5>
-void processSameEvent(const T1& SliceParticle,
-                      T2& ParticleHistManager,
-                      T3& PairHistManager,
-                      T4& CprManager,
-                      T5& rng,
-                      bool randomize)
-{
-  // Fill single particle histograms
-  for (auto const& part : SliceParticle) {
-    ParticleHistManager.fill(part);
-  }
+enum PairOrder : uint8_t {
+  kOrder12,
+  kOrder21
+};
 
-  std::uniform_real_distribution<float> dist(0.f, 1.f);
-
-  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
-
-    // Close pair rejection
-    if (CprManager.isActivated()) {
-      CprManager.setPair(p1, p2);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
-    }
-    CprManager.fill();
-
-    // Randomize pair order if enabled
-    float threshold = 0.5f;
-    bool swapPair = randomize ? (dist(rng) > threshold) : false;
-    if (swapPair) {
-      PairHistManager.setPair(p2, p1);
-    } else {
-      PairHistManager.setPair(p1, p2);
-    }
-    PairHistManager.fill();
-  }
-}
-
-// process same event for non-identical tracks
-template <typename T1,
+// process same event for identical particles
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
           typename T5,
           typename T6,
           typename T7>
-void processSameEvent(T1& SliceParticle1,
-                      T2& SliceParticle2,
-                      T3& ParticleHistManager1,
-                      T4& ParticleHistManager2,
+void processSameEvent(T1 const& SliceParticle,
+                      T2 const& TrackTable,
+                      T3 const& Collision,
+                      T4& ParticleHistManager,
                       T5& PairHistManager,
                       T6& CprManager,
-                      T7& PcManager)
+                      T7& PcManager,
+                      PairOrder pairOrder)
 {
-  // Fill single particle histograms
-  for (auto const& part : SliceParticle1) {
-    ParticleHistManager1.fill(part);
+  for (auto const& part : SliceParticle) {
+    ParticleHistManager.template fill<mode>(part, TrackTable);
   }
-
-  for (auto const& part : SliceParticle2) {
-    ParticleHistManager2.fill(part);
-  }
-
-  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
-    // pair cleaning
-    if (!PcManager.isCleanPair(p1, p2)) {
-      continue;
-    }
-    // Close pair rejection
-    if (CprManager.isActivated()) {
-      CprManager.setPair(p1, p2);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
-    }
-    CprManager.fill();
-    PairHistManager.setPair(p1, p2);
-    PairHistManager.fill();
-  }
-}
-
-// process same event for tracks and particles decaying into tracks
-template <typename T1,
-          typename T2,
-          typename T3,
-          typename T4,
-          typename T5,
-          typename T6,
-          typename T7,
-          typename T8>
-void processSameEvent(T1& SliceParticle1,
-                      T2& SliceParticle2,
-                      T3& TrackTable,
-                      T4& ParticleHistManager1,
-                      T5& ParticleHistManager2,
-                      T6& PairHistManager,
-                      T7& CprManager,
-                      T8& PcManager)
-{
-  // Fill single particle histograms
-  for (auto const& part : SliceParticle1) {
-    ParticleHistManager1.fill(part);
-  }
-
-  for (auto const& part : SliceParticle2) {
-    ParticleHistManager2.fill(part, TrackTable);
-  }
-
-  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
-    // pair cleaning
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
+    // check if pair is clean
     if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
       continue;
     }
-    // Close pair rejection
-    if (CprManager.isActivated()) {
-      CprManager.setPair(p1, p2, TrackTable);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
+    // check if pair is close
+    CprManager.setPair(p1, p2, TrackTable);
+    if (CprManager.isClosePair()) {
+      continue;
     }
-    CprManager.fill();
-    PairHistManager.setPair(p1, p2);
-    PairHistManager.fill();
+    // Randomize pair order if enabled
+    switch (pairOrder) {
+      case kOrder12:
+        PairHistManager.setPair(p1, p2, Collision);
+        break;
+      case kOrder21:
+        PairHistManager.setPair(p2, p1, Collision);
+        break;
+      default:
+        PairHistManager.setPair(p1, p2, Collision);
+    }
+    // fill deta-dphi histograms with kstar cutoff
+    CprManager.fill(PairHistManager.getKstar());
+    // if pair cuts are configured check them before filling
+    if (PairHistManager.checkPairCuts()) {
+      PairHistManager.template fill<mode>();
+    }
   }
 }
 
-// process mixed event identical tracks
-template <typename T1,
+// process same event for identical particles with mc information
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
           typename T5,
           typename T6,
           typename T7,
-          typename T8>
-void processMixedEvent(T1& Collisions,
-                       T2& Partition,
-                       T3& cache,
-                       T4& policy,
-                       T5& depth,
-                       T6& PairHistManager,
-                       T7& CprManager,
-                       T8& PcManager)
+          typename T8,
+          typename T9,
+          typename T10,
+          typename T11,
+          typename T12>
+void processSameEvent(T1 const& SliceParticle,
+                      T2 const& TrackTable,
+                      T3 const& mcParticles,
+                      T4 const& mcMothers,
+                      T5 const& mcPartonicMothers,
+                      T6 const& Collision,
+                      T7 const& mcCollisions,
+                      T8& ParticleHistManager,
+                      T9& PairHistManager,
+                      T10& ParticleCleaner,
+                      T11& CprManager,
+                      T12& PcManager,
+                      PairOrder pairOrder)
 {
-  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
-    if (!(std::fabs(collision1.magField() - collision2.magField()) < o2::constants::math::Epsilon)) {
+  for (auto const& part : SliceParticle) {
+    if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    CprManager.setMagField(collision1.magField());
-    auto sliceParticle1 = Partition->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+    ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+  }
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
+    // check if particles are clean
+    if (!ParticleCleaner.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+        !ParticleCleaner.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
-      // pair cleaning
-      if (!PcManager.isCleanPair(p1, p2)) {
-        continue;
-      }
-      // Close pair rejection
-      if (CprManager.isActivated()) {
-        CprManager.setPair(p1, p2);
-        if (CprManager.isClosePair()) {
-          continue;
-        }
-      }
-      CprManager.fill();
-      PairHistManager.setPair(p1, p2);
-      PairHistManager.fill();
+    // check if pair is clean
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
+      continue;
+    }
+    // check if pair is close
+    CprManager.setPair(p1, p2, TrackTable);
+    if (CprManager.isClosePair()) {
+      continue;
+    }
+    // Randomize pair order if enabled
+    switch (pairOrder) {
+      case kOrder12:
+        PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+        break;
+      case kOrder21:
+        PairHistManager.setPairMc(p2, p1, mcParticles, Collision, mcCollisions);
+        break;
+      default:
+        PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+    }
+    // fill deta-dphi histograms with kstar cutoff
+    CprManager.fill(PairHistManager.getKstar());
+    // if pair cuts are configured check them before filling
+    if (PairHistManager.checkPairCuts()) {
+      PairHistManager.template fill<mode>();
     }
   }
 }
 
-// process mixed event different tracks
-template <typename T1,
+// process same event for non-identical particles
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
@@ -215,47 +162,113 @@ template <typename T1,
           typename T7,
           typename T8,
           typename T9>
-void processMixedEvent(T1& Collisions,
-                       T2& Partition1,
-                       T3& Partition2,
-                       T4& cache,
-                       T5& policy,
-                       T6& depth,
-                       T7& PairHistManager,
-                       T8& CprManager,
-                       T9& PcManager)
+void processSameEvent(T1 const& SliceParticle1,
+                      T2 const& SliceParticle2,
+                      T3 const& TrackTable,
+                      T4 const& Collision,
+                      T5& ParticleHistManager1,
+                      T6& ParticleHistManager2,
+                      T7& PairHistManager,
+                      T8& CprManager,
+                      T9& PcManager)
 {
-  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
-    if (!(std::fabs(collision1.magField() - collision2.magField()) < o2::constants::math::Epsilon)) {
+  // Fill single particle histograms
+  for (auto const& part : SliceParticle1) {
+    ParticleHistManager1.template fill<mode>(part, TrackTable);
+  }
+  for (auto const& part : SliceParticle2) {
+    ParticleHistManager2.template fill<mode>(part, TrackTable);
+  }
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
+    // pair cleaning
+    if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
       continue;
     }
-    CprManager.setMagField(collision1.magField());
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+    // Close pair rejection
+    CprManager.setPair(p1, p2, TrackTable);
+    if (CprManager.isClosePair()) {
       continue;
     }
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
-      // pair cleaning
-      if (!PcManager.isCleanPair(p1, p2)) {
-        continue;
-      }
-      // Close pair rejection
-      if (CprManager.isActivated()) {
-        CprManager.setPair(p1, p2);
-        if (CprManager.isClosePair()) {
-          continue;
-        }
-      }
-      CprManager.fill();
-      PairHistManager.setPair(p1, p2);
-      PairHistManager.fill();
+    PairHistManager.setPair(p1, p2, Collision);
+    CprManager.fill(PairHistManager.getKstar());
+    if (PairHistManager.checkPairCuts()) {
+      PairHistManager.template fill<mode>();
     }
   }
 }
 
-// process mixed event for track and particles decaying into tracks
-template <typename T1,
+// process same event for non-identical particles with mc information
+template <modes::Mode mode,
+          typename T1,
+          typename T2,
+          typename T3,
+          typename T4,
+          typename T5,
+          typename T6,
+          typename T7,
+          typename T8,
+          typename T9,
+          typename T10,
+          typename T11,
+          typename T12,
+          typename T13,
+          typename T14,
+          typename T15>
+void processSameEvent(T1 const& SliceParticle1,
+                      T2 const& SliceParticle2,
+                      T3 const& TrackTable,
+                      T4 const& mcParticles,
+                      T5 const& mcMothers,
+                      T6 const& mcPartonicMothers,
+                      T7 const& Collision,
+                      T8 const& mcCollisions,
+                      T9& ParticleHistManager1,
+                      T10& ParticleHistManager2,
+                      T11& PairHistManager,
+                      T12& ParticleCleaner1,
+                      T13& ParticleCleaner2,
+                      T14& CprManager,
+                      T15& PcManager)
+{
+  // Fill single particle histograms
+  for (auto const& part : SliceParticle1) {
+    if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+  }
+  for (auto const& part : SliceParticle2) {
+    if (!ParticleCleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    ParticleHistManager2.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+  }
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
+    // check if particles are clean
+    if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+        !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
+    // pair cleaning
+    if (!PcManager.isCleanPair(p1, p2, TrackTable, mcPartonicMothers)) {
+      continue;
+    }
+    // Close pair rejection
+    CprManager.setPair(p1, p2, TrackTable);
+    if (CprManager.isClosePair()) {
+      continue;
+    }
+    PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+    CprManager.fill(PairHistManager.getKstar());
+    if (PairHistManager.checkPairCuts()) {
+      PairHistManager.template fill<mode>();
+    }
+  }
+}
+
+// process mixed event
+template <modes::Mode mode,
+          typename T1,
           typename T2,
           typename T3,
           typename T4,
@@ -265,19 +278,19 @@ template <typename T1,
           typename T8,
           typename T9,
           typename T10>
-void processMixedEvent(T1& Collisions,
+void processMixedEvent(T1 const& Collisions,
                        T2& Partition1,
                        T3& Partition2,
-                       T4& TrackTable,
+                       T4 const& TrackTable,
                        T5& cache,
-                       T6& policy,
-                       T7& depth,
+                       T6 const& policy,
+                       T7 const& depth,
                        T8& PairHistManager,
                        T9& CprManager,
                        T10& PcManager)
 {
   for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
-    if (!(std::fabs(collision1.magField() - collision2.magField()) < o2::constants::math::Epsilon)) {
+    if (collision1.magField() != collision2.magField()) {
       continue;
     }
     CprManager.setMagField(collision1.magField());
@@ -292,18 +305,88 @@ void processMixedEvent(T1& Collisions,
         continue;
       }
       // Close pair rejection
-      if (CprManager.isActivated()) {
-        CprManager.setPair(p1, p2, TrackTable);
-        if (CprManager.isClosePair()) {
-          continue;
-        }
+      CprManager.setPair(p1, p2, TrackTable);
+      if (CprManager.isClosePair()) {
+        continue;
       }
-      CprManager.fill();
-      PairHistManager.setPair(p1, p2);
-      PairHistManager.fill();
+      PairHistManager.setPair(p1, p2, collision1, collision2);
+      CprManager.fill(PairHistManager.getKstar());
+      if (PairHistManager.checkPairCuts()) {
+        PairHistManager.template fill<mode>();
+      }
     }
   }
 }
+
+// process mixed event  with mc information
+template <modes::Mode mode,
+          typename T1,
+          typename T2,
+          typename T3,
+          typename T4,
+          typename T5,
+          typename T6,
+          typename T7,
+          typename T8,
+          typename T9,
+          typename T10,
+          typename T11,
+          typename T12,
+          typename T13,
+          typename T14,
+          typename T15,
+          typename T16>
+void processMixedEvent(T1 const& Collisions,
+                       T2 const& mcCollisions,
+                       T3& Partition1,
+                       T4& Partition2,
+                       T5 const& TrackTable,
+                       T6 const& mcParticles,
+                       T7 const& mcMothers,
+                       T8 const& mcPartonicMothers,
+                       T9& cache,
+                       T10 const& policy,
+                       T11 const& depth,
+                       T12& PairHistManager,
+                       T13& ParticleCleaner1,
+                       T14& ParticleCleaner2,
+                       T15& CprManager,
+                       T16& PcManager)
+{
+  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
+    if (collision1.magField() != collision2.magField()) {
+      continue;
+    }
+    CprManager.setMagField(collision1.magField());
+    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
+    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
+    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+      continue;
+    }
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+      // particle cleaning
+      if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+          !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
+      // pair cleaning
+      if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
+        continue;
+      }
+      // Close pair rejection
+      CprManager.setPair(p1, p2, TrackTable);
+      if (CprManager.isClosePair()) {
+        continue;
+      }
+      PairHistManager.setPairMc(p1, p2, mcParticles, collision1, collision2, mcCollisions);
+      CprManager.fill(PairHistManager.getKstar());
+      if (PairHistManager.checkPairCuts()) {
+        PairHistManager.template fill<mode>();
+      }
+    }
+  }
+}
+
 } // namespace pairprocesshelpers
 } // namespace o2::analysis::femto
 

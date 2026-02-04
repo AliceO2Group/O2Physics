@@ -194,7 +194,8 @@ class decay3bodyBuilderHelper
                                 bool acceptTPCOnly = false,
                                 bool askOnlyITSMatch = true,
                                 bool calculateCovariance = true,
-                                bool isEventMixing = false)
+                                bool isEventMixing = false,
+                                bool doApplySVertexerCuts = false)
   {
     int collisionIndex = collision.globalIndex();
     float pvX = collision.posX();
@@ -479,7 +480,7 @@ class decay3bodyBuilderHelper
 
     //_______________________________________________________________________
     // SVertexer selections in case of event mixing
-    if (isEventMixing) {
+    if (isEventMixing && doApplySVertexerCuts) {
       applySVertexerCuts(collision, trackProton, trackPion, trackDeuteron, /*applyV0Cut = */ true);
     }
 

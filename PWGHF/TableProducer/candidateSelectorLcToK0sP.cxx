@@ -20,6 +20,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseLcToK0sP.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -91,12 +92,11 @@ struct HfCandidateSelectorLcToK0sP {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-  HfHelper hfHelper;
   TrackSelectorPr selectorProtonLowP;
   TrackSelectorPr selectorProtonHighP;
 
   o2::analysis::HfMlResponseLcToK0sP<float> hfMlResponse;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
 
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -141,8 +141,8 @@ struct HfCandidateSelectorLcToK0sP {
       hfMlResponse.init();
 
       // load histograms for ML score
-      AxisSpec axisScore = {100, 0, 1, "score"};
-      AxisSpec axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
+      AxisSpec const axisScore = {100, 0, 1, "score"};
+      AxisSpec const axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
       for (int classMl = 0; classMl < nClassesMl; classMl++) {
         hModelScore.push_back(registry.add<TH1>(Form("hMlScoreClass%d", classMl), "Model score distribution for Lc;Model score;counts", HistType::kTH1F, {axisScore}));
         hModelScoreVsPtCand.push_back(registry.add<TH2>(Form("hMlScoreClass%dVsPtCand", classMl), "Model score distribution for Lc;Model score;counts", HistType::kTH2F, {axisScore, axisBinsPt}));
@@ -157,7 +157,7 @@ struct HfCandidateSelectorLcToK0sP {
   bool selectionTopol(const T& hfCandCascade)
   {
     auto candPt = hfCandCascade.pt();
-    int ptBin = findBin(binsPt, candPt);
+    int const ptBin = findBin(binsPt, candPt);
     if (ptBin == -1) {
       return false;
     }
@@ -166,7 +166,7 @@ struct HfCandidateSelectorLcToK0sP {
       return false; // check that the candidate pT is within the analysis range
     }
 
-    if (std::abs(hfHelper.invMassLcToK0sP(hfCandCascade) - o2::constants::physics::MassLambdaCPlus) > cuts->get(ptBin, "mLc")) {
+    if (std::abs(HfHelper::invMassLcToK0sP(hfCandCascade) - o2::constants::physics::MassLambdaCPlus) > cuts->get(ptBin, "mLc")) {
       return false; // mass of the Lambda c
     }
 
@@ -221,9 +221,8 @@ struct HfCandidateSelectorLcToK0sP {
   {
     if (track.p() < pPidThreshold) {
       return selectorProtonLowP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
-    } else {
-      return selectorProtonHighP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
     }
+    return selectorProtonHighP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
   }
 
   template <typename T>
@@ -235,9 +234,8 @@ struct HfCandidateSelectorLcToK0sP {
 
     if (track.p() < pPidThreshold) {
       return selectorProtonLowP.statusBayesProb(track) == TrackSelectorPID::Accepted;
-    } else {
-      return selectorProtonHighP.statusBayesProb(track) == TrackSelectorPID::Accepted;
     }
+    return selectorProtonHighP.statusBayesProb(track) == TrackSelectorPID::Accepted;
   }
 
   template <typename T, typename U>
@@ -247,7 +245,7 @@ struct HfCandidateSelectorLcToK0sP {
     auto ptCand = hfCandCascade.pt();
     std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(hfCandCascade, bach);
 
-    bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
+    bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
 
     for (int classMl = 0; classMl < nClassesMl; classMl++) {
       hModelScore[classMl]->Fill(outputMl[classMl]);
@@ -287,7 +285,7 @@ struct HfCandidateSelectorLcToK0sP {
       }
 
       if (applyMl) {
-        bool isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
+        bool const isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
         hfMlLcToK0sPCandidate(outputMl);
 
         if (!isSelectedMlLcToK0sP) {
@@ -330,7 +328,7 @@ struct HfCandidateSelectorLcToK0sP {
       }
 
       if (applyMl) {
-        bool isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
+        bool const isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
         hfMlLcToK0sPCandidate(outputMl);
 
         if (!isSelectedMlLcToK0sP) {

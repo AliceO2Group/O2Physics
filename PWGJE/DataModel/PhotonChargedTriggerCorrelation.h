@@ -18,11 +18,12 @@
 #ifndef PWGJE_DATAMODEL_PHOTONCHARGEDTRIGGERCORRELATION_H_
 #define PWGJE_DATAMODEL_PHOTONCHARGEDTRIGGERCORRELATION_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+
+#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
@@ -44,9 +45,10 @@ namespace collision_extra_corr
 {
 DECLARE_SOA_COLUMN(SelEv, selEv, bool);
 DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
+DECLARE_SOA_COLUMN(NGlobalTracks, nGlobalTracks, int);
 } // namespace collision_extra_corr
 DECLARE_SOA_TABLE(CollisionsExtraCorr, "AOD", "COLLISIONSEXTRACORR",
-                  collision_extra_corr::SelEv, collision_extra_corr::TrigEv);
+                  collision_extra_corr::SelEv, collision_extra_corr::TrigEv, collision_extra_corr::NGlobalTracks);
 
 // trigger
 namespace trigger
@@ -114,9 +116,10 @@ using PhotonPCMPair = PhotonPCMPairs::iterator;
 namespace mc_collision_extra_corr
 {
 DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
+DECLARE_SOA_COLUMN(NChargedInEtaRange, nChargedInEtaRange, int);
 } // namespace mc_collision_extra_corr
 DECLARE_SOA_TABLE(McCollisionsExtraCorr, "AOD", "MCCOLLISIONSEXTRACORR",
-                  mc_collision_extra_corr::TrigEv);
+                  mc_collision_extra_corr::TrigEv, mc_collision_extra_corr::NChargedInEtaRange);
 
 // trigger
 namespace trigger_particle

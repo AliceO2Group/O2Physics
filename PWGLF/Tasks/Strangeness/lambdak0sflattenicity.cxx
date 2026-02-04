@@ -17,26 +17,28 @@
 /// \brief V0 task for production of strange hadrons as a function of flattenicity
 /// \author Suraj Prasad (suraj.prasad@cern.ch)
 
-#include <CommonConstants/MathConstants.h>
-#include <Framework/Configurable.h>
-#include <cmath>
-#include <vector>
-#include <TGraph.h>
-#include <TRandom2.h>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include <TGraph.h>
+#include <TRandom2.h>
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/Utils/inelGt.h"
+#include <cmath>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

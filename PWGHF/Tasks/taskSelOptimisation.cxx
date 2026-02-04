@@ -14,7 +14,9 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -45,74 +47,74 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-static constexpr int nCutsToTestCosp = 15;
-static constexpr int nCutsToTestDecLen = 11;
-static constexpr int nCutsToTestImpParProd = 11;
-static constexpr int nCutsToTestMinDCAxy = 9;
-static constexpr int nCutsToTestMinTrackPt = 7;
+constexpr int NCutsToTestCosp = 15;
+constexpr int NCutsToTestDecLen = 11;
+constexpr int NCutsToTestImpParProd = 11;
+constexpr int NCutsToTestMinDcAxy = 9;
+constexpr int NCutsToTestMinTrackPt = 7;
 
-constexpr float cutsCosp[nCutsToTestCosp] = {0.70, 0.75, 0.80, 0.85, 0.88, 0.90, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.995};
-constexpr float cutsDecLen[nCutsToTestDecLen] = {0., 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.075, 0.1};
-constexpr float cutsImpParProd[nCutsToTestImpParProd] = {-0.00005, -0.00004, -0.00003, -0.00002, -0.00001, 0., 0.00001, 0.00002, 0.00003, 0.00004, 0.00005};
-constexpr float cutsMinDCAxy[nCutsToTestMinDCAxy] = {0., 0.0005, 0.001, 0.0015, 0.0020, 0.0025, 0.0030, 0.0040, 0.0050};
-constexpr float cutsMinTrackPt[nCutsToTestMinTrackPt] = {0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60};
+constexpr float CutsCosp[NCutsToTestCosp] = {0.70, 0.75, 0.80, 0.85, 0.88, 0.90, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 0.995};
+constexpr float CutsDecLen[NCutsToTestDecLen] = {0., 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.075, 0.1};
+constexpr float CutsImpParProd[NCutsToTestImpParProd] = {-0.00005, -0.00004, -0.00003, -0.00002, -0.00001, 0., 0.00001, 0.00002, 0.00003, 0.00004, 0.00005};
+constexpr float CutsMinDcAxy[NCutsToTestMinDcAxy] = {0., 0.0005, 0.001, 0.0015, 0.0020, 0.0025, 0.0030, 0.0040, 0.0050};
+constexpr float CutsMinTrackPt[NCutsToTestMinTrackPt] = {0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60};
 
-auto vecCutsCosp = std::vector<float>{cutsCosp, cutsCosp + nCutsToTestCosp};
-auto vecCutsDecLen = std::vector<float>{cutsDecLen, cutsDecLen + nCutsToTestDecLen};
-auto vecCutsImpParProd = std::vector<float>{cutsImpParProd, cutsImpParProd + nCutsToTestImpParProd};
-auto vecCutsMinDCAxy = std::vector<float>{cutsMinDCAxy, cutsMinDCAxy + nCutsToTestMinDCAxy};
-auto vecCutsMinTrackPt = std::vector<float>{cutsMinTrackPt, cutsMinTrackPt + nCutsToTestMinTrackPt};
+auto vecCutsCosp = std::vector<float>{CutsCosp, CutsCosp + NCutsToTestCosp};
+auto vecCutsDecLen = std::vector<float>{CutsDecLen, CutsDecLen + NCutsToTestDecLen};
+auto vecCutsImpParProd = std::vector<float>{CutsImpParProd, CutsImpParProd + NCutsToTestImpParProd};
+auto vecCutsMinDCAxy = std::vector<float>{CutsMinDcAxy, CutsMinDcAxy + NCutsToTestMinDcAxy};
+auto vecCutsMinTrackPt = std::vector<float>{CutsMinTrackPt, CutsMinTrackPt + NCutsToTestMinTrackPt};
 
-static const int n2Prong = o2::aod::hf_cand_2prong::DecayType::N2ProngDecays;
-static const int n3Prong = o2::aod::hf_cand_3prong::DecayType::N3ProngDecays;
+const int n2Prong = o2::aod::hf_cand_2prong::DecayType::N2ProngDecays;
+const int n3Prong = o2::aod::hf_cand_3prong::DecayType::N3ProngDecays;
 
-static constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> histoNames2Prong = {{{"hPromptVsPtD0ToPiK", "hPromptVsPtJpsiToEE", "hPromptVsPtJpsiToMuMu", "hPromptVsPt2Prong"},
-                                                                                               {"hNonPromptVsPtD0ToPiK", "hNonPromptVsPtJpsiToEE", "hNonPromptVsPtJpsiToMuMu", "hNonPromptVsPt2Prong"},
-                                                                                               {"hBkgVsPtD0ToPiK", "hBkgVsPtJpsiToEE", "hBkgVsPtJpsiToMuMu", "hBkgVsPt2Prong"}}};
-static constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> histoNamesCosp2Prong = {{{"hPromptCospVsPtD0ToPiK", "hPromptCospVsPtJpsiToEE", "hPromptCospVsPtJpsiToMuMu", "hPromptCospVsPt2Prong"},
-                                                                                                   {"hNonPromptCospVsPtD0ToPiK", "hNonPromptCospVsPtJpsiToEE", "hNonPromptCospVsPtJpsiToMuMu", "hNonPromptCospVsPt2Prong"},
-                                                                                                   {"hBkgCospVsPtD0ToPiK", "hBkgCospVsPtJpsiToEE", "hBkgCospVsPtJpsiToMuMu", "hBkgCospVsPt2Prong"}}};
-static constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> histoNamesDecLen2Prong = {{{"hPromptDecLenVsPtD0ToPiK", "hPromptDecLenVsPtJpsiToEE", "hPromptDecLenVsPtJpsiToMuMu", "hPromptDecLenVsPt2Prong"},
-                                                                                                     {"hNonPromptDecLenVsPtD0ToPiK", "hNonPromptDecLenVsPtJpsiToEE", "hNonPromptDecLenVsPtJpsiToMuMu", "hNonPromptDecLenVsPt2Prong"},
-                                                                                                     {"hBkgDecLenVsPtD0ToPiK", "hBkgDecLenVsPtJpsiToEE", "hBkgDecLenVsPtJpsiToMuMu", "hBkgDecLenVsPt2Prong"}}};
-static constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> histoNamesImpParProd2Prong = {{{"hPromptImpParProdVsPtD0ToPiK", "hPromptImpParProdVsPtJpsiToEE", "hPromptImpParProdVsPtJpsiToMuMu", "hPromptImpParProdVsPt2Prong"},
-                                                                                                         {"hNonPromptImpParProdVsPtD0ToPiK", "hNonPromptImpParProdVsPtJpsiToEE", "hNonPromptImpParProdVsPtJpsiToMuMu", "hNonPromptImpParProdVsPt2Prong"},
-                                                                                                         {"hBkgImpParProdVsPtD0ToPiK", "hBkgImpParProdVsPtJpsiToEE", "hBkgImpParProdVsPtJpsiToMuMu", "hBkgImpParProdVsPt2Prong"}}};
-static constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> histoNamesMinDCAxy2Prong = {{{"hPromptMinDCAxyVsPtD0ToPiK", "hPromptMinDCAxyVsPtJpsiToEE", "hPromptMinDCAxyVsPtJpsiToMuMu", "hPromptMinDCAxyVsPt2Prong"},
-                                                                                                       {"hNonPromptMinDCAxyVsPtD0ToPiK", "hNonPromptMinDCAxyVsPtJpsiToEE", "hNonPromptMinDCAxyVsPtJpsiToMuMu", "hNonPromptMinDCAxyVsPt2Prong"},
-                                                                                                       {"hBkgMinDCAxyVsPtD0ToPiK", "hBkgMinDCAxyVsPtJpsiToEE", "hBkgMinDCAxyVsPtJpsiToMuMu", "hBkgMinDCAxyVsPt2Prong"}}};
-static constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> histoNamesMinTrackPt2Prong = {{{"hPromptMinTrackPtVsPtD0ToPiK", "hPromptMinTrackPtVsPtJpsiToEE", "hPromptMinTrackPtVsPtJpsiToMuMu", "hPromptMinTrackPtVsPt2Prong"},
-                                                                                                         {"hNonPromptMinTrackPtVsPtD0ToPiK", "hNonPromptMinTrackPtVsPtJpsiToEE", "hNonPromptMinTrackPtVsPtJpsiToMuMu", "hNonPromptMinTrackPtVsPt2Prong"},
-                                                                                                         {"hBkgMinTrackPtVsPtD0ToPiK", "hBkgMinTrackPtVsPtJpsiToEE", "hBkgMinTrackPtVsPtJpsiToMuMu", "hBkgMinTrackPtVsPt2Prong"}}};
+constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> HistoNames2Prong = {{{"hPromptVsPtD0ToPiK", "hPromptVsPtJpsiToEE", "hPromptVsPtJpsiToMuMu", "hPromptVsPt2Prong"},
+                                                                                        {"hNonPromptVsPtD0ToPiK", "hNonPromptVsPtJpsiToEE", "hNonPromptVsPtJpsiToMuMu", "hNonPromptVsPt2Prong"},
+                                                                                        {"hBkgVsPtD0ToPiK", "hBkgVsPtJpsiToEE", "hBkgVsPtJpsiToMuMu", "hBkgVsPt2Prong"}}};
+constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> HistoNamesCosp2Prong = {{{"hPromptCospVsPtD0ToPiK", "hPromptCospVsPtJpsiToEE", "hPromptCospVsPtJpsiToMuMu", "hPromptCospVsPt2Prong"},
+                                                                                            {"hNonPromptCospVsPtD0ToPiK", "hNonPromptCospVsPtJpsiToEE", "hNonPromptCospVsPtJpsiToMuMu", "hNonPromptCospVsPt2Prong"},
+                                                                                            {"hBkgCospVsPtD0ToPiK", "hBkgCospVsPtJpsiToEE", "hBkgCospVsPtJpsiToMuMu", "hBkgCospVsPt2Prong"}}};
+constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> HistoNamesDecLen2Prong = {{{"hPromptDecLenVsPtD0ToPiK", "hPromptDecLenVsPtJpsiToEE", "hPromptDecLenVsPtJpsiToMuMu", "hPromptDecLenVsPt2Prong"},
+                                                                                              {"hNonPromptDecLenVsPtD0ToPiK", "hNonPromptDecLenVsPtJpsiToEE", "hNonPromptDecLenVsPtJpsiToMuMu", "hNonPromptDecLenVsPt2Prong"},
+                                                                                              {"hBkgDecLenVsPtD0ToPiK", "hBkgDecLenVsPtJpsiToEE", "hBkgDecLenVsPtJpsiToMuMu", "hBkgDecLenVsPt2Prong"}}};
+constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> HistoNamesImpParProd2Prong = {{{"hPromptImpParProdVsPtD0ToPiK", "hPromptImpParProdVsPtJpsiToEE", "hPromptImpParProdVsPtJpsiToMuMu", "hPromptImpParProdVsPt2Prong"},
+                                                                                                  {"hNonPromptImpParProdVsPtD0ToPiK", "hNonPromptImpParProdVsPtJpsiToEE", "hNonPromptImpParProdVsPtJpsiToMuMu", "hNonPromptImpParProdVsPt2Prong"},
+                                                                                                  {"hBkgImpParProdVsPtD0ToPiK", "hBkgImpParProdVsPtJpsiToEE", "hBkgImpParProdVsPtJpsiToMuMu", "hBkgImpParProdVsPt2Prong"}}};
+constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> HistoNamesMinDcAxy2Prong = {{{"hPromptMinDCAxyVsPtD0ToPiK", "hPromptMinDCAxyVsPtJpsiToEE", "hPromptMinDCAxyVsPtJpsiToMuMu", "hPromptMinDCAxyVsPt2Prong"},
+                                                                                                {"hNonPromptMinDCAxyVsPtD0ToPiK", "hNonPromptMinDCAxyVsPtJpsiToEE", "hNonPromptMinDCAxyVsPtJpsiToMuMu", "hNonPromptMinDCAxyVsPt2Prong"},
+                                                                                                {"hBkgMinDCAxyVsPtD0ToPiK", "hBkgMinDCAxyVsPtJpsiToEE", "hBkgMinDCAxyVsPtJpsiToMuMu", "hBkgMinDCAxyVsPt2Prong"}}};
+constexpr std::array<std::array<std::string_view, n2Prong + 1>, 3> HistoNamesMinTrackPt2Prong = {{{"hPromptMinTrackPtVsPtD0ToPiK", "hPromptMinTrackPtVsPtJpsiToEE", "hPromptMinTrackPtVsPtJpsiToMuMu", "hPromptMinTrackPtVsPt2Prong"},
+                                                                                                  {"hNonPromptMinTrackPtVsPtD0ToPiK", "hNonPromptMinTrackPtVsPtJpsiToEE", "hNonPromptMinTrackPtVsPtJpsiToMuMu", "hNonPromptMinTrackPtVsPt2Prong"},
+                                                                                                  {"hBkgMinTrackPtVsPtD0ToPiK", "hBkgMinTrackPtVsPtJpsiToEE", "hBkgMinTrackPtVsPtJpsiToMuMu", "hBkgMinTrackPtVsPt2Prong"}}};
 
-static constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> histoNames3Prong = {{{"hPromptVsPtDPlusToPiKPi", "hPromptVsPtLcToPKPi", "hPromptVsPtDsToPiKK", "hPromptVsPtXicToPKPi", "hPromptVsPt3Prong"},
-                                                                                               {"hNonPromptVsPtDPlusToPiKPi", "hNonPromptVsPtLcToPKPi", "hNonPromptVsPtDsToPiKK", "hNonPromptVsPtXicToPKPi", "hNonPromptVsPt3Prong"},
-                                                                                               {"hBkgVsPtDPlusToPiKPi", "hBkgVsPtLcToPKPi", "hBkgVsPtDsToPiKK", "hBkgVsPtXicToPKPi", "hBkgVsPt3Prong"}}};
-static constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> histoNamesCosp3Prong = {{{"hPromptCospVsPtDPlusToPiKPi", "hPromptCospVsPtLcToPKPi", "hPromptCospVsPtDsToPiKK", "hPromptCospVsPtXicToPKPi", "hPromptCospVsPt3Prong"},
-                                                                                                   {"hNonPromptCospVsPtDPlusToPiKPi", "hNonPromptCospVsPtLcToPKPi", "hNonPromptCospVsPtDsToPiKK", "hNonPromptCospVsPtXicToPKPi", "hNonPromptCospVsPt3Prong"},
-                                                                                                   {"hBkgCospVsPtDPlusToPiKPi", "hBkgCospVsPtLcToPKPi", "hBkgCospVsPtDsToPiKK", "hBkgCospVsPtXicToPKPi", "hBkgCospVsPt3Prong"}}};
-static constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> histoNamesDecLen3Prong = {{{"hPromptDecLenVsPtDPlusToPiKPi", "hPromptDecLenVsPtLcToPKPi", "hPromptDecLenVsPtDsToPiKK", "hPromptDecLenVsPtXicToPKPi", "hPromptDecLenVsPt3Prong"},
-                                                                                                     {"hNonPromptDecLenVsPtDPlusToPiKPi", "hNonPromptDecLenVsPtLcToPKPi", "hNonPromptDecLenVsPtDsToPiKK", "hNonPromptDecLenVsPtXicToPKPi", "hNonPromptDecLenVsPt3Prong"},
-                                                                                                     {"hBkgDecLenVsPtDPlusToPiKPi", "hBkgDecLenVsPtLcToPKPi", "hBkgDecLenVsPtDsToPiKK", "hBkgDecLenVsPtXicToPKPi", "hBkgDecLenVsPt3Prong"}}};
-static constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> histoNamesMinDCAxy3Prong = {{{"hPromptMinDCAxyVsPtDPlusToPiKPi", "hPromptMinDCAxyVsPtLcToPKPi", "hPromptMinDCAxyVsPtDsToPiKK", "hPromptMinDCAxyVsPtXicToPKPi", "hPromptMinDCAxyVsPt3Prong"},
-                                                                                                       {"hNonPromptMinDCAxyVsPtDPlusToPiKPi", "hNonPromptMinDCAxyVsPtLcToPKPi", "hNonPromptMinDCAxyVsPtDsToPiKK", "hNonPromptMinDCAxyVsPtXicToPKPi", "hNonPromptMinDCAxyVsPt3Prong"},
-                                                                                                       {"hBkgMinDCAxyVsPtDPlusToPiKPi", "hBkgMinDCAxyVsPtLcToPKPi", "hBkgMinDCAxyVsPtDsToPiKK", "hBkgMinDCAxyVsPtXicToPKPi", "hBkgMinDCAxyVsPt3Prong"}}};
-static constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> histoNamesMinTrackPt3Prong = {{{"hPromptMinTrackPtVsPtDPlusToPiKPi", "hPromptMinTrackPtVsPtLcToPKPi", "hPromptMinTrackPtVsPtDsToPiKK", "hPromptMinTrackPtVsPtXicToPKPi", "hPromptMinTrackPtVsPt3Prong"},
-                                                                                                         {"hNonPromptMinTrackPtVsPtDPlusToPiKPi", "hNonPromptMinTrackPtVsPtLcToPKPi", "hNonPromptMinTrackPtVsPtDsToPiKK", "hNonPromptMinTrackPtVsPtXicToPKPi", "hNonPromptMinTrackPtVsPt3Prong"},
-                                                                                                         {"hBkgMinTrackPtVsPtDPlusToPiKPi", "hBkgMinTrackPtVsPtLcToPKPi", "hBkgMinTrackPtVsPtDsToPiKK", "hBkgMinTrackPtVsPtXicToPKPi", "hBkgMinTrackPtVsPt3Prong"}}};
+constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> HistoNames3Prong = {{{"hPromptVsPtDPlusToPiKPi", "hPromptVsPtLcToPKPi", "hPromptVsPtDsToPiKK", "hPromptVsPtXicToPKPi", "hPromptVsPt3Prong"},
+                                                                                        {"hNonPromptVsPtDPlusToPiKPi", "hNonPromptVsPtLcToPKPi", "hNonPromptVsPtDsToPiKK", "hNonPromptVsPtXicToPKPi", "hNonPromptVsPt3Prong"},
+                                                                                        {"hBkgVsPtDPlusToPiKPi", "hBkgVsPtLcToPKPi", "hBkgVsPtDsToPiKK", "hBkgVsPtXicToPKPi", "hBkgVsPt3Prong"}}};
+constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> HistoNamesCosp3Prong = {{{"hPromptCospVsPtDPlusToPiKPi", "hPromptCospVsPtLcToPKPi", "hPromptCospVsPtDsToPiKK", "hPromptCospVsPtXicToPKPi", "hPromptCospVsPt3Prong"},
+                                                                                            {"hNonPromptCospVsPtDPlusToPiKPi", "hNonPromptCospVsPtLcToPKPi", "hNonPromptCospVsPtDsToPiKK", "hNonPromptCospVsPtXicToPKPi", "hNonPromptCospVsPt3Prong"},
+                                                                                            {"hBkgCospVsPtDPlusToPiKPi", "hBkgCospVsPtLcToPKPi", "hBkgCospVsPtDsToPiKK", "hBkgCospVsPtXicToPKPi", "hBkgCospVsPt3Prong"}}};
+constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> HistoNamesDecLen3Prong = {{{"hPromptDecLenVsPtDPlusToPiKPi", "hPromptDecLenVsPtLcToPKPi", "hPromptDecLenVsPtDsToPiKK", "hPromptDecLenVsPtXicToPKPi", "hPromptDecLenVsPt3Prong"},
+                                                                                              {"hNonPromptDecLenVsPtDPlusToPiKPi", "hNonPromptDecLenVsPtLcToPKPi", "hNonPromptDecLenVsPtDsToPiKK", "hNonPromptDecLenVsPtXicToPKPi", "hNonPromptDecLenVsPt3Prong"},
+                                                                                              {"hBkgDecLenVsPtDPlusToPiKPi", "hBkgDecLenVsPtLcToPKPi", "hBkgDecLenVsPtDsToPiKK", "hBkgDecLenVsPtXicToPKPi", "hBkgDecLenVsPt3Prong"}}};
+constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> HistoNamesMinDcAxy3Prong = {{{"hPromptMinDCAxyVsPtDPlusToPiKPi", "hPromptMinDCAxyVsPtLcToPKPi", "hPromptMinDCAxyVsPtDsToPiKK", "hPromptMinDCAxyVsPtXicToPKPi", "hPromptMinDCAxyVsPt3Prong"},
+                                                                                                {"hNonPromptMinDCAxyVsPtDPlusToPiKPi", "hNonPromptMinDCAxyVsPtLcToPKPi", "hNonPromptMinDCAxyVsPtDsToPiKK", "hNonPromptMinDCAxyVsPtXicToPKPi", "hNonPromptMinDCAxyVsPt3Prong"},
+                                                                                                {"hBkgMinDCAxyVsPtDPlusToPiKPi", "hBkgMinDCAxyVsPtLcToPKPi", "hBkgMinDCAxyVsPtDsToPiKK", "hBkgMinDCAxyVsPtXicToPKPi", "hBkgMinDCAxyVsPt3Prong"}}};
+constexpr std::array<std::array<std::string_view, n3Prong + 1>, 3> HistoNamesMinTrackPt3Prong = {{{"hPromptMinTrackPtVsPtDPlusToPiKPi", "hPromptMinTrackPtVsPtLcToPKPi", "hPromptMinTrackPtVsPtDsToPiKK", "hPromptMinTrackPtVsPtXicToPKPi", "hPromptMinTrackPtVsPt3Prong"},
+                                                                                                  {"hNonPromptMinTrackPtVsPtDPlusToPiKPi", "hNonPromptMinTrackPtVsPtLcToPKPi", "hNonPromptMinTrackPtVsPtDsToPiKK", "hNonPromptMinTrackPtVsPtXicToPKPi", "hNonPromptMinTrackPtVsPt3Prong"},
+                                                                                                  {"hBkgMinTrackPtVsPtDPlusToPiKPi", "hBkgMinTrackPtVsPtLcToPKPi", "hBkgMinTrackPtVsPtDsToPiKK", "hBkgMinTrackPtVsPtXicToPKPi", "hBkgMinTrackPtVsPt3Prong"}}};
 
-static std::array<std::array<std::shared_ptr<TH1>, n2Prong + 1>, 3> histPt2Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histCospVsPt2Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histDecLenVsPt2Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histImpParProdVsPt2Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histMinDCAxyVsPt2Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histMinTrackPtVsPt2Prong{};
+std::array<std::array<std::shared_ptr<TH1>, n2Prong + 1>, 3> histPt2Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histCospVsPt2Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histDecLenVsPt2Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histImpParProdVsPt2Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histMinDCAxyVsPt2Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n2Prong + 1>, 3> histMinTrackPtVsPt2Prong{};
 
-static std::array<std::array<std::shared_ptr<TH1>, n3Prong + 1>, 3> histPt3Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histCospVsPt3Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histDecLenVsPt3Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histMinDCAxyVsPt3Prong{};
-static std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histMinTrackPtVsPt3Prong{};
+std::array<std::array<std::shared_ptr<TH1>, n3Prong + 1>, 3> histPt3Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histCospVsPt3Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histDecLenVsPt3Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histMinDCAxyVsPt3Prong{};
+std::array<std::array<std::shared_ptr<TH2>, n3Prong + 1>, 3> histMinTrackPtVsPt3Prong{};
 
 } // namespace
 
@@ -139,43 +141,43 @@ struct HfSelOptimisation {
   {
     for (int iOrig{0}; iOrig < 3; iOrig++) {
       for (int i2Prong = 0; i2Prong < n2Prong + 1; ++i2Prong) {
-        histPt2Prong[iOrig][i2Prong] = registry.add<TH1>(histoNames2Prong[iOrig][i2Prong].data(), "", HistType::kTH1F, {axisPt});
-        histCospVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesCosp2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisCosp});
+        histPt2Prong[iOrig][i2Prong] = registry.add<TH1>(HistoNames2Prong[iOrig][i2Prong].data(), "", HistType::kTH1F, {axisPt});
+        histCospVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(HistoNamesCosp2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisCosp});
         for (int iBin{0}; iBin < histCospVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histCospVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestCpa->at(iBin)));
         }
-        histDecLenVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesDecLen2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisDecLen});
+        histDecLenVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(HistoNamesDecLen2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisDecLen});
         for (int iBin{0}; iBin < histDecLenVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histDecLenVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.3f", cutsToTestDecLen->at(iBin)));
         }
-        histImpParProdVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesImpParProd2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisImpParProd});
+        histImpParProdVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(HistoNamesImpParProd2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisImpParProd});
         for (int iBin{0}; iBin < histImpParProdVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histImpParProdVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestImpParProd->at(iBin)));
         }
-        histMinDCAxyVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesMinDCAxy2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisMinDCAxy});
+        histMinDCAxyVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(HistoNamesMinDcAxy2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisMinDCAxy});
         for (int iBin{0}; iBin < histMinDCAxyVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histMinDCAxyVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestMinDcaXY->at(iBin)));
         }
-        histMinTrackPtVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(histoNamesMinTrackPt2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisMinTrackPt});
+        histMinTrackPtVsPt2Prong[iOrig][i2Prong] = registry.add<TH2>(HistoNamesMinTrackPt2Prong[iOrig][i2Prong].data(), "", HistType::kTH2F, {axisPt, axisMinTrackPt});
         for (int iBin{0}; iBin < histMinTrackPtVsPt2Prong[iOrig][i2Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histMinTrackPtVsPt2Prong[iOrig][i2Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.2f", cutsToTestMinTrackPt->at(iBin)));
         }
       }
       for (int i3Prong{0}; i3Prong < n3Prong + 1; ++i3Prong) {
-        histPt3Prong[iOrig][i3Prong] = registry.add<TH1>(histoNames3Prong[iOrig][i3Prong].data(), "", HistType::kTH1F, {axisPt});
-        histCospVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesCosp3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisCosp});
+        histPt3Prong[iOrig][i3Prong] = registry.add<TH1>(HistoNames3Prong[iOrig][i3Prong].data(), "", HistType::kTH1F, {axisPt});
+        histCospVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(HistoNamesCosp3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisCosp});
         for (int iBin{0}; iBin < histCospVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histCospVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestCpa->at(iBin)));
         }
-        histDecLenVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesDecLen3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisDecLen});
+        histDecLenVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(HistoNamesDecLen3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisDecLen});
         for (int iBin{0}; iBin < histDecLenVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histDecLenVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestDecLen->at(iBin)));
         }
-        histMinDCAxyVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesMinDCAxy3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisMinDCAxy});
+        histMinDCAxyVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(HistoNamesMinDcAxy3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisMinDCAxy});
         for (int iBin{0}; iBin < histMinDCAxyVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histMinDCAxyVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestMinDcaXY->at(iBin)));
         }
-        histMinTrackPtVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(histoNamesMinTrackPt3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisMinTrackPt});
+        histMinTrackPtVsPt3Prong[iOrig][i3Prong] = registry.add<TH2>(HistoNamesMinTrackPt3Prong[iOrig][i3Prong].data(), "", HistType::kTH2F, {axisPt, axisMinTrackPt});
         for (int iBin{0}; iBin < histMinTrackPtVsPt3Prong[iOrig][i3Prong]->GetYaxis()->GetNbins(); ++iBin) {
           histMinTrackPtVsPt3Prong[iOrig][i3Prong]->GetYaxis()->SetBinLabel(iBin + 1, Form("%0.4f", cutsToTestMinTrackPt->at(iBin)));
         }
@@ -188,7 +190,7 @@ struct HfSelOptimisation {
   /// \param candOrig is candidate type (Prompt, NonPrompt, Bkg)
   /// \param candidate is a candidate
   /// \param tracks is the array of daughter tracks
-  template <std::size_t candType, std::size_t candOrig, typename T1, typename T2>
+  template <std::size_t CandType, std::size_t CandOrig, typename T1, typename T2>
   void testSelections2Prong(const T1& candidate, const T2& tracks)
   {
     auto pT = candidate.pt();
@@ -198,35 +200,35 @@ struct HfSelOptimisation {
     std::array<double, 2> ptTrack{tracks[0].pt(), tracks[1].pt()};
     std::sort(ptTrack.begin(), ptTrack.end());
 
-    histPt2Prong[candOrig][candType]->Fill(pT);
+    histPt2Prong[CandOrig][CandType]->Fill(pT);
 
     for (std::size_t iCospCut{0}; iCospCut < cutsToTestCpa->size(); ++iCospCut) {
       if (candidate.cpa() > cutsToTestCpa->at(iCospCut)) {
-        histCospVsPt2Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
+        histCospVsPt2Prong[CandOrig][CandType]->Fill(pT, iCospCut + 1);
       }
     }
 
     for (std::size_t iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
       if (candidate.decayLength() > cutsToTestDecLen->at(iDecLenCut)) {
-        histDecLenVsPt2Prong[candOrig][candType]->Fill(pT, iDecLenCut + 1);
+        histDecLenVsPt2Prong[CandOrig][CandType]->Fill(pT, iDecLenCut + 1);
       }
     }
 
     for (std::size_t iImpParProd{0}; iImpParProd < cutsToTestImpParProd->size(); ++iImpParProd) {
       if (candidate.impactParameterProduct() < cutsToTestImpParProd->at(iImpParProd)) {
-        histImpParProdVsPt2Prong[candOrig][candType]->Fill(pT, iImpParProd + 1);
+        histImpParProdVsPt2Prong[CandOrig][CandType]->Fill(pT, iImpParProd + 1);
       }
     }
 
     for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDcaXY->size(); ++iMinDCAxy) {
       if (absDCA[0] > cutsToTestMinDcaXY->at(iMinDCAxy)) {
-        histMinDCAxyVsPt2Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
+        histMinDCAxyVsPt2Prong[CandOrig][CandType]->Fill(pT, iMinDCAxy + 1);
       }
     }
 
     for (std::size_t iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
       if (ptTrack[0] > cutsToTestMinTrackPt->at(iMinTrackPt)) {
-        histMinTrackPtVsPt2Prong[candOrig][candType]->Fill(pT, iMinTrackPt + 1);
+        histMinTrackPtVsPt2Prong[CandOrig][CandType]->Fill(pT, iMinTrackPt + 1);
       }
     }
   }
@@ -236,7 +238,7 @@ struct HfSelOptimisation {
   /// \param candOrig is candidate type (Prompt, NonPrompt, Bkg)
   /// \param candidate is a candidate
   /// \param tracks is the array of doughter tracks
-  template <std::size_t candType, std::size_t candOrig, typename T1, typename T2>
+  template <std::size_t CandType, std::size_t CandOrig, typename T1, typename T2>
   void testSelections3Prong(const T1& candidate, const T2& tracks)
   {
     auto pT = candidate.pt();
@@ -246,29 +248,29 @@ struct HfSelOptimisation {
     std::array<double, 3> ptTrack{tracks[0].pt(), tracks[1].pt(), tracks[2].pt()};
     std::sort(ptTrack.begin(), ptTrack.end());
 
-    histPt3Prong[candOrig][candType]->Fill(pT);
+    histPt3Prong[CandOrig][CandType]->Fill(pT);
 
     for (std::size_t iCospCut{0}; iCospCut < cutsToTestCpa->size(); ++iCospCut) {
       if (candidate.cpa() > cutsToTestCpa->at(iCospCut)) {
-        histCospVsPt3Prong[candOrig][candType]->Fill(pT, iCospCut + 1);
+        histCospVsPt3Prong[CandOrig][CandType]->Fill(pT, iCospCut + 1);
       }
     }
 
     for (std::size_t iDecLenCut{0}; iDecLenCut < cutsToTestDecLen->size(); ++iDecLenCut) {
       if (candidate.decayLength() > cutsToTestDecLen->at(iDecLenCut)) {
-        histDecLenVsPt3Prong[candOrig][candType]->Fill(pT, iDecLenCut + 1);
+        histDecLenVsPt3Prong[CandOrig][CandType]->Fill(pT, iDecLenCut + 1);
       }
     }
 
     for (std::size_t iMinDCAxy{0}; iMinDCAxy < cutsToTestMinDcaXY->size(); ++iMinDCAxy) {
       if (absDCA[0] > cutsToTestMinDcaXY->at(iMinDCAxy)) {
-        histMinDCAxyVsPt3Prong[candOrig][candType]->Fill(pT, iMinDCAxy + 1);
+        histMinDCAxyVsPt3Prong[CandOrig][CandType]->Fill(pT, iMinDCAxy + 1);
       }
     }
 
     for (std::size_t iMinTrackPt{0}; iMinTrackPt < cutsToTestMinTrackPt->size(); ++iMinTrackPt) {
       if (ptTrack[0] > cutsToTestMinTrackPt->at(iMinTrackPt)) {
-        histMinTrackPtVsPt3Prong[candOrig][candType]->Fill(pT, iMinTrackPt + 1);
+        histMinTrackPtVsPt3Prong[CandOrig][CandType]->Fill(pT, iMinTrackPt + 1);
       }
     }
   }
@@ -282,7 +284,7 @@ struct HfSelOptimisation {
 
       auto trackPos = cand2Prong.prong0_as<aod::TracksWDca>(); // positive daughter
       auto trackNeg = cand2Prong.prong1_as<aod::TracksWDca>(); // negative daughter
-      std::array tracks = {trackPos, trackNeg};
+      std::array const tracks = {trackPos, trackNeg};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n2Prong; ++iDecay) {
@@ -338,7 +340,7 @@ struct HfSelOptimisation {
       auto trackFirst = cand3Prong.prong0_as<aod::TracksWDca>();  // first daughter
       auto trackSecond = cand3Prong.prong1_as<aod::TracksWDca>(); // second daughter
       auto trackThird = cand3Prong.prong2_as<aod::TracksWDca>();  // third daughter
-      std::array tracks = {trackFirst, trackSecond, trackThird};
+      std::array const tracks = {trackFirst, trackSecond, trackThird};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n3Prong; ++iDecay) {

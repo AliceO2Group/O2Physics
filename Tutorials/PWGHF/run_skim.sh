@@ -11,7 +11,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# @brief Bash script to produce derived data AnalysisResults_trees.root with 2-prong mini skims from Run 3 real-data input for the D0 mini task
+# @brief Bash script to produce derived data AnalysisResults_trees.root with 2-prong mini skims from Run 3 input for the D0 mini task
 #
 # The input AO2D.root file is expected in the working directory.
 #
@@ -27,24 +27,29 @@ DIR_THIS="$(dirname "$(realpath "$0")")"
 # O2 configuration file (in the same directory)
 JSON="$DIR_THIS/dpl-config_skim.json"
 
-# command line options of O2 workflows
-OPTIONS=(
+# local command line options of O2 workflows (required per workflow)
+OPTIONS_LOCAL=(
   -b
   --configuration json://"$JSON"
-  --aod-memory-rate-limit 2000000000
-  --shm-segment-size 16000000000
-  --resources-monitoring 2
   --aod-writer-keep "AOD/HFT2PRONG/0"
 )
 
-# execute the mini task workflow and its dependencies
-# shellcheck disable=SC2086 # Ignore unquoted options.
-o2-analysistutorial-hf-skim-creator-mini "${OPTIONS[@]}" | \
-o2-analysis-timestamp "${OPTIONS[@]}" | \
-o2-analysis-trackselection "${OPTIONS[@]}" | \
-o2-analysis-track-propagation "${OPTIONS[@]}" | \
-o2-analysis-bc-converter "${OPTIONS[@]}" | \
-o2-analysis-tracks-extra-v002-converter "${OPTIONS[@]}" \
+# global command line options of O2 workflows (required only once)
+OPTIONS_GLOBAL=(
+  --aod-memory-rate-limit 2000000000
+  --shm-segment-size 16000000000
+  --resources-monitoring 2
+  --aod-file "@input_skim.txt"
+  --min-failure-level error
+)
+
+# execute the mini skim creator workflow and its dependencies
+o2-analysis-trackselection "${OPTIONS_LOCAL[@]}" | \
+o2-analysis-mccollision-converter "${OPTIONS_LOCAL[@]}" | \
+o2-analysis-event-selection-service "${OPTIONS_LOCAL[@]}" | \
+o2-analysis-tracks-extra-v002-converter "${OPTIONS_LOCAL[@]}" | \
+o2-analysis-propagationservice "${OPTIONS_LOCAL[@]}" | \
+o2-analysistutorial-hf-skim-creator-mini "${OPTIONS_LOCAL[@]}" "${OPTIONS_GLOBAL[@]}" \
 > "$LOGFILE" 2>&1
 
 # report status

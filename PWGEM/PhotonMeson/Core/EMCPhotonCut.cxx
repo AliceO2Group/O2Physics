@@ -9,75 +9,83 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for EMCal cluster selection
-//
+/// \file EMCPhotonCut.cxx
+/// \brief source of class for emcal photon selection.
+/// \author M. Hemmer, marvin.hemmer@cern.ch; N. Strangmann, nicolas.strangmann@cern.ch
 
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-
+//
 #include "PWGJE/DataModel/EMCALClusters.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
 
 #include <Rtypes.h>
 
-#include <functional>
 #include <string>
 
 ClassImp(EMCPhotonCut);
 
-const char* EMCPhotonCut::mCutNames[static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts)] = {"Definition", "Energy", "NCell", "M02", "Timing", "TrackMatching", "Exotic"};
+const char* EMCPhotonCut::mCutNames[static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts)] = {"Definition", "Energy", "NCell", "M02", "Timing", "TrackMatching", "SecTrackMatching", "Exotic"};
 
 void EMCPhotonCut::SetClusterizer(std::string clusterDefinitionString)
 {
   mDefinition = static_cast<int>(o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionString));
   LOG(info) << "EMCal Photon Cut, set cluster definition to: " << mDefinition << " (" << clusterDefinitionString << ")";
 }
+
 void EMCPhotonCut::SetMinE(float min)
 {
   mMinE = min;
   LOG(info) << "EMCal Photon Cut, set minimum cluster energy: " << mMinE;
 }
+
 void EMCPhotonCut::SetMinNCell(int min)
 {
   mMinNCell = min;
   LOG(info) << "EMCal Photon Cut, set minimum number of cells per cluster: " << mMinNCell;
 }
+
 void EMCPhotonCut::SetM02Range(float min, float max)
 {
   mMinM02 = min;
   mMaxM02 = max;
   LOG(info) << "EMCal Photon Cut, set minimum and maximum M02: " << mMinM02 << " <= M02 <= " << mMaxM02;
 }
+
 void EMCPhotonCut::SetTimeRange(float min, float max)
 {
   mMinTime = min;
   mMaxTime = max;
   LOG(info) << "EMCal Photon Cut, set cluster time range in ns: " << mMinTime << " <= t <= " << mMaxTime;
 }
-void EMCPhotonCut::SetTrackMatchingEta(std::function<float(float)> funcTM)
-{
-  mTrackMatchingEta = funcTM;
-  LOG(info) << "EMCal Photon Cut, set max dEta for TM (e.g. track pT == 1.4 GeV): " << mTrackMatchingEta(1.4);
-}
-void EMCPhotonCut::SetTrackMatchingPhi(std::function<float(float)> funcTM)
-{
-  mTrackMatchingPhi = funcTM;
-  LOG(info) << "EMCal Photon Cut, set max dPhi for TM (e.g. track pT == 1.4 GeV): " << mTrackMatchingPhi(1.4);
-}
+
 void EMCPhotonCut::SetMinEoverP(float min)
 {
   mMinEoverP = min;
 }
+
 void EMCPhotonCut::SetUseExoticCut(bool flag)
 {
   mUseExoticCut = flag;
   LOG(info) << "EMCal Photon Cut, set usage of exotic cluster cut to: " << mUseExoticCut;
 }
+
 void EMCPhotonCut::SetUseTM(bool flag)
 {
   mUseTM = flag;
   LOG(info) << "EM Photon Cluster Cut, using TM cut is set to : " << mUseTM;
+}
+
+void EMCPhotonCut::SetUseSecondaryTM(bool flag)
+{
+  mUseSecondaryTM = flag;
+  LOG(info) << "EM Photon Cluster Cut, using secondary TM cut is set to : " << mUseTM;
+}
+
+void EMCPhotonCut::SetDoQA(bool flag)
+{
+  mDoQA = flag;
+  LOG(info) << "EM Photon Cluster Cut, QA is set to: " << mUseTM;
 }
 
 void EMCPhotonCut::print() const
@@ -100,7 +108,7 @@ void EMCPhotonCut::print() const
       case EMCPhotonCuts::kTiming:
         LOG(info) << mCutNames[i] << " in [" << mMinTime << ", " << mMaxTime << "]";
         break;
-      // currently unsure how to do this in a nice way
+      // TODO: find a nice way to print TM cuts
       // case EMCPhotonCuts::kTM:
       //   LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsOverFindableClustersTPC;
       //   break;

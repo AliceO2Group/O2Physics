@@ -21,6 +21,8 @@
 
 #include "Tools/ML/MlResponse.h"
 
+#include <CommonConstants/PhysicsConstants.h>
+
 #include <cstdint>
 #include <vector>
 
@@ -63,7 +65,7 @@
 // where OBJECT is named candidateD , FEATURE = GETTER and INDEX is the index of the vector
 #define CHECK_AND_FILL_VEC_D0_INDEX(FEATURE, GETTER1, GETTER2, INDEX) \
   case static_cast<uint8_t>(InputFeaturesBplusToD0Pi::FEATURE): {     \
-    if (pdgCode == o2::constants::physics::kD0) {                     \
+    if (pdgCode == o2::constants::physics::Pdg::kD0) {                \
       inputFeatures.emplace_back((candidateD0.GETTER1())[INDEX]);     \
     } else {                                                          \
       inputFeatures.emplace_back((candidateD0.GETTER2())[INDEX]);     \

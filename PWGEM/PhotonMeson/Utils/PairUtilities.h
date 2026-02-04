@@ -15,7 +15,11 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 
-#include <TVector2.h>
+#include <Common/Core/RecoDecay.h>
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+
 #include <cmath>
 
 namespace o2::aod::pwgem::photonmeson::utils::pairutil
@@ -44,24 +48,24 @@ enum PairType {
   kNpair,
 };
 
-template <typename U1, typename U2, typename TG1, typename TG2, typename TCut1, typename TCut2>
+template <typename U1, typename U2, o2::soa::is_iterator TG1, o2::soa::is_iterator TG2, typename TCut1, typename TCut2>
 bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
 {
   bool is_g1_selected = false;
   bool is_g2_selected = false;
-  is_g1_selected = cut1.template IsSelected<U1>(g1);
-  is_g2_selected = cut2.template IsSelected<U2>(g2);
+  is_g1_selected = cut1.template IsSelected<TG1, U1>(g1);
+  is_g2_selected = cut2.template IsSelected<TG2, U2>(g2);
   return (is_g1_selected && is_g2_selected);
 }
 
-template <typename TV0Leg, typename TCluster>
+template <o2::soa::is_iterator TV0Leg, o2::soa::is_iterator TCluster>
 bool DoesV0LegMatchWithCluster(TV0Leg const& v0leg, TCluster const& cluster, const float max_deta, const float max_dphi, const float max_Ep_width)
 {
   float deta = v0leg.eta() - cluster.eta();
-  float dphi = TVector2::Phi_mpi_pi(TVector2::Phi_0_2pi(v0leg.phi()) - TVector2::Phi_0_2pi(cluster.phi()));
+  float dphi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(v0leg.phi()) - RecoDecay::constrainAngle(cluster.phi()), -o2::constants::math::PI);
   // float dR = sqrt(deta * deta + dphi * dphi);
   float Ep = cluster.e() / v0leg.p();
-  return (pow(deta / max_deta, 2) + pow(dphi / max_dphi, 2) < 1) && (abs(Ep - 1) < max_Ep_width);
+  return (std::pow(deta / max_deta, 2.f) + std::pow(dphi / max_dphi, 2.f) < 1.f) && (std::abs(Ep - 1.f) < max_Ep_width);
 }
 } // namespace o2::aod::pwgem::photonmeson::photonpair
 

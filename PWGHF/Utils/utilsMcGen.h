@@ -147,7 +147,7 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
     int8_t sign = 0;
     std::vector<int> arrDaughIndex;
     std::vector<int> idxBhadMothers{};
-    std::array<int, NDaughtersResonant> arrPdgDaugResonant;
+    std::array<int, NDaughtersResonant> arrPdgDaugResonant{};
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToPKstar0{daughtersLcResonant.at(DecayChannelResonant::LcToPKstar0)};               // Λc± → p± K*
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToDeltaplusplusK{daughtersLcResonant.at(DecayChannelResonant::LcToDeltaplusplusK)}; // Λc± → Δ(1232)±± K∓
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToL1520Pi{daughtersLcResonant.at(DecayChannelResonant::LcToL1520Pi)};               // Λc± → Λ(1520) π±
@@ -160,7 +160,7 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
       continue;
     }
 
-    if (pdgMothersCorrelBkg.size() > 0) {
+    if (!pdgMothersCorrelBkg.empty()) {
       for (const auto& pdgMother : pdgMothersCorrelBkg) {
         if (std::abs(particle.pdgCode()) != pdgMother) {
           continue; // Skip if the particle PDG code does not match the mother PDG code
@@ -202,8 +202,8 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
             if (std::abs(pdgMother) == Pdg::kDStar) {
               std::vector<int> arrResoDaughIndexDStar = {};
               RecoDecay::getDaughters(particle, &arrResoDaughIndexDStar, std::array{0}, DepthResoMax);
-              for (std::size_t iDaug = 0; iDaug < arrResoDaughIndexDStar.size(); iDaug++) {
-                auto daughDstar = mcParticles.rawIteratorAt(arrResoDaughIndexDStar[iDaug]);
+              for (const int iDaug : arrResoDaughIndexDStar) {
+                auto daughDstar = mcParticles.rawIteratorAt(iDaug);
                 if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
                   RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, DepthResoMax);
                   break;

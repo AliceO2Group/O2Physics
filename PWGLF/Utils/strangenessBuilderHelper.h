@@ -301,7 +301,7 @@ class strangenessBuilderHelper
         v0 = {};
         return false;
       }
-      if (!acceptTPCOnly && !positiveTrack.hasITS() && !negativeTrack.hasTRD() && !negativeTrack.hasTOF()) {
+      if (!acceptTPCOnly && !positiveTrack.hasITS() && !positiveTrack.hasTRD() && !positiveTrack.hasTOF()) {
         v0 = {};
         return false;
       }

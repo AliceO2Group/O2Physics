@@ -17,7 +17,6 @@
 #include "PWGLF/DataModel/v0qaanalysis.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
@@ -495,7 +494,7 @@ struct v0postprocessing {
 
             if (candidate.isphysprimary() == 1) {
               registry.fill(HIST("hMassAntiLambda_MC"), candidate.massantilambda());
-              registry.fill(HIST("hMassVsPtAntiLambdaVsCentFT0M_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.massantilambda());
+              registry.fill(HIST("hMassVsPtAntiLambdaVsCentFT0M_MC"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
             } else if (std::abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.01) {
               if (candidate.pdgcodemother() == -3312) {
                 registry.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_MC"), candidate.v0pt(), candidate.v0motherpt(), candidate.multft0m());
