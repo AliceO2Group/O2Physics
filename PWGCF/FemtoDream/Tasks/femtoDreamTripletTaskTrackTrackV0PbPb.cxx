@@ -168,7 +168,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
-  
+
   ConfigurableAxis confQ3Bins{"confQ3Bins", {2000, 0., 8.}, "binning Q3"};
   ConfigurableAxis confQ3BinsFor4D{"confQ3BinsFor4D", {500, 0., 2.}, "binning Q3 for 4D hist"};
   Configurable<int> confNEventsMix{"confNEventsMix", 5, "Number of events for mixing"};
@@ -232,9 +232,9 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPosAfter", ";primaryTrack; posDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNegAfter", ";primaryTrack; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hCentralityME", ";Centrality;Entries", kTH1F, {{100, 0.0, 100.0}});
-    if(confIsAddPairsInTriplet){
+    if (confIsAddPairsInTriplet) {
       threeBodyQARegistry.add("SameEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{4000, 0., 4.}});
-      threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{4000, 0., 4.}});    
+      threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{4000, 0., 4.}});
     }
     sameEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     mixedEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
@@ -326,7 +326,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
       trackHistoselectedParts.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, multCol, centCol);
     }
     /// Histograming V0s
-    int v0Counter = 0;    
+    int v0Counter = 0;
     for (const auto& V0 : groupselectedV0s) {
       const auto& posChild = parts.iteratorAt(V0.index() - 2);
       const auto& negChild = parts.iteratorAt(V0.index() - 1);
@@ -402,10 +402,10 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
         threeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), T1.pt(), T2.pt(), V0.pt(), q3);
         sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
         threeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, q3);
-        
-        //Teporary test: pairing the same event tracks in the triplet task (without triplet-combinatoric repetitions)
-        if(confIsAddPairsInTriplet){
-          if(v0Counter == 0){
+
+        // Teporary test: pairing the same event tracks in the triplet task (without triplet-combinatoric repetitions)
+        if (confIsAddPairsInTriplet) {
+          if (v0Counter == 0) {
             auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
             threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_trackTrack"), kstarTT);
           }
@@ -591,9 +591,9 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
       threeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_ME"), T1.pt(), T2.pt(), V0.pt(), q3);
       mixedEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
     }
-    
-    //Teporary test: pairing the mixed event tracks in the triplet task (without triplet-combinatoric repetitions)
-    if(confIsAddPairsInTriplet) {
+
+    // Teporary test: pairing the mixed event tracks in the triplet task (without triplet-combinatoric repetitions)
+    if (confIsAddPairsInTriplet) {
       for (const auto& [T1, T2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         if (confIsCPR.value) {
           if (pairCloseRejectionTrackTrackME.isClosePair(T1, T2, parts, magFieldTesla)) {
@@ -601,8 +601,8 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
           }
         }
         auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
-        threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_trackTrack"), kstarTT);    
-      }      
+        threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_trackTrack"), kstarTT);
+      }
     }
   }
 
