@@ -241,10 +241,10 @@ class FemtoDreamCollisionSelection
     mHistogramQn->get<TH1>(HIST("Event/hN2allQn"))->Sumw2();
     mHistogramQn->get<TH1>(HIST("Event/hD2allQn"))->Sumw2();
 
-    mHistogramQn->add("Event/hn2pQn",  ";centrality; pT; eta; #sum Re(p_{2,A} Q_{2,B}^{*})", kTH3F, {{centBins, 0, 100}, {20, 0.2, 5.0}, {32, -0.8, 0.8}});
-    mHistogramQn->add("Event/hd2pQn",  ";centrality; pT; eta; #sum (w_{A} W_{B})",           kTH3F, {{centBins, 0, 100}, {20, 0.2, 5.0}, {32, -0.8, 0.8}});
-    mHistogramQn->add("Event/hEntries",  ";centrality; pT; eta; entries",                    kTH3F, {{centBins, 0, 100}, {20, 0.2, 5.0}, {32, -0.8, 0.8}});
-    mHistogramQn->add("Event/hEvtCount",  ";centrality; count",                              kTH1F, {{centBins, 0, 100}});
+    mHistogramQn->add("Event/hn2pQn", ";centrality; pT; eta; #sum Re(p_{2,A} Q_{2,B}^{*})", kTH3F, {{centBins, 0, 100}, {20, 0.2, 5.0}, {32, -0.8, 0.8}});
+    mHistogramQn->add("Event/hd2pQn", ";centrality; pT; eta; #sum (w_{A} W_{B})", kTH3F, {{centBins, 0, 100}, {20, 0.2, 5.0}, {32, -0.8, 0.8}});
+    mHistogramQn->add("Event/hEntries", ";centrality; pT; eta; entries", kTH3F, {{centBins, 0, 100}, {20, 0.2, 5.0}, {32, -0.8, 0.8}});
+    mHistogramQn->add("Event/hEvtCount", ";centrality; count", kTH1F, {{centBins, 0, 100}});
 
     if (doQnSeparation) {
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
@@ -486,21 +486,21 @@ class FemtoDreamCollisionSelection
     mHistogramQn->fill(HIST("Event/hD2allQn"), centrality, D2_evt);
 
     for (auto const& trk : tracks) {
-      const double pt  = trk.pt();
+      const double pt = trk.pt();
       const double eta = trk.eta();
       if (pt < ptMin || pt > ptMax) {
         continue;
       }
-      
-      const double w   = 1.0; // TODO: NUA/NUE weight if you want
+
+      const double w = 1.0; // TODO: NUA/NUE weight if you want
       const double phi = trk.phi();
-      const double c   = w * TMath::Cos(harmonic * phi);
-      const double s   = w * TMath::Sin(harmonic * phi);
+      const double c = w * TMath::Cos(harmonic * phi);
+      const double s = w * TMath::Sin(harmonic * phi);
 
       if (eta > fEtaGap) {
-        double p2A_re = c;  
-        double p2A_im = s;  
-        double wA = w;  
+        double p2A_re = c;
+        double p2A_im = s;
+        double wA = w;
 
         double n2_trk = p2A_re * Q2B_re + p2A_im * Q2B_im;
         double d2_trk = wA * WB;
@@ -508,10 +508,10 @@ class FemtoDreamCollisionSelection
         mHistogramQn->fill(HIST("Event/hn2pQn"), centrality, pt, eta, n2_trk);
         mHistogramQn->fill(HIST("Event/hd2pQn"), centrality, pt, eta, d2_trk);
         mHistogramQn->fill(HIST("Event/hEntries"), centrality, pt, eta);
-      } else if (eta < -1* fEtaGap) {
-        double p2B_re = c;  
-        double p2B_im = s;  
-        double wB = w;  
+      } else if (eta < -1 * fEtaGap) {
+        double p2B_re = c;
+        double p2B_im = s;
+        double wB = w;
 
         double n2_trk = Q2A_re * p2B_re + Q2A_im * p2B_im;
         double d2_trk = WA * wB;
