@@ -237,7 +237,7 @@ class DimuonCut : public TNamed
         return std::fabs(track.ptMatchedMCHMID() - track.pt()) / track.pt() < mMaxReldPtwrtMCHMID && std::sqrt(std::pow((track.etaMatchedMCHMID() - track.eta()) / mMaxdEtawrtMCHMID, 2) + std::pow((track.phiMatchedMCHMID() - track.phi()) / mMaxdPhiwrtMCHMID, 2)) < 1.f;
 
       case DimuonCuts::kDr_MatchingChi2MCHMFT_2D:
-        return mSlope_dr_chi2MatchMFTMCH * track.chi2MatchMCHMFT() + mIntercept_dr_chi2MatchMFTMCH < std::sqrt(std::pow(track.etaMatchedMCHMID() - track.eta(), 2) + std::pow(track.phiMatchedMCHMID() - track.phi(), 2));
+        return mSlope_dr_chi2MatchMFTMCH * track.chi2MatchMCHMFT() + mIntercept_dr_chi2MatchMFTMCH > std::sqrt(std::pow(track.etaMatchedMCHMID() - track.eta(), 2) + std::pow(track.phiMatchedMCHMID() - track.phi(), 2));
 
       default:
         return false;
