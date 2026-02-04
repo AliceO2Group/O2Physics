@@ -13,119 +13,118 @@
 /// \brief Task for analysing D0 triggered jet events.
 /// \author Matthew Ockleton <matthew.ockleton@cern.ch>, University of Liverpool
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/AliasTables.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
 #include "Common/Core/RecoDecay.h"
 
-#include "Framework/Logger.h"
-#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/ASoA.h>
 #include <Framework/HistogramSpec.h>
-#include "Framework/AnalysisDataModel.h"
+
 #include <fairlogger/Logger.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 namespace o2::aod
 {
-  namespace d0s
-  { 
-    // D0
-    DECLARE_SOA_COLUMN(D0PromptBDT, d0PromptBDT, float);
-    DECLARE_SOA_COLUMN(D0NonPromptBDT, d0NonPromptBDT, float);
-    DECLARE_SOA_COLUMN(D0BkgBDT, d0BkgBDT, float);
-    DECLARE_SOA_COLUMN(D0M, d0M, float);
-    DECLARE_SOA_COLUMN(D0Pt, d0Pt, float);
-    DECLARE_SOA_COLUMN(D0Eta, d0Eta, float);
-    DECLARE_SOA_COLUMN(D0Phi, d0Phi, float);
-    DECLARE_SOA_COLUMN(D0McOrigin, d0McOrigin, float);
-    DECLARE_SOA_COLUMN(D0MD, d0MD, float);
-    DECLARE_SOA_COLUMN(D0PtD, d0PtD, float);
-    DECLARE_SOA_COLUMN(D0EtaD, d0EtaD, float);
-    DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
-    DECLARE_SOA_COLUMN(D0CollisionIdx, d0CollisionIdx, int);
-    DECLARE_SOA_COLUMN(D0Reflection, d0Reflection, int);
-  }
+namespace d0s
+{
+// D0
+DECLARE_SOA_COLUMN(D0PromptBDT, d0PromptBDT, float);
+DECLARE_SOA_COLUMN(D0NonPromptBDT, d0NonPromptBDT, float);
+DECLARE_SOA_COLUMN(D0BkgBDT, d0BkgBDT, float);
+DECLARE_SOA_COLUMN(D0M, d0M, float);
+DECLARE_SOA_COLUMN(D0Pt, d0Pt, float);
+DECLARE_SOA_COLUMN(D0Eta, d0Eta, float);
+DECLARE_SOA_COLUMN(D0Phi, d0Phi, float);
+DECLARE_SOA_COLUMN(D0McOrigin, d0McOrigin, float);
+DECLARE_SOA_COLUMN(D0MD, d0MD, float);
+DECLARE_SOA_COLUMN(D0PtD, d0PtD, float);
+DECLARE_SOA_COLUMN(D0EtaD, d0EtaD, float);
+DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
+DECLARE_SOA_COLUMN(D0CollisionIdx, d0CollisionIdx, int);
+DECLARE_SOA_COLUMN(D0Reflection, d0Reflection, int);
+} // namespace d0s
 
-  DECLARE_SOA_TABLE(D0DataTables, "AOD", "D0DATATABLE",
-                    d0s::D0CollisionIdx,
-                    d0s::D0PromptBDT,
-                    d0s::D0NonPromptBDT,
-                    d0s::D0BkgBDT,
-                    d0s::D0M,
-                    d0s::D0Pt,
-                    d0s::D0Eta,
-                    d0s::D0Phi);
-  
-  DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPARTICLELEVELTABLE",
-                    d0s::D0CollisionIdx,
-                    d0s::D0McOrigin,
-                    d0s::D0Pt,
-                    d0s::D0Eta,
-                    d0s::D0Phi);
+DECLARE_SOA_TABLE(D0DataTables, "AOD", "D0DATATABLE",
+                  d0s::D0CollisionIdx,
+                  d0s::D0PromptBDT,
+                  d0s::D0NonPromptBDT,
+                  d0s::D0BkgBDT,
+                  d0s::D0M,
+                  d0s::D0Pt,
+                  d0s::D0Eta,
+                  d0s::D0Phi);
 
-  DECLARE_SOA_TABLE(D0McMatchedTables, "AOD", "D0MCMATCHEDTABLE",
-                    d0s::D0CollisionIdx,
-                    d0s::D0Pt,
-                    d0s::D0Eta,
-                    d0s::D0Phi,
-                    d0s::D0McOrigin,
-                    d0s::D0Reflection);
-  
-  namespace jets
-  {
-    // Jet
-    DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
-    DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
-    DECLARE_SOA_INDEX_COLUMN(D0McMatchedTable, d0MCMatched);
-    DECLARE_SOA_COLUMN(JetPt, jetPt, float);
-    DECLARE_SOA_COLUMN(JetEta, jetEta, float);
-    DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
-    DECLARE_SOA_COLUMN(CollID, jetCollID, int);
-    // D0-jet
-    DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
-  }
+DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPARTICLELEVELTABLE",
+                  d0s::D0CollisionIdx,
+                  d0s::D0McOrigin,
+                  d0s::D0Pt,
+                  d0s::D0Eta,
+                  d0s::D0Phi);
 
-  DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETDATATABLE",
-                    o2::soa::Index<>,
-                    jets::D0DataTableId,
-                    jets::CollID, // change to index column
-                    jets::JetPt,
-                    jets::JetEta,
-                    jets::JetPhi,
-                    jets::D0JetDeltaPhi);
+DECLARE_SOA_TABLE(D0McMatchedTables, "AOD", "D0MCMATCHEDTABLE",
+                  d0s::D0CollisionIdx,
+                  d0s::D0Pt,
+                  d0s::D0Eta,
+                  d0s::D0Phi,
+                  d0s::D0McOrigin,
+                  d0s::D0Reflection);
 
-  DECLARE_SOA_TABLE_STAGED(JetMCPTables, "JETMCPARTICLELEVELTABLE",
-                    o2::soa::Index<>,
-                    jets::D0McPTableId,
-                    jets::CollID, // change to index column
-                    jets::JetPt,
-                    jets::JetEta,
-                    jets::JetPhi,
-                    jets::D0JetDeltaPhi);
+namespace jets
+{
+// Jet
+DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
+DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
+DECLARE_SOA_INDEX_COLUMN(D0McMatchedTable, d0MCMatched);
+DECLARE_SOA_COLUMN(JetPt, jetPt, float);
+DECLARE_SOA_COLUMN(JetEta, jetEta, float);
+DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
+DECLARE_SOA_COLUMN(CollID, jetCollID, int);
+// D0-jet
+DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
+} // namespace jets
 
-  DECLARE_SOA_TABLE_STAGED(JetMCMatchedTables, "JETMCMATCHEDTABLE",
-                    o2::soa::Index<>,
-                    jets::D0McMatchedTableId,
-                    jets::CollID, // change to index column
-                    jets::JetPt,
-                    jets::JetEta,
-                    jets::JetPhi,
-                    jets::D0JetDeltaPhi);
-}
+DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETDATATABLE",
+                         o2::soa::Index<>,
+                         jets::D0DataTableId,
+                         jets::CollID, // change to index column
+                         jets::JetPt,
+                         jets::JetEta,
+                         jets::JetPhi,
+                         jets::D0JetDeltaPhi);
 
-struct JetCorrelationD0 
-  {
+DECLARE_SOA_TABLE_STAGED(JetMCPTables, "JETMCPARTICLELEVELTABLE",
+                         o2::soa::Index<>,
+                         jets::D0McPTableId,
+                         jets::CollID, // change to index column
+                         jets::JetPt,
+                         jets::JetEta,
+                         jets::JetPhi,
+                         jets::D0JetDeltaPhi);
+
+DECLARE_SOA_TABLE_STAGED(JetMCMatchedTables, "JETMCMATCHEDTABLE",
+                         o2::soa::Index<>,
+                         jets::D0McMatchedTableId,
+                         jets::CollID, // change to index column
+                         jets::JetPt,
+                         jets::JetEta,
+                         jets::JetPhi,
+                         jets::D0JetDeltaPhi);
+} // namespace o2::aod
+
+struct JetCorrelationD0 {
   // Define new table
   Produces<aod::D0DataTables> tableD0;
   Produces<aod::D0McPTables> tableD0MCParticle;
@@ -138,7 +137,7 @@ struct JetCorrelationD0
 
   // Configurables
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-  //Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
+  // Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<bool> doSumw{"doSumw", false, "enable sumw2 for weighted histograms"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
@@ -176,12 +175,11 @@ struct JetCorrelationD0
     registry.fill(HIST("h_Jet_pT_D0_Jet_dPhi"), jet.pt(), dphi);
   }
 
-  
   template <typename T, typename U>
-  void applyCollisionSelections(T const& collision, U const& eventSelectionBits) {
+  void applyCollisionSelections(T const& collision, U const& eventSelectionBits)
+  {
     registry.fill(HIST("hCollisions"), 0.5); // All collisions
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) 
-    {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("hCollisions"), 1.5); // Selected collisions
@@ -190,17 +188,17 @@ struct JetCorrelationD0
 
   template <typename T, typename U>
   // Jetbase is the jet we take, i.e. an MCD jet. We then loop through jettag, i.e. MCP jets to test if they match
-  //void fillMatchedHistograms(T const& jetBase, float weight = 1.0) // float leadingTrackPtBase,
-  void fillMatchedHistograms(T const& jetsBase, U const&, float weight = 1.0,  float rho = 0.0)
+  // void fillMatchedHistograms(T const& jetBase, float weight = 1.0) // float leadingTrackPtBase,
+  void fillMatchedHistograms(T const& jetsBase, U const&, float weight = 1.0, float rho = 0.0)
   {
     for (const auto& jetBase : jetsBase) {
-      float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));  // calculated from pythia event weights
+      float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));          // calculated from pythia event weights
       if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // reject events that are too hard / soft
         return;
       }
-      if (jetBase.has_matchedJetGeo()) { // geometric matching
+      if (jetBase.has_matchedJetGeo()) {                                            // geometric matching
         for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) { // this tests if jet base does have a matched jettag jet
-          if (jetTag.pt() > pTHatMaxMCP * pTHat) { // cuts overly hard jets from jettag (mcp) sample
+          if (jetTag.pt() > pTHatMaxMCP * pTHat) {                                  // cuts overly hard jets from jettag (mcp) sample
             continue;
           }
           registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
@@ -214,7 +212,6 @@ struct JetCorrelationD0
       }
     }
   }
-  
 
   void init(InitContext const&)
   {
@@ -230,7 +227,7 @@ struct JetCorrelationD0
     registry.add("hZvtxSelected", "Z vertex position;Z_{vtx};entries", {HistType::kTH1F, {{80, -20, 20}}});
 
     // D0 Histograms
-    registry.add("hD0MlPrompt", "D0 ML Prompt Scores",   {HistType::kTH1F, {{100, -1.0, 2.0}}});
+    registry.add("hD0MlPrompt", "D0 ML Prompt Scores", {HistType::kTH1F, {{100, -1.0, 2.0}}});
     registry.add("hD0MlNonPrompt", "D0 ML NonPrompt Scores", {HistType::kTH1F, {{100, -1.0, 2.0}}});
     registry.add("hD0MlBkg", "D0 ML Background Scores", {HistType::kTH1F, {{100, -1.0, 2.0}}});
 
@@ -269,11 +266,11 @@ struct JetCorrelationD0
               scores[2],
               scores[1],
               scores[0],
-              d0DataCandidate.m(), 
+              d0DataCandidate.m(),
               d0DataCandidate.pt(),
               d0DataCandidate.eta(),
               d0DataCandidate.phi());
-      //LOGF(info, "table row %i d0_mass %.2f d0_pt %.2f d0_eta %.2f d0_phi %.2f", tableD0.lastIndex(), d0.m(), d0.pt(), d0.eta(), d0.phi());
+      // LOGF(info, "table row %i d0_mass %.2f d0_pt %.2f d0_eta %.2f d0_phi %.2f", tableD0.lastIndex(), d0.m(), d0.pt(), d0.eta(), d0.phi());
       for (const auto& jet : jets) {
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0DataCandidate.phi());
         fillJetHistograms(jet, dphi);
@@ -283,15 +280,15 @@ struct JetCorrelationD0
                  jet.eta(),
                  jet.phi(),
                  dphi);
-        //LOGF(info, "table row %i D0_index %i jet_pt %.2f jet_eta %.2f jet_phi %.2f dphi %.2f" ,tableJet.lastIndex(), tableD0.lastIndex(), jet.pt(), jet.eta(), jet.phi(), dphi);
+        // LOGF(info, "table row %i D0_index %i jet_pt %.2f jet_eta %.2f jet_phi %.2f dphi %.2f" ,tableJet.lastIndex(), tableD0.lastIndex(), jet.pt(), jet.eta(), jet.phi(), dphi);
       }
     }
   }
   PROCESS_SWITCH(JetCorrelationD0, processData, "charged particle level jet analysis", true);
 
   void processMCParticle(aod::JetMcCollision const& collision,
-                  aod::CandidatesD0MCP const& d0MCPCandidates,
-                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets)
+                         aod::CandidatesD0MCP const& d0MCPCandidates,
+                         soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets)
   {
     registry.fill(HIST("hCollisions"), 0.5); // All collisions
     if (std::abs(collision.posZ()) > vertexZCut) {
@@ -310,36 +307,35 @@ struct JetCorrelationD0
                         d0MCPCandidate.phi());
 
       for (const auto& jet : jets) {
-          float dphi = RecoDecay::constrainAngle(jet.phi() - d0MCPCandidate.phi());
-          fillJetHistograms(jet, dphi);
-          tableJetMCParticle(tableD0MCParticle.lastIndex(),
-                             collIdx, // check collIdx equals collIdx
-                             jet.pt(),
-                             jet.eta(),
-                             jet.phi(),
-                             dphi);
-        }
+        float dphi = RecoDecay::constrainAngle(jet.phi() - d0MCPCandidate.phi());
+        fillJetHistograms(jet, dphi);
+        tableJetMCParticle(tableD0MCParticle.lastIndex(),
+                           collIdx, // check collIdx equals collIdx
+                           jet.pt(),
+                           jet.eta(),
+                           jet.phi(),
+                           dphi);
+      }
     }
   }
   PROCESS_SWITCH(JetCorrelationD0, processMCParticle, "process MC Particle jets", false);
 
   void processMCMatched(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
-                  aod::JetMcCollisions const&,
-                  aod::CandidatesD0MCP const& d0MCPCandidates,
-                  aod::CandidatesD0MCD const& d0MCDCandidates,
-                  TracksSelQuality const&,
-                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
-                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcpJets,
-                  soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcdJets
-                  )
+                        aod::JetMcCollisions const&,
+                        aod::CandidatesD0MCP const& d0MCPCandidates,
+                        aod::CandidatesD0MCD const& d0MCDCandidates,
+                        TracksSelQuality const&,
+                        soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                        soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcpJets,
+                        soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcdJets)
   {
     applyCollisionSelections(collision, eventSelectionBits);
 
     const auto CollIdx = collision.mcCollisionId();
 
     for (const auto& d0MCDCandidate : d0MCDCandidates) {
-    // Loop over d0 detector level candidates, apply d0 matching logic, fill d0 particle level that has been matched;
-    // Loop over jet decetor level, apply jet matching logic (jet finder QA task), fill jet particle level that has been matched.
+      // Loop over d0 detector level candidates, apply d0 matching logic, fill d0 particle level that has been matched;
+      // Loop over jet decetor level, apply jet matching logic (jet finder QA task), fill jet particle level that has been matched.
 
       // D or D bar?
       int matchedFrom = 0;
@@ -367,17 +363,17 @@ struct JetCorrelationD0
       auto trackPos = d0MCDCandidate.template prong0_as<TracksSelQuality>(); // positive daughter
       auto trackNeg = d0MCDCandidate.template prong1_as<TracksSelQuality>(); // negative daughter
 
-      auto indexMother = RecoDecay::getMother(mcParticles, 
-                                                      trackPos.template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), 
-                                                     o2::constants::physics::Pdg::kD0, 
-                                           true);
+      auto indexMother = RecoDecay::getMother(mcParticles,
+                                              trackPos.template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(),
+                                              o2::constants::physics::Pdg::kD0,
+                                              true);
       auto particleMother = mcParticles.rawIteratorAt(indexMother); // This is the particle level D0 corresponding to a matched D0 index
       LOGF(info, "trackPos pt %.2f, eta %.2f, phi %.2f, trackNeg pt %.2f, eta %.2f, phi %.2f, indexMother %.2f, particleMother pt %.2f eta %.2f phi %.2f", trackPos.pt(), trackPos.eta(), trackPos.phi(), trackNeg.pt(), trackNeg.eta(), trackNeg.phi(), indexMother, particleMother.pt(), particleMother.eta(), particleMother.phi());
-      
+
       // Loop over particle level that have been matched
       for (const auto& particleMother : d0MCPCandidates) {
         tableD0MCMatched(CollIdx,
-                         particleMother.pt(), 
+                         particleMother.pt(),
                          particleMother.eta(),
                          particleMother.phi(),
                          particleMother.originMcGen(),
@@ -387,17 +383,16 @@ struct JetCorrelationD0
         // Jet matching
         fillMatchedHistograms(mcdJets, mcpJets);
 
-
-          for (const auto& mcpJet : mcpJets) {
-            float dphi = RecoDecay::constrainAngle(mcpJet.phi() - d0MCDCandidate.phi());
-            fillJetHistograms(mcpJet, dphi);
-            tableJetMCMatched(tableD0MCMatched.lastIndex(),
-                              CollIdx,
-                              mcpJet.pt(),
-                              mcpJet.eta(),
-                              mcpJet.phi(),
-                              dphi);
-          }
+        for (const auto& mcpJet : mcpJets) {
+          float dphi = RecoDecay::constrainAngle(mcpJet.phi() - d0MCDCandidate.phi());
+          fillJetHistograms(mcpJet, dphi);
+          tableJetMCMatched(tableD0MCMatched.lastIndex(),
+                            CollIdx,
+                            mcpJet.pt(),
+                            mcpJet.eta(),
+                            mcpJet.phi(),
+                            dphi);
+        }
       }
     }
   }
