@@ -99,15 +99,20 @@ struct KinkBuilder {
   Configurable<float> maxDCAMothToPV{"maxDCAMothToPV", 0.2, "Max DCA of the mother to the PV"};
   Configurable<float> minDCADaugToPV{"minDCADaugToPV", 0.1, "Min DCA of the daughter to the PV"};
   Configurable<float> minPtMoth{"minPtMoth", 0.15, "Minimum pT of the hypercandidate"};
+  Configurable<float> minPtDaug{"minPtDaug", 0.15, "Minimum pT of the daughter candidate"};
   Configurable<float> maxZDiff{"maxZDiff", 20., "Max z difference between the kink daughter and the mother"};
   Configurable<float> maxPhiDiff{"maxPhiDiff", 100, "Max phi difference between the kink daughter and the mother"};
   Configurable<float> timeMarginNS{"timeMarginNS", 600, "Additional time res tolerance in ns"};
+  Configurable<float> timeMarginNSDaughter{"timeMarginNSDaughter", 200, "time tolerance for daughter candidate in ns"};
   Configurable<float> etaMaxDaug{"etaMaxDaug", 1., "eta max daughter"};
   Configurable<float> etaMaxMoth{"etaMaxMoth", 1., "eta max Mother"};
   Configurable<float> nTPCClusMinDaug{"nTPCClusMinDaug", 30, "mother NTPC clusters cut"};
   Configurable<float> itsChi2cut{"itsChi2cut", 36, "mother itsChi2 cut"};
   Configurable<bool> askTOFforDaug{"askTOFforDaug", false, "If true, ask for TOF signal"};
   Configurable<bool> kaontopologhy{"kaontopologhy", true, "If true, selected mother have both ITS+TPC "};
+  Configurable<bool> ismc{"ismc", false, "If true, additional selection crideria for daughter "};
+  Configurable<float> minradiusKink{"minradiusKink", 130.0, "minradiuscut for kink vertex"};
+  Configurable<float> maxradiusKink{"maxradiusKink", 200.0, "maxradiuscut for kink vertex"};
 
   o2::vertexing::DCAFitterN<2> fitter;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -205,76 +210,122 @@ struct KinkBuilder {
     if (askTOFforDaug && !candidate.hasTOF()) {
       return false;
     }
+    if (ismc && candidate.trackTimeRes() > timeMarginNSDaughter) {
+      return false; // ns
+    }
+    if (ismc && candidate.pt() < minPtDaug) {
+      return false; // ns
+    }
+
     return true;
   }
 
   template <class Tcolls, class Ttracks>
-  void fillCandidateData(const Tcolls& collisions, const Ttracks& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
+  void fillCandidateData(const Tcolls& collisions,
+                         const Ttracks& tracks,
+                         aod::AmbiguousTracks const& ambiguousTracks,
+                         aod::BCsWithTimestamps const& bcs)
   {
     svCreator.clearPools();
     svCreator.fillBC2Coll(collisions, bcs);
-    bool isDaug;
-    bool isMoth;
+
+    bool isDaug = false;
+    bool isMoth = false;
+
     for (const auto& track : tracks) {
-      if (!track.hasTPC())
+      if (!track.hasTPC()) {
         continue;
+      }
       isDaug = false;
       isMoth = false;
+
+      // Daughter: TPC-only, not PV contributor
       if (!track.hasITS() && !track.isPVContributor()) {
         isDaug = selectDaugTrack(track);
       }
+
+      // Mother: PV contributor, ITS (+TPC if kaon topology), no TOF
       if (track.hasITS() && !track.hasTOF() && track.isPVContributor()) {
         isMoth = selectMothTrack(track);
       }
-      if (!isDaug && !isMoth)
+
+      if (!isDaug && !isMoth) {
         continue;
-      if (isMoth && std::abs(track.eta()) > etaMaxMoth)
+      }
+
+      if (isMoth && std::abs(track.eta()) > etaMaxMoth) {
         continue;
-      if (isDaug && std::abs(track.eta()) > etaMaxDaug)
+      }
+      if (isDaug && std::abs(track.eta()) > etaMaxDaug) {
         continue;
+      }
+
       int pdgHypo = isMoth ? 1 : 0;
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
 
-    auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
+    auto& kinkPool = svCreator.getSVCandPool(collisions, /*combineLikeSign=*/!unlikeSignBkg);
 
     for (const auto& svCand : kinkPool) {
       KinkCandidate kinkCand;
       auto trackMoth = tracks.rawIteratorAt(svCand.tr0Idx);
       auto trackDaug = tracks.rawIteratorAt(svCand.tr1Idx);
+
+      // Mother must have collision (PV contributor)
+      if (!trackMoth.has_collision()) {
+        continue;
+      }
+
       auto const& collision = trackMoth.template collision_as<Tcolls>();
+      if (!collision.has_bc()) {
+        continue;
+      }
       auto const& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       o2::dataformats::VertexBase primaryVertex;
       primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
-      primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(),
+                           collision.covXZ(), collision.covYZ(), collision.covZZ());
       kinkCand.primVtx = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
       o2::track::TrackParCov trackParCovMoth = getTrackParCov(trackMoth);
       o2::track::TrackParCov trackParCovMothPV{trackParCovMoth};
+
       std::array<float, 2> dcaInfoMoth;
-      bool okMoth = o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovMothPV, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoMoth);
+      bool okMoth = o2::base::Propagator::Instance()->propagateToDCABxByBz(
+        {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()},
+        trackParCovMothPV, 2.f,
+        static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value),
+        &dcaInfoMoth);
+
       if (!okMoth) {
         continue;
       }
+
       o2::track::TrackParCov trackParCovDaug = getTrackParCov(trackDaug);
-      // propagate to PV
       std::array<float, 2> dcaInfoDaug;
-      bool okDaug = o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovDaug, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
+
+      bool okDaug = o2::base::Propagator::Instance()->propagateToDCABxByBz(
+        {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()},
+        trackParCovDaug, 2.f,
+        static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value),
+        &dcaInfoDaug);
+
       if (!okDaug) {
         continue;
       }
+
       if (std::abs(dcaInfoMoth[1]) > maxDCAMothToPV) {
         continue;
       }
       if (std::abs(dcaInfoDaug[1]) < minDCADaugToPV) {
         continue;
       }
+
       int nCand = 0;
       try {
         nCand = fitter.process(trackParCovMoth, trackParCovDaug);
       } catch (...) {
-        LOG(error) << "Exception caught in DCA fitter process call!";
         continue;
       }
       if (nCand == 0) {
@@ -283,12 +334,18 @@ struct KinkBuilder {
       if (!fitter.propagateTracksToVertex()) {
         continue;
       }
+
       auto propMothTrack = fitter.getTrack(0);
       auto propDaugTrack = fitter.getTrack(1);
+
       kinkCand.decVtx = fitter.getPCACandidatePos();
       const int vtxp = 3;
       for (int i = 0; i < vtxp; i++) {
         kinkCand.decVtx[i] -= kinkCand.primVtx[i];
+      }
+      double radiusxy = std::sqrt(kinkCand.decVtx[0] * kinkCand.decVtx[0] + kinkCand.decVtx[1] * kinkCand.decVtx[1]);
+      if (radiusxy < minradiusKink || radiusxy > maxradiusKink) {
+        continue;
       }
       propMothTrack.getPxPyPzGlo(kinkCand.momMoth);
       propDaugTrack.getPxPyPzGlo(kinkCand.momDaug);
@@ -380,6 +437,7 @@ struct SpectraKinkPiKa {
   Configurable<int> pid{"pid", 321, ""};
   Configurable<int> dpid{"dpid", 13, ""};
   Configurable<bool> dpidCut{"dpidCut", 0, ""};
+  Configurable<bool> dradiusCrossrow{"dradiusCrossrow", 0, ""};
   Configurable<bool> dptCut{"dptCut", 0, ""};
   Configurable<bool> qa{"qa", 0, ""};
   Configurable<int> maxtpcncle{"maxtpcncle", 0, "max tpc find ncle"};
@@ -636,6 +694,9 @@ struct SpectraKinkPiKa {
       double radiusxy = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
       if (radiusxy < minradius || radiusxy > maxradius)
         continue;
+
+      if (dradiusCrossrow && (mothTrack.tpcNClsFound() > (-31.67 + ((11.0 / 12.0) * radiusxy)) || mothTrack.tpcNClsFound() < (-85.5 + ((65.0 / 95.0) * radiusxy))))
+        continue;
       rpiKkink.fill(HIST("h1_tracks_data"), 10.0);
       if (std::abs(kinkCand.zDecVtx()) < minzcut || std::abs(kinkCand.zDecVtx()) > maxzcut)
         continue;
@@ -744,10 +805,14 @@ struct SpectraKinkPiKa {
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       rEventSelection.fill(HIST("hMultiplicity"), multiplicity);
 
-      auto kinkCandPerColl = KinkCands.sliceBy(mPerCol, collision.index());
+      auto kinkCandPerColl = KinkCands.sliceBy(mPerCol, collision.globalIndex());
       for (const auto& kinkCand : kinkCandPerColl) {
         auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
         auto mothTrack = kinkCand.trackMoth_as<TracksFull>();
+        if (mothTrack.collisionId() != collision.globalIndex()) {
+          continue; // not from this event
+        }
+
         if (!mothTrack.has_collision() || !dauTrack.has_collision()) {
           continue;
         }
@@ -769,7 +834,10 @@ struct SpectraKinkPiKa {
         v0.SetCoordinates(mothTrack.px(), mothTrack.py(), mothTrack.pz(), o2::constants::physics::MassKaonCharged);
 
         double radiusxy = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
+        //	std::cout<<"radius check:     "<<radiusxy<<std::endl;
         if (radiusxy < minradius || radiusxy > maxradius)
+          continue;
+        if (dradiusCrossrow && (mothTrack.tpcNClsFound() > (-31.67 + ((11.0 / 12.0) * radiusxy)) || mothTrack.tpcNClsFound() < (-85.5 + ((65.0 / 95.0) * radiusxy))))
           continue;
         rpiKkink.fill(HIST("h1_tracks"), 3.0);
         if (std::abs(kinkCand.zDecVtx()) < minzcut || std::abs(kinkCand.zDecVtx()) > maxzcut)
