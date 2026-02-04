@@ -1592,6 +1592,8 @@ struct AnalysisSameEventPairing {
             Form("PairsEleMuSEMM_%s_%s", trackCutName.Data(), muonCutName.Data())
           };
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          int index = iTrack * fNCutsMuon + iMuon;
+          fTrackMuonHistNames[index] = names;
           
           // if (fEnableBarrelMuonMixingHistos) {
           //   names.push_back(Form("PairsBarrelMuonMEPM_%s_%s", trackCutName.Data(), muonCutName.Data()));
@@ -1611,7 +1613,7 @@ struct AnalysisSameEventPairing {
                 Form("PairsEleMuSEMM_%s_%s_%s", trackCutName.Data(), muonCutName.Data(), objArrayPair->At(iPairCut)->GetName())
               };
               histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-              int index = iTrack * (fNCutsMuon * nPairCuts) + iMuon * nPairCuts + iPairCut;
+              index = iTrack * (fNCutsMuon * nPairCuts) + iMuon * nPairCuts + iPairCut;
               fTrackMuonHistNames[index] = names;
             }
           }
@@ -2444,7 +2446,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processElectronMuonSkimmed(MyEventsVtxCovSelected const& events,
-                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs, MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
                                   soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runEmuSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMapWithCov, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(events, trackEmuAssocsPerCollision, barrelAssocs, barrelTracks, muonAssocsPerCollision, muonAssocs, muons);
