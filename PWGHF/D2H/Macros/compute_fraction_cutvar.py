@@ -38,7 +38,7 @@ def main(config):
         hist_rawy_name = cfg["rawyields"]["histoname"]
         hist_rawy.append(infile_rawy.Get(hist_rawy_name))
         if not isinstance(hist_rawy[-1], ROOT.TH1):
-            sys.exit(f"Fatal error: Histogram with raw yield \"{hist_rawy_name}\" is absent. Exit.")
+            sys.exit(f"\33[31mFatal error: Histogram with raw yield \"{hist_rawy_name}\" is absent. Exit.\33[0m")
         hist_rawy[-1].SetDirectory(0)
         infile_rawy.Close()
 
@@ -48,18 +48,18 @@ def main(config):
         hist_effp.append(infile_eff.Get(hist_effp_name))
         hist_effnp.append(infile_eff.Get(hist_effnp_name))
         if not isinstance(hist_effp[-1], ROOT.TH1):
-            sys.exit(f"Fatal error: Histogram with efficiency for prompt \"{hist_effp_name}\" is absent. Exit.")
+            sys.exit(f"\33[31mFatal error: Histogram with efficiency for prompt \"{hist_effp_name}\" is absent. Exit.\33[0m")
         if not isinstance(hist_effnp[-1], ROOT.TH1):
-            sys.exit(f"Fatal error: Histogram with efficiency for nonprompt \"{hist_effnp}\" is absent. Exit.")
+            sys.exit(f"\33[31mFatal error: Histogram with efficiency for nonprompt \"{hist_effnp}\" is absent. Exit.\33[0m")
         hist_effp[-1].SetDirectory(0)
         hist_effnp[-1].SetDirectory(0)
         infile_eff.Close()
 
     pt_bin_to_process = cfg.get("pt_bin_to_process", -1)
     if not isinstance(pt_bin_to_process, int):
-        sys.exit("Fatal error: pt_bin_to_process must be an integer value. Exit.")
+        sys.exit("\33[31mFatal error: pt_bin_to_process must be an integer value. Exit.")
     if (pt_bin_to_process != -1 and pt_bin_to_process < 1) or pt_bin_to_process > hist_rawy[0].GetNbinsX():
-        sys.exit("Fatal error: pt_bin_to_process must be a positive value up to number of bins in raw yield histogram. Exit.")
+        sys.exit("\33[31mFatal error: pt_bin_to_process must be a positive value up to number of bins in raw yield histogram. Exit.")
 
     is_draw_title_rawy = cfg.get("is_draw_title", {}).get("rawy", True)
     is_draw_title_eff = cfg.get("is_draw_title", {}).get("eff", False)
@@ -73,11 +73,11 @@ def main(config):
         hist_central_effp_name = cfg["central_efficiency"]["histonames"]["prompt"]
         hist_central_effp = infile_central_eff.Get(hist_central_effp_name)
         if not isinstance(hist_central_effp[-1], ROOT.TH1):
-            sys.exit(f"Fatal error: Histogram with central efficiency for prompt \"{hist_central_effp_name}\" is absent. Exit.")
+            sys.exit(f"\33[31mFatal error: Histogram with central efficiency for prompt \"{hist_central_effp_name}\" is absent. Exit.\33[0m")
         hist_central_effnp_name = cfg["central_efficiency"]["histonames"]["nonprompt"]
         hist_central_effnp = infile_central_eff.Get(hist_central_effnp_name)
         if not isinstance(hist_central_effnp[-1], ROOT.TH1):
-            sys.exit(f"Fatal error: Histogram with central efficiency for nonprompt \"{hist_central_effnp_name}\" is absent. Exit.")
+            sys.exit(f"\33[31mFatal error: Histogram with central efficiency for nonprompt \"{hist_central_effnp_name}\" is absent. Exit.\33[0m")
         hist_central_effp.SetDirectory(0)
         hist_central_effnp.SetDirectory(0)
         infile_central_eff.Close()
@@ -177,10 +177,10 @@ def main(config):
 
         if cfg["minimisation"]["correlated"]:
             if not (np.all(rawy[1:] > rawy[:-1]) or np.all(rawy[1:] < rawy[:-1])):
-                print("WARNING! main(): the raw yield vector is not monotonous. Check the input for stability.")
+                print("\0\33[33mWARNING! main(): the raw yield vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield vector elements = {rawy}\n")
             if not (np.all(unc_rawy[1:] > unc_rawy[:-1]) or np.all(unc_rawy[1:] < unc_rawy[:-1])):
-                print("WARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.")
+                print("\0\33[33mWARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
 
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)

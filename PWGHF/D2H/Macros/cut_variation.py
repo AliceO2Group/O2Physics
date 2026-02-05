@@ -79,15 +79,15 @@ class CutVarMinimiser:
         """
 
         if len(self.eff_prompt) != self.n_sets or len(self.eff_nonprompt) != self.n_sets:
-            print("ERROR: number of raw yields and efficiencies not consistent! Exit")
+            print("33[31mERROR: number of raw yields and efficiencies not consistent! Exit\033[0m")
             sys.exit()
 
         if len(self.unc_raw_yields) != self.n_sets:
-            print("ERROR: number of raw yields and raw-yield uncertainties not consistent! Exit")
+            print("33[31mERROR: number of raw yields and raw-yield uncertainties not consistent! Exit\033[0m")
             sys.exit()
 
         if len(self.unc_eff_prompt) != self.n_sets or len(self.unc_eff_nonprompt) != self.n_sets:
-            print("ERROR: number of raw yields and efficiency uncertainties not consistent! Exit")
+            print("33[31mERROR: number of raw yields and efficiency uncertainties not consistent! Exit\033[0m")
             sys.exit()
 
     def __initialise_objects(self):
@@ -199,7 +199,7 @@ class CutVarMinimiser:
         if correlated:
             m_cov_sets_diag = np.diag(self.m_cov_sets)
             if not (np.all(m_cov_sets_diag[1:] > m_cov_sets_diag[:-1]) or np.all(m_cov_sets_diag[1:] < m_cov_sets_diag[:-1])):
-                print("WARNING! minimise_system(): the residual vector uncertainties elements are not monotonous. Check the input for stability.")
+                print("\033[33mWARNING! minimise_system(): the residual vector uncertainties elements are not monotonous. Check the input for stability.\033[0m")
                 print(f"residual vector uncertainties elements = {np.sqrt(m_cov_sets_diag)}\n")
 
         # chi2
