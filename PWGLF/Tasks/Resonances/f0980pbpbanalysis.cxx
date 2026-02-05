@@ -117,12 +117,12 @@ struct F0980pbpbanalysis {
   Configurable<float> cfgTrackDCAzToPVcutMax{"cfgTrackDCAzToPVcutMax", 2.0, "Maximum longitudinal DCA"};
 
   Configurable<bool> cfgTrackDCArDepPTSel{"cfgTrackDCArDepPTSel", false, "Flag for pT dependent transverse DCA cut"}; // 7 - sigma cut
-  Configurable<float> cfgTrackDCArDepPTP0{"cfgTrackDCArDepPTP0", 0.004, "Coeff. of transverse DCA for p0"};
-  Configurable<float> cfgTrackDCArDepPTExp{"cfgTrackDCArDepPTExp", 0.013, "Coeff. of transverse DCA for power law term"};
+  Configurable<double> cfgTrackDCArDepPTP0{"cfgTrackDCArDepPTP0", 0.004, "Coeff. of transverse DCA for p0"};
+  Configurable<double> cfgTrackDCArDepPTExp{"cfgTrackDCArDepPTExp", 0.013, "Coeff. of transverse DCA for power law term"};
 
   Configurable<bool> cfgTrackDCAzDepPTSel{"cfgTrackDCAzDepPTSel", false, "Flag for pT dependent longitudinal DCA cut"}; // 7 - sigma cut
-  Configurable<float> cfgTrackDCAzDepPTP0{"cfgTrackDCAzDepPTP0", 0.004, "Coeff. of longitudinal DCA for p0"};
-  Configurable<float> cfgTrackDCAzDepPTExp{"cfgTrackDCAzDepPTExp", 0.013, "Coeff. of longitudinal DCA for power law term"};
+  Configurable<double> cfgTrackDCAzDepPTP0{"cfgTrackDCAzDepPTP0", 0.004, "Coeff. of longitudinal DCA for p0"};
+  Configurable<double> cfgTrackDCAzDepPTExp{"cfgTrackDCAzDepPTExp", 0.013, "Coeff. of longitudinal DCA for power law term"};
 
   // PID Configurables
   Configurable<bool> cfgPIDUSETOF{"cfgPIDUSETOF", true, "TOF usage"};
@@ -166,7 +166,7 @@ struct F0980pbpbanalysis {
   ConfigurableAxis histAxisDCAr{"histAxisDCAr", {40, -0.2, 0.2}, "DCAxy axis"};
   ConfigurableAxis histAxisOccupancy{"histAxisOccupancy", {100, 0.0, 20000}, "Occupancy axis"};
 
-  Configurable<bool> cfgAnalysisMethod{"cfgAnalysisMethod", true, "true: Two for-loop, false: Combination"};
+  // Configurable<bool> cfgAnalysisMethod{"cfgAnalysisMethod", true, "true: Two for-loop, false: Combination"};
 
   // Configurable for axis
   ConfigurableAxis axisMass{"axisMass", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -237,15 +237,12 @@ struct F0980pbpbanalysis {
 
   TRandom* rn = new TRandom();
 
-  using EventCandidatesOrigin = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>;
-  using TrackCandidatesOrigin = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFbeta>;
-
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgEventCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgTrackEtaMax && nabs(aod::track::pt) > cfgTrackPtMin);
   Filter cutDCAFilter = (nabs(aod::track::dcaXY) < cfgTrackDCArToPVcutMax) && (nabs(aod::track::dcaZ) < cfgTrackDCAzToPVcutMax);
 
-  using EventCandidates = soa::Filtered<EventCandidatesOrigin>;
-  using TrackCandidates = soa::Filtered<TrackCandidatesOrigin>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFbeta>>;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
@@ -707,7 +704,7 @@ struct F0980pbpbanalysis {
   }
   PROCESS_SWITCH(F0980pbpbanalysis, processEventMixing, "Process Event mixing", false);
 
-  void processTotalEvent(EventCandidatesOrigin const& events)
+  void processTotalEvent(aod::Collisions const& events)
   {
     if (cfgQAEventFlowCut) {
       nTotalEvents += events.size();
