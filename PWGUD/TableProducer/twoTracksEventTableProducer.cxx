@@ -138,8 +138,8 @@ struct TwoTracksEventTableProducer {
     mySetITShitsRule(cutGlobalTrack.cutITShitsRule);
 
     histos.add("Reco/hSelections", "Effect of selections;;Number of events (-)", HistType::kTH1D, {{50, 0.5, 50.5}});
-	  histos.add("Reco/hNanalyzedPerRun", "N analyzed events per run;Run number (-);Number of analyzed events (-)", HistType::kTH1D, {{1, 0., 1.}});
-	  histos.add("Reco/hNselectedPerRun", "N selected events per run;Run number (-);Number of selected events (-)", HistType::kTH1D, {{1, 0., 1.}});
+    histos.add("Reco/hNanalyzedPerRun", "N analyzed events per run;Run number (-);Number of analyzed events (-)", HistType::kTH1D, {{1, 0., 1.}});
+    histos.add("Reco/hNselectedPerRun", "N selected events per run;Run number (-);Number of selected events (-)", HistType::kTH1D, {{1, 0., 1.}});
     histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of troubles (-)", HistType::kTH1D, {{15, 0.5, 15.5}});
 
   } // end init
@@ -360,9 +360,9 @@ struct TwoTracksEventTableProducer {
   void processDataSG(FullSGUDCollision const& collision,
                      FullUDTracks const& tracks)
   {
-	  int run = collision.runNumber();
-	  const char* srun = Form("%d", run);
-	  histos.get<TH1>(HIST("Reco/hNanalyzedPerRun"))->Fill(srun, 1);
+    int run = collision.runNumber();
+    const char* srun = Form("%d", run);
+    histos.get<TH1>(HIST("Reco/hNanalyzedPerRun"))->Fill(srun, 1);
 
     nSelection = 0;
     histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
@@ -495,7 +495,7 @@ struct TwoTracksEventTableProducer {
     float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
     float infoZDC[4] = {collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC()};
 
-	  histos.get<TH1>(HIST("Reco/hNselectedPerRun"))->Fill(srun, 1);
+    histos.get<TH1>(HIST("Reco/hNselectedPerRun"))->Fill(srun, 1);
 
     twoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
               collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
