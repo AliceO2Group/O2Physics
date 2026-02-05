@@ -85,6 +85,8 @@ DECLARE_SOA_COLUMN(PhiAssocTrack, phiAssocTrack, float);   //! Phi of the track
 DECLARE_SOA_COLUMN(PtAssocTrack, ptAssocTrack, float);     //! Pt of the track
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                   //! Impact parameter in XY of the track to the primary vertex
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                     //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(NSigmaTpc, nSigmaTpc, float);           //! Number of sigma TPC
+DECLARE_SOA_COLUMN(NSigmaTof, nSigmaTpc, float);           //! Number of sigma TOF
 } // namespace hf_assoc_track_reduced
 DECLARE_SOA_TABLE(AssocTrackReds, "AOD", "ASSOCTRACKRED", //! Table with associated track info
                   soa::Index<>,
@@ -102,6 +104,11 @@ DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associa
                   aod::hf_assoc_track_reduced::ItsNCls,
                   aod::hf_assoc_track_reduced::DcaXY,
                   aod::hf_assoc_track_reduced::DcaZ);
+
+DECLARE_SOA_TABLE(AssocTrackPids, "AOD", "ASSOCTRACKPID", //! Table with associated track pid info
+                  soa::Index<>,
+                  aod::hf_assoc_track_reduced::NSigmaTpc,
+                  aod::hf_assoc_track_reduced::NSigmaTof);
 
 // definition of columns and tables for Charm-Hadron and Hadron-Hadron correlation pairs
 namespace hf_correl_charm_had_reduced
