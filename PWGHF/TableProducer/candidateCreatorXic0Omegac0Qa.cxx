@@ -540,7 +540,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                             false, // calculateBachelorBaryonVariable
                                             false, // useCascadeMomentumAtPV
                                             true)) {
-        // LOG(info) << "!This cascade cannot be rebuilt(cascade ID : " << cand.cascadeId() << "/ collision ID : " << collision.globalIndex();
         continue;
       } else {
         float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;
@@ -879,7 +878,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                                   LFConfigs.kfUseCascadeMassConstraintFromLF,
                                                   LFConfigs.kfDoDCAFitterPreMinimV0FromLF,
                                                   LFConfigs.kfDoDCAFitterPreMinimCascFromLF)) {
-        LOG(info) << "This cascade cannot be rebuilt";
         continue;
       } else {
         float storeMass = (decayChannel == 0) ? straHelper.cascade.massXi : straHelper.cascade.massOmega;

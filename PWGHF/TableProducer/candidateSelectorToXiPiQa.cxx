@@ -150,7 +150,7 @@ struct HfCandidateSelectorToXiPiQa {
   TrackSelectorPr selectorProton;
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr>;
-  // using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr>;
+  using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr>;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
@@ -259,6 +259,7 @@ struct HfCandidateSelectorToXiPiQa {
     }
 
     // invarinat mass histograms
+    registry.add("hInvMassCharmBaryonWoPidInvMassCut", "Charm baryon invariant mass; int mass; entries", {HistType::kTH1F, {{1500, 1.5, 4.5}}});
     registry.add("hInvMassCharmBaryon", "Charm baryon invariant mass; int mass; entries", {HistType::kTH1F, {{1500, 1.5, 4.5}}});
     registry.add("hInvMassCharmBaryonBkg", "Charm baryon invariant mass, rejected; int mass; entries", {HistType::kTH1F, {{1500, 1.5, 4.5}}});
 
@@ -519,7 +520,8 @@ struct HfCandidateSelectorToXiPiQa {
 
   template <int svReco, typename TCandTable>
   void runSelection(TCandTable const& candidates,
-                    TracksSel const&)
+                    TracksSel const& tracks,
+                    TracksSelLf const& lfTracks)
   {
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
@@ -527,10 +529,16 @@ struct HfCandidateSelectorToXiPiQa {
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
       outputMlXic0ToXiPi.clear();
 
+#if 0
       auto trackV0PosDau = candidate.template posTrack_as<TracksSel>();
       auto trackV0NegDau = candidate.template negTrack_as<TracksSel>();
       auto trackPiFromCasc = candidate.template bachelor_as<TracksSel>();
       auto trackPiFromCharm = candidate.template bachelorFromCharmBaryon_as<TracksSel>();
+#endif
+      auto trackV0PosDau = lfTracks.rawIteratorAt(candidate.posTrackId());
+      auto trackV0NegDau = lfTracks.rawIteratorAt(candidate.negTrackId());
+      auto trackPiFromCasc = lfTracks.rawIteratorAt(candidate.bachelorId());
+      auto trackPiFromCharm = tracks.rawIteratorAt(candidate.bachelorFromCharmBaryonId());
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
@@ -724,6 +732,9 @@ struct HfCandidateSelectorToXiPiQa {
       }
 
       // Fill in invariant mass histogram
+      if (resultSelections) {
+        registry.fill(HIST("hInvMassCharmBaryonWoPidInvMassCut"), invMassCharmBaryon);
+      }
       if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
         registry.fill(HIST("hInvMassCharmBaryon"), invMassCharmBaryon);
       } else {
@@ -736,18 +747,18 @@ struct HfCandidateSelectorToXiPiQa {
   ///////////////////////////////////
   ///    Process with DCAFitter    //
   ///////////////////////////////////
-  void processSelectionDCAFitter(aod::HfCandToXiPi const& candidates, TracksSel const& tracks)
+  void processSelectionDCAFitter(aod::HfCandToXiPi const& candidates, TracksSel const& tracks, TracksSelLf const& lfTracks)
   {
-    runSelection<doDcaFitter>(candidates, tracks);
+    runSelection<doDcaFitter>(candidates, tracks, lfTracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorToXiPiQa, processSelectionDCAFitter, "Xic0 candidate selection with DCAFitter output", true);
 
   ////////////////////////////////////
   ///    Process with KFParticle    //
   ////////////////////////////////////
-  void processSelectionKFParticle(aod::HfCandToXiPiKf const& candidates, TracksSel const& tracks)
+  void processSelectionKFParticle(aod::HfCandToXiPiKf const& candidates, TracksSel const& tracks, TracksSelLf const& lfTracks)
   {
-    runSelection<doKfParticle>(candidates, tracks);
+    runSelection<doKfParticle>(candidates, tracks, lfTracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorToXiPiQa, processSelectionKFParticle, "Xic0 candidate selection with KFParticle output", false);
 
