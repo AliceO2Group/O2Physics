@@ -460,12 +460,12 @@ struct Alice3MulticharmFinder {
     INSERT_HIST(histPath + "hPi2cPt", "hPi2cPt", {kTH1D, {{axisPt}}});
     INSERT_HIST(histPath + "hPiccPt", "hPiccPt", {kTH1D, {{axisPt}}});
 
-    INSERT_HIST(histPath + "hPi1cDCAxy", "hPi1cDCAxy", {kTH1D, {{axisPt}}});
-    INSERT_HIST(histPath + "hPi1cDCAz", "hPi1cDCAz", {kTH1D, {{axisPt}}});
-    INSERT_HIST(histPath + "hPi2cDCAxy", "hPi2cDCAxy", {kTH1D, {{axisPt}}});
-    INSERT_HIST(histPath + "hPi2cDCAz", "hPi2cDCAz", {kTH1D, {{axisPt}}});
-    INSERT_HIST(histPath + "hPiccDCAxy", "hPiccDCAxy", {kTH1D, {{axisPt}}});
-    INSERT_HIST(histPath + "hPiccDCAz", "hPiccDCAz", {kTH1D, {{axisPt}}});
+    INSERT_HIST(histPath + "hPi1cDCAxy", "hPi1cDCAxy", {kTH1D, {{axisDCA}}});
+    INSERT_HIST(histPath + "hPi1cDCAz", "hPi1cDCAz", {kTH1D, {{axisDCA}}});
+    INSERT_HIST(histPath + "hPi2cDCAxy", "hPi2cDCAxy", {kTH1D, {{axisDCA}}});
+    INSERT_HIST(histPath + "hPi2cDCAz", "hPi2cDCAz", {kTH1D, {{axisDCA}}});
+    INSERT_HIST(histPath + "hPiccDCAxy", "hPiccDCAxy", {kTH1D, {{axisDCA}}});
+    INSERT_HIST(histPath + "hPiccDCAz", "hPiccDCAz", {kTH1D, {{axisDCA}}});
 
     INSERT_HIST(histPath + "hMinXiDecayRadius", "hMinXiDecayRadius", {kTH1D, {{axisRadius2DXi}}});
     INSERT_HIST(histPath + "hMinXiCDecayRadius", "hMinXiCDecayRadius", {kTH1D, {{axisRadius}}});
