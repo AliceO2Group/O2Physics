@@ -284,9 +284,12 @@ struct lambdaspincorrderived {
     if (std::abs(candidate1.lambdaEta() - candidate2.lambdaEta()) > etaMix) {
       return false;
     }
-    if (std::abs(RecoDecay::constrainAngle(candidate1.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(candidate2.lambdaPhi(), 0.0F, harmonic)) > phiMix) {
+    if (std::abs(RecoDecay::constrainAngle(RecoDecay::constrainAngle(candidate1.lambdaPhi(), 0.f, harmonic) - RecoDecay::constrainAngle(candidate2.lambdaPhi(), 0.f, harmonic), -TMath::Pi(), 1)) > phiMix) {
       return false;
     }
+    /*if (std::abs(RecoDecay::constrainAngle(candidate1.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(candidate2.lambdaPhi(), 0.0F, harmonic)) > phiMix) {
+      return false;
+      }*/
     if (std::abs(candidate1.lambdaMass() - candidate2.lambdaMass()) > massMix) {
       return false;
     }
@@ -376,11 +379,12 @@ struct lambdaspincorrderived {
     double dphi2 = RecoDecay::constrainAngle(particle2.Phi(), 0.0F, harmonic);
     double deta2 = particle2.Eta();
 
-    double deta_pair = std::abs(deta1 - deta2);
-    double dphi_pair = RecoDecay::constrainAngle(particle1.Phi() - particle2.Phi(), -TMath::Pi(), harmonicDphi);
+    // double deta_pair = std::abs(deta1 - deta2);
+    double dphi_pair = RecoDecay::constrainAngle(dphi1 - dphi2, -TMath::Pi(), harmonicDphi);
 
-    double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_pair * dphi_pair);
+    // double deltaR = TMath::Sqrt(deta_pair * deta_pair + dphi_pair * dphi_pair);
     double deltaRap = std::abs(particle1.Rapidity() - particle2.Rapidity());
+    double deltaR = TMath::Sqrt(deltaRap * deltaRap + dphi_pair * dphi_pair);
 
     double epsWeight1 = 1.0;
     double epsWeight2 = 1.0;
@@ -821,7 +825,7 @@ struct lambdaspincorrderived {
 
     // Mass binning: [1.09, 1.14) with 50 bins (1e-3 GeV/c^2)
     static constexpr float mMin = 1.09f;
-    static constexpr float mMax = 1.14f; // exclusive
+    static constexpr float mMax = 1.14f;
     static constexpr int nM_ = 1;
     static constexpr float mStep = (mMax - mMin) / nM_;
 
@@ -885,6 +889,22 @@ struct lambdaspincorrderived {
     return ((((((static_cast<size_t>(colBin) * nStatus + statBin) * nPt + ptBin) * nEta + etaBin) * nPhi + phiBin) * nM + mBin));
   }
 
+  static inline void collectPhiNeighborBins(int phiB, int nPhi, int nNeighbor, std::vector<int>& out)
+  {
+    out.clear();
+    out.reserve(2 * nNeighbor + 1);
+    for (int d = -nNeighbor; d <= nNeighbor; ++d) {
+      int b = phiB + d;
+      // wrap into [0, nPhi-1]
+      b %= nPhi;
+      if (b < 0)
+        b += nPhi;
+      out.push_back(b);
+    }
+    // optional: unique (in case nNeighbor >= nPhi)
+    std::sort(out.begin(), out.end());
+    out.erase(std::unique(out.begin(), out.end()), out.end());
+  }
   // ===================== Main mixing (with mass-bin + random unique sampling) =====================
   void processMEV4(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {
@@ -967,70 +987,76 @@ struct lambdaspincorrderived {
         if (status < 0 || status >= nStat)
           continue;
 
-        // Bin of t1 defines where to search (exact 6D bin)
+        // Bin of t1 defines where to search (exact bin, but handle φ wrap at edges)
         const int ptB = mb.ptBin(t1.lambdaPt());
         const int etaB = mb.etaBin(t1.lambdaEta());
-        const int phiB = mb.phiBin(RecoDecay::constrainAngle(t1.lambdaPhi(), 0.0F, harmonic)); // φ already constrained upstream
+        const int phiB = mb.phiBin(RecoDecay::constrainAngle(t1.lambdaPhi(), 0.0F, harmonic));
         const int mB = mb.massBin(t1.lambdaMass());
         if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0)
           continue;
 
-        const size_t key = linearKey(colBin, status, ptB, etaB, phiB, mB,
-                                     nStat, nPt, nEta, nPhi, nM);
-        auto const& binVec = buffer[key];
-        if (binVec.empty())
-          continue;
-
-        // Collect all partners from this 6D bin but different collision
+        // Collect partners from nominal key, plus wrapped neighbor only for φ-edge bins
         std::vector<MatchRef> matches;
-        matches.reserve(binVec.size());
+        matches.reserve(128); // or keep binVec.size() if you prefer
         const int64_t curColIdx = static_cast<int64_t>(collision1.index());
 
-        for (const auto& bc : binVec) {
-          if (bc.collisionIdx == curColIdx)
-            continue; // ensure different event
-          matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
-        }
-        if (matches.empty())
-          continue;
-
-        // ---------- YOUR PREFERRED RANDOM UNIQUE SAMPLING BLOCK ----------
-        const int cap = nEvtMixing.value;
-        const int n = static_cast<int>(matches.size());
-        if (cap > 0 && cap < n) {
-          std::uniform_int_distribution<int> dist(0, n - 1);
-          // pick cap unique indices
-          std::unordered_set<int> chosen;
-          chosen.reserve(cap * 2);
-          while ((int)chosen.size() < cap) {
-            chosen.insert(dist(rng));
+        auto collectFrom = [&](int phiBinUse) {
+          const size_t keyUse = linearKey(colBin, status, ptB, etaB, phiBinUse, mB,
+                                          nStat, nPt, nEta, nPhi, nM);
+          auto const& vec = buffer[keyUse];
+          for (const auto& bc : vec) {
+            if (bc.collisionIdx == curColIdx) {
+              continue; // must be from different event
+            }
+            auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+            if (!selectionV0(tX)) {
+              continue;
+            }
+            if (!checkKinematics(t1, tX)) {
+              continue;
+            }
+            matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
           }
-          std::vector<MatchRef> subset;
-          subset.reserve(cap);
-          for (int idx : chosen)
-            subset.push_back(matches[idx]);
-          matches.swap(subset);
-        } else {
-          std::shuffle(matches.begin(), matches.end(), rng);
+        };
+
+        // 1) nominal φ-bin
+        collectFrom(phiB);
+
+        // 2) wrap only at boundaries: 0 <-> nPhi-1
+        if (phiB == 0) {
+          collectFrom(nPhi - 1);
+        } else if (phiB == nPhi - 1) {
+          collectFrom(0);
         }
-        // ----------------------------------------------------------------
+
+        if (matches.empty()) {
+          continue;
+        }
+
+        // Optional safety: dedupe exact same (collision,row) just in case
+        std::sort(matches.begin(), matches.end(),
+                  [](auto& a, auto& b) { return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex); });
+        matches.erase(std::unique(matches.begin(), matches.end(),
+                                  [](auto& a, auto& b) { return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex; }),
+                      matches.end());
+        if (matches.empty()) {
+          continue;
+        }
 
         const float wBase = 1.0f / static_cast<float>(matches.size());
 
-        // Emit mixed pairs: tX replaces t1; keep t2
         for (const auto& m : matches) {
-          auto tX = V0s.iteratorAt(m.rowIndex); // replace accessor if different
-          if (!selectionV0(tX))
-            continue; // optional extra guard
-          if (!checkKinematics(t1, tX))
-            continue;
+          auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
 
           auto proton = ROOT::Math::PtEtaPhiMVector(tX.protonPt(), tX.protonEta(), tX.protonPhi(), o2::constants::physics::MassProton);
           auto lambda = ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass());
           auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
           auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
 
-          const float dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic), -TMath::Pi(), harmonicDphi);
+          const float dPhi = RecoDecay::constrainAngle(
+            RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic),
+            -TMath::Pi(), harmonicDphi);
+
           histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
           fillHistograms(tX.v0Status(), t2.v0Status(), lambda, lambda2, proton, proton2, 1, wBase);
         }

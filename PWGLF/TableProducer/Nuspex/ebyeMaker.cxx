@@ -554,8 +554,8 @@ struct EbyeMaker {
 
     // tracking variables QA
     histos.add<TH2>("QA/tpcCRvsCls", ";#it{N}_{TPCCR};#it{N}_{TPCcls}", HistType::kTH2F, {nTpcAxis, nTpcAxis});
-    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
-    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
+    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {signMomAxis, dcaAxis});
+    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {signMomAxis, dcaAxis});
     histos.add<TH3>("QA/phiVsPtVsCls", ";#it{N}^{TPC}_{CR};#it{p}_{T} (GeV/#it{c});#phi (rad)", HistType::kTH3F, {nTpcAxis, signMomAxis, phiAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
@@ -604,11 +604,11 @@ struct EbyeMaker {
       auto trackPt = trackParCov.getPt();
       auto trackPhi = trackParCov.getPhi();
       auto trackEta = trackParCov.getEta();
-      histos.fill(HIST("QA/dcaxyVsPt"), track.pt(), dcaInfo[0]); // TODO: this should rather be trackPt (likely small effect for 7 ITS clusters?)
-      histos.fill(HIST("QA/dcazVsPt"), track.pt(), dcaInfo[1]);
-      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca"))
-        continue;
       if (track.tpcNClsFound() < trackNclusTpcCut || track.tpcNClsCrossedRows() < trackNcrossedRows)
+        continue;
+      histos.fill(HIST("QA/dcaxyVsPt"), track.sign() > 0. ? track.pt() : -track.pt(), dcaInfo[0]); // TODO: this should rather be trackPt (likely small effect for 7 ITS clusters?)
+      histos.fill(HIST("QA/dcazVsPt"), track.sign() > 0. ? track.pt() : -track.pt(), dcaInfo[1]);
+      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca"))
         continue;
       histos.fill(HIST("QA/phiVsPtVsCls"), track.tpcNClsFound(), track.sign() > 0. ? trackPt : -trackPt, trackPhi);
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());

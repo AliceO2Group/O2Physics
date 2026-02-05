@@ -79,10 +79,10 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> confMinDCAxy{"confMinDCAxy", -0.1f, "Minimum DCAxy of the particles"};
   Configurable<float> confPIDthrMom{"confPIDthrMom", 0.75f, "Momentum threshold from which TPC and TOF are required for PID"};
   Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
-  Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
+  Configurable<bool> confIsAddPairsInTriplet{"confIsAddPairsInTriplet", false, "Extra histograms and pairing for tracks in triplet"};
   Configurable<bool> confDCACutPtDep{"confDCACutPtDep", false, "Use pt dependent dca cut for tracks"};
-  Configurable<float> confDCACutPtDepPar0{"confDCACutPtDepPar0", 0.0105, "Parameter par[0] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
-  Configurable<float> confDCACutPtDepPar1{"confDCACutPtDepPar1", 0.035, "Parameter par[1] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
+  Configurable<float> confDCACutPtDepPar0{"confDCACutPtDepPar0", 0.004, "Parameter par[0] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
+  Configurable<float> confDCACutPtDepPar1{"confDCACutPtDepPar1", 0.013, "Parameter par[1] of the pt dep cut, par[0] + par[1]/(pT/(GeV/c)−1.1) cm"};
 
   /// Partition for selected particles
   Partition<aod::FDParticles> selectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
@@ -232,13 +232,10 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerPosAfter", ";primaryTrack; posDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hTestPairCleanerNegAfter", ";primaryTrack; negDaughtID", kTH2F, {{40, -20, 20}, {40, -20, 20}});
     threeBodyQARegistry.add("TripletTaskQA/hCentralityME", ";Centrality;Entries", kTH1F, {{100, 0.0, 100.0}});
-
-    threeBodyQARegistry.add("SameEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 4.0}});
-    threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 4.0}});
-    threeBodyQARegistry.add("SameEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 4.0}});
-    threeBodyQARegistry.add("SameEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 4.0}});
-    threeBodyQARegistry.add("MixedEvent/relPairDist_track1V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 4.0}});
-    threeBodyQARegistry.add("MixedEvent/relPairDist_track2V0", ";k* (GeV/c) ;Entries", kTH1F, {{2000, 0.0, 4.0}});
+    if (confIsAddPairsInTriplet) {
+      threeBodyQARegistry.add("SameEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{4000, 0., 4.}});
+      threeBodyQARegistry.add("MixedEvent/relPairDist_trackTrack", ";k* (GeV/c) ;Entries", kTH1F, {{4000, 0., 4.}});
+    }
     sameEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     mixedEventCont.init(&resultRegistry, confQ3Bins, confMultBins, confIsMC);
     sameEventCont.setPDGCodes(confPDGCodePart, confPDGCodePart, confPDGCodeV0);
@@ -329,6 +326,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
       trackHistoselectedParts.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, multCol, centCol);
     }
     /// Histograming V0s
+    int v0Counter = 0;
     for (const auto& V0 : groupselectedV0s) {
       const auto& posChild = parts.iteratorAt(V0.index() - 2);
       const auto& negChild = parts.iteratorAt(V0.index() - 1);
@@ -405,12 +403,14 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
         sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
         threeBodyQARegistry.fill(HIST("TripletTaskQA/hCentrality"), centCol, q3);
 
-        auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
-        auto kstarT1V = FemtoDreamMath::getkstar(T1, mMassOne, V0, mMassThree);
-        auto kstarT2V = FemtoDreamMath::getkstar(T2, mMassTwo, V0, mMassThree);
-        threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_trackTrack"), kstarTT);
-        threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_track1V0"), kstarT1V);
-        threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_track2V0"), kstarT2V);
+        // Teporary test: pairing the same event tracks in the triplet task (without triplet-combinatoric repetitions)
+        if (confIsAddPairsInTriplet) {
+          if (v0Counter == 0) {
+            auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
+            threeBodyQARegistry.fill(HIST("SameEvent/relPairDist_trackTrack"), kstarTT);
+          }
+        }
+        v0Counter = 1;
       }
     }
   }
@@ -590,13 +590,19 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
       threeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvME_AntiLambda"), q3, V0.mAntiLambda());
       threeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_ME"), T1.pt(), T2.pt(), V0.pt(), q3);
       mixedEventCont.setTriplet<isMC>(T1, T2, V0, multCol, q3);
+    }
 
-      auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
-      auto kstarT1V = FemtoDreamMath::getkstar(T1, mMassOne, V0, mMassThree);
-      auto kstarT2V = FemtoDreamMath::getkstar(T2, mMassTwo, V0, mMassThree);
-      threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_trackTrack"), kstarTT);
-      threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_track1V0"), kstarT1V);
-      threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_track2V0"), kstarT2V);
+    // Teporary test: pairing the mixed event tracks in the triplet task (without triplet-combinatoric repetitions)
+    if (confIsAddPairsInTriplet) {
+      for (const auto& [T1, T2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (confIsCPR.value) {
+          if (pairCloseRejectionTrackTrackME.isClosePair(T1, T2, parts, magFieldTesla)) {
+            continue;
+          }
+        }
+        auto kstarTT = FemtoDreamMath::getkstar(T1, mMassOne, T2, mMassTwo);
+        threeBodyQARegistry.fill(HIST("MixedEvent/relPairDist_trackTrack"), kstarTT);
+      }
     }
   }
 

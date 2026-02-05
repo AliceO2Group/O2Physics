@@ -702,7 +702,7 @@ struct CalibTaskEmc {
     int nColl = 1;
 
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
 
     for (const auto& collision : collisions) {
       auto photonsPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
@@ -812,7 +812,7 @@ struct CalibTaskEmc {
     int nColl = 1;
 
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
 
     for (const auto& collision : collisions) {
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
@@ -917,7 +917,7 @@ struct CalibTaskEmc {
   {
     float energyCorrectionFactor = 1.f;
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
 
     SameKindPair<Colls, EMCalPhotons, BinningType> pair{binningOnPositions, mixingConfig.cfgMixingDepth, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
@@ -998,7 +998,7 @@ struct CalibTaskEmc {
   {
     float energyCorrectionFactor = 1.f;
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
 
     for (const auto& [c1, photonEMC, c2, photonPCM] : pairPCMEMC) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {

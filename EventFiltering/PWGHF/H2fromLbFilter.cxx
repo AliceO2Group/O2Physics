@@ -16,21 +16,18 @@
 
 #include "../filterTables.h"
 
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/Propagator.h"
@@ -69,14 +66,16 @@ struct H2fromLbFilter {
   o2::framework::Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", true, "isNoITSROFrameBorder event selection"};
   o2::framework::Configurable<float> cfgTPCNsigma{"cfgTPCNsigma", 4.0f, "TPC n sigma for deuteron PID"};
   o2::framework::Configurable<float> cfgTOFNsigma{"cfgTOFNsigma", 4.0f, "TOF n sigma for deuteron PID"};
+  o2::framework::Configurable<float> cfgITSNsigma{"cfgITSNsigma", -2.0f, "ITS n sigma for deuteron PID"};
   o2::framework::Configurable<float> cfgEta{"cfgEta", 0.8f, "Track eta selection"};
   o2::framework::Configurable<int> cfgTPCNclsFound{"cfgTPCNclsFound", 100, "Minimum TPC clusters found"};
   o2::framework::Configurable<float> cfgTPCChi2Ncl{"cfgTPCChi2Ncl", 4.0f, "Maximum TPC chi2 per N clusters"};
   o2::framework::Configurable<float> cfgITSChi2Ncl{"cfgITSChi2Ncl", 36.0f, "Maximum ITS chi2 per N clusters"};
   o2::framework::Configurable<int> cfgITScls{"cfgITScls", 2, "Minimum ITS clusters"};
   o2::framework::Configurable<float> cfgMaxPt{"cfgMaxPt", 5.0f, "Maximum pT cut"};
-  o2::framework::Configurable<float> cfgMinPt{"cfgMinPt", 1.0f, "Maximum pT cut"};
+  o2::framework::Configurable<float> cfgMinPt{"cfgMinPt", 0.5f, "Minimum pT cut"};
   o2::framework::Configurable<float> cfgDCAcut{"cfgDCAcut", 0.003f, "DCA cut for non prompt deuteron"};
+  o2::framework::Configurable<float> ptThresholdPid{"ptThresholdPid", 1.0f, "pT threshold to switch between ITS and TOF PID"};
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -95,6 +94,7 @@ struct H2fromLbFilter {
     QAHistos.add("hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {o2::framework::HistType::kTH2D, {pTAxis, DCAzAxis}});
     QAHistos.add("hnSigmaTPCVsPt", "n#sigma TPC vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TPC", {o2::framework::HistType::kTH2D, {pTAxis, nSigmaAxis}});
     QAHistos.add("hnSigmaTOFVsPt", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {o2::framework::HistType::kTH2D, {pTAxis, nSigmaAxis}});
+    QAHistos.add("hnSigmaITSVsPt", "n#sigma ITS vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma ITS", {o2::framework::HistType::kTH2D, {pTAxis, nSigmaAxis}});
     QAHistos.add("ptAntiDeuteron", "ptAntiDeuteron", {o2::framework::HistType::kTH1F, {ptAxis}});
     QAHistos.add("etaAntideuteron", "etaAntideuteron", {o2::framework::HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
     QAHistos.add("hDCAxyVsPt-pre_selection", "DCAxy #bar{d} vs p_{T}", {o2::framework::HistType::kTH2D, {pTAxis, DCAxyAxis}});
@@ -193,10 +193,11 @@ struct H2fromLbFilter {
 
       // Loop over tracks
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      auto tracksWithItsPid = o2::soa::Attach<TrackCandidates, o2::aod::pidits::ITSNSigmaDe>(tracks);
 
       for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
 
-        const auto& track = tracks.rawIteratorAt(trackId.trackId());
+        const auto& track = tracksWithItsPid.rawIteratorAt(trackId.trackId());
 
         std::array<float, 2> dca{track.dcaXY(), track.dcaZ()};
         std::array<float, 3> pVec = track.pVector();
@@ -213,23 +214,42 @@ struct H2fromLbFilter {
 
         const bool isTOFDe = std::abs(track.tofNSigmaDe()) < cfgTOFNsigma;
         const bool isTPCDe = std::abs(track.tpcNSigmaDe()) < cfgTPCNsigma;
+        const bool isITSDe = track.itsNSigmaDe() > cfgITSNsigma;
 
-        if (isTPCDe && isTOFDe) {
-
-          QAHistos.fill(HIST("hDCAxyVsPt-pre_selection"), track.pt(), dca[0]);
-          QAHistos.fill(HIST("hDCAzVsPt-pre-selection"), track.pt(), dca[1]);
-          if (std::abs(dca[0]) < cfgDCAcut) {
-            continue;
+        if (track.pt() < ptThresholdPid) {
+          if (isTPCDe && isITSDe) {
+            QAHistos.fill(HIST("hDCAxyVsPt-pre_selection"), track.pt(), dca[0]);
+            QAHistos.fill(HIST("hDCAzVsPt-pre-selection"), track.pt(), dca[1]);
+            if (std::abs(dca[0]) < cfgDCAcut) {
+              continue;
+            }
+            keepEvent[0] = true;
+            QAHistos.fill(HIST("ptAntiDeuteron"), track.pt());
+            QAHistos.fill(HIST("etaAntideuteron"), track.eta());
+            QAHistos.fill(HIST("hDCAxyVsPt"), track.pt(), dca[0]);
+            QAHistos.fill(HIST("hDCAzVsPt"), track.pt(), dca[1]);
+            QAHistos.fill(HIST("hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
+            QAHistos.fill(HIST("hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            QAHistos.fill(HIST("hnSigmaITSVsPt"), track.pt(), track.itsNSigmaDe());
           }
-          keepEvent[0] = true;
-          QAHistos.fill(HIST("ptAntiDeuteron"), track.pt());
-          QAHistos.fill(HIST("etaAntideuteron"), track.eta());
-          QAHistos.fill(HIST("hDCAxyVsPt"), track.pt(), dca[0]);
-          QAHistos.fill(HIST("hDCAzVsPt"), track.pt(), dca[1]);
-          QAHistos.fill(HIST("hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
-          QAHistos.fill(HIST("hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
-        }
+        } else {
+          if (isTPCDe && isTOFDe) {
 
+            QAHistos.fill(HIST("hDCAxyVsPt-pre_selection"), track.pt(), dca[0]);
+            QAHistos.fill(HIST("hDCAzVsPt-pre-selection"), track.pt(), dca[1]);
+            if (std::abs(dca[0]) < cfgDCAcut) {
+              continue;
+            }
+            keepEvent[0] = true;
+            QAHistos.fill(HIST("ptAntiDeuteron"), track.pt());
+            QAHistos.fill(HIST("etaAntideuteron"), track.eta());
+            QAHistos.fill(HIST("hDCAxyVsPt"), track.pt(), dca[0]);
+            QAHistos.fill(HIST("hDCAzVsPt"), track.pt(), dca[1]);
+            QAHistos.fill(HIST("hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
+            QAHistos.fill(HIST("hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            QAHistos.fill(HIST("hnSigmaITSVsPt"), track.pt(), track.itsNSigmaDe());
+          }
+        }
       } // end track loop
       if (keepEvent[0]) {
         hProcessedEvents->Fill(5.5);
