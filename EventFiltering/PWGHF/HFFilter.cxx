@@ -814,22 +814,37 @@ struct HfFilter { // Main struct for HF triggers
             }
           } // end beauty selection
 
-          // 2-prong femto
-          if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isD0CharmTagged && track.collisionId() == thisCollId) {
-            bool isProton = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hPrDePID[0], hPrDePID[1], kProtonForFemto);
-            if (isProton) {
-              float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
-              if (applyOptimisation) {
-                optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
-              }
-              if (relativeMomentum < femtoMaxRelativeMomentum) {
-                keepEvent[kFemto2P] = true;
-                if (activateQA) {
-                  hCharmProtonKstarDistr[kD0]->Fill(relativeMomentum);
+            // 2-prong femto
+            bool isProtonForCharm2Prong = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hPrDePID[0], hPrDePID[1], kProtonForFemto);
+            bool isDeuteronForCharm2Prong = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hPrDePID[2], hPrDePID[3], kDeuteronForFemto);
+
+            if (track.collisionId() == thisCollId) {
+              if (isProtonForCharm2Prong && !keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isD0CharmTagged) {
+                float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
+                if (applyOptimisation) {
+                  optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
+                }
+                if (relativeMomentum < femtoMaxRelativeMomentum) {
+                  keepEvent[kFemto2P] = true;
+                  if (activateQA) {
+                    hCharmProtonKstarDistr[kD0]->Fill(relativeMomentum);
+                  }
                 }
               }
-            }
-          } // end femto selection
+
+              if (isDeuteronForCharm2Prong && !keepEvent[kFemto2P] && enableFemtoChannels->get(1u, 0u) && isD0CharmTagged) {
+                float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
+                if (applyOptimisation) {
+                  optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
+                }
+                if (relativeMomentum < femtoMaxRelativeMomentum) {
+                  keepEvent[kFemto2P] = true;
+                  if (activateQA) {
+                    hCharmDeuteronKstarDistr[kD0]->Fill(relativeMomentum);
+                  }
+                }
+              }
+            } // end femto charm 2prong selection
 
           // Beauty with JPsi
           if (preselJPsiToMuMu) {
