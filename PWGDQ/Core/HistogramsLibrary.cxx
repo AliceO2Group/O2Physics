@@ -1373,27 +1373,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("upsilon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
-        int varsrapHE[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int binspT[4] = {100, 20, 20, 20};
-        int binsy[4] = {100, 10, 20, 20};
-        double xminpT[4] = {1., 0., -1., -3.14};
-        double xmaxpT[4] = {15., 20., 1., +3.14};
-        double xminy[4] = {1., 2.5, -1., -3.14};
-        double xmaxy[4] = {15., 4.0, 1., +3.14};
+        double xminpT[4] = {1., 0., -1., 0.};
+        double xmaxpT[4] = {15., 20., 1., 2. * o2::constants::math::PI};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_cosThetaHE_phiHE", "", 4, varsrapHE, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("upsilon-polarization-cs")) {
         int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int varsrapCS[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int binspT[4] = {100, 20, 20, 20};
-        int binsy[4] = {100, 10, 20, 20};
-        double xminpT[4] = {1., 0., -1., -3.14};
-        double xmaxpT[4] = {15., 20., 1., +3.14};
-        double xminy[4] = {1., 2.5, -1., -3.14};
-        double xmaxy[4] = {15., 4.0, 1., +3.14};
+        double xminpT[4] = {1., 0., -1., 0.};
+        double xmaxpT[4] = {15., 20., 1., 2. * o2::constants::math::PI};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_cosThetaCS_phiCS", "", 4, varsrapCS, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp")) {
         int varspTVP[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosPhiVP, VarManager::kPhiVP};

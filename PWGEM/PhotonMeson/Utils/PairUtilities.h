@@ -15,9 +15,10 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 
-#include "Common/Core/RecoDecay.h"
+#include <Common/Core/RecoDecay.h>
 
 #include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
 
 #include <cmath>
 
@@ -47,7 +48,7 @@ enum PairType {
   kNpair,
 };
 
-template <typename U1, typename U2, typename TG1, typename TG2, typename TCut1, typename TCut2>
+template <typename U1, typename U2, o2::soa::is_iterator TG1, o2::soa::is_iterator TG2, typename TCut1, typename TCut2>
 bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
 {
   bool is_g1_selected = false;
@@ -57,7 +58,7 @@ bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const
   return (is_g1_selected && is_g2_selected);
 }
 
-template <typename TV0Leg, typename TCluster>
+template <o2::soa::is_iterator TV0Leg, o2::soa::is_iterator TCluster>
 bool DoesV0LegMatchWithCluster(TV0Leg const& v0leg, TCluster const& cluster, const float max_deta, const float max_dphi, const float max_Ep_width)
 {
   float deta = v0leg.eta() - cluster.eta();
