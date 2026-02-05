@@ -18,7 +18,9 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
+#include "PWGLF/Utils/inelGt.h"
 
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -74,6 +76,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
+using namespace o2::aod::rctsel;
 
 struct Chargedkstaranalysis {
 
@@ -154,6 +157,17 @@ struct Chargedkstaranalysis {
   // Configurables
   Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
 
+  struct RCTCut : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+
+    RCTFlagsChecker rctChecker;
+  };
+
+  RCTCut rctCut;
+
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
   struct : ConfigurableGroup {
@@ -170,6 +184,18 @@ struct Chargedkstaranalysis {
     Configurable<bool> confEvtNoITSROBorderCut{"confEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
     Configurable<bool> confincludeCentralityMC{"confincludeCentralityMC", false, "Include centrality in MC"};
     Configurable<bool> confEvtCollInTimeRangeStandard{"confEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<bool> confEvtCollInTimeRangeNarrow{"confEvtCollInTimeRangeNarrow", false, "Evt sel: apply NoCollInTimeRangeNarrow"};
+    Configurable<bool> confEvtCollInTimeRangeStrict{"confEvtCollInTimeRangeStrict", false, "Evt sel: apply NoCollInTimeRangeStrict"};
+    Configurable<bool> confEvtNoCollInRofStandard{"confEvtNoCollInRofStandard", false, "Evt sel: apply NoCollInRofStandard"};
+    Configurable<bool> confEvtNoCollInRofStrict{"confEvtNoCollInRofStrict", false, "Evt sel: apply NoCollInRofStrict"};
+    Configurable<bool> confEvtNoHighMultCollInPrevRof{"confEvtNoHighMultCollInPrevRof", false, "Evt sel: apply NoHighMultCollInPrevRof"};
+    Configurable<bool> confEvtGoodITSLayersAll{"confEvtGoodITSLayersAll", false, "Evt sel: require all good ITS layers"};
+    Configurable<bool> confEvtGoodITSLayer3{"confEvtGoodITSLayer3", false, "Evt sel: require good ITS layer 3"};
+    Configurable<bool> confEvtGoodITSLayer0123{"confEvtGoodITSLayer0123", false, "Evt sel: require good ITS layers 0–3"};
+    Configurable<bool> confEvtVertexTRDmatched{"confEvtVertexTRDmatched", false, "Evt sel: require TRD-matched vertex"};
+    Configurable<bool> confEvtBBT0A{"confEvtBBT0A", false, "Evt sel: apply BBT0A cut"};
+    Configurable<bool> confEvtBBT0C{"confEvtBBT0C", false, "Evt sel: apply BBT0C cut"};
+
     Configurable<float> cfgEventCentralityMin{"cfgEventCentralityMin", 0.0f, "Event sel: minimum centrality"};
     Configurable<float> cfgEventCentralityMax{"cfgEventCentralityMax", 100.0f, "Event sel: maximum centrality"};
     Configurable<int> cfgCentEst{"cfgCentEst", static_cast<int>(CentralityEstimator::FT0C), "Centrality estimator: 1=FT0C, 2=FT0M"};
@@ -202,6 +228,7 @@ struct Chargedkstaranalysis {
     Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
     Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
     Configurable<bool> cfgpTdepDCAxyCut{"cfgpTdepDCAxyCut", true, "pT-dependent DCAxy cut"};
+    Configurable<bool> cfgpTdepDCAzCut{"cfgpTdepDCAzCut", false, "pT-dependent DCAz cut"};
     Configurable<float> cfgMaxbDCArToPVcut{"cfgMaxbDCArToPVcut", 0.1, "Track DCAr cut to PV Maximum"};
     Configurable<float> cfgMaxbDCAzToPVcut{"cfgMaxbDCAzToPVcut", 0.1, "Track DCAz cut to PV Maximum"};
   } trackCutCfgs;
@@ -220,9 +247,6 @@ struct Chargedkstaranalysis {
   struct : ConfigurableGroup {
 
     // Secondary Selection
-    Configurable<bool> cfgReturnFlag{"cfgReturnFlag", false, "Return Flag for debugging"};
-    Configurable<bool> cSecondaryRequire{"cSecondaryRequire", true, "Secondary cuts on/off"};
-
     Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
     Configurable<float> cSecondaryDauDCAMax{"cSecondaryDauDCAMax", 1., "Maximum DCA Secondary daughters to PV"};
     Configurable<float> cSecondaryDauPosDCAtoPVMin{"cSecondaryDauPosDCAtoPVMin", 0.0, "Minimum DCA Secondary positive daughters to PV"};
@@ -236,6 +260,9 @@ struct Chargedkstaranalysis {
     Configurable<float> cSecondaryDCAtoPVMax{"cSecondaryDCAtoPVMax", 0.3, "Maximum DCA Secondary to PV"};
     Configurable<float> cSecondaryProperLifetimeMax{"cSecondaryProperLifetimeMax", 20, "Maximum Secondary Lifetime"};
     Configurable<float> cSecondaryMassWindow{"cSecondaryMassWindow", 0.075, "Secondary inv mass selciton window"};
+    Configurable<float> cfgSecondaryparamArmenterosCut{"cfgSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
+    Configurable<bool> cfgSecondaryCrossMassHypothesisCut{"cfgSecondaryCrossMassHypothesisCut", false, "Apply cut based on the lambda mass hypothesis"};
+    Configurable<float> cfgSecondaryCrossMassCutWindow{"cfgSecondaryCrossMassCutWindow", 0.05, "Secondary inv mass selection window with (anti)lambda hypothesis"};
 
   } secondaryCutsCfgs;
 
@@ -268,15 +295,28 @@ struct Chargedkstaranalysis {
   {
     centrality = -999;
 
+    rctCut.rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+
     colCuts.setCuts(eventCutCfgs.confEvtZvtx, eventCutCfgs.confEvtTriggerCheck, eventCutCfgs.confEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, eventCutCfgs.confEvtOccupancyInTimeRangeMax, eventCutCfgs.confEvtOccupancyInTimeRangeMin);
     colCuts.init(&histos);
     colCuts.setTriggerTVX(eventCutCfgs.confEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(eventCutCfgs.confEvtTFBorderCut);
+    colCuts.setApplyNoITSROBorderCut(eventCutCfgs.confEvtNoITSROBorderCut);
     colCuts.setApplyITSTPCvertex(eventCutCfgs.confEvtUseITSTPCvertex);
     colCuts.setApplyZvertexTimedifference(eventCutCfgs.confEvtZvertexTimedifference);
     colCuts.setApplyPileupRejection(eventCutCfgs.confEvtPileupRejection);
-    colCuts.setApplyNoITSROBorderCut(eventCutCfgs.confEvtNoITSROBorderCut);
     colCuts.setApplyCollInTimeRangeStandard(eventCutCfgs.confEvtCollInTimeRangeStandard);
+    colCuts.setApplyCollInTimeRangeNarrow(eventCutCfgs.confEvtCollInTimeRangeNarrow);
+    colCuts.setApplyCollInTimeRangeStrict(eventCutCfgs.confEvtCollInTimeRangeStrict);
+    colCuts.setApplyCollInRofStandard(eventCutCfgs.confEvtNoCollInRofStandard);
+    colCuts.setApplyCollInRofStrict(eventCutCfgs.confEvtNoCollInRofStrict);
+    colCuts.setApplyHighMultCollInPrevRof(eventCutCfgs.confEvtNoHighMultCollInPrevRof);
+    colCuts.setApplyGoodITSLayersAll(eventCutCfgs.confEvtGoodITSLayersAll);
+    colCuts.setApplyGoodITSLayer3(eventCutCfgs.confEvtGoodITSLayer3);
+    colCuts.setApplyGoodITSLayer0123(eventCutCfgs.confEvtGoodITSLayer0123);
+    colCuts.setApplyVertexTRDmatched(eventCutCfgs.confEvtVertexTRDmatched);
+    colCuts.setApplyBBT0A(eventCutCfgs.confEvtBBT0A);
+    colCuts.setApplyBBT0C(eventCutCfgs.confEvtBBT0C);
 
     AxisSpec centAxis = {axisCfgs.cfgBinsCent, "T0M (%)"};
     AxisSpec vtxzAxis = {axisCfgs.cfgBinsVtxZ, "Z Vertex (cm)"};
@@ -300,7 +340,60 @@ struct Chargedkstaranalysis {
     // THnSparse
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
-    histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{12, -0.5, 11.5, "Check"}});
+    histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
+    std::shared_ptr<TH1> hCutFlow = histos.get<TH1>(HIST("hEvtSelInfo"));
+    hCutFlow->GetXaxis()->SetBinLabel(1, "All Events");
+    hCutFlow->GetXaxis()->SetBinLabel(2, "coll cuts");
+    hCutFlow->GetXaxis()->SetBinLabel(3, "rctChecker");
+    hCutFlow->GetXaxis()->SetBinLabel(4, "Multiplicity");
+    hCutFlow->GetXaxis()->SetBinLabel(5, "IsINELgt0");
+
+    constexpr int kNTrackCuts = 22;
+
+    histos.add("QA/hTrackCutFlow", "Track cut flow", kTH1I, {{kNTrackCuts, 0.5, kNTrackCuts + 0.5}});
+
+    auto hTrackCutFlow = histos.get<TH1>(HIST("QA/hTrackCutFlow"));
+
+    int bin = 1;
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "All tracks");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "pT min");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "|eta| max");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "ITS clusters");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "TPC clusters");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "TPC crossed rows ratio");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "ITS chi2/Ncl");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "TPC chi2/Ncl");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "Has ITS");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "Has TPC");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "Has TOF");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "ITS refit");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "TPC refit");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "PV contributor");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "Global w/o DCA");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "Global track");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "Primary track");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "DCAxy max");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "DCAz max");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "pT-dep DCAxy");
+    hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "pT-dep DCAz");
+
+    constexpr int kNK0sCuts = 14;
+    int iK0sbin = 1;
+    histos.add("QA/K0sCutCheck", "K0s cut flow", kTH1I, {{kNK0sCuts, 0.5, kNK0sCuts + 0.5}});
+    auto hK0sCut = histos.get<TH1>(HIST("QA/K0sCutCheck"));
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "All PASS");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "DauDCA>max");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "PosDCAtoPV<min");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "NegDCAtoPV<min");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "pT<min");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "|y|>max");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "R<min or R>max");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "DCAtoPV>max");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "cosPA<min");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "ctau>max");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "qtarm<a|alpha|");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "|M(K0s)-m0|>win");
+    hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "cross-mass veto");
 
     histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
     histos.add("QA/before/CentDist1", "Centrality distribution", o2::framework::kTH1F, {{110, 0, 110}});
@@ -485,43 +578,82 @@ struct Chargedkstaranalysis {
   template <typename TrackType>
   bool trackCut(TrackType const& track)
   {
+    int ibin = 1;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     // basic track cuts
     if (std::abs(track.pt()) < trackCutCfgs.cMinPtcut)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (std::abs(track.eta()) > trackCutCfgs.cMaxEtacut)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (track.itsNCls() < trackCutCfgs.cfgITScluster)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (track.tpcNClsFound() < trackCutCfgs.cfgTPCcluster)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (track.tpcCrossedRowsOverFindableCls() < trackCutCfgs.cfgRatioTPCRowsOverFindableCls)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (track.itsChi2NCl() >= trackCutCfgs.cfgITSChi2NCl)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (track.tpcChi2NCl() >= trackCutCfgs.cfgTPCChi2NCl)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgHasITS && !track.hasITS())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgHasTPC && !track.hasTPC())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgHasTOF && !track.hasTOF())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgUseITSRefit && !track.passedITSRefit())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgUseTPCRefit && !track.passedTPCRefit())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgPVContributor && !track.isPVContributor())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgGlobalTrack && !track.isGlobalTrack())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (std::abs(track.dcaXY()) > trackCutCfgs.cMaxbDCArToPVcut)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (std::abs(track.dcaZ()) > trackCutCfgs.cMaxbDCAzToPVcut)
       return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
     if (trackCutCfgs.cfgpTdepDCAxyCut) {
       if (std::abs(track.dcaXY()) > (0.004 + (0.013 / track.pt())))
         return false;
@@ -529,8 +661,17 @@ struct Chargedkstaranalysis {
       if (std::abs(track.dcaXY()) > trackCutCfgs.cfgMaxbDCArToPVcut)
         return false;
     }
-    if (std::abs(track.dcaZ()) > trackCutCfgs.cfgMaxbDCAzToPVcut)
-      return false;
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+
+    if (trackCutCfgs.cfgpTdepDCAzCut) {
+      // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
+      if (std::abs(track.dcaZ()) > (0.004 + (0.013 / track.pt())))
+        return false;
+    } else {
+      if (std::abs(track.dcaZ()) > trackCutCfgs.cfgMaxbDCAzToPVcut)
+        return false;
+    }
+    histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
     return true;
   }
 
@@ -560,6 +701,7 @@ struct Chargedkstaranalysis {
   template <typename CollisionType, typename K0sType>
   bool selectionK0s(CollisionType const& collision, K0sType const& candidate)
   {
+    int ibin = 1;
     auto dauDCA = candidate.dcaV0daughters();
     auto dauPosDCAtoPV = candidate.dcapostopv();
     auto dauNegDCAtoPV = candidate.dcanegtopv();
@@ -570,118 +712,96 @@ struct Chargedkstaranalysis {
     auto cosPA = candidate.v0cosPA();
     auto propTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0s;
     auto mK0s = candidate.mK0Short();
+    auto mLambda = candidate.mLambda();
+    auto mALambda = candidate.mAntiLambda();
 
-    if (secondaryCutsCfgs.cfgReturnFlag) {
-      bool returnFlag = true;
-
-      if (secondaryCutsCfgs.cSecondaryRequire) {
-        histos.fill(HIST("QA/K0sCutCheck"), 0);
-        if (dauDCA > secondaryCutsCfgs.cSecondaryDauDCAMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 1);
-          returnFlag = false;
-        }
-        if (dauPosDCAtoPV < secondaryCutsCfgs.cSecondaryDauPosDCAtoPVMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 2);
-          returnFlag = false;
-        }
-        if (dauNegDCAtoPV < secondaryCutsCfgs.cSecondaryDauNegDCAtoPVMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 3);
-          returnFlag = false;
-        }
-        if (pT < secondaryCutsCfgs.cSecondaryPtMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 4);
-          returnFlag = false;
-        }
-        if (rapidity > secondaryCutsCfgs.cSecondaryRapidityMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 5);
-          returnFlag = false;
-        }
-        if (v0Radius < secondaryCutsCfgs.cSecondaryRadiusMin || v0Radius > secondaryCutsCfgs.cSecondaryRadiusMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 6);
-          returnFlag = false;
-        }
-        if (dcaToPV > secondaryCutsCfgs.cSecondaryDCAtoPVMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 7);
-          returnFlag = false;
-        }
-        if (cosPA < secondaryCutsCfgs.cSecondaryCosPAMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 8);
-          returnFlag = false;
-        }
-        if (propTauK0s > secondaryCutsCfgs.cSecondaryProperLifetimeMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 9);
-          returnFlag = false;
-        }
-        if (std::fabs(mK0s - massK0s) > secondaryCutsCfgs.cSecondaryMassWindow) {
-          histos.fill(HIST("QA/K0sCutCheck"), 10);
-          returnFlag = false;
-        }
-
-        return returnFlag;
-
-      } else {
-        if (std::fabs(mK0s - massK0s) > secondaryCutsCfgs.cSecondaryMassWindow) {
-          histos.fill(HIST("QA/K0sCutCheck"), 10);
-          returnFlag = false;
-        }
-
-        return returnFlag;
-      }
-
-    } else {
-      if (secondaryCutsCfgs.cSecondaryRequire) {
-
-        histos.fill(HIST("QA/K0sCutCheck"), 0);
-        if (dauDCA > secondaryCutsCfgs.cSecondaryDauDCAMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 1);
-          return false;
-        }
-        if (dauPosDCAtoPV < secondaryCutsCfgs.cSecondaryDauPosDCAtoPVMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 2);
-          return false;
-        }
-        if (dauNegDCAtoPV < secondaryCutsCfgs.cSecondaryDauNegDCAtoPVMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 3);
-          return false;
-        }
-        if (pT < secondaryCutsCfgs.cSecondaryPtMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 4);
-          return false;
-        }
-        if (rapidity > secondaryCutsCfgs.cSecondaryRapidityMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 5);
-          return false;
-        }
-        if (v0Radius < secondaryCutsCfgs.cSecondaryRadiusMin || v0Radius > secondaryCutsCfgs.cSecondaryRadiusMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 6);
-          return false;
-        }
-        if (dcaToPV > secondaryCutsCfgs.cSecondaryDCAtoPVMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 7);
-          return false;
-        }
-        if (cosPA < secondaryCutsCfgs.cSecondaryCosPAMin) {
-          histos.fill(HIST("QA/K0sCutCheck"), 8);
-          return false;
-        }
-        if (propTauK0s > secondaryCutsCfgs.cSecondaryProperLifetimeMax) {
-          histos.fill(HIST("QA/K0sCutCheck"), 9);
-          return false;
-        }
-        if (std::fabs(mK0s - massK0s) > secondaryCutsCfgs.cSecondaryMassWindow) {
-          histos.fill(HIST("QA/K0sCutCheck"), 10);
-          return false;
-        }
-        return true;
-
-      } else {
-        if (std::fabs(mK0s - massK0s) > secondaryCutsCfgs.cSecondaryMassWindow) {
-          histos.fill(HIST("QA/K0sCutCheck"), 10);
-          return false;
-        }
-        return true;
-      }
+    bool returnFlag = true;
+    histos.fill(HIST("QA/K0sCutCheck"), ibin);
+    if (dauDCA > secondaryCutsCfgs.cSecondaryDauDCAMax) {
+      returnFlag = false;
     }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+    if (dauPosDCAtoPV < secondaryCutsCfgs.cSecondaryDauPosDCAtoPVMin) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (dauNegDCAtoPV < secondaryCutsCfgs.cSecondaryDauNegDCAtoPVMin) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (pT < secondaryCutsCfgs.cSecondaryPtMin) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (std::fabs(rapidity) > secondaryCutsCfgs.cSecondaryRapidityMax) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (v0Radius < secondaryCutsCfgs.cSecondaryRadiusMin || v0Radius > secondaryCutsCfgs.cSecondaryRadiusMax) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (dcaToPV > secondaryCutsCfgs.cSecondaryDCAtoPVMax) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (cosPA < secondaryCutsCfgs.cSecondaryCosPAMin) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (propTauK0s > secondaryCutsCfgs.cSecondaryProperLifetimeMax) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (candidate.qtarm() < secondaryCutsCfgs.cfgSecondaryparamArmenterosCut * std::fabs(candidate.alpha())) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (std::fabs(mK0s - MassK0Short) > secondaryCutsCfgs.cSecondaryMassWindow) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+
+    if (secondaryCutsCfgs.cfgSecondaryCrossMassHypothesisCut &&
+        ((std::fabs(mLambda - MassLambda0) < secondaryCutsCfgs.cfgSecondaryCrossMassCutWindow) || (std::fabs(mALambda - MassLambda0Bar) < secondaryCutsCfgs.cfgSecondaryCrossMassCutWindow))) {
+      returnFlag = false;
+    }
+    ibin++;
+    if (returnFlag == true)
+      histos.fill(HIST("QA/K0sCutCheck"), ibin);
+    return returnFlag;
+
   } // selectionK0s
 
   template <typename TrackTemplate, typename V0Template>
@@ -1108,13 +1228,22 @@ struct Chargedkstaranalysis {
                      V0Candidates const& v0s,
                      aod::BCsWithTimestamps const&)
   {
+    histos.fill(HIST("hEvtSelInfo"), 0.5);
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
+    histos.fill(HIST("hEvtSelInfo"), 1.5);
+    if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 2.5);
+
     lMultiplicity = getCentrality(collision);
     if (lMultiplicity < eventCutCfgs.cfgEventCentralityMin || lMultiplicity > eventCutCfgs.cfgEventCentralityMax)
       return;
+    histos.fill(HIST("hEvtSelInfo"), 3.5);
     if (!collision.isInelGt0())
       return;
+    histos.fill(HIST("hEvtSelInfo"), 4.5);
     colCuts.fillQA(collision);
     fillHistograms<false, false>(collision, tracks, v0s);
   }
