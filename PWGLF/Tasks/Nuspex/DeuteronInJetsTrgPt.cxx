@@ -11,7 +11,7 @@
 //
 // Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 05-02-2026
 //
-// Executable : o2-analysis-lf-deuteron-in-jet-trg-pt
+// Executable : o2-analysis-lf-deuteron-in-jets-trg-pt
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
