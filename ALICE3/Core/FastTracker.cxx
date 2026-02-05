@@ -34,7 +34,7 @@ namespace o2
 namespace fastsim
 {
 
-std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string filename, std::vector<std::string>& layers)
+std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string& filename, std::vector<std::string>& layers)
 {
   std::map<std::string, std::map<std::string, std::string>> configMap;
   filename = gSystem->ExpandPathName(filename.c_str());
