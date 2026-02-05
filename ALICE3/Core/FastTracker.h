@@ -53,6 +53,9 @@ class GeometryContainer
       mFileName = filename;
       mConfigurations = GeometryContainer::parseTEnvConfiguration(mFileName, mLayerNames);
       LOG(info) << "Loaded geometry configuration from file: " << filename << " with " << mLayerNames.size() << " layers.";
+      if (mLayerNames.empty()) {
+        LOG(warning) << "No layers found in geometry configuration file: " << filename;
+      }
     }
     std::map<std::string, std::map<std::string, std::string>> getConfigurations() const { return mConfigurations; }
     std::map<std::string, std::string> getConfiguration(const std::string& layerName) const;
@@ -84,7 +87,7 @@ class GeometryContainer
   std::map<std::string, std::string> getConfiguration(const int id, const std::string& layerName) const { return entries.at(id).getConfiguration(layerName); }
 
   // Get specific values
-  std::string getValue(const int id, const std::string& layerName, const std::string& key, bool require = true) const { return entries.at(id).getValue(layerName, key, require); };
+  std::string getValue(const int id, const std::string& layerName, const std::string& key, bool require = true) const { return entries.at(id).getValue(layerName, key, require); }
   float getFloatValue(const int id, const std::string& layerName, const std::string& key) const { return entries.at(id).getFloatValue(layerName, key); }
 
  private:
