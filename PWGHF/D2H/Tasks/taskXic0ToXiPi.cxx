@@ -175,6 +175,10 @@ struct HfTaskXic0ToXiPi {
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsPtPion"))->Sumw2();
       registry.get<THnSparse>(HIST("hMassVsPtVsYVsPtPion"))->Sumw2();
     }
+
+    if (yCandRecMax >= 0) {
+      registry.add("hNumRejCandidate_RapidityCut", "# of rejected candidate using rap cut;Rej;entries", {HistType::kTH1F, {thnAxisY}});
+    }
   }
 
   template <bool UseKfParticle, bool UseCentrality, bool ApplyMl, typename CandType, typename CollType>
@@ -190,6 +194,7 @@ struct HfTaskXic0ToXiPi {
       yCharmBaryon = candidate.y(o2::constants::physics::MassXiC0);
     }
     if (yCandRecMax >= 0. && std::abs(yCharmBaryon) > yCandRecMax) {
+      registry.fill(HIST("hNumRejCandidate_RapidityCut"), yCharmBaryon);
       return;
     }
 
