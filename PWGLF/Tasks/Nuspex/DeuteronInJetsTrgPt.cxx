@@ -9,13 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 04-02-2026
+// Task for analysing (anti)deuteron production in jets using pT-triggered data - update: 05-02-2026
 //
 // Executable : o2-analysis-lf-deuteron-in-jet-trg-pt
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/JetUtilities.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
@@ -256,25 +257,9 @@ struct DeuteronInJetsTrgPt {
     u2.SetXYZ(u2x, u2y, pz);
   }
 
-  // Compute delta phi
-  double getDeltaPhi(double a1, double a2)
-  {
-    double deltaPhi(0);
-    double phi1 = TVector2::Phi_0_2pi(a1);
-    double phi2 = TVector2::Phi_0_2pi(a2);
-    double diff = std::fabs(phi1 - phi2);
-
-    if (diff <= PI)
-      deltaPhi = diff;
-    if (diff > PI)
-      deltaPhi = TwoPI - diff;
-
-    return deltaPhi;
-  }
-
-  // Find ITS hit
+  // Find hit on ITS layer
   template <typename TrackIts>
-  bool hasITShit(const TrackIts& track, int layer)
+  bool hasHitITS(const TrackIts& track, int layer)
   {
     int ibit = layer - 1;
     return (track.itsClusterMap() & (1 << ibit));
@@ -305,7 +290,7 @@ struct DeuteronInJetsTrgPt {
     // Part relative to ITS
     if (!track.hasITS())
       return false;
-    if ((!hasITShit(track, 1)) && (!hasITShit(track, 2)) && (!hasITShit(track, 3)))
+    if ((!hasHitITS(track, 1)) && (!hasHitITS(track, 2)) && (!hasHitITS(track, 3)))
       return false; // Has Inner Barrel hit
     if (track.itsChi2NCl() >= MaxChi2Its)
       return false;
@@ -334,7 +319,7 @@ struct DeuteronInJetsTrgPt {
     // Part relative to ITS
     if (!track.hasITS())
       return false; // Flag to check if track has a ITS match
-    if ((!hasITShit(track, 1)) && (!hasITShit(track, 2)) && (!hasITShit(track, 3)))
+    if ((!hasHitITS(track, 1)) && (!hasHitITS(track, 2)) && (!hasHitITS(track, 3)))
       return false; // Require IB hit
     if (track.itsNCls() < cfgTrackCut.ITSnClusMin)
       return false; // Minimum number of ITS cluster
@@ -498,10 +483,10 @@ struct DeuteronInJetsTrgPt {
 
         // Calculate the angular distance between the track and the UE axes in eta-phi space
         double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
-        double deltaPhiUe1 = getDeltaPhi(track.phi(), ueAxis1.Phi());
+        double deltaPhiUe1 = std::fabs(RecoDecay::constrainAngle(track.phi() - ueAxis1.Phi(), -PI));
         double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
         double deltaEtaUe2 = track.eta() - ueAxis2.Eta();
-        double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
+        double deltaPhiUe2 = std::fabs(RecoDecay::constrainAngle(track.phi() - ueAxis2.Phi(), -PI));
         double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
         double maxConeRadius = coneRadius;
