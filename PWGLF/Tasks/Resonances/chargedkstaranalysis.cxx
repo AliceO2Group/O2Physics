@@ -341,7 +341,7 @@ struct Chargedkstaranalysis {
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
-    auto hhCutFlow = histos.get<TH1>(HIST("hEvtSelInfo"));
+    auto hCutFlow = histos.get<TH1>(HIST("hEvtSelInfo"));
     hCutFlow->GetXaxis()->SetBinLabel(1, "All Events");
     hCutFlow->GetXaxis()->SetBinLabel(2, "coll cuts");
     hCutFlow->GetXaxis()->SetBinLabel(3, "rctChecker");
