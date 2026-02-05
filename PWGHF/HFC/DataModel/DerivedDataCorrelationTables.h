@@ -86,7 +86,7 @@ DECLARE_SOA_COLUMN(PtAssocTrack, ptAssocTrack, float);     //! Pt of the track
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                   //! Impact parameter in XY of the track to the primary vertex
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                     //! Impact parameter in Z of the track to the primary vertex
 DECLARE_SOA_COLUMN(NSigmaTpc, nSigmaTpc, float);           //! Number of sigma TPC
-DECLARE_SOA_COLUMN(NSigmaTof, nSigmaTpc, float);           //! Number of sigma TOF
+DECLARE_SOA_COLUMN(NSigmaTof, nSigmaTof, float);           //! Number of sigma TOF
 } // namespace hf_assoc_track_reduced
 DECLARE_SOA_TABLE(AssocTrackReds, "AOD", "ASSOCTRACKRED", //! Table with associated track info
                   soa::Index<>,
