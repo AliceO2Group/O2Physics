@@ -41,9 +41,9 @@ namespace o2::analysis::femto
 namespace tripletbuilder
 {
 
-const size_t nLimitPartitionIdenticalParticles123 = 3;
-const size_t nLimitPartitionIdenticalParticles12 = 2;
-const size_t nLimitPartitionParticles = 1;
+const int64_t nLimitPartitionIdenticalParticles123 = 3;
+const int64_t nLimitPartitionIdenticalParticles12 = 2;
+const int64_t nLimitPartitionParticles = 1;
 
 template <const char* prefixTrack1,
           const char* prefixTrack2,
