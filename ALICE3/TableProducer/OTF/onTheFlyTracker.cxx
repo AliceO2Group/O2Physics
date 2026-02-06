@@ -148,8 +148,6 @@ struct OnTheFlyTracker {
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
     Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
-    Configurable<int> scaleVD{"scaleVD", 1, "scale x0 and xrho in VD layers"};
-    Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
   struct : ConfigurableGroup {
