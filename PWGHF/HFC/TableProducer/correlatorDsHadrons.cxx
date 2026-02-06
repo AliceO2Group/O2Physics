@@ -176,6 +176,7 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandSelInfos> candSelInfo;
   Produces<aod::AssocTrackReds> assocTrackReduced;
   Produces<aod::AssocTrackSels> assocTrackSelInfo;
+  Produces<aod::AssocTrackPids> assocTrackPidInfo;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
@@ -889,6 +890,15 @@ struct HfCorrelatorDsHadrons {
 
         assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
+        if (trkPIDspecies->at(0) == o2::track::PID::Kaon) {
+          assocTrackPidInfo(track.tpcNSigmaKa(), track.tofNSigmaKa());
+        }
+        if (trkPIDspecies->at(0) == o2::track::PID::Pion) {
+          assocTrackPidInfo(track.tpcNSigmaPi(), track.tofNSigmaPi());
+        }
+        if (trkPIDspecies->at(0) == o2::track::PID::Proton) {
+          assocTrackPidInfo(track.tpcNSigmaPr(), track.tofNSigmaPr());
+        }
       }
 
       collReduced(collision.multFT0M(), collision.numContrib(), collision.posZ());
