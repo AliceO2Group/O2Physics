@@ -1543,6 +1543,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBC"] = kBC;
   fgVarNamesMap["kBCOrbit"] = kBCOrbit;
   fgVarNamesMap["kIsPhysicsSelection"] = kIsPhysicsSelection;
+  fgVarNamesMap["kIsTVXTriggered"] = kIsTVXTriggered;
   fgVarNamesMap["kIsNoTFBorder"] = kIsNoTFBorder;
   fgVarNamesMap["kIsNoITSROFBorder"] = kIsNoITSROFBorder;
   fgVarNamesMap["kIsNoITSROFBorderRecomputed"] = kIsNoITSROFBorderRecomputed;
