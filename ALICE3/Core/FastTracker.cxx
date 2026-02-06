@@ -34,10 +34,11 @@ namespace o2
 namespace fastsim
 {
 
-std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string filename, std::vector<std::string>& layers)
+std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string& filename, std::vector<std::string>& layers)
 {
   std::map<std::string, std::map<std::string, std::string>> configMap;
   filename = gSystem->ExpandPathName(filename.c_str());
+  LOG(info) << "Parsing TEnv configuration file: " << filename;
   TEnv env(filename.c_str());
   THashList* table = env.GetTable();
   layers.clear();
@@ -95,6 +96,16 @@ std::map<std::string, std::string> GeometryContainer::GeometryEntry::getConfigur
   }
 }
 
+bool GeometryContainer::GeometryEntry::hasValue(const std::string& layerName, const std::string& key) const
+{
+  auto layerIt = mConfigurations.find(layerName);
+  if (layerIt != mConfigurations.end()) {
+    auto keyIt = layerIt->second.find(key);
+    return keyIt != layerIt->second.end();
+  }
+  return false;
+}
+
 std::string GeometryContainer::GeometryEntry::getValue(const std::string& layerName, const std::string& key, bool require) const
 {
   auto layer = getConfiguration(layerName);
@@ -107,6 +118,14 @@ std::string GeometryContainer::GeometryEntry::getValue(const std::string& layerN
   } else {
     return "";
   }
+}
+
+void GeometryContainer::GeometryEntry::replaceValue(const std::string& layerName, const std::string& key, const std::string& value)
+{
+  if (!hasValue(layerName, key)) { // check that the key exists
+    LOG(fatal) << "Key " << key << " does not exist in layer " << layerName << ". Cannot replace value.";
+  }
+  setValue(layerName, key, value);
 }
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
