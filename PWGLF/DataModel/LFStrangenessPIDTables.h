@@ -112,6 +112,7 @@ DECLARE_SOA_INDEX_COLUMN(DauTrackExtra, dauTrackExtra); //! point to daughter th
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision); //! point to collision associated with this track (not the V0/Casc)
 DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);        //! track TOF signal
 DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float);        //! event time
+DECLARE_SOA_COLUMN(TOFEvTimeErr, tofEvTimeErr, float);  //! event time error for TOF
 DECLARE_SOA_COLUMN(Length, length, float);              //! track length (to assigned PV)
 DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);        //! tof Exp Mom (to assigned PV)
 
@@ -171,7 +172,17 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_001, "AOD", "DAUTRACKTOFPID", 1, // 
                             dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
 
-using DauTrackTOFPIDs = DauTrackTOFPIDs_001; // second gen: with collision Id, with TOFExpMom
+DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_002, "AOD", "DAUTRACKTOFPID", 2, // raw table (for posterior TOF calculation)
+                            o2::soa::Index<>,
+                            dautrack::StraCollisionId, dautrack::DauTrackExtraId,
+                            dautrack::TOFSignal, dautrack::TOFEvTime, dautrack::TOFEvTimeErr,
+                            dautrack::Length, dautrack::TOFExpMom,
+                            dautrack::TOFExpTimeEl<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePi<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);                            
+
+using DauTrackTOFPIDs = DauTrackTOFPIDs_002; // second gen: with collision Id, with TOFExpMom
 
 namespace v0data
 {

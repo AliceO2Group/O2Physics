@@ -837,7 +837,7 @@ struct strangederivedbuilder {
                                    aod::dautrack::packing::packInInt8(tr.tpcNSigmaPr()));
           // populate daughter-level TOF information
           if (tr.hasTOF()) {
-            products.dauTrackTOFPIDs(tr.collisionId(), products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.length(), tr.tofExpMom());
+            products.dauTrackTOFPIDs(tr.collisionId(), products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.tofEvTimeErr(), tr.length(), tr.tofExpMom());
           }
         } else {
           // populate with empty fully-compatible Nsigmas if no corresponding table available
