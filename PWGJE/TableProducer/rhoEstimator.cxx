@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Task to produce a table joinable to the jcollision table with the mean background pT density
+// Task to produce a table joinable to the jcollision or candidate table with the mean background pT density
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
