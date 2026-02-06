@@ -338,6 +338,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronSelection2_yiping")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug2"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiO2MCdebugCuts4_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
@@ -648,6 +656,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pionPIDCut2")) {
     cut->AddCut(GetAnalysisCut("pionQualityCut2"));
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPIDCut9")) {
+    cut->AddCut(GetAnalysisCut("pionQualityCut9"));
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
     return cut;
   }
@@ -3497,6 +3511,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairX3872Minitree")) {
+    cut->AddCut(GetAnalysisCut("pairX3872_minitree"));
+    return cut;
+  }
+
   if (!nameStr.compare("DipionPairCut1")) {
     cut->AddCut(GetAnalysisCut("DipionMassCut1"));
     return cut;
@@ -4874,6 +4893,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
     cut->AddCut(VarManager::kTPCncls, 90, 161);
     cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    return cut;
+  }
+
+  if (!nameStr.compare("pionQualityCut9")) {
+    cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCncls, 100, 161, false, VarManager::kPt, 0.3, 1000.0);
+    cut->AddCut(VarManager::kTrackDCAxy, -0.5, 0.5);
+    cut->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
     return cut;
   }
 
@@ -6676,6 +6703,18 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kQ, 0.0, 0.5);
     cut->AddCut(VarManager::kDeltaR, 0.0, 5.0);
     cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
+    return cut;
+  }
+
+  TF1* fDeltaR2High = new TF1("fDeltaR2High", "[0]+[1]*x", 0.0, 5.0);
+  fDeltaR2High->SetParameters(3.0, -0.4);
+  if (!nameStr.compare("pairX3872_minitree")) {
+    cut->AddCut(VarManager::kQuadDefaultDileptonMass, 3.0, 5.0);
+    cut->AddCut(VarManager::kDeltaR2, 0.0, 1.0, false, VarManager::kPt, 5.0, 1000.0);
+    cut->AddCut(VarManager::kDeltaR2, 0.0, fDeltaR2High, false, VarManager::kPt, 0.0, 5.0);
+    cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
+    cut->AddCut(VarManager::kVertexingProcCode, 0.5, 2.5);
+    cut->AddCut(VarManager::kVertexingQuadProcCode, 0.5, 2.5);
     return cut;
   }
 
