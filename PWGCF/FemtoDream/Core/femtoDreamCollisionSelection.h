@@ -219,7 +219,7 @@ class FemtoDreamCollisionSelection
     mHistogramQn = registry;
     mHistogramQn->add("Event/centFT0CBeforeQn", "; cent", kTH1F, {{10, 0, 100}});
     mHistogramQn->add("Event/centFT0CAfterQn", "; cent", kTH1F, {{10, 0, 100}});
-    mHistogramQn->add("Event/centVsqn", "; cent; qn", kTH2F, {{10, 0, 100}, {100, 0, 1000}});
+    mHistogramQn->add("Event/centVsqn", "; cent; qn", kTH2F, {{10, 0, 100}, {1000, 0, 1000}});
     mHistogramQn->add("Event/centVsqnVsSpher", "; cent; qn; Sphericity", kTH3F, {{10, 0, 100}, {100, 0, 1000}, {100, 0, 1}});
     mHistogramQn->add("Event/qnBin", "; qnBin; entries", kTH1F, {{20, 0, 20}});
     mHistogramQn->add("Event/psiEP", "; #Psi_{EP} (deg); entries", kTH1F, {{100, 0, 180}});
@@ -428,8 +428,8 @@ class FemtoDreamCollisionSelection
   /// \param doQnSeparation to fill flow in divied qn bins
   /// \param qnBin should be <int> in 0-9
   /// \param fEtaGap eta gap for flow cumulant
-  template <typename T1, typename T2>
-  void doCumulants(T1 const& col, T2 const& tracks, float centrality, bool doQnSeparation = false, int numQnBins = 10, float fEtaGap = 0.5f, float ptMin = 0.2f, float ptMax = 5.0f, float harmonic = 2.0f)
+  template <typename T1, typename T2, typename TC>
+  void doCumulants(T1 const& col, T2 const& tracks, TC& trackCuts, float centrality, bool doQnSeparation = false, int numQnBins = 10, float fEtaGap = 0.5f, float ptMin = 0.2f, float ptMax = 5.0f, float harmonic = 2.0f)
   {
     int numOfTracks = col.numContrib();
     if (numOfTracks < 3)
@@ -441,13 +441,16 @@ class FemtoDreamCollisionSelection
     int nA = 0, nB = 0;
 
     for (auto const& trk : tracks) {
+      if (!trackCuts.isSelectedMinimal(trk)) {
+        continue;
+      }
       const double pt = trk.pt();
       const double eta = trk.eta();
       if (pt < ptMin || pt > ptMax) {
         continue;
       }
 
-      const double w = 1.0; // TODO: NUA/NUE weight if you want
+      const double w = 1.0; // TODO: NUA/NUE weight
       const double phi = trk.phi();
       const double c = w * TMath::Cos(harmonic * phi);
       const double s = w * TMath::Sin(harmonic * phi);

@@ -693,6 +693,14 @@ struct qVectorsTable {
             deltapsiTPCall += ((2. / (1.0 * ishift)) * (-coeffshiftxTPCall * TMath::Cos(ishift * static_cast<float>(nmode) * psidefTPCall) + coeffshiftyTPCall * TMath::Sin(ishift * static_cast<float>(nmode) * psidefTPCall))) / static_cast<float>(nmode);
           }
 
+          deltapsiFT0C *= static_cast<float>(nmode);
+          deltapsiFT0A *= static_cast<float>(nmode);
+          deltapsiFT0M *= static_cast<float>(nmode);
+          deltapsiFV0A *= static_cast<float>(nmode);
+          deltapsiTPCpos *= static_cast<float>(nmode);
+          deltapsiTPCneg *= static_cast<float>(nmode);
+          deltapsiTPCall *= static_cast<float>(nmode);
+
           qvecReShiftedFT0C.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C) - qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C));
           qvecImShiftedFT0C.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C) + qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C));
           qvecReShiftedFT0A.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Cos(deltapsiFT0A) - qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Sin(deltapsiFT0A));
