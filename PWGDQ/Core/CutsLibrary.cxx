@@ -3880,6 +3880,19 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventSel8TriggerZNAZNC")) {
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsTriggerZNAZNC, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventSel8TriggerZNAZNCNoPileUp")) {
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsTriggerZNAZNC, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("eventSel8NoSameBunchGoodZvtx")) {
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
