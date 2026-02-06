@@ -65,6 +65,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/Vertex.h> // for PV refit
 
@@ -1298,7 +1299,7 @@ struct HfTrackIndexSkimCreator {
     Configurable<LabeledArray<double>> cutsCdToDeKPi{"cutsCdToDeKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Cd->deKpi selections per pT bin"};
     // Ct cuts
     Configurable<std::vector<double>> binsPtCtToTrKPi{"binsPtCtToTrKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Ct->tKpi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsCtToTrKPi{"cutsCdToTrKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ct->tKpi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsCtToTrKPi{"cutsCtToTrKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ct->tKpi selections per pT bin"};
     // Ch cuts
     Configurable<std::vector<double>> binsPtChToHeKPi{"binsPtChToHeKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Ch->heKpi pT-dependent cuts"};
     Configurable<LabeledArray<double>> cutsChToHeKPi{"cutsChToHeKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ch->heKpi selections per pT bin"};
@@ -1307,7 +1308,10 @@ struct HfTrackIndexSkimCreator {
     Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
     // CharmNuclei track selection
-    Configurable<LabeledArray<float>> selectionsLightNuclei{"selectionsLightNuclei", {hf_presel_lightnuclei::CutsTrackQuality[0], 3, 9, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsCutsTrack}, "nuclei track selections for deuteron / triton / helium applied if proper process function enabled"};
+    Configurable<LabeledArray<float>> selectionsLightNuclei{"selectionsLightNuclei", {hf_presel_lightnuclei::CutsTrackQuality[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NVarCuts, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsCutsTrack}, "nuclei track selections for deuteron / triton / helium applied if proper process function enabled"};
+    Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams},
+                                                                "TPC PID Bethe–Bloch parameter configurations for light nuclei "
+                                                                "(deuteron, triton, helium-3), used in BB-based PID when enabled"};
 
     // proton PID selections for Lc and Xic
     Configurable<bool> applyProtonPidForLcToPKPi{"applyProtonPidForLcToPKPi", false, "Apply proton PID for Lc->pKpi"};
@@ -1316,6 +1320,8 @@ struct HfTrackIndexSkimCreator {
     Configurable<bool> applyDeuteronPidForCdToDeKPi{"applyDeuteronPidForCdToDeKPi", false, "Require deuteron PID for Cd->deKpi"};
     Configurable<bool> applyTritonPidForCtToTrKPi{"applyTritonPidForCtToTrKPi", false, "Require triton PID for Ct->tKpi"};
     Configurable<bool> applyHeliumPidForChToHeKPi{"applyHeliumPidForChToHeKPi", false, "Require helium3 PID for Ch->heKpi"};
+    Configurable<bool> applyLightNucleiTpcPidBasedOnBB{"applyLightNucleiTpcPidBasedOnBB", false, "Apply TPC PID for light nuclei using Bethe–Bloch parameterization"};
+
     // lightnuclei track selection for charmnuclei
     Configurable<bool> applyNucleiSelcForCharmNuclei{"applyNucleiSelcForCharmNuclei", false, "Require track selection for charm nuclei"};
     // ML models for triggers
@@ -1482,7 +1488,9 @@ struct HfTrackIndexSkimCreator {
       registry.add("hMassCdToDeKPi", "C Deuteron candidates;inv. mass (De K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassCtToTrKPi", "C Triton candidates;inv. mass (Tr K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassChToHeKPi", "C Helium3 candidates;inv. mass (He3 K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
-
+      if (config.applyNucleiSelcForCharmNuclei && config.applyLightNucleiTpcPidBasedOnBB) {
+        registry.add("hTPCSignalsLightNuclei", "Light Nuclei TPC signal (a.u.)", {HistType::kTH2D, {{2000, -10., 10.}, {1000, 0., 2000.}}});
+      }
       // needed for PV refitting
       if (doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) {
         const AxisSpec axisCollisionX{100, -20.f, 20.f, "X (cm)"};
@@ -1659,57 +1667,147 @@ struct HfTrackIndexSkimCreator {
   }
 
   /// Apply track-quality (ITS/TPC) + optional ITS-PID preselection for light-nucleus daughters used in charm-nuclei 3-prong channels (Cd/Ct/Ch).
-  /// \tparam TrackType  Track/ASoA row type providing ITS/TPC quality accessors.
+  /// \tparam TrackType   Track  providing ITS/TPC quality accessors.
   /// \param track        Daughter track to be tested (either prong0 or prong2).
-  /// \param lightnuclei  Species selector  0: Deuteron, 1: Triton, 2: Helium3.
-  /// \param nSigmaItsPid ITS nσ value for the selected light nucleus hypothesis
+  /// \param lightnuclei  Species selector: 0=Deuteron, 1=Triton, 2=Helium3.
+  /// \return             true if the track passes all enabled selections.
   template <typename TrackType>
   bool applyTrackSelectionForCharmNuclei(const TrackType& track,
-                                         ChannelsNucleiQA lightnuclei,
-                                         float nSigmaItsPid)
+                                         ChannelsNucleiQA lightnuclei)
   {
     // Row index in the selection table: 0 (De), 1 (Tr), 2 (He3)
     const int row = static_cast<int>(lightnuclei);
-    const float nSigmaItsNuclei = nSigmaItsPid;
-    // Load cuts for the selected species.
-    const float minItsNSigmaPid = config.selectionsLightNuclei->get(row, 0u);
-    const int minItsClusterSizes = config.selectionsLightNuclei->get(row, 1u);
-    const int minItsCluster = config.selectionsLightNuclei->get(row, 2u);
-    const int minItsIbCluster = config.selectionsLightNuclei->get(row, 3u);
-    const int minTpcCluster = config.selectionsLightNuclei->get(row, 4u);
-    const int minTpcRow = config.selectionsLightNuclei->get(row, 5u);
-    const float minTpcCrossedOverFound = config.selectionsLightNuclei->get(row, 6u);
-    const int maxTpcShared = config.selectionsLightNuclei->get(row, 7u);
-    const float maxTpcFracShared = config.selectionsLightNuclei->get(row, 8u);
+    if (row < 0 || row >= NChannelsLightNucleiPid) {
+      return false;
+    }
 
-    if (nSigmaItsNuclei < minItsNSigmaPid) {
+    float itsPidNsigma = -999.f;
+
+    switch (lightnuclei) {
+      case ChannelsNucleiQA::Deuteron:
+        itsPidNsigma = track.itsNSigmaDe();
+        break;
+      case ChannelsNucleiQA::Triton:
+        itsPidNsigma = track.itsNSigmaTr();
+        break;
+      case ChannelsNucleiQA::Helium3:
+        itsPidNsigma = track.itsNSigmaHe();
+        break;
+      default:
+        LOG(fatal) << "Unhandled ChannelsNucleiQA " << static_cast<int>(lightnuclei);
+    }
+
+    // Load cuts for the selected species.
+    const float itsPidNsigmaMin = config.selectionsLightNuclei->get(row, 0u);
+    const float itsClusterSizeMin = config.selectionsLightNuclei->get(row, 1u);
+    const float itsClusterMin = config.selectionsLightNuclei->get(row, 2u);
+    const float itsIbClusterMin = config.selectionsLightNuclei->get(row, 3u);
+    const float tpcClusterMin = config.selectionsLightNuclei->get(row, 4u);
+    const float tpcCrossedRowsMin = config.selectionsLightNuclei->get(row, 5u);
+    const float tpcCrossedRowsOverFindMin = config.selectionsLightNuclei->get(row, 6u);
+    const float tpcSharedMax = config.selectionsLightNuclei->get(row, 7u);
+    const float tpcFracSharedMax = config.selectionsLightNuclei->get(row, 8u);
+
+    // Optional: BB-based TPC nσ selection (only if enabled)
+    const float tpcBbPidNsigmaMax = config.selectionsLightNuclei->get(row, 9u);
+
+    if (itsPidNsigma < itsPidNsigmaMin) {
       return false;
     }
-    if (track.itsClusterSizes() < static_cast<unsigned int>(minItsClusterSizes)) {
+    if (track.itsClusterSizes() < static_cast<unsigned int>(itsClusterSizeMin)) {
       return false;
     }
-    if (track.itsNCls() < minItsCluster) {
+    if (track.itsNCls() < itsClusterMin) {
       return false;
     }
-    if (track.itsNClsInnerBarrel() < minItsIbCluster) {
+    if (track.itsNClsInnerBarrel() < itsIbClusterMin) {
       return false;
     }
-    if (track.tpcNClsFound() < minTpcCluster) {
+    if (track.tpcNClsFound() < tpcClusterMin) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < minTpcRow) {
+    if (track.tpcNClsCrossedRows() < tpcCrossedRowsMin) {
       return false;
     }
-    if (track.tpcCrossedRowsOverFindableCls() < minTpcCrossedOverFound) {
+    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindMin) {
       return false;
     }
-    if (maxTpcShared >= 0 && track.tpcNClsShared() > maxTpcShared) {
+    if (track.tpcNClsShared() > tpcSharedMax) {
       return false;
     }
-    if (track.tpcFractionSharedCls() > maxTpcFracShared) {
+    if (track.tpcFractionSharedCls() > tpcFracSharedMax) {
       return false;
     }
+
+    if (config.applyLightNucleiTpcPidBasedOnBB) {
+      const float tpcBbPidNsigma = getTPCnSigmaBB(track, lightnuclei);
+      if (std::abs(tpcBbPidNsigma) > tpcBbPidNsigmaMax) {
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  /// Compute TPC nσ for light nuclei (De/Tr/He3) using a Bethe–Bloch parameter configuration (BB-based PID).
+  ///
+  /// \tparam TrackType   Track/ASoA row type providing TPC accessors.
+  /// \param track        Track to be tested.
+  /// \param lightnuclei  Species selector: 0=Deuteron, 1=Triton, 2=Helium3.
+  /// \return             TPC nσ for the chosen nucleus hypothesis (or -999 if not applicable).
+  template <typename TrackType>
+  float getTPCnSigmaBB(const TrackType& track, ChannelsNucleiQA lightnuclei)
+  {
+    if (!track.hasTPC()) {
+      return -999.f;
+    }
+
+    const int row = static_cast<int>(lightnuclei);
+    if (row < 0 || row >= NChannelsLightNucleiPid) {
+      return -999.f;
+    }
+
+    // Columns: [0..4] BB params, [5] relative resolution (sigma/mean)
+    const double bb0 = config.tpcPidBBParamsLightNuclei->get(row, 0u);
+    const double bb1 = config.tpcPidBBParamsLightNuclei->get(row, 1u);
+    const double bb2 = config.tpcPidBBParamsLightNuclei->get(row, 2u);
+    const double bb3 = config.tpcPidBBParamsLightNuclei->get(row, 3u);
+    const double bb4 = config.tpcPidBBParamsLightNuclei->get(row, 4u);
+    const double relRes = config.tpcPidBBParamsLightNuclei->get(row, 5u);
+
+    if (relRes <= 0.f) {
+      return -999.f;
+    }
+
+    // Mass/charge hypothesis for the selected nucleus.
+    double mass = 0.;
+    switch (lightnuclei) {
+      case ChannelsNucleiQA::Deuteron:
+        mass = MassDeuteron;
+        break;
+      case ChannelsNucleiQA::Triton:
+        mass = MassTriton;
+        break;
+      case ChannelsNucleiQA::Helium3:
+        mass = MassHelium3;
+        break;
+      default:
+        LOG(fatal) << "Unhandled ChannelsNucleiQA " << static_cast<int>(lightnuclei);
+    }
+
+    const int charge = (lightnuclei == ChannelsNucleiQA::Helium3) ? 2 : 1;
+
+    const float rigidity = track.tpcInnerParam(); // p / |q| note: here we didn't apply rigidity correction
+
+    const double x = static_cast<double>(charge) * static_cast<double>(rigidity) / mass;
+    const double expBethe = common::BetheBlochAleph(x, bb0, bb1, bb2, bb3, bb4);
+    const double expSigma = expBethe * static_cast<double>(relRes);
+
+    if (expSigma <= 0.) {
+      return -999.f;
+    }
+
+    return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }
 
   /// Method to perform selections on difference from nominal mass for phi decay
@@ -1767,27 +1865,34 @@ struct HfTrackIndexSkimCreator {
            iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi ||
            iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi)) {
 
-        ChannelsNucleiQA nucleiType = ChannelsNucleiQA::Deuteron;
-        float nSigmaItsNuclei0 = track0.itsNSigmaDe();
-        float nSigmaItsNuclei2 = track2.itsNSigmaDe();
+        ChannelsNucleiQA nucleiType;
 
-        if (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi) {
-          nucleiType = ChannelsNucleiQA::Triton;
-          nSigmaItsNuclei0 = track0.itsNSigmaTr();
-          nSigmaItsNuclei2 = track2.itsNSigmaTr();
-        } else if (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi) {
-          nucleiType = ChannelsNucleiQA::Helium3;
-          nSigmaItsNuclei0 = track0.itsNSigmaHe();
-          nSigmaItsNuclei2 = track2.itsNSigmaHe();
+        switch (iDecay3P) {
+          case hf_cand_3prong::DecayType::CdToDeKPi:
+            nucleiType = ChannelsNucleiQA::Deuteron;
+            break;
+          case hf_cand_3prong::DecayType::CtToTrKPi:
+            nucleiType = ChannelsNucleiQA::Triton;
+            break;
+          case hf_cand_3prong::DecayType::ChToHeKPi:
+            nucleiType = ChannelsNucleiQA::Helium3;
+            break;
+          default:
+            LOG(fatal) << "Unhandled DecayType " << static_cast<int>(iDecay3P);
+            continue;
         }
 
         // hypo0: nucleus on track0
-        if (!applyTrackSelectionForCharmNuclei(track0, nucleiType, nSigmaItsNuclei0)) {
+        if (!applyTrackSelectionForCharmNuclei(track0, nucleiType)) {
           CLRBIT(whichHypo[iDecay3P], 0);
+        } else {
+          registry.fill(HIST("hTPCSignalsLightNuclei"), track0.tpcInnerParam() * track0.sign(), track0.tpcSignal());
         }
         // hypo1: nucleus on track2
-        if (!applyTrackSelectionForCharmNuclei(track2, nucleiType, nSigmaItsNuclei2)) {
+        if (!applyTrackSelectionForCharmNuclei(track2, nucleiType)) {
           CLRBIT(whichHypo[iDecay3P], 1);
+        } else {
+          registry.fill(HIST("hTPCSignalsLightNuclei"), track2.tpcInnerParam() * track2.sign(), track2.tpcSignal());
         }
 
         if (whichHypo[iDecay3P] == 0) {
