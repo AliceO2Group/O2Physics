@@ -435,7 +435,7 @@ struct F0980pbpbanalysis {
       return 0;
     }
     if (QAConfig.cfgQAEventFlowCut && QA) {
-      histos.fill(HIST("EventQA/hnEvents"), 9); // Additional PV cut
+      histos.fill(HIST("EventQA/hnEvents"), 9);  // Additional PV cut
       histos.fill(HIST("EventQA/hnEvents"), 10); // All passed
     }
     return 1;
