@@ -854,11 +854,17 @@ struct RadialFlowDecorr {
   void init(InitContext&)
   {
     if (cfgSys == 1) {
-      nChAxis = {cfgNchPbMax / 5, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchPbMax / 100, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      std::vector<double> binsPbPb = {0, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000};
+      nChAxis = {cfgNchPbMax / 10, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {binsPbPb, "Nch", "PV-contributor track multiplicity"};
+    } else if (cfgSys == 2 || cfgSys == 3) {
+      std::vector<double> binsOO = {0, 50, 100, 150, 200, 250, 300, 350, 400, 600};
+      nChAxis = {cfgNchOMax / 4, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {binsOO, "Nch", "PV-contributor track multiplicity"};
     } else {
-      nChAxis = {cfgNchOMax / 10, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchOMax / 30, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      std::vector<double> binsPP = {0, 20, 40, 80, 150, 300};
+      nChAxis = {cfgNchOMax / 3, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {binsPP, "Nch", "PV-contributor track multiplicity"};
     }
 
     ccdb->setURL(cfgCCDBurl.value);
