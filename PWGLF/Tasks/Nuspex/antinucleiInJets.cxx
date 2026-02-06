@@ -1155,56 +1155,56 @@ struct AntinucleiInJets {
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
       return;
     registryData.fill(HIST("number_of_events_data"), 8.5);
-    
+
     // Loop over all tracks for Full Event histograms
     for (auto const& track : tracks) {
-        // Apply standard track selection
-        if (!passedTrackSelection(track))
-            continue;
-          
-        // Define variables
-        double nsigmaTPCPr = track.tpcNSigmaPr();
-        double nsigmaTOFPr = track.tofNSigmaPr();
-        double nsigmaTPCDe = track.tpcNSigmaDe();
-        double nsigmaTOFDe = track.tofNSigmaDe();
-        double pt = track.pt();
+      // Apply standard track selection
+      if (!passedTrackSelection(track))
+        continue;
 
-        // ITS PID logic
-        bool passedItsPidProt(true), passedItsPidDeut(true);
-        double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
-        double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
+      // Define variables
+      double nsigmaTPCPr = track.tpcNSigmaPr();
+      double nsigmaTOFPr = track.tofNSigmaPr();
+      double nsigmaTPCDe = track.tpcNSigmaDe();
+      double nsigmaTOFDe = track.tofNSigmaDe();
+      double pt = track.pt();
 
-          if (applyItsPid && pt < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMin || nSigmaITSprot > nSigmaItsMax)) {
-              passedItsPidProt = false;
+      // ITS PID logic
+      bool passedItsPidProt(true), passedItsPidDeut(true);
+      double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
+      double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
+
+      if (applyItsPid && pt < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMin || nSigmaITSprot > nSigmaItsMax)) {
+        passedItsPidProt = false;
+      }
+      if (applyItsPid && pt < ptMaxItsPidDeut && (nSigmaITSdeut < nSigmaItsMin || nSigmaITSdeut > nSigmaItsMax)) {
+        passedItsPidDeut = false;
+      }
+
+      // Fill histograms for antimatter
+      if (track.sign() < 0) {
+
+        // Antiprotons Full Event
+        if (passedItsPidProt) {
+          registryData.fill(HIST("antiproton_fullEvent_tpc"), pt, nsigmaTPCPr);
+
+          // Require TOF matching and preliminary TPC cut
+          if (nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF()) {
+            registryData.fill(HIST("antiproton_fullEvent_tof"), pt, nsigmaTOFPr);
           }
-          if (applyItsPid && pt < ptMaxItsPidDeut && (nSigmaITSdeut < nSigmaItsMin || nSigmaITSdeut > nSigmaItsMax)) {
-              passedItsPidDeut = false;
+        }
+
+        // Antideuterons Full Event
+        if (passedItsPidDeut) {
+          registryData.fill(HIST("antideuteron_fullEvent_tpc"), pt, nsigmaTPCDe);
+
+          // Require TOF matching and preliminary TPC cut
+          if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc && track.hasTOF()) {
+            registryData.fill(HIST("antideuteron_fullEvent_tof"), pt, nsigmaTOFDe);
           }
-
-          // Fill histograms for antimatter
-          if (track.sign() < 0) {
-              
-              // Antiprotons Full Event
-              if (passedItsPidProt) {
-                  registryData.fill(HIST("antiproton_fullEvent_tpc"), pt, nsigmaTPCPr);
-                  
-                  // Require TOF matching and preliminary TPC cut
-                  if (nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF()) {
-                      registryData.fill(HIST("antiproton_fullEvent_tof"), pt, nsigmaTOFPr);
-                  }
-                }
-
-                // Antideuterons Full Event
-                if (passedItsPidDeut) {
-                    registryData.fill(HIST("antideuteron_fullEvent_tpc"), pt, nsigmaTPCDe);
-                  
-                  // Require TOF matching and preliminary TPC cut
-                  if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc && track.hasTOF()) {
-                      registryData.fill(HIST("antideuteron_fullEvent_tof"), pt, nsigmaTOFDe);
-                  }
-                }
-              }
-            }
+        }
+      }
+    }
 
     // Loop over reconstructed tracks
     int id(-1);
@@ -1236,7 +1236,7 @@ struct AntinucleiInJets {
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
     auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
-      
+
     // Loop over reconstructed jets
     bool isAtLeastOneJetSelected = false;
     for (const auto& jet : jets) {
