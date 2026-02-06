@@ -130,7 +130,7 @@ struct HfTaskFlowCharmHadrons {
 
   EventPlaneHelper epHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;

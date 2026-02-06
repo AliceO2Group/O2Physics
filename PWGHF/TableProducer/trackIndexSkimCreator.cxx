@@ -153,8 +153,8 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "Run 2 trigger class, only for Run 2 converted data"};
-  HfEventSelection hfEvSel;                 // event selection and monitoring
-  Service<o2::ccdb::BasicCCDBManager> ccdb; // needed for evSelection
+  HfEventSelection hfEvSel;                   // event selection and monitoring
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; // needed for evSelection
 
   // QA histos
   HistogramRegistry registry{"registry"};
@@ -344,7 +344,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   SliceCache cache;
 
   // Needed for PV refitting
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber{};
@@ -1337,7 +1337,7 @@ struct HfTrackIndexSkimCreator {
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   // Needed for PV refitting
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber{};
@@ -3294,7 +3294,7 @@ struct HfTrackIndexSkimCreatorCascades {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   // Needed for PV refitting
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -3555,7 +3555,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   } config;
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber{};
