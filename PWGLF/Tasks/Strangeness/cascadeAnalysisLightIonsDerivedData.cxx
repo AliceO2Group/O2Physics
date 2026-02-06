@@ -906,174 +906,188 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   PROCESS_SWITCH(CascadeAnalysisLightIonsDerivedData, processData, "Process data", true);
 
-  void processMonteCarloRec(SimCollisions const& RecCols, CascadeMCCandidates const& fullCascades, DaughterTracks const&, CascadeMCCores const&)
+  void processMonteCarloRec(SimCollisions::iterator const& RecCol, CascadeMCCandidates const& fullCascades, DaughterTracks const&, CascadeMCCores const&)
   {
-    for (const auto& RecCol : RecCols) {
-      // Fill event counter before event selection
-      registryMC.fill(HIST("number_of_events_mc_rec"), 0);
+     // Fill event counter before event selection
+     registryMC.fill(HIST("number_of_events_mc_rec"), 0);
 
-      // Initialize CCDB objects using the BC info
-      initCCDB(RecCol);
+     // Initialize CCDB objects using the BC info
+     initCCDB(RecCol);
 
-      // Define the event centrality using different estimators
-      float centralityMcRec = -1;
-      float multiplicityMcRec = -1;
+     // Define the event centrality using different estimators
+     float centralityMcRec = -1;
+     float multiplicityMcRec = -1;
 
-      if (centralityEstimator == Option::kFT0C) {
-        centralityMcRec = RecCol.centFT0C();
-        multiplicityMcRec = RecCol.multFT0C();
-      }
-      if (centralityEstimator == Option::kFT0M) {
-        centralityMcRec = RecCol.centFT0M();
-        multiplicityMcRec = RecCol.multFT0C() + RecCol.multFT0A();
-      }
-      if (centralityEstimator == Option::kFV0A) {
-        centralityMcRec = RecCol.centFV0A();
-        multiplicityMcRec = RecCol.multFV0A();
-      }
-      if (centralityEstimator == Option::kNGlobal) {
-        centralityMcRec = RecCol.centNGlobal();
-        multiplicityMcRec = RecCol.multNTracksGlobal();
-      }
+     if (centralityEstimator == Option::kFT0C) {
+       centralityMcRec = RecCol.centFT0C();
+       multiplicityMcRec = RecCol.multFT0C();
+     }
+     if (centralityEstimator == Option::kFT0M) {
+       centralityMcRec = RecCol.centFT0M();
+       multiplicityMcRec = RecCol.multFT0C() + RecCol.multFT0A();
+     }
+     if (centralityEstimator == Option::kFV0A) {
+       centralityMcRec = RecCol.centFV0A();
+       multiplicityMcRec = RecCol.multFV0A();
+     }
+     if (centralityEstimator == Option::kNGlobal) {
+       centralityMcRec = RecCol.centNGlobal();
+       multiplicityMcRec = RecCol.multNTracksGlobal();
+     }
 
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 0, centralityMcRec);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 0, centralityMcRec);
 
-      // event selections
-      if (applySel8 && !RecCol.sel8())
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_rec"), 1);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 1, centralityMcRec);
+     // event selections
+     if (applySel8 && !RecCol.sel8())
+       return;
+     registryMC.fill(HIST("number_of_events_mc_rec"), 1);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 1, centralityMcRec);
 
-      if (applyVtxZ && std::fabs(RecCol.posZ()) > zVtx)
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_rec"), 2);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 2, centralityMcRec);
+     if (applyVtxZ && std::fabs(RecCol.posZ()) > zVtx)
+       return;
+     registryMC.fill(HIST("number_of_events_mc_rec"), 2);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 2, centralityMcRec);
 
-      if (rejectITSROFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 3 /* Not at ITS ROF border */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 3, centralityMcRec);
+     if (rejectITSROFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 3 /* Not at ITS ROF border */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 3, centralityMcRec);
 
-      if (rejectTFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 4 /* Not at TF border */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 4, centralityMcRec);
+     if (rejectTFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 4 /* Not at TF border */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 4, centralityMcRec);
 
-      if (requireVertexITSTPC && !RecCol.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 5 /* Contains at least one ITS-TPC track */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 5, centralityMcRec);
+     if (requireVertexITSTPC && !RecCol.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 5 /* Contains at least one ITS-TPC track */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 5, centralityMcRec);
 
-      if (requireIsGoodZvtxFT0VsPV && !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 6 /* PV position consistency check */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 6, centralityMcRec);
+     if (requireIsGoodZvtxFT0VsPV && !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 6 /* PV position consistency check */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 6, centralityMcRec);
 
-      if (requireIsVertexTOFmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 7 /* PV with at least one contributor matched with TOF */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 7, centralityMcRec);
+     if (requireIsVertexTOFmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 7 /* PV with at least one contributor matched with TOF */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 7, centralityMcRec);
 
-      if (requireIsVertexTRDmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 8 /* PV with at least one contributor matched with TRD */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 8, centralityMcRec);
+     if (requireIsVertexTRDmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 8 /* PV with at least one contributor matched with TRD */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 8, centralityMcRec);
 
-      if (rejectSameBunchPileup && !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 9 /* Not at same bunch pile-up */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 9, centralityMcRec);
+     if (rejectSameBunchPileup && !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 9 /* Not at same bunch pile-up */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 9, centralityMcRec);
 
-      if (requireInel0 && RecCol.multNTracksPVeta1() < 1) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 10 /* INEL > 0 */);
-      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 10, centralityMcRec);
+     if (requireInel0 && RecCol.multNTracksPVeta1() < 1) {
+       return;
+     }
+     registryMC.fill(HIST("number_of_events_mc_rec"), 10 /* INEL > 0 */);
+     registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 10, centralityMcRec);
 
-      // Store the Zvtx
-      registryQC.fill(HIST("hVertexZRec"), RecCol.posZ());
+     // Store the Zvtx
+     registryQC.fill(HIST("hVertexZRec"), RecCol.posZ());
 
-      // Store the event centrality
-      registryMC.fill(HIST("hCentEstimator_truerec"), centralityMcRec);
-      registryMC.fill(HIST("hCentralityVsNch_truerec"), centralityMcRec, RecCol.multNTracksPVeta1());
-      registryMC.fill(HIST("hCentralityVsMultiplicity_truerec"), centralityMcRec, multiplicityMcRec);
+     // Store the event centrality
+     registryMC.fill(HIST("hCentEstimator_truerec"), centralityMcRec);
+     registryMC.fill(HIST("hCentralityVsNch_truerec"), centralityMcRec, RecCol.multNTracksPVeta1());
+     registryMC.fill(HIST("hCentralityVsMultiplicity_truerec"), centralityMcRec, multiplicityMcRec);
 
-      for (const auto& casc : fullCascades) {
-        if (etaMin > casc.bacheloreta() || casc.bacheloreta() > etaMax ||
-            etaMin > casc.negativeeta() || casc.negativeeta() > etaMax ||
-            etaMin > casc.positiveeta() || casc.positiveeta() > etaMax)
-          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+     for (const auto& casc : fullCascades) {
+       if (etaMin > casc.bacheloreta() || casc.bacheloreta() > etaMax ||
+           etaMin > casc.negativeeta() || casc.negativeeta() > etaMax ||
+           etaMin > casc.positiveeta() || casc.positiveeta() > etaMax)
+         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
-        if (!casc.has_cascMCCore())
-          continue;
+       if (!casc.has_cascMCCore())
+         continue;
 
-        auto cascMC = casc.template cascMCCore_as<CascadeMCCores>();
+       auto cascMC = casc.template cascMCCore_as<CascadeMCCores>();
 
-        auto bach = casc.bachTrackExtra_as<DaughterTracks>();
-        auto pos = casc.posTrackExtra_as<DaughterTracks>();
-        auto neg = casc.negTrackExtra_as<DaughterTracks>();
+       auto bach = casc.bachTrackExtra_as<DaughterTracks>();
+       auto pos = casc.posTrackExtra_as<DaughterTracks>();
+       auto neg = casc.negTrackExtra_as<DaughterTracks>();
 
-        int pdgParent = cascMC.pdgCode();
-        bool isPhysPrim = cascMC.isPhysicalPrimary();
-        if (pdgParent == 0)
-          continue;
-        if (!isPhysPrim)
-          continue;
+       int pdgParent = cascMC.pdgCode();
+       bool isPhysPrim = cascMC.isPhysicalPrimary();
+       if (pdgParent == 0)
+         continue;
+       if (!isPhysPrim)
+         continue;
 
-        float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
+       float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
 
-        // ------------------------------------- Store selctions distribution for QC
-        registryQC.fill(HIST("hv0cosPARec"), casc.v0cosPA(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
-        registryQC.fill(HIST("hcasccosPARec"), casc.casccosPA(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
-        registryQC.fill(HIST("hv0radiusRec"), casc.v0radius());
-        registryQC.fill(HIST("hcascradiusRec"), casc.cascradius());
-        registryQC.fill(HIST("hdcaV0daughtersRec"), casc.dcaV0daughters());
-        registryQC.fill(HIST("hdcacascdaughtersRec"), casc.dcacascdaughters());
-        registryQC.fill(HIST("hdcapostopvRec"), casc.dcapostopv());
-        registryQC.fill(HIST("hdcanegtopvRec"), casc.dcanegtopv());
-        registryQC.fill(HIST("hdcabachtopvRec"), casc.dcabachtopv());
-        registryQC.fill(HIST("hdcav0topvRec"), casc.dcav0topv(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
+       // ------------------------------------- Store selctions distribution for QC
+       registryQC.fill(HIST("hv0cosPARec"), casc.v0cosPA(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
+       registryQC.fill(HIST("hcasccosPARec"), casc.casccosPA(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
+       registryQC.fill(HIST("hv0radiusRec"), casc.v0radius());
+       registryQC.fill(HIST("hcascradiusRec"), casc.cascradius());
+       registryQC.fill(HIST("hdcaV0daughtersRec"), casc.dcaV0daughters());
+       registryQC.fill(HIST("hdcacascdaughtersRec"), casc.dcacascdaughters());
+       registryQC.fill(HIST("hdcapostopvRec"), casc.dcapostopv());
+       registryQC.fill(HIST("hdcanegtopvRec"), casc.dcanegtopv());
+       registryQC.fill(HIST("hdcabachtopvRec"), casc.dcabachtopv());
+       registryQC.fill(HIST("hdcav0topvRec"), casc.dcav0topv(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
 
-        // ------------------------------------- Store selctions distribution for analysis
-        if (casc.sign() < 0) {
-          if (pdgParent == kXiMinus) {
-            registryMC.fill(HIST("hMassXineg_truerec"), centralityMcRec, ptmc, casc.mXi());
-          }
-          if (pdgParent == kOmegaMinus) {
-            registryMC.fill(HIST("hMassOmeganeg_truerec"), centralityMcRec, ptmc, casc.mOmega());
-          }
-        }
+       // ------------------------------------- Store selctions distribution for analysis
+       if (casc.sign() < 0) {
+         if (pdgParent == kXiMinus) {
+           registryMC.fill(HIST("hMassXineg_truerec"), centralityMcRec, ptmc, casc.mXi());
+         }
+         if (pdgParent == kOmegaMinus) {
+           registryMC.fill(HIST("hMassOmeganeg_truerec"), centralityMcRec, ptmc, casc.mOmega());
+         }
+       }
 
-        if (casc.sign() > 0) {
-          if (pdgParent == kXiPlusBar) {
-            registryMC.fill(HIST("hMassXipos_truerec"), centralityMcRec, ptmc, casc.mXi());
-          }
-          if (pdgParent == kOmegaPlusBar) {
-            registryMC.fill(HIST("hMassOmegapos_truerec"), centralityMcRec, ptmc, casc.mOmega());
-          }
-        }
+       if (casc.sign() > 0) {
+         if (pdgParent == kXiPlusBar) {
+           registryMC.fill(HIST("hMassXipos_truerec"), centralityMcRec, ptmc, casc.mXi());
+         }
+         if (pdgParent == kOmegaPlusBar) {
+           registryMC.fill(HIST("hMassOmegapos_truerec"), centralityMcRec, ptmc, casc.mOmega());
+         }
+       }
 
-        if (casc.sign() < 0 && pdgParent == kXiMinus && passedXiSelection(casc, pos, neg, bach, RecCol)) {
+       // compute MC association
+       const bool isXiMC    = (std::abs(pdgParent) == PDG_t::kXiMinus);
+       const bool isOmegaMC = (std::abs(pdgParent) == PDG_t::kOmegaMinus);
+       bool isTrueMCCascade = false;
+       bool isTrueMCCascadeDecay = false;
+       bool isCorrectLambdaDecay = false;
+
+       if (isPhysPrim && ( isXiMC || isOmegaMC))
+         isTrueMCCascade = true;
+       if (isTrueMCCascade && ((casc.sign() > 0 && cascMC.pdgCodePositive() == PDG_t::kPiPlus && cascMC.pdgCodeNegative() == PDG_t::kProtonBar) || (casc.sign() < 0 && cascMC.pdgCodePositive() == PDG_t::kProton && cascMC.pdgCodeNegative() == PDG_t::kPiMinus)))
+         isCorrectLambdaDecay = true;
+       if (isTrueMCCascade && isCorrectLambdaDecay && ((isXiMC && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus) || (isOmegaMC && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kKPlus)))
+         isTrueMCCascadeDecay = true;
+
+       if (isTrueMCCascadeDecay){
+        if (pdgParent == kXiMinus && passedXiSelection(casc, pos, neg, bach, RecCol)) {
           registryMC.fill(HIST("hMassXinegSelected_truerec"), centralityMcRec, ptmc, casc.mXi());
         }
-        if (casc.sign() < 0 && pdgParent == kOmegaMinus && passedOmegaSelection(casc, pos, neg, bach, RecCol)) {
+        if (pdgParent == kOmegaMinus && passedOmegaSelection(casc, pos, neg, bach, RecCol)) {
           registryMC.fill(HIST("hMassOmeganegSelected_truerec"), centralityMcRec, ptmc, casc.mOmega());
         }
-        if (casc.sign() > 0 && pdgParent == kXiPlusBar && passedXiSelection(casc, pos, neg, bach, RecCol)) {
+        if (pdgParent == kXiPlusBar && passedXiSelection(casc, pos, neg, bach, RecCol)) {
           registryMC.fill(HIST("hMassXiposSelected_truerec"), centralityMcRec, ptmc, casc.mXi());
         }
-        if (casc.sign() > 0 && pdgParent == kOmegaPlusBar && passedOmegaSelection(casc, pos, neg, bach, RecCol)) {
+        if (pdgParent == kOmegaPlusBar && passedOmegaSelection(casc, pos, neg, bach, RecCol)) {
           registryMC.fill(HIST("hMassOmegaposSelected_truerec"), centralityMcRec, ptmc, casc.mOmega());
         }
-      } // casc loop
-    } // rec.collision loop
+       }
+     } // casc loop
   }
 
   PROCESS_SWITCH(CascadeAnalysisLightIonsDerivedData, processMonteCarloRec, "Process MC Rec", false);
