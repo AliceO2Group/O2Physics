@@ -96,6 +96,8 @@ struct JetFinderTask {
   o2::framework::Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   o2::framework::Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   o2::framework::Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  o2::framework::Configurable<float> jetPhiMin{"jetPhiMin", -99.0, "minimum jet phi"};
+  o2::framework::Configurable<float> jetPhiMax{"jetPhiMax", 99.0, "maximum jet phi"};
   o2::framework::Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
   o2::framework::Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
   o2::framework::Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
@@ -135,11 +137,16 @@ struct JetFinderTask {
     jetFinder.etaMax = trackEtaMax;
     jetFinder.phiMin = trackPhiMin;
     jetFinder.phiMax = trackPhiMax;
+    if (jetPhiMin < -98.0) {
+      jetFinder.jetPhiMin = -2. * M_PI;
+      jetFinder.jetPhiMax = 2. * M_PI;
+    }
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
     if (jetEtaMin < -98.0) {
       jetFinder.jetEtaDefault = true;
     }
+
     jetFinder.algorithm = static_cast<fastjet::JetAlgorithm>(static_cast<int>(jetAlgorithm));
     jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
     jetFinder.ghostArea = jetGhostArea;
