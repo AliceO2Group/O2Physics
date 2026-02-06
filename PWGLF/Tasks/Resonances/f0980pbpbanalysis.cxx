@@ -106,8 +106,8 @@ struct F0980pbpbanalysis {
     Configurable<float> cfgTrackRapMax{"cfgTrackRapMax", 0.5, "Maximum rapidity for pair"};
 
     Configurable<bool> cfgTrackIsPVContributor{"cfgTrackIsPVContributor", true, "PV contributor track selection"};
-    Configurable<bool> cfgTrackIsGlobalWoDCATrack{"cfgTrackIsGlobalWoDCATrack", true, "Global track selection without DCA"};
-    Configurable<bool> cfgTrackIsPrimaryTrack{"cfgTrackIsPrimaryTrack", true, "Primary track selection"};
+    Configurable<bool> cfgTrackIsGlobalWoDCATrack{"cfgTrackIsGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+    Configurable<bool> cfgTrackIsPrimaryTrack{"cfgTrackIsPrimaryTrack", true, "Primary track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
 
     Configurable<double> cfgTrackTPCCrossedRows{"cfgTrackTPCCrossedRows", 70, "nCrossed TPC Rows"};
     Configurable<double> cfgTrackTPCFindableClusters{"cfgTrackTPCFindableClusters", 50, "nFindable TPC Clusters"};
