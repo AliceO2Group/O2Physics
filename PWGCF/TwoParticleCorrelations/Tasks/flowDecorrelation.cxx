@@ -28,9 +28,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/MathConstants.h"
@@ -46,7 +43,6 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
 
@@ -63,12 +59,8 @@ using namespace o2::framework::expressions;
 
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-// template for labelled array
-static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
-
 struct FlowDecorrelation {
   Service<ccdb::BasicCCDBManager> ccdb;
-  o2::aod::ITSResponse itsResponse;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVtxZ, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "minimum accepted track pT")
@@ -139,12 +131,6 @@ struct FlowDecorrelation {
     TF1* fT0AV0AMean = nullptr;
     TF1* fT0AV0ASigma = nullptr;
   } cfgFuncParas;
-  struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
-    O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "1 = pion, 2 = kaon, 3 = proton, 4 = kshort, 5 = lambda, 6 = phi, 0 for no PID")
-    O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
-    Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 3, 6, {"TPC", "TOF", "ITS"}, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
-  } cfgPIDConfig;
 
   SliceCache cache;
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
@@ -153,7 +139,7 @@ struct FlowDecorrelation {
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEtaTpcFt0a{"axisDeltaEtaTpcFt0a", {32, -5.8, -2.6}, "delta eta axis, -5.8~-2.6 for TPC-FT0A,"};
   ConfigurableAxis axisDeltaEtaTpcFt0c{"axisDeltaEtaTpcFt0c", {32, 1.2, 4.2}, "delta eta axis, 1.2~4.2 for TPC-FT0C"};
-  ConfigurableAxis axisDeltaEtaTpcMft{"axisDeltaEtaTpcMft", {32, -3.8, -2.3}, "delta eta axis, 1.2~4.2 for TPC-FT0C"};
+  ConfigurableAxis axisDeltaEtaTpcMft{"axisDeltaEtaTpcMft", {32, 1.3, 4.8}, "delta eta axis, 1.3~4.8 for TPC-MFT"};
   ConfigurableAxis axisEtaTrigger{"axisEtaTrigger", {VARIABLE_WIDTH, -3.3, -2.1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 3.5, 4.9}, "eta trigger axis for histograms"};
   ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {VARIABLE_WIDTH, -3.3, -2.1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 3.5, 4.9}, "eta associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
@@ -175,7 +161,7 @@ struct FlowDecorrelation {
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
   Filter trackFilter = (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
-  using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
+  using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   // FT0 geometry
   o2::ft0::Geometry ft0Det;
@@ -223,15 +209,6 @@ struct FlowDecorrelation {
     kKaonLow,
     kProtonLow
   };
-  enum PIDIndex {
-    kCharged = 0,
-    kPions,
-    kKaons,
-    kProtons,
-    kK0,
-    kLambda,
-    kPhi
-  };
   enum DetectorType {
     kTPC = 0,
     kTOF,
@@ -256,29 +233,6 @@ struct FlowDecorrelation {
     ccdb->setCreatedNotAfter(now);
 
     LOGF(info, "Starting init");
-
-    // filling tpc nSigmas array
-    tpcNsigmaCut[kPionUp] = cfgPIDConfig.nSigmas->getData()[kTPC][kPionUp];
-    tpcNsigmaCut[kKaonUp] = cfgPIDConfig.nSigmas->getData()[kTPC][kKaonUp];
-    tpcNsigmaCut[kProtonUp] = cfgPIDConfig.nSigmas->getData()[kTPC][kProtonUp];
-    tpcNsigmaCut[kPionLow] = cfgPIDConfig.nSigmas->getData()[kTPC][kPionLow];
-    tpcNsigmaCut[kKaonLow] = cfgPIDConfig.nSigmas->getData()[kTPC][kKaonLow];
-    tpcNsigmaCut[kProtonLow] = cfgPIDConfig.nSigmas->getData()[kTPC][kProtonLow];
-    // filling tof nSigmas array
-    tofNsigmaCut[kPionUp] = cfgPIDConfig.nSigmas->getData()[kTOF][kPionUp];
-    tofNsigmaCut[kKaonUp] = cfgPIDConfig.nSigmas->getData()[kTOF][kKaonUp];
-    tofNsigmaCut[kProtonUp] = cfgPIDConfig.nSigmas->getData()[kTOF][kProtonUp];
-    tofNsigmaCut[kPionLow] = cfgPIDConfig.nSigmas->getData()[kTOF][kPionLow];
-    tofNsigmaCut[kKaonLow] = cfgPIDConfig.nSigmas->getData()[kTOF][kKaonLow];
-    tofNsigmaCut[kProtonLow] = cfgPIDConfig.nSigmas->getData()[kTOF][kProtonLow];
-    // filling its nSigmas array
-    itsNsigmaCut[kPionUp] = cfgPIDConfig.nSigmas->getData()[kITS][kPionUp];
-    itsNsigmaCut[kKaonUp] = cfgPIDConfig.nSigmas->getData()[kITS][kKaonUp];
-    itsNsigmaCut[kProtonUp] = cfgPIDConfig.nSigmas->getData()[kITS][kProtonUp];
-    itsNsigmaCut[kPionLow] = cfgPIDConfig.nSigmas->getData()[kITS][kPionLow];
-    itsNsigmaCut[kKaonLow] = cfgPIDConfig.nSigmas->getData()[kITS][kKaonLow];
-    itsNsigmaCut[kProtonLow] = cfgPIDConfig.nSigmas->getData()[kITS][kProtonLow];
-
     // Event Counter
     if ((doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameTpcMft) && cfgUseAdditionalEventCut) {
       registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{12, 0, 12}}});
@@ -487,58 +441,6 @@ struct FlowDecorrelation {
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
-  template <typename TTrack>
-  int getNsigmaPID(TTrack track)
-  {
-    // Computing Nsigma arrays for pion, kaon, and protons
-    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-    std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
-    std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
-    int pid = -1; // -1 = not identified, 1 = pion, 2 = kaon, 3 = proton
-
-    std::array<float, 3> nSigmaToUse = cfgPIDConfig.cfgUseItsPID ? nSigmaITS : nSigmaTPC;             // Choose which nSigma to use: TPC or ITS
-    std::array<float, 6> detectorNsigmaCut = cfgPIDConfig.cfgUseItsPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
-
-    bool isPion = false;
-    bool isKaon = false;
-    bool isProton = false;
-    bool isDetectedPion = nSigmaToUse[kPionUp] < detectorNsigmaCut[kPionUp] && nSigmaToUse[kPionUp] > detectorNsigmaCut[kPionLow];
-    bool isDetectedKaon = nSigmaToUse[kKaonUp] < detectorNsigmaCut[kKaonUp] && nSigmaToUse[kKaonUp] > detectorNsigmaCut[kKaonLow];
-    bool isDetectedProton = nSigmaToUse[kProtonUp] < detectorNsigmaCut[kProtonUp] && nSigmaToUse[kProtonUp] > detectorNsigmaCut[kProtonLow];
-
-    bool isTofPion = nSigmaTOF[kPionUp] < tofNsigmaCut[kPionUp] && nSigmaTOF[kPionUp] > tofNsigmaCut[kPionLow];
-    bool isTofKaon = nSigmaTOF[kKaonUp] < tofNsigmaCut[kKaonUp] && nSigmaTOF[kKaonUp] > tofNsigmaCut[kKaonLow];
-    bool isTofProton = nSigmaTOF[kProtonUp] < tofNsigmaCut[kProtonUp] && nSigmaTOF[kProtonUp] > tofNsigmaCut[kProtonLow];
-
-    if (track.pt() > cfgPIDConfig.cfgTofPtCut && !track.hasTOF()) {
-      return -1;
-    } else if (track.pt() > cfgPIDConfig.cfgTofPtCut && track.hasTOF()) {
-      isPion = isTofPion && isDetectedPion;
-      isKaon = isTofKaon && isDetectedKaon;
-      isProton = isTofProton && isDetectedProton;
-    } else {
-      isPion = isDetectedPion;
-      isKaon = isDetectedKaon;
-      isProton = isDetectedProton;
-    }
-
-    if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
-      return -1; // more than one particle satisfy the criteria
-    }
-
-    if (isPion) {
-      pid = kPions;
-    } else if (isKaon) {
-      pid = kKaons;
-    } else if (isProton) {
-      pid = kProtons;
-    } else {
-      return -1; // no particle satisfies the criteria
-    }
-
-    return pid; // -1 = not identified, 1 = pion, 2 = kaon, 3 = proton
-  }
-
   void loadAlignParam(uint64_t timestamp)
   {
     offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
@@ -687,8 +589,6 @@ struct FlowDecorrelation {
 
       if (!trackSelected(track1))
         continue;
-      if (cfgPIDConfig.cfgPIDParticle && getNsigmaPID(track1) != cfgPIDConfig.cfgPIDParticle)
-        continue; // if PID is selected, check if the track has the right PID
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
       if (system == SameEvent) {
