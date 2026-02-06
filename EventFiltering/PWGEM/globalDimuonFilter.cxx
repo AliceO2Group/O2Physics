@@ -268,7 +268,7 @@ struct globalDimuonFilter {
   std::vector<std::tuple<int, int, int>> vec_min_chi2MatchMCHMFT; // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> chi2MatchMCHMFT;
 
   template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
-  void findBestMatchPerMCHMID(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const& mfttracks)
+  void findBestMatchPerMCHMID(TCollision const&, TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const&)
   {
     // make a unordered_map : globalIndex of global muon -> boolean isSelected.
 
@@ -289,7 +289,7 @@ struct globalDimuonFilter {
     std::tuple<int, int, int> tupleIds_at_min_chi2mftmch;
     for (const auto& muon_tmp : muons_per_MCHMID) {
       if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-        auto tupleId = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
+        // auto tupleId = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
         // auto mchtrack = muon_tmp.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
         // auto mfttrack = muon_tmp.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
 
@@ -719,7 +719,7 @@ struct globalDimuonFilter {
   }
 
   template <typename TCollision, typename TMuons, typename TFwdTracks, typename TMFTTracks, typename TMFTCovs>
-  void runPairing(TCollision const& collision, TMuons const& posMuons, TMuons const& negMuons, TFwdTracks const& fwdtracks, TMFTTracks const& mfttracks, TMFTCovs const& mftCovs)
+  void runPairing(TCollision const& collision, TMuons const& posMuons, TMuons const& negMuons, TFwdTracks const& fwdtracks, TMFTTracks const& mfttracks, TMFTCovs const&)
   {
     for (const auto& pos : posMuons) {
       auto v1 = std::get<1>(pos);
