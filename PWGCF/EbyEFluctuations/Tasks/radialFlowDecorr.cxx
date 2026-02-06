@@ -1532,23 +1532,30 @@ struct RadialFlowDecorr {
 
         for (int ieta = 0; ieta < KNEta; ++ieta) {
           for (int ipt = 0; ipt < KNpT; ++ipt) {
-            if (std::isfinite(sumWiTruth[ieta][ipt]))
-              histos.fill(HIST("pmeanTruNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiptiTruth[ieta][ipt] / sumWiTruth[ieta][ipt]);
-            if (std::isfinite(sumWiReco[ieta][ipt]))
-              histos.fill(HIST("pmeanRecoNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiptiReco[ieta][ipt] / sumWiReco[ieta][ipt]);
-            if (std::isfinite(sumWiRecoEffCorr[ieta][ipt]))
-              histos.fill(HIST("pmeanRecoEffcorrNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiptiRecoEffCorr[ieta][ipt] / sumWiRecoEffCorr[ieta][ipt]);
+            double mptTru = sumWiptiTruth[ieta][ipt] / sumWiTruth[ieta][ipt];
+            double mptReco = sumWiptiReco[ieta][ipt] / sumWiReco[ieta][ipt];
+            double mptRecoEffCorr = sumWiptiRecoEffCorr[ieta][ipt] / sumWiRecoEffCorr[ieta][ipt];
+            if (std::isfinite(mptTru))
+              histos.fill(HIST("pmeanTruNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, mptTru);
+            if (std::isfinite(mptReco))
+              histos.fill(HIST("pmeanRecoNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, mptReco);
+            if (std::isfinite(mptRecoEffCorr))
+              histos.fill(HIST("pmeanRecoEffcorrNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, mptRecoEffCorr);
 
-            if (std::isfinite(sumWiTruthEt[ieta][ipt])) {
-              histos.fill(HIST("pmeanEtTruNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiptiTruthEt[ieta][ipt] / sumWiTruthEt[ieta][ipt]);
+            double metTru = sumWiptiTruthEt[ieta][ipt] / sumWiTruthEt[ieta][ipt];
+            double metReco = sumWiptiRecoEt[ieta][ipt] / sumWiRecoEt[ieta][ipt];
+            double metRecoEffCorr = sumWiptiRecoEffCorrEt[ieta][ipt] / sumWiRecoEffCorrEt[ieta][ipt];
+
+            if (std::isfinite(metTru)) {
+              histos.fill(HIST("pmeanEtTruNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, metTru);
               histos.fill(HIST("pmeanMultTruNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiTruthEt[ieta][ipt]);
             }
-            if (std::isfinite(sumWiRecoEt[ieta][ipt])) {
-              histos.fill(HIST("pmeanEtRecoNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiptiRecoEt[ieta][ipt] / sumWiRecoEt[ieta][ipt]);
+            if (std::isfinite(metReco)) {
+              histos.fill(HIST("pmeanEtRecoNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, metReco);
               histos.fill(HIST("pmeanMultRecoNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiRecoEt[ieta][ipt]);
             }
-            if (std::isfinite(sumWiRecoEffCorrEt[ieta][ipt])) {
-              histos.fill(HIST("pmeanEtRecoEffcorrNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiptiRecoEffCorrEt[ieta][ipt] / sumWiRecoEffCorrEt[ieta][ipt]);
+            if (std::isfinite(metRecoEffCorr)) {
+              histos.fill(HIST("pmeanEtRecoEffcorrNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, metRecoEffCorr);
               histos.fill(HIST("pmeanMultRecoEffcorrNchEtabinPtbin"), col.multNTracksPV(), ieta, ipt, sumWiRecoEffCorrEt[ieta][ipt]);
             }
           }
@@ -1997,10 +2004,12 @@ struct RadialFlowDecorr {
                     histos.fill(HIST("MCGen/Prof_ipt0_C2Sub2D_Cent_etaA_etaC"), cent, ietaA, ietaC, c2Sub_Tru);
                   if (std::isfinite(c2SubEt_Tru))
                     histos.fill(HIST("MCGen/Prof_ipt0_C2EtSub2D_Cent_etaA_etaC"), cent, ietaA, ietaC, c2SubEt_Tru);
+
                   if (std::isfinite(c2Sub_Reco))
                     histos.fill(HIST("MCReco/Prof_ipt0_C2Sub2D_Cent_etaA_etaC"), cent, ietaA, ietaC, c2Sub_Reco);
                   if (std::isfinite(c2SubEt_Reco))
                     histos.fill(HIST("MCReco/Prof_ipt0_C2EtSub2D_Cent_etaA_etaC"), cent, ietaA, ietaC, c2SubEt_Reco);
+
                   if (std::isfinite(c2Sub_RecoEffCor))
                     histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_C2Sub2D_Cent_etaA_etaC"), cent, ietaA, ietaC, c2Sub_RecoEffCor);
                   if (std::isfinite(c2SubEt_RecoEffCor))
@@ -2225,15 +2234,17 @@ struct RadialFlowDecorr {
 
     for (int ieta = 0; ieta < KNEta; ++ieta) {
       for (int ipt = 0; ipt < KNpT; ++ipt) {
-        if (sumWi[ieta][ipt] > 1.0f) {
-          histos.fill(HIST("pmean_nch_etabin_ptbin"), coll.multNTracksPV(), ieta, ipt, sumWipti[ieta][ipt] / sumWi[ieta][ipt]);
+        double mpt = sumWipti[ieta][ipt] / sumWi[ieta][ipt];
+        double met = sumWiEtVal[ieta][ipt] / sumWiEt[ieta][ipt];
+        if (sumWi[ieta][ipt] >= 1.0f && std::isfinite(mpt)) {
+          histos.fill(HIST("pmean_nch_etabin_ptbin"), coll.multNTracksPV(), ieta, ipt, mpt);
           histos.fill(HIST("pmeanMult_nch_etabin_ptbin"), coll.multNTracksPV(), ieta, ipt, sumWi[ieta][ipt]);
-          histos.fill(HIST("pmean_cent_etabin_ptbin"), cent, ieta, ipt, sumWipti[ieta][ipt] / sumWi[ieta][ipt]);
+          histos.fill(HIST("pmean_cent_etabin_ptbin"), cent, ieta, ipt, mpt);
           histos.fill(HIST("pmeanMult_cent_etabin_ptbin"), cent, ieta, ipt, sumWi[ieta][ipt]);
         }
-        if (sumWiEt[ieta][ipt] > 1.0f)
-          histos.fill(HIST("pmeanEt_nch_etabin_ptbin"), coll.multNTracksPV(), ieta, ipt, sumWiEtVal[ieta][ipt] / sumWiEt[ieta][ipt]);
-        histos.fill(HIST("pmeanEt_cent_etabin_ptbin"), cent, ieta, ipt, sumWiEtVal[ieta][ipt] / sumWiEt[ieta][ipt]);
+        if (sumWiEt[ieta][ipt] >= 1.0f && std::isfinite(met))
+          histos.fill(HIST("pmeanEt_nch_etabin_ptbin"), coll.multNTracksPV(), ieta, ipt, met);
+        histos.fill(HIST("pmeanEt_cent_etabin_ptbin"), cent, ieta, ipt, met);
       }
     }
   }
@@ -2362,11 +2373,12 @@ struct RadialFlowDecorr {
 
     for (int ieta = 0; ieta < KNEta; ++ieta) {
       for (int ipt = 0; ipt < KNpT; ++ipt) {
-        if (sumwk[ieta][ipt][1] > 1.f) {
+
+        if (std::isfinite(mean[ieta][ipt])) {
           histos.fill(HIST("Prof_Cent_MeanpT_etabin_ptbin"), cent, ieta, ipt, mean[ieta][ipt]);
           histos.fill(HIST("Prof_Mult_MeanpT_etabin_ptbin"), coll.multNTracksPV(), ieta, ipt, mean[ieta][ipt]);
         }
-        if (sumwkEt[ieta][ipt][1] > 1.f) {
+        if (std::isfinite(meanEt[ieta][ipt])) {
           histos.fill(HIST("Prof_Cent_MeanEt_etabin_ptbin"), cent, ieta, ipt, meanEt[ieta][ipt]);
           histos.fill(HIST("Prof_Mult_MeanEt_etabin_ptbin"), coll.multNTracksPV(), ieta, ipt, meanEt[ieta][ipt]);
         }
