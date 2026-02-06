@@ -2375,6 +2375,7 @@ struct LFNucleiBATask {
       if (evselOptions.removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
         return;
     }
+
     if (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh) {
       return;
     }
@@ -2382,10 +2383,6 @@ struct LFNucleiBATask {
       histos.fill(HIST("event/eventSelection"), 7, centFT0M);
     else
       histos.fill(HIST("event/eventSelection"), 7);
-
-    if (enableCentrality && enableDebug) {
-      debugHistos.fill(HIST("event/h1VtxZ_Centrality"), event.posZ());
-    }
 
     float gamma = 0., massTOF = 0., massTOFhe = 0., massTOFantihe = 0., heTPCmomentum = 0.f, antiheTPCmomentum = 0.f, heP = 0.f, antiheP = 0.f, hePt = 0.f, antihePt = 0.f, antiDPt = 0.f, DPt = 0.f;
     bool isTritonTPCpid = false;
@@ -4594,7 +4591,7 @@ struct LFNucleiBATask {
       //  TOF
       if (outFlagOptions.doTOFplots) {
 
-        if (isDeWoTPCpid) {
+        if (isDeWTPCpid) {
           switch (useHasTRDConfig) {
             case 0:
               histos.fill(HIST("tracks/deuteron/h2DeuteronVspTNSigmaTOF"), DPt, track.tofNSigmaDe());
@@ -4614,7 +4611,7 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/deuteron/h2DeuteronTOFExpSignalDiffVsPt"), DPt, track.tofExpSignalDiffDe());
         }
 
-        if (isAntiDeWoTPCpid) {
+        if (isAntiDeWTPCpid) {
           switch (useHasTRDConfig) {
             case 0:
               histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspTNSigmaTOF"), antiDPt, track.tofNSigmaDe());
@@ -4634,13 +4631,13 @@ struct LFNucleiBATask {
             histos.fill(HIST("tracks/deuteron/h2antiDeuteronTOFExpSignalDiffVsPt"), antiDPt, track.tofExpSignalDiffDe());
         }
 
-        if (isHeWoTPCpid) {
+        if (isHeWTPCpid) {
           histos.fill(HIST("tracks/helium/h2HeliumVspTNSigmaTOF"), hePt, track.tofNSigmaHe());
           if (outFlagOptions.enableExpSignalTOF)
             histos.fill(HIST("tracks/helium/h2HeliumTOFExpSignalDiffVsPt"), hePt, track.tofExpSignalDiffHe());
         }
 
-        if (isAntiHeWoTPCpid) {
+        if (isAntiHeWTPCpid) {
           histos.fill(HIST("tracks/helium/h2antiHeliumVspTNSigmaTOF"), antihePt, track.tofNSigmaHe());
           if (outFlagOptions.enableExpSignalTOF)
             histos.fill(HIST("tracks/helium/h2antiHeliumTOFExpSignalDiffVsPt"), antihePt, track.tofExpSignalDiffHe());
