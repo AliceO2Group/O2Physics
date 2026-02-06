@@ -1275,7 +1275,7 @@ struct FullJetSpectra {
       //   continue;
       // }
       if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
-        continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
@@ -1408,7 +1408,7 @@ struct FullJetSpectra {
         continue;
       }
       if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
-        continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
@@ -1507,7 +1507,7 @@ struct FullJetSpectra {
         continue;
       }
       if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
-        continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
@@ -1604,7 +1604,7 @@ struct FullJetSpectra {
         continue;
       }
       if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
-        continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
@@ -1902,7 +1902,7 @@ struct FullJetSpectra {
         continue;
       }
       if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
-        continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       // Check if MCD jet is within the EMCAL fiducial region; if not then flag it as a fake jet
       // if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax || mcdjet.eta() < jetEtaMin || mcdjet.eta() > jetEtaMax) {
@@ -1995,7 +1995,7 @@ struct FullJetSpectra {
         continue;
       }
       if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
-        continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
 
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
@@ -2023,10 +2023,10 @@ struct FullJetSpectra {
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsNoFidMCPMCDMatchedWeighted, "Full Jet finder No Fid MCP matched to MCD on weighted events", false);
 
-  //Matching with Fiducial cuts at MCD only.
-  //New: First matching is done and then all the cuts are applied - if the matched jet pair pass the cuts then Accept the pair otherwise reject the jet pair.
+  // Matching with Fiducial cuts at MCD only.
+  // New: First matching is done and then all the cuts are applied - if the matched jet pair pass the cuts then Accept the pair otherwise reject the jet pair.
   void processJetsNewNoFidMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const& mcpjets, aod::JMcCollisions const&,
-                                             aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
+                                                aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
   {
     bool eventAccepted = false;
     int fakeMcdJet = 0;
@@ -2038,7 +2038,7 @@ struct FullJetSpectra {
     const auto mcpJetsPerMcCollision = mcpjets.sliceBy(JetMCPPerMcCollision, collision.mcCollisionId());
 
     registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 0.5, eventWeight); // allDetColl
-    if (std::fabs(collision.posZ()) > vertexZCut) {                         // making double sure this condition is satisfied
+    if (std::fabs(collision.posZ()) > vertexZCut) {                            // making double sure this condition is satisfied
       return;
     }
     registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 1.5, eventWeight); // DetCollWithVertexZ
@@ -2107,7 +2107,7 @@ struct FullJetSpectra {
           continue;
         }
         if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
-          continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+          continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
         }
 
         // Not applying any emcal fiducial cuts in eta and phi on MCP jets when matching.
@@ -2123,13 +2123,12 @@ struct FullJetSpectra {
         registry.fill(HIST("h2_full_NewNoFidmatchedmcpjet_pt"), mcpjet.pt(), NPartJetFid, eventWeight);
         registry.fill(HIST("h_full_NewNoFidmatchedmcpjet_eta"), mcpjet.eta(), eventWeight);
         registry.fill(HIST("h_full_NewNoFidmatchedmcpjet_phi"), mcpjet.phi(), eventWeight);
-      } //mcpjet
+      } // mcpjet
     } // mcdjet
     // Fill the total matched particle jets histogram after processing all MCP jets for the MCD jet in a given accepted event
     registry.fill(HIST("h_allMatchedNewNoFidPartJetsCounter"), allMatchedPartJetsEvent, eventWeight);
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsNewNoFidMCPMCDMatchedWeighted, "Full Jet finder No Fid MCP matched to MCD on weighted events with new algorithm of rejecting jet pair", false);
-
 
   void processJetsMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const& mcpjets, aod::JMcCollisions const&,
                                         aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
@@ -2233,7 +2232,7 @@ struct FullJetSpectra {
         continue;
       }
       if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
-        continue; //maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
 
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
