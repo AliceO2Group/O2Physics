@@ -676,31 +676,27 @@ struct HfCandidateSelectorToXiPiQa {
         registry.fill(HIST("hSelStatusPID"), 2.0);
       }
       bool statusPidCharmBaryon = (statusPidCascade && statusPidPiFromCharmBaryon == TrackSelectorPID::Accepted);
-      if (statusPidCharmBaryon) {
-        if (resultSelections) {
-          registry.fill(HIST("hSelStatusPID"), 3.0);
-        }
-      } else {
-        resultSelections = false;
+      if (statusPidCharmBaryon && resultSelections) {
+        registry.fill(HIST("hSelStatusPID"), 3.0);
       }
 
       // invariant mass cuts
-      bool statusInvMassLambda = true;
-      bool statusInvMassCascade = true;
-      bool statusInvMassCharmBaryon = true;
+      bool statusInvMassLambda = false;
+      bool statusInvMassCascade = false;
+      bool statusInvMassCharmBaryon = false;
 
       double invMassLambda = candidate.invMassLambda();
       double invMassCascade = candidate.invMassCascade();
       double invMassCharmBaryon = candidate.invMassCharmBaryon();
 
-      if ((invMassLambda - o2::constants::physics::MassLambda0) > v0MassWindow) {
-        statusInvMassLambda = false;
+      if ((invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
+        statusInvMassLambda = true;
       }
-      if ((invMassCascade - o2::constants::physics::MassXiMinus) > cascMassWindow) {
-        statusInvMassCascade = false;
+      if ((invMassCascade - o2::constants::physics::MassXiMinus) < cascMassWindow) {
+        statusInvMassCascade = true;
       }
-      if ((invMassCharmBaryon < invMassCharmBaryonMin) || (invMassCharmBaryon > invMassCharmBaryonMax)) {
-        statusInvMassCharmBaryon = false;
+      if ((invMassCharmBaryon > invMassCharmBaryonMin) && (invMassCharmBaryon < invMassCharmBaryonMax)) {
+        statusInvMassCharmBaryon = true;
       }
 
       // ML BDT selection
@@ -726,6 +722,9 @@ struct HfCandidateSelectorToXiPiQa {
                     trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                     trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
       } else {
+        if (!statusPidCharmBaryon || !statusInvMassCharmBaryon) {
+          resultSelections = false;
+        }
         hfSelToXiPiKf(resultSelections,
                       trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                       trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
