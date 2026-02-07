@@ -92,7 +92,7 @@ DECLARE_SOA_COLUMN(HfCharmBarToXi2Bach, hasHfCharmBarToXi2Bach, bool);          
 DECLARE_SOA_COLUMN(HfPrCharm2P, hasHfPrCharm2P, bool);                           //! Charm baryon to 2-prong + bachelors
 DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);                           //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
 DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);                           //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
-DECLARE_SOA_COLUMN(HfSigmaCPr, hasHfSigmaCPr, bool);                             //! SigmaC(2455)Proton pairs
+DECLARE_SOA_COLUMN(HfSigmaCPr, hasHfSigmaCPr, bool);                               //! SigmaC(2455)Proton corr
 DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);                   //! photon with 2-prong charm hadron
 DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);                   //! photon with 3-prong charm hadron
 DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);                   //! 2-prong charm hadron (for efficiency studies)
@@ -175,6 +175,7 @@ DECLARE_SOA_COLUMN(LambdaLambda, lambdaLambda, bool);            //! at least 2 
 DECLARE_SOA_COLUMN(OmegaHighMultTrk, hasOmegaHighMultTrk, bool); //! at least 1 Omega + high-mult track event
 DECLARE_SOA_COLUMN(HighMultFT0M, hasHighMultFT0M, bool);         //! at least 1 Omega + high-mult track event
 DECLARE_SOA_COLUMN(HighMultTrk, hasHighMultTrk, bool);           //! at least 1 Omega + high-mult track event
+DECLARE_SOA_COLUMN(SigmaProton, hasSigmaProton, bool);           //! at least 1 Sigma - proton candidate
 // F1-proton
 DECLARE_SOA_COLUMN(TriggerEventF1Proton, triggereventf1proton, bool); //! F1 - proton femto trigger event
 
@@ -336,7 +337,7 @@ using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
-                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult, filtering::DoubleOmega, filtering::OmegaXi, filtering::LambdaLambda, filtering::OmegaHighMultTrk, filtering::HighMultFT0M, filtering::HighMultTrk);
+                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult, filtering::DoubleOmega, filtering::OmegaXi, filtering::LambdaLambda, filtering::OmegaHighMultTrk, filtering::HighMultFT0M, filtering::HighMultTrk, filtering::SigmaProton);
 using StrangenessFilter = StrangenessFilters::iterator;
 
 // F1 proton
