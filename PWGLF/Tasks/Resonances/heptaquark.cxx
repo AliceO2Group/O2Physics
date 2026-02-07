@@ -68,6 +68,7 @@ struct heptaquark {
 
   Configurable<float> cfgSoftFraction{"cfgSoftFraction", 0.01, "Minimum allowed softest fraction"};
   Configurable<float> cfgCollinear{"cfgCollinear", 0.98, "Maximum allowed collinear selection"};
+  Configurable<float> cfgCosPoint{"cfgCosPoint", 0.95, "Minimum pointing angle selection"};
 
   ConfigurableAxis massAxis{"massAxis", {600, 2.8, 3.4}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
@@ -95,6 +96,18 @@ struct heptaquark {
 
     histos.add("hDalitz", "hDalitz", {HistType::kTHnSparseF, {massPPAxis, massPLAxis, massAxis, ptAxis, {2, -0.5f, 1.5f}, centAxis}});
     histos.add("hDalitzRot", "hDalitzRot", {HistType::kTHnSparseF, {massPPAxis, massPLAxis, massAxis, ptAxis, {2, -0.5f, 1.5f}, centAxis}});
+  }
+
+  template <typename HQRow>
+  static inline TLorentzVector makeP4FromHQRow(HQRow const& hq)
+  {
+    const double px = hq.hqPx();
+    const double py = hq.hqPy();
+    const double pz = hq.hqPz();
+    const double m  = hq.hqMass();
+    TLorentzVector v;
+    v.SetXYZM(px, py, pz, m);
+    return v;
   }
 
   double massLambda = o2::constants::physics::MassLambda;
@@ -185,37 +198,52 @@ struct heptaquark {
     return false;
   }
 
-  template <typename HQ1, typename HQ2, typename HQ3>
-  int selectHQ(HQ1 const& hq1, HQ2 const& hq2, HQ3 const& hq3)
+  template <typename HQRow1, typename HQRow2, typename HQRow3, typename ColRow>
+  int selectHQ(HQRow1 const& hq1r, HQRow2 const& hq2r, HQRow3 const& hq3r, ColRow const& col)
   {
     int selection = 0;
-    if (hq1.Pt() < cfgMinPhiPt || hq2.Pt() < cfgMinPhiPt || hq3.Pt() < cfgMinLambdaPt)
-      selection += 1;
 
-    double sumE = hq1.E() + hq2.E() + hq3.E();
-    double emin = std::min({hq1.E(), hq2.E(), hq3.E()});
-    double fmin = emin / std::max(1e-9, sumE);
-    if (fmin < cfgSoftFraction)
+    auto hq1 = makeP4FromHQRow(hq1r);
+    auto hq2 = makeP4FromHQRow(hq2r);
+    auto hq3 = makeP4FromHQRow(hq3r);
+
+    if (hq1.Pt() < cfgMinPhiPt || hq2.Pt() < cfgMinPhiPt || hq3.Pt() < cfgMinLambdaPt) {
+      selection += 1;
+    }
+
+    const double sumE = hq1.E() + hq2.E() + hq3.E();
+    const double emin = std::min({hq1.E(), hq2.E(), hq3.E()});
+    const double fmin = emin / std::max(1e-9, sumE);
+    if (fmin < cfgSoftFraction) {
       selection += 2;
+    }
 
     auto ex = hq1 + hq2 + hq3;
     TVector3 boost = -ex.BoostVector();
+
     auto hqphipair_boost = hq1 + hq2;
-    auto hqlambda_boost = hq3;
+    auto hqlambda_boost  = hq3;
     hqphipair_boost.Boost(boost);
     hqlambda_boost.Boost(boost);
-    double cosHel = hqlambda_boost.Vect().Dot(hqphipair_boost.Vect()) / (hqlambda_boost.Vect().Mag() * hqphipair_boost.Vect().Mag());
-    if (std::abs(cosHel) > cfgCollinear)
+
+    const double denom = (hqlambda_boost.Vect().Mag() * hqphipair_boost.Vect().Mag());
+    const double cosHel = (denom > 0.) ? (hqlambda_boost.Vect().Dot(hqphipair_boost.Vect()) / denom) : 1.0;
+    if (std::abs(cosHel) > cfgCollinear) {
       selection += 4;
-    /*
-        ROOT::Math::XYZVector rPV(col.posX(), col.posY(), col.posZ());
-        ROOT::Math::XYZVector rSV(hq3.hqx(), hq3.hqy(), hq3.hqz());
-        ROOT::Math::XYZVector L = rSV - rPV;
-        ROOT::Math::XYZVector exMom(ex.Px(), ex.Py(), ex.Pz());
-        double cosPoint = L.Dot(exMom) / (L.R() * pEx.R() + 1e-9);
-        if (cosPoint < cfgCosPoint)
-          return 8;
-    */
+    }
+
+    ROOT::Math::XYZVector rPV(col.posX(), col.posY(), col.posZ());
+    ROOT::Math::XYZVector rSV(hq3r.hqx(), hq3r.hqy(), hq3r.hqz());
+
+    ROOT::Math::XYZVector L = rSV - rPV;
+    ROOT::Math::XYZVector exMom(ex.Px(), ex.Py(), ex.Pz());
+
+    const double denom2 = (L.R() * exMom.R() + 1e-9);
+    const double cosPoint = L.Dot(exMom) / denom2;
+    if (cosPoint < cfgCosPoint) {
+      selection += 8;
+    }
+
     return selection;
   }
 
@@ -344,7 +372,7 @@ struct heptaquark {
           HQ12 = HQ1 + HQ2;
           HQ13 = HQ1 + HQ3;
 
-          if (cfgSelectHQ && selectHQ(HQ1, HQ2, HQ3))
+          if (cfgSelectHQ && selectHQ(hqtrackd1, hqtrackd2, hqtrackd3, collision))
             continue;
 
           histos.fill(HIST("h_InvMass_same"), exotic.M(), exotic.Pt(), collision.centrality());
