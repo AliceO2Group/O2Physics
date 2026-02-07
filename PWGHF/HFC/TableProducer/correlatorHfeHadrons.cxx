@@ -138,8 +138,21 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hptElectron", "hptElectron", {HistType::kTH1D, {axisPt}});
     registry.add("hptHadron", "hptHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hptHadronMcRec", "hptHadronMcRec", {HistType::kTH1D, {axisPt}});
+    registry.add("hptHadronMcRecPrimary", "hptHadronMcRecPrimary", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptEleHadron", "hMCRecptEleHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptMuonHadron", "hMCRecptMuonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptPionHadron", "hMCRecptPionHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptKaonHadron", "hMCRecptKaonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCRecptProtonHadron", "hMCRecptProtonHadron", {HistType::kTH1D, {axisPt}});
+
     registry.add("hMCgenptHadron", "hMCgenptHadron", {HistType::kTH1D, {axisPt}});
     registry.add("hMCgenptHadronprimary", "hMCgenptHadronprimary", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptEleHadron", "hMCgenptEleHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptMuonHadron", "hMCgenptMuonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptPionHadron", "hMCgenptPionHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptKaonHadron", "hMCgenptKaonHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptProtonHadron", "hMCgenptProtonHadron", {HistType::kTH1D, {axisPt}});
 
     registry.add("hMixEventInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMixEventLSEHCorrel", "Sparse for mix event Delta phi and Delta eta Like sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
@@ -173,8 +186,8 @@ struct HfCorrelatorHfeHadrons {
   }
 
   // Electron-hadron Correlation
-  template <typename TracksType, typename ElectronType, typename CollisionType, typename BcType>
-  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&)
+  template <bool IsMc, typename TracksType, typename ElectronType, typename CollisionType, typename BcType, typename McParticlesType>
+  void fillCorrelation(CollisionType const& collision, ElectronType const& electrons, TracksType const& tracks, BcType const&, McParticlesType const&)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
@@ -192,6 +205,7 @@ struct HfCorrelatorHfeHadrons {
     }
 
     registry.fill(HIST("hNevents"), 1);
+
     // Add hadron Table For Mix Event Electron Hadron correlation
     if (!skipEventTableFilling) {
       registry.fill(HIST("hZvertex"), collision.posZ());
@@ -199,8 +213,38 @@ struct HfCorrelatorHfeHadrons {
         if (!selAssoHadron(hTrack)) {
           continue;
         }
+
+        // Mc rec hadron efficiency
+        if constexpr (IsMc) {
+          if (hTrack.has_mcParticle()) {
+            auto mcParticle = hTrack.template mcParticle_as<aod::McParticles>();
+            if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
+              continue;
+            }
+
+            registry.fill(HIST("hptHadronMcRec"), hTrack.pt());
+            if (mcParticle.isPhysicalPrimary()) {
+
+              registry.fill(HIST("hptHadronMcRecPrimary"), hTrack.pt());
+
+              if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                registry.fill(HIST("hMCRecptEleHadron"), hTrack.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                registry.fill(HIST("hMCRecptMuonHadron"), hTrack.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                registry.fill(HIST("hMCRecptPionHadron"), hTrack.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                registry.fill(HIST("hMCRecptKaonHadron"), hTrack.pt());
+              } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                registry.fill(HIST("hMCRecptProtonHadron"), hTrack.pt());
+              }
+            }
+          }
+        }
         registry.fill(HIST("hTracksBin"), poolBin);
+
         registry.fill(HIST("hptHadron"), hTrack.pt());
+
         entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
       }
     }
@@ -381,22 +425,22 @@ struct HfCorrelatorHfeHadrons {
                    TableTracks const& tracks,
                    aod::BCsWithTimestamps const& bcs)
   {
-    fillCorrelation(collision, electrons, tracks, bcs);
+    fillCorrelation<false>(collision, electrons, tracks, bcs, 0);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", false);
 
   // =======  Process starts for McRec, Same event ============
 
   void processMcRec(McTableCollision const& mcCollision,
                     aod::HfCorrSelEl const& mcElectrons,
                     McTableTracks const& mcTracks,
-                    aod::BCsWithTimestamps const& bcs)
+                    aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticle)
   {
-    fillCorrelation(mcCollision, mcElectrons, mcTracks, bcs);
+    fillCorrelation<true>(mcCollision, mcElectrons, mcTracks, bcs, mcParticle);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", true);
 
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electrons)
   {
@@ -411,11 +455,25 @@ struct HfCorrelatorHfeHadrons {
       if (particleMc.pt() < ptTrackMin) {
         continue;
       }
-
+      if ((std::abs(particleMc.pdgCode()) != kElectron) && (std::abs(particleMc.pdgCode()) != kMuonMinus) && (std::abs(particleMc.pdgCode()) != kPiPlus) && (std::abs(particleMc.pdgCode()) != kKPlus) && (std::abs(particleMc.pdgCode()) != kProton)) {
+        continue;
+      }
       registry.fill(HIST("hMCgenptHadron"), particleMc.pt());
       if (particleMc.isPhysicalPrimary()) {
 
         registry.fill(HIST("hMCgenptHadronprimary"), particleMc.pt());
+
+        if (std::abs(particleMc.pdgCode()) == kElectron) {
+          registry.fill(HIST("hMCgenptEleHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kMuonMinus) {
+          registry.fill(HIST("hMCgenptMuonHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kPiPlus) {
+          registry.fill(HIST("hMCgenptPionHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kKPlus) {
+          registry.fill(HIST("hMCgenptKaonHadron"), particleMc.pt());
+        } else if (std::abs(particleMc.pdgCode()) == kProton) {
+          registry.fill(HIST("hMCgenptProtonHadron"), particleMc.pt());
+        }
       }
     }
 
