@@ -324,12 +324,16 @@ struct AntinucleiInJets {
       registryData.add("antiproton_ue_tof", "antiproton_ue_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
       registryData.add("antiproton_dca_jet", "antiproton_dca_jet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1.0, 1.0, "DCA_{xy} (cm)"}});
       registryData.add("antiproton_dca_ue", "antiproton_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1.0, 1.0, "DCA_{xy} (cm)"}});
+      registryData.add("antiproton_fullEvent_tpc", "antiproton_fullEvent_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antiproton_fullEvent_tof", "antiproton_fullEvent_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
 
       // Antideuterons
       registryData.add("antideuteron_jet_tpc", "antideuteron_jet_tpc", HistType::kTH2F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
       registryData.add("antideuteron_jet_tof", "antideuteron_jet_tof", HistType::kTH2F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
       registryData.add("antideuteron_ue_tpc", "antideuteron_ue_tpc", HistType::kTH2F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
       registryData.add("antideuteron_ue_tof", "antideuteron_ue_tof", HistType::kTH2F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antideuteron_fullEvent_tpc", "antideuteron_fullEvent_tpc", HistType::kTH2F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antideuteron_fullEvent_tof", "antideuteron_fullEvent_tof", HistType::kTH2F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
 
       // Deuterons
       registryData.add("deuteron_jet_tpc", "deuteron_jet_tpc", HistType::kTH2F, {{nbins, 2 * min, 2 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
@@ -1151,6 +1155,56 @@ struct AntinucleiInJets {
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
       return;
     registryData.fill(HIST("number_of_events_data"), 8.5);
+
+    // Loop over all tracks for Full Event histograms
+    for (auto const& track : tracks) {
+      // Apply standard track selection
+      if (!passedTrackSelection(track))
+        continue;
+
+      // Define variables
+      double nsigmaTPCPr = track.tpcNSigmaPr();
+      double nsigmaTOFPr = track.tofNSigmaPr();
+      double nsigmaTPCDe = track.tpcNSigmaDe();
+      double nsigmaTOFDe = track.tofNSigmaDe();
+      double pt = track.pt();
+
+      // ITS PID logic
+      bool passedItsPidProt(true), passedItsPidDeut(true);
+      double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
+      double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
+
+      if (applyItsPid && pt < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMin || nSigmaITSprot > nSigmaItsMax)) {
+        passedItsPidProt = false;
+      }
+      if (applyItsPid && pt < ptMaxItsPidDeut && (nSigmaITSdeut < nSigmaItsMin || nSigmaITSdeut > nSigmaItsMax)) {
+        passedItsPidDeut = false;
+      }
+
+      // Fill histograms for antimatter
+      if (track.sign() < 0) {
+
+        // Antiprotons Full Event
+        if (passedItsPidProt) {
+          registryData.fill(HIST("antiproton_fullEvent_tpc"), pt, nsigmaTPCPr);
+
+          // Require TOF matching and preliminary TPC cut
+          if (nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF()) {
+            registryData.fill(HIST("antiproton_fullEvent_tof"), pt, nsigmaTOFPr);
+          }
+        }
+
+        // Antideuterons Full Event
+        if (passedItsPidDeut) {
+          registryData.fill(HIST("antideuteron_fullEvent_tpc"), pt, nsigmaTPCDe);
+
+          // Require TOF matching and preliminary TPC cut
+          if (nsigmaTPCDe > minNsigmaTpc && nsigmaTPCDe < maxNsigmaTpc && track.hasTOF()) {
+            registryData.fill(HIST("antideuteron_fullEvent_tof"), pt, nsigmaTOFDe);
+          }
+        }
+      }
+    }
 
     // Loop over reconstructed tracks
     int id(-1);
