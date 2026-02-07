@@ -315,9 +315,9 @@ static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
 constexpr float cutsNsigma[4][9] = {
-  {3., 3., 3., 5., 3., 3., 5., 3., 3.},               // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
-  {3., 3., 3., 2.5, 3., 3., 5., 3., 3.},              // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
-  {999., 999., 999., 2.5, 999., 999., 5., 999., 3.},  // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
+  {3., 3., 3., 5., 3., 3., 5., 3., 3.},                 // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
+  {3., 3., 3., 2.5, 3., 3., 5., 3., 3.},                // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
+  {999., 999., 999., 2.5, 999., 999., 5., 999., 3.},    // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
   {999., 999., 999., 999., 999., 999., -4., 999., 999.} // ITS used only for femto selected deuteron for less than pt threshold
 };
 static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "PrForFemto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "DeForFemto", "KaPrFromBeautyToJPsi", "PrFromSigmaCPr"};
@@ -381,22 +381,20 @@ static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "Pt
 constexpr float cutsCharmBaryons[1][15] = {{5., 5., 1000., 2.35, 2.60, 2.35, 3., 3., 2.7, -2., -2., 1.e6, 1.e6, -1., -1.}}; // MinPtXiPi, MinPtXiKa, MinPtXiPiPi, MinMassXiPi, MinMassXiKa, MinMassXiPiPi, MaxMassXiPi, MaxMassXiKa, MaxMassXiPiPi, CosPaXiBach, CosPaXiBachBach, Chi2PcaXiBach, Chi2PcaXiBachBach, DecLenXiBach, DecLenBachBach
 static const std::vector<std::string> labelsColumnsCharmBarCuts = {"MinPtXiPi", "MinPtXiKa", "MinPtXiPiPi", "MinMassXiPi", "MinMassXiKa", "MinMassXiPiPi", "MaxMassXiPi", "MaxMassXiKa", "MaxMassXiPiPi", "CosPaXiBach", "CosPaXiBachBach", "Chi2PcaXiBach", "Chi2PcaXiBachBach", "DecLenXiBach", "DecLenBachBach"};
 
-//proton for SigmaC-pr trigger
+// proton for SigmaC-pr trigger
 constexpr float cutsSigmaCPrDefault[4][1] = {
-  {0.399},   // ptPrMin
-  {4.501},   // ptPrMax
-  {1},   // forceTOF (0=false, 1=true)
-  {1.0}   // ptTOFThreshold
+  {0.399}, // ptPrMin
+  {4.501}, // ptPrMax
+  {1},     // forceTOF (0=false, 1=true)
+  {1.0}    // ptTOFThreshold
 };
 static const std::vector<std::string> labelsRowsSigmaCPr = {
   "ptPrMin",
   "ptPrMax",
   "forceTOF",
-  "ptTOFThreshold"
-};
+  "ptTOFThreshold"};
 static const std::vector<std::string> labelsColumnsSigmaCPr = {
-  "SigmaCPr"
-};
+  "SigmaCPr"};
 
 constexpr int requireStrangenessTrackedXi[1][2] = {{1, 0}};
 static const std::vector<std::string> labelsColumnsCharmBaryons = {"CharmBarToXiBach", "CharmBarToXiBachBach"};
@@ -498,7 +496,7 @@ class HfFilterHelper
     mPtMinSigmaCPlusPlus = minPtSigmaCPlusPlus;
     mPtMinSigmaC2520PlusPlus = minPtSigmaC2520PlusPlus;
   }
-    void setParSigmaCPr(float minDeltaMassSigmaC, float maxDeltaMassSigmaC, float minPtSigmaC, float minPtProton, float maxPtProton, bool forceTOF, float minPtForTOF)
+  void setParSigmaCPr(float minDeltaMassSigmaC, float maxDeltaMassSigmaC, float minPtSigmaC, float minPtProton, float maxPtProton, bool forceTOF, float minPtForTOF)
   {
     minDeltaMassScSigmaCPr = minDeltaMassSigmaC;
     maxDeltaMassScSigmaCPr = maxDeltaMassSigmaC;
@@ -533,7 +531,7 @@ class HfFilterHelper
   }
 
   void setNsigmaProtonCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
-  void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts;}
+  void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
   void setNsigmaProtonCutsForSigmaCPr(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForSigmaCPr = nSigmaCuts; }
 
   void setDeuteronTrackSelectionForFemto(float minTpcCluster, float minTpcRow, float minTpcCrossedOverFound, float maxTpcShared, float maxTpcFracShared, float minItsCluster, float minItsIbCluster)
@@ -841,14 +839,14 @@ class HfFilterHelper
   float mMaxTpcFracShared{1.};                                                    // Maximum allowed fraction of shared TPC clusters relative to total clusters
   float mMinItsCluster{1.};                                                       // Minimum required number of ITS clusters
   float mMinItsIbCluster{1.};                                                     // Minimum required number of ITS clusters for IB
-// SigmaC–p (ScPr) trigger
-float minDeltaMassScSigmaCPr{0.15f};                                                   // min Delta mass (SigmaC)
-float maxDeltaMassScSigmaCPr{0.19f};                                                   // max Delta mass (SigmaC)
-float minPtScSigmaPr{4.99f};                                                          // min pT(SigmaC)
-float minPtPrSigmaCPr{0.399f};                                                    // min pT(proton)
-float maxPtPrSigmaCPr{4.501f};                                                    // max pT(proton)
-bool  forceTOFForPrSigmaCPr{true};                                                   // force TOF for proton
-float thresholdPtTOFForPrSigmaCPr{1.0f};                                                 // pT threshold above which TOF is required
+  // SigmaC–p (ScPr) trigger
+  float minDeltaMassScSigmaCPr{0.15f};     // min Delta mass (SigmaC)
+  float maxDeltaMassScSigmaCPr{0.19f};     // max Delta mass (SigmaC)
+  float minPtScSigmaPr{4.99f};             // min pT(SigmaC)
+  float minPtPrSigmaCPr{0.399f};           // min pT(proton)
+  float maxPtPrSigmaCPr{4.501f};           // max pT(proton)
+  bool forceTOFForPrSigmaCPr{true};        // force TOF for proton
+  float thresholdPtTOFForPrSigmaCPr{1.0f}; // pT threshold above which TOF is required
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                          // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
@@ -1389,24 +1387,27 @@ inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSa
       isSigmaC2520 = (mDeltaMassMinSigmaC2520PlusPlus < deltaMassPKPi && deltaMassPKPi < mDeltaMassMaxSigmaC2520PlusPlus && ptSigmaC > mPtMinSigmaC2520PlusPlus);
     }
     if (isSigmaC2455 || isSigmaC2520) {
-            retValue |= BIT(0);
-            if (isSigmaC2455) SETBIT(retValue, 2);
-            if (isSigmaC2520) SETBIT(retValue, 3);
-        }
-
-        // --- SigmaCPr selection ---
-        if constexpr (charge == -1) {
-        if (deltaMassPKPi > minDeltaMassScSigmaCPr &&
-            deltaMassPKPi < maxDeltaMassScSigmaCPr &&
-            ptSigmaC > minPtScSigmaPr) // proton cuts
-        {
-            SETBIT(retValue, 4); // SigmaCPr bit
-        }
-      }
-
-        if (activateQA) hMassVsPt->Fill(ptSigmaC, deltaMassPKPi);
+      retValue |= BIT(0);
+      if (isSigmaC2455)
+        SETBIT(retValue, 2);
+      if (isSigmaC2520)
+        SETBIT(retValue, 3);
     }
-  
+
+    // --- SigmaCPr selection ---
+    if constexpr (charge == -1) {
+      if (deltaMassPKPi > minDeltaMassScSigmaCPr &&
+          deltaMassPKPi < maxDeltaMassScSigmaCPr &&
+          ptSigmaC > minPtScSigmaPr) // proton cuts
+      {
+        SETBIT(retValue, 4); // SigmaCPr bit
+      }
+    }
+
+    if (activateQA)
+      hMassVsPt->Fill(ptSigmaC, deltaMassPKPi);
+    }
+
   if (TESTBIT(isSelectedLc, 1)) {
     /// Lc->piKp case
     auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massKa, massProton});
@@ -1424,21 +1425,23 @@ inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSa
     }
     if (isSigmaC2455 || isSigmaC2520) {
       retValue |= BIT(1);
-      if (isSigmaC2455) SETBIT(retValue, 2);
-            if (isSigmaC2520) SETBIT(retValue, 3);
-        }
-
-        // --- SigmaCPr selection ---
-        if constexpr (charge == -1) {
-        if (deltaMassPiKP > minDeltaMassScSigmaCPr &&
-            deltaMassPiKP < maxDeltaMassScSigmaCPr &&
-            ptSigmaC > minPtScSigmaPr)
-        {
-            SETBIT(retValue, 4); // SigmaCPr bit
-        }
-      }
-        if (activateQA) hMassVsPt->Fill(ptSigmaC, deltaMassPiKP);
+      if (isSigmaC2455)
+        SETBIT(retValue, 2);
+      if (isSigmaC2520)
+        SETBIT(retValue, 3);
     }
+
+    // --- SigmaCPr selection ---
+    if constexpr (charge == -1) {
+      if (deltaMassPiKP > minDeltaMassScSigmaCPr &&
+          deltaMassPiKP < maxDeltaMassScSigmaCPr &&
+          ptSigmaC > minPtScSigmaPr) {
+        SETBIT(retValue, 4); // SigmaCPr bit
+      }
+    }
+    if (activateQA)
+      hMassVsPt->Fill(ptSigmaC, deltaMassPiKP);
+  }
   /// TODO: add QA plot
 
   return retValue;
