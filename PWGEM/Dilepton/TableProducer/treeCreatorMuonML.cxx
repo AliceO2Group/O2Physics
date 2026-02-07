@@ -14,7 +14,7 @@
 // This code will create data table for inputs to machine learning for electrons.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Common/Core/CollisionTypeHelper.cxx"
+#include "Common/Core/CollisionTypeHelper.h"
 
 #include "PWGEM/Dilepton/DataModel/lmeeMLTables.h"
 
