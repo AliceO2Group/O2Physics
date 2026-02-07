@@ -3818,6 +3818,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventIsTVXTriggered")) {
+    cut->AddCut(VarManager::kIsTVXTriggered, 0.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("eventStandard")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsINT7, 0.5, 1.5);
