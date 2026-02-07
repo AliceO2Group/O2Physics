@@ -93,11 +93,11 @@ struct FullJetSpectra {
   Configurable<float> jetPhiMax{"jetPhiMax", 2.86, "maximum emcal Fid phi"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
 
-  // Leading track and cluster pT configurables
-  Configurable<float> minTrackPt{"minTrackPt", -99.0, "minimum pT selection on jet tracks"};
-  Configurable<float> maxTrackPt{"maxTrackPt", 999.0, "maximum pT selection on jet tracks"};
-  Configurable<float> minClusterPt{"minClusterPt", -99.0, "minimum pT selection on jet clusters"};
-  Configurable<float> maxClusterPt{"maxClusterPt", 999.0, "maximum pT selection on jet clusters"};
+  // Maximum track and cluster pT configurables
+  Configurable<float> minTrackPt{"minTrackPt", 0.15, "minimum pT selection on jet tracks"};
+  Configurable<float> maxTrackPt{"maxTrackPt", 150.0, "maximum pT selection on jet tracks"};
+  Configurable<float> minClusterPt{"minClusterPt", 0.3, "minimum pT selection on jet clusters"};
+  Configurable<float> maxClusterPt{"maxClusterPt", 250.0, "maximum pT selection on jet clusters"};
 
   // Track configurables
   Configurable<float> trackpTMin{"trackpTMin", 0.15, "minimum track pT"};
@@ -277,6 +277,19 @@ struct FullJetSpectra {
       hMatchedNoFidcollisionCounter->GetXaxis()->SetBinLabel(7, "EMCreadoutDetJJEventsWithkTVXinEMC");
       hMatchedNoFidcollisionCounter->GetXaxis()->SetBinLabel(8, "AllRejectedDetEventsAfterEMCEventSelection");
       hMatchedNoFidcollisionCounter->GetXaxis()->SetBinLabel(9, "EMCAcceptedDetColl");
+    }
+
+    if (doprocessJetsNewNoFidMCPMCDMatchedWeighted) {
+      auto hMatchedNewNoFidcollisionCounter = registry.get<TH1>(HIST("hMatchedNewNoFidcollisionCounter"));
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(1, "allDetColl");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(2, "DetCollWithVertexZ");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(3, "RejectedDetCollWithOutliers");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(4, "RejectedPartCollWithOutliers");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(5, "EMCMBRejectedDetColl");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(6, "EventsNotSatisfyingEventSelection");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(7, "EMCreadoutDetJJEventsWithkTVXinEMC");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(8, "AllRejectedDetEventsAfterEMCEventSelection");
+      hMatchedNewNoFidcollisionCounter->GetXaxis()->SetBinLabel(9, "EMCAcceptedDetColl");
     }
 
     if (doprocessMBCollisionsDATAWithMultiplicity || doprocessMBMCDCollisionsWithMultiplicity) {
@@ -586,6 +599,38 @@ struct FullJetSpectra {
       registry.add("h_full_jet_NoFidResponseMatrix", "Full Jets Response Matrix; p_{T,det} (GeV/c); p_{T,part} (GeV/c)", {HistType::kTH2F, {{500, 0., 500.}, {500, 0., 500.}}}, doSumw2);
     }
 
+    if (doprocessJetsNewNoFidMCPMCDMatchedWeighted) {
+      registry.add("hMatchedNewNoFidcollisionCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}, doSumw2);
+      registry.add("h_allMatchedNewNoFidPartJetsCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}, doSumw2);
+
+      registry.add("h_full_NoFidmatchedmcdjet_tablesize", "", {HistType::kTH1F, {{350, 0., 350.}}}, doSumw2);
+      registry.add("h_full_NoFidmatchedmcpjet_tablesize", "", {HistType::kTH1F, {{350, 0., 350.}}}, doSumw2);
+      registry.add("h_full_NoFidmatchedmcdjet_ntracks", "", {HistType::kTH1F, {{200, -0.5, 200.}}}, doSumw2);
+      registry.add("h_full_NoFidmatchedmcpjet_ntracks", "", {HistType::kTH1F, {{200, -0.5, 200.}}}, doSumw2);
+      registry.add("h_full_NewNoFidmatchedmcpjet_eta", "Matched No Fid MCP jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1., 1.}}}, doSumw2);
+      registry.add("h_full_NewNoFidmatchedmcpjet_phi", "Matched No Fid MCP jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, 0., 7.}}}, doSumw2);
+      registry.add("h_allMatchedNewNoFidPartJetsPt", "Matched No Fid MCP jet Pt;p_{T,part} (GeV/c);entries", {HistType::kTH1F, {{350, 0.0, 350.0}}}, doSumw2);
+      registry.add("h_full_jet_NoFiddeltaR", "Distance between matched Det Jet and Part Jet; #Delta R; entries", {HistType::kTH1F, {{100, 0., 1.}}}, doSumw2);
+
+      registry.add("h2_full_jet_NoFidenergyscaleDet", "Jet Energy Scale (det); p_{T,det} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F, {{400, 0., 400.}, {200, -1., 1.}}}, doSumw2);
+
+      registry.add("h2_NoFidmatchedjet_etaphiDet", "Det jet #eta vs jet #varphi; #eta_{jet};#varphi_{jet}", {HistType::kTH2F, {{100, -1., 1.}, {160, -1., 7.}}}, doSumw2);
+      registry.add("h2_NoFidmatchedjet_etaphiPart", "Part jet #eta vs jet #varphi; #eta_{jet};#varphi_{jet}", {HistType::kTH2F, {{100, -1., 1.}, {160, -1., 7.}}}, doSumw2);
+      registry.add("h2_NoFidmatchedjet_deltaEtaCorr", "Correlation between Det Eta and Part Eta; #eta_{jet,det}; #eta_{jet,part}", {HistType::kTH2F, {{100, -1., 1.}, {100, -1., 1.}}}, doSumw2);
+      registry.add("h2_NoFidmatchedjet_deltaPhiCorr", "Correlation between Det Phi and Part Phi; #varphi_{jet,det}; #varphi_{jet,part}", {HistType::kTH2F, {{160, 0., 7.}, {160, 0., 7.}}}, doSumw2);
+
+      registry.add("h2_full_jet_NoFidenergyscalePart", "Jet Energy Scale (part); p_{T,part} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH2F, {{400, 0., 400.}, {200, -1., 1.}}}, doSumw2);
+      registry.add("h3_full_jet_NoFidenergyscalePart", "R dependence of Jet Energy Scale (Part); #it{R}_{jet};p_{T,det} (GeV/c); (p_{T,det} - p_{T,part})/p_{T,part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {400, 0., 400.}, {200, -1., 1.}}}, doSumw2);
+      registry.add("h2_full_jet_NoFidetaresolutionPart", ";p_{T,part} (GeV/c); (#eta_{jet,det} - #eta_{jet,part})/#eta_{jet,part}", {HistType::kTH2F, {{400, 0., 400.}, {100, -1., 1.}}}, doSumw2);
+      registry.add("h2_full_jet_NoFidphiresolutionPart", ";p_{T,part} (GeV/c); (#varphi_{jet,det} - #varphi_{jet,part})/#varphi_{jet,part}", {HistType::kTH2F, {{400, 0., 400.}, {160, -1., 7.}}}, doSumw2);
+      registry.add("h2_full_NewNoFidfakemcdjets", "Fake MCD Jets; p_{T,det} (GeV/c); NCounts", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}}, doSumw2);
+      registry.add("h2_full_NewNoFidfakemcpjets", "Fake MCP Jets; p_{T,part} (GeV/c); NCounts", {HistType::kTH2F, {{350, 0., 350.}, {100, 0., 100.}}}, doSumw2);
+      registry.add("h2_full_NewNoFidmatchedmcpjet_pt", "Matched No Fid MCP jet #it{p}_{T,part};#it{p}_{T,part} (GeV/c); Ncounts", {HistType::kTH2F, {{350, 0., 350.}, {10000, 0., 10000.}}}, doSumw2);
+
+      // Response Matrix
+      registry.add("h_full_jet_NoFidResponseMatrix", "Full Jets Response Matrix; p_{T,det} (GeV/c); p_{T,part} (GeV/c)", {HistType::kTH2F, {{500, 0., 500.}, {500, 0., 500.}}}, doSumw2);
+    }
+
     if (doprocessMBCollisionsDATAWithMultiplicity || doprocessMBMCDCollisionsWithMultiplicity || doprocessMCDCollisionsWeightedWithMultiplicity) {
       registry.add("hEventmultiplicityCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}, doSumw2);
       registry.add("h_FT0Mults_occupancy", "", {HistType::kTH1F, {{3500, 0., 3500.}}}, doSumw2);
@@ -748,7 +793,7 @@ struct FullJetSpectra {
     filteredTrackPt = 0.0;
     filteredClusterPt = 0.0;
 
-    // --- Track cuts: ALL tracks must satisfy 0.15 <= pT <= 200 or 150 GeV/c---
+    // --- Track cuts: ALL tracks must satisfy 0.15 <= pT <= 140 GeV/c---
     // if (leadingTrackPtMin > kLeadingTrackPtMinThreshold || leadingTrackPtMax < kLeadingTrackPtMaxThreshold) {
     bool hasValidTrack = false;
     for (const auto& constituent : jet.template tracks_as<T>()) {
@@ -1220,6 +1265,8 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 7.5); // EMCAcceptedDetColl
 
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1227,6 +1274,9 @@ struct FullJetSpectra {
       // if (jet.phi() < jetPhiMin || jet.phi() > jetPhiMax) {
       //   continue;
       // }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
+      }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
       }
@@ -1350,9 +1400,15 @@ struct FullJetSpectra {
       registry.fill(HIST("hDetTrigcollisionCounter"), 15.5); // EMCAcceptedDetTrigCollWithLow+HighFullJetTriggers
       eventAccepted = true;
     }
+
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
+      }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
@@ -1444,9 +1500,14 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 7.5); // EMCAcceptedDetColl
 
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
+      }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
@@ -1536,10 +1597,14 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 7.5, collision.mcCollision().weight()); // EMCAcceptedDetColl
 
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
-
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
+      }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
         continue;
@@ -1827,13 +1892,17 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hMatchedcollisionCounter"), 8.5); // EMCAcceptedDetColl
 
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
     for (const auto& mcdjet : mcdjets) {
-
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
           !isInPhiAcceptance(mcdjet)) {
         fakeMcdJet++;
         registry.fill(HIST("h2_full_fakemcdjets"), mcdjet.pt(), fakeMcdJet, 1.0);
         continue;
+      }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       // Check if MCD jet is within the EMCAL fiducial region; if not then flag it as a fake jet
       // if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax || mcdjet.eta() < jetEtaMin || mcdjet.eta() > jetEtaMax) {
@@ -1916,13 +1985,17 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hMatchedNoFidcollisionCounter"), 8.5, eventWeight); // EMCAcceptedDetColl
 
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
     for (const auto& mcdjet : mcdjets) {
-
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
           !isInPhiAcceptance(mcdjet)) {
         fakeMcdJet++;
         registry.fill(HIST("h2_full_NoFidfakemcdjets"), mcdjet.pt(), fakeMcdJet, eventWeight);
         continue;
+      }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
 
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
@@ -1949,6 +2022,113 @@ struct FullJetSpectra {
     } // mcdjet
   }
   PROCESS_SWITCH(FullJetSpectra, processJetsNoFidMCPMCDMatchedWeighted, "Full Jet finder No Fid MCP matched to MCD on weighted events", false);
+
+  // Matching with Fiducial cuts at MCD only.
+  // New: First matching is done and then all the cuts are applied - if the matched jet pair pass the cuts then Accept the pair otherwise reject the jet pair.
+  void processJetsNewNoFidMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const& mcpjets, aod::JMcCollisions const&,
+                                                aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
+  {
+    bool eventAccepted = false;
+    int fakeMcdJet = 0;
+    int fakeMcpJet = 0;
+    int NPartJetFid = 0; // counter for the matched and accepted particle-level jets at the event level.
+    // int allMatchedPartJets = 0;
+    float eventWeight = collision.mcCollision().weight();
+    float pTHat = 10.f / (std::pow(eventWeight, 1.0f / pTHatExponent));
+    const auto mcpJetsPerMcCollision = mcpjets.sliceBy(JetMCPPerMcCollision, collision.mcCollisionId());
+
+    registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 0.5, eventWeight); // allDetColl
+    if (std::fabs(collision.posZ()) > vertexZCut) {                            // making double sure this condition is satisfied
+      return;
+    }
+    registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 1.5, eventWeight); // DetCollWithVertexZ
+
+    // outlier check: for every outlier jet, reject the whole event
+    for (auto const& mcdjet : mcdjets) {
+      if (mcdjet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
+        registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 2.5, eventWeight); // RejectedDetCollWithOutliers
+        return;
+      }
+    }
+
+    if (doMBGapTrigger && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 4.5, eventWeight); // EMCMBRejectedDetColl
+      return;
+    }
+
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 5.5, eventWeight); // EventsNotSatisfyingEventSelection
+      return;
+    }
+
+    for (auto const& mcpjet : mcpJetsPerMcCollision) {
+      if (mcpjet.pt() > pTHatMaxMCP * pTHat) { // outlier rejection for MCP: Should I remove this cut as I'm already doing MC outlier rejection @L1071?
+        return;
+      }
+    }
+    if (doEMCALEventWorkaround) {
+      if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
+        if (collision.alias_bit(kTVXinEMC)) {
+          eventAccepted = true;
+          registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 6.5, eventWeight); // EMCreadoutDetJJEventsWithkTVXinEMC
+        }
+      }
+    } else {
+      if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
+        eventAccepted = true;
+        registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 6.5, eventWeight); // EMCreadoutDetJJEventsWithkTVXinEMC
+      }
+    }
+    if (!eventAccepted) {
+      registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 7.5, eventWeight); // AllRejectedDetEventsAfterEMCEventSelection
+      return;
+    }
+    registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 8.5, eventWeight); // EMCAcceptedDetColl
+
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
+
+    // NEW: event-level counter of all MCP–MCD matches (pair count)
+    int allMatchedPartJetsEvent = 0;
+
+    for (const auto& mcdjet : mcdjets) {
+
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {
+        // allMatchedPartJets++;
+        // count every matched pair (MCD ↔ MCP), regardless of later cuts
+        ++allMatchedPartJetsEvent;
+
+        registry.fill(HIST("h_allMatchedNewNoFidPartJetsPt"), mcpjet.pt(), eventWeight);
+
+        if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
+            !isInPhiAcceptance(mcdjet)) {
+          fakeMcdJet++;
+          registry.fill(HIST("h2_full_NewNoFidfakemcdjets"), mcdjet.pt(), fakeMcdJet, eventWeight);
+          continue;
+        }
+        if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+          continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
+        }
+
+        // Not applying any emcal fiducial cuts in eta and phi on MCP jets when matching.
+        // Keeping jet eta here open = |0.9| and no cut in phi at all.
+        if (!jetfindingutilities::isInEtaAcceptance(mcpjet, jetNoFidPartEtaMin, jetNoFidPartEtaMax, trackEtaMin, trackEtaMax)) {
+          fakeMcpJet++;
+          registry.fill(HIST("h2_full_NewNoFidfakemcpjets"), mcpjet.pt(), fakeMcpJet, eventWeight);
+          continue;
+        }
+        ++NPartJetFid;
+        // Fill matched histograms (including Response Matrix) for valid MCD-MCP pairs
+        fillMatchedNoFidHistograms<JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet, eventWeight);
+        registry.fill(HIST("h2_full_NewNoFidmatchedmcpjet_pt"), mcpjet.pt(), NPartJetFid, eventWeight);
+        registry.fill(HIST("h_full_NewNoFidmatchedmcpjet_eta"), mcpjet.eta(), eventWeight);
+        registry.fill(HIST("h_full_NewNoFidmatchedmcpjet_phi"), mcpjet.phi(), eventWeight);
+      } // mcpjet
+    } // mcdjet
+    // Fill the total matched particle jets histogram after processing all MCP jets for the MCD jet in a given accepted event
+    registry.fill(HIST("h_allMatchedNewNoFidPartJetsCounter"), allMatchedPartJetsEvent, eventWeight);
+  }
+  PROCESS_SWITCH(FullJetSpectra, processJetsNewNoFidMCPMCDMatchedWeighted, "Full Jet finder No Fid MCP matched to MCD on weighted events with new algorithm of rejecting jet pair", false);
 
   void processJetsMCPMCDMatchedWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDMatchedJoined const& mcdjets, JetTableMCPMatchedJoined const& mcpjets, aod::JMcCollisions const&,
                                         aod::JetTracks const&, ClusterWithCorrections const&, aod::JetParticles const&)
@@ -2042,13 +2222,17 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hMatchedcollisionCounter"), 8.5, eventWeight); // EMCAcceptedDetColl
 
+    double filteredTrackPt = 0.0;
+    double filteredClusterPt = 0.0;
     for (const auto& mcdjet : mcdjets) {
-
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
           !isInPhiAcceptance(mcdjet)) {
         fakeMcdJet++;
         registry.fill(HIST("h2_full_fakemcdjets"), mcdjet.pt(), fakeMcdJet, eventWeight);
         continue;
+      }
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+        continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
 
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<JetTableMCPMatchedJoined>()) {

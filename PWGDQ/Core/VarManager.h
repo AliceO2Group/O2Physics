@@ -218,6 +218,7 @@ class VarManager : public TObject
     kIsGoodITSLayer3,            // number of inactive chips on ITS layer 3 is below maximum allowed value
     kIsGoodITSLayer0123,         // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
     kIsGoodITSLayersAll,         // numbers of inactive chips on all ITS layers are below maximum allowed values
+    kIsTriggerZNAZNC,            // trigger ZNA && ZNC
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -1837,6 +1838,9 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+    }
+    if (fgUsedVars[kIsTriggerZNAZNC]) {
+      values[kIsTriggerZNAZNC] = event.selection_bit(o2::aod::evsel::kIsBBZNA) && event.selection_bit(o2::aod::evsel::kIsBBZNC);
     }
     if (fgUsedVars[kIsNoSameBunch]) {
       values[kIsNoSameBunch] = event.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
