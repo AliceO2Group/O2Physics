@@ -309,6 +309,7 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
   for (auto jetR : jetsR) {
     std::vector<double> jetsBasePhi;
     std::vector<double> jetsBaseEta;
+    std::vector<int> jetsBaseGlobalIndex;
     std::vector<int> baseToTagMatchingGeoIndex;
     std::vector<int> tagToBaseMatchingGeoIndex;
 
@@ -316,17 +317,20 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
       if (std::round(jetBase.r()) != std::round(jetR)) {
         continue;
       }
-      jetsBasePhi.emplace_back(jetBase.phi());
+      jetsBasePhi.emplace_back(RecoDecay::constrainAngle(jetBase.phi(), 0.0));
       jetsBaseEta.emplace_back(jetBase.eta());
+      jetsBaseGlobalIndex.emplace_back(jetBase.globalIndex());
     }
     std::vector<double> jetsTagPhi;
     std::vector<double> jetsTagEta;
+    std::vector<int> jetsTagGlobalIndex;
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetTag.r()) != std::round(jetR)) {
         continue;
       }
-      jetsTagPhi.emplace_back(jetTag.phi());
+      jetsTagPhi.emplace_back(RecoDecay::constrainAngle(jetTag.phi(), 0.0));
       jetsTagEta.emplace_back(jetTag.eta());
+      jetsTagGlobalIndex.emplace_back(jetTag.globalIndex());
     }
     std::tie(baseToTagMatchingGeoIndex, tagToBaseMatchingGeoIndex) = MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance); // change max distnace to a function call
     int jetBaseIndex = 0;
@@ -336,19 +340,20 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
         continue;
       }
       jetTagIndex = baseToTagMatchingGeoIndex[jetBaseIndex];
-      if (jetTagIndex > -1 && jetTagIndex < jetsTagPerCollision.size()) {
-        int jetTagGlobalIndex = jetsTagPerCollision.iteratorAt(jetTagIndex).globalIndex();
+      if (jetTagIndex > -1 && jetTagIndex < std::ssize(jetsTagPhi)) {
+        int jetTagGlobalIndex = jetsTagGlobalIndex[jetTagIndex];
         baseToTagMatchingGeo[jetBase.globalIndex()].push_back(jetTagGlobalIndex);
       }
       jetBaseIndex++;
     }
+    jetTagIndex = 0;
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetTag.r()) != std::round(jetR)) {
         continue;
       }
       jetBaseIndex = tagToBaseMatchingGeoIndex[jetTagIndex];
-      if (jetBaseIndex > -1 && jetBaseIndex < jetsBasePerCollision.size()) {
-        int jetBaseGlobalIndex = jetsBasePerCollision.iteratorAt(jetBaseIndex).globalIndex();
+      if (jetBaseIndex > -1 && jetBaseIndex < std::ssize(jetsBasePhi)) {
+        int jetBaseGlobalIndex = jetsBaseGlobalIndex[jetBaseIndex];
         tagToBaseMatchingGeo[jetTag.globalIndex()].push_back(jetBaseGlobalIndex);
       }
       jetTagIndex++;
@@ -484,10 +489,8 @@ float getPtSum(T const& tracksBase, U const& candidatesBase, V const& clustersBa
             if (candidateBaseMcId == candidateTagId) {
               ptSum += candidateBase.pt();
             }
-            break; // should only be one
           }
         }
-        break;
       }
     } else if constexpr (jetsBaseIsMc) {
       for (auto const& candidateTag : candidatesTag) {
@@ -498,10 +501,8 @@ float getPtSum(T const& tracksBase, U const& candidatesBase, V const& clustersBa
             if (candidateTagMcId == candidateBaseId) {
               ptSum += candidateTag.pt();
             }
-            break; // should only be one
           }
         }
-        break;
       }
     } else {
       for (auto const& candidateBase : candidatesBase) {
@@ -509,9 +510,7 @@ float getPtSum(T const& tracksBase, U const& candidatesBase, V const& clustersBa
           if (candidateBase.globalIndex() == candidateTag.globalIndex()) {
             ptSum += candidateBase.pt();
           }
-          break; // should only be one
         }
-        break;
       }
     }
   }

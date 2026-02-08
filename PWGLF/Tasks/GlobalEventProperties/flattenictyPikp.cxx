@@ -122,7 +122,7 @@ static constexpr std::string_view CpTmcClosurePrimF = "Tracks/{}/hPtMCclosurePri
 enum PidType {
   kEl = 0,
   kPi,
-  kPr,
+  kPr
 };
 
 enum V0sSel {
@@ -160,8 +160,6 @@ enum V0Sel {
   v0SelAll,
   v0SelRejectSameSign,
   v0SelRejectV0sAtTPCSector,
-  v0SelTPCnClsFound,
-  v0SelTPCnClsPID,
   v0SelCosPA,
   v0SelV0radius,
   v0SelDCAposToPV,
@@ -259,12 +257,12 @@ struct FlattenictyPikp {
 
   struct : ConfigurableGroup {
     Configurable<bool> cfgCustomTVX{"cfgCustomTVX", false, "Ask for custom TVX instead of sel8"};
-    Configurable<bool> cfgRemoveNoTimeFrameBorder{"cfgRemoveNoTimeFrameBorder", true, "Bunch crossing is far from Time Frame borders"};
-    Configurable<bool> cfgRemoveITSROFrameBorder{"cfgRemoveITSROFrameBorder", true, "Bunch crossing is far from ITS RO Frame border"};
+    Configurable<bool> cfgRemoveNoTimeFrameBorder{"cfgRemoveNoTimeFrameBorder", false, "Bunch crossing is far from Time Frame borders"};
+    Configurable<bool> cfgRemoveITSROFrameBorder{"cfgRemoveITSROFrameBorder", false, "Bunch crossing is far from ITS RO Frame border"};
     Configurable<float> cfgCutVtxZ{"cfgCutVtxZ", 10.0f, "Accepted z-vertex range"};
     Configurable<bool> cfgINELCut{"cfgINELCut", true, "INEL event selection"};
-    Configurable<bool> cfgRemoveNoSameBunchPileup{"cfgRemoveNoSameBunchPileup", false, "Reject collisions in case of pileup with another collision in the same foundBC"};
-    Configurable<bool> cfgRequireIsGoodZvtxFT0vsPV{"cfgRequireIsGoodZvtxFT0vsPV", false, "Small difference between z-vertex from PV and from FT0"};
+    Configurable<bool> cfgRemoveNoSameBunchPileup{"cfgRemoveNoSameBunchPileup", true, "Reject collisions in case of pileup with another collision in the same foundBC"};
+    Configurable<bool> cfgRequireIsGoodZvtxFT0vsPV{"cfgRequireIsGoodZvtxFT0vsPV", true, "Small difference between z-vertex from PV and from FT0"};
     Configurable<bool> cfgRequireIsVertexITSTPC{"cfgRequireIsVertexITSTPC", false, "At least one ITS-TPC track (reject vertices built from ITS-only tracks)"};
     Configurable<bool> cfgRequirekIsVertexTOFmatched{"cfgRequirekIsVertexTOFmatched", false, "Require kIsVertexTOFmatched: at least one of vertex contributors is matched to TOF"};
   } evtSelOpt;
@@ -297,10 +295,11 @@ struct FlattenictyPikp {
   struct : ConfigurableGroup {
     Configurable<float> cfgTrkEtaMax{"cfgTrkEtaMax", 0.8f, "Eta range for tracks"};
     Configurable<float> cfgRapMax{"cfgRapMax", 0.5f, "Maximum range of rapidity for tracks"};
-    Configurable<float> cfgTrkPtMin{"cfgTrkPtMin", 0.15f, "Minimum pT of tracks"};
-    Configurable<float> cfgNclTPCMin{"cfgNclTPCMin", 80.0f, "Minimum of number of TPC found clusters"};
+    Configurable<float> cfgTrkPtMin{"cfgTrkPtMin", 0.1f, "Minimum pT of tracks"};
+    Configurable<bool> cfgApplyNcl{"cfgApplyNcl", false, "Apply cut on TPC clusters"};
+    Configurable<float> cfgNclTPCMin{"cfgNclTPCMin", 135.0f, "Minimum of number of TPC found clusters"};
     Configurable<bool> cfgApplyNclPID{"cfgApplyNclPID", true, "Apply cut on TPC PID clusters"};
-    Configurable<float> cfgNclPidTPCMin{"cfgNclPidTPCMin", 130.0f, "Minimum of number of TPC PID clusters"};
+    Configurable<float> cfgNclPidTPCMin{"cfgNclPidTPCMin", 135.0f, "Minimum of number of TPC PID clusters"};
     Configurable<float> cfgPhiCutPtMin{"cfgPhiCutPtMin", 2.0f, "Minimum pT for phi cut"};
     Configurable<float> cfgTOFBetaPion{"cfgTOFBetaPion", 1.0f, "Minimum beta for TOF pions"};
     Configurable<float> cfgTofBetaPiMax{"cfgTofBetaPiMax", 5E-5, "Maximum beta for TOF pion selection"};
@@ -324,6 +323,7 @@ struct FlattenictyPikp {
     Configurable<float> cfgPtDaughterMin{"cfgPtDaughterMin", 0.1f, "minimum pT of the V0 daughter tracks"};
     Configurable<float> cfgPtDaughterMax{"cfgPtDaughterMax", 20.0f, "maximum pT of the V0 daughter tracks"};
     Configurable<bool> cfgRejectV0sAtTPCSector{"cfgRejectV0sAtTPCSector", true, "Reject V0s close to the TPC sector boundaries"};
+    Configurable<bool> cfgRequireITS{"cfgRequireITS", true, "Additional cut on the ITS requirement"};
     Configurable<float> cfgNsigmaElTPC{"cfgNsigmaElTPC", 5.0, "max nsigma of TPC for electorn"};
     Configurable<float> cfgNsigmaPiTPC{"cfgNsigmaPiTPC", 5.0, "max nsigma of TPC for pion"};
     Configurable<float> cfgNsigmaPrTPC{"cfgNsigmaPrTPC", 5.0, "max nsigma of TPC for proton"};
@@ -333,11 +333,17 @@ struct FlattenictyPikp {
     ConfigurableAxis axisArmPodAlpha{"axisArmPodAlpha", {200, -1.0, 1.0}, "Armenteros-Podolanski alpha"};
     ConfigurableAxis axisArmPodqT{"axisArmPodqT", {600, 0.0f, 0.3f}, "Armenteros-Podolanski qT"};
     // standad parameters for V0 selection
-    Configurable<float> cfgV0etamax{"cfgV0etamax", 0.8f, "max eta of V0s"};
-    Configurable<float> cfgTPCnClsmin{"cfgTPCnClsmin", 80.0f, "Minimum of number of TPC found clusters"};
+    Configurable<float> cfgV0etamin{"cfgV0etamin", -0.8f, "min eta of V0s"};
+    Configurable<float> cfgV0etamax{"cfgV0etamax", +0.8f, "max eta of V0s"};
+    Configurable<float> cfgminNCrossedRowsTPC{"cfgminNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
     Configurable<bool> cfgApplyV0sNclFound{"cfgApplyV0sNclFound", false, "Apply cut on TPC Found clusters"};
+    Configurable<float> cfgV0NclTPCMin{"cfgV0NclTPCMin", 135.0f, "Minimum of number of TPC found clusters"};
     Configurable<bool> cfgApplyV0sNclPID{"cfgApplyV0sNclPID", true, "Apply cut on TPC PID clusters"};
-    Configurable<float> cfgTPCnClsPidmin{"cfgTPCnClsPidmin", 130.0f, "Minimum of number of TPC PID clusters"};
+    Configurable<float> cfgV0NclPidTPCMin{"cfgV0NclPidTPCMin", 135.0f, "Minimum of number of TPC PID clusters"};
+    Configurable<float> cfgmaxChi2PerClusterTPC{"cfgmaxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+    Configurable<float> cfgmaxChi2PerClusterITS{"cfgmaxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
+    Configurable<int> cfgminITSnClusters{"cfgminITSnClusters", 4, "minimum number of found ITS clusters"};
+    Configurable<float> cfgminNCrossedRowsOverFindableClustersTPC{"cfgminNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
     Configurable<float> cfgDCAv0daughter{"cfgDCAv0daughter", 1.0, "max DCA of V0 daughter tracks (cm)"};
     Configurable<float> cfgv0cospa{"cfgv0cospa", 0.995, "min V0 CosPA"};
     Configurable<float> cfgDCAposToPV{"cfgDCAposToPV", 0.05f, "min DCA Pos To PV (cm)"};
@@ -395,9 +401,10 @@ struct FlattenictyPikp {
 
   TrackSelection selTrkGlobal;
   Configurable<bool> isCustomTracks{"isCustomTracks", true, "Use custom track cuts"};
-  Configurable<float> requirePt{"requirePt", 0.15f, "Set minimum pT of tracks"};
+  Configurable<float> minPt{"minPt", 0.15f, "Set minimum pT of tracks"};
+  Configurable<float> maxPt{"maxPt", 20.0f, "Set maximum pT of tracks"};
   Configurable<float> requireEta{"requireEta", 0.8f, "Set eta range of tracks"};
-  Configurable<int> setITSreq{"setITSreq", 2, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<int> setITSreq{"setITSreq", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
@@ -408,23 +415,6 @@ struct FlattenictyPikp {
   Configurable<int> minITSnClusters{"minITSnClusters", 5, "minimum number of found ITS clusters"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Multiplicative factor on the maximum value of the DCA xy"};
   Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
-  Configurable<float> minTPCNClsFound{"minTPCNClsFound", 70.0f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
-
-  TrackSelection selTrkV0sDaughters;
-  TrackSelection selV0sDaugthers()
-  {
-    TrackSelection selTracks;
-    selTracks.SetPtRange(v0SelOpt.cfgPtDaughterMin.value, v0SelOpt.cfgPtDaughterMax.value);
-    selTracks.SetEtaRange(-v0SelOpt.cfgV0etamax.value, v0SelOpt.cfgV0etamax.value);
-    selTracks.SetRequireITSRefit(requireITS.value);
-    selTracks.SetRequireTPCRefit(requireTPC.value);
-    selTracks.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
-    selTracks.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
-    selTracks.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
-    selTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
-    selTracks.SetRequireGoldenChi2(requireGoldenChi2.value);
-    return selTracks;
-  }
 
   TF1* fPhiCutLow = nullptr;
   TF1* fPhiCutHigh = nullptr;
@@ -500,11 +490,9 @@ struct FlattenictyPikp {
 
     rctChecker.init(rctCuts.cfgEvtRCTFlagCheckerLabel, rctCuts.cfgEvtRCTFlagCheckerZDCCheck, rctCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
-    selTrkV0sDaughters = selV0sDaugthers();
-
     if (isCustomTracks.value) {
       selTrkGlobal = getGlobalTrackSelectionRun3ITSMatch(setITSreq.value);
-      selTrkGlobal.SetPtRange(requirePt.value, 1e10f);
+      selTrkGlobal.SetPtRange(minPt.value, maxPt.value);
       selTrkGlobal.SetEtaRange(-requireEta.value, requireEta.value);
       selTrkGlobal.SetRequireITSRefit(requireITS.value);
       selTrkGlobal.SetRequireTPCRefit(requireTPC.value);
@@ -513,7 +501,6 @@ struct FlattenictyPikp {
       selTrkGlobal.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
       selTrkGlobal.SetMinNClustersITS(minITSnClusters.value);
       selTrkGlobal.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
-      selTrkGlobal.SetMinNClustersTPC(minTPCNClsFound.value);
       selTrkGlobal.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       // //     selTrkGlobal.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
       selTrkGlobal.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
@@ -585,8 +572,6 @@ struct FlattenictyPikp {
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelAll + 1, "All");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelRejectSameSign + 1, "Reject same sign");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelRejectV0sAtTPCSector + 1, "Reject V0s at TPC sector");
-    flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelTPCnClsFound + 1, "TPC nCls found");
-    flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelTPCnClsPID + 1, "TPC nCls PID");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelCosPA + 1, "Cos PA");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelV0radius + 1, "V0 radius");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelDCAposToPV + 1, "DCA pos to PV");
@@ -1204,8 +1189,8 @@ struct FlattenictyPikp {
           }
         }
         if (selectTypeV0s(collision, v0, posTrack, negTrack) == kaLam) { // antiLambda -> pbar + pi+
-          fillV0QA<kPi, kLam>(v0, posTrack);
-          fillV0QA<kPr, kLam>(v0, negTrack);
+          fillV0QA<kPi, kaLam>(v0, posTrack);
+          fillV0QA<kPr, kaLam>(v0, negTrack);
           if (cfgStoreThnSparse) {
             if (cfgFillChrgType) {
               flatchrg.fill(HIST(CprefixCleanV0) + HIST(Ccharge[kPos]) + HIST("hPiV0"), posTrack.eta(), mult, flat, posTrack.sign() * posTrack.p(), dEdxPos);
@@ -1341,7 +1326,7 @@ struct FlattenictyPikp {
       return false;
     }
     flatchrg.fill(HIST("Tracks/hTrkSel"), trkNRowsTPC);
-    if (track.tpcNClsFound() < trkSelOpt.cfgNclTPCMin) {
+    if (trkSelOpt.cfgApplyNcl && track.tpcNClsFound() < trkSelOpt.cfgNclTPCMin) {
       return false;
     }
     flatchrg.fill(HIST("Tracks/hTrkSel"), trkSelNClsFound);
@@ -1476,18 +1461,6 @@ struct FlattenictyPikp {
       }
     }
     flatchrg.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelRejectV0sAtTPCSector);
-    if (v0SelOpt.cfgApplyV0sNclFound) {
-      if (posTrack.tpcNClsFound() < v0SelOpt.cfgTPCnClsmin || negTrack.tpcNClsFound() < v0SelOpt.cfgTPCnClsmin) {
-        return false;
-      }
-    }
-    flatchrg.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelTPCnClsFound);
-    if (v0SelOpt.cfgApplyV0sNclPID) {
-      if (posTrack.tpcNClsPID() < v0SelOpt.cfgTPCnClsPidmin || negTrack.tpcNClsPID() < v0SelOpt.cfgTPCnClsPidmin) {
-        return false;
-      }
-    }
-    flatchrg.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelTPCnClsPID);
     // V0 topological selections
     if (v0.v0cosPA() < v0SelOpt.cfgv0cospa) {
       return false;
@@ -1502,7 +1475,7 @@ struct FlattenictyPikp {
     }
     flatchrg.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelDCAposToPV);
     // selection of V0 daughters
-    if (!(selTrkV0sDaughters.IsSelected(posTrack) && selTrkV0sDaughters.IsSelected(negTrack))) {
+    if (!(isGoodV0DaughterTrack(posTrack) && isGoodV0DaughterTrack(negTrack))) {
       return false;
     }
     flatchrg.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelDaughters);
@@ -1513,6 +1486,49 @@ struct FlattenictyPikp {
     if constexpr (fillHist) {
       flatchrg.fill(HIST("Tracks/V0qa/hV0Pt"), v0.pt());
       flatchrg.fill(HIST("Tracks/V0qa/hV0ArmPod"), v0.alpha(), v0.qtarm());
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool isGoodV0DaughterTrack(const T& track)
+  {
+    if (track.eta() < v0SelOpt.cfgV0etamin || track.eta() > v0SelOpt.cfgV0etamax) {
+      return false;
+    }
+    if (track.pt() < v0SelOpt.cfgPtDaughterMin || track.pt() > v0SelOpt.cfgPtDaughterMax) {
+      return false;
+    }
+    if (!track.hasTPC()) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < v0SelOpt.cfgminNCrossedRowsTPC) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < v0SelOpt.cfgminNCrossedRowsOverFindableClustersTPC) {
+      return false;
+    }
+    if (v0SelOpt.cfgApplyV0sNclFound) {
+      if (track.tpcNClsFound() < v0SelOpt.cfgV0NclTPCMin) {
+        return false;
+      }
+    }
+    if (v0SelOpt.cfgApplyV0sNclPID) {
+      if (track.tpcNClsPID() < v0SelOpt.cfgV0NclPidTPCMin) {
+        return false;
+      }
+    }
+    if (track.tpcChi2NCl() > v0SelOpt.cfgmaxChi2PerClusterTPC) {
+      return false;
+    }
+    if (v0SelOpt.cfgRequireITS && (!track.hasITS())) {
+      return false;
+    }
+    if (v0SelOpt.cfgRequireITS && track.itsNCls() < v0SelOpt.cfgminITSnClusters) {
+      return false;
+    }
+    if (track.itsChi2NCl() > v0SelOpt.cfgmaxChi2PerClusterITS) {
+      return false;
     }
     return true;
   }

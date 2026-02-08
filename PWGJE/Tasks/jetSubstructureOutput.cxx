@@ -187,11 +187,11 @@ struct JetSubstructureOutputTask {
     std::copy(pairPerpCone1PerpCone2EnergySpan.begin(), pairPerpCone1PerpCone2EnergySpan.end(), std::back_inserter(pairPerpCone1PerpCone2EnergyVec));
     std::copy(pairPerpCone1PerpCone2ThetaSpan.begin(), pairPerpCone1PerpCone2ThetaSpan.end(), std::back_inserter(pairPerpCone1PerpCone2ThetaVec));
 
-    std::vector<int> splittingMatchesGeoVec;
-    std::vector<int> splittingMatchesPtVec;
-    std::vector<int> splittingMatchesHFVec;
-    std::vector<int> pairMatchesVec;
-    std::vector<int> dummyVec;
+    std::vector<int32_t> splittingMatchesGeoVec;
+    std::vector<int32_t> splittingMatchesPtVec;
+    std::vector<int32_t> splittingMatchesHFVec;
+    std::vector<int32_t> pairMatchesVec;
+    std::vector<int32_t> dummyVec;
     if (doprocessOutputSubstructureMatchingData || doprocessOutputSubstructureMatchingMC) {
       splittingMatchesGeoVec = splittingMatchesGeoVecVec[jet.globalIndex()];
       splittingMatchesPtVec = splittingMatchesPtVecVec[jet.globalIndex()];

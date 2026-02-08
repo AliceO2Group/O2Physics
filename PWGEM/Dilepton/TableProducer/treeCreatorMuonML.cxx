@@ -14,12 +14,11 @@
 // This code will create data table for inputs to machine learning for electrons.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Common/Core/CollisionTypeHelper.cxx"
-
 #include "PWGEM/Dilepton/DataModel/lmeeMLTables.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/fwdtrackUtilities.h"
@@ -252,7 +251,7 @@ struct TreeCreatorMuonML {
     return true;
   }
 
-  template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
+  template <bool withMFTCov, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
   bool fillFwdTrackTable(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTTracksCov const& mftCovs, const float hadronicRate)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
@@ -325,15 +324,22 @@ struct TreeCreatorMuonML {
     float pDCA = mchtrack.p() * dcaXY_Matched;
     float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
 
-    auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
-    o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwdShift(mfttrack, mZShift, mfttrackcov); // values at innermost update
-    mftsaAtMP.propagateToZhelix(glMuonCutGroup.matchingZ, mBz);                                   // propagated to matching plane
-    float xMatchedMFTatMP = mftsaAtMP.getX();
-    float yMatchedMFTatMP = mftsaAtMP.getY();
+    float xMatchedMFTatMP = 999.f;
+    float yMatchedMFTatMP = 999.f;
+    float xMatchedMCHMIDatMP = 999.f;
+    float yMatchedMCHMIDatMP = 999.f;
 
-    auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, glMuonCutGroup.matchingZ, mBz, mZShift); // propagated to matching plane
-    float xMatchedMCHMIDatMP = muonAtMP.getX();
-    float yMatchedMCHMIDatMP = muonAtMP.getY();
+    if constexpr (withMFTCov) {
+      auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+      o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwdShift(mfttrack, mZShift, mfttrackcov); // values at innermost update
+      mftsaAtMP.propagateToZhelix(glMuonCutGroup.matchingZ, mBz);                                   // propagated to matching plane
+      xMatchedMFTatMP = mftsaAtMP.getX();
+      yMatchedMFTatMP = mftsaAtMP.getY();
+
+      auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, glMuonCutGroup.matchingZ, mBz, mZShift); // propagated to matching plane
+      xMatchedMCHMIDatMP = muonAtMP.getX();
+      yMatchedMCHMIDatMP = muonAtMP.getY();
+    }
 
     float deta = etaMatchedMCHMID - eta;
     float dphi = phiMatchedMCHMID - phi;
@@ -374,7 +380,7 @@ struct TreeCreatorMuonML {
   Preslice<aod::FwdTracks> perCollision = o2::aod::fwdtrack::collisionId;
 
   std::unordered_map<int, int> map_mfttrackcovs;
-  void processMatchingMFT(MyCollisionsMC const& collisions, aod::BCsWithTimestamps const&, MyFwdTracksMC const& fwdtracks, MyMFTTracksMC const& mfttracks, aod::MFTTracksCov const& mftCovs, aod::McParticles const&, aod::McCollisions const&)
+  void processWithMFTCov(MyCollisionsMC const& collisions, aod::BCsWithTimestamps const&, MyFwdTracksMC const& fwdtracks, MyMFTTracksMC const& mfttracks, aod::MFTTracksCov const& mftCovs, aod::McParticles const&, aod::McCollisions const&)
   {
     for (const auto& mfttrackConv : mftCovs) {
       map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
@@ -402,14 +408,45 @@ struct TreeCreatorMuonML {
           continue;
         }
 
-        fillFwdTrackTable(collision, fwdtrack, fwdtracks, mfttracks, mftCovs, hadronicRate);
+        fillFwdTrackTable<true>(collision, fwdtrack, fwdtracks, mfttracks, mftCovs, hadronicRate);
 
       } // end of fwdtrack loop
     } // end of collision loop
 
     map_mfttrackcovs.clear();
   }
-  PROCESS_SWITCH(TreeCreatorMuonML, processMatchingMFT, "produce ML input for single track level", true);
+  PROCESS_SWITCH(TreeCreatorMuonML, processWithMFTCov, "produce ML input for single track level", true);
+
+  void processWithoutMFTCov(MyCollisionsMC const& collisions, aod::BCsWithTimestamps const&, MyFwdTracksMC const& fwdtracks, MyMFTTracksMC const& mfttracks, aod::McParticles const&, aod::McCollisions const&)
+  {
+    for (const auto& collision : collisions) {
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      if (!isSelectedCollision(collision)) {
+        continue;
+      }
+      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSourceForCptFetcher) * 1.e-3; // kHz
+
+      auto fwdtracks_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& fwdtrack : fwdtracks_coll) {
+        if (!fwdtrack.has_mcParticle()) {
+          continue;
+        }
+        if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          continue;
+        }
+
+        fillFwdTrackTable<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr, hadronicRate);
+
+      } // end of fwdtrack loop
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(TreeCreatorMuonML, processWithoutMFTCov, "produce ML input for single track level", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

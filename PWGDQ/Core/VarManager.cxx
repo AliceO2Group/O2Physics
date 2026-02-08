@@ -1554,6 +1554,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsGoodITSLayer3"] = kIsGoodITSLayer3;
   fgVarNamesMap["kIsGoodITSLayer0123"] = kIsGoodITSLayer0123;
   fgVarNamesMap["kIsGoodITSLayersAll"] = kIsGoodITSLayersAll;
+  fgVarNamesMap["kIsTriggerZNAZNC"] = kIsTriggerZNAZNC;
   fgVarNamesMap["kIsINT7"] = kIsINT7;
   fgVarNamesMap["kIsEMC7"] = kIsEMC7;
   fgVarNamesMap["kIsINT7inMUON"] = kIsINT7inMUON;
