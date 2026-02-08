@@ -241,23 +241,20 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confPtLowFilterCut{"confPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
     Configurable<float> confPtHighFilterCut{"confPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
     Configurable<float> confEtaFilterCut{"confEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
-    Configurable<bool> confDxaXYCustom0Cut{"confDxaXYCustom0Cut", false, "Enable Custom Dcaxy < [0] cut."};
-    Configurable<float> confDcaXYFilterCut{"confDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"}; // max dca to vertex XY
-    Configurable<float> confDcaZFilterCut{"confDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};    // max dca to vertex Z
-    Configurable<bool> confDcaXYCustom1Cut{"confDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
-    Configurable<float> confDcaXYCustom11FilterCut{"confDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
-    Configurable<float> confDcaXYCustom12FilterCut{"confDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaXYCustom1FilterCut{"confDcaXYCustom1FilterCut", 0.0105, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaXYCustom2FilterCut{"confDcaXYCustom2FilterCut", 0.035, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaZCustom1FilterCut{"confDcaZCustom1FilterCut", 0.02, "Value for [1] custom cut on DCAz -> |DCAz| < [1] + [2]/pT"};
+    Configurable<float> confDcaZCustom2FilterCut{"confDcaZCustom2FilterCut", 0.0, "Value for [2] custom cut on DCAz -> |DCAz| < [1] + [2]/pT"};
     Configurable<bool> confIsApplyTrkCutMCTruth{"confIsApplyTrkCutMCTruth", false, "Apply eta, pT selection cut on MCTruth tracks "};
     Configurable<bool> confIsOnlyPrimary{"confIsOnlyPrimary", false, "Select only primaries"};
   } ConfFilterCuts;
 
-  Filter globalCutFilter = requireGlobalTrackInFilter();
+  Filter globalCutFilter = requireGlobalTrackWoDCAInFilter();
   Filter customTrackFilter = (aod::track::pt > ConfFilterCuts.confPtLowFilterCut) &&
                              (aod::track::pt < ConfFilterCuts.confPtHighFilterCut) &&
                              (nabs(aod::track::eta) < ConfFilterCuts.confEtaFilterCut) &&
-                             (!ConfFilterCuts.confDxaXYCustom0Cut || (aod::track::dcaXY < ConfFilterCuts.confDcaXYFilterCut)) && // true if configurable set to false or if configurable is true and it passes the selection
-                             (aod::track::dcaZ < ConfFilterCuts.confDcaZFilterCut) &&
-                             (!ConfFilterCuts.confDcaXYCustom1Cut || (nabs(aod::track::dcaXY) < ConfFilterCuts.confDcaXYCustom11FilterCut + ConfFilterCuts.confDcaXYCustom12FilterCut / aod::track::pt)); // same logic here
+                             (nabs(aod::track::dcaZ) < (ConfFilterCuts.confDcaZCustom1FilterCut + ConfFilterCuts.confDcaZCustom2FilterCut / aod::track::pt)) &&
+                             (nabs(aod::track::dcaXY) < (ConfFilterCuts.confDcaXYCustom1FilterCut + ConfFilterCuts.confDcaXYCustom2FilterCut / aod::track::pt));
 
   // CASCADE
   FemtoUniverseCascadeSelection cascadeCuts;
@@ -1234,8 +1231,9 @@ struct FemtoUniverseProducerTask {
                   confIsUseCutculator ? cutContainer.at(
                                           femto_universe_track_selection::TrackContainerPosition::kPID)
                                       : PIDBitmask(track),
-                  track.dcaXY(), childIDs, 0,
-                  track.sign()); // sign getter is mAntiLambda()
+                  track.dcaXY(), childIDs,
+                  track.hasTOF(), // hasTOF getter is mLambda()
+                  track.sign());  // sign getter is mAntiLambda()
 
       tmpIDtrack.push_back(track.globalIndex());
       if (confIsDebug) {
