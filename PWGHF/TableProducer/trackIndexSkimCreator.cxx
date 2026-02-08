@@ -1229,7 +1229,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processNoPid, "Process without PID selections", false);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processNoPid, "Process without PID selections", true);
 
   void processProtonPidTpc(aod::Collisions const& collisions,
                            TrackAssoc const& trackIndices,
@@ -1260,7 +1260,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpc, "Process with proton TPC PID selection", true);
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpc, "Process with proton TPC PID selection", false);
 
   void processProtonPidTof(aod::Collisions const& collisions,
                            TrackAssoc const& trackIndices,
