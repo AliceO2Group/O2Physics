@@ -41,6 +41,10 @@ namespace o2::analysis::femto
 namespace tripletbuilder
 {
 
+const int64_t nLimitPartitionIdenticalParticles123 = 3;
+const int64_t nLimitPartitionIdenticalParticles12 = 2;
+const int64_t nLimitPartitionParticles = 1;
+
 template <const char* prefixTrack1,
           const char* prefixTrack2,
           const char* prefixTrack3,
@@ -71,21 +75,23 @@ class TripletTrackTrackTrackBuilder
             typename T10,
             typename T11,
             typename T12,
-            typename T13>
+            typename T13,
+            typename T14>
   void init(o2::framework::HistogramRegistry* registry,
-            T1 const& confTrackSelection1,
-            T2 const& confTrackSelection2,
-            T3 const& confTrackSelection3,
-            T4 const& confCtr,
-            T5 const& confMixing,
-            T6 const& confTripletBinning,
-            T7 const& confTripletCuts,
-            std::map<T8, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
-            std::map<T9, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
-            std::map<T10, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
-            std::map<T11, std::vector<o2::framework::AxisSpec>> const& trackHistSpec3,
-            std::map<T12, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
-            std::map<T13, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
+            T1 const& confCollisionBinning,
+            T2 const& confTrackSelection1,
+            T3 const& confTrackSelection2,
+            T4 const& confTrackSelection3,
+            T5 const& confCtr,
+            T6 const& confMixing,
+            T7 const& confTripletBinning,
+            T8 const& confTripletCuts,
+            std::map<T9, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& trackHistSpec3,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
   {
     // check if correlate the same tracks or not
     mTrack1Track2Track3AreSameSpecies = confMixing.particle123AreSameSpecies.value;
@@ -95,7 +101,7 @@ class TripletTrackTrackTrackBuilder
       LOG(fatal) << "Option Track 1&2 are identical and Option Track 1&2&3 are identical is activated. Breaking...";
     }
 
-    mColHistManager.template init<mode>(registry, colHistSpec);
+    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
     mTripletHistManagerSe.template init<mode>(registry, pairHistSpec, confTripletBinning, confTripletCuts);
     mTripletHistManagerMe.template init<mode>(registry, pairHistSpec, confTripletBinning, confTripletCuts);
 
@@ -169,10 +175,10 @@ class TripletTrackTrackTrackBuilder
     tripletprocesshelpers::TripletOrder tripletOrder = tripletprocesshelpers::kOrder123;
     if (mTrack1Track2Track3AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionIdenticalParticles123) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice1.size(), trackSlice1.size());
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -181,10 +187,10 @@ class TripletTrackTrackTrackBuilder
     } else if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || trackSlice3.size() == 0) {
+      if (trackSlice1.size() <= nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice1.size(), trackSlice3.size());
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -194,10 +200,10 @@ class TripletTrackTrackTrackBuilder
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || trackSlice2.size() == 0 || trackSlice3.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice2.size(), trackSlice3.size());
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTc);
     }
@@ -210,10 +216,10 @@ class TripletTrackTrackTrackBuilder
     tripletprocesshelpers::TripletOrder tripletOrder = tripletprocesshelpers::kOrder123;
     if (mTrack1Track2Track3AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionIdenticalParticles123) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice1.size(), trackSlice1.size());
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -222,10 +228,10 @@ class TripletTrackTrackTrackBuilder
     } else if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || trackSlice3.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice1.size(), trackSlice3.size());
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -235,10 +241,10 @@ class TripletTrackTrackTrackBuilder
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || trackSlice2.size() == 0 || trackSlice3.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice2.size(), trackSlice3.size());
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTc);
     }
@@ -395,28 +401,30 @@ class TripletTrackTrackV0Builder
             typename T12,
             typename T13,
             typename T14,
-            typename T15>
+            typename T15,
+            typename T16>
   void init(o2::framework::HistogramRegistry* registry,
-            T1 const& confTrackSelection1,
-            T2 const& confTrackSelection2,
-            T3 const& confV0Selection,
-            T4 const& confCtr,
-            T5 const& confMixing,
-            T6 const& confTripletBinning,
-            T7 const& confTripletCuts,
-            std::map<T8, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
-            std::map<T9, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
-            std::map<T10, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
-            std::map<T11, std::vector<o2::framework::AxisSpec>> const& v0histSpec,
-            std::map<T12, std::vector<o2::framework::AxisSpec>> const& posDauhistSpec,
-            std::map<T13, std::vector<o2::framework::AxisSpec>> const& negDauhistSpec,
-            std::map<T14, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
-            std::map<T15, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec)
+            T1 const& confCollisionBinning,
+            T2 const& confTrackSelection1,
+            T3 const& confTrackSelection2,
+            T4 const& confV0Selection,
+            T5 const& confCtr,
+            T6 const& confMixing,
+            T7 const& confTripletBinning,
+            T8 const& confTripletCuts,
+            std::map<T9, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T10, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
+            std::map<T11, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& v0histSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& posDauhistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& negDauhistSpec,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& tripletHistSpec,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& ctrHistSpec)
   {
     // check if correlate the same tracks or not
     mTrack1Track2AreSameSpecies = confMixing.particle12AreSameSpecies.value;
 
-    mColHistManager.template init<mode>(registry, colHistSpec);
+    mColHistManager.template init<mode>(registry, colHistSpec, confCollisionBinning);
     mTripletHistManagerSe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
     mTripletHistManagerMe.template init<mode>(registry, tripletHistSpec, confTripletBinning, confTripletCuts);
 
@@ -475,10 +483,10 @@ class TripletTrackTrackV0Builder
     if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || v0Slice.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice1.size(), v0Slice.size());
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -488,10 +496,10 @@ class TripletTrackTrackV0Builder
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || trackSlice2.size() == 0 || v0Slice.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice2.size(), v0Slice.size());
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTc);
     }
@@ -505,10 +513,10 @@ class TripletTrackTrackV0Builder
     if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || v0Slice.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice1.size(), v0Slice.size());
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -518,10 +526,10 @@ class TripletTrackTrackV0Builder
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice2 = partition2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto v0Slice = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() == 0 || trackSlice2.size() == 0 || v0Slice.size() == 0) {
+      if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col);
+      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice2.size(), v0Slice.size());
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTc);
     }

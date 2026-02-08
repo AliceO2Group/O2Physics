@@ -16,11 +16,13 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
+#include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/Array2D.h>
 
@@ -39,8 +41,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-using namespace o2::pwgem::photonmeson;
 
 namespace o2::analysis
 {
@@ -193,6 +193,21 @@ class V0PhotonCut : public TNamed
     kNCuts
   };
 
+  /// \brief check if given v0 photon survives all cuts
+  /// \param flags EMBitFlags where results will be stored
+  /// \param v0s v0 photon table to check
+  template <o2::soa::is_table TV0, typename TLeg>
+  void AreSelectedRunning(EMBitFlags& flags, TV0 const& v0s) const
+  {
+    size_t iV0 = 0;
+    for (const auto& v0 : v0s) {
+      if (!IsSelected<decltype(v0), TLeg>(v0)) {
+        flags.set(iV0);
+      }
+      ++iV0;
+    }
+  }
+
   template <o2::soa::is_iterator TV0, typename TLeg>
   bool IsSelected(TV0 const& v0) const
   {
@@ -247,7 +262,7 @@ class V0PhotonCut : public TNamed
     auto pos = v0.template posTrack_as<TLeg>();
     auto ele = v0.template negTrack_as<TLeg>();
 
-    for (auto& track : {pos, ele}) {
+    for (const auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackPtRange)) {
         return false;
       }
@@ -263,10 +278,10 @@ class V0PhotonCut : public TNamed
       if (!track.hasITS() && !track.hasTPC()) { // track has to be ITSonly or TPConly or ITS-TPC
         return false;
       }
-      if (mDisableITSonly && isITSonlyTrack(track)) {
+      if (mDisableITSonly && o2::pwgem::photonmeson::isITSonlyTrack(track)) {
         return false;
       }
-      if (mDisableTPConly && isTPConlyTrack(track)) {
+      if (mDisableTPConly && o2::pwgem::photonmeson::isTPConlyTrack(track)) {
         return false;
       }
 
@@ -274,13 +289,13 @@ class V0PhotonCut : public TNamed
         auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
         auto hits_ob = std::count_if(its_ob_Requirement.second.begin(), its_ob_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
         bool its_ob_only = (hits_ib <= its_ib_Requirement.first) && (hits_ob >= its_ob_Requirement.first);
-        if (isITSonlyTrack(track) && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
+        if (o2::pwgem::photonmeson::isITSonlyTrack(track) && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
           return false;
         }
 
         auto hits_ob_itstpc = std::count_if(its_ob_Requirement_ITSTPC.second.begin(), its_ob_Requirement_ITSTPC.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
         bool its_ob_only_itstpc = (hits_ib <= its_ib_Requirement.first) && (hits_ob_itstpc >= its_ob_Requirement_ITSTPC.first);
-        if (isITSTPCTrack(track) && !its_ob_only_itstpc) { // ITSTPC tracks should not have any ITSib hits.
+        if (o2::pwgem::photonmeson::isITSTPCTrack(track) && !its_ob_only_itstpc) { // ITSTPC tracks should not have any ITSib hits.
           return false;
         }
       }
@@ -400,7 +415,7 @@ class V0PhotonCut : public TNamed
         return v0.mGamma() < mMaxQt * 2.f;
 
       case V0PhotonCuts::kAP:
-        return pow(v0.alpha() / mMaxAlpha, 2) + pow(v0.qtarm() / mMaxQt, 2) < 1.0;
+        return std::pow(v0.alpha() / mMaxAlpha, 2) + std::pow(v0.qtarm() / mMaxQt, 2) < 1.0;
 
       case V0PhotonCuts::kPsiPair:
         return true;
@@ -438,24 +453,24 @@ class V0PhotonCut : public TNamed
         float y = v0.vy();            // cm, measured secondary vertex of gamma->ee
         float z = v0.vz();            // cm, measured secondary vertex of gamma->ee
 
-        float rxy = sqrt(x * x + y * y);
+        float rxy = std::sqrt(x * x + y * y);
         if (rxy < 7.0 || 14.0 < rxy) {
           return false;
         }
 
-        // r = 0.192 * z + 8.88 (cm) expected wire position in RZ plane.TMath::Tan(10.86 * TMath::DegToRad()) = 0.192
+        // r = 0.192 * z + 8.88 (cm) expected wire position in RZ plane.TMath::Tan(10.86 * o2::constants::math::Deg2Rad) = 0.192
         if (rxy > 0.192 * z + 14.0) { // upper limit
           return false;
         }
 
-        float dxy = std::fabs(1.0 * y - x * std::tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(std::tan(-8.52 * TMath::DegToRad()), 2));
+        float dxy = std::fabs(1.0 * y - x * std::tan(-8.52f * o2::constants::math::Deg2Rad)) / std::sqrt(std::pow(1.0, 2) + std::pow(std::tan(-8.52f * o2::constants::math::Deg2Rad), 2));
         return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kOnWwireOB: {
-        const float margin_xy = 1.0;                                      // cm
-        const float rxy_exp = 30.8;                                       // cm
-        const float x_exp = rxy_exp * std::cos(-1.3 * TMath::DegToRad()); // cm, expected position x of W wire
-        const float y_exp = rxy_exp * std::sin(-1.3 * TMath::DegToRad()); // cm, expected position y of W wire
+        const float margin_xy = 1.0;                                                  // cm
+        const float rxy_exp = 30.8;                                                   // cm
+        const float x_exp = rxy_exp * std::cos(-1.3f * o2::constants::math::Deg2Rad); // cm, expected position x of W wire
+        const float y_exp = rxy_exp * std::sin(-1.3f * o2::constants::math::Deg2Rad); // cm, expected position y of W wire
         // const float z_min = -47.0;                                          // cm
         // const float z_max = +47.0;                                          // cm
         float x = v0.vx(); // cm, measured secondary vertex of gamma->ee
@@ -520,26 +535,26 @@ class V0PhotonCut : public TNamed
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
       case V0PhotonCuts::kITSClusterSize: {
-        if (!isITSonlyTrack(track)) {
+        if (!o2::pwgem::photonmeson::isITSonlyTrack(track)) {
           return true;
         }
         return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
       }
 
       case V0PhotonCuts::kRequireITSTPC:
-        return isITSTPCTrack(track);
+        return o2::pwgem::photonmeson::isITSTPCTrack(track);
 
       case V0PhotonCuts::kRequireITSonly:
-        return isITSonlyTrack(track);
+        return o2::pwgem::photonmeson::isITSonlyTrack(track);
 
       case V0PhotonCuts::kRequireTPConly:
-        return isTPConlyTrack(track);
+        return o2::pwgem::photonmeson::isTPConlyTrack(track);
 
       case V0PhotonCuts::kRequireTPCTRD:
-        return isTPCTRDTrack(track);
+        return o2::pwgem::photonmeson::isTPCTRDTrack(track);
 
       case V0PhotonCuts::kRequireTPCTOF:
-        return isTPCTOFTrack(track);
+        return o2::pwgem::photonmeson::isTPCTOFTrack(track);
 
       default:
         return false;

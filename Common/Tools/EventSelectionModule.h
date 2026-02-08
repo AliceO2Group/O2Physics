@@ -159,6 +159,7 @@ class BcSelectionModule
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
   std::string strLPMProductionTag = "";  // MC production tag to be retrieved from AO2D metadata
+  bool isMC = false;
 
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
@@ -195,6 +196,7 @@ class BcSelectionModule
       }
     }
     strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
+    isMC = metadataInfo.isMC();
 
     // add counter
     histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::kTH1D, {{1, 0., 1.}});
@@ -223,7 +225,10 @@ class BcSelectionModule
         // duration of TF in bcs
         nBCsPerTF = 32; // hard-coded for Run3 MC (no info from ccdb at the moment)
       } else {
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+        auto runInfo = (!isMC) ? o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run)
+                               : o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+        LOGP(info, "BcSelectionModule: isMC = {}, NumberOfOrbitsPerTF extracted from AggregatedRunInfo = {}", isMC, runInfo.orbitsPerTF);
+
         // SOR and EOR timestamps
         sorTimestamp = runInfo.sor;
         eorTimestamp = runInfo.eor;
@@ -751,7 +756,10 @@ class EventSelectionModule
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= run3min) {
       lastRun = run;
-      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+      auto runInfo = (!evselOpts.isMC) ? o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run)
+                                       : o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
+      LOGP(info, "EventSelectionModule: isMC = {}, NumberOfOrbitsPerTF extracted from AggregatedRunInfo = {}", (bool)evselOpts.isMC, runInfo.orbitsPerTF);
+
       // first bc of the first orbit
       bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
       // duration of TF in bcs

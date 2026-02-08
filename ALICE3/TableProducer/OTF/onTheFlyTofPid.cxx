@@ -160,6 +160,7 @@ struct OnTheFlyTofPid {
       mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
       mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
       mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+      mSmearer[icfg]->setDownloadPath("./.ALICE3/TOFPID/");
       std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
       for (const auto& entry : globalConfiguration) {
         int pdg = 0;

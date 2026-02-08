@@ -296,7 +296,7 @@ template <typename T>
 bool selectTrigger(T const& collision, int triggerMaskBit)
 {
   if (triggerMaskBit == -1) {
-    return false;
+    return true;
   }
   return collision.triggerSel() & (1 << triggerMaskBit);
 }

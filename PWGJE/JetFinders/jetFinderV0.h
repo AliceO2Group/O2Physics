@@ -75,8 +75,8 @@ struct JetFinderV0Task {
   // V0 candidate level configurables
   o2::framework::Configurable<float> candPtMin{"candPtMin", 0.0, "minimum candidate pT"};
   o2::framework::Configurable<float> candPtMax{"candPtMax", 100.0, "maximum candidate pT"};
-  o2::framework::Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate eta"};
-  o2::framework::Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate eta"};
+  o2::framework::Configurable<float> candYMin{"candYMin", -0.8, "minimum candidate rapidity"};
+  o2::framework::Configurable<float> candYMax{"candYMax", 0.8, "maximum candidate rapidity"};
   o2::framework::Configurable<float> candPDG{"candPDG", 310, "candidate PDG for mass in clustering"};
 
   // jet level configurables
