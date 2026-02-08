@@ -351,8 +351,7 @@ struct rho770analysis {
   void processData(aod::ResoCollision const& resoCollision,
                    aod::ResoCollisionColls const& collisionIndex,
                    soa::Join<aod::Collisions, aod::PVMults> const& collisions,
-                   aod::ResoTracks const& resoTracks,
-                   aod::ResoCascades const& cascTracks)
+                   aod::ResoTracks const& resoTracks)
   {
     auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
     auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
