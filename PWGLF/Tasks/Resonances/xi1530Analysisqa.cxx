@@ -254,6 +254,8 @@ struct Xi1530Analysisqa {
 
   Configurable<bool> cUseFixedMassXi{"cUseFixedMassXi", false, "Use fixed mass for Xi-"};
   Configurable<bool> cUseTruthRapidity{"cUseTruthRapidity", false, "Use truth rapidity for Xi*"};
+  
+  Configurable<bool> cConsiderPairOnly{"cConsiderPairOnly", true, "Consider only existing particle pairs in the event"};
 
   } additionalConfig;
 
@@ -284,8 +286,6 @@ struct Xi1530Analysisqa {
     AxisSpec pidQAAxis = {65, -6.5, 6.5};
     AxisSpec flagAxis = {9, 0, 9, "Flags"};
 
-    
-      
       if(histoConfig.multQA) {
       // multiplicity histograms
       histos.add("multQA/h2MultCent", "Multiplicity vs Centrality", HistType::kTH2F, {centAxis, histoConfig.multNTracksAxis});
@@ -294,11 +294,14 @@ struct Xi1530Analysisqa {
     
       // event histograms
       if(histoConfig.eventQA) {
-      histos.add("TestME/hCollisionIndexSameE", "coll index sameE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
-      histos.add("TestME/hCollisionIndexMixedE", "coll index mixedE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
+      histos.add("QAevent/hCollisionIndexSameE", "coll index sameE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
+      histos.add("QAevent/hCollisionIndexMixedE", "coll index mixedE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
 
-      histos.add("TestME/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
-      histos.add("TestME/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+
+      histos.add("QAevent/hnCascsSameE", "n cascs per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      histos.add("QAevent/hnCascsMixedE", "n cascs per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
 
       histos.add("QAevent/hVertexZSameE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
       histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {centAxis});
@@ -316,10 +319,6 @@ struct Xi1530Analysisqa {
       histos.add("Xi1530invmassLSAnti", "Invariant mass of Anti-Xi(1530)0 like sign", kTH1F, {invMassAxis});
     }
 
-    if (doprocessMEMicro) {
-      histos.add("Xi1530invmassME_DS", "Invariant mass of Xi(1530)0 mixed event DS", kTH1F, {invMassAxis});
-      histos.add("Xi1530invmassME_DSAnti", "Invariant mass of Xi(1530)0 mixed event DSAnti", kTH1F, {invMassAxis});
-    }
 
     if(histoConfig.additionalQAplots) {
     // DCA QA to candidates for first pion and Xi-
@@ -385,18 +384,15 @@ struct Xi1530Analysisqa {
 
     histos.add("h3Xi1530invmassLS", "Invariant mass of Xi(1530)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
 
-    histos.add("h3Xi1530invmassME", "Invariant mass of Xi(1530)0 mixed event", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
 
+    histos.add("h3Xi1530invmassDSAnti", "Invariant mass of Anti-Xi(1530)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
+    histos.add("h3XiinvmassDSAnti", "Invariant mass of Anti-Xi- differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxisCasc, flagAxis});
 
-      histos.add("h3Xi1530invmassDSAnti", "Invariant mass of Anti-Xi(1530)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
-      histos.add("h3XiinvmassDSAnti", "Invariant mass of Anti-Xi- differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxisCasc, flagAxis});
+    histos.add("h3Xi1530invmassLSAnti", "Invariant mass of Anti-Xi(1530)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
+  
 
-      histos.add("h3Xi1530invmassLSAnti", "Invariant mass of Anti-Xi(1530)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
-    
-
-    if (doprocessMEMicro) {
+    if (doprocessMEDF || doprocessMEMicro) {
       histos.add("h3Xi1530invmassME_DS", "Invariant mass of Xi(1530)0 mixed event DS", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
-
       histos.add("h3Xi1530invmassME_DSAnti", "Invariant mass of Xi(1530)0 mixed event DSAnti", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
     }
 
@@ -485,10 +481,10 @@ struct Xi1530Analysisqa {
           return false;
       }
     } else {
-      if (std::abs(track.dcaXY()) > (primarytrackConfig.cDCAxytoPVByPtPiFirstP0 + primarytrackConfig.cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+      if (std::abs(track.dcaXY()) > (primarytrackConfig.cDCAxytoPVByPtPiFirstP0 + primarytrackConfig.cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.)))
         return false;
       if (primarytrackConfig.cDCAzToPVAsPt) {
-        if (std::abs(track.dcaZ()) > (primarytrackConfig.cDCAxytoPVByPtPiFirstP0 + primarytrackConfig.cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+        if (std::abs(track.dcaZ()) > (primarytrackConfig.cDCAxytoPVByPtPiFirstP0 + primarytrackConfig.cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.)))
           return false;
       } else {
         if (std::abs(track.dcaZ()) > primarytrackConfig.cMaxDCAzToPVCut)
@@ -526,7 +522,7 @@ struct Xi1530Analysisqa {
         return false;
     }
     if (primarytrackConfig.cDCAzToPVAsPtForCasc) {
-      if (std::abs(track.dcaZCascToPV()) > (primarytrackConfig.cDCAxyToPVByPtCascP0 + primarytrackConfig.cDCAxyToPVByPtCascExp * std::pow(track.pt(), -1.1)))
+      if (std::abs(track.dcaZCascToPV()) > (primarytrackConfig.cDCAxyToPVByPtCascP0 + primarytrackConfig.cDCAxyToPVByPtCascExp * std::pow(track.pt(), -1.)))
         return false;
     }
 
@@ -713,15 +709,20 @@ struct Xi1530Analysisqa {
       if constexpr (!IsMix) {
         histos.fill(HIST("QAevent/hVertexZSameE"), collision.posZ());
         histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), Cent);
-        histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
-        histos.fill(HIST("TestME/hnTrksSameE"), dTracks1.size());
+        histos.fill(HIST("QAevent/hCollisionIndexSameE"), collision.globalIndex());
+        histos.fill(HIST("QAevent/hnTrksSameE"), dTracks1.size());
+        histos.fill(HIST("QAevent/hnCascsSameE"), dTracks2.size());
       } else {
         histos.fill(HIST("QAevent/hVertexZMixedE"), collision.posZ());
-          histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), Cent);
-        histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision.globalIndex());
-        histos.fill(HIST("TestME/hnTrksMixedE"), dTracks1.size());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), Cent);
+        histos.fill(HIST("QAevent/hCollisionIndexMixedE"), collision.globalIndex());
+        histos.fill(HIST("QAevent/hnTrksMixedE"), dTracks1.size());
+        histos.fill(HIST("QAevent/hnCascsMixedE"), dTracks2.size());
       }
     }
+
+    if (additionalConfig.cConsiderPairOnly && (dTracks2.size() < 1 || dTracks1.size() < 1))
+    return;
 
     LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, lResonance;
     std::vector<int64_t> pionCandateIndicies = {};
@@ -764,10 +765,9 @@ struct Xi1530Analysisqa {
       if (pidConfig.cUseOnlyTOFTrackPionBachelor && hasSubsystemInfo(trk1NSigmaPiTOF))
         continue;      
       if (!selectionPIDPionFirst<IsResoMicrotrack>(trk1)) // PID selection for the first pion
-          continue;
+        continue;
       if (!primaryTrackCut<IsResoMicrotrack>(trk1)) // Primary track selections
         continue;
-
 
       if constexpr (!IsMix) {
       if (histoConfig.pidPlots) {
@@ -873,7 +873,6 @@ struct Xi1530Analysisqa {
       if (!cascprimaryTrackCut(trk2) || !casctopCut(trk2)) // Primary track selections
         continue;
 
-
       //QA after selections
       if constexpr (!IsMix) {
         //// QA plots after the selection
@@ -941,25 +940,14 @@ struct Xi1530Analysisqa {
         }
       }
 
-
       xiCandateIndicies.push_back(trk2.index());
 
     }
 
     for(const auto& trk1cand : pionCandateIndicies) {
-
-      auto pionCand = dTracks1.rawIteratorAt(trk1cand);
-      auto pionCandIndex = pionCand.index();
-     if(pionCandIndex != trk1cand){
-        LOG(info) << "pion candidate index retrieval: expected " << trk1cand << ", got " << pionCandIndex;
-     }
+      auto pionCand = dTracks1.iteratorAt(trk1cand);
       for(const auto& trk2cand : xiCandateIndicies) {
-        auto xiCand = dTracks2.rawIteratorAt(trk2cand);
-        auto xiCandIndex = xiCand.index();
-       if(xiCandIndex != trk2cand){
-          LOG(info) << "xi candidate index retrieval: expected " << trk2cand << ", got " << xiCandIndex;
-       } 
-
+        auto xiCand = dTracks2.iteratorAt(trk2cand);
         auto pionCandPt = pionCand.pt();
         auto xiCandPt = xiCand.pt();
         float massXiCand = xiCand.mXi();
@@ -997,17 +985,9 @@ struct Xi1530Analysisqa {
                 histos.fill(HIST("h3Xi1530invmassDSAnti"), Cent, lResonancePt, lResonanceMass, kData);
               }
           } else {
-            if (histoConfig.invMass1D)
-              histos.fill(HIST("Xi1530invmassME"), lResonanceMass);
             if (pionCand.sign() > 0) {
-              if (histoConfig.invMass1D)
-                histos.fill(HIST("Xi1530invmassME_DS"), lResonanceMass);
-
               histos.fill(HIST("h3Xi1530invmassME_DS"), Cent, lResonancePt, lResonanceMass, kData);
             } else if (pionCand.sign() < 0) {
-              if (histoConfig.invMass1D)
-                histos.fill(HIST("Xi1530invmassME_DSAnti"), lResonanceMass);
-
               histos.fill(HIST("h3Xi1530invmassME_DSAnti"), Cent, lResonancePt, lResonanceMass, kData);
             }
           }
@@ -1135,14 +1115,7 @@ struct Xi1530Analysisqa {
                 histos.fill(HIST("h3Xi1530invmassLSAnti"), Cent, lResonancePt, lResonanceMass, kLS);
               }
           }
-        else if constexpr (IsMix) {
-          if (pionCand.sign() < 0) {
-            histos.fill(HIST("Xi1530invmassME_DS"), Cent, lResonancePt, lResonanceMass, kMixing);
-          } else if (pionCand.sign() > 0) {
-            histos.fill(HIST("Xi1530invmassME_DSAnti"), Cent, lResonancePt, lResonanceMass, kMixing);
-          }
-        }
-      }
+        } // -> End if signal or bkg
       } // -> End loop over xi candidates
     } // -> End loop over pion and xi candidates
   } // -> End fillHistograms
@@ -1265,7 +1238,7 @@ struct Xi1530Analysisqa {
       float multiplicity = 0.f;
     auto inCent = collision1.cent();
     if (additionalConfig.cRecoINELgt0 && !collision1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
-      return;
+      continue;
     if(additionalConfig.cMultNTracksPVFull)
       multiplicity = collision1.multNTracksPV();
     else if(additionalConfig.cMultNTracksPVeta1)
