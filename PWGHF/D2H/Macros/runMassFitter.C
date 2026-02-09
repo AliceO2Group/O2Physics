@@ -37,6 +37,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <functional>
@@ -131,12 +132,13 @@ void runMassFitter(const std::string& configFileName)
   std::vector<double> dscbNRLower;
   std::vector<double> dscbNRUpper;
 
-  readJsonVector(inputHistoName, config, "InputHistoName", true);
-  const int nHistograms = static_cast<int>(inputHistoName.size());
-
+  readJsonVector(inputHistoName, config, "InputHistoName");
   readJsonVector(promptHistoName, config, "PromptHistoName");
   readJsonVector(fdHistoName, config, "FDHistoName");
   readJsonVector(signalHistoName, config, "SignalHistoName");
+  const std::array possibleInputHistogramSizes{inputHistoName.size(), promptHistoName.size(), fdHistoName.size(), signalHistoName.size()};
+  const int nHistograms = static_cast<int>(*std::max_element(possibleInputHistogramSizes.begin(), possibleInputHistogramSizes.end()));
+
   readJsonVector(reflHistoName, config, "ReflHistoName");
   readJsonVector(promptSecPeakHistoName, config, "PromptSecPeakHistoName");
   readJsonVector(fdSecPeakHistoName, config, "FDSecPeakHistoName");
