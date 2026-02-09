@@ -25,6 +25,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/Array2D.h>
+#include <Framework/HistogramRegistry.h>
 
 #include <TMath.h>
 #include <TNamed.h>
@@ -193,86 +194,309 @@ class V0PhotonCut : public TNamed
     kNCuts
   };
 
+  /// \brief add histograms to registry
+  /// \param fRegistry pointer to histogram registry
+  void addQAHistograms(o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  {
+    if (mDoQA && fRegistry != nullptr) {
+      const o2::framework::AxisSpec thAxispT{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"};
+      const o2::framework::AxisSpec thAxisMomentum{250, 0., 25., "#it{p} (GeV/#it{c})"};
+      const o2::framework::AxisSpec thAxisEta{320, -0.8, 0.8, "#eta"};
+      const o2::framework::AxisSpec thAxisPhi{500, 0, o2::constants::math::TwoPI, "#varphi (rad)"};
+      const o2::framework::AxisSpec thAxisNSigmaE{500, -10, 10, "#it{N#sigma}_{e} (a.u.)"};
+      const o2::framework::AxisSpec thAxisNSigmaPi{500, -10, 10, "#it{N#sigma}_{#pi} (a.u.)"};
+      const o2::framework::AxisSpec thAxisNClusTPC{152, 0., 152., "#it{N}_{cl., TPC}"};
+      const o2::framework::AxisSpec thAxisNCrossedTPC{152, 0., 152., "#it{N}_{cr., TPC}"};
+      const o2::framework::AxisSpec thAxisIDV0{1000, 0., 1000., "ID_{V0}"};
+      const o2::framework::AxisSpec thAxisIDLeg{1000, 0., 1000., "ID_{Leg}"};
+      const o2::framework::AxisSpec thAxisAlpha{250, -1., 1., "#alpha=(#it{p}^{+}_{L}-#it{p}^{-}_{L})/(#it{p}^{+}_{L}+#it{p}^{-}_{L})"};
+      const o2::framework::AxisSpec thAxisQt{200, 0., 0.1, "#it{q}_{T} (GeV/#it{c})"};
+      const o2::framework::AxisSpec thAxisConvX{320, -160., +160, "X (cm)"};
+      const o2::framework::AxisSpec thAxisConvY{320, -160., +160, "Y (cm)"};
+      const o2::framework::AxisSpec thAxisConvZ{180, -90., +90, "Z (cm)"};
+      const o2::framework::AxisSpec thAxisConvR{200, 0., +100, "R (cm)"};
+      const o2::framework::AxisSpec thAxisChi2{100, 0., +50, "#chi^{2}_{KF}/ndf"};
+      const o2::framework::AxisSpec thAxisPsiPair{200, -0.1, +0.1, "#Psi_{pair}"};
+
+      fRegistry->add("QA/V0Photon/before/hE", "p_{T};#it{p}_{T} (GeV/#it{c});#it{N}_{#gamma}", o2::framework::kTH1D, {thAxispT}, true);
+      fRegistry->add("QA/V0Photon/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{#gamma}", o2::framework::kTH1D, {thAxispT}, true);
+      fRegistry->add("QA/V0Photon/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
+      fRegistry->add("QA/V0Photon/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/V0Photon/before/hAP", "Armenteros-Podolanski #alpha vs qT", o2::framework::kTH2F, {thAxisAlpha, thAxisQt}, true);
+      fRegistry->add("QA/V0Photon/before/hConvXY", "Conversion point XY", o2::framework::kTH2F, {thAxisConvX, thAxisConvY}, true);
+      fRegistry->add("QA/V0Photon/before/hConvZR", "Conversion point ZR", o2::framework::kTH2F, {thAxisConvZ, thAxisConvR}, true);
+      fRegistry->add("QA/V0Photon/before/hChi2", "Chi2/ndf from KFParticle;#chi^{2}_{KF}/ndf;counts", o2::framework::kTH1D, {thAxisChi2}, true);
+
+      // TODO: add psi_pair once available
+      // fRegistry->add("QA/V0Photon/before/hPsiPair", "Psi pair;#Psi_{pair};counts", o2::framework::kTH1D, {thAxisPsiPair}, true);
+
+      fRegistry->add("QA/V0Photon/before/Pos/NSigmaE", "NSigmaE of pos leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaE}, true);
+      fRegistry->add("QA/V0Photon/before/Pos/NSigmaPi", "NSigmaE of pos leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaPi}, true);
+      fRegistry->add("QA/V0Photon/before/Pos/hEtaPhi", "eta vs phi of pos leg", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/V0Photon/before/Pos/hTPCHits", "NCluster vs NFindable TPC", o2::framework::kTH2F, {thAxisNClusTPC, thAxisNCrossedTPC}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/NSigmaE", "NSigmaE of neg leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaE}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/NSigmaPi", "NSigmaE of neg leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaPi}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/hEtaPhi", "eta vs phi of neg leg", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/hTPCHits", "NCluster vs NFindable TPC", o2::framework::kTH2F, {thAxisNClusTPC, thAxisNCrossedTPC}, true);
+
+      fRegistry->addClone("QA/V0Photon/before/", "QA/V0Photon/after/");
+
+      auto hPhotonQualityCuts = fRegistry->add<TH2>("QA/V0Photon/hPhotonQualityCuts", "pT at which v0 photons are removed by a given cut", o2::framework::kTH2F, {{static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(V0PhotonCut::V0PhotonCuts::kNCuts) + 1.5}, thAxispT}, true);
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(1, "In");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(2, "#it{M}_{ee}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(3, "#it{p}_{T}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(4, "#it{#eta}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(5, "AP");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(6, "#Psi_{pair}"); // currently not implemented!
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(7, "#Phi_{v}");    // currently not implemented!
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(8, "#it{R}_{xy}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(9, "CosPA");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(10, "PCA");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(11, "#chi^{2}_{KF}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(12, "RZ_{line}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(13, "Wire_{IB}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(14, "Wire_{OB}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(15, "#it{p}_{T,leg}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(16, "#it{#eta}_{leg}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(17, "#it{N}_{cl,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(18, "#it{N}_{cr,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(19, "#it{N}_{cr,TPC}/#it{N}_{cl,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(20, "FracSharedCl");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(21, "#chi^{2}_{TPC}/NDF");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(22, "#it{N#sigma}_{e,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(23, "#it{N#sigma}_{#pi,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(24, "DCA_{xy}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(25, "DCA_{z}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(26, "#it{N}_{cl,ITS}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(27, "#chi^{2}_{ITS}/NDF");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(28, "size_{ITS}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(29, "ITSTPC");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(30, "ITSOnly");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(31, "TPCOnly");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(32, "TPCTRD");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(33, "TPCTOF");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(34, "Out");
+    }
+  }
+
+  template <o2::soa::is_iterator TV0, o2::soa::is_iterator TLeg1, o2::soa::is_iterator TLeg2>
+  void fillBeforePhotonHistogram(TV0 const& v0, TLeg1 const& pos, TLeg2 const& ele, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  {
+
+    if (mDoQA == false || fRegistry == nullptr) {
+      return;
+    }
+
+    fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), 0, v0.pt());
+    fRegistry->fill(HIST("QA/V0Photon/before/hE"), v0.e());
+    fRegistry->fill(HIST("QA/V0Photon/before/hPt"), v0.pt());
+    fRegistry->fill(HIST("QA/V0Photon/before/hEtaPhi"), v0.eta(), v0.phi());
+    fRegistry->fill(HIST("QA/V0Photon/before/hAP"), v0.alpha(), v0.qtarm());
+    fRegistry->fill(HIST("QA/V0Photon/before/hConvXY"), v0.vx(), v0.vy());
+    fRegistry->fill(HIST("QA/V0Photon/before/hConvZR"), v0.vz(), v0.v0radius());
+    fRegistry->fill(HIST("QA/V0Photon/before/hChi2"), v0.chiSquareNDF());
+
+    // TODO: add psi_pair once available
+    // fRegistry->fill(HIST("QA/V0Photon/before/hPsiPair"), v0.psiPair());
+
+    fRegistry->fill(HIST("QA/V0Photon/before/Pos/NSigmaE"), pos.p(), pos.tpcNSigmaEl());
+    fRegistry->fill(HIST("QA/V0Photon/before/Pos/NSigmaPi"), pos.p(), pos.tpcNSigmaPi());
+    fRegistry->fill(HIST("QA/V0Photon/before/Pos/hEtaPhi"), pos.eta(), pos.phi());
+    fRegistry->fill(HIST("QA/V0Photon/before/Pos/hTPCHits"), pos.tpcNClsFound(), pos.tpcNClsCrossedRows());
+    fRegistry->fill(HIST("QA/V0Photon/before/Neg/NSigmaE"), ele.p(), ele.tpcNSigmaEl());
+    fRegistry->fill(HIST("QA/V0Photon/before/Neg/NSigmaPi"), ele.p(), ele.tpcNSigmaPi());
+    fRegistry->fill(HIST("QA/V0Photon/before/Neg/hEtaPhi"), ele.eta(), ele.phi());
+    fRegistry->fill(HIST("QA/V0Photon/before/Neg/hTPCHits"), ele.tpcNClsFound(), ele.tpcNClsCrossedRows());
+  }
+
+  template <o2::soa::is_iterator TV0, o2::soa::is_iterator TLeg1, o2::soa::is_iterator TLeg2>
+  void fillAfterPhotonHistogram(TV0 const& v0, TLeg1 const& pos, TLeg2 const& ele, o2::framework::HistogramRegistry* fRegistry = nullptr) const
+  {
+
+    if (mDoQA == false || fRegistry == nullptr) {
+      return;
+    }
+
+    fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kNCuts) + 1, v0.pt());
+    fRegistry->fill(HIST("QA/V0Photon/after/hE"), v0.e());
+    fRegistry->fill(HIST("QA/V0Photon/after/hPt"), v0.pt());
+    fRegistry->fill(HIST("QA/V0Photon/after/hEtaPhi"), v0.eta(), v0.phi());
+    fRegistry->fill(HIST("QA/V0Photon/after/hAP"), v0.alpha(), v0.qtarm());
+    fRegistry->fill(HIST("QA/V0Photon/after/hConvXY"), v0.vx(), v0.vy());
+    fRegistry->fill(HIST("QA/V0Photon/after/hConvZR"), v0.vz(), v0.v0radius());
+    fRegistry->fill(HIST("QA/V0Photon/after/hChi2"), v0.chiSquareNDF());
+
+    // TODO: add psi_pair once available
+    // fRegistry->fill(HIST("QA/V0Photon/after/hPsiPair"), v0.psiPair());
+
+    fRegistry->fill(HIST("QA/V0Photon/after/Pos/NSigmaE"), pos.p(), pos.tpcNSigmaEl());
+    fRegistry->fill(HIST("QA/V0Photon/after/Pos/NSigmaPi"), pos.p(), pos.tpcNSigmaPi());
+    fRegistry->fill(HIST("QA/V0Photon/after/Pos/hEtaPhi"), pos.eta(), pos.phi());
+    fRegistry->fill(HIST("QA/V0Photon/after/Pos/hTPCHits"), pos.tpcNClsFound(), pos.tpcNClsCrossedRows());
+    fRegistry->fill(HIST("QA/V0Photon/after/Neg/NSigmaE"), ele.p(), ele.tpcNSigmaEl());
+    fRegistry->fill(HIST("QA/V0Photon/after/Neg/NSigmaPi"), ele.p(), ele.tpcNSigmaPi());
+    fRegistry->fill(HIST("QA/V0Photon/after/Neg/hEtaPhi"), ele.eta(), ele.phi());
+    fRegistry->fill(HIST("QA/V0Photon/after/Neg/hTPCHits"), ele.tpcNClsFound(), ele.tpcNClsCrossedRows());
+  }
+
   /// \brief check if given v0 photon survives all cuts
   /// \param flags EMBitFlags where results will be stored
   /// \param v0s v0 photon table to check
   template <o2::soa::is_table TV0, typename TLeg>
-  void AreSelectedRunning(EMBitFlags& flags, TV0 const& v0s) const
+  void AreSelectedRunning(EMBitFlags& flags, TV0 const& v0s, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
+    // auto legIter = legs.begin();
+    // auto legEnd = legs.end();
     size_t iV0 = 0;
+
+    const bool doQA = mDoQA && fRegistry != nullptr;
+
+    uint nTotV0PerColl = 0;
+    currentCollID = v0s.iteratorAt(0).emeventId();
+
     for (const auto& v0 : v0s) {
-      if (!IsSelected<decltype(v0), TLeg>(v0)) {
+      const auto collID = v0.emeventId();
+      if (!IsSelected<decltype(v0), TLeg>(v0, fRegistry)) {
         flags.set(iV0);
       }
+      if (collID != currentCollID) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/before/hNgamma"), nTotV0PerColl);
+        }
+        nTotV0PerColl = 0;
+        currentCollID = collID;
+      }
+      ++nTotV0PerColl;
       ++iV0;
     }
   }
 
   template <o2::soa::is_iterator TV0, typename TLeg>
-  bool IsSelected(TV0 const& v0) const
+  bool IsSelected(TV0 const& v0, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
+    auto pos = v0.template posTrack_as<TLeg>();
+    auto ele = v0.template negTrack_as<TLeg>();
+
+    const float v0Pt = v0.pt();
+
+    const auto doQA = mDoQA && fRegistry != nullptr;
+
+    if (doQA) {
+      fillBeforePhotonHistogram(v0, pos, ele, fRegistry);
+    }
+    if (!IsSelectedV0(v0, V0PhotonCuts::kMee)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kMee) + 1, v0Pt);
+      }
+      return false;
+    }
     if (!IsSelectedV0(v0, V0PhotonCuts::kV0PtRange)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kV0PtRange) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kV0EtaRange)) {
-      return false;
-    }
-    if (!IsSelectedV0(v0, V0PhotonCuts::kMee)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kV0EtaRange) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kAP)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kAP) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPsiPair)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kPsiPair) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPhiV)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kPhiV) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kRxy)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kRxy) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kCosPA)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kCosPA) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kPCA)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kPCA) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kChi2KF)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kChi2KF) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedV0(v0, V0PhotonCuts::kRZLine)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kRZLine) + 1, v0Pt);
+      }
       return false;
     }
 
     if (mIsOnWwireIB && mIsOnWwireOB) {
       if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB) && !IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kOnWwireIB) + 1, v0Pt);
+        }
         return false;
       }
     } else if (mIsOnWwireIB) {
       if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireIB)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kOnWwireIB) + 1, v0Pt);
+        }
         return false;
       }
     } else if (mIsOnWwireOB) {
       if (!IsSelectedV0(v0, V0PhotonCuts::kOnWwireOB)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kOnWwireOB) + 1, v0Pt);
+        }
         return false;
       }
     }
 
-    auto pos = v0.template posTrack_as<TLeg>();
-    auto ele = v0.template negTrack_as<TLeg>();
-
     for (const auto& track : {pos, ele}) {
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackPtRange)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTrackPtRange) + 1, v0Pt);
+        }
         return false;
       }
       if (!IsSelectedTrack(track, V0PhotonCuts::kTrackEtaRange)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTrackEtaRange) + 1, v0Pt);
+        }
         return false;
       }
       if (!IsSelectedTrack(track, V0PhotonCuts::kDCAxy)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kDCAxy) + 1, v0Pt);
+        }
         return false;
       }
       if (!IsSelectedTrack(track, V0PhotonCuts::kDCAz)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kDCAz) + 1, v0Pt);
+        }
         return false;
       }
       if (!track.hasITS() && !track.hasTPC()) { // track has to be ITSonly or TPConly or ITS-TPC
@@ -300,10 +524,10 @@ class V0PhotonCut : public TNamed
         }
       }
 
-      if (track.hasITS() && !CheckITSCuts(track)) {
+      if (track.hasITS() && !CheckITSCuts(track, fRegistry, v0Pt)) {
         return false;
       }
-      if (track.hasTPC() && !CheckTPCCuts(track)) {
+      if (track.hasTPC() && !CheckTPCCuts(track, fRegistry, v0Pt)) {
         return false;
       }
       if (track.hasITS() && !track.hasTPC() && (track.hasTRD() || track.hasTOF())) { // remove ITS-TRD, ITS-TOF, ITS-TRD-TOF that are unrealistic tracks.
@@ -315,18 +539,33 @@ class V0PhotonCut : public TNamed
       }
 
       if (mRequireITSonly && !IsSelectedTrack(track, V0PhotonCuts::kRequireITSonly)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kRequireITSonly) + 1, v0Pt);
+        }
         return false;
       }
       if (mRequireITSTPC && !IsSelectedTrack(track, V0PhotonCuts::kRequireITSTPC)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kRequireITSTPC) + 1, v0Pt);
+        }
         return false;
       }
       if (mRequireTPConly && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPConly)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kRequireTPConly) + 1, v0Pt);
+        }
         return false;
       }
       if (mRequireTPCTRD && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTRD)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kRequireTPCTRD) + 1, v0Pt);
+        }
         return false;
       }
       if (mRequireTPCTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTOF)) {
+        if (doQA) {
+          fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kRequireTPCTOF) + 1, v0Pt);
+        }
         return false;
       }
     }
@@ -356,46 +595,86 @@ class V0PhotonCut : public TNamed
         return false;
       }
     }
+    if (doQA) {
+      fillAfterPhotonHistogram(v0, pos, ele, fRegistry);
+      if (v0.emeventId() != currentCollID) {
+        fRegistry->fill(HIST("QA/V0Photon/after/hNgamma"), nAccV0PerColl);
+        nAccV0PerColl = 0;
+      }
+      ++nAccV0PerColl;
+    }
     return true;
   }
 
   template <typename T>
-  bool CheckITSCuts(T const& track) const
+  bool CheckITSCuts(T const& track, o2::framework::HistogramRegistry* fRegistry = nullptr, const float v0Pt = 0.f) const
   {
+    const auto doQA = mDoQA && fRegistry != nullptr;
     if (!IsSelectedTrack(track, V0PhotonCuts::kITSNCls)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kITSNCls) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kITSChi2NDF)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kITSChi2NDF) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kITSClusterSize)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kITSClusterSize) + 1, v0Pt);
+      }
       return false;
     }
     return true;
   }
 
   template <typename T>
-  bool CheckTPCCuts(T const& track) const
+  bool CheckTPCCuts(T const& track, o2::framework::HistogramRegistry* fRegistry = nullptr, const float v0Pt = 0.f) const
   {
+    const auto doQA = mDoQA && fRegistry != nullptr;
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNCls)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTPCNCls) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRows)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTPCCrossedRows) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRowsOverNCls)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTPCCrossedRowsOverNCls) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCFracSharedClusters)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTPCFracSharedClusters) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCChi2NDF)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTPCChi2NDF) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaEl)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTPCNsigmaEl) + 1, v0Pt);
+      }
       return false;
     }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaPi)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kTPCNsigmaPi) + 1, v0Pt);
+      }
       return false;
     }
     return true;
@@ -679,6 +958,8 @@ class V0PhotonCut : public TNamed
   void SetCutsMl(const std::vector<double>& cutsMlFlat);
   void SetNamesInputFeatures(const std::vector<std::string>& namesInputFeaturesVec);
 
+  void setDoQA(bool flag = false);
+
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement;
@@ -752,7 +1033,11 @@ class V0PhotonCut : public TNamed
   bool mDisableITSonly{false};
   bool mDisableTPConly{false};
 
-  ClassDef(V0PhotonCut, 4);
+  bool mDoQA{false};             ///< flag to decide if QA should be done or not
+  mutable uint nAccV0PerColl{0}; ///< running number of accepted v0 photons per collision used for QA
+  mutable int currentCollID{-1}; ///< running collision ID of v0 photon used for QA
+
+  ClassDef(V0PhotonCut, 5);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_

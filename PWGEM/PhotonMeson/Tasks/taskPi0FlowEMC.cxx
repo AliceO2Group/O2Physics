@@ -212,6 +212,7 @@ struct TaskPi0FlowEMC {
     o2::framework::Configurable<float> maxTPCNSigmaEl{"maxTPCNSigmaEl", +3.0f, "max. TPC n sigma for electron"};
     o2::framework::Configurable<bool> disableITSOnly{"disableITSOnly", false, "flag to disable ITSonly tracks"};
     o2::framework::Configurable<bool> disableTPCOnly{"disableTPCOnly", false, "flag to disable TPConly tracks"};
+    o2::framework::Configurable<bool> doQA{"doQA", false, "flag to set QA flag."};
   } pcmcuts;
 
   struct : ConfigurableGroup {
@@ -380,6 +381,8 @@ struct TaskPi0FlowEMC {
     fV0PhotonCut.SetRequireITSTPC(pcmcuts.requireV0WithITSTPC);
     fV0PhotonCut.SetRequireITSonly(pcmcuts.requireV0WithITSOnly);
     fV0PhotonCut.SetRequireTPConly(pcmcuts.requireV0WithTPCOnly);
+
+    fV0PhotonCut.setDoQA(pcmcuts.doQA.value);
   }
 
   void init(InitContext&)
@@ -390,7 +393,9 @@ struct TaskPi0FlowEMC {
 
     defineEMEventCut();
     defineEMCCut();
+    fEMCCut.addQAHistograms(&registry);
     definePCMCut();
+    fV0PhotonCut.addQAHistograms(&registry);
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
@@ -1103,7 +1108,7 @@ struct TaskPi0FlowEMC {
     }
     for (const auto& collision : collisions) {
 
-      if (!isFullEventSelected(collision)) {
+      if (!isFullEventSelected(collision, true)) {
         continue;
       }
       runNow = collision.runNumber();
@@ -1242,14 +1247,14 @@ struct TaskPi0FlowEMC {
     fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
 
     EMBitFlags v0flags(photons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons);
+    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
 
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
     }
     for (const auto& collision : collisions) {
 
-      if (!isFullEventSelected(collision)) {
+      if (!isFullEventSelected(collision, true)) {
         continue;
       }
       runNow = collision.runNumber();
@@ -1487,10 +1492,10 @@ struct TaskPi0FlowEMC {
   void processPCM(CollsWithQvecs const& collisions, PCMPhotons const& photons, aod::V0Legs const&)
   {
     EMBitFlags v0flags(photons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons);
+    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
     for (const auto& collision : collisions) {
 
-      if (!isFullEventSelected(collision)) {
+      if (!isFullEventSelected(collision, true)) {
         continue;
       }
       runNow = collision.runNumber();
