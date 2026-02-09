@@ -179,7 +179,7 @@ struct jEPFlowAnalysis {
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());    
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     detId = getdetId(cfgDetName);
     refAId = getdetId(cfgRefAName);
@@ -291,9 +291,10 @@ struct jEPFlowAnalysis {
       float weight = 1.0;
 
       for (const auto& track : tracks) {
-        if (trackSel(track)) continue;
+        if (trackSel(track))
+          continue;
         if (cfgEffCor) {
-          weight /= getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ()); 
+          weight /= getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
         }
 
         float vn = std::cos((i + 2) * (track.phi() - eps[0]));
