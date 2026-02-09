@@ -896,6 +896,30 @@ class V0PhotonCut : public TNamed
     mEmMlResponse->init();
   }
 
+  template <o2::soa::is_iterator TMCPhoton>
+  bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton) const
+  {
+
+    float rGenXY = std::sqrt(std::pow(mcphoton.vx(), 2) + std::pow(mcphoton.vy(), 2));
+
+    // eta cut
+    if (mcphoton.eta() >= mMinV0Eta && mcphoton.eta() <= mMaxV0Eta) {
+      return false;
+    }
+
+    // radius cut
+    if (rGenXY < mMinRxy || mMaxRxy < rGenXY) {
+      return false;
+    }
+
+    // line cut
+    if (rGenXY < std::abs(mcphoton.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ) {
+      return false;
+    }
+
+    return true;
+  }
+
   // Setters
   void SetV0PtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetV0EtaRange(float minEta = -1e10f, float maxEta = 1e10f);
