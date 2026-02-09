@@ -207,7 +207,7 @@ class VarManager : public TObject
     kBC,
     kBCOrbit,
     kIsPhysicsSelection,
-    kIsTVXTriggered,             // Is Trigger TVX
+    kIsTVXTriggered,             // Is trigger TVX
     kIsNoTFBorder,               // No time frame border
     kIsNoITSROFBorder,           // No ITS read out frame border (from event selection)
     kIsNoITSROFBorderRecomputed, // No ITS read out frame border, computed here
