@@ -135,7 +135,7 @@ struct FemtoV0Qa {
 
     if (processData) {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
       negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
       if (doprocessLambda) {
@@ -148,7 +148,7 @@ struct FemtoV0Qa {
       }
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-      colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kAnalysis_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       posDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
       negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
       if (doprocessLambdaMc) {
@@ -165,7 +165,7 @@ struct FemtoV0Qa {
 
   void processK0short(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
     auto k0shortSlice = k0shortPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& k0short : k0shortSlice) {
       k0shortHistManager.fill<modes::Mode::kAnalysis_Qa>(k0short, tracks);
@@ -175,7 +175,7 @@ struct FemtoV0Qa {
 
   void processK0shortMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoK0shortsWithLabel const& /*k0shorts*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
     auto k0shortSlice = k0shortWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& k0short : k0shortSlice) {
       if (!k0shortCleaner.isClean(k0short, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -188,7 +188,7 @@ struct FemtoV0Qa {
 
   void processLambda(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
     auto lambdaSlice = lambdaPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& lambda : lambdaSlice) {
       lambdaHistManager.fill<modes::Mode::kAnalysis_Qa>(lambda, tracks);
@@ -198,7 +198,7 @@ struct FemtoV0Qa {
 
   void processLambdaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
     auto lambdaSlice = lambdaWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& lambda : lambdaSlice) {
       if (!lambdaCleaner.isClean(lambda, mcParticles, mcMothers, mcPartonicMothers)) {

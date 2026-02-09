@@ -329,10 +329,10 @@ struct JetSubstructureHFOutputTask {
     std::copy(pairPerpCone1PerpCone2EnergySpan.begin(), pairPerpCone1PerpCone2EnergySpan.end(), std::back_inserter(pairPerpCone1PerpCone2EnergyVec));
     std::copy(pairPerpCone1PerpCone2ThetaSpan.begin(), pairPerpCone1PerpCone2ThetaSpan.end(), std::back_inserter(pairPerpCone1PerpCone2ThetaVec));
 
-    std::vector<int> splittingMatchesGeoVec;
-    std::vector<int> splittingMatchesPtVec;
-    std::vector<int> splittingMatchesHFVec;
-    std::vector<int> pairMatchesVec;
+    std::vector<int32_t> splittingMatchesGeoVec;
+    std::vector<int32_t> splittingMatchesPtVec;
+    std::vector<int32_t> splittingMatchesHFVec;
+    std::vector<int32_t> pairMatchesVec;
     if (doprocessOutputSubstructureMatchingData || doprocessOutputSubstructureMatchingMC) {
       splittingMatchesGeoVec = splittingMatchesGeoVecVec[jet.globalIndex()];
       splittingMatchesPtVec = splittingMatchesPtVecVec[jet.globalIndex()];
@@ -367,7 +367,7 @@ struct JetSubstructureHFOutputTask {
             if (candidateTableIndex != candidateMap.end()) {
               candidatesIndices.push_back(candidateTableIndex->second);
             }
-            rho = candidate.rho();
+            rho = candidate.rho(); // doesn't work if multiple jet candidates
           }
           if (nJetInCollision == 0) {
             float centrality = -1.0;
@@ -413,6 +413,9 @@ struct JetSubstructureHFOutputTask {
   {
     for (const auto& jet : jets) {
       auto const& candidates = jet.template candidates_as<U>();
+      for (auto const& candidate : candidates) {
+        candidateSelectionFlags[candidate.globalIndex()] = true;
+      }
       if (jet.pt() < jetPtMin) {
         for (const auto& candidate : candidates) {
           candidateSelectionFlags[candidate.globalIndex()] = false;
@@ -445,6 +448,7 @@ struct JetSubstructureHFOutputTask {
   {
     for (const auto& jet : jets) {
       auto candidateId = jet.candidateId();
+      candidateSelectionFlags[candidateId] = true;
       if (jet.pt() < jetPtMin) {
         candidateSelectionFlags[candidateId] = false;
         continue;
@@ -578,7 +582,7 @@ struct JetSubstructureHFOutputTask {
       } else {
         continue;
       }
-      for (const auto& jetRadiiValue : jetRadiiValues) {
+      for (const auto& jetRadiiValue : recoilJetRadiiValues) {
         if (recoilJet.r() == round(jetRadiiValue * 100.0f)) {
           auto const& jet = recoilJet.template jet_as<U>();
           std::vector<int> geoMatching;
