@@ -66,6 +66,7 @@ using namespace o2::framework;
 using namespace o2::aod::evsel;
 using namespace o2::constants::math;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::FT0MultZeqs, o2::aod::CentFT0Cs, o2::aod::CentFT0Ms, aod::TPCMults, o2::aod::BarrelMults>;
 using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -252,6 +253,14 @@ struct PiKpRAA {
   Configurable<std::string> pathPhiCutHigh{"pathPhiCutHigh", "Users/o/omvazque/PhiCut/OO/Global/High", "base path to the ccdb object"};
   Configurable<std::string> pathPhiCutLow{"pathPhiCutLow", "Users/o/omvazque/PhiCut/OO/Global/Low", "base path to the ccdb object"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+  Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
+  Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
+  Configurable<bool> requireGoodRct{"requireGoodRct", true, "RCT flag to reject events with limited acceptance for selected detectors"};
+  Configurable<bool> requireGoodPIDRct{"requireGoodPIDRct", true, "RCT flag to reject events with limited acceptance for selected detectors"};
+
+  // RCT Checker instance
+  RCTFlagsChecker rctChecker;
 
   enum EvCutLabel {
     All = 1,
@@ -349,6 +358,12 @@ struct PiKpRAA {
   int currentRunNumberPhiSel;
   void init(InitContext const&)
   {
+
+    // Initialize the rct checker
+    if (requireGoodRct) {
+      rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    }
+
     currentRunNumberNchSel = -1;
     currentRunNumberPhiSel = -1;
     trkSelGlobalOpenDCAxy = trkSelOpenDCAxy();
@@ -372,6 +387,7 @@ struct PiKpRAA {
     registry.add("zPos", "With Event Selection;;Entries;", kTH1F, {axisZpos});
     registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
     registry.add("T0CcentVsFoundFT0", ";Found(=1.5) NOT Found(=0.5);", kTH2F, {{{axisCent}, {2, 0, 2}}});
+    registry.add("T0CcentVsRCTSel", "Bad RCT(=0.5) Good RCT(=1.5) Good RCT & Good PID RCT(=2.5);;RCT Status;", kTH2F, {{{axisCent}, {3, 0, 3}}});
     registry.add("NchVsCent", "Measured Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Nch", kTH2F, {{axisCent, {nBinsNch, minNch, maxNch}}});
     registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
     registry.add("NclVsEtaPIDp", ";#eta;#LTNcl#GT used for PID", kTProfile, {axisEta});
@@ -577,6 +593,7 @@ struct PiKpRAA {
       registry.add("MCclosure_PtPrVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch;", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
     }
 
+    LOG(info) << "\trequireGoodRct=" << requireGoodRct.value;
     LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
     LOG(info) << "\tapplyNchSel=" << applyNchSel.value;
     LOG(info) << "\tselINELgt0=" << selINELgt0.value;
@@ -640,6 +657,7 @@ struct PiKpRAA {
     // LOG(info) << " Collisions size: " << collisions.size() << "
     // Table's size: " << collisions.tableSize() << "\n";
     // LOG(info) << "Run number: " << foundBC.runNumber() << "\n";
+
     if (!isEventSelected(collision)) {
       return;
     }
@@ -649,6 +667,31 @@ struct PiKpRAA {
     const int magField{getMagneticField(timeStamp)};
     const double nPV{collision.multNTracksPVeta1() / 1.};
     const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
+
+    //---------------------------
+    // Control histogram
+    //---------------------------
+    if (selHasFT0 && !collision.has_foundFT0()) {
+      registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 0.5);
+    }
+    registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 1.5);
+
+    // Apply RCT selection?
+    if (requireGoodRct) {
+
+      // Checks if collisions passes RCT selection
+      if (!rctChecker(*collision)) {
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 0.5);
+        return;
+      }
+
+      registry.fill(HIST("T0CcentVsRCTSel"), centrality, 1.5);
+      // Checks if collisions passes good PID RCT status
+      if (requireGoodPIDRct && collision.rct_bit(kTPCBadPID)) {
+        return;
+      }
+      registry.fill(HIST("T0CcentVsRCTSel"), centrality, 2.5);
+    }
 
     if (applyNchSel) {
       const int nextRunNumber{foundBC.runNumber()};
