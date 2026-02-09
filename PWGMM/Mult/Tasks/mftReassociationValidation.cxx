@@ -63,7 +63,6 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::aod::pid_tpc_tof_utils;
 using namespace o2::aod::track;
 using namespace o2::constants::math;
 using namespace o2::framework;
@@ -236,11 +235,6 @@ struct MftReassociationValidation {
 
   Preslice<FilteredMftTracks> perColMftTracks = o2::aod::fwdtrack::collisionId;
   Preslice<FilteredTracksWDcaSel> perColTracks = aod::track::collisionId;
-
-  //  configurables for containers
-  //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
-  //        either 1) add invariant mass axis or 2) define several containers for different inv. mass regions
-  //        Note: don't forget to check inv. mass separately for D0 and D0bar candidate
 
   struct : ConfigurableGroup {
     std::string prefix = "ConfigAxis_group";
@@ -543,7 +537,7 @@ struct MftReassociationValidation {
     for (const auto& reassociated2dMftTrack : reassociated2dMftTracks) {
 
       registry.fill(HIST("Data/Mft/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
-      auto templatedMftTrack = track2.template mfttrack_as<FilteredMftTracks>();
+      auto templatedMftTrack = reassociated2dMftTrack.template mfttrack_as<FilteredMftTracks>();
 
       if (!isAcceptedMftTrack(reassociated2dMftTrack, false)) {
         continue;
