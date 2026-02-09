@@ -930,6 +930,11 @@ class VarManager : public TObject
     kPhiCharmHadron,
     kBdtCharmHadron,
 
+    // Resolution variables
+    kDeltaPt,
+    kPtResolution,
+    kEtaResolution,
+
     // Index used to scan bit maps
     kBitMapIndex,
 
@@ -1010,6 +1015,8 @@ class VarManager : public TObject
     kRICHnSigmaAl,
     kTOFEventTime,
     kTOFEventTimeErr,
+    kiTOFBeta,
+    koTOFBeta,
     kOuterTOFnSigmaEl,
     kOuterTOFnSigmaMu,
     kOuterTOFnSigmaPi,
@@ -1349,6 +1356,8 @@ class VarManager : public TObject
   static void FillEventAlice3(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrackAlice3(T const& track, float* values = nullptr);
+  template <typename M, typename T>
+  static void FillResolutions(M const& mcTrack, T const& track, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -6381,16 +6390,6 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
 
   if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
 
-    values[kOTTOTSignal] = track.timeOverThresholdBarrel();
-    values[kOTnSigmaEl] = track.nSigmaTrkEl();
-    values[kOTnSigmaMu] = track.nSigmaTrkMu();
-    values[kOTnSigmaPi] = track.nSigmaTrkPi();
-    values[kOTnSigmaKa] = track.nSigmaTrkKa();
-    values[kOTnSigmaPr] = track.nSigmaTrkPr();
-    values[kOTnSigmaDe] = track.nSigmaTrkDe();
-    values[kOTnSigmaTr] = track.nSigmaTrkTr();
-    values[kOTnSigmaHe3] = track.nSigmaTrkHe();
-    values[kOTnSigmaAl] = track.nSigmaTrkAl();
     values[kHasRICHSig] = track.hasSig();
     values[kHasRICHSigInGas] = track.hasSigInGas();
     values[kHasRICHSigEl] = track.hasSigEl();
@@ -6413,6 +6412,8 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
     values[kRICHnSigmaAl] = track.nSigmaAlphaRich();
     values[kTOFEventTime] = track.tofEventTime();
     values[kTOFEventTimeErr] = track.tofEventTimeErr();
+    values[kiTOFBeta] = track.innerTOFTrackLengthReco() / (track.innerTOFTrackTimeReco() - track.tofEventTime()) * o2::constants::physics::invLightSpeedCm2PS;
+    values[koTOFBeta] = track.outerTOFTrackLengthReco() / (track.outerTOFTrackTimeReco() - track.tofEventTime()) * o2::constants::physics::invLightSpeedCm2PS;
     values[kOuterTOFnSigmaEl] = track.nSigmaElectronOuterTOF();
     values[kOuterTOFnSigmaMu] = track.nSigmaMuonOuterTOF();
     values[kOuterTOFnSigmaPi] = track.nSigmaPionOuterTOF();
@@ -6698,6 +6699,19 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
+}
+
+template <typename M, typename T>
+void VarManager::FillResolutions(M const& mcTrack, T const& track, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kDeltaPt] = track.pt() - mcTrack.pt();
+  values[kPtResolution] = (track.pt() - mcTrack.pt()) / mcTrack.pt();
+
+  values[kEtaResolution] = track.eta() - mcTrack.eta();
 }
 
 #endif // PWGDQ_CORE_VARMANAGER_H_

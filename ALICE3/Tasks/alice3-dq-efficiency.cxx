@@ -423,6 +423,7 @@ struct AnalysisTrackSelection {
           isCorrectAssoc = (eventMCfromTrack.globalIndex() == event.reducedA3MCEvent().globalIndex());
         }
         VarManager::FillTrackMC(tracksMC, trackMC);
+        VarManager::FillResolutions(trackMC, track);
       }
 
       if (fConfigQA) {

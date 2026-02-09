@@ -77,6 +77,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+using namespace o2::aod::rctsel;
 
 Zorro zorro;
 
@@ -204,6 +205,12 @@ struct TableMaker {
     Configurable<std::string> fConfigMuonCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
   } fConfigCuts;
 
+  // RCT selection
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigUseRCT{"cfgUseRCT", false, "Enable event selection with RCT flags"};
+    Configurable<std::string> fConfigRCTLabel{"cfgRCTLabel", "CBT", "RCT flag labels : CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
+  } fConfigRCT;
+
   // Zorro selection
   struct : ConfigurableGroup {
     Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro"};
@@ -311,6 +318,9 @@ struct TableMaker {
   std::vector<double> binsPtMl;
   std::array<double, 1> cutValues;
   std::vector<int> cutDirMl;
+
+  // RCT flag checker
+  RCTFlagsChecker rctChecker{"CBT"};
 
   // FIXME: For now, the skimming is done using the Common track-collision association task, which does not allow to use
   //       our own Filtered tracks. If the filter is very selective, then it may be worth to run the association in this workflow
@@ -466,6 +476,10 @@ struct TableMaker {
       matchingMlResponse.setModelPathsCCDB(fConfigVariousOptions.fModelNames.value, fCCDBApi, fConfigVariousOptions.fModelPathsCCDB.value, fConfigCCDB.fConfigNoLaterThan.value);
       matchingMlResponse.cacheInputFeaturesIndices(fConfigVariousOptions.fInputFeatures.value);
       matchingMlResponse.init();
+    }
+
+    if (fConfigRCT.fConfigUseRCT.value) {
+      rctChecker.init(fConfigRCT.fConfigRCTLabel);
     }
   }
 
@@ -995,7 +1009,7 @@ struct TableMaker {
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
         zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
-        if (!fEventCut->IsSelected(VarManager::fgValues)) {
+        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
 
@@ -1007,7 +1021,7 @@ struct TableMaker {
           continue;
         }
       } else {
-        if (!fEventCut->IsSelected(VarManager::fgValues)) {
+        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
       }

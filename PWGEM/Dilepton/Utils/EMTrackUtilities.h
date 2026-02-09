@@ -137,18 +137,21 @@ bool checkMFTHitMap(T const& track)
 template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
 bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
 {
-  // this is only for muon at forward rapidity
+  // this is only for global muons at forward rapidity
+  // Be careful! tracks are fwdtracks per DF.
   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
     std::map<int64_t, float> map_chi2MCHMFT;
     map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
     for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
       const auto& candidate = tracks.rawIteratorAt(glmuonId);
-      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
-          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+      if (track.mchtrackId() != candidate.mchtrackId() && track.mfttrackId() == candidate.mfttrackId()) {
+        if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+          if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+            map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+          }
         }
       }
-    }
+    } // end of glmuonId
 
     auto it = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
 
