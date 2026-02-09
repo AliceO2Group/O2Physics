@@ -259,6 +259,13 @@ void runMassFitter(const std::string& configFileName)
     }
   };
 
+  if ((!isMc && enableRefl) || isMc) {
+    checkVectorSizeMcHistograms(signalHistoName, promptHistoName, fdHistoName);
+  }
+  if (isMc && includeSecPeak) {
+    checkVectorSizeMcHistograms(signalSecPeakHistoName, promptSecPeakHistoName, fdSecPeakHistoName);
+  }
+
   for (int iSliceVar = 0; iSliceVar < nHistograms; iSliceVar++) {
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
 
@@ -311,8 +318,6 @@ void runMassFitter(const std::string& configFileName)
       hMass[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFile, inputHistoName[iSliceVar]);
       if (enableRefl) {
         hMassRefl[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFileRefl, reflHistoName[iSliceVar]);
-
-        checkVectorSizeMcHistograms(signalHistoName, promptHistoName, fdHistoName);
         if (!signalHistoName.empty()) {
           hMassSgn[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFileRefl, signalHistoName[iSliceVar]);
         } else {
@@ -321,7 +326,6 @@ void runMassFitter(const std::string& configFileName)
         }
       }
     } else {
-      checkVectorSizeMcHistograms(signalHistoName, promptHistoName, fdHistoName);
       if (!signalHistoName.empty()) {
         hMass[iSliceVar] = getObjectWithNullPtrCheck<TH1>(inputFile, signalHistoName[iSliceVar]);
       } else {
@@ -329,7 +333,6 @@ void runMassFitter(const std::string& configFileName)
         hMass[iSliceVar]->Add(getObjectWithNullPtrCheck<TH1>(inputFile, fdHistoName[iSliceVar]));
       }
       if (includeSecPeak) {
-        checkVectorSizeMcHistograms(signalSecPeakHistoName, promptSecPeakHistoName, fdSecPeakHistoName);
         if (!signalHistoName.empty()) {
           hMass[iSliceVar]->Add(getObjectWithNullPtrCheck<TH1>(inputFile, signalSecPeakHistoName[iSliceVar]));
         } else {
