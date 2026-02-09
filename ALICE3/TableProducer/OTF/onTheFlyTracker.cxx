@@ -1394,7 +1394,7 @@ struct OnTheFlyTracker {
 
       LOG(debug) << "Vertex reconstruction efficiency " << vertexReconstructionEfficiencyCounters.second << "/" << vertexReconstructionEfficiencyCounters.first << "=" << vertexReconstructionEfficiencyCounters.second / vertexReconstructionEfficiencyCounters.first;
       if (n_vertices < 1) {
-        LOG(info) << "Vertexing completed, no vtx found.";
+        LOG(debug) << "Vertexing completed, no vtx found.";
         if (doExtraQA) {
           histos.fill(HIST("h1dVerticesNotReco"), tracksAlice3.size());
         }
