@@ -888,7 +888,7 @@ class PairTrackKinkBuilder
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    if (trackSlice.size() == 0 || kinkSlice.size() == 0) {
+    if (trackSlice.size() < nLimitPartitionParticles || kinkSlice.size() < nLimitPartitionParticles) {
       return;
     }
     mColHistManager.template fill<mode>(col, mcCols, 0, 0, 0);
