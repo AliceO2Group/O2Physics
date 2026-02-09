@@ -575,7 +575,7 @@ struct Xi1530Analysisqa {
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
-    if (pidConfig.tofAtHighPt && trackPt > pidConfig.cMinTOFpt) {
+    if (tofAtHighPt && trackPt > pidConfig.cMinTOFpt) {
       if (std::abs(TPCNsigma) < params.cMaxTPCnSigma) {
         tpcPIDPassed = true;
       }
