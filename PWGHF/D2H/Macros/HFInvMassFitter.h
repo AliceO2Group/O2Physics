@@ -36,6 +36,7 @@
 
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 
 class HFInvMassFitter : public TNamed
@@ -175,7 +176,8 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
   void fillWorkspace(RooWorkspace& w) const;
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
-  double randomizeInitialParameter(const ParameterRanges& parameterRanges) const;
+  [[nodiscard]] double randomizeInitialParameter(const ParameterRanges& parameterRanges) const;
+  [[nodiscard]] std::pair<double, double> getRangesOfSignal() const;
 
   TH1* mHistoInvMass; // histogram to fit
   std::string mFitOption;

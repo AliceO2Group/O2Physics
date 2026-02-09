@@ -54,6 +54,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace RooFit;
@@ -202,14 +203,14 @@ void HFInvMassFitter::doFit()
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mSecMass - mNSigmaForSidebands * mSecSigma);
       mass->setRange("SEC", mSecMass + mNSigmaForSidebands * mSecSigma, mMaxMass);
-      mass->setRange("signal", mSecMass - mNSigmaForSidebands * mSecSigma, mSecMass + mNSigmaForSidebands * mSecSigma);
+      mass->setRange("signal", mSecMass - mNSigmaForSgn * mSecSigma, mSecMass + mNSigmaForSgn * mSecSigma);
     } else { // Single Peak fit range
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mMaxMass);
       mass->setRange("signal", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);
     }
   }
-  mass->setRange("bkg", mMass - 4 * mSigmaSgn, mMass + 4 * mSigmaSgn);
+  mass->setRange("bkg", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);
   mass->setRange("full", mMinMass, mMaxMass);
   mInvMassFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle()))); // define the frame to plot
   dataHistogram.plotOn(mInvMassFrame, Name("data_c"));                       // plot data histogram on the frame
@@ -226,13 +227,14 @@ void HFInvMassFitter::doFit()
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));                                                          // create total pdf
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-      mTotalPdf->chi2FitTo(dataHistogram, Range("signal"));
+      mTotalPdf->chi2FitTo(dataHistogram, Range("full"));
     } else {
-      mTotalPdf->fitTo(dataHistogram, Range("signal"));
+      mTotalPdf->fitTo(dataHistogram, Range("full"));
     }
     RooAbsReal* signalIntegralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
     mIntegralSgn = signalIntegralMc->getValV();
-    calculateSignal(mRawYield, mRawYieldErr);        // calculate signal and signal error
+    calculateSignal(mRawYield, mRawYieldErr); // calculate signal and signal error
+    countSignal(mRawYieldCounted, mRawYieldCountedErr);
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
     // Fit to data ratio
     mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
@@ -702,10 +704,7 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 // calculate signal yield via bin counting
 void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
 {
-  const double mean = mRooMeanSgn->getVal();
-  const double sigma = mRooSecSigmaSgn->getVal();
-  const double minForSgn = mean - mNSigmaForSidebands * sigma;
-  const double maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const auto [minForSgn, maxForSgn] = getRangesOfSignal();
   const int binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   const int binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
   const double binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn + 1);
@@ -758,8 +757,7 @@ void HFInvMassFitter::calculateSignificance(double& significance, double& errSig
 // estimate Signal
 void HFInvMassFitter::checkForSignal(double& estimatedSignal)
 {
-  double const minForSgn = mMass - 4 * mSigmaSgn;
-  double const maxForSgn = mMass + 4 * mSigmaSgn;
+  auto const [minForSgn, maxForSgn] = getRangesOfSignal();
   int const binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   int const binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
 
@@ -770,6 +768,19 @@ void HFInvMassFitter::checkForSignal(double& estimatedSignal)
   double bkg{}, errBkg{};
   calculateBackground(bkg, errBkg);
   estimatedSignal = sum - bkg;
+}
+
+// Estimate ranges where signal is located to be used in countSignal() and checkForSignal()
+// It is mu +- n*sigma for Gaussian, and the entire mInv histogram for DoubleSidedCrystalBall (due to heavy tails)
+std::pair<double, double> HFInvMassFitter::getRangesOfSignal() const
+{
+  if (mTypeOfSgnPdf == DoubleSidedCrystalBall) {
+    return std::make_pair(mMinMass, mMaxMass);
+  } else {
+    const double mean = mRooMeanSgn->getVal();
+    const double sigma = mRooSigmaSgn->getVal();
+    return std::make_pair(mean - mNSigmaForSgn * sigma, mean + mNSigmaForSgn * sigma);
+  }
 }
 
 // Create Background Fit Function
