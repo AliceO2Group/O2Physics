@@ -27,6 +27,7 @@
 #include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsFT0/Digit.h"
 #include "Framework/Logger.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "TLorentzVector.h"
 
@@ -533,6 +534,118 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
   }
   return false;
 }
+
+// -----------------------------------------------------------------------------
+// return eta and phi of a given FIT channel based on the bitset
+// Bit layout contract:
+constexpr int kFT0Bits = 208;        // FT0 total channels
+constexpr int kFV0Bits = 48;         // FV0A channels
+constexpr int kTotalBits = 256;      // 4*64
+
+// FT0 side split (adjust if your channelization differs in your tag)
+constexpr int kFT0AChannels = 96;    // FT0A channels are [0..95]
+constexpr int kFT0CChannels = 112;   // FT0C channels are [96..207]
+static_assert(kFT0AChannels + kFT0CChannels == kFT0Bits);
+
+using Bits256 = std::array<uint64_t, 4>;
+
+inline Bits256 makeBits256(uint64_t w0, uint64_t w1, uint64_t w2, uint64_t w3)
+{
+  return {w0, w1, w2, w3};
+}
+
+inline bool testBit(Bits256 const& w, int bit)
+{
+	if (bit < 0 || bit >= kTotalBits) {
+    return false;
+  }
+  return (w[bit >> 6] >> (bit & 63)) & 1ULL;
+}
+
+struct FitBitRef {
+  enum class Det : uint8_t { FT0, FV0, Unknown };
+  Det det = Det::Unknown;
+  int ch = -1;      // FT0: 0..207, FV0: 0..47
+  bool isC = false; // only meaningful for FT0
+};
+
+inline FitBitRef decodeFitBit(int bit)
+{
+  FitBitRef out;
+  if (bit >= 0 && bit < kFT0Bits) {
+    out.det = FitBitRef::Det::FT0;
+    out.ch  = bit;                         // FT0 channel id
+    out.isC = (bit >= kFT0AChannels);      // C side if in upper range
+    return out;
+  }
+  if (bit >= kFT0Bits && bit < kTotalBits) {
+    out.det = FitBitRef::Det::FV0;
+    out.ch  = bit - kFT0Bits;              // FV0A channel id 0..47
+    return out;
+  }
+  return out;
+}
+
+// You can pass whatever type offsetFT0 is (vector/array/span of objects with getX/Y/Z).
+template <typename FT0DetT, typename OffsetsT>
+inline double getPhiFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& offsetFT0, int i)
+{
+  ft0Det.calculateChannelCenter();
+  auto chPos = ft0Det.getChannelCenter(ft0Ch);
+
+  const double x = chPos.X() + offsetFT0[i].getX();
+  const double y = chPos.Y() + offsetFT0[i].getY();
+
+  return RecoDecay::phi(x, y);
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline double getEtaFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& offsetFT0, int i)
+{
+  ft0Det.calculateChannelCenter();
+  auto chPos = ft0Det.getChannelCenter(ft0Ch);
+
+  double x = chPos.X() + offsetFT0[i].getX();
+  double y = chPos.Y() + offsetFT0[i].getY();
+  double z = chPos.Z() + offsetFT0[i].getZ();
+
+  // If this channel belongs to FT0C, flip z (matches your original intent)
+  const bool isC = (ft0Ch >= kFT0AChannels);
+  if (isC) {
+    z = -z;
+  }
+
+  const double r = std::sqrt(x * x + y * y);
+  const double theta = std::atan2(r, z);
+  return -std::log(std::tan(0.5 * theta));
+}
+
+template <typename FT0DetT, typename OffsetsT>
+inline bool getPhiEtaFromFitBit(FT0DetT& ft0Det,
+                                int bit,
+                                OffsetsT const& offsetFT0,
+                                int iRunOffset,
+                                double& phi,
+                                double& eta)
+{
+  auto ref = decodeFitBit(bit);
+  if (ref.det != FitBitRef::Det::FT0) {
+    return false;
+  }
+	
+	// packed mapping: bit index == ft0Ch in the detector numbering you used for getChannelCenter
+  // FT0A: 0..95, FT0C: 96..207
+  const int ft0Ch = bit;
+
+  // (Optional) if ft0Det expects FT0C channels numbered 0..111 separately, then map:
+  // const int ft0Ch = (bit < kFT0AChannels) ? bit : (bit - kFT0AChannels);
+
+  phi = getPhiFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
+  eta = getEtaFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
+  return true;
+	
+}
+
 
 // -----------------------------------------------------------------------------
 
