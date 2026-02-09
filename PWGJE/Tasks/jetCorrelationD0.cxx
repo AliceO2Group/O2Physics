@@ -60,8 +60,26 @@ DECLARE_SOA_COLUMN(D0CollisionIdx, d0CollisionIdx, int);
 DECLARE_SOA_COLUMN(D0Reflection, d0Reflection, int);
 } // namespace d0s
 
+namespace jets
+{
+// Jet
+DECLARE_SOA_COLUMN(JetPt, jetPt, float);
+DECLARE_SOA_COLUMN(JetEta, jetEta, float);
+DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
+DECLARE_SOA_COLUMN(CollID, jetCollID, int);
+// D0-jet
+DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
+} // namespace jets
+
+DECLARE_SOA_TABLE(CollisionTables, "AOD", "COLLISIONINFOTABLE",
+                  o2::soa::Index<>,
+                  collision::PosZ);
+
+DECLARE_SOA_INDEX_COLUMN(CollisionTable, collisionTable);
+
 DECLARE_SOA_TABLE(D0DataTables, "AOD", "D0DATATABLE",
-                  d0s::D0CollisionIdx,
+                  o2::soa::Index<>,
+                  CollisionTableId,
                   d0s::D0PromptBDT,
                   d0s::D0NonPromptBDT,
                   d0s::D0BkgBDT,
@@ -71,38 +89,30 @@ DECLARE_SOA_TABLE(D0DataTables, "AOD", "D0DATATABLE",
                   d0s::D0Phi);
 
 DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPARTICLELEVELTABLE",
-                  d0s::D0CollisionIdx,
+                  o2::soa::Index<>,
+                  CollisionTableId,
                   d0s::D0McOrigin,
                   d0s::D0Pt,
                   d0s::D0Eta,
                   d0s::D0Phi);
 
 DECLARE_SOA_TABLE(D0McMatchedTables, "AOD", "D0MCMATCHEDTABLE",
-                  d0s::D0CollisionIdx,
+                  o2::soa::Index<>,
+                  CollisionTableId,
                   d0s::D0Pt,
                   d0s::D0Eta,
                   d0s::D0Phi,
                   d0s::D0McOrigin,
                   d0s::D0Reflection);
 
-namespace jets
-{
-// Jet
 DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
 DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
 DECLARE_SOA_INDEX_COLUMN(D0McMatchedTable, d0MCMatched);
-DECLARE_SOA_COLUMN(JetPt, jetPt, float);
-DECLARE_SOA_COLUMN(JetEta, jetEta, float);
-DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
-DECLARE_SOA_COLUMN(CollID, jetCollID, int);
-// D0-jet
-DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
-} // namespace jets
 
 DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETDATATABLE",
                          o2::soa::Index<>,
-                         jets::D0DataTableId,
-                         jets::CollID, // change to index column
+                         CollisionTableId,
+                         D0DataTableId,
                          jets::JetPt,
                          jets::JetEta,
                          jets::JetPhi,
@@ -110,8 +120,8 @@ DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETDATATABLE",
 
 DECLARE_SOA_TABLE_STAGED(JetMCPTables, "JETMCPARTICLELEVELTABLE",
                          o2::soa::Index<>,
-                         jets::D0McPTableId,
-                         jets::CollID, // change to index column
+                         CollisionTableId,
+                         D0McPTableId,
                          jets::JetPt,
                          jets::JetEta,
                          jets::JetPhi,
@@ -119,8 +129,8 @@ DECLARE_SOA_TABLE_STAGED(JetMCPTables, "JETMCPARTICLELEVELTABLE",
 
 DECLARE_SOA_TABLE_STAGED(JetMCMatchedTables, "JETMCMATCHEDTABLE",
                          o2::soa::Index<>,
-                         jets::D0McMatchedTableId,
-                         jets::CollID, // change to index column
+                         CollisionTableId,
+                         D0McMatchedTableId,
                          jets::JetPt,
                          jets::JetEta,
                          jets::JetPhi,
@@ -129,6 +139,7 @@ DECLARE_SOA_TABLE_STAGED(JetMCMatchedTables, "JETMCMATCHEDTABLE",
 
 struct JetCorrelationD0 {
   // Define new table
+  Produces<aod::CollisionTables> tableCollision;
   Produces<aod::D0DataTables> tableD0;
   Produces<aod::D0McPTables> tableD0MCParticle;
   Produces<aod::D0McMatchedTables> tableD0MCMatched;
@@ -261,11 +272,12 @@ struct JetCorrelationD0 {
                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
     applyCollisionSelections(collision, eventSelectionBits);
+    tableCollision(collision.posZ());
+
     for (const auto& d0DataCandidate : d0DataCandidates) {
       const auto scores = d0DataCandidate.mlScores();
       fillD0Histograms(d0DataCandidate, scores);
-      const auto collIdx = collision.globalIndex();
-      tableD0(collIdx,
+      tableD0(tableCollision.lastIndex(),
               scores[2],
               scores[1],
               scores[0],
@@ -277,8 +289,8 @@ struct JetCorrelationD0 {
       for (const auto& jet : jets) {
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0DataCandidate.phi());
         fillJetHistograms(jet, dphi);
-        tableJet(tableD0.lastIndex(),
-                 jet.collisionId(),
+        tableJet(tableCollision.lastIndex(),
+                 tableD0.lastIndex(),
                  jet.pt(),
                  jet.eta(),
                  jet.phi(),
@@ -300,10 +312,11 @@ struct JetCorrelationD0 {
     registry.fill(HIST("hCollisions"), 1.5); // Selected collisions
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
 
-    const auto collIdx = collision.globalIndex();
+    applyCollisionSelections(collision, eventSelectionBits);
+    tableCollision(collision.posZ());
 
     for (const auto& d0MCPCandidate : d0MCPCandidates) {
-      tableD0MCParticle(collIdx,
+      tableD0MCParticle(tableCollision.lastIndex(),
                         d0MCPCandidate.originMcGen(),
                         d0MCPCandidate.pt(),
                         d0MCPCandidate.eta(),
@@ -312,8 +325,8 @@ struct JetCorrelationD0 {
       for (const auto& jet : jets) {
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0MCPCandidate.phi());
         fillJetHistograms(jet, dphi);
-        tableJetMCParticle(tableD0MCParticle.lastIndex(),
-                           collIdx, // check collIdx equals collIdx
+        tableJetMCParticle(tableCollision.lastIndex(),
+                           tableD0MCParticle.lastIndex(),
                            jet.pt(),
                            jet.eta(),
                            jet.phi(),
@@ -338,7 +351,7 @@ struct JetCorrelationD0 {
 
     for (const auto& d0MCDCandidate : d0MCDCandidates) {
       // Loop over d0 detector level candidates, apply d0 matching logic, fill d0 particle level that has been matched;
-      // Loop over jet decetor level, apply jet matching logic (jet finder QA task), fill jet particle level that has been matched.
+      // Loop over jet detector level, apply jet matching logic (similar to jet finder QA task), fill jet particle level that has been matched.
 
       // D or D bar?
       int matchedFrom = 0;
