@@ -6710,6 +6710,4 @@ void VarManager::FillResolutions(M const& mcTrack, T const& track, float* values
   values[kEtaResolution] = track.eta() - mcTrack.eta();
 }
 
-
-
 #endif // PWGDQ_CORE_VARMANAGER_H_
