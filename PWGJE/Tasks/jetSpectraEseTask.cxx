@@ -89,7 +89,7 @@ struct JetSpectraEseTask {
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
 
-  Configurable<bool> fLeadJetPtCut{"fLeadJetPtCut", false, "Flag for leading jet pT cut"};  
+  Configurable<bool> fLeadJetPtCut{"fLeadJetPtCut", false, "Flag for leading jet pT cut"};
   Configurable<float> leadJetPtMin{"leadJetPtMin", 20.0, "minimum leading jet pT cut"};
 
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
@@ -406,11 +406,6 @@ struct JetSpectraEseTask {
     }
   }
 
-  struct leadjetEvent {
-    float lead = -999;
-    bool fLead = false;
-  };
-
   template <typename TCollision, typename TJets>
   float corr(const TCollision& collision, const TJets& jet)
   {
@@ -478,7 +473,7 @@ struct JetSpectraEseTask {
         registry.fill(HIST("eventQA/hCentPhi"), centrality, rhoFit->Eval(jet.phi()));
         registry.fill(HIST("eventQA/hdPhiRhoPhi"), dPhi, rhoLocal);
       }
-    
+
       registry.fill(HIST("hNtrig"), centrality, vCorrL, dPhi, qPerc[0]);
       for (const auto& track : tracks) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
@@ -577,7 +572,7 @@ struct JetSpectraEseTask {
           registry.fill(HIST("thn_jethad_corr_mixed"), centrality, vCorrL, track.pt(), deta, dphi, dPhi, qPerc[0]);
         }
       }
-      
+
       for (const auto& track : tracks2) {
         registry.fill(HIST("trackQA/before/hTrackPtMixed"), centrality, track.pt());
         registry.fill(HIST("trackQA/before/hTrackEtaMixed"), centrality, track.eta());
@@ -1211,9 +1206,9 @@ struct JetSpectraEseTask {
       }
     }
   }
-  //leadJet(collision, jets)
+  // leadJet(collision, jets)
   template <bool fill = true, typename TCollisions, typename TJets>
-  bool isAcceptedLeadingJet(TCollisions const& collision, TJets const& jets, const float & centrality)
+  bool isAcceptedLeadingJet(TCollisions const& collision, TJets const& jets, const float& centrality)
   {
     float leadJetPt = 0.0;
     float leadJetPhi = -999;
@@ -1225,16 +1220,16 @@ struct JetSpectraEseTask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      auto jet_pt_bkg = jet.pt() - (collision.rho() * jet.area());
+      auto jetPtBkg = jet.pt() - (collision.rho() * jet.area());
 
       if (!hasLeadingJet) {
-        leadJetPt = jet_pt_bkg;
+        leadJetPt = jetPtBkg;
         leadJetPhi = jet.phi();
         leadJetEta = jet.eta();
         hasLeadingJet = true;
       }
-      if (jet_pt_bkg > leadJetPt) {
-        leadJetPt = jet_pt_bkg;
+      if (jetPtBkg > leadJetPt) {
+        leadJetPt = jetPtBkg;
         leadJetPhi = jet.phi();
         leadJetEta = jet.eta();
       }
