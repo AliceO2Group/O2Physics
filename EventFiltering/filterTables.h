@@ -282,7 +282,6 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
                   filtering::HfCharmBarToXiBach,
                   filtering::HfSigmaCPPK,
                   filtering::HfSigmaC0K0,
-                  filtering::HfSigmaCPr,
                   filtering::HfPhotonCharm2P,
                   filtering::HfPhotonCharm3P,
                   filtering::HfSingleCharm2P,
@@ -295,7 +294,8 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
                   filtering::HfBtoJPsiKstar,
                   filtering::HfBtoJPsiPhi,
                   filtering::HfBtoJPsiPrKa,
-                  filtering::HfBtoJPsiPi);
+                  filtering::HfBtoJPsiPi,
+                  filtering::HfSigmaCPr);
 
 using HfFilter = HfFilters::iterator;
 
