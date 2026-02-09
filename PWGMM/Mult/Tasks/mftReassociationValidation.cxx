@@ -17,6 +17,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -25,9 +26,6 @@
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsCommonDataFormats/AlignParam.h>
-#include <FT0Base/Geometry.h>
-#include <FV0Base/Geometry.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -62,7 +60,6 @@
 #include <vector>
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::aod::track;
 using namespace o2::constants::math;
 using namespace o2::framework;
@@ -95,6 +92,16 @@ enum MftTrackSelectionStep {
   Pt,
   NMftTrackSelectionSteps
 };
+
+enum MultiplicityEstimators {
+  MultNTracksPV = 0,
+  MultNumContrib,
+  MultFT0C,
+  MultFT0M
+};
+
+static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
+static constexpr std::string_view WhatMultiplicityEstimator[] = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -192,12 +199,11 @@ struct MftReassociationValidation {
   // =========================
 
   using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
-  using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
   using FilteredMftTracks = soa::Filtered<aod::MFTTracks>;
   using FilteredMftTracksWColls = soa::Filtered<soa::Join<aod::MFTTracks, aod::MFTTrkCompColls>>;
   using FilteredMftTracksWCollsMcLabels = soa::Filtered<soa::Join<aod::MFTTracks, aod::MFTTrkCompColls, aod::McMFTTrackLabels>>;
-  using MftReasso2dTracksWCollsMcLabels = soa::Join < aod::MFTTracks, aod::BestCollisionsFwd, aod::McMFTTrackLabels >> ;
-  using MftReasso3dTracksWCollsMcLabels = soa::Join < aod::MFTTracks, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels >> ;
+  using MftReasso2dTracksWCollsMcLabels = soa::Join<aod::MFTTracks, aod::BestCollisionsFwd, aod::McMFTTrackLabels>;
+  using MftReasso3dTracksWCollsMcLabels = soa::Join<aod::MFTTracks, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>;
 
   // =========================
   //      Filters & partitions : DATA
@@ -234,7 +240,6 @@ struct MftReassociationValidation {
   // =========================
 
   Preslice<FilteredMftTracks> perColMftTracks = o2::aod::fwdtrack::collisionId;
-  Preslice<FilteredTracksWDcaSel> perColTracks = aod::track::collisionId;
 
   struct : ConfigurableGroup {
     std::string prefix = "ConfigAxis_group";
@@ -347,23 +352,23 @@ struct MftReassociationValidation {
   //      Quality assessment functions
   // =========================
 
-  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
-  void fillTriggerQa(float multiplicity, float const& eta, float const& phi, float const& pt)
-  {
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPtTrigger"), pt);
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaTrigger"), eta);
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiTrigger"), phi);
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hYieldsTrigger"), multiplicity, pt, eta);
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiTrigger"), multiplicity, eta, phi);
-  }
+  // template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
+  // void fillTriggerQa(float multiplicity, float const& eta, float const& phi, float const& pt)
+  // {
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPtTrigger"), pt);
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaTrigger"), eta);
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiTrigger"), phi);
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hYieldsTrigger"), multiplicity, pt, eta);
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiTrigger"), multiplicity, eta, phi);
+  // }
 
-  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
-  void fillAssociatedQa(float multiplicity, float const& eta, float const& phi)
-  {
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaAssociated"), eta);
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiAssociated"), phi);
-    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiAssociated"), multiplicity, eta, phi);
-  }
+  // template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
+  // void fillAssociatedQa(float multiplicity, float const& eta, float const& phi)
+  // {
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaAssociated"), eta);
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiAssociated"), phi);
+  //   registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiAssociated"), multiplicity, eta, phi);
+  // }
 
   // =========================
   //      Helper functions
@@ -532,14 +537,14 @@ struct MftReassociationValidation {
       return;
     }
 
-    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    // const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     for (const auto& reassociated2dMftTrack : reassociated2dMftTracks) {
 
       registry.fill(HIST("Data/Mft/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
       auto templatedMftTrack = reassociated2dMftTrack.template mfttrack_as<FilteredMftTracks>();
 
-      if (!isAcceptedMftTrack(reassociated2dMftTrack, false)) {
+      if (!isAcceptedMftTrack(templatedMftTrack, false)) {
         continue;
       }
 
