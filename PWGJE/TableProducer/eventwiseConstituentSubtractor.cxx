@@ -84,7 +84,6 @@ struct eventWiseConstituentSubtractorTask {
 
   Configurable<float> alpha{"alpha", 1.0, "exponent of transverse momentum in calculating the distance measure between pairs"};
   Configurable<float> rMax{"rMax", 0.24, "maximum distance of subtraction"};
-  Configurable<float> eventEtaMax{"eventEtaMax", 0.9, "maximum pseudorapidity of event"};
   Configurable<bool> doRhoMassSub{"doRhoMassSub", true, "perfom mass subtraction as well"};
   Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
@@ -112,7 +111,7 @@ struct eventWiseConstituentSubtractorTask {
 
     eventWiseConstituentSubtractor.setDoRhoMassSub(doRhoMassSub);
     eventWiseConstituentSubtractor.setConstSubAlphaRMax(alpha, rMax);
-    eventWiseConstituentSubtractor.setMaxEtaEvent(eventEtaMax);
+    eventWiseConstituentSubtractor.setEtaMinMax(trackEtaMin, trackEtaMax);
     fastjet::GhostedAreaSpec ghostAreaSpec(ghostRapMax, ghostRepeat, ghostArea,
                                            ghostGridScatter, ghostKtScatter, ghostMeanPt);
     eventWiseConstituentSubtractor.setGhostAreaSpec(ghostAreaSpec);

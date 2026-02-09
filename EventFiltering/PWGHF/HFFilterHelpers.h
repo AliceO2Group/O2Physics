@@ -376,8 +376,8 @@ static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0
 // cascades for Xi + bachelor triggers
 constexpr float cutsCascades[1][8] = {{0.2, 1., 0.01, 0.01, 0.99, 0.99, 0.3, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
 static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "PtXi", "DeltaMassXi", "DeltaMassLambda", "CosPAXi", "CosPaLambda", "DCAxyXi", "NsigmaPid"};
-constexpr float cutsCharmBaryons[1][11] = {{5., 5., 1000., 2.35, 2.60, 2.35, 3., 3., 2.7, -2., -2.}}; // MinPtXiPi, MinPtXiKa, MinPtXiPiPi, MinMassXiPi, MinMassXiKa, MinMassXiPiPi, MaxMassXiPi, MaxMassXiKa, MaxMassXiPiPi, CosPaXiBach, CosPaXiBachBach
-static const std::vector<std::string> labelsColumnsCharmBarCuts = {"MinPtXiPi", "MinPtXiKa", "MinPtXiPiPi", "MinMassXiPi", "MinMassXiKa", "MinMassXiPiPi", "MaxMassXiPi", "MaxMassXiKa", "MaxMassXiPiPi", "CosPaXiBach", "CosPaXiBachBach"};
+constexpr float cutsCharmBaryons[1][15] = {{5., 5., 1000., 2.35, 2.60, 2.35, 3., 3., 2.7, -2., -2., 1.e6, 1.e6, -1., -1.}}; // MinPtXiPi, MinPtXiKa, MinPtXiPiPi, MinMassXiPi, MinMassXiKa, MinMassXiPiPi, MaxMassXiPi, MaxMassXiKa, MaxMassXiPiPi, CosPaXiBach, CosPaXiBachBach, Chi2PcaXiBach, Chi2PcaXiBachBach, DecLenXiBach, DecLenBachBach
+static const std::vector<std::string> labelsColumnsCharmBarCuts = {"MinPtXiPi", "MinPtXiKa", "MinPtXiPiPi", "MinMassXiPi", "MinMassXiKa", "MinMassXiPiPi", "MaxMassXiPi", "MaxMassXiKa", "MaxMassXiPiPi", "CosPaXiBach", "CosPaXiBachBach", "Chi2PcaXiBach", "Chi2PcaXiBachBach", "DecLenXiBach", "DecLenBachBach"};
 
 constexpr int requireStrangenessTrackedXi[1][2] = {{1, 0}};
 static const std::vector<std::string> labelsColumnsCharmBaryons = {"CharmBarToXiBach", "CharmBarToXiBachBach"};
@@ -566,7 +566,7 @@ class HfFilterHelper
     mNSigmaTofKaonFromXicResoToSigmaC = nSigmaTof;
   }
 
-  void setXiBachelorSelections(float ptMinXiPi, float ptMinXiKa, float ptMinXiPiPi, float massMinXiPi, float massMinXiKa, float massMinXiPiPi, float massMaxXiPi, float massMaxXiKa, float massMaxXiPiPi, float cosPaMinXiBach, float cosPaMinXiBachBach)
+  void setXiBachelorSelections(float ptMinXiPi, float ptMinXiKa, float ptMinXiPiPi, float massMinXiPi, float massMinXiKa, float massMinXiPiPi, float massMaxXiPi, float massMaxXiKa, float massMaxXiPiPi, float cosPaMinXiBach, float cosPaMinXiBachBach, float chi2PcaMaxXiBach, float chi2PcaMaxXiBachBach, float decLenMinXiBach, float decLenMinXiBachBach)
   {
     mPtMinXiBach[0] = ptMinXiPi;
     mPtMinXiBach[1] = ptMinXiKa;
@@ -579,6 +579,10 @@ class HfFilterHelper
     mMassMaxXiBach[2] = massMaxXiPiPi;
     mCosPaMinXiBach[0] = cosPaMinXiBach;
     mCosPaMinXiBach[1] = cosPaMinXiBachBach;
+    mChi2PcaMaxXiBach[0] = chi2PcaMaxXiBach;
+    mChi2PcaMaxXiBach[1] = chi2PcaMaxXiBachBach;
+    mDecLenMinXiBach[0] = decLenMinXiBach;
+    mDecLenMinXiBach[1] = decLenMinXiBachBach;
   }
 
   void setTpcPidCalibrationOption(int opt) { mTpcPidCalibrationOption = opt; }
@@ -792,6 +796,8 @@ class HfFilterHelper
   std::array<float, 3> mMassMinXiBach{2.35, 2.6, 2.35};                           // minimum invariant-mass for XiBachelor candidates
   std::array<float, 3> mMassMaxXiBach{3.0, 3.0, 2.7};                             // maximum invariant-mass for XiBachelor candidates
   std::array<float, 2> mCosPaMinXiBach{-2.f, -2.f};                               // minimum cosine of pointing angle for XiBachelor candidates
+  std::array<float, 2> mChi2PcaMaxXiBach{1.e6, 1.e6};                             // minimum chi2PCA for XiBachelor candidates
+  std::array<float, 2> mDecLenMinXiBach{-2.f, -2.f};                              // minimum decay length for XiBachelor candidates
   std::array<o2::framework::LabeledArray<double>, kNBeautyParticles> mCutsBhad{}; // selections for B-hadron candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
   o2::framework::LabeledArray<double> mCutsBhadToJPsi{};                          // selections for B->JPsi candidates (PtMinMu, DeltaMass, CPA, DecayLength)
   float mMinTpcCluster{90.};                                                      // Minimum number of TPC clusters required on a track
@@ -2364,7 +2370,7 @@ inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& tra
 
   bool isSelected = isSelectedXiPi || isSelectedXiKa;
 
-  if (isSelected && mCosPaMinXiBach[0] > -1.f) { // if selected by pT and mass, check topology if applicable
+  if (isSelected && (mCosPaMinXiBach[0] > -1.f || mChi2PcaMaxXiBach[0] < 1.e6 || mDecLenMinXiBach[0] > 0.)) { // if selected by pT and mass, check topology if applicable
     int nCand = 0;
     try {
       nCand = dcaFitter.process(trackParCasc, trackParBachelor);
@@ -2384,8 +2390,16 @@ inline bool HfFilterHelper::isSelectedXiBach(T const& trackParCasc, T const& tra
     trackBachProp.getPxPyPzGlo(momBach);
     auto momXiBach = RecoDecay::pVec(momCasc, momBach);
 
+    if (dcaFitter.getChi2AtPCACandidate() > mChi2PcaMaxXiBach[0]) {
+      return false;
+    }
+
     std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
     if (RecoDecay::cpa(primVtx, std::array{vtx[0], vtx[1], vtx[2]}, momXiBach) < mCosPaMinXiBach[0]) {
+      return false;
+    }
+
+    if (RecoDecay::distance(primVtx, vtx) < mDecLenMinXiBach[0]) {
       return false;
     }
 
@@ -2428,7 +2442,7 @@ inline bool HfFilterHelper::isSelectedXiBachBach(T const& trackParCasc, std::arr
     return false;
   }
 
-  if (mCosPaMinXiBach[1] > -1.f) { // check topology if applicable
+  if (mCosPaMinXiBach[1] > -1.f || mChi2PcaMaxXiBach[1] < 1.e6 || mDecLenMinXiBach[0] > 0.) { // check topology if applicable
     int nCand = 0;
     if constexpr (Nprongs == 3) {
       try {
@@ -2465,8 +2479,16 @@ inline bool HfFilterHelper::isSelectedXiBachBach(T const& trackParCasc, std::arr
     }
     auto momXiBachBach = RecoDecay::pVec(momCasc, momBachFirst, momBachSecond);
 
+    if (dcaFitter.getChi2AtPCACandidate() > mChi2PcaMaxXiBach[1]) {
+      return false;
+    }
+
     std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
     if (RecoDecay::cpa(primVtx, std::array{vtx[0], vtx[1], vtx[2]}, momXiBachBach) < mCosPaMinXiBach[1]) {
+      return false;
+    }
+
+    if (RecoDecay::distance(primVtx, vtx) < mDecLenMinXiBach[1]) {
       return false;
     }
 

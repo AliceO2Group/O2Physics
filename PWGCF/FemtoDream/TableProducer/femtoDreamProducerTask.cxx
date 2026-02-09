@@ -1146,7 +1146,7 @@ struct femtoDreamProducerTask {
     if (epCal.ConfFillFlowQA) {
       colCuts.fillEPQA(mult, spher, myqn, myEP);
       if (epCal.ConfDoCumlant) {
-        colCuts.doCumulants(col, tracks, mult, epCal.ConfQnSeparation);
+        colCuts.doCumulants(col, tracks, trackCuts, mult, epCal.ConfQnSeparation);
       }
     }
   }
