@@ -386,8 +386,7 @@ struct PiKpRAA {
     registry.add("EventCounter", ";;Events", kTH1F, {axisEvent});
     registry.add("zPos", "With Event Selection;;Entries;", kTH1F, {axisZpos});
     registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
-    registry.add("T0CcentVsFoundFT0", ";Found(=1.5) NOT Found(=0.5);", kTH2F, {{{axisCent}, {2, 0, 2}}});
-    registry.add("T0CcentVsRCTSel", "Bad RCT(=0.5) Good RCT(=1.5) Good RCT & Good PID RCT(=2.5);;RCT Status;", kTH2F, {{{axisCent}, {3, 0, 3}}});
+    registry.add("T0CcentVsFoundFT0", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{axisCent}, {2, 0, 2}}});
     registry.add("NchVsCent", "Measured Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Nch", kTH2F, {{axisCent, {nBinsNch, minNch, maxNch}}});
     registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
     registry.add("NclVsEtaPIDp", ";#eta;#LTNcl#GT used for PID", kTProfile, {axisEta});
@@ -414,6 +413,7 @@ struct PiKpRAA {
     x->SetBinLabel(16, "INEL > 0");
 
     if (doprocessCalibrationAndV0s) {
+      registry.add("T0CcentVsRCTSel", "Bad RCT(=0.5) Good RCT(=1.5) Good RCT & Good PID RCT(=2.5);;RCT Status;", kTH2F, {{{axisCent}, {3, 0, 3}}});
       registry.add("NchVsNPV", ";Nch; NPV;", kTH2F, {{{nBinsNPV, minNpv, maxNpv}, {nBinsNch, minNch, maxNch}}});
       registry.add("ExcludedEvtVsNch", ";Nch;Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("ExcludedEvtVsNPV", ";NPV;Entries;", kTH1F, {{nBinsNPV, minNpv, maxNpv}});
