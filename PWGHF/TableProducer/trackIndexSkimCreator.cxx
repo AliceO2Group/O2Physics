@@ -441,7 +441,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       registry.add("hDCAToPrimXYVsPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {axisPtProng, axisDca}});
       registry.add("hEtaCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(scaleEtaMax * (config.etaMaxTrackBachLfCasc - config.etaMinTrackBachLfCasc) * nBinsPerEta), scaleEtaMax * config.etaMinTrackBachLfCasc, scaleEtaMax * config.etaMaxTrackBachLfCasc}}});
       registry.add("hTPCSignalsLightNuclei", "Light Nuclei;p_{TPC}/z (GeV/#it{c}); d#it{E}/d#it{x}", {HistType::kTH2D, {{2000, -10., 10.}, {1000, 0., 2000.}}});
-      
+
       const std::string cutNames[nCuts + 1] = {"selected", "rej pT", "rej eta", "rej track quality", "rej dca"};
       const std::string candNames[CandidateType::NCandidateTypes] = {"2-prong", "3-prong", "bachelor", "dstar", "lfCascBachelor"};
       for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; iCandType++) {
