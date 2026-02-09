@@ -70,7 +70,7 @@ struct Alice3TrackingTranslator {
   o2::framework::Produces<o2::aod::McCollisions> tableMcCollisions;
   o2::framework::Produces<o2::aod::OTFLUTConfigId> tableOTFLUTConfigId;
 
-  o2::framework::Configurable<int> maxCollisions{"maxCollisions", 1000, "Nsigma for TOF PID (if enabled)"};
+  o2::framework::Configurable<int> maxCollisions{"maxCollisions", -1000, "Maximum number of collisions translated"};
 
   void init(o2::framework::InitContext&)
   {
@@ -257,7 +257,7 @@ struct Alice3TrackingTranslator {
 
     const Long64_t kEvents = fileParticles.getEntries();
     for (Long64_t iEvent = 0; iEvent < kEvents; ++iEvent) {
-      if (iEvent > 0 && iEvent % maxCollisions) {
+      if (iEvent > 0 && maxCollisions.value > 0 && (iEvent % maxCollisions) == 0) {
         LOG(info) << "Processing event " << iEvent << "/" << kEvents;
         break;
       }

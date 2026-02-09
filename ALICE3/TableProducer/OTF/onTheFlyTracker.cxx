@@ -42,6 +42,7 @@
 #include <DetectorsBase/Propagator.h>
 #include <DetectorsVertexing/PVertexer.h>
 #include <DetectorsVertexing/PVertexerHelpers.h>
+#include <DetectorsVertexing/PVertexerParams.h>
 #include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -117,6 +118,7 @@ struct OnTheFlyTracker {
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
   Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
+  Configurable<std::string> primaryVertexOption{"primaryVertexOption", "pvertexer.maxChi2TZDebris=10;pvertexer.acceptableScale2=9;pvertexer.minScale2=2;pvertexer.timeMarginVertexTime=1.3;;pvertexer.maxChi2TZDebris=40;pvertexer.maxChi2Mean=12;pvertexer.maxMultRatDebris=1.;pvertexer.addTimeSigma2Debris=1e-2;pvertexer.meanVertexExtraErrSelection=0.03;", "Option for the primary vertexer"};
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
@@ -147,9 +149,6 @@ struct OnTheFlyTracker {
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
-    Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
-    Configurable<int> scaleVD{"scaleVD", 1, "scale x0 and xrho in VD layers"};
-    Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
   struct : ConfigurableGroup {
@@ -159,7 +158,6 @@ struct OnTheFlyTracker {
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
-    Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
   } fastPrimaryTrackerSettings;
 
   struct : ConfigurableGroup {
@@ -474,6 +472,7 @@ struct OnTheFlyTracker {
 
     if (doExtraQA) {
       histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axes.axisMultiplicity, axes.axisNVertices});
+      histos.add("h1dVerticesNotReco", "h1dVerticesNotReco", kTH1F, {axes.axisMultiplicity});
       histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axes.axisMultiplicity, axes.axisMultiplicity});
 
       histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axes.axisX});
@@ -554,8 +553,13 @@ struct OnTheFlyTracker {
     irSampler.init();
 
     vertexer.setValidateWithIR(kFALSE);
+    vertexer.setTrackSources(o2::dataformats::GlobalTrackID::ITS);
     vertexer.setBunchFilling(irSampler.getBunchFilling());
+    vertexer.setBz(mMagneticField);
+    o2::conf::ConfigurableParam::updateFromString("pvertexer.doBCValidation=false;" + primaryVertexOption.value);
     vertexer.init();
+
+    o2::vertexing::PVertexerParams::Instance().printKeyValues();
 
     // initialize O2 2-prong fitter
     fitter.setPropagateToPCA(true);
@@ -680,11 +684,13 @@ struct OnTheFlyTracker {
     decayDaughters.push_back(*v0Decay.GetDecay(1));
   }
 
-  float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
+  float dNdEta = 0.f;                                                      // Charged particle multiplicity to use in the efficiency evaluation
+  std::pair<float, float> vertexReconstructionEfficiencyCounters = {0, 0}; // {nVerticesWithMoreThan2Contributors, nVerticesReconstructed}
   void processWithLUTs(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, int const& icfg)
   {
     LOG(debug) << "Processing event " << mcCollision.globalIndex() << " with LUTs for configuration " << icfg;
-    int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
+    vertexReconstructionEfficiencyCounters.first += 1;
+    const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
 
     tracksAlice3.clear();
@@ -1386,9 +1392,16 @@ struct OnTheFlyTracker {
                                               gsl::span<const o2::MCCompLabel>{lblTracks},
                                               lblVtx);
 
+      LOG(debug) << "Vertex reconstruction efficiency " << vertexReconstructionEfficiencyCounters.second << "/" << vertexReconstructionEfficiencyCounters.first << "=" << vertexReconstructionEfficiencyCounters.second / vertexReconstructionEfficiencyCounters.first;
       if (n_vertices < 1) {
+        LOG(debug) << "Vertexing completed, no vtx found.";
+        if (doExtraQA) {
+          histos.fill(HIST("h1dVerticesNotReco"), tracksAlice3.size());
+        }
         return; // primary vertex not reconstructed
       }
+      vertexReconstructionEfficiencyCounters.second += 1;
+      LOG(debug) << "Vertexing completed with " << n_vertices << " vertices found.";
 
       // Find largest vertex
       int largestVertex = 0;
