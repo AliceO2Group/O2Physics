@@ -191,7 +191,7 @@ struct Chk892pp {
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
-    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                     // bool
+    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                      // bool
     Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                 // TPC
     Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 5.0, "TOF nSigma cut for Pion"};                 // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
@@ -543,8 +543,8 @@ struct Chk892pp {
       if (std::abs(track.dcaXY()) > TrackCuts.cfgMaxbDCArToPVcut)
         return false;
     }
-		if (TrackCuts.cfgpTdepDCAzCut) {
-			// Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
+    if (TrackCuts.cfgpTdepDCAzCut) {
+      // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
       if (std::abs(track.dcaZ()) > (0.004 + (0.013 / track.pt())))
         return false;
     } else {
@@ -911,7 +911,6 @@ struct Chk892pp {
     return true;
   } // matchRecoToTruthKstar
 
-
   void effKstarProcessGen(MCTrueTrackCandidates const& mcparts)
   {
     for (const auto& part : mcparts) {
@@ -922,44 +921,37 @@ struct Chk892pp {
       if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
         continue;
 
+      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+      bool hasRightPion = false;
+      bool hasK0sToPipi = false;
 
-			const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
-			bool hasRightPion = false;
-			bool hasK0sToPipi = false;
+      for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
+        const int pdg1 = d1.pdgCode();
+        if (pdg1 == pionWanted) {
+          hasRightPion = true;
+        } else if (std::abs(pdg1) == kPDGK0) {
+          for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) {
+            if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              bool seenPip = false, seenPim = false;
+              for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) {
+                if (d3.pdgCode() == +kPiPlus)
+                  seenPip = true;
+                else if (d3.pdgCode() == -kPiPlus)
+                  seenPim = true;
+              }
+              if (seenPip && seenPim) {
+                hasK0sToPipi = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasRightPion && hasK0sToPipi)
+          break;
+      }
 
-			for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
-				const int pdg1 = d1.pdgCode();
-				if (pdg1 == pionWanted)
-				{
-					hasRightPion = true;
-				} else if (std::abs(pdg1) == kPDGK0) 
-				{
-					for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) 
-					{
-						if (std::abs(d2.pdgCode()) == kPDGK0s) 
-						{
-							bool seenPip = false, seenPim = false;
-							for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) 
-							{
-								if (d3.pdgCode() == +kPiPlus)
-									seenPip = true;
-								else if (d3.pdgCode() == -kPiPlus)
-									seenPim = true;
-							}
-							if (seenPip && seenPim) 
-							{
-								hasK0sToPipi = true;
-								break;
-							}
-						}
-					}
-				}
-				if (hasRightPion && hasK0sToPipi) break;
-			}
-
-			if (!(hasRightPion && hasK0sToPipi))
-				continue;
-
+      if (!(hasRightPion && hasK0sToPipi))
+        continue;
 
       const auto mcid = part.mcCollisionId();
       if (allowedMcIds.count(mcid) == 0)
@@ -970,10 +962,10 @@ struct Chk892pp {
         continue;
 
       const float lCentrality = iter->second;
-		
+
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
     }
-  } //effKstarProcessGen
+  } // effKstarProcessGen
 
   template <typename V0RangeT, typename TrkRangeT>
   void effKstarProcessReco(V0RangeT const& v0s, TrkRangeT const& tracks)
