@@ -730,7 +730,6 @@ struct Chk892pp {
     centTruthByAllowed.clear();
 
     for (const auto& coll : events) {
-      // lCentrality = getCentrality(coll);
 
       if (!coll.has_mcCollision())
         continue;
@@ -920,6 +919,38 @@ struct Chk892pp {
       if (std::abs(part.pdgCode()) != kKstarPlus)
         continue;
       if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+        continue;
+
+      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+      bool hasRightPion = false;
+      bool hasK0sToPipi = false;
+
+      for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
+        const int pdg1 = d1.pdgCode();
+        if (pdg1 == pionWanted) {
+          hasRightPion = true;
+        } else if (std::abs(pdg1) == kPDGK0) {
+          for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) {
+            if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              bool seenPip = false, seenPim = false;
+              for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) {
+                if (d3.pdgCode() == +kPiPlus)
+                  seenPip = true;
+                else if (d3.pdgCode() == -kPiPlus)
+                  seenPim = true;
+              }
+              if (seenPip && seenPim) {
+                hasK0sToPipi = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasRightPion && hasK0sToPipi)
+          break;
+      }
+
+      if (!(hasRightPion && hasK0sToPipi))
         continue;
 
       const auto mcid = part.mcCollisionId();
@@ -1388,7 +1419,7 @@ struct Chk892pp {
     auto id = collision.mcCollisionId();
 
     auto mccoll = mccolls.iteratorAt(id);
-    const float lCentrality = mccoll.centFT0M();
+    lCentrality = mccoll.centFT0M();
 
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;
