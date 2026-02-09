@@ -2311,5 +2311,4 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kInnerTOFnSigmaTr"] = kInnerTOFnSigmaTr;
   fgVarNamesMap["kInnerTOFnSigmaHe3"] = kInnerTOFnSigmaHe3;
   fgVarNamesMap["kInnerTOFnSigmaAl"] = kInnerTOFnSigmaAl;
-
 }

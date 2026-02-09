@@ -3731,7 +3731,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
     return cut;
   }
-  
+
   if (!nameStr.compare("alice3StandardTrack")) {
     cut->AddCut(GetAnalysisCut("alice3StandardKine"));
     cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
@@ -6944,7 +6944,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kEta, -2.5, 2.5); // Total tracker acceptance in v3b geomety
     return cut;
   }
-  
+
   if (!nameStr.compare("alice3KineTOFAcceptance")) {
     cut->AddCut(VarManager::kPt, 0.1, 1000.0);
     cut->AddCut(VarManager::kEta, -2.0, 2.0); // TOF acceptance in v3b geomety
