@@ -279,14 +279,14 @@ struct FemtoUniversePairTaskTrackV0Extended {
     qaRegistry.add("V0Type1/hInvMassAntiLambdaVsCent", "; Centrality; M_{#Lambda}; Entries", kTH2F, {confMultBins, {2000, 1.f, 3.f}});
     qaRegistry.add("V0Type2/hInvMassAntiLambdaVsCent", "; Centrality; M_{#Lambda}; Entries", kTH2F, {confMultBins, {2000, 1.f, 3.f}});
 
-    if (confIsDebug && doprocessSameEventV0) {
+    if (confIsDebug) {
       qaRegistry.add("SameEvent/hPtPosDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
       qaRegistry.add("SameEvent/hPtNegDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
       qaRegistry.add("SameEvent/hDaughMomPart1", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
       qaRegistry.add("SameEvent/hDaughMomPart2", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
     }
 
-    if (confIsDebug && doprocessMixedEventV0) {
+    if (confIsDebug) {
       qaRegistry.add("MixedEvent/hPtPosDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
       qaRegistry.add("MixedEvent/hPtNegDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
       qaRegistry.add("MixedEvent/hDaughMomPart1", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
@@ -757,7 +757,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         }
       }
 
-      if (confIsDebug && doprocessSameEventV0) {
+      if (confIsDebug) {
         qaRegistry.fill(HIST("SameEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
         qaRegistry.fill(HIST("SameEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
         qaRegistry.fill(HIST("SameEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
@@ -1134,7 +1134,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           }
         }
 
-        if (confIsDebug && doprocessMixedEventV0) {
+        if (confIsDebug) {
           qaRegistry.fill(HIST("MixedEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
           qaRegistry.fill(HIST("MixedEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
           qaRegistry.fill(HIST("MixedEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
