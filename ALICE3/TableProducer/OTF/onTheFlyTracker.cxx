@@ -1392,7 +1392,7 @@ struct OnTheFlyTracker {
                                               gsl::span<const o2::MCCompLabel>{lblTracks},
                                               lblVtx);
 
-      LOG(info) << "Vertex reconstruction efficiency " << vertexReconstructionEfficiencyCounters.second << "/" << vertexReconstructionEfficiencyCounters.first << "=" << vertexReconstructionEfficiencyCounters.second / vertexReconstructionEfficiencyCounters.first;
+      LOG(debug) << "Vertex reconstruction efficiency " << vertexReconstructionEfficiencyCounters.second << "/" << vertexReconstructionEfficiencyCounters.first << "=" << vertexReconstructionEfficiencyCounters.second / vertexReconstructionEfficiencyCounters.first;
       if (n_vertices < 1) {
         LOG(info) << "Vertexing completed, no vtx found.";
         if (doExtraQA) {
