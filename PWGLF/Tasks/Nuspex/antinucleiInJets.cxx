@@ -155,7 +155,7 @@ struct AntinucleiInJets {
   // Jet selection and event filtering parameters
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
   Configurable<double> ptLeadingMin{"ptLeadingMin", 5.0, "pt Leading Min"};
-  Configurable<double> rJet{"rJet", 0.3, "Jet resolution parameter R"};
+  Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<bool> applyAreaCut{"applyAreaCut", true, "apply area cut"};
   Configurable<double> maxNormalizedJetArea{"maxNormalizedJetArea", 1.0, "area cut"};
@@ -191,15 +191,15 @@ struct AntinucleiInJets {
 
   // Configuration parameters for CCDB access and reweighting input files
   Configurable<bool> applyReweighting{"applyReweighting", true, "enable reweighting for efficiency"};
-  Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
-  Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/reweightingHistogramsAntipInJet", "path to file"};
-  Configurable<std::string> weightsProton{"weightsProton", "", "weightsProton"};
-  Configurable<std::string> weightsLambda{"weightsLambda", "", "weightsLambda"};
-  Configurable<std::string> weightsSigma{"weightsSigma", "", "weightsSigma"};
-  Configurable<std::string> weightsXi{"weightsXi", "", "weightsXi"};
-  Configurable<std::string> weightsOmega{"weightsOmega", "", "weightsOmega"};
-  Configurable<std::string> weightsJet{"weightsJet", "", "weightsJet"};
-  Configurable<std::string> weightsUe{"weightsUe", "", "weightsUe"};
+  Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch/", "url of the personal ccdb"};
+  Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/reweightingHistogramsAnalysis/", "path to file"};
+  Configurable<std::string> weightsProton{"weightsProton", "weightsProton", "weightsProton"};
+  Configurable<std::string> weightsLambda{"weightsLambda", "weightsLambda", "weightsLambda"};
+  Configurable<std::string> weightsSigma{"weightsSigma", "weightsSigma", "weightsSigma"};
+  Configurable<std::string> weightsXi{"weightsXi", "weightsXi", "weightsXi"};
+  Configurable<std::string> weightsOmega{"weightsOmega", "weightsOmega", "weightsOmega"};
+  Configurable<std::string> weightsJet{"weightsJet", "weightsJet", "weightsJet"};
+  Configurable<std::string> weightsUe{"weightsUe", "weightsUe", "weightsUe"};
 
   // Number of events
   Configurable<int> shrinkInterval{"shrinkInterval", 1000, "variable that controls how often shrinking happens"};

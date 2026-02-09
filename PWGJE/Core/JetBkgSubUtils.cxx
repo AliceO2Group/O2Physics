@@ -51,7 +51,7 @@ void JetBkgSubUtils::initialise()
   // Note: recommended to use R=0.2
   jetDefBkg = fastjet::JetDefinition(algorithmBkg, jetBkgR, recombSchemeBkg, fastjet::Best);
   areaDefBkg = fastjet::AreaDefinition(fastjet::active_area_explicit_ghosts, ghostAreaSpec);
-  selRho = fastjet::SelectorRapRange(bkgEtaMin, bkgEtaMax) && fastjet::SelectorPhiRange(bkgPhiMin, bkgPhiMax) && !fastjet::SelectorNHardest(nHardReject); // here we have to put rap range, to be checked!
+  selRho = fastjet::SelectorEtaRange(bkgEtaMin, bkgEtaMax) && fastjet::SelectorPhiRange(bkgPhiMin, bkgPhiMax) && !fastjet::SelectorNHardest(nHardReject); // here we have to put rap range, to be checked!
 }
 
 std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vector<fastjet::PseudoJet>& inputParticles, bool doSparseSub)
@@ -75,6 +75,9 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vect
   // Fill a vector for pT/area to be used for the median
   for (auto& ijet : alljets) {
 
+    if (ijet.area() <= 0.0) {
+      continue;
+    }
     // Physical area/ Physical jets (no ghost)
     if (!clusterSeq.is_pure_ghost(ijet)) {
       rhovector.push_back(ijet.perp() / ijet.area());
@@ -122,14 +125,14 @@ std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fast
   constituentSub.set_max_distance(constSubRMax);
   constituentSub.set_alpha(constSubAlpha);
   constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
-  constituentSub.set_max_eta(maxEtaEvent);
+  constituentSub.set_max_eta(std::max(std::abs(bkgEtaMin), std::abs(bkgEtaMax)));
 
   // by default, the masses of all particles are set to zero. With this flag the jet mass will also be subtracted
   if (doRhoMassSub) {
     constituentSub.set_do_mass_subtraction();
   }
 
-  return constituentSub.subtract_event(inputParticles, maxEtaEvent);
+  return constituentSub.subtract_event(inputParticles, std::max(std::abs(bkgEtaMin), std::abs(bkgEtaMax)));
 }
 
 std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastjet::PseudoJet>& jets, double rhoParam, double rhoMParam)
@@ -146,7 +149,7 @@ std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastje
   constituentSub.set_max_distance(constSubRMax);
   constituentSub.set_alpha(constSubAlpha);
   constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
-  constituentSub.set_max_eta(bkgEtaMax);
+  constituentSub.set_max_eta(std::max(std::abs(bkgEtaMin), std::abs(bkgEtaMax)));
 
   // by default, the masses of all particles are set to zero. With this flag the jet mass will also be subtracted
   if (doRhoMassSub) {
