@@ -121,7 +121,7 @@ struct HfCandidateCreator2Prong {
   int runNumber{0};
   double bz{0.};
 
-  static constexpr float CentiToMicro = 10000.; // from cm to µm
+  constexpr static float CentiToMicro{10000.f}; // from cm to µm
 
   std::shared_ptr<TH1> hCandidates;
 
