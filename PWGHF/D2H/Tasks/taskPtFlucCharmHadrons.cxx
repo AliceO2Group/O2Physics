@@ -207,8 +207,9 @@ struct HfTaskPtFlucCharmHadrons {
     int n = 0;
 
     for (const auto& trk : tracks) {
-      if (!selectionTrack(trk))
+      if (!selectionTrack(trk)) {
         continue;
+      }
       float eta = trk.eta();
       if (eta <= etaMin || eta >= etaMax) {
         continue;
