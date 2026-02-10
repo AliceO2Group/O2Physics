@@ -231,7 +231,7 @@ struct FlowZdcTask {
       histos.add("CommonZNAVsZNC", ";Common ZNC;Common ZNA", kTH2F, {{{nBinsZDC, -0.5, maxZn}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("CommonZPAVsZPC", ";Common ZPC;Common ZPA;", kTH2F, {{{nBinsZDC, -0.5, maxZp}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("CommonZNAVsZPA", ";Common ZPA;Common ZNA;", kTH2F, {{{nBinsZDC, -0.5, maxZp}, {nBinsZDC, -0.5, maxZn}}});
-      histos.add("CommonZNCVsZPC", ";Common ZPC;Common ZNC;", kTH2F, {{{nBinsZDC, -0.5, maxZp}, {nBinsZDC, -0.5, maxZn}}});     
+      histos.add("CommonZNCVsZPC", ";Common ZPC;Common ZNC;", kTH2F, {{{nBinsZDC, -0.5, maxZp}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNASector", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
       histos.add("ZPASector", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
       histos.add("ZNCSector", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
