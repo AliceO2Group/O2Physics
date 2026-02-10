@@ -28,6 +28,7 @@ TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
 std::map<TString, int> VarManager::fgVarNamesMap;
 bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
+bool VarManager::fgPVrecalKF = true;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgzMatching = -77.5;
 float VarManager::fgzShiftFwd = 0.0;
@@ -1301,6 +1302,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPhiCharmHadron] = "rad.";
   fgVariableNames[kBdtCharmHadron] = "BDT score (charm hadron)";
   fgVariableUnits[kBdtCharmHadron] = " ";
+  fgVariableNames[kDeltaPt] = "pT Reco - pT MC ";
+  fgVariableUnits[kDeltaPt] = "GeV/c";
+  fgVariableNames[kPtResolution] = "Resolution (pT Reco - pT MC) / pT MC";
+  fgVariableUnits[kPtResolution] = "";
+  fgVariableNames[kEtaResolution] = "Resolution (eta Reco - eta MC)";
+  fgVariableUnits[kEtaResolution] = "";
   fgVariableNames[kIsDoubleGap] = "is double gap event";
   fgVariableUnits[kIsDoubleGap] = "";
   fgVariableNames[kIsSingleGapA] = "is single gap event side A";
@@ -1489,6 +1496,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTOFEventTime] = "ns";
   fgVariableNames[kTOFEventTimeErr] = "Event time error reconstructed with ALICE3 TOF";
   fgVariableUnits[kTOFEventTimeErr] = "ns";
+  fgVariableNames[koTOFBeta] = "oTOF #beta";
+  fgVariableUnits[koTOFBeta] = "";
   fgVariableNames[kOuterTOFnSigmaEl] = "n #sigma_{El}^{oTOF}";
   fgVariableUnits[kOuterTOFnSigmaEl] = "";
   fgVariableNames[kOuterTOFnSigmaMu] = "n #sigma_{Mu}^{oTOF}";
@@ -1507,6 +1516,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kOuterTOFnSigmaHe3] = "";
   fgVariableNames[kOuterTOFnSigmaAl] = "n #sigma_{Al}^{oTOF}";
   fgVariableUnits[kOuterTOFnSigmaAl] = "";
+  fgVariableNames[kiTOFBeta] = "iTOF #beta";
+  fgVariableUnits[kiTOFBeta] = "";
   fgVariableNames[kInnerTOFnSigmaEl] = "n #sigma_{El}^{iTOF}";
   fgVariableUnits[kInnerTOFnSigmaEl] = "";
   fgVariableNames[kInnerTOFnSigmaMu] = "n #sigma_{Mu}^{iTOF}";
@@ -1554,6 +1565,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsGoodITSLayer3"] = kIsGoodITSLayer3;
   fgVarNamesMap["kIsGoodITSLayer0123"] = kIsGoodITSLayer0123;
   fgVarNamesMap["kIsGoodITSLayersAll"] = kIsGoodITSLayersAll;
+  fgVarNamesMap["kIsTriggerZNAZNC"] = kIsTriggerZNAZNC;
   fgVarNamesMap["kIsINT7"] = kIsINT7;
   fgVarNamesMap["kIsEMC7"] = kIsEMC7;
   fgVarNamesMap["kIsINT7inMUON"] = kIsINT7inMUON;

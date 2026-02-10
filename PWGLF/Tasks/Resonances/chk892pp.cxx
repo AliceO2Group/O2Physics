@@ -444,10 +444,13 @@ struct Chk892pp {
       histos.add("EffK0s/recoK0s", "Reco K0s (|y<0.8|)", HistType::kTH2F, {ptAxis, centAxis});
 
       histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("EffKstar/genKstar_pri", "Gen primary Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
 
       histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_num", "Gen Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num_pri", "Gen primary Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
       histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
       histos.add("Correction/MCTruthCent_all", "MC truth FT0M centrality (all mcCollisions)", HistType::kTH1F, {centAxis});
@@ -730,7 +733,6 @@ struct Chk892pp {
     centTruthByAllowed.clear();
 
     for (const auto& coll : events) {
-      // lCentrality = getCentrality(coll);
 
       if (!coll.has_mcCollision())
         continue;
@@ -922,6 +924,38 @@ struct Chk892pp {
       if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
         continue;
 
+      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+      bool hasRightPion = false;
+      bool hasK0sToPipi = false;
+
+      for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
+        const int pdg1 = d1.pdgCode();
+        if (pdg1 == pionWanted) {
+          hasRightPion = true;
+        } else if (std::abs(pdg1) == kPDGK0) {
+          for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) {
+            if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              bool seenPip = false, seenPim = false;
+              for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) {
+                if (d3.pdgCode() == +kPiPlus)
+                  seenPip = true;
+                else if (d3.pdgCode() == -kPiPlus)
+                  seenPim = true;
+              }
+              if (seenPip && seenPim) {
+                hasK0sToPipi = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasRightPion && hasK0sToPipi)
+          break;
+      }
+
+      if (!(hasRightPion && hasK0sToPipi))
+        continue;
+
       const auto mcid = part.mcCollisionId();
       if (allowedMcIds.count(mcid) == 0)
         continue;
@@ -933,6 +967,10 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
+
+      if (part.vt() == 0) {
+        histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
+      }
     }
   } // effKstarProcessGen
 
@@ -1021,6 +1059,9 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
+      }
     }
   } // fillSigLossNum
 
@@ -1045,6 +1086,9 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
     }
   } // fillSigLossDen
 
@@ -1388,7 +1432,7 @@ struct Chk892pp {
     auto id = collision.mcCollisionId();
 
     auto mccoll = mccolls.iteratorAt(id);
-    const float lCentrality = mccoll.centFT0M();
+    lCentrality = mccoll.centFT0M();
 
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;

@@ -77,7 +77,6 @@ using namespace o2::aod;
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::TracksCov, aod::TracksAlice3, aod::TracksExtraA3,
                                  aod::UpgradeTofs, aod::UpgradeRichs, aod::UpgradeRichSignals,
-                                 aod::UpgradeTrkPids, aod::UpgradeTrkPidSignals,
                                  aod::McTrackLabels>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::CollisionsAlice3, aod::McCollisionLabels>;
@@ -108,7 +107,6 @@ struct Alice3DQTableMaker {
   Produces<ReducedA3PIDTOF> trackPIDTOF;
   Produces<ReducedA3PIDRich> trackPIDRich;
   Produces<ReducedA3PIDRichSignals> trackPIDRichSig;
-  Produces<ReducedA3PIDOT> trackPIDOT;
 
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<TList> fStatsList{"Statistics"}; //! skimming statistics
@@ -565,11 +563,6 @@ struct Alice3DQTableMaker {
                         track.hasSigEl(), track.hasSigMu(), track.hasSigPi(),
                         track.hasSigKa(), track.hasSigPr(), track.hasSigDe(),
                         track.hasSigTr(), track.hasSigHe3(), track.hasSigAl());
-
-        trackPIDOT(track.timeOverThresholdBarrel(),
-                   track.nSigmaTrkEl(), track.nSigmaTrkMu(), track.nSigmaTrkPi(),
-                   track.nSigmaTrkKa(), track.nSigmaTrkPr(), track.nSigmaTrkDe(),
-                   track.nSigmaTrkTr(), track.nSigmaTrkHe(), track.nSigmaTrkAl());
       }
 
       fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
@@ -581,6 +574,7 @@ struct Alice3DQTableMaker {
       } else {
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
         VarManager::FillTrackMC(mcTracks, mctrack);
+        VarManager::FillResolutions(mctrack, track);
 
         mcflags = 0;
         int i = 0; // runs over the MC signals
@@ -650,7 +644,6 @@ struct Alice3DQTableMaker {
       trackPIDTOF.reserve(tracksBarrel.size());
       trackPIDRich.reserve(tracksBarrel.size());
       trackPIDRichSig.reserve(tracksBarrel.size());
-      trackPIDOT.reserve(tracksBarrel.size());
       trackBarrelAssoc.reserve(tracksBarrel.size());
       trackBarrelLabels.reserve(tracksBarrel.size());
     }
