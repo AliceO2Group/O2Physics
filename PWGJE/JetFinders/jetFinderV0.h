@@ -83,6 +83,8 @@ struct JetFinderV0Task {
   o2::framework::Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   o2::framework::Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   o2::framework::Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  o2::framework::Configurable<float> jetPhiMin{"jetPhiMin", -99.0, "minimum jet phi"};
+  o2::framework::Configurable<float> jetPhiMax{"jetPhiMax", 99.0, "maximum jet phi"};
   o2::framework::Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   o2::framework::Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
   o2::framework::Configurable<int> jetTypeParticleLevel{"jetTypeParticleLevel", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
@@ -121,6 +123,10 @@ struct JetFinderV0Task {
     jetFinder.etaMax = trackEtaMax;
     jetFinder.jetPtMin = jetPtMin;
     jetFinder.jetPtMax = jetPtMax;
+    if (jetPhiMin < -98.0) {
+      jetFinder.jetPhiMin = -2. * M_PI;
+      jetFinder.jetPhiMax = 2. * M_PI;
+    }
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
     if (jetEtaMin < -98.0) {
