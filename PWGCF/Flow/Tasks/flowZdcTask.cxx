@@ -32,6 +32,7 @@
 #include <TProfile.h>
 
 #include <cmath>
+#include <string>
 #include <vector>
 
 using namespace o2;
