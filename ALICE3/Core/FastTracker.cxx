@@ -24,6 +24,7 @@
 #include <TRandom.h>
 #include <TSystem.h>
 
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <string>
@@ -79,7 +80,24 @@ void GeometryContainer::init(o2::framework::InitContext& initContext)
     return;
   }
   LOG(info) << "Size of detector configuration: " << detectorConfiguration.size();
-  for (const auto& configFile : detectorConfiguration) {
+  for (std::string& configFile : detectorConfiguration) {
+    if (configFile.rfind("ccdb:", 0) == 0) {
+      LOG(info) << "ccdb source detected from on-the-fly-detector-geometry-provider";
+      const std::string ccdbPath = configFile.substr(5); // remove "ccdb:" prefix
+      const std::string outPath = "./.ALICE3/Configuration/";
+      configFile = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
+
+      int timeout = 600; // Wait max 10 minutes
+      while (!std::filesystem::exists(configFile) && --timeout > 0) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+
+      if (!std::filesystem::exists(configFile)) {
+        LOG(fatal) << "Timed out waiting for geometry snapshot: " << configFile;
+        return;
+      }
+    }
+
     LOG(info) << "Detector geometry configuration file used: " << configFile;
     addEntry(configFile);
   }
