@@ -652,7 +652,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// PID track cuts (for proton only)
   /// \param hfTrack is a track
   /// \param hfTrackWithIts is a track joined with the ITS PID table
-  /// \return true if the track is compatible with a proton hypothesis
+  /// \return bit mask encoding PID compatibility per channel
   template <int PidStrategy, typename T, typename TrackWithIts>
   uint8_t isSelectedPid(const T& hfTrack, const TrackWithIts& hfTrackWithIts)
   {
