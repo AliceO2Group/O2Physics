@@ -207,6 +207,7 @@ class VarManager : public TObject
     kBC,
     kBCOrbit,
     kIsPhysicsSelection,
+    kIsTVXTriggered,             // Is trigger TVX
     kIsNoTFBorder,               // No time frame border
     kIsNoITSROFBorder,           // No ITS read out frame border (from event selection)
     kIsNoITSROFBorderRecomputed, // No ITS read out frame border, computed here
@@ -1854,6 +1855,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kNoCollInTimeRangeStandard]) {
       values[kNoCollInTimeRangeStandard] = event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     }
+    if (fgUsedVars[kIsTVXTriggered]) {
+      values[kIsTVXTriggered] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX);
+    }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
@@ -2022,6 +2026,9 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsNoITSROFBorder]) {
       values[kIsNoITSROFBorder] = (event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) > 0);
+    }
+    if (fgUsedVars[kIsTVXTriggered]) {
+      values[kIsTVXTriggered] = (event.selection_bit(o2::aod::evsel::kIsTriggerTVX) > 0);
     }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
