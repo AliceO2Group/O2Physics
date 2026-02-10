@@ -25,7 +25,6 @@
 #include <TSystem.h>
 
 #include <chrono>
-#include <filesystem>
 #include <fstream>
 #include <map>
 #include <string>
@@ -90,11 +89,17 @@ void GeometryContainer::init(o2::framework::InitContext& initContext)
       configFile = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
 
       int timeout = 600; // Wait max 10 minutes
-      while (!std::filesystem::exists(configFile) && --timeout > 0) {
+      while (--timeout > 0) {
+        std::ifstream file(configFile);
+        if (file.good()) {
+          break;
+        }
+
         std::this_thread::sleep_for(std::chrono::seconds(1));
       }
 
-      if (!std::filesystem::exists(configFile)) {
+      std::ifstream checkFile(configFile);
+      if (!checkFile.good()) {
         LOG(fatal) << "Timed out waiting for geometry snapshot: " << configFile;
         return;
       }
