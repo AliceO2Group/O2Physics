@@ -39,6 +39,7 @@
 #include <TDatabasePDG.h>
 #include <TLine.h>
 #include <TPaveText.h>
+#include <TString.h>
 #include <TStyle.h>
 #include <TVirtualPad.h>
 

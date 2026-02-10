@@ -17,6 +17,7 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/Utils/utilsSigmac.h"
 #include "PWGHF/DataModel/AliasTables.h"
@@ -34,6 +35,7 @@
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h> // for dca recalculation
+#include <CommonConstants/PhysicsConstants.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h> // for dca recalculation
 #include <Framework/ASoA.h>

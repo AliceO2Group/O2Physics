@@ -36,6 +36,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TPDGCode.h>
 #include <TRandom3.h>
 
 #include <cstddef>
