@@ -523,7 +523,6 @@ struct HfTaskCorrelationDsHadrons {
       int const poolBin = pairEntry.poolBin();
       int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       const bool haveSameSign = ptD * ptHadron > 0.;
-      const bool haveOppositeSign = ptD * ptHadron < 0.;
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -544,7 +543,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSignalRegionLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSignalRegionULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -556,7 +555,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandLeftLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandLeftULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -568,7 +567,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandRightLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandRightULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -634,7 +633,6 @@ struct HfTaskCorrelationDsHadrons {
       int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       bool const isPhysicalPrimary = pairEntry.isPhysicalPrimary();
       const bool haveSameSign = ptD * ptHadron > 0.;
-      const bool haveOppositeSign = ptD * ptHadron < 0.;
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -661,7 +659,7 @@ struct HfTaskCorrelationDsHadrons {
           if (isPhysicalPrimary) {
             if (doLSpair && haveSameSign) { // like-sign pairs
               registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRecLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
-            } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+            } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
               registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRecULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
             } else { // default case
               registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
@@ -703,14 +701,13 @@ struct HfTaskCorrelationDsHadrons {
       int const statusPromptHadron = pairEntry.trackOrigin();
       bool const isDsPrompt = pairEntry.isPrompt();
       const bool haveSameSign = ptD * ptHadron > 0.;
-      const bool haveOppositeSign = ptD * ptHadron < 0.;
 
       registry.fill(HIST("hCorrel2DVsPtMcGen"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
       registry.fill(HIST("hDeltaEtaPtIntMcGen"), deltaEta);
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDsPrompt) {
         registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
-        if (doULSpair && haveOppositeSign) {
+        if (doULSpair && !haveSameSign) {
           registry.fill(HIST("hCorrel2DVsPtMcGenPromptULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
         }
         if (doLSpair && haveSameSign) {
@@ -721,7 +718,7 @@ struct HfTaskCorrelationDsHadrons {
         }
       } else {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
-        if (doULSpair && haveOppositeSign) {
+        if (doULSpair && !haveSameSign) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
         }
         if (doLSpair && haveSameSign) {
@@ -753,7 +750,6 @@ struct HfTaskCorrelationDsHadrons {
       int const poolBin = pairEntry.poolBin();
       int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       const bool haveSameSign = ptD * ptHadron > 0.;
-      const bool haveOppositeSign = ptD * ptHadron < 0.;
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -774,7 +770,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSignalRegionLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSignalRegionULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -786,7 +782,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandLeftLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandLeftULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -798,7 +794,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandRightLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandRightULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -823,7 +819,6 @@ struct HfTaskCorrelationDsHadrons {
       int const poolBin = pairEntry.poolBin();
       int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       const bool haveSameSign = ptD * ptHadron > 0.;
-      const bool haveOppositeSign = ptD * ptHadron < 0.;
 
       double efficiencyWeight = 1.;
       if (useHighDimHistoForEff) {
@@ -836,7 +831,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSignalRegionLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSignalRegionULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -848,7 +843,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandLeftLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandLeftULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -860,7 +855,7 @@ struct HfTaskCorrelationDsHadrons {
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
         if (doLSpair && haveSameSign) { // like-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandRightLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
-        } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+        } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
           registry.fill(HIST("hCorrel2DVsPtSidebandRightULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         } else if (fillHistoData) { // default case
           registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
@@ -894,7 +889,6 @@ struct HfTaskCorrelationDsHadrons {
       int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       bool const isPhysicalPrimary = pairEntry.isPhysicalPrimary();
       const bool haveSameSign = ptD * ptHadron > 0.;
-      const bool haveOppositeSign = ptD * ptHadron < 0.;
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -921,7 +915,7 @@ struct HfTaskCorrelationDsHadrons {
           if (isPhysicalPrimary) {
             if (doLSpair && haveSameSign) { // like-sign pairs
               registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRecLS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
-            } else if (doULSpair && haveOppositeSign) { // unlike-sign pairs
+            } else if (doULSpair && !haveSameSign) { // unlike-sign pairs
               registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRecULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
             } else { // default case
               registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
