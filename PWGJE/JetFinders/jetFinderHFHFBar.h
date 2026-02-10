@@ -14,8 +14,8 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
-#ifndef PWGJE_JETFINDERS_JETFINDERHF_H_
-#define PWGJE_JETFINDERS_JETFINDERHF_H_
+#ifndef PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_
+#define PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
@@ -139,9 +139,17 @@ struct JetFinderHFHFBarTask {
     jetFinder.etaMax = trackEtaMax;
     jetFinder.jetPtMin = jetPtMin;
     jetFinder.jetPtMax = jetPtMax;
+    jetFinder.phiMin = trackPhiMin;
+    jetFinder.phiMax = trackPhiMax;
+    if (trackPhiMin < -98.0) {
+      jetFinder.phiMin = -1.0 * M_PI;
+      jetFinder.phiMax = 2.0 * M_PI;
+    }
+    jetFinder.jetPhiMin = jetPhiMin;
+    jetFinder.jetPhiMax = jetPhiMax;
     if (jetPhiMin < -98.0) {
-      jetFinder.jetPhiMin = -2. * M_PI;
-      jetFinder.jetPhiMax = 2. * M_PI;
+      jetFinder.jetPhiMin = -1.0 * M_PI;
+      jetFinder.jetPhiMax = 2.0 * M_PI;
     }
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
@@ -323,4 +331,4 @@ struct JetFinderHFHFBarTask {
   PROCESS_SWITCH(JetFinderHFHFBarTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
 };
 
-#endif // PWGJE_JETFINDERS_JETFINDERHF_H_
+#endif // PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_

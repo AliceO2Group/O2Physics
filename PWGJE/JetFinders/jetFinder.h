@@ -137,9 +137,15 @@ struct JetFinderTask {
     jetFinder.etaMax = trackEtaMax;
     jetFinder.phiMin = trackPhiMin;
     jetFinder.phiMax = trackPhiMax;
+    if (trackPhiMin < -98.0) {
+      jetFinder.phiMin = -1.0 * M_PI;
+      jetFinder.phiMax = 2.0 * M_PI;
+    }
+    jetFinder.jetPhiMin = jetPhiMin;
+    jetFinder.jetPhiMax = jetPhiMax;
     if (jetPhiMin < -98.0) {
-      jetFinder.jetPhiMin = -2. * M_PI;
-      jetFinder.jetPhiMax = 2. * M_PI;
+      jetFinder.jetPhiMin = -1.0 * M_PI;
+      jetFinder.jetPhiMax = 2.0 * M_PI;
     }
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
