@@ -33,6 +33,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include "ALICE3/Core/TrackSmearerService.h"
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/GeomConstants.h>
 #include <CommonConstants/MathConstants.h>
@@ -133,7 +134,7 @@ struct OnTheFlyTofPid {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
+  Service<o2::upgrade::TrackSmearerContainer> smearerContainer;
 
   // needed: random number generator for smearing
   TRandom3 pRandomNumberGenerator;
@@ -149,64 +150,9 @@ struct OnTheFlyTofPid {
   void init(o2::framework::InitContext& initContext)
   {
     mGeoContainer.init(initContext);
-
-    const int nGeometries = mGeoContainer.getNumberOfConfigurations();
+    smearerContainer->waitReady();
     mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
-
     pRandomNumberGenerator.SetSeed(0); // fully randomize
-
-    for (int icfg = 0; icfg < nGeometries; ++icfg) {
-      const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
-      mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
-      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
-      mSmearer[icfg]->setCcdbManager(ccdb.operator->());
-      mSmearer[icfg]->setDownloadPath("./.ALICE3/TOFPID/");
-      std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
-      for (const auto& entry : globalConfiguration) {
-        int pdg = 0;
-        if (entry.first.find("lut") != 0) {
-          continue;
-        }
-        if (entry.first.find("lutEl") != std::string::npos) {
-          pdg = kElectron;
-        } else if (entry.first.find("lutMu") != std::string::npos) {
-          pdg = kMuonMinus;
-        } else if (entry.first.find("lutPi") != std::string::npos) {
-          pdg = kPiPlus;
-        } else if (entry.first.find("lutKa") != std::string::npos) {
-          pdg = kKPlus;
-        } else if (entry.first.find("lutPr") != std::string::npos) {
-          pdg = kProton;
-        } else if (entry.first.find("lutDe") != std::string::npos) {
-          pdg = o2::constants::physics::kDeuteron;
-        } else if (entry.first.find("lutTr") != std::string::npos) {
-          pdg = o2::constants::physics::kTriton;
-        } else if (entry.first.find("lutHe3") != std::string::npos) {
-          pdg = o2::constants::physics::kHelium3;
-        } else if (entry.first.find("lutAl") != std::string::npos) {
-          pdg = o2::constants::physics::kAlpha;
-        }
-
-        std::string filename = entry.second;
-        if (pdg == 0) {
-          LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
-        }
-        LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
-        if (filename.empty()) {
-          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
-        }
-        // strip from leading/trailing spaces
-        filename.erase(0, filename.find_first_not_of(" "));
-        filename.erase(filename.find_last_not_of(" ") + 1);
-        if (filename.empty()) {
-          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
-        }
-        bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
-        if (!success) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
-        }
-      }
-    }
 
     if (plotsConfig.doQAplots) {
       const AxisSpec axisdNdeta{plotsConfig.nBinsMult, 0.0f, plotsConfig.maxMultRange, Form("dN/d#eta in |#eta| < %f", simConfig.multiplicityEtaRange.value)};
@@ -877,9 +823,9 @@ struct OnTheFlyTofPid {
           double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(trkWithTime.mMomentum.second);
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
-            if (mSmearer[collision.lutConfigId()]->hasTable(kParticlePdgs[ii])) { // Only if the LUT for this particle was loaded
-              ptResolution = mSmearer[collision.lutConfigId()]->getAbsPtRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
-              etaResolution = mSmearer[collision.lutConfigId()]->getAbsEtaRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
+            if (smearerContainer->getSmearer(collision.lutConfigId())->hasTable(kParticlePdgs[ii])) { // Only if the LUT for this particle was loaded
+              ptResolution = smearerContainer->getSmearer(collision.lutConfigId())->getAbsPtRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
+              etaResolution = smearerContainer->getSmearer(collision.lutConfigId())->getAbsEtaRes(kParticlePdgs[ii], dNdEta, pseudorapidity, transverseMomentum);
             }
           }
           const float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(transverseMomentum, pseudorapidity, ptResolution, etaResolution, kParticleMasses[ii], simConfig.innerTOFRadius, mMagneticField);

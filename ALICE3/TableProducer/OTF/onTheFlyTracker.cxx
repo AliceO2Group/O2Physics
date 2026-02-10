@@ -51,6 +51,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <SimulationDataFormat/InteractionSampler.h>
+#include "ALICE3/Core/TrackSmearerService.h"
 
 #include <TGenPhaseSpace.h>
 #include <TGeoGlobalMagField.h>
@@ -288,7 +289,7 @@ struct OnTheFlyTracker {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
+  Service<o2::upgrade::TrackSmearerContainer> smearerContainer;
 
   // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
@@ -308,6 +309,9 @@ struct OnTheFlyTracker {
   float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
+    // need geo provider to load smearer into memory before continuing
+    smearerContainer->waitReady();
+
     LOG(info) << "Initializing OnTheFlyTracker task";
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
@@ -315,65 +319,14 @@ struct OnTheFlyTracker {
 
     const int nGeometries = mGeoContainer.getNumberOfConfigurations();
     mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
-    for (int icfg = 0; icfg < nGeometries; ++icfg) {
+    for (int icfg = 0; icfg < nGeometries; ++icfg) {      
       const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
-      mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
-      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
-      mSmearer[icfg]->setCcdbManager(ccdb.operator->());
-      mSmearer[icfg]->setDownloadPath("./.ALICE3/Tracker/");
-      std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
       if (enablePrimarySmearing) {
-        // load LUTs for primaries
-        for (const auto& entry : globalConfiguration) {
-          int pdg = 0;
-          if (entry.first.find("lut") != 0) {
-            continue;
-          }
-          if (entry.first.find("lutEl") != std::string::npos) {
-            pdg = kElectron;
-          } else if (entry.first.find("lutMu") != std::string::npos) {
-            pdg = kMuonMinus;
-          } else if (entry.first.find("lutPi") != std::string::npos) {
-            pdg = kPiPlus;
-          } else if (entry.first.find("lutKa") != std::string::npos) {
-            pdg = kKPlus;
-          } else if (entry.first.find("lutPr") != std::string::npos) {
-            pdg = kProton;
-          } else if (entry.first.find("lutDe") != std::string::npos) {
-            pdg = o2::constants::physics::kDeuteron;
-          } else if (entry.first.find("lutTr") != std::string::npos) {
-            pdg = o2::constants::physics::kTriton;
-          } else if (entry.first.find("lutHe3") != std::string::npos) {
-            pdg = o2::constants::physics::kHelium3;
-          } else if (entry.first.find("lutAl") != std::string::npos) {
-            pdg = o2::constants::physics::kAlpha;
-          }
-
-          std::string filename = entry.second;
-          if (pdg == 0) {
-            LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
-          }
-          LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
-          if (filename.empty()) {
-            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
-          }
-          // strip from leading/trailing spaces
-          filename.erase(0, filename.find_first_not_of(" "));
-          filename.erase(filename.find_last_not_of(" ") + 1);
-          if (filename.empty()) {
-            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
-          }
-          bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
-          if (!success) {
-            LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
-          }
-        }
-
         // interpolate efficiencies if requested to do so
-        mSmearer[icfg]->interpolateEfficiency(interpolateLutEfficiencyVsNch.value);
-
+        smearerContainer->getSmearer(icfg)->interpolateEfficiency(interpolateLutEfficiencyVsNch.value);
+        
         // smear un-reco'ed tracks if asked to do so
-        mSmearer[icfg]->skipUnreconstructed(!processUnreconstructedTracks.value);
+        smearerContainer->getSmearer(icfg)->skipUnreconstructed(!processUnreconstructedTracks.value);
 
         insertHist(histPath + "hPtGenerated", "hPtGenerated", {kTH1D, {{axes.axisMomentum}}});
         insertHist(histPath + "hPhiGenerated", "hPhiGenerated", {kTH1D, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}}});
@@ -1310,7 +1263,7 @@ struct OnTheFlyTracker {
 
       bool reconstructed = true;
       if (enablePrimarySmearing && !fastPrimaryTrackerSettings.fastTrackPrimaries) {
-        reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+        reconstructed = smearerContainer->getSmearer(icfg)->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
       } else if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
         o2::track::TrackParCov o2Track;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, o2Track, pdgDB);
@@ -1592,7 +1545,7 @@ struct OnTheFlyTracker {
 
   void processOnTheFly(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
+    for (size_t icfg = 0; icfg < smearerContainer->size(); ++icfg) {
       LOG(debug) << "  -> Processing OTF tracking with LUT configuration ID " << icfg;
       processWithLUTs(mcCollision, mcParticles, static_cast<int>(icfg));
     }
@@ -1696,7 +1649,7 @@ struct OnTheFlyTracker {
       bool reconstructed = false;
       if (enablePrimarySmearing && mcParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
-        reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+        reconstructed = smearerContainer->getSmearer(icfg)->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
       } else if (enableSecondarySmearing) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
@@ -1855,7 +1808,7 @@ struct OnTheFlyTracker {
 
   void processDecayer(aod::McCollision const& mcCollision, aod::McParticlesWithDau const& mcParticles)
   {
-    for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
+    for (size_t icfg = 0; icfg < smearerContainer->size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));
     }
   }

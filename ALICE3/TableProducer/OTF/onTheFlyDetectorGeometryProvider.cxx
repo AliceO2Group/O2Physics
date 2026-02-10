@@ -17,11 +17,13 @@
 ///
 
 #include "ALICE3/Core/FastTracker.h"
+#include "ALICE3/Core/TrackSmearerService.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
+
 
 #include <map>
 #include <string>
@@ -29,12 +31,18 @@
 
 struct OnTheFlyDetectorGeometryProvider {
   o2::framework::HistogramRegistry histos{"Histos", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "Flag to delete the local lut files after loading them into memory"};
   o2::framework::Configurable<std::vector<std::string>> detectorConfiguration{"detectorConfiguration",
                                                                               std::vector<std::string>{"$O2PHYSICS_ROOT/share/alice3/a3geometry_v3.ini"},
                                                                               "Paths of the detector geometry configuration files"};
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::upgrade::TrackSmearerContainer> smearerContainer;
   void init(o2::framework::InitContext&)
   {
+    if (std::ifstream(".TrackSmearerOK")) {
+      std::remove(".TrackSmearerOK");
+    }
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
     o2::fastsim::GeometryContainer geometryContainer; // Checking that the geometry files can be accessed and loaded
@@ -70,13 +78,11 @@ struct OnTheFlyDetectorGeometryProvider {
 
     // First we check that the magnetic field is consistent
     const int nGeometries = geometryContainer.getNumberOfConfigurations();
-    const float mMagneticField = geometryContainer.getFloatValue(0, "global", "magneticfield");
+    smearerContainer->initSmearer(ccdb.operator->(), cleanLutWhenLoaded.value);
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
-      const float cfgBfield = geometryContainer.getFloatValue(icfg, "global", "magneticfield");
-      if (std::abs(cfgBfield - mMagneticField) > 1e-3) {
-        LOG(fatal) << "Inconsistent magnetic field values between configurations 0 and " << icfg << ": " << mMagneticField << " vs " << cfgBfield;
-      }
+      smearerContainer->initCfg(icfg, geometryContainer.getConfiguration(icfg, "global"));
     }
+    smearerContainer->setReady();
     LOG(info) << "Initialization completed";
   }
 
