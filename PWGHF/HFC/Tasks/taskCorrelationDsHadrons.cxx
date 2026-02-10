@@ -704,7 +704,7 @@ struct HfTaskCorrelationDsHadrons {
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDsPrompt) {
         registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
-        if (doULSpair) {
+        if (doULSpai && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) {
           registry.fill(HIST("hCorrel2DVsPtMcGenPromptULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
         }
         if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) {
@@ -715,7 +715,7 @@ struct HfTaskCorrelationDsHadrons {
         }
       } else {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
-        if (doULSpair) {
+        if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptULS"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
         }
         if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) {
