@@ -64,8 +64,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
     LOG(info) << " --- LUT file source identified as CCDB.";
     std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
-    const std::string outPath = "/tmp/LUTs/";
-    filename = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
+    filename = Form("%s/%s/snapshot.root", mOutPath.c_str(), path.c_str());
     LOG(info) << " --- Local LUT filename will be: " << filename;
     std::ifstream checkFile(filename); // Check if file already exists
     if (!checkFile.is_open()) {        // File does not exist, retrieve from CCDB
@@ -74,7 +73,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
         LOG(fatal) << " --- CCDB manager not set. Please set it before loading LUT from CCDB.";
       }
       std::map<std::string, std::string> metadata;
-      mCcdbManager->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
+      mCcdbManager->getCCDBAccessor().retrieveBlob(path, mOutPath, metadata, 1);
       // Add CCDB handling logic here if needed
       LOG(info) << " --- Now retrieving LUT file from CCDB to: " << filename;
       if (mCleanupDownloadedFile) { // Clean up the downloaded file if needed
@@ -105,6 +104,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   lutFile.read(reinterpret_cast<char*>(mLUTHeader[ipdg]), sizeof(lutHeader_t));
   if (lutFile.gcount() != sizeof(lutHeader_t)) {
     LOG(info) << " --- troubles reading covariance matrix header for PDG " << pdg << ": " << filename << std::endl;
+    LOG(info) << " --- expected/detected " << sizeof(lutHeader_t) << "/" << lutFile.gcount() << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
     return false;
@@ -148,6 +148,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
           lutFile.read(reinterpret_cast<char*>(mLUTEntry[ipdg][inch][irad][ieta][ipt]), sizeof(lutEntry_t));
           if (lutFile.gcount() != sizeof(lutEntry_t)) {
             LOG(info) << " --- troubles reading covariance matrix entry for PDG " << pdg << ": " << filename << std::endl;
+            LOG(info) << " --- expected/detected " << sizeof(lutHeader_t) << "/" << lutFile.gcount() << std::endl;
             return false;
           }
         }

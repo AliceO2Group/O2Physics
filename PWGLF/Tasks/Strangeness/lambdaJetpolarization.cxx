@@ -24,7 +24,8 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -52,6 +53,8 @@
 
 #include <cmath>
 // #include <iostream>
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include <string>
 #include <vector>
 
@@ -126,12 +129,13 @@ struct LambdaJetpolarization {
   Configurable<bool> requireTPC{"requireTPC", true, "require TPC hit"};
   Configurable<float> yMin{"yMin", -0.5f, "minimum y"};
   Configurable<float> yMax{"yMax", +0.5f, "maximum y"};
+  Configurable<float> yMCcut{"yMCcut", +0.5f, "maximum y"};
   Configurable<float> v0rejLambda{"v0rejLambda", 0.01, "V0 rej Lambda"};
   Configurable<float> v0accLambda{"v0accLambda", 0.075, "V0 acc Lambda"};
   Configurable<bool> ifinitpasslambda{"ifinitpasslambda", 0, "ifinitpasslambda"};
   Configurable<bool> ifpasslambda{"ifpasslambda", 1, "ifpasslambda"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-  Configurable<bool> doArmenterosCut{"doArmenterosCut", 1, "do Armenteros Cut"};
+  Configurable<bool> doArmenterosCut{"doArmenterosCut", 0, "do Armenteros Cut"};
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
   Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
   Configurable<bool> notITSAfterburner{"notITSAfterburner", 0, "notITSAfterburner"};
@@ -139,20 +143,20 @@ struct LambdaJetpolarization {
   Configurable<bool> evSel{"evSel", 1, "evSel"};
   Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
   Configurable<bool> hasTOF1Leg{"hasTOF1Leg", 0, "hasTOF1Leg"};
+  Configurable<bool> isMC{"isMC", 1, "fill MC histograms"};
 
-  // Jet background subtraction
-  JetBkgSubUtils backgroundSub;
   void init(InitContext const&)
   {
+
     const AxisSpec axisPx{100, -10, 10, "#px (GeV/c)"};
     const AxisSpec axisPy{100, -10, 10, "#py (GeV/c)"};
     const AxisSpec axisPz{100, -10, 10, "#pz (GeV/c)"};
     const AxisSpec axisPT{200, 0, 50, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPhi{200, -TMath::Pi(), TMath::Pi(), "#Phi"};
-    const AxisSpec axisDeltaPhi{200, 0, TMath::Pi(), "#Phi"};
+    const AxisSpec axisDeltaPhi{10, 0, TMath::Pi(), "#Phi"};
     const AxisSpec axisTheta{100, -TMath::Pi(), TMath::Pi(), "#Theta"};
     const AxisSpec axisMass{100, 0.9, 1.0, "Mass(GeV/c^{2})"};
-    const AxisSpec axisCostheta{100, -1, 1, "Cos(#theta^{*}_{p})"};
+    const AxisSpec axisCostheta{10, -1, 1, "Cos(#theta^{*}_{p})"};
     const AxisSpec axisSinPhi{100, -1, 1, "Sin(#phi^{*}_{p})"};
 
     const AxisSpec JetaxisEta{30, -1.5, +1.5, "#eta"};
@@ -365,6 +369,58 @@ struct LambdaJetpolarization {
       registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(18, "TPC nsigma Neg Dau");
       registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(19, "TPC nsigma Pos Dau");
       registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(20, "Armenteros-Podolansky");
+    }
+    if (isMC) {
+      registryData.add("MC/hNEventsMCReco", "hNEventsMCReco", {HistType::kTH1D, {{4, 0.f, 4.f}}});
+      registryData.get<TH1>(HIST("MC/hNEventsMCReco"))->GetXaxis()->SetBinLabel(1, "all");
+      registryData.get<TH1>(HIST("MC/hNEventsMCReco"))->GetXaxis()->SetBinLabel(2, "pass ev sel");
+      registryData.get<TH1>(HIST("MC/hNEventsMCReco"))->GetXaxis()->SetBinLabel(3, "INELgt0");
+      registryData.get<TH1>(HIST("MC/hNEventsMCReco"))->GetXaxis()->SetBinLabel(4, "check");
+      registryData.add("MC/Reconstructed_MCRecoColl_INEL_Lambda", "Reconstructed_MCRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registryData.add("MC/Reconstructed_MCRecoColl_INEL_AntiLambda", "Reconstructed_MCRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registryData.add("MC/Reconstructed_MCRecoColl_INELgt0_Lambda", "Reconstructed_MCRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registryData.add("MC/Reconstructed_MCRecoColl_INELgt0_AntiLambda", "Reconstructed_MCRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registryData.add("MC/hMassLambda_MC", "hMassLambda", {HistType::kTH1F, {{200, 1.016f, 1.216f}}});
+      registryData.add("MC/hMassVsPtLambdaVsCentFT0M_MC", ";p_{T} [GeV/c];M_{p^{+}#pi^{-}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {100, 0.f, 100.f}, {200, 1.936f - (massPr + massPi), massPr + massPi + (massPr + massPi)}}});
+      registryData.add("MC/hFDVsPtLambdaVsMotherPt_DoubleCharged_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-}); percentile", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {100, 0.f, 100.f}}});
+      registryData.add("MC/hFDVsPtLambdaVsMotherPt_MCRatio_MC", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-/0}); percentile", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {250, 0.0f, 25.0f}, {100, 0.f, 100.f}}});
+      registryData.add("MC/hMassAntiLambda_MC", "hMassAntiLambda", {HistType::kTH1F, {{200, 1.016f, 1.216f}}});
+      registryData.add("MC/hMassVsPtAntiLambdaVsCentFT0M_MC", ";p_{T} [GeV/c];M_{p^{+}#pi^{-}} [GeV/c^{2}]", {HistType::kTH3F, {{250, 0.0f, 25.0f}, {100, 0.f, 100.f}, {200, 1.936f - (massPr + massPi), massPr + massPi + (massPr + massPi)}}});
+      registryData.add("MC/h_MCtrack_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", kTH1F, {{200, 0., 200.}});
+      registryData.add("MC/h_MCtrack_eta", "track #eta;#eta_{track};entries", kTH1F, {{100, -1.f, 1.f}});
+      registryData.add("MC/h_MCtrack_phi", "track #varphi;#varphi_{track};entries", kTH1F, {{80, -1.f, 7.f}});
+      registryData.add("MC/h_MCtrack_pt_sel", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", kTH1F, {{200, 0., 200.}});
+      registryData.add("MC/h_MCtrack_eta_sel", "track #eta;#eta_{track};entries", kTH1F, {{100, -1.f, 1.f}});
+      registryData.add("MC/h_MCtrack_phi_sel", "track #varphi;#varphi_{track};entries", kTH1F, {{80, -1.f, 7.f}});
+
+      registryData.add("MC/MCFJetaHistogram", "FJetaHistogram", kTH1F, {JetaxisEta});
+      registryData.add("MC/MCFJphiHistogram", "FJphiHistogram", kTH1F, {JetaxisPhi});
+      registryData.add("MC/MCFJptHistogram", "FJptHistogram", kTH1F, {JetaxisPt});
+      registryData.add("MC/MCFJetaHistogramsel", "FJetaHistogramsel", kTH1F, {JetaxisEta});
+      registryData.add("MC/MCFJphiHistogramsel", "FJphiHistogramsel", kTH1F, {JetaxisPhi});
+      registryData.add("MC/MCFJptHistogramsel", "FJptHistogramsel", kTH1F, {JetaxisPt});
+
+      registryData.add("MC/MCFLeadingJetaHistogramsel", "FLeadingJetaHistogramsel", kTH1F, {JetaxisEta});
+      registryData.add("MC/MCFLeadingJphiHistogramsel", "FLeadingJphiHistogramsel", kTH1F, {JetaxisPhi});
+      registryData.add("MC/MCFLeadingJptHistogramsel", "FLeadingJptHistogramsel", kTH1F, {JetaxisPt});
+      registryData.add("MC/MCnJetsPerEvent", "nJetsPerEvent", kTH1F, {{10, 0.0, 10.0}});
+      registryData.add("MC/MCnJetsPerEventsel", "nJetsPerEventsel", kTH1F, {{10, 0.0, 10.0}});
+      registryData.add("MC/MCnumber_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryData.add("MC/MCnV0sPerEvent", "nV0sPerEvent", kTH1F, {{10, 0.0, 10.0}});
+
+      registryData.add("MC/V0pxInRest_frame", "V0pxInRest_frame", kTH1F, {axisPx});
+      registryData.add("MC/V0pyInRest_frame", "V0pyInRest_frame", kTH1F, {axisPy});
+      registryData.add("MC/V0pzInRest_frame", "V0pzInRest_frame", kTH1F, {axisPz});
+
+      // Jet-V0 frame messages
+      registryData.add("MC/TH2FprotonCosThetaInJetV0", "TH2FprotonCosThetaInJetV0", kTH2F, {{200, 0.9, 1.2}, {200, -1.0, 1.0}});
+      registryData.add("MC/TProfile1DprotonCosThetaInJetV0", "TProfile1DprotonCosThetaInJetV0", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+      registryData.add("MC/TProfile1DprotonCos2ThetaInJetV0", "TProfile1DprotonCos2ThetaInJetV0", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+      registryData.add("MC/TProfile2DprotonCosThetaInJetV0", "TProfile2DprotonCosThetaInJetV0", kTProfile2D, {tprofile2DaxisMass, axisDeltaPhi});
+      registryData.add("MC/TProfile2DprotonCos2ThetaInJetV0", "TProfile2DprotonCos2ThetaInJetV0", kTProfile2D, {tprofile2DaxisMass, axisDeltaPhi});
+      registryData.add("MC/TH1FprotonCosThetaInJetV0", "TH1FprotonCosThetaInJetV0", kTH1F, {{200, -1.0, 1.0}});
+      registryData.add("MC/TH2FprotonCosThetaPhiInJetV0", "TH2FprotonCosThetaPhiInJetV0", kTH2F, {{200, -1.0, 1.0}, {200, 0.0, TMath::Pi()}});
+      registryData.add({"MC/TH3DLambdaMassDeltaPhiDeltaCosTheta", ";  Mass (GeV/c^{2}); #Delta #varphi_{jet} (rad); Cos(#theta^{*}_{p})", {HistType::kTH3D, {invMassLambdaAxis, axisDeltaPhi, axisCostheta}}});
     }
   }
   double massPr = o2::constants::physics::MassProton;
@@ -834,6 +890,124 @@ struct LambdaJetpolarization {
 
     return true;
   }
+  // MC Lambda Selections
+  template <typename MCLambda, typename MCTrackPos, typename MCTrackNeg, typename MCTCollision>
+  bool registryMCAcceptV0Lambda(const MCLambda& v0, const MCTrackPos& ptrack, const MCTrackNeg& ntrack, const MCTCollision& collision)
+  {
+
+    int evFlag = 0;
+    if (collision.isInelGt0()) {
+      evFlag = 1;
+    }
+
+    if (v0.pt() < v0Ptmin) {
+      return false;
+    }
+
+    registryData.fill(HIST("QA/hv0sSelection"), 0.5);
+
+    if (evSel && evFlag < 1)
+      return false;
+
+    registryData.fill(HIST("QA/hv0sSelection"), 1.5);
+
+    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+      return false;
+
+    registryData.fill(HIST("QA/hv0sSelection"), 2.5);
+
+    if (TMath::Abs(ptrack.eta()) > v0TracketaMax || TMath::Abs(ntrack.eta()) > v0TracketaMax) {
+      return false;
+    }
+    registryData.fill(HIST("QA/hv0sSelection"), 3.5);
+
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 4.5);
+
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 5.5);
+
+    if (requireITS && ptrack.itsNCls() < minITSnCls)
+      return false;
+    if (requireITS && ntrack.itsNCls() < minITSnCls)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 6.5);
+
+    if (hasTOF1Leg && !ptrack.hasTOF() && !ntrack.hasTOF())
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 7.5);
+
+    if (hasTOF2Leg && (!ptrack.hasTOF() || !ntrack.hasTOF()))
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 8.5);
+
+    if (ptrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (ntrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 9.5);
+
+    if (requireMaxTPCSharedCls && ptrack.tpcNClsShared() > maxTPCSharedCls)
+      return false;
+    if (requireMaxTPCSharedCls && ntrack.tpcNClsShared() > maxTPCSharedCls)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 10.5);
+
+    if (ptrack.itsChi2NCl() > maxChi2ITS)
+      return false;
+    if (ntrack.itsChi2NCl() > maxChi2ITS)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 11.5);
+
+    if (ptrack.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (ntrack.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 12.5);
+
+    if (v0.v0cosPA() < v0cospaMin)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 13.5);
+
+    if (v0.yLambda() < yMin || v0.yLambda() > yMax) {
+      return false;
+    }
+    registryData.fill(HIST("QA/hv0sSelection"), 14.5);
+    // For MC ,these cuts is not applied
+    /*
+    float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+    if (ctauLambda >= cTau)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 15.5);
+
+    if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
+      return false;
+    }
+    if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) > v0accLambda) {
+      return false;
+    }
+
+    registryData.fill(HIST("QA/hv0sSelection"), 16.5);
+
+
+    if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 17.5);
+
+    if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 18.5);
+
+    if (doArmenterosCut && v0.qtarm() > (paramArmenterosCut * std::abs(v0.alpha())))
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 19.5);
+    */
+    return true;
+  }
 
   template <typename Lambda, typename TrackPos, typename TrackNeg, typename TCollision>
   bool registryDataAcceptV0AntiLambda(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TCollision& collision)
@@ -903,23 +1077,24 @@ struct LambdaJetpolarization {
     }
 
     float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-    if (ctauAntiLambda >= cTau)
+    if (ctauAntiLambda >= cTau) {
       return false;
-
+    }
     if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
       return false;
     }
     if (std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > v0accLambda) {
       return false;
     }
-    if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+    if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax) {
       return false;
-
-    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+    }
+    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax) {
       return false;
-
-    if (doArmenterosCut && v0.qtarm() > (paramArmenterosCut * std::abs(v0.alpha())))
+    }
+    if (doArmenterosCut && v0.qtarm() > (paramArmenterosCut * std::abs(v0.alpha()))) {
       return false;
+    }
 
     return true;
   }
@@ -1196,6 +1371,7 @@ struct LambdaJetpolarization {
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using SelV0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentNGlobals>;
   using StrHadronDaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  // using StrHadronDaughterTracksMC = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   void processData(SelV0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
   {
     registryData.fill(HIST("hNEvents"), 0.5);
@@ -2004,9 +2180,435 @@ struct LambdaJetpolarization {
     }
   }
   PROCESS_SWITCH(LambdaJetpolarization, processLambdaJetPolarization, "processLambdaJetPolarization", true);
+
+  Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCol = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+  SliceCache cache1;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+  using DauTracksMC = soa::Join<StrHadronDaughterTracks, aod::McTrackLabels>;
+  Preslice<DauTracksMC> perColtrack = aod::track::collisionId;
+  void processRun3MCReconstructed(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
+                                  soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& /*mcCollisions*/,
+                                  soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
+                                  aod::McParticles const& /*mcParticles*/, DauTracksMC const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      if (!AcceptEvent(collision)) {
+        continue;
+      }
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      registryData.fill(HIST("MC/hNEventsMCReco"), 3.5);
+      // const float cent = 0.f;
+      //  Event flags
+      int evFlag = 0;
+      if (collision.isInelGt0()) {
+        evFlag = 1;
+      }
+      auto v0sThisCollision = V0s.sliceBy(perCol, collision.globalIndex());
+      auto tracksThisCollision = tracks.sliceBy(perColtrack, collision.globalIndex());
+      std::vector<fastjet::PseudoJet> fjParticles;
+      for (const auto& track : tracksThisCollision) {
+        registryData.fill(HIST("MC/h_MCtrack_pt"), track.pt());
+        registryData.fill(HIST("MC/h_MCtrack_eta"), track.eta());
+        registryData.fill(HIST("MC/h_MCtrack_phi"), track.phi());
+        if (ispassdTrackSelectionForJetReconstruction && !passedTrackSelectionForJetReconstruction(track)) {
+          continue;
+        }
+        registryData.fill(HIST("MC/h_MCtrack_pt_sel"), track.pt());
+        registryData.fill(HIST("MC/h_MCtrack_eta_sel"), track.eta());
+        registryData.fill(HIST("MC/h_MCtrack_phi_sel"), track.phi());
+
+        // 4-momentum representation of a particle
+        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
+        fjParticles.emplace_back(fourMomentum);
+      }
+      // reject empty events
+      if (fjParticles.size() < 1)
+        return;
+      // cluster particles using the anti-kt algorithm
+      fastjet::RecombinationScheme recombScheme = fastjet::E_scheme;
+      fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet, recombScheme);
+      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+
+      // jet selection
+      bool isAtLeastOneJetSelected = false;
+      int nJets = 0;
+      int nJetssel = 0;
+      // select most large momentum jet
+      float maxJetpx = 0;
+      float maxJetpy = 0;
+      float maxJetpz = 0;
+      float maxJeteta = 0;
+      float maxJetphi = 0;
+      float maxJetE = 0;
+      float maxJetpT = 0;
+      float maxJetPt = -999;
+
+      for (const auto& jet : jets) {
+        nJets++;
+        registryData.fill(HIST("MC/MCFJetaHistogram"), jet.eta());
+        registryData.fill(HIST("MC/MCFJphiHistogram"), jet.phi());
+        registryData.fill(HIST("MC/MCFJptHistogram"), jet.pt());
+        // jet must be fully contained in the acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge)) {
+          continue;
+        }
+
+        if (jet.pt() < cfgjetPtMin) {
+          continue;
+        }
+        nJetssel++;
+        registryData.fill(HIST("MC/MCFJetaHistogramsel"), jet.eta());
+        registryData.fill(HIST("MC/MCFJphiHistogramsel"), jet.phi());
+        registryData.fill(HIST("MC/MCFJptHistogramsel"), jet.pt());
+
+        if (jet.pt() > maxJetPt) {
+          maxJetpx = jet.px();
+          maxJetpy = jet.py();
+          maxJetpz = jet.pz();
+          maxJeteta = jet.eta();
+          maxJetE = jet.E();
+          maxJetphi = jet.phi();
+          maxJetpT = jet.pt();
+          maxJetPt = maxJetpT;
+        }
+      }
+      if (maxJetpT > 0) {
+        registryData.fill(HIST("MC/MCFLeadingJetaHistogramsel"), maxJeteta);
+        registryData.fill(HIST("MC/MCFLeadingJphiHistogramsel"), maxJetphi);
+        registryData.fill(HIST("MC/MCFLeadingJptHistogramsel"), maxJetpT);
+      }
+      registryData.fill(HIST("MC/MCnJetsPerEvent"), nJets);
+      registryData.fill(HIST("MC/MCnJetsPerEventsel"), nJetssel);
+      isAtLeastOneJetSelected = true;
+      if (!isAtLeastOneJetSelected) {
+        return;
+      }
+      // Event multiplicity
+      const float multiplicity = mcCollision.centFT0M();
+      registryData.fill(HIST("MC/MCnumber_of_events_vsmultiplicity"), multiplicity);
+      // v0 loop
+      int V0Numbers = 0;
+      int AntiV0Numbers = 0;
+
+      // loop over V0s
+      for (const auto& v0 : v0sThisCollision) {
+        if (!v0.has_mcParticle()) {
+          continue;
+        }
+        auto v0mcparticle = v0.mcParticle();
+        if (std::abs(v0mcparticle.y()) > yMCcut) {
+          continue;
+        }
+        if (v0.v0Type() != v0TypeSelection) {
+          continue;
+        }
+        if (notITSAfterburner && (v0.negTrack_as<DauTracksMC>().isITSAfterburner() || v0.posTrack_as<DauTracksMC>().isITSAfterburner())) {
+          continue;
+        }
+        if (v0mcparticle.isPhysicalPrimary()) {
+          if (v0mcparticle.pdgCode() == 3122) {
+            registryData.fill(HIST("MC/Reconstructed_MCRecoColl_INEL_Lambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // Lambda
+            if (evFlag == 1) {
+              registryData.fill(HIST("MC/Reconstructed_MCRecoColl_INELgt0_Lambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // Lambda
+            }
+          }
+          if (v0mcparticle.pdgCode() == -3122) {
+            registryData.fill(HIST("MC/Reconstructed_MCRecoColl_INEL_AntiLambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // AntiLambda
+            if (evFlag == 1) {
+              registryData.fill(HIST("MC/Reconstructed_MCRecoColl_INELgt0_AntiLambda"), v0mcparticle.pt(), mcCollision.centFT0M()); // AntiLambda
+            }
+          }
+        }
+        int lPDG = 0;
+        bool isDauLambda = false, isDauAntiLambda = false;
+        bool isprimary = false;
+        if (std::abs(v0mcparticle.pdgCode()) == 310 || std::abs(v0mcparticle.pdgCode()) == 3122) { // K0S or Lambda
+          lPDG = v0mcparticle.pdgCode();
+          isprimary = v0mcparticle.isPhysicalPrimary();
+        }
+        for (const auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
+          for (const auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
+            if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) { // proton + pion^{-}
+              isDauLambda = true;
+            }
+            if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -2212) { // antiproton + pion^{+}
+              isDauAntiLambda = true;
+            }
+          }
+        }
+        float ptMotherMC = 0.;
+        float pdgMother = 0.;
+
+        if (std::abs(v0mcparticle.pdgCode()) == 3122 && v0mcparticle.has_mothers()) {
+          for (const auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
+            if (std::abs(mcparticleMother0.pdgCode()) == 3312 || std::abs(mcparticleMother0.pdgCode()) == 3322) {
+              ptMotherMC = mcparticleMother0.pt();
+              pdgMother = mcparticleMother0.pdgCode();
+            }
+          }
+        }
+
+        if (registryMCAcceptV0Lambda(v0, v0.posTrack_as<DauTracksMC>(), v0.negTrack_as<DauTracksMC>(), collision)) {
+          if (isMC && lPDG == 3122) {
+            if (isprimary == 1 && isDauLambda) {
+              V0Numbers = V0Numbers + 1;
+              registryData.fill(HIST("MC/hMassLambda_MC"), v0.mLambda());
+              registryData.fill(HIST("MC/hMassVsPtLambdaVsCentFT0M_MC"), v0.pt(), mcCollision.centFT0M(), v0.mLambda());
+            }
+
+          } else if (isMC && lPDG == -3122) {
+            if (isprimary == 1 && isDauAntiLambda) {
+              AntiV0Numbers = AntiV0Numbers + 1;
+              registryData.fill(HIST("MC/hMassAntiLambda_MC"), v0.mAntiLambda());
+              registryData.fill(HIST("MC/hMassVsPtAntiLambdaVsCentFT0M_MC"), v0.pt(), mcCollision.centFT0M(), v0.mAntiLambda());
+            }
+
+          } else if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0rejLambda) {
+            if (pdgMother == 3312) {
+              registryData.fill(HIST("MC/hFDVsPtLambdaVsMotherPt_DoubleCharged_MC"), v0.pt(), ptMotherMC, mcCollision.centFT0M());
+            }
+            if (pdgMother == 3312 || pdgMother == 3322) {
+              registryData.fill(HIST("MC/hFDVsPtLambdaVsMotherPt_MCRatio_MC"), v0.pt(), ptMotherMC, mcCollision.centFT0M());
+            }
+          }
+        }
+      }
+      registryData.fill(HIST("MC/MCnV0sPerEvent"), V0Numbers);
+      // calculate lambda polarization induced by jet
+      if (V0Numbers == 0 && AntiV0Numbers == 0) {
+        return;
+      }
+      if (maxJetpx == 0) {
+        return;
+      }
+
+      // second loop over V0s
+      for (const auto& v0 : v0sThisCollision) {
+        if (!v0.has_mcParticle()) {
+          continue;
+        }
+        auto v0mcparticle = v0.mcParticle();
+        if (std::abs(v0mcparticle.y()) > yMCcut) {
+          continue;
+        }
+        if (v0.v0Type() != v0TypeSelection) {
+          continue;
+        }
+        if (notITSAfterburner && (v0.negTrack_as<DauTracksMC>().isITSAfterburner() || v0.posTrack_as<DauTracksMC>().isITSAfterburner())) {
+          continue;
+        }
+
+        int lPDG = 0;
+        bool isDauLambda = false, isDauAntiLambda = false;
+        bool isprimary = false;
+        if (std::abs(v0mcparticle.pdgCode()) == 310 || std::abs(v0mcparticle.pdgCode()) == 3122) { // K0S or Lambda
+          lPDG = v0mcparticle.pdgCode();
+          isprimary = v0mcparticle.isPhysicalPrimary();
+        }
+        for (const auto& mcparticleDaughter0 : v0mcparticle.daughters_as<aod::McParticles>()) {
+          for (const auto& mcparticleDaughter1 : v0mcparticle.daughters_as<aod::McParticles>()) {
+            if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) { // proton + pion^{-}
+              isDauLambda = true;
+            }
+            if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -2212) { // antiproton + pion^{+}
+              isDauAntiLambda = true;
+            }
+          }
+        }
+        // float ptMotherMC = 0.;
+        float pdgMother = 0.;
+        if (std::abs(v0mcparticle.pdgCode()) == 3122 && v0mcparticle.has_mothers()) {
+          for (const auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
+            if (std::abs(mcparticleMother0.pdgCode()) == 3312 || std::abs(mcparticleMother0.pdgCode()) == 3322) {
+              // ptMotherMC = mcparticleMother0.pt();
+              pdgMother = mcparticleMother0.pdgCode();
+            }
+          }
+        }
+
+        if (registryMCAcceptV0Lambda(v0, v0.posTrack_as<DauTracksMC>(), v0.negTrack_as<DauTracksMC>(), collision)) {
+          if (isMC && lPDG == 3122) {
+            if (isprimary == 1 && isDauLambda) {
+              const auto& pos = v0.posTrack_as<DauTracksMC>();
+              // const auto& neg = v0.negTrack_as<DauTracksMC>();
+              double PLambda = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
+              double ELambda = std::sqrt(v0.mLambda() * v0.mLambda() + PLambda * PLambda);
+              double protonE = std::sqrt(massPr * massPr + pos.px() * pos.px() + pos.py() * pos.py() + pos.pz() * pos.pz());
+
+              TMatrixD pLabJet(4, 1);
+              pLabJet(0, 0) = maxJetE;
+              pLabJet(1, 0) = maxJetpx;
+              pLabJet(2, 0) = maxJetpy;
+              pLabJet(3, 0) = maxJetpz;
+
+              TMatrixD pLabV0(4, 1);
+              pLabV0(0, 0) = ELambda;
+              pLabV0(1, 0) = v0.px();
+              pLabV0(2, 0) = v0.py();
+              pLabV0(3, 0) = v0.pz();
+
+              TMatrixD V0InV0(4, 1);
+              V0InV0 = LorentzTransInV0frame(ELambda, v0.px(), v0.py(), v0.pz()) * pLabV0;
+              registryData.fill(HIST("MC/V0pxInRest_frame"), V0InV0(1, 0));
+              registryData.fill(HIST("MC/V0pyInRest_frame"), V0InV0(2, 0));
+              registryData.fill(HIST("MC/V0pzInRest_frame"), V0InV0(3, 0));
+
+              TMatrixD lambdaInJet(4, 1);
+              lambdaInJet = MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, v0.px(), v0.py(), v0.pz()) * pLabV0;
+
+              TMatrixD pLabproton(4, 1);
+              pLabproton(0, 0) = protonE;
+              pLabproton(1, 0) = pos.px();
+              pLabproton(2, 0) = pos.py();
+              pLabproton(3, 0) = pos.pz();
+
+              TMatrixD protonInJetV0(4, 1);
+              protonInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, v0.px(), v0.py(), v0.pz()) * pLabproton;
+              double protonPinJetV0 = std::sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0) + protonInJetV0(3, 0) * protonInJetV0(3, 0));
+              double protonCosThetainJetV0 = protonInJetV0(3, 0) / protonPinJetV0;
+              double protonCosThetaInJetV0frame = protonCosThetainJetV0;
+              registryData.fill(HIST("MC/TH2FprotonCosThetaInJetV0"), v0.mLambda(), protonCosThetaInJetV0frame);
+              registryData.fill(HIST("MC/TProfile1DprotonCosThetaInJetV0"), v0.mLambda(), protonCosThetaInJetV0frame);
+              registryData.fill(HIST("MC/TProfile1DprotonCos2ThetaInJetV0"), v0.mLambda(), protonCosThetaInJetV0frame * protonCosThetaInJetV0frame);
+              registryData.fill(HIST("MC/TProfile2DprotonCosThetaInJetV0"), v0.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame);
+              registryData.fill(HIST("MC/TProfile2DprotonCos2ThetaInJetV0"), v0.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame * protonCosThetaInJetV0frame);
+              registryData.fill(HIST("MC/TH1FprotonCosThetaInJetV0"), protonCosThetaInJetV0frame);
+              registryData.fill(HIST("MC/TH2FprotonCosThetaPhiInJetV0"), protonCosThetaInJetV0frame, TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)));
+              registryData.fill(HIST("MC/TH3DLambdaMassDeltaPhiDeltaCosTheta"), v0.mLambda(), TMath::ATan2(lambdaInJet(2, 0), lambdaInJet(1, 0)), protonCosThetaInJetV0frame);
+            }
+          } else if (isMC && lPDG == -3122) {
+            if (isprimary == 1 && isDauAntiLambda) {
+              continue;
+            }
+
+          } else if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0rejLambda) {
+            if (pdgMother == 3312) {
+              continue;
+            }
+            if (pdgMother == 3312 || pdgMother == 3322) {
+              continue;
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(LambdaJetpolarization, processRun3MCReconstructed, "processRun3MCReconstructed", true);
+};
+
+struct LambdaJetpolarizationMCcount {
+  // Basic checks
+  HistogramRegistry registry{
+    "registry",
+    {
+      {"hK0ShortCount", "hK0ShortCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hLambdaCount", "hLambdaCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hAntiLambdaCount", "hAntiLambdaCount", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hK0ShortCount_PtDiff", "hK0ShortCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hLambdaCount_PtDiff", "hLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+      {"hAntiLambdaCount_PtDiff", "hAntiLambdaCount_PtDiff", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
+
+      {"hEventSelection", "hEventSelection", {HistType::kTH1F, {{1, 0.0f, 3.0f}}}},
+    },
+  };
+
+  void init(InitContext&)
+  {
+    registry.get<TH1>(HIST("hK0ShortCount"))->GetXaxis()->SetBinLabel(1, "primary K0S mothers");
+    registry.get<TH1>(HIST("hK0ShortCount"))->GetXaxis()->SetBinLabel(2, "decaying into V0");
+    registry.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(1, "primary Lambda mothers");
+    registry.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(2, "decaying into V0");
+    registry.get<TH1>(HIST("hAntiLambdaCount"))->GetXaxis()->SetBinLabel(1, "primary AntiLambda mothers");
+    registry.get<TH1>(HIST("hAntiLambdaCount"))->GetXaxis()->SetBinLabel(2, "decaying into V0");
+
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "Sel8 cut");
+    registry.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+  }
+
+  Configurable<float> rapidityMCcut{"rapidityMCcut", 0.5f, "rapidity cut MC count"};
+  Configurable<bool> eventSel8selection{"eventSel8selection", true, "event selection MC count post sel8 cut"};
+  Configurable<bool> eventPosZselection{"eventPosZselection", true, "event selection MC count post posZ cut"};
+  Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
+  void processMC(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions)
+  {
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
+    for (const auto& collision : collisions) {
+      if (eventSel8selection && !collision.sel8()) {
+        continue;
+      }
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    SelectedEvents.resize(nevts);
+
+    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
+
+    registry.fill(HIST("hEventSelection"), 0.5);
+    if (!evtReconstructedAndSelected) {
+      return;
+    }
+    registry.fill(HIST("hEventSelection"), 1.5);
+    if (eventPosZselection && std::abs(mcCollision.posZ()) > zVtx) {
+      return;
+    }
+    registry.fill(HIST("hEventSelection"), 2.5);
+
+    for (const auto& mcparticle : mcParticles) {
+      if (TMath::Abs(mcparticle.y()) < rapidityMCcut) {
+        if (mcparticle.isPhysicalPrimary()) {
+          if (!mcparticle.has_daughters()) {
+            continue;
+          }
+          if (mcparticle.pdgCode() == 310) {
+            registry.fill(HIST("hK0ShortCount"), 0.5);
+            registry.fill(HIST("hK0ShortCount_PtDiff"), mcparticle.pt());
+            for (const auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+              for (const auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+                if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -211) {
+                  registry.fill(HIST("hK0ShortCount"), 1.5);
+                }
+              }
+            }
+          }
+          if (mcparticle.pdgCode() == 3122) {
+            registry.fill(HIST("hLambdaCount"), 0.5);
+            registry.fill(HIST("hLambdaCount_PtDiff"), mcparticle.pt());
+            for (const auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+              for (const auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+                if (mcparticleDaughter0.pdgCode() == -211 && mcparticleDaughter1.pdgCode() == 2212) {
+                  registry.fill(HIST("hLambdaCount"), 1.5);
+                }
+              }
+            }
+          }
+          if (mcparticle.pdgCode() == -3122) {
+            registry.fill(HIST("hAntiLambdaCount"), 0.5);
+            registry.fill(HIST("hAntiLambdaCount_PtDiff"), mcparticle.pt());
+            for (const auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+              for (const auto& mcparticleDaughter1 : mcparticle.daughters_as<aod::McParticles>()) {
+                if (mcparticleDaughter0.pdgCode() == 211 && mcparticleDaughter1.pdgCode() == -2212) {
+                  registry.fill(HIST("hAntiLambdaCount"), 1.5);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(LambdaJetpolarizationMCcount, processMC, "processMC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<LambdaJetpolarization>(cfgc)}; // TaskName{"lambdaJetpolarization"}
+  return WorkflowSpec{
+    adaptAnalysisTask<LambdaJetpolarization>(cfgc),
+    adaptAnalysisTask<LambdaJetpolarizationMCcount>(cfgc)};
 }

@@ -20,6 +20,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
 
 #include <map>
@@ -27,7 +28,7 @@
 #include <vector>
 
 struct OnTheFlyDetectorGeometryProvider {
-
+  o2::framework::HistogramRegistry histos{"Histos", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
   o2::framework::Configurable<std::vector<std::string>> detectorConfiguration{"detectorConfiguration",
                                                                               std::vector<std::string>{"$O2PHYSICS_ROOT/share/alice3/a3geometry_v3.ini"},
                                                                               "Paths of the detector geometry configuration files"};
@@ -43,12 +44,13 @@ struct OnTheFlyDetectorGeometryProvider {
       return;
     }
     int idx = 0;
-    for (auto& configFile : detectorConfiguration.value) {
+    for (std::string& configFile : detectorConfiguration.value) {
       LOG(info) << "Loading detector geometry from configuration file: " << configFile;
+      histos.add<TH1>(Form("GeometryConfigFile_%d", idx), configFile.c_str(), o2::framework::HistType::kTH1D, {{1, 0, 1}})->Fill(0.5);
       // If the filename starts with ccdb: then take the file from the ccdb
       if (configFile.rfind("ccdb:", 0) == 0) {
         std::string ccdbPath = configFile.substr(5); // remove "ccdb:" prefix
-        const std::string outPath = "/tmp/DetGeo/";
+        const std::string outPath = "./.ALICE3/Configuration/";
         configFile = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
         std::ifstream checkFile(configFile); // Check if file already exists
         if (!checkFile.is_open()) {          // File does not exist, retrieve from CCDB
@@ -62,6 +64,7 @@ struct OnTheFlyDetectorGeometryProvider {
         }
         detectorConfiguration.value[idx] = configFile; // Update the filename to the local file
       }
+      LOG(info) << "Adding " << configFile << "geometry container";
       geometryContainer.addEntry(configFile);
       idx++;
     }
@@ -75,10 +78,12 @@ struct OnTheFlyDetectorGeometryProvider {
         LOG(fatal) << "Inconsistent magnetic field values between configurations 0 and " << icfg << ": " << mMagneticField << " vs " << cfgBfield;
       }
     }
+    LOG(info) << "Initialization completed";
   }
 
-  void process(o2::aod::McCollisions const&)
+  void process(o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles)
   {
+    LOG(info) << "On-the-fly detector geometry provider processing " << mcCollisions.size() << " collisions and " << mcParticles.size() << " particles.";
   }
 };
 

@@ -101,6 +101,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                                           //!
 DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of D-meson candidates (GeV/c)
 DECLARE_SOA_COLUMN(Centrality, centrality, float);                           //! Centrality of collision
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);                 //! Impact parameter of D-meson candidate
+DECLARE_SOA_COLUMN(ImpactParameterMc, impactParameterMc, float);             //! Generated impact parameter of D-meson candidate
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of D-meson candidate
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of D-meson candidate
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of D-meson candidate
@@ -108,21 +109,24 @@ DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //!
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int);                                     //! MC flag (according to DataType enum)
 } // namespace hf_cand_ds_mini
 
-DECLARE_SOA_TABLE(HfCandDsMinis, "AOD", "HFCANDDSMINI", //! Table with few Ds properties
+DECLARE_SOA_TABLE(HfCandDsMinis, "AOD", "HFDSMINI", //! Table with few Ds properties
                   hf_cand_ds_mini::M,
                   hf_cand_ds_mini::Pt,
                   hf_cand_ds_mini::Centrality);
 
-DECLARE_SOA_TABLE(HfCandDsDlMinis, "AOD", "HFCANDDSDLMINI", //! Table with decay length Ds properties
+DECLARE_SOA_TABLE(HfCandDsDlMinis, "AOD", "HFDSDLMINI", //! Table with decay length Ds properties
                   hf_cand_ds_mini::DecayLength,
                   hf_cand_ds_mini::DecayLengthXY,
                   hf_cand_ds_mini::DecayLengthNormalised,
                   hf_cand_ds_mini::DecayLengthXYNormalised);
 
-DECLARE_SOA_TABLE(HfCandDsD0Minis, "AOD", "HFCANDDSD0MINI", //! Table with impact parameter (d0)
+DECLARE_SOA_TABLE(HfCandDsD0Minis, "AOD", "HFDSD0MINI", //! Table with impact parameter (d0)
                   hf_cand_ds_mini::ImpactParameter);
 
-DECLARE_SOA_TABLE(HfCandDsMcMinis, "AOD", "HFCANDDSMCMINI", //! Table with MC decay type check
+DECLARE_SOA_TABLE(HfCandDsD0McMinis, "AOD", "HFDSD0MCMINI", //! Table with generated impact parameter (d0)
+                  hf_cand_ds_mini::ImpactParameterMc);
+
+DECLARE_SOA_TABLE(HfCandDsMcMinis, "AOD", "HFDSMCMINI", //! Table with MC decay type check
                   hf_cand_ds_mini::FlagMc);
 } // namespace o2::aod
 
@@ -141,6 +145,7 @@ struct HfTaskDs {
   Produces<aod::HfCandDsDlMinis> hfCandDsDlMinis;
   Produces<aod::HfCandDsD0Minis> hfCandDsD0Minis;
   Produces<aod::HfCandDsMcMinis> hfCandDsMcMinis;
+  Produces<aod::HfCandDsD0McMinis> hfCandDsD0McMinis;
 
   Configurable<int> decayChannel{"decayChannel", 1, "Switch between resonant decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
   Configurable<bool> fillDplusMc{"fillDplusMc", true, "Switch to fill Dplus MC information"};
@@ -584,8 +589,8 @@ struct HfTaskDs {
     }
   }
 
-  template <bool IsMc, typename Coll, typename Cand>
-  void fillMiniTrees(const Cand& candidate, DataType dataType, FinalState finalState)
+  template <typename Coll, typename Cand>
+  void fillMiniTrees(const Cand& candidate, FinalState finalState)
   {
     auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
     auto pt = candidate.pt();
@@ -597,8 +602,32 @@ struct HfTaskDs {
     if (miniTrees.extendWithImpactParameter) {
       hfCandDsD0Minis(candidate.impactParameterXY());
     }
-    if constexpr (IsMc) {
-      hfCandDsMcMinis(dataType);
+  }
+
+  template <typename Coll, typename Cand>
+  void fillMiniTreesMc(const Cand& candidate, DataType dataType, FinalState finalState, const CandDsMcGen& mcParticles, int indexMother)
+  {
+    auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
+    auto pt = candidate.pt();
+
+    hfCandDsMinis(mass, pt, evaluateCentralityCand<Coll>(candidate));
+    if (miniTrees.extendWithDecayLength) {
+      hfCandDsDlMinis(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
+    }
+    if (miniTrees.extendWithImpactParameter) {
+      hfCandDsD0Minis(candidate.impactParameterXY());
+    }
+    hfCandDsMcMinis(dataType);
+
+    if (miniTrees.extendWithImpactParameter) {
+      // indexMother is != -1 here
+      auto particleMc = mcParticles.rawIteratorAt(indexMother);
+      auto prong0 = mcParticles.rawIteratorAt(particleMc.daughtersIds()[0]);
+
+      std::array pv{particleMc.mcCollision().posX(), particleMc.mcCollision().posY(), particleMc.mcCollision().posZ()};
+      std::array sv{prong0.vx(), prong0.vy(), prong0.vz()};
+      auto genD0 = RecoDecay::impParXY(pv, sv, std::array{particleMc.px(), particleMc.py(), particleMc.pz()});
+      hfCandDsD0McMinis(genD0);
     }
   }
 
@@ -663,7 +692,7 @@ struct HfTaskDs {
         fillHisto(candidate, dataType);
         fillHistoKKPi<true, Coll>(candidate, dataType);
         if (miniTrees.produceMiniTrees) {
-          fillMiniTrees<true, Coll>(candidate, dataType, FinalState::KKPi);
+          fillMiniTreesMc<Coll>(candidate, dataType, FinalState::KKPi, mcParticles, indexMother);
         }
         if (TESTBIT(candidate.isSelDsToKKPi(), aod::SelectionStep::RecoSkims)) {
           std::get<TH2Ptr>(histosPtr[dataType]["hPtVsYRecoSkim"])->Fill(pt, yCand);
@@ -683,7 +712,7 @@ struct HfTaskDs {
         fillHisto(candidate, dataType);
         fillHistoPiKK<true, Coll>(candidate, dataType);
         if (miniTrees.produceMiniTrees) {
-          fillMiniTrees<true, Coll>(candidate, dataType, FinalState::PiKK);
+          fillMiniTreesMc<Coll>(candidate, dataType, FinalState::PiKK, mcParticles, indexMother);
         }
 
         if (TESTBIT(candidate.isSelDsToPiKK(), aod::SelectionStep::RecoSkims)) {
@@ -709,7 +738,7 @@ struct HfTaskDs {
       fillHisto(candidate, DataType::Data);
       fillHistoKKPi<false, Coll>(candidate, DataType::Data);
       if (miniTrees.produceMiniTrees) {
-        fillMiniTrees<true, Coll>(candidate, DataType::Data, FinalState::KKPi);
+        fillMiniTrees<Coll>(candidate, FinalState::KKPi);
       }
     }
     if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
@@ -719,7 +748,7 @@ struct HfTaskDs {
       fillHisto(candidate, DataType::Data);
       fillHistoPiKK<false, Coll>(candidate, DataType::Data);
       if (miniTrees.produceMiniTrees) {
-        fillMiniTrees<true, Coll>(candidate, DataType::Data, FinalState::PiKK);
+        fillMiniTrees<Coll>(candidate, FinalState::PiKK);
       }
     }
   }

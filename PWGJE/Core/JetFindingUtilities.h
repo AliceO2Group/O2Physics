@@ -207,7 +207,7 @@ bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& 
   if (candidate.pt() < candPtMin || candidate.pt() >= candPtMax) {
     return false;
   }
-  fastjetutilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
+  fastjetutilities::fillTracks(candidate, inputParticles, candidate.globalIndex(), JetConstituentStatus::candidate, candMass);
   return true;
 }
 
@@ -274,7 +274,7 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
     if (v0.pt() < v0PtMin || v0.pt() >= v0PtMax) {
       continue;
     }
-    fastjetutilities::fillTracks(v0, inputParticles, v0.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), v0Mass);
+    fastjetutilities::fillTracks(v0, inputParticles, v0.globalIndex(), JetConstituentStatus::candidate, v0Mass);
     nSelectedV0s++;
   }
   if (nSelectedV0s > 0) {
@@ -315,8 +315,8 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       if (doCandidateJetFinding) {
         bool isCandidateJet = false;
         for (const auto& constituent : jet.constituents()) {
-          auto constituentStatus = constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus();
-          if (constituentStatus == static_cast<int>(JetConstituentStatus::candidate)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
+          JetConstituentStatus constituentStatus = constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus();
+          if (constituentStatus == JetConstituentStatus::candidate) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
             isCandidateJet = true;
             break;
           }
@@ -331,13 +331,13 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       jetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(),
                 jet.E(), jet.rapidity(), jet.m(), jet.has_area() ? jet.area() : 0., std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::track)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::track) {
           tracks.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::cluster)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::cluster) {
           clusters.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidate)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::candidate) {
           cands.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
       }
@@ -406,7 +406,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, const std
         }
       }
     }
-    fastjetutilities::fillTracks(particle, inputParticles, particle.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdgParticle->Mass());
+    fastjetutilities::fillTracks(particle, inputParticles, particle.globalIndex(), JetConstituentStatus::track, pdgParticle->Mass());
   }
 }
 

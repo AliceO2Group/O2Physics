@@ -434,9 +434,20 @@ struct FlowTask {
       oba->Add(new TNamed(Form("Ch10Gap24_pt_%i", i + 1), "Ch10Gap24_pTDiff"));
     std::vector<std::string> userDefineGFWCorr = cfgUserDefineGFWCorr;
     std::vector<std::string> userDefineGFWName = cfgUserDefineGFWName;
+    if (userDefineGFWName.size() != userDefineGFWCorr.size()) {
+      LOGF(fatal, "The GFWConfig names you provided are NOT matching with configurations. userDefineGFWName.size(): %d, userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
+    }
+    LOGF(info, "User adding FlowContainer Array:");
     if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
       for (uint i = 0; i < userDefineGFWName.size(); i++) {
-        oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
+        if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
+          LOGF(info, "%d: pT-diff array %s", i, userDefineGFWName.at(i).c_str());
+          for (auto iPt = 0; iPt < fPtAxis->GetNbins(); iPt++)
+            oba->Add(new TNamed(Form("%s_pt_%i", userDefineGFWName.at(i).c_str(), iPt + 1), Form("%s_pTDiff", userDefineGFWName.at(i).c_str())));
+        } else {
+          LOGF(info, "%d: %s", i, userDefineGFWName.at(i).c_str());
+          oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
+        }
       }
     }
     fFC->SetName("FlowContainer");

@@ -93,6 +93,24 @@ float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, fl
 {
   return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
 }
+void encode16bit(int const& n, uint8_t& low, uint8_t& up)
+{
+  if (n >= (1 << 16)) {
+    low = up = -1;
+    return;
+  } else {
+    low = up = 0;
+  }
+  int bByte = 8;
+  for (int b{0}; b < bByte; ++b) {
+    int bL = (n & (1 << b)) >> b;
+    int bU = (n & (1 << (b + bByte))) >> (b + bByte);
+    if (bL > 0)
+      low += (1 << b);
+    if (bU > 0)
+      up += (1 << b);
+  }
+}
 } // namespace
 
 struct CandidateV0 {
@@ -184,6 +202,7 @@ struct EbyeMaker {
   uint8_t nTrackletsColl;
   uint8_t nTracksColl;
   uint8_t nChPartGen;
+  int nTracksCollFull;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
@@ -194,6 +213,8 @@ struct EbyeMaker {
   const AxisSpec zVtxAxis{100, -20.f, 20.f, "vertex z in cm"};
   const AxisSpec nTpcAxis{160, 0, 160, "N TPC"};
   const AxisSpec dcaAxis{2000, -1., 1., "DCA in cm"};
+  const AxisSpec phiAxis{650, 0, 6.5, "#phi (rad)"};
+  const AxisSpec signMomAxis{1000, -5.f, 5.f, "#it{p}_{T}/#it{Z} (GeV/#it{c})"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
@@ -231,6 +252,7 @@ struct EbyeMaker {
   Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
   Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
+  Configurable<float> trackMinChi2Cut{"trackMinChi2Cut", 0.f, "Minimum chi2/ncls in TPC"};
 
   Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 100, "Minimum number of crossed TPC rows for V0 daughter"};
   Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 0, "Minimum number of ITS clusters for V0 daughter"};
@@ -329,7 +351,6 @@ struct EbyeMaker {
   {
     const float defItsChi2NClCut = 36.f;
     const float defNClCROverFind = 0.8f;
-    const float defMinChi2Cut = 0.f;
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
@@ -337,9 +358,9 @@ struct EbyeMaker {
       return false;
     }
     if (track.itsNCls() < trackNclusItsCut ||
-        track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
+        (track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() && !(doprocessRun3 || doprocessMcRun3)) ||
         track.tpcChi2NCl() > trackChi2Cut ||
-        track.tpcChi2NCl() < defMinChi2Cut ||
+        track.tpcChi2NCl() < trackMinChi2Cut ||
         track.itsChi2NCl() > defItsChi2NClCut) {
       return false;
     }
@@ -517,7 +538,7 @@ struct EbyeMaker {
     // event QA
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
     if (doprocessRun3) {
-      histos.add<TH2>("QA/PvMultVsCent", ";Centrality T0C (%);#it{N}_{PV contributors};", HistType::kTH2F, {centAxis, multAxis});
+      histos.add<TH2>("QA/PvMultVsCent", ";Centrality FT0C (%);#it{N}_{tracks};", HistType::kTH2F, {centAxis, multAxis});
     } else if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
       histos.add<TH2>("QA/trackletsVsV0M", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, multAxis});
@@ -533,8 +554,9 @@ struct EbyeMaker {
 
     // tracking variables QA
     histos.add<TH2>("QA/tpcCRvsCls", ";#it{N}_{TPCCR};#it{N}_{TPCcls}", HistType::kTH2F, {nTpcAxis, nTpcAxis});
-    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
-    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
+    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {signMomAxis, dcaAxis});
+    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {signMomAxis, dcaAxis});
+    histos.add<TH3>("QA/phiVsPtVsCls", ";#it{N}^{TPC}_{CR};#it{p}_{T} (GeV/#it{c});#phi (rad)", HistType::kTH3F, {nTpcAxis, signMomAxis, phiAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
@@ -562,6 +584,7 @@ struct EbyeMaker {
     candidateV0s.clear();
     nTrackletsColl = 0u;
     nTracksColl = 0u;
+    nTracksCollFull = 0;
 
     std::array<float, 2> dcaInfo;
     for (const auto& track : tracks) {
@@ -573,25 +596,26 @@ struct EbyeMaker {
       if (!selectTrack(track)) {
         continue;
       }
-
       histos.fill(HIST("QA/tpcCRvsCls"), track.tpcNClsCrossedRows(), track.tpcNClsFound());
-      if (track.tpcNClsFound() < trackNclusTpcCut || track.tpcNClsCrossedRows() < trackNcrossedRows)
-        continue;
 
       auto trackParCov = getTrackParCov(track);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto dca = std::hypot(dcaInfo[0], dcaInfo[1]);
       auto trackPt = trackParCov.getPt();
+      auto trackPhi = trackParCov.getPhi();
       auto trackEta = trackParCov.getEta();
-      histos.fill(HIST("QA/dcaxyVsPt"), track.pt(), dcaInfo[0]);
-      histos.fill(HIST("QA/dcazVsPt"), track.pt(), dcaInfo[1]);
-      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca")) { // dcaxy
+      if (track.tpcNClsFound() < trackNclusTpcCut || track.tpcNClsCrossedRows() < trackNcrossedRows)
         continue;
-      }
+      histos.fill(HIST("QA/dcaxyVsPt"), track.sign() > 0. ? track.pt() : -track.pt(), dcaInfo[0]); // TODO: this should rather be trackPt (likely small effect for 7 ITS clusters?)
+      histos.fill(HIST("QA/dcazVsPt"), track.sign() > 0. ? track.pt() : -track.pt(), dcaInfo[1]);
+      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca"))
+        continue;
+      histos.fill(HIST("QA/phiVsPtVsCls"), track.tpcNClsFound(), track.sign() > 0. ? trackPt : -trackPt, trackPhi);
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (track.sign() > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll)))
+      if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyLSTrk == TracksCharge::kNegative) || (track.sign() > 0 && countOnlyLSTrk == TracksCharge::kPositive) || (countOnlyLSTrk == TracksCharge::kAll))) {
         nTracksColl++;
-
+        nTracksCollFull++;
+      }
       for (int iP{0}; iP < kNpart; ++iP) {
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
           continue;
@@ -622,7 +646,7 @@ struct EbyeMaker {
           candTrack.dcaxypv = dcaInfo[0];
           candTrack.dcazpv = dcaInfo[1];
           candTrack.tpcchi2 = track.tpcChi2NCl();
-          candTrack.tpcncls = track.tpcNClsFound();
+          candTrack.tpcncls = (doprocessRun3 || doprocessMcRun3) ? track.tpcNClsCrossedRows() : track.tpcNClsFound();
           candTrack.tpcnsigma = nSigmaTPC;
           candTrack.tofmass = hasTof ? mass : -999.f;
           candTrack.globalIndex = track.globalIndex();
@@ -932,8 +956,8 @@ struct EbyeMaker {
       auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
       v0TableThisCollision.bindExternalIndices(&tracks);
 
-      histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
+      histos.fill(HIST("QA/PvMultVsCent"), centrality, nTracksColl);
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
@@ -986,6 +1010,7 @@ struct EbyeMaker {
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
       histos.fill(HIST("QA/trackletsVsV0M"), centrality, multTracklets);
 
+      encode16bit(nTracksCollFull, nTrackletsColl, nTracksColl);
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);

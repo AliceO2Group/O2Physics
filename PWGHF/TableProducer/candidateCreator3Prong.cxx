@@ -138,8 +138,8 @@ struct HfCandidateCreator3Prong {
   int runNumber{0};
   double bz{0.};
 
-  static constexpr float CentiToMicro = 10000.; // from cm to µm
-  static constexpr float UndefValueFloat{-999.f};
+  constexpr static float CentiToMicro{10000.f}; // from cm to µm
+  constexpr static float UndefValueFloat{-999.f};
 
   using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
   using FilteredPvRefitHf3Prongs = soa::Filtered<soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong>>;
@@ -226,10 +226,10 @@ struct HfCandidateCreator3Prong {
     // Configure DCAFitterN
     // df.setBz(bz);
     df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
+    df.setMaxR(static_cast<float>(maxR));
+    df.setMaxDZIni(static_cast<float>(maxDZIni));
+    df.setMinParamChange(static_cast<float>(minParamChange));
+    df.setMinRelChi2Change(static_cast<float>(minRelChi2Change));
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
@@ -307,7 +307,7 @@ struct HfCandidateCreator3Prong {
         // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
         // df.print();
       }
-      df.setBz(bz);
+      df.setBz(static_cast<float>(bz));
 
       // reconstruct the 3-prong secondary vertex
       hCandidates->Fill(SVFitting::BeforeFit);
@@ -481,7 +481,7 @@ struct HfCandidateCreator3Prong {
       }
       float covMatrixPV[6];
 
-      KFParticle::SetField(bz);
+      KFParticle::SetField(static_cast<float>(bz));
       KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
 
       if constexpr (DoPvRefit) {
@@ -604,14 +604,14 @@ struct HfCandidateCreator3Prong {
       const float massPiK = kfPairPiK.GetMass();
 
       if (applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
-        kfCandPKPi.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
-        kfCandPiKP.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
-        kfCandPiKPi.SetNonlinearMassConstraint(MassDPlus);
-        kfCandKKPi.SetNonlinearMassConstraint(MassDS);
-        kfCandPiKK.SetNonlinearMassConstraint(MassDS);
+        kfCandPKPi.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
+        kfCandPiKP.SetNonlinearMassConstraint(createLc ? static_cast<float>(MassLambdaCPlus) : static_cast<float>(MassXiCPlus));
+        kfCandPiKPi.SetNonlinearMassConstraint(static_cast<float>(MassDPlus));
+        kfCandKKPi.SetNonlinearMassConstraint(static_cast<float>(MassDS));
+        kfCandPiKK.SetNonlinearMassConstraint(static_cast<float>(MassDS));
       }
 
-      const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();
+      const float chi2geo = kfCandPKPi.Chi2() / static_cast<float>(kfCandPKPi.NDF());
       const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, kfpV);
 
       std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
@@ -647,7 +647,7 @@ struct HfCandidateCreator3Prong {
                        kfpV.GetX(), kfpV.GetY(), kfpV.GetZ(),
                        kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ(),
                        errorDecayLength, errorDecayLengthXY,
-                       kfCandPKPi.GetChi2() / kfCandPKPi.GetNDF(),
+                       kfCandPKPi.GetChi2() / static_cast<float>(kfCandPKPi.GetNDF()),
                        pProng0.at(0), pProng0.at(1), pProng0.at(2),
                        pProng1.at(0), pProng1.at(1), pProng1.at(2),
                        pProng2.at(0), pProng2.at(1), pProng2.at(2),
@@ -904,7 +904,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -923,7 +923,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -942,7 +942,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -966,7 +966,7 @@ struct HfCandidateCreator3Prong {
       const auto bc = collision.template foundBC_as<aod::BcFullInfos>();
       const auto ir = hfEvSel.getInteractionRate(bc, ccdb); // Hz
       /// monitor the satisfied event selections
-      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, ir);
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy, static_cast<float>(ir));
 
     } /// end loop over collisions
   }
@@ -1132,7 +1132,7 @@ struct HfCandidateCreator3ProngExpressions {
               return;
             }
             if (indexRec > -1) {
-              flagChannelMain = sign * channelMain;
+              flagChannelMain = static_cast<int8_t>(sign * channelMain);
 
               /// swapping for D+, Ds->Kpipi; Lc, Xic->pKpi
               if (std::abs(flagChannelMain) == DecayChannelMain::DplusToPiKK || std::abs(flagChannelMain) == DecayChannelMain::DsToPiKK || std::abs(flagChannelMain) == DecayChannelMain::LcToPKPi || std::abs(flagChannelMain) == DecayChannelMain::XicToPKPi) {
@@ -1185,7 +1185,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, arrPdgDaughtersDplusToPiKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::DplusToPiKPi;
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::DplusToPiKPi);
           }
         }
 
@@ -1215,7 +1215,7 @@ struct HfCandidateCreator3ProngExpressions {
             }
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * (isDplus ? DecayChannelMain::DplusToPiKK : DecayChannelMain::DsToPiKK);
+            flagChannelMain = sign * (isDplus ? static_cast<int8_t>(DecayChannelMain::DplusToPiKK) : static_cast<int8_t>(DecayChannelMain::DsToPiKK));
             if (arrayDaughters[0].has_mcParticle()) {
               swapping = static_cast<int8_t>(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
             }
@@ -1243,7 +1243,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, arrPdgDaughtersDstarToPiKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::DstarToPiKPi;
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::DstarToPiKPi);
             flagChannelResonant = 0;
           }
         }
@@ -1261,7 +1261,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, arrPdgDaughtersLcToPKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::LcToPKPi;
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::LcToPKPi);
 
             // Flagging the different Λc± → p± K∓ π± decay channels
             if (arrayDaughters[0].has_mcParticle()) {
@@ -1297,7 +1297,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, arrPdgDaughtersXicToPKPi, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flagChannelMain = sign * DecayChannelMain::XicToPKPi;
+            flagChannelMain = static_cast<int8_t>(sign * DecayChannelMain::XicToPKPi);
             flagChannelResonant = 0; // TODO
             if (arrayDaughters[0].has_mcParticle()) {
               swapping = static_cast<int8_t>(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
@@ -1309,7 +1309,7 @@ struct HfCandidateCreator3ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flagChannelMain != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        origin = static_cast<int8_t>(RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers));
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);

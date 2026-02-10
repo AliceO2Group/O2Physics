@@ -238,8 +238,7 @@ struct HfCandidateCreatorBToJpsiReduced {
           registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
           registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-          // propagate Jpsi daugthers and K to the B+ vertex
-          df3.propagateTracksToVertex();
+          // get JPsi daughters and K tracks (propagated to the B+ vertex if propagateToPCA==true)
           // track.getPxPyPzGlo(pVec) modifies pVec of track
           df3.getTrack(0).getPxPyPzGlo(pVecDauPos);   // momentum of positive Jpsi daughter at the B+ vertex
           df3.getTrack(1).getPxPyPzGlo(pVecDauNeg);   // momentum of negative Jpsi daughter at the B+ vertex
@@ -309,8 +308,7 @@ struct HfCandidateCreatorBToJpsiReduced {
             registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
             registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-            // propagate Jpsi and phi to the Bs vertex
-            df4.propagateTracksToVertex();
+            // get JPsi daughters and K tracks (propagated to the Bs vertex if propagateToPCA==true)
             // track.getPxPyPzGlo(pVec) modifies pVec of track
             df4.getTrack(0).getPxPyPzGlo(pVecDauPos);   // momentum of Jpsi at the B+ vertex
             df4.getTrack(1).getPxPyPzGlo(pVecDauNeg);   // momentum of Jpsi at the B+ vertex

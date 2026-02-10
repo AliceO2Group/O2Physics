@@ -173,7 +173,6 @@ struct HfCandidateCreatorXicc {
         auto chi2PCA = df2.getChi2AtPCACandidate();
         auto covMatrixPCA = df2.calcPCACovMatrixFlat();
 
-        df2.propagateTracksToVertex();
         df2.getTrack(0).getPxPyPzGlo(pvecxic);
         df2.getTrack(1).getPxPyPzGlo(pvecpion);
 

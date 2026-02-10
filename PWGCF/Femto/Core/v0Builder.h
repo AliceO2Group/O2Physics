@@ -388,12 +388,13 @@ class V0Builder
       if (!mV0Selection.passesAllRequiredSelections()) {
         continue;
       }
+
+      collisionBuilder.template fillCollision<system>(collisionProducts, col);
+
       // cleaner, but without ITS pid: auto posDaughter = v0.template posTrack_as<T7>();
       auto posDaughter = tracksWithItsPid.iteratorAt(v0.posTrackId() - tracksWithItsPid.offset());
       // cleaner, but without ITS pid: auto negDaughter = v0.template negTrack_as<T7>();
       auto negDaughter = tracksWithItsPid.iteratorAt(v0.negTrackId() - tracksWithItsPid.offset());
-
-      collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
       posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
       negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);

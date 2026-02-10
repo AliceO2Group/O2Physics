@@ -326,7 +326,7 @@ struct HfCandidateCreatorBplus {
           }
           hCandidatesB->Fill(SVFitting::FitOk);
 
-          dfB.propagateTracksToVertex();        // propagate the bachelor and D0 to the B+ vertex
+          // get D and Pi tracks (propagated to the B+ vertex if propagateToPCA==true)
           trackD0.getPxPyPzGlo(pVecD0);         // momentum of D0 at the B+ vertex
           trackParCovPi.getPxPyPzGlo(pVecBach); // momentum of pi+ at the B+ vertex
 

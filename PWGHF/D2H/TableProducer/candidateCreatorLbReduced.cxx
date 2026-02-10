@@ -189,8 +189,7 @@ struct HfCandidateCreatorLbReduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate Lc and Pi to the Lb vertex
-        df2.propagateTracksToVertex();
+        // get Lc and Pi tracks (propagated to the Lb vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecLc);   // momentum of Lc at the Lb vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Lb vertex

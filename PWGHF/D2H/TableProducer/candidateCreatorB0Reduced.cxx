@@ -192,8 +192,7 @@ struct HfCandidateCreatorB0Reduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D and Pi to the B0 vertex
-        df3.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B0 vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df3.getTrack(0).getPxPyPzGlo(pVecD0);       // momentum of D at the B0 vertex
         df3.getTrack(1).getPxPyPzGlo(pVecSoftPion); // momentum of SoftPi at the B0 vertex
@@ -299,8 +298,7 @@ struct HfCandidateCreatorB0Reduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D and Pi to the B0 vertex
-        df2.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B0 vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex

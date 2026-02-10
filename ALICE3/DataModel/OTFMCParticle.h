@@ -32,6 +32,9 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Y, y, float);
+DECLARE_SOA_COLUMN(IsAlive, isAlive, bool);
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);
+
 } // namespace otfmcparticle
 
 DECLARE_SOA_TABLE_FULL(McParticlesWithDau, "McParticlesWithDau", "AOD", "MCPARTICLEWITHDAU",
@@ -56,6 +59,8 @@ DECLARE_SOA_TABLE_FULL(McParticlesWithDau, "McParticlesWithDau", "AOD", "MCPARTI
                        otfmcparticle::Pt,
                        otfmcparticle::P,
                        otfmcparticle::Y,
+                       otfmcparticle::IsAlive,
+                       otfmcparticle::IsPrimary,
                        mcparticle::PVector<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
                        mcparticle::ProducedByGenerator<mcparticle::Flags>,
                        mcparticle::FromBackgroundEvent<mcparticle::Flags>,

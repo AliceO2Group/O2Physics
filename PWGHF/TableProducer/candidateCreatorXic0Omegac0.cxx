@@ -53,6 +53,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
@@ -105,7 +106,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Produces<aod::HfCandToXiPiKfQa> rowKfXic0Qa;
   Produces<aod::HfCandToOmegaKaKf> kfCandidateOmegaKaData;
 
-  Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
@@ -114,7 +115,6 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
-  Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
   Configurable<bool> fillAllHist{"fillAllHist", true, "Fill additional KF histograms to check selector cuts"};
   Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
@@ -144,6 +144,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdgdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber{-1};
@@ -377,7 +378,6 @@ struct HfCandidateCreatorXic0Omegac0 {
     df.setMaxChi2(maxChi2);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
-    df.setRefitWithMatCorr(refitWithMatCorr);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -545,10 +545,6 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto vertexCharmBaryonFromFitter = df.getPCACandidate();
       std::array<float, 3> pVecCascAsD{};
       std::array<float, 3> pVecCharmBachelorAsD{};
-      df.propagateTracksToVertex();
-      if (!df.isPropagateTracksToVertexDone()) {
-        continue;
-      }
       df.getTrack(0).getPxPyPzGlo(pVecCascAsD);
       df.getTrack(1).getPxPyPzGlo(pVecCharmBachelorAsD);
       std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecCharmBachelorAsD[0], pVecCascAsD[1] + pVecCharmBachelorAsD[1], pVecCascAsD[2] + pVecCharmBachelorAsD[2]};
@@ -1124,7 +1120,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.rapOmegac = kfOmegaC0.GetRapidity();
 
       // KF cosThetaStar
-      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfBachPionToOmegaC, kfOmegaToOmegaC);
+      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfBachPionToOmegaC, kfOmegaToOmegaC, pdgdb);
 
       // KF ct
       kfOmegac0Candidate.ctV0 = kfV0.GetLifeTime();
@@ -1588,7 +1584,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfXic0Candidate.rapXic = kfXiC0.GetRapidity();
 
       // KF cosThetaStar
-      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4132, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC);
+      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4132, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC, pdgdb);
 
       // KF ct
       kfXic0Candidate.ctV0 = kfV0ToCasc.GetLifeTime();
@@ -1950,8 +1946,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       float const ptOmega = kfOmega.GetPt();
 
       // KF cosThetaStar
-      float const cosThetaStarKaFromOmegac = cosThetaStarFromKF(0, 4332, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
-      float const cosThetaStarKaFromXic = cosThetaStarFromKF(0, 4132, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
+      float const cosThetaStarKaFromOmegac = cosThetaStarFromKF(0, 4332, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa, pdgdb);
+      float const cosThetaStarKaFromXic = cosThetaStarFromKF(0, 4132, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa, pdgdb);
 
       // KF ct
       float const ctV0 = kfV0ToOmega.GetLifeTime();

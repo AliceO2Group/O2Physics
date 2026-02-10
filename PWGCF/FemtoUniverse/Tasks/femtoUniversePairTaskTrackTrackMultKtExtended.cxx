@@ -882,40 +882,48 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   /// \tparam isMC: enables Monte Carlo truth specific histograms
   /// \param groupPartsOne partition for the first particle passed by the process function
   /// \param groupPartsTwo partition for the second particle passed by the process function
-  template <bool isMC, bool doFractions, typename PartitionType>
+  template <bool isMC, typename PartitionType>
   void doFractionsMCTruth(PartitionType groupPartsOne, PartitionType groupPartsTwo, int ContType)
   {
-
-    for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-
-      int pdgCodePartOne = static_cast<int>(p1.pidCut());
-      const auto& pdgParticleOne = pdg->GetParticle(pdgCodePartOne);
-      int pdgCodePartTwo = static_cast<int>(p2.pidCut());
-      const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
-      switch (ContType) {
-        case 1: {
+    switch (ContType) {
+      case 1: {
+        for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+          int pdgCodePartOne = static_cast<int>(p1.pidCut());
+          const auto& pdgParticleOne = pdg->GetParticle(pdgCodePartOne);
+          int pdgCodePartTwo = static_cast<int>(p2.pidCut());
+          const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
           if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == trackonefilter.confPDGCodePartOne) && (pdgCodePartTwo == tracktwofilter.confPDGCodePartTwo)) {
-            continue;
+            mixedMultRegistryPM.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
           }
-          mixedMultRegistryPM.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
-          break;
         }
-        case 2: {
-          if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == trackonefilter.confPDGCodePartOne) && (pdgCodePartTwo == trackonefilter.confPDGCodePartOne)) {
-            continue;
-          }
-          mixedMultRegistryPP.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
-          break;
-        }
-        case 3: {
-          if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == tracktwofilter.confPDGCodePartTwo) && (pdgCodePartTwo == tracktwofilter.confPDGCodePartTwo)) {
-            continue;
-          }
-          mixedMultRegistryMM.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
-        }
-        default:
-          break;
+        break;
       }
+      case 2: {
+        for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsOne))) {
+          int pdgCodePartOne = static_cast<int>(p1.pidCut());
+          const auto& pdgParticleOne = pdg->GetParticle(pdgCodePartOne);
+          int pdgCodePartTwo = static_cast<int>(p2.pidCut());
+          const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
+          if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == trackonefilter.confPDGCodePartOne) && (pdgCodePartTwo == trackonefilter.confPDGCodePartOne)) {
+            mixedMultRegistryPP.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+          }
+        }
+        break;
+      }
+      case 3: {
+        for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+          int pdgCodePartOne = static_cast<int>(p1.pidCut());
+          const auto& pdgParticleOne = pdg->GetParticle(pdgCodePartOne);
+          int pdgCodePartTwo = static_cast<int>(p2.pidCut());
+          const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
+          if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == tracktwofilter.confPDGCodePartTwo) && (pdgCodePartTwo == tracktwofilter.confPDGCodePartTwo)) {
+            mixedMultRegistryMM.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+          }
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
 
@@ -942,13 +950,13 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       auto groupPartsOne = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
       if (processPair.cfgProcessPM) {
-        doFractionsMCTruth<true, true>(groupPartsOne, groupPartsTwo, 1);
+        doFractionsMCTruth<true>(groupPartsOne, groupPartsTwo, 1);
       }
       if (processPair.cfgProcessPP) {
-        doFractionsMCTruth<true, true>(groupPartsOne, groupPartsOne, 2);
+        doFractionsMCTruth<true>(groupPartsOne, groupPartsOne, 2);
       }
       if (processPair.cfgProcessMM) {
-        doFractionsMCTruth<true, true>(groupPartsTwo, groupPartsTwo, 3);
+        doFractionsMCTruth<true>(groupPartsTwo, groupPartsTwo, 3);
       }
     }
   }

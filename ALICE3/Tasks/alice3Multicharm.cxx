@@ -8,17 +8,17 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+
+/// \file alice3Multicharm.cxx
+/// \brief consumer task for alice 3 multicharm studies
+/// \author Jesper Karlsson Gumprecht <jesper.gumprecht@cern.ch>
+
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 //   Decay finder task for ALICE 3
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 //
 //    Uses specific ALICE 3 PID and performance for studying
 //    HF decays. Work in progress: use at your own risk!
-//
-
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
@@ -64,27 +64,23 @@ using namespace o2::ml;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using multiCharmTracksPID = soa::Join<aod::MCharmCores, aod::MCharmPID>;
-using multiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MCharmExtra>;
+using MultiCharmTracksPID = soa::Join<aod::MCharmCores, aod::MCharmPID>;
+using MultiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MCharmExtra>;
 
-struct alice3multicharm {
+struct Alice3Multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  std::map<std::string, HistPtr> histPointers;
-  std::vector<int> savedConfigs;
-  std::string histPath;
 
   std::map<int, int> pdgToBin;
   o2::ml::OnnxModel bdtMCharm;
-
   std::map<std::string, std::string> metadata;
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   struct : ConfigurableGroup {
     std::string prefix = "bdt"; // JSON group name
-    Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> localPath{"localPath", "MCharm_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> pathCCDB{"btdPathCCDB", "Users/j/jekarlss/MLModels", "Path on CCDB"};
+    Configurable<std::string> pathCCDB{"pathCCDB", "Users/j/jekarlss/MLModels", "Path on CCDB"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", 1695750420200, "timestamp of the ONNX file for ML model used to query in CCDB. Please use 1695750420200"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -131,6 +127,7 @@ struct alice3multicharm {
   Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
   Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 1e+4, "Minimum proper length for Xicc decay (cm)"};
   Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
+
   Filter configFilter = (aod::otfmulticharm::lutConfigId == otfConfig);
 
   void init(InitContext&)
@@ -555,23 +552,23 @@ struct alice3multicharm {
     genericProcessXicc(multiCharmTracks);
   }
 
-  void processXiccPID(soa::Filtered<multiCharmTracksPID> const& multiCharmTracks)
+  void processXiccPID(soa::Filtered<MultiCharmTracksPID> const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }
 
-  void processXiccExtra(soa::Filtered<multiCharmTracksFull> const& multiCharmTracks)
+  void processXiccExtra(soa::Filtered<MultiCharmTracksFull> const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }
 
-  PROCESS_SWITCH(alice3multicharm, processXicc, "find Xicc baryons", true);
-  PROCESS_SWITCH(alice3multicharm, processXiccPID, "find Xicc baryons with more QA from PID information", false);
-  PROCESS_SWITCH(alice3multicharm, processXiccExtra, "find Xicc baryons with all QA", false);
+  PROCESS_SWITCH(Alice3Multicharm, processXicc, "find Xicc baryons", true);
+  PROCESS_SWITCH(Alice3Multicharm, processXiccPID, "find Xicc baryons with more QA from PID information", false);
+  PROCESS_SWITCH(Alice3Multicharm, processXiccExtra, "find Xicc baryons with all QA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<alice3multicharm>(cfgc)};
+    adaptAnalysisTask<Alice3Multicharm>(cfgc)};
 }

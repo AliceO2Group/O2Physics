@@ -317,8 +317,7 @@ struct HfCandidateCreatorBs {
           auto chi2PCA = df2.getChi2AtPCACandidate();
           auto covMatrixPCA = df2.calcPCACovMatrixFlat();
 
-          // propagate Ds and Pi to the Bs vertex
-          df2.propagateTracksToVertex();
+          // get Ds and Pi tracks (propagated to the Bs vertex if propagateToPCA==true)
           // track.getPxPyPzGlo(pVec) modifies pVec of track
           df2.getTrack(0).getPxPyPzGlo(pVecDs);   // momentum of Ds at the Bs vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Bs vertex

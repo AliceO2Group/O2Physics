@@ -12,28 +12,42 @@
 /// \file rho770analysis.cxx
 /// \brief rho(770)0 analysis in pp 13 & 13.6 TeV
 /// \author Hyunji Lim (hyunji.lim@cern.ch)
-/// \since 03/12/2025
+/// \since 08/02/2026
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
 
-#include "TVector2.h"
-#include <TLorentzVector.h>
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
+using LorentzVectorPxPyPzMVector = ROOT::Math::PxPyPzMVector;
+using LorentzVectorPxPyPzEVector = ROOT::Math::PxPyPzEVector;
+
+enum class TrackPIDMode : int {
+  TPCOrTOF = 0,
+  OnlyTPC = 1,
+  Combined = 2,
+  TPCWithTOFVeto = 3
+};
 
 struct rho770analysis {
   SliceCache cache;
@@ -43,12 +57,20 @@ struct rho770analysis {
 
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
-  Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.15, "Maximum transverse DCA"};
-  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Maximum longitudinal DCA"};
   Configurable<float> cfgMaxTPC{"cfgMaxTPC", 5.0, "Maximum TPC PID with TOF"};
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 5.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
+
+  // DCA cuts
+  Configurable<bool> cDCAxyToPVAsPt{"cDCAxyToPVAsPt", true, "DCAxy to PV selection as pt"};
+  Configurable<bool> cDCAzToPVAsPt{"cDCAzToPVAsPt", false, "DCAz to PV selection as pt"};
+  Configurable<float> cfgMaxDCAxyToPVcut{"cfgMaxDCAxyToPVcut", 0.15, "Maximum transverse DCA"};
+  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Maximum longitudinal DCA"};
+  Configurable<float> cDCAxytoPVByPtPiFirstP0{"cDCAxytoPVByPtPiFirstP0", 0.0105, "Coeff. Track DCAxy cut to PV by pt for Pion First (p0)"};
+  Configurable<float> cDCAxyToPVByPtPiFirstExp{"cDCAxyToPVByPtPiFirstExp", 0.035, "Coeff. Track DCAxy cut to PV by pt for Pion First (exp)"};
+  Configurable<float> cDCAztoPVByPtPiFirstP0{"cDCAztoPVByPtPiFirstP0", 0.0105, "Coeff. Track DCAz cut to PV by pt for Pion First (p0)"};
+  Configurable<float> cDCAzToPVByPtPiFirstExp{"cDCAzToPVByPtPiFirstExp", 0.035, "Coeff. Track DCAz cut to PV by pt for Pion First (exp)"};
 
   // Track selection
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
@@ -62,22 +84,23 @@ struct rho770analysis {
                                                                                                              // kEtaRange)
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
-  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
+  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"}; // refit is included in global track selection
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Number of TPC cluster"};
+  Configurable<int> cfgTPCRows{"cfgTPCRows", 80, "Minimum Number of TPC Crossed Rows "};
 
   // PID
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                          // TOF
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                          // TPC
   Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 2.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
-  Configurable<int> selectType{"selectType", 0, "PID selection type"};
+  Configurable<int> selectTypeInt{"selectTypeInt", static_cast<int>(TrackPIDMode::OnlyTPC), "Pion PID selection mode: 0=TPCOrTOF, 1=OnlyTPC, 2=Combined, 3=TPCWithTOFVeto"};
 
   // Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis massK0sAxis{"massK0sAxis", {200, 0.46, 0.54}, "K0s Invariant mass axis"};
-  ConfigurableAxis massKstarAxis{"massKstarAxis", {200, 0.7, 1.1}, "Kstar Invariant mass axis"};
+  ConfigurableAxis massKstarAxis{"massKstarAxis", {200, 0.6, 1.3}, "Kstar Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 95.0, 100.0, 105.0, 110.0}, "Centrality  Binning"};
 
@@ -98,6 +121,8 @@ struct rho770analysis {
     histos.add("hInvMass_Kstar_US", "Kstar unlike invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
     histos.add("hInvMass_Kstar_LSpp", "Kstar ++ invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
     histos.add("hInvMass_Kstar_LSmm", "Kstar -- invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
+
+    histos.add("QA/hMultiplicityPercent", "Multiplicity percentile of collision", HistType::kTH1F, {centAxis});
 
     histos.add("QA/Nsigma_TPC_BF", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
     histos.add("QA/Nsigma_TOF_BF", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
@@ -128,27 +153,39 @@ struct rho770analysis {
   {
     if (std::abs(track.pt()) < cfgMinPt)
       return false;
-    if (std::fabs(track.eta()) > cfgMaxEta)
+    if (std::abs(track.eta()) > cfgMaxEta)
       return false;
-    if (std::abs(track.dcaXY()) > cfgMaxDCArToPVcut)
+    if (cDCAxyToPVAsPt) {
+      if (std::abs(track.dcaXY()) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+        return false;
+    } else {
+      if (std::abs(track.dcaXY()) > cfgMaxDCAxyToPVcut)
+        return false;
+    }
+    if (cDCAzToPVAsPt) {
+      if (std::abs(track.dcaZ()) > (cDCAztoPVByPtPiFirstP0 + cDCAzToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+        return false;
+    } else {
+      if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
+        return false;
+    }
+    if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
-    if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
+    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
-    if (track.tpcNClsFound() < cfgTPCcluster)
+    if (cfgPVContributor && !track.isPVContributor())
       return false;
-    if (cfgHasTOF && !track.hasTOF())
+    if (cfgGlobalTrack && !track.isGlobalTrack())
       return false;
     if (cfgUseITSRefit && !track.passedITSRefit())
       return false;
     if (cfgUseTPCRefit && !track.passedTPCRefit())
       return false;
-    if (cfgPVContributor && !track.isPVContributor())
+    if (cfgHasTOF && !track.hasTOF())
       return false;
-    if (cfgPrimaryTrack && !track.isPrimaryTrack())
+    if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
-    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
-      return false;
-    if (cfgGlobalTrack && !track.isGlobalTrack())
+    if (track.tpcNClsCrossedRows() < cfgTPCRows)
       return false;
 
     return true;
@@ -157,19 +194,21 @@ struct rho770analysis {
   template <typename TrackType>
   bool selPion(const TrackType track)
   {
-    if (selectType == 0) {
+    const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
+
+    if (mode == TrackPIDMode::TPCOrTOF) { // TPC or TOF
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
         return false;
     }
-    if (selectType == 1) {
+    if (mode == TrackPIDMode::OnlyTPC) { // only TPC
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion)
         return false;
     }
-    if (selectType == 2) {
+    if (mode == TrackPIDMode::Combined) { // combining
       if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (selectType == 3) {
+    if (mode == TrackPIDMode::TPCWithTOFVeto) { // TPC TOF veto
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
           return false;
@@ -184,19 +223,21 @@ struct rho770analysis {
   template <typename TrackType>
   bool selKaon(const TrackType track)
   {
-    if (selectType == 0) {
+    const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
+
+    if (mode == TrackPIDMode::TPCOrTOF) {
       if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
         return false;
     }
-    if (selectType == 1) {
+    if (mode == TrackPIDMode::OnlyTPC) {
       if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion)
         return false;
     }
-    if (selectType == 2) {
+    if (mode == TrackPIDMode::Combined) {
       if (track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (selectType == 3) {
+    if (mode == TrackPIDMode::TPCWithTOFVeto) {
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
           return false;
@@ -208,10 +249,12 @@ struct rho770analysis {
     return true;
   }
 
-  template <bool IsMC, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks)
+  template <bool IsMC, typename CollisionType, typename CenMult, typename TracksType>
+  void fillHistograms(const CollisionType& /*collision*/, const CenMult& multiplicity, const TracksType& dTracks)
   {
-    TLorentzVector part1, part2, reco;
+    histos.fill(HIST("QA/hMultiplicityPercent"), multiplicity);
+
+    LorentzVectorPxPyPzMVector part1, part2, reco;
     for (const auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
 
       if (trk1.index() == trk2.index()) {
@@ -232,51 +275,52 @@ struct rho770analysis {
         continue;
 
       if (selPion(trk1) && selPion(trk2)) {
-        part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-        part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+
+        part1 = LorentzVectorPxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), massPi);
+        part2 = LorentzVectorPxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massPi);
         reco = part1 + part2;
 
         if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
           continue;
 
         if (trk1.sign() * trk2.sign() < 0) {
-          histos.fill(HIST("hInvMass_rho770_US"), reco.M(), reco.Pt(), collision.cent());
-          histos.fill(HIST("hInvMass_K0s_US"), reco.M(), reco.Pt(), collision.cent());
+          histos.fill(HIST("hInvMass_rho770_US"), reco.M(), reco.Pt(), multiplicity);
+          histos.fill(HIST("hInvMass_K0s_US"), reco.M(), reco.Pt(), multiplicity);
 
           if constexpr (IsMC) {
             if (trk1.motherId() != trk2.motherId())
               continue;
-            if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211) {
-              if (std::abs(trk1.motherPDG()) == 113) {
-                histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), collision.cent());
-              } else if (std::abs(trk1.motherPDG()) == 223) {
-                histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), collision.cent());
-              } else if (std::abs(trk1.motherPDG()) == 310) {
-                histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
-                histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
+            if (std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == kPiPlus) {
+              if (std::abs(trk1.motherPDG()) == kRho770_0) {
+                histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), multiplicity);
+              } else if (std::abs(trk1.motherPDG()) == kOmega) {
+                histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), multiplicity);
+              } else if (std::abs(trk1.motherPDG()) == kK0Short) {
+                histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), multiplicity);
+                histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), multiplicity);
               }
-            } else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
-              if (std::abs(trk1.motherPDG()) == 313) {
-                histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), collision.cent());
+            } else if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == kKPlus) || (std::abs(trk1.pdgCode()) == kKPlus && std::abs(trk2.pdgCode()) == kPiPlus)) {
+              if (std::abs(trk1.motherPDG()) == kK0Star892) {
+                histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), multiplicity);
               }
             }
           }
         } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-          histos.fill(HIST("hInvMass_rho770_LSpp"), reco.M(), reco.Pt(), collision.cent());
-          histos.fill(HIST("hInvMass_K0s_LSpp"), reco.M(), reco.Pt(), collision.cent());
+          histos.fill(HIST("hInvMass_rho770_LSpp"), reco.M(), reco.Pt(), multiplicity);
+          histos.fill(HIST("hInvMass_K0s_LSpp"), reco.M(), reco.Pt(), multiplicity);
         } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-          histos.fill(HIST("hInvMass_rho770_LSmm"), reco.M(), reco.Pt(), collision.cent());
-          histos.fill(HIST("hInvMass_K0s_LSmm"), reco.M(), reco.Pt(), collision.cent());
+          histos.fill(HIST("hInvMass_rho770_LSmm"), reco.M(), reco.Pt(), multiplicity);
+          histos.fill(HIST("hInvMass_K0s_LSmm"), reco.M(), reco.Pt(), multiplicity);
         }
       }
 
       if ((selPion(trk1) && selKaon(trk2)) || (selKaon(trk1) && selPion(trk2))) {
         if (selPion(trk1) && selKaon(trk2)) {
-          part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-          part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
+          part1 = LorentzVectorPxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), massPi);
+          part2 = LorentzVectorPxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massKa);
         } else if (selKaon(trk1) && selPion(trk2)) {
-          part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-          part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+          part1 = LorentzVectorPxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), massKa);
+          part2 = LorentzVectorPxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massPi);
         }
         reco = part1 + part2;
 
@@ -284,68 +328,111 @@ struct rho770analysis {
           continue;
 
         if (trk1.sign() * trk2.sign() < 0) {
-          histos.fill(HIST("hInvMass_Kstar_US"), reco.M(), reco.Pt(), collision.cent());
+          histos.fill(HIST("hInvMass_Kstar_US"), reco.M(), reco.Pt(), multiplicity);
 
           if constexpr (IsMC) {
             if (trk1.motherId() != trk2.motherId())
               continue;
-            if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
-              if (std::abs(trk1.motherPDG()) == 313) {
-                histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
+            if ((std::abs(trk1.pdgCode()) == kPiPlus && std::abs(trk2.pdgCode()) == kKPlus) || (std::abs(trk1.pdgCode()) == kKPlus && std::abs(trk2.pdgCode()) == kPiPlus)) {
+              if (std::abs(trk1.motherPDG()) == kK0Star892) {
+                histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), multiplicity);
               }
             }
           }
         } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-          histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), collision.cent());
+          histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), multiplicity);
         } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-          histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), collision.cent());
+          histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), multiplicity);
         }
       }
     }
   }
 
-  void processData(aod::ResoCollision const& collision, aod::ResoTracks const& resotracks)
+  void processData(aod::ResoCollision const& resoCollision,
+                   aod::ResoCollisionColls const& collisionIndex,
+                   soa::Join<aod::Collisions, aod::PVMults> const& collisions,
+                   aod::ResoTracks const& resoTracks)
   {
-    fillHistograms<false>(collision, resotracks);
+    auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+    auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+    auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
+
+    if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
+    auto multiplicity = resoCollision.cent();
+    fillHistograms<false>(resoCollision, multiplicity, resoTracks);
   }
   PROCESS_SWITCH(rho770analysis, processData, "Process Event for data", true);
 
-  void processMCLight(aod::ResoCollision const& collision, soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
+  void processMCLight(ResoMCCols::iterator const& resoCollision,
+                      aod::ResoCollisionColls const& collisionIndex,
+                      soa::Join<aod::ResoCollisionCandidatesMC, aod::PVMults> const& collisionsMC,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoTracks,
+                      soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
-    fillHistograms<true>(collision, resotracks);
+    auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+    auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+    auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+    if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
+    auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+    auto multiplicity = mcColl.centFT0M();
+
+    if (!resoCollision.isInAfterAllCuts())
+      return;
+
+    fillHistograms<true>(resoCollision, multiplicity, resoTracks);
   }
   PROCESS_SWITCH(rho770analysis, processMCLight, "Process Event for MC", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& resoCollision,
+                     aod::ResoCollisionColls const& collisionIndex,
+                     aod::ResoMCParents const& resoParents,
+                     aod::ResoCollisionCandidatesMC const& collisionsMC,
+                     soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
-    auto multiplicity = collision.cent();
+    auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+    auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+    auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+    if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
+    auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+    auto multiplicity = mcColl.centFT0M();
 
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
-      if (std::abs(part.pdgCode()) != 113)
+      if (std::abs(part.pdgCode()) != kRho770_0)
         continue;
       if (!part.producedByGenerator())
         continue;
       if (part.y() < cfgMinRap || part.y() > cfgMaxRap)
         continue;
-      if (!(std::abs(part.daughterPDG1()) == 211 && std::abs(part.daughterPDG2()) == 211))
+      if (!(std::abs(part.daughterPDG1()) == kPiPlus && std::abs(part.daughterPDG2()) == kPiPlus))
         continue;
 
-      TLorentzVector truthpar;
-      truthpar.SetPxPyPzE(part.px(), part.py(), part.pz(), part.e());
+      LorentzVectorPxPyPzEVector truthpar;
+      truthpar = LorentzVectorPxPyPzEVector(part.px(), part.py(), part.pz(), part.e());
       auto mass = truthpar.M();
 
       histos.fill(HIST("MCL/hpT_rho770_GEN"), 0, mass, part.pt(), multiplicity);
 
-      if (collision.isVtxIn10()) {
+      if (resoCollision.isVtxIn10()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 1, mass, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isInSel8()) {
+      if (resoCollision.isVtxIn10() && resoCollision.isInSel8()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 2, mass, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isTriggerTVX()) {
+      if (resoCollision.isVtxIn10() && resoCollision.isTriggerTVX()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 3, mass, part.pt(), multiplicity);
       }
-      if (collision.isInAfterAllCuts()) {
+      if (resoCollision.isInAfterAllCuts()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 4, mass, part.pt(), multiplicity);
       }
     }

@@ -17,8 +17,8 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/Utils/utilsSigmac.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -34,7 +34,6 @@
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h> // for dca recalculation
-#include <CommonConstants/PhysicsConstants.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h> // for dca recalculation
 #include <Framework/ASoA.h>
@@ -83,8 +82,10 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   /// Selections on candidate soft π-,+
   Configurable<bool> applyGlobalTrkWoDcaCutsSoftPi{"applyGlobalTrkWoDcaCutsSoftPi", false, "Switch on the application of the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS"};
+  Configurable<float> softPiPtMin{"softPiPtMin", 0.1f, "Soft pion min value for pt (GeV/c)"};
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
   Configurable<float> softPiChi2Max{"softPiChi2Max", 36.f, "Soft pion max value for chi2 ITS"};
+  Configurable<int> softPiApplyCustomITSHitMap{"softPiApplyCustomITSHitMap", true, "Flag to enable/disable the application of the custom ITS hitmap requirement for the candidate soft pion"};
   Configurable<int> softPiItsHitMap{"softPiItsHitMap", 127, "Soft pion ITS hitmap"};
   Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
@@ -156,7 +157,7 @@ struct HfCandidateCreatorSigmac0plusplus {
     }
 
     // kinematics
-    // softPiCuts.SetPtRange(0.001, 1000.); // pt
+    softPiCuts.SetPtRange(softPiPtMin, 1e10f);           // pt
     softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
     // softPiCuts.SetMaxDcaXY(softPiDcaXYMax);              // dcaXY
     // softPiCuts.SetMaxDcaZ(softPiDcaZMax);                // dcaZ
@@ -164,22 +165,24 @@ struct HfCandidateCreatorSigmac0plusplus {
     // ITS chi2
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
     //  ITS hitmap
-    std::set<uint8_t> setSoftPiItsHitMap; // = {};
-    constexpr std::size_t NLayersIts = 7;
-    for (std::size_t idItsLayer = 0u; idItsLayer < NLayersIts; idItsLayer++) {
-      if (TESTBIT(softPiItsHitMap, idItsLayer)) {
-        setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
+    if (softPiApplyCustomITSHitMap) {
+      std::set<uint8_t> setSoftPiItsHitMap; // = {};
+      constexpr std::size_t NLayersIts = 7;
+      for (std::size_t idItsLayer = 0u; idItsLayer < NLayersIts; idItsLayer++) {
+        if (TESTBIT(softPiItsHitMap, idItsLayer)) {
+          setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
+        }
       }
+      LOG(info) << "### ITS hitmap for soft pion";
+      LOG(info) << "    >>> setSoftPiItsHitMap.size(): " << setSoftPiItsHitMap.size();
+      LOG(info) << "    >>> Custom ITS hitmap dfchecked: ";
+      for (const auto& it : setSoftPiItsHitMap) {
+        LOG(info) << "        Layer " << static_cast<int>(it) << " ";
+      }
+      LOG(info) << "############";
+      softPiCuts.SetRequireITSRefit();
+      softPiCuts.SetRequireHitsInITSLayers(softPiItsHitsMin, setSoftPiItsHitMap);
     }
-    LOG(info) << "### ITS hitmap for soft pion";
-    LOG(info) << "    >>> setSoftPiItsHitMap.size(): " << setSoftPiItsHitMap.size();
-    LOG(info) << "    >>> Custom ITS hitmap dfchecked: ";
-    for (const auto it : setSoftPiItsHitMap) {
-      LOG(info) << "        Layer " << static_cast<int>(it) << " ";
-    }
-    LOG(info) << "############";
-    softPiCuts.SetRequireITSRefit();
-    softPiCuts.SetRequireHitsInITSLayers(softPiItsHitsMin, setSoftPiItsHitMap);
 
     /// CCDB for dcaXY, dcaZ recalculation of soft pions reassigned to another collision
     ccdb->setURL(ccdbUrl);
@@ -224,10 +227,10 @@ struct HfCandidateCreatorSigmac0plusplus {
         mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
       }
 
-      if (candLc.isSelLcToPKPi() >= 1 && std::abs(HfHelper::invMassLcToPKPi(candLc) - MassLambdaCPlus) <= mPKPiCandLcMax) {
+      if (candLc.isSelLcToPKPi() >= 1 && std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPKPi(candLc)) <= mPKPiCandLcMax) {
         statusSpreadMinvPKPiFromPDG = 1;
       }
-      if (candLc.isSelLcToPiKP() >= 1 && std::abs(HfHelper::invMassLcToPiKP(candLc) - MassLambdaCPlus) <= mPiKPCandLcMax) {
+      if (candLc.isSelLcToPiKP() >= 1 && std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPiKP(candLc)) <= mPiKPCandLcMax) {
         statusSpreadMinvPiKPFromPDG = 1;
       }
       if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {

@@ -32,6 +32,7 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -219,6 +220,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext&)
   {
@@ -271,7 +273,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    hfEvSel.addHistograms(qaRegistry); // collision monitoring
+    hfEvSel.init(qaRegistry, &zorroSummary); // collision monitoring
 
     int64_t const now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);

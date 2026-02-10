@@ -339,8 +339,7 @@ struct HfCandidateCreatorB0 {
           hCovSVXX->Fill(covMatrixPCA[0]);
           hCovPVXX->Fill(covMatrixPV[0]);
 
-          // propagate D and Pi to the B0 vertex
-          df2.propagateTracksToVertex();
+          // get D and Pi tracks (propagated to the B0 vertex if propagateToPCA==true)
           // track.getPxPyPzGlo(pVec) modifies pVec of track
           df2.getTrack(0).getPxPyPzGlo(pVecD);    // momentum of D at the B0 vertex
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
