@@ -32,7 +32,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h" // For V0TOFPIDs and NSigmas getters
+// #include "PWGLF/DataModel/LFStrangenessPIDTables.h" // For V0TOFPIDs and NSigmas getters
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "Common/DataModel/Centrality.h"
 
@@ -41,7 +41,9 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h" // for pp
-// #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
+
+// For PID in raw data:
+#include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
 
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -110,18 +112,25 @@ using std::array;
 using namespace o2::aod::rctsel;
 
 // Aliases for joined tables:
-using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::BCs, aod::Timestamps, // Added BCs subscription to retrieve collision.runNumber() and Timestamps for collision.timestamp()
-                    aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s, aod::CentMFTs, aod::CentNGlobals, aod::CentFV0As, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::MultsGlobal>; // Added PVMults to get MultNTracksPVeta1 as centrality estimator
+using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s, aod::CentMFTs, aod::CentNGlobals,
+                                aod::CentFV0As, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::MultsGlobal>; // Added PVMults to get MultNTracksPVeta1 as centrality estimator
+using SelCollisionsSimple = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>; // Simpler, for jets
 // using DauTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
 //                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
     // Actually used subscriptions (smaller memory usage):
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr>;
-using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+// using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+// using V0CandidatesSimple = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>; // No TOF
 
 using PseudoJetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA>; // Simpler tracks access. (TODO: Should I include TracksIU and TracksCovIU? I don't use any getters from them!)
                                 // , aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>; // Not using TOF right now due to some possible mismatches
 // using SimCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>;
 // using DauTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
+
+// To run in RAW data:
+using V0Candidates = aod::V0Datas;
+
+
 
 enum CentEstimator {
     kCentFT0C = 0,
@@ -157,7 +166,8 @@ struct lambdajetpolarizationions {
     /////////////////////////////////////////////
     Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
     Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
-    Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"}; // Includes doPlainTopoQA from derivedlambdakzeroanalysis
+    Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variables QA histograms"}; // Includes doPlainTopoQA from derivedlambdakzeroanalysis
+    Configurable<bool> doV0KinematicQA{"doV0KinematicQA", false, "do kinematic variables QA histograms"};
     Configurable<bool> doArmenterosQA{"doArmenterosQA", false, "do Armenteros QA histograms"};
     Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
     Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
@@ -341,6 +351,7 @@ struct lambdajetpolarizationions {
         ConfigurableAxis axisPhi{"axisPhi", {20, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
         ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0.0f, constants::math::TwoPI / 18}, "Azimuth angle wrt TPC sector (rad.)"};
         ConfigurableAxis axisEta{"axisEta", {20, -1.0f, 1.0f}, "#eta"};
+        ConfigurableAxis axisRapidity{"axisRapidity", {20, -1.0f, 1.0f}, "y"};
         ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
         ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
         ConfigurableAxis axisTPCrowsOverFindable{"axisTPCrowsOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC crossed rows over findable clusters"};
@@ -369,6 +380,7 @@ struct lambdajetpolarizationions {
         ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {50, -constants::math::PI, constants::math::PI}, "#Delta #phi"};
         ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -1.5f, 1.5f}, "#Delta #phi"}; // Calculated as twice the subtraction "eta_max=0.9 - R_min=0.2", with a margin
         ConfigurableAxis axisDeltaR{"axisDeltaR", {50, 0, 3.5f}, "#Delta R"}; // From 0 to about the maximum Delta R possible with R = 0.2
+        ConfigurableAxis axisEnergy{"axisEnergy",{200, 0.f, 200.f},"E_{jet} (GeV) (#pi mass hypothesis)"}; // Jet energy is not that well defined here, due to track mass hypothesis being of pions! This is just to include px,py,pz in full!
     } axisConfigurations;
 
     // Jet selection configuration:
@@ -626,10 +638,10 @@ struct lambdajetpolarizationions {
                 {p + "DCA_{#pi} to PV", true},
                 {p + "TPC PID p", v0Selections.tpcPidNsigmaCut > 0},
                 {p + "TPC PID #pi", v0Selections.tpcPidNsigmaCut > 0},
-                {p + "TOF #Delta t p", v0Selections.maxDeltaTimeProton < 1e8},
-                {p + "TOF #Delta t #pi", v0Selections.maxDeltaTimePion < 1e8},
-                {p + "TOF PID p", v0Selections.tofPidNsigmaCutLaPr < 1e8},
-                {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e8},
+                // {p + "TOF #Delta t p", v0Selections.maxDeltaTimeProton < 1e8},
+                // {p + "TOF #Delta t #pi", v0Selections.maxDeltaTimePion < 1e8},
+                // {p + "TOF PID p", v0Selections.tofPidNsigmaCutLaPr < 1e8},
+                // {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e8},
                 {p + "c#tau", v0Selections.lambdaLifetimeCut > 0}
             });
         };
@@ -732,6 +744,35 @@ struct lambdajetpolarizationions {
         if (analyseLambda && analyseAntiLambda) histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates", kTH1D, {{1, 0, 1}});
 
         // QA histograms if requested
+        if (doV0KinematicQA) {
+            if (analyseLambda) {
+                // --- Basic kinematics ---
+                histos.add("V0KinematicQA/Lambda/hPt","Lambda p_{T}",kTH1D,{axisConfigurations.axisPt});
+                histos.add("V0KinematicQA/Lambda/hY","Lambda rapidity",kTH1D,{axisConfigurations.axisRapidity});
+                histos.add("V0KinematicQA/Lambda/hPhi","Lambda #varphi",kTH1D,{axisConfigurations.axisPhi});
+                // --- Mass correlations ---
+                histos.add("V0KinematicQA/Lambda/hMassVsPt","Lambda mass vs p_{T}",kTH2D,{axisConfigurations.axisPt,axisConfigurations.axisLambdaMass});
+                histos.add("V0KinematicQA/Lambda/hMassVsY","Lambda mass vs y",kTH2D,{axisConfigurations.axisRapidity,axisConfigurations.axisLambdaMass});
+                histos.add("V0KinematicQA/Lambda/hMassVsPhi","Lambda mass vs #varphi",kTH2D,{axisConfigurations.axisPhi,axisConfigurations.axisLambdaMass});
+                // --- Kinematic correlations ---
+                histos.add("V0KinematicQA/Lambda/hYVsPt","Lambda y vs p_{T}",kTH2D,{axisConfigurations.axisPt,axisConfigurations.axisRapidity});
+                histos.add("V0KinematicQA/Lambda/hPhiVsPt","Lambda #varphi vs p_{T}",kTH2D,{axisConfigurations.axisPt,axisConfigurations.axisPhi});
+            }
+            if (analyseAntiLambda) {
+                // --- Basic kinematics ---
+                histos.add("V0KinematicQA/AntiLambda/hPt","AntiLambda p_{T}",kTH1D,{axisConfigurations.axisPt});
+                histos.add("V0KinematicQA/AntiLambda/hY","AntiLambda rapidity",kTH1D,{axisConfigurations.axisRapidity});
+                histos.add("V0KinematicQA/AntiLambda/hPhi","AntiLambda #varphi",kTH1D,{axisConfigurations.axisPhi});
+                // --- Mass correlations ---
+                histos.add("V0KinematicQA/AntiLambda/hMassVsPt","AntiLambda mass vs p_{T}",kTH2D,{axisConfigurations.axisPt,axisConfigurations.axisLambdaMass});
+                histos.add("V0KinematicQA/AntiLambda/hMassVsY","AntiLambda mass vs y",kTH2D,{axisConfigurations.axisRapidity,axisConfigurations.axisLambdaMass});
+                histos.add("V0KinematicQA/AntiLambda/hMassVsPhi","AntiLambda mass vs #varphi",kTH2D,{axisConfigurations.axisPhi,axisConfigurations.axisLambdaMass});
+                // --- Kinematic correlations ---
+                histos.add("V0KinematicQA/AntiLambda/hYVsPt","AntiLambda y vs p_{T}",kTH2D,{axisConfigurations.axisPt,axisConfigurations.axisRapidity});
+                histos.add("V0KinematicQA/AntiLambda/hPhiVsPt","AntiLambda #varphi vs p_{T}",kTH2D,{axisConfigurations.axisPt,axisConfigurations.axisPhi});
+            }
+        }
+
         if (doCompleteTopoQA) {
             if (analyseLambda) {
                 histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisDCAtoPV});
@@ -813,6 +854,44 @@ struct lambdajetpolarizationions {
             histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead", "h2dCosThetaToLeadvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaEta});
             histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead", "h2dCosThetaToLeadvsDeltaRToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaR});
             histos.add("JetKinematicsQA/h2dDeltaPhiToLeadvsDeltaEtaToLead", "h2dDeltaPhiToLeadvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta}); // to see existence of back-to-back jets, and in which window
+
+            // Comparisons to jet energy:
+            histos.add("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead","h2dJetPtvsDeltaPhiToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisDeltaPhi});
+            histos.add("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead","h2dJetEnergyvsDeltaPhiToLead",kTH2D,{axisConfigurations.axisEnergy, axisConfigurations.axisDeltaPhi});
+            histos.add("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead","h2dJetEnergyvsCosThetaToLead",kTH2D,{axisConfigurations.axisEnergy, axisConfigurations.axisCosTheta});
+
+            // Jets per event vs correlation to lead jet
+            histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead","h2dJetsPerEventvsDeltaPhiToLead",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaPhi});
+            histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead","h2dJetsPerEventvsDeltaEtaToLead",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaEta});
+            histos.add("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead","h2dJetsPerEventvsCosThetaToLead",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisCosTheta});
+
+            ////////////////////////////
+            // Leading particle 1D QA:
+            histos.add("JetVsLeadingParticleQA/hLeadingParticlePt","hLeadingParticlePt",kTH1D,{axisConfigurations.axisPt});
+            histos.add("JetVsLeadingParticleQA/hLeadingParticleEta","hLeadingParticleEta",kTH1D,{axisConfigurations.axisEta});
+            histos.add("JetVsLeadingParticleQA/hLeadingParticlePhi","hLeadingParticlePhi",kTH1D,{axisConfigurations.axisPhi});
+
+            // 1D correlations to lead jet:
+            histos.add("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet","hCosThetaLeadParticleToJet",kTH1D,{axisConfigurations.axisCosTheta});
+            histos.add("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet","hDeltaPhiLeadParticleToJet",kTH1D,{axisConfigurations.axisDeltaPhi});
+            histos.add("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet","hDeltaEtaToLeadParticleToJet",kTH1D,{axisConfigurations.axisDeltaEta});
+            
+            // Leading particle correlations:
+            histos.add("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead","h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead",kTH2D,{axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta});
+
+            // Jets-per-event vs particle-to-lead correlations:
+            histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead","h2dJetsPerEventvsDeltaPhiParticleToLead",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaPhi});
+            histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead","h2dJetsPerEventvsDeltaEtaParticleToLead",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaEta});
+            histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead","h2dJetsPerEventvsCosThetaParticleToLead",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisCosTheta});
+
+            // Main "Leading jet vs leading particle" correlations:
+            histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt","h2dJetsPerEventvsLeadParticlePt",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisPt});
+            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt","h2dLeadJetPtvsLeadParticlePt",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisPt});
+            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead","h2dLeadJetPtvsCosThetaParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisCosTheta});
+            histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead","h2dLeadParticlePtvsCosThetaParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisCosTheta});
+            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead","h2dLeadJetPtvsDeltaPhiParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisDeltaPhi});
+            histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead","h2dLeadParticlePtvsDeltaPhiParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisDeltaPhi});
+
         }
 
         // inspect histogram sizes, please
@@ -831,30 +910,27 @@ struct lambdajetpolarizationions {
         return -1.f;
     }
 
-    template <typename TCollision>
-    void initCCDB(TCollision const& collision)
-    {
-        if (mRunNumber == collision.runNumber()) {
+    template <typename TBC>
+    void initCCDB(TBC const& bc) {
+        if (mRunNumber == bc.runNumber()) {
         return;
         }
 
-        mRunNumber = collision.runNumber();
+        mRunNumber = bc.runNumber();
 
-        // Fetching magnetic field if requested
-        if (v0Selections.rejectTPCsectorBoundary) {
-            // In case override, don't proceed, please - no CCDB access required
-            if (ccdbConfigurations.useCustomMagField) {
-                magField = ccdbConfigurations.customMagField;
+        // Fetching magnetic field as requested
+        // In case override, don't proceed, please - no CCDB access required
+        if (ccdbConfigurations.useCustomMagField) {
+            magField = ccdbConfigurations.customMagField;
+        }
+        else {
+            grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, mRunNumber);
+            if (!grpmag) {
+            LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField and " << ccdbConfigurations.grpPath << " of object GRPObject for run " << mRunNumber;
             }
-            else {
-                grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, mRunNumber);
-                if (!grpmag) {
-                LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField and " << ccdbConfigurations.grpPath << " of object GRPObject for run " << mRunNumber;
-                }
-                // Fetch magnetic field from ccdb for current collision
-                magField = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-                LOG(info) << "Retrieved GRP for run " << mRunNumber << " with magnetic field of " << magField << " kZG";
-            }
+            // Fetch magnetic field from ccdb for current bc
+            magField = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+            LOG(info) << "Retrieved GRP for run " << mRunNumber << " with magnetic field of " << magField << " kZG";
         }
     }
 
@@ -939,8 +1015,8 @@ struct lambdajetpolarizationions {
 
     /////////////////////////////////////////////
     // Helper functions for event and candidate selection:
-    template <typename TCollision> // (TODO: add fillHists and doEventQA capabilities from derivedlambdakzeroanalysis)
-    bool isEventAccepted(TCollision const& collision, float centrality, bool fillHists){ // check whether the collision passes our collision selections
+    template <typename TCollision, typename TBC> // (TODO: add fillHists and doEventQA capabilities from derivedlambdakzeroanalysis)
+    bool isEventAccepted(TCollision const& collision, TBC const& bc, float centrality, bool fillHists){ // check whether the collision passes our collision selections
         int selectionIdx = 0; // To loop over QA histograms. First bin is already filled: first call will already increment this index (not actually the bin index, but a value in the X axis).
         if (eventSelections.requireSel8 && !collision.sel8()) return false;
         if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
@@ -977,10 +1053,18 @@ struct lambdajetpolarizationions {
         if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
         
         if (doPPAnalysis) { // we are in pp
-            if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) return false;
-            if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
-            if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) return false;
-            if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
+            if constexpr (requires { collision.multNTracksPVeta1(); }){
+                // Only considers compiling this block when the collision type actually
+                // has multNTracksPVeta1(). This is done to reduce collision-table
+                // subscriptions in the jet processing function.
+                // This is a compile-time check: since the function is templated, it
+                // is instantiated separately for Jets and V0s, and this block will be
+                // properly compiled for each use case and table subscription automatically!
+                if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) return false;
+                if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
+                if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) return false;
+                if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
+            }
         }
         else { // Performing selections as if in Pb-Pb:
             const float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
@@ -990,7 +1074,7 @@ struct lambdajetpolarizationions {
             if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
 
             // Fetch interaction rate only if required (in order to limit ccdb calls)
-            const double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
+            const double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3 : -1;
             if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) return false;
             if (fillHists) fillEventSelectionQA(++selectionIdx, centrality);
             if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) return false;
@@ -1057,7 +1141,7 @@ struct lambdajetpolarizationions {
         V0SelCounter.fill();
 
         // pseudorapidity cuts:
-        if (std::fabs(v0.yLambda()) > v0Selections.rapidityCut) return false; // Not using rapidity in selections for now. Just detector acceptance.
+        if (std::fabs(v0.yLambda()) > v0Selections.rapidityCut) return false;
         V0SelCounter.fill();
         // if (std::fabs(v0.eta()) > v0Selections.daughterEtaCut) return false; // (TODO: properly consider this in daughter selection!)
         
@@ -1065,8 +1149,8 @@ struct lambdajetpolarizationions {
         if (std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0Selections.compMassRejection) return false;
         V0SelCounter.fill();
 
-        const auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>(); // (TODO: is it worth it to cache these transformations outside of the function? They are reused in the Lambda hypothesis checks)
-        const auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
+        const auto posTrackExtra = v0.template posTrack_as<DauTracks>(); // (TODO: is it worth it to cache these transformations outside of the function? They are reused in the Lambda hypothesis checks)
+        const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
 
         // ITS quality cuts
         bool posIsFromAfterburner = posTrackExtra.isITSAfterburner();
@@ -1149,8 +1233,8 @@ struct lambdajetpolarizationions {
         if (dcaPionToPV < v0Selections.dcaPionToPV) return false;
         V0SelCounter.fill();
 
-        const auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
-        const auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
+        const auto posTrackExtra = v0.template posTrack_as<DauTracks>();
+        const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
 
         // For the PID cuts to be properly applied while also keeping this function
         // general enough for Lambdas and AntiLambdas, we identify the roles of 
@@ -1165,27 +1249,37 @@ struct lambdajetpolarizationions {
         if (std::fabs(pionTrack.tpcNSigmaPi()) > v0Selections.tpcPidNsigmaCut) return false;
         V0SelCounter.fill();
 
-        // TOF PID in DeltaT (if TOF is not available, then uses the track. If is available, uses it. In this sense, TOF is optional)
-        // const bool posHasTOF = posTrackExtra.hasTOF(); // For the older version, which worked only for Lambdas
-        const bool protonHasTOF = protonTrack.hasTOF();
-        const bool pionHasTOF = pionTrack.hasTOF();
+        // // TOF PID in DeltaT (if TOF is not available, then uses the track. If is available, uses it. In this sense, TOF is optional)
+        // // const bool posHasTOF = posTrackExtra.hasTOF(); // For the older version, which worked only for Lambdas
+        // const bool protonHasTOF = protonTrack.hasTOF();
+        // const bool pionHasTOF = pionTrack.hasTOF();
 
-        // Proton-like track
-        if (protonHasTOF && std::abs(Lambda_hypothesis ? v0.posTOFDeltaTLaPr()
-                      : v0.negTOFDeltaTLaPr()) > v0Selections.maxDeltaTimeProton) return false;
-        V0SelCounter.fill();
-        // Pion-like track
-        if (pionHasTOF && std::abs(Lambda_hypothesis ? v0.negTOFDeltaTLaPi()
-                      : v0.posTOFDeltaTLaPi()) > v0Selections.maxDeltaTimePion) return false;
-        V0SelCounter.fill();
+        // // Proton-like track
+        // if (protonHasTOF && std::abs(Lambda_hypothesis ? v0.posTOFDeltaTLaPr()
+        //               : v0.negTOFDeltaTLaPr()) > v0Selections.maxDeltaTimeProton) return false;
+        // V0SelCounter.fill();
+        // // Pion-like track
+        // if (pionHasTOF && std::abs(Lambda_hypothesis ? v0.negTOFDeltaTLaPi()
+        //               : v0.posTOFDeltaTLaPi()) > v0Selections.maxDeltaTimePion) return false;
+        // V0SelCounter.fill();
 
-        // TOF PID in NSigma
-        // Proton-like track
-        if (protonHasTOF && std::fabs(v0.tofNSigmaLaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
-        V0SelCounter.fill();
-        // Pion-like track
-        if (pionHasTOF && std::fabs(v0.tofNSigmaLaPi()) > v0Selections.tofPidNsigmaCutLaPi) return false;
-        V0SelCounter.fill();
+        // // TOF PID in NSigma (TODO: add asymmetric NSigma windows for purity tuning?)
+        // // Proton-like track
+        // // if (protonHasTOF && std::fabs(v0.tofNSigmaLaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
+        //     // Getter for raw data's PIDResponseTOF.h instead of LFStrangenessPIDTables.h:
+        // if (protonHasTOF && std::fabs(v0.tofNSigmaLaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
+        // V0SelCounter.fill();
+        // // Pion-like track
+        // if (pionHasTOF && std::fabs(v0.tofNSigmaLaPi()) > v0Selections.tofPidNsigmaCutLaPi) return false;
+        // V0SelCounter.fill();
+
+        // // // PID Selections (TOF)
+        // // if (requireTOF) {
+        // // if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+        // //     return false;
+        // // if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+        // //     return false;
+        // // }
 
         // proper lifetime
         if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 > v0Selections.lambdaLifetimeCut) return false;
@@ -1201,15 +1295,17 @@ struct lambdajetpolarizationions {
     // }
 
 
-
-    void processJetsData(SelCollisions::iterator const& collision, PseudoJetTracks const& tracks){
+    void processJetsData(SelCollisionsSimple::iterator const& collision, PseudoJetTracks const& tracks, aod::BCsWithTimestamps const& bcs){ // Uses BCsWithTimestamps to get timestamps for rejectTPCsectorBoundary
         float centrality = -1.0f; // Just a placeholder
-        if (!isEventAccepted(collision, centrality, false)) return; // Uses return instead of continue, as there is no explicit loop here
+
+        auto bc = bcs.iteratorAt(collision.bcId()); // Got the iteratorAt() idea from O2Physics/PWGUD/Core/UDHelpers.h
+        if (!isEventAccepted(collision, bc, centrality, false)) return; // Uses return instead of continue, as there is no explicit loop here
         const uint64_t collIdx = collision.globalIndex();
-        if (v0Selections.rejectTPCsectorBoundary) initCCDB(collision);
         
         // Loop over reconstructed tracks:
         std::vector<fastjet::PseudoJet> fjParticles;
+        int leadingParticleIdx; // An index inside fjParticles
+        float leadingParticlePt = 0;
         for (auto const& track : tracks){
             // Require that tracks pass selection criteria
             if (!isCandidateForChargedPseudojetAccepted(track)) continue;
@@ -1219,6 +1315,12 @@ struct lambdajetpolarizationions {
                 // (TODO: study the possibility of using identified PseudoJet candidates for this estimate)
             fastjet::PseudoJet candidate(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
             fjParticles.emplace_back(candidate);
+
+            // Calculating leading particle
+            if (track.pt() > leadingParticlePt){
+                leadingParticlePt = track.pt();
+                leadingParticleIdx = fjParticles.size() - 1;
+            }
         }
         // Reject empty events
         if (fjParticles.size() < 1) return;
@@ -1302,7 +1404,44 @@ struct lambdajetpolarizationions {
                     histos.fill(HIST("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead"), cosTheta, deltaEta);
                     histos.fill(HIST("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead"), cosTheta, deltaR);
                     histos.fill(HIST("JetKinematicsQA/h2dDeltaPhiToLeadvsDeltaEtaToLead"), deltaPhi, deltaEta);
+
+                    histos.fill(HIST("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead"), jet.pt(), deltaPhi); // Can't really get the energy of the jet, just the pt to make this comparison
+                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead"), jet.E(), deltaPhi); // Just a different scale
+                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead"), jet.E(), cosTheta);
+
+                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead"), selectedJets, deltaPhi);
+                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead"), selectedJets, deltaEta);
+                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead"), selectedJets, cosTheta);
                 }
+                // Leading particle comparisons:
+                auto const& leadingParticle = fjParticles[leadingParticleIdx];
+
+                histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
+                histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
+                histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
+
+                double deltaPhiParticleToJet = leadingJetSub.phi() - leadingParticle.phi();
+                double deltaEtaParticleToJet = leadingJetSub.eta() - leadingParticle.eta();
+                double cosThetaParticleToJet = cosThetaJets(leadingJetSub, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
+
+                histos.fill(HIST("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet"), cosThetaParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet"), deltaPhiParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet"), deltaEtaParticleToJet);
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead"), deltaPhiParticleToJet, deltaEtaParticleToJet);
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead"), selectedJets, deltaPhiParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead"), selectedJets, deltaEtaParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead"), selectedJets, cosThetaParticleToJet);
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt"), selectedJets, leadingParticle.pt());
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt"), leadingJetSub.pt(), leadingParticle.pt());
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead"), leadingJetSub.pt(), cosThetaParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead"), leadingParticle.pt(), cosThetaParticleToJet);
+                
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead"), leadingJetSub.pt(), deltaPhiParticleToJet); // To see if there is any backgound in phi due to soft jets (or soft particles below)
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead"), leadingParticle.pt(), deltaPhiParticleToJet);
             }
         }
         else{ // Otherwise, simple jet clustering
@@ -1358,26 +1497,68 @@ struct lambdajetpolarizationions {
                     histos.fill(HIST("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead"), cosTheta, deltaEta);
                     histos.fill(HIST("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead"), cosTheta, deltaR);
                     histos.fill(HIST("JetKinematicsQA/h2dDeltaPhiToLeadvsDeltaEtaToLead"), deltaPhi, deltaEta);
+
+                    histos.fill(HIST("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead"), jet.pt(), deltaPhi); // Can't really get the energy of the jet, just the pt to make this comparison
+                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead"), jet.E(), deltaPhi); // Just a different scale
+                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead"), jet.E(), cosTheta);
+
+                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead"), jetsInEvent, deltaPhi);
+                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead"), jetsInEvent, deltaEta);
+                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead"), jetsInEvent, cosTheta);
                 }
             }
             if (doJetKinematicsQA){
                 histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJet.pt());
                 histos.fill(HIST("JetKinematicsQA/hLeadingJetEta"), leadingJet.eta());
                 histos.fill(HIST("JetKinematicsQA/hLeadingJetPhi"), leadingJet.phi());
+
+                // Leading particle comparisons:
+                auto const& leadingParticle = fjParticles[leadingParticleIdx];
+
+                histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
+                histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
+                histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
+
+                double deltaPhiParticleToJet = leadingJet.phi() - leadingParticle.phi();
+                double deltaEtaParticleToJet = leadingJet.eta() - leadingParticle.eta();
+                double cosThetaParticleToJet = cosThetaJets(leadingJet, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
+
+                histos.fill(HIST("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet"), cosThetaParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet"), deltaPhiParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet"), deltaEtaParticleToJet);
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead"), deltaPhiParticleToJet, deltaEtaParticleToJet);
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead"), jetsInEvent, deltaPhiParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead"), jetsInEvent, deltaEtaParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead"), jetsInEvent, cosThetaParticleToJet);
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt"), jetsInEvent, leadingParticle.pt());
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt"), leadingJet.pt(), leadingParticle.pt());
+
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead"), leadingJet.pt(), cosThetaParticleToJet);
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead"), leadingParticle.pt(), cosThetaParticleToJet);
+                
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead"), leadingJet.pt(), deltaPhiParticleToJet); // To see if there is any backgound in phi due to soft jets (or soft particles below)
+                histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead"), leadingParticle.pt(), deltaPhiParticleToJet);
             }
         }
     }
 
-    void processV0sData(SelCollisions::iterator const& collision, V0Candidates const& fullV0s){
+    // Had to include DauTracks in subscription, even though I don't loop in it, for the indices to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
+    void processV0sData(SelCollisions::iterator const& collision, V0Candidates const& fullV0s, aod::BCsWithTimestamps const& bcs, DauTracks const& V0DauTracks){
         const float centrality = getCentrality(collision);
         if (doEventQA) {
             histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
             histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
         }
-        if (!isEventAccepted(collision, centrality, doEventQA)) return; // Uses return instead of continue, as there is no explicit loop here
+
+        auto bc = bcs.iteratorAt(collision.bcId());
+        if (!isEventAccepted(collision, bc, centrality, doEventQA)) return; // Uses return instead of continue, as there is no explicit loop here
+
         if (doEventQA) fillCentralityProperties(collision, centrality);
         const uint64_t collIdx = collision.globalIndex();
-        if (v0Selections.rejectTPCsectorBoundary) initCCDB(collision);
+        if (v0Selections.rejectTPCsectorBoundary) initCCDB(bc); // Substituted call from collision to bc for raw data
 
         for (auto const& v0 : fullV0s){
             V0SelCounter.resetForNewV0();
@@ -1422,10 +1603,44 @@ struct lambdajetpolarizationions {
                     v0.negativephi()
                     );
             
+            if (doV0KinematicQA){
+                // Cache kinematics once
+                const float v0y  = v0.yLambda();
+                const float v0phi  = v0.phi();
+                const float mLambda     = v0.mLambda();
+                const float mAntiLambda = v0.mAntiLambda();
+                if (analyseLambda && isLambda){
+                     // --- Basic kinematics ---
+                    histos.fill(HIST("V0KinematicQA/Lambda/hPt"),  v0pt);
+                    histos.fill(HIST("V0KinematicQA/Lambda/hY"),   v0y);
+                    histos.fill(HIST("V0KinematicQA/Lambda/hPhi"), v0phi);
+                    // --- Mass correlations ---
+                    histos.fill(HIST("V0KinematicQA/Lambda/hMassVsPt"),  v0pt,  mLambda);
+                    histos.fill(HIST("V0KinematicQA/Lambda/hMassVsY"),   v0y, mLambda);
+                    histos.fill(HIST("V0KinematicQA/Lambda/hMassVsPhi"), v0phi, mLambda);
+                    // --- Kinematic correlations ---
+                    histos.fill(HIST("V0KinematicQA/Lambda/hYVsPt"),    v0pt,  v0y);
+                    histos.fill(HIST("V0KinematicQA/Lambda/hPhiVsPt"),  v0pt,  v0phi);
+                }
+                if (analyseAntiLambda && isAntiLambda){
+                    // --- Basic kinematics ---
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hPt"),  v0pt);
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hY"),   v0y);
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hPhi"), v0phi);
+                    // --- Mass correlations ---
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hMassVsPt"),  v0pt,  mAntiLambda);
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hMassVsY"),   v0y, mAntiLambda);
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hMassVsPhi"), v0phi, mAntiLambda);
+                    // --- Kinematic correlations ---
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hYVsPt"),    v0pt,  v0y);
+                    histos.fill(HIST("V0KinematicQA/AntiLambda/hPhiVsPt"),  v0pt,  v0phi);
+                }
+            }
+            
             if (doCompleteTopoQA){
                 // Remaking these variables outside of the passesLambdaLambdaBarHypothesis. Loses performance, but that should be OK for QA
-                const auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
-                const auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
+                const auto posTrackExtra = v0.template posTrack_as<DauTracks>();
+                const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
                 if (isLambda && analyseLambda) {
                     histos.fill(HIST("h3dMassLambda"), centrality, v0pt, v0.mLambda());
                     histos.fill(HIST("hMassLambda"), v0.mLambda());
@@ -1452,20 +1667,20 @@ struct lambdajetpolarizationions {
                         histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
                         histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
                     }
-                    if (doTOFQA) {
-                        histos.fill(HIST("Lambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPr());
-                        histos.fill(HIST("Lambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPi());
-                        histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPr());
-                        histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPi());
-                        histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaLaPr());
-                        histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaLaPi());
-                        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPr());
-                        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPi());
-                        histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaLaPr());
-                        histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaLaPi());
-                        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
-                        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
-                    }
+                    // if (doTOFQA) {
+                    //     histos.fill(HIST("Lambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPr());
+                    //     histos.fill(HIST("Lambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPi());
+                    //     histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPr());
+                    //     histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPi());
+                    //     histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaLaPr());
+                    //     histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaLaPi());
+                    //     histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPr());
+                    //     histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPi());
+                    //     histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaLaPr());
+                    //     histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaLaPi());
+                    //     histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
+                    //     histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
+                    // }
                     if (doEtaPhiQA) {
                         histos.fill(HIST("Lambda/h5dV0PhiVsEta"), centrality, v0pt, v0.mLambda(), v0.phi(), v0.eta());
                         histos.fill(HIST("Lambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mLambda(), v0.positivephi(), v0.positiveeta());
@@ -1498,20 +1713,20 @@ struct lambdajetpolarizationions {
                         histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
                         histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
                     }
-                    if (doTOFQA) {
-                        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPi());
-                        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPr());
-                        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPi());
-                        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPr());
-                        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaALaPi());
-                        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaALaPr());
-                        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPi());
-                        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPr());
-                        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaALaPi());
-                        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaALaPr());
-                        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
-                        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
-                    }
+                    // if (doTOFQA) {
+                    //     histos.fill(HIST("AntiLambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPi());
+                    //     histos.fill(HIST("AntiLambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPr());
+                    //     histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPi());
+                    //     histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPr());
+                    //     histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaALaPi());
+                    //     histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaALaPr());
+                    //     histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPi());
+                    //     histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPr());
+                    //     histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaALaPi());
+                    //     histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaALaPr());
+                    //     histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
+                    //     histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
+                    // }
                     if (doEtaPhiQA) {
                         histos.fill(HIST("AntiLambda/h5dV0PhiVsEta"), centrality, v0pt, v0.mAntiLambda(), v0.phi(), v0.eta());
                         histos.fill(HIST("AntiLambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mAntiLambda(), v0.positivephi(), v0.positiveeta());
