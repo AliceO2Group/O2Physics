@@ -564,7 +564,7 @@ struct tofPidQaDynamic {
         }
       }
 
-      const auto nsigma = o2::aod::pidutils::tofNSigma<id>(t);
+      const auto nsigma = t.tofNSigmaDyn(id);
       histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
       if (splitSignalPerCharge) {
         histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma, t.sign());
@@ -606,7 +606,8 @@ struct tofPidQaDynamic {
 
       if constexpr (fillFullHistograms) {
         const float& tof = t.tofSignal() - t.tofEvTime();
-        const auto& diff = o2::aod::pidutils::tofExpSignalDiff<id>(t);
+        const auto& diff = o2::aod::pidutils::tofExpTime<id>(t);
+
         // Fill histograms
         histos.fill(HIST(hexpected[id]), t.p(), tof - diff);
         histos.fill(HIST(hdelta[id]), t.p(), diff);
@@ -621,7 +622,7 @@ struct tofPidQaDynamic {
             histos.fill(HIST(hdelta_etaphi[id]), t.eta(), t.phi(), diff);
           }
         }
-        histos.fill(HIST(hexpsigma[id]), t.p(), o2::aod::pidutils::tofExpSigma<id>(t));
+        histos.fill(HIST(hexpsigma[id]), t.p(), t.tofExpSigmaDyn(id));
 
         // Filling info split per ev. time
         if (enableEvTimeSplitting) {
@@ -676,13 +677,13 @@ struct tofPidQaDynamic {
   }
 
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                                                                          \
-  void process##particleId(CollisionCandidate const& collision,                                                            \
-                           TrackCandidates const& tracks)                                                                  \
-  {                                                                                                                        \
-    auto tracksWithPid = soa::Attach<TrackCandidates, aod::TOFExpSigmaDyn##inputPid, aod::TOFNSigmaDyn##inputPid>(tracks); \
-    processSingleParticle<PID::particleId, false>(collision, tracksWithPid);                                               \
-  }                                                                                                                        \
+#define makeProcessFunction(inputPid, particleId)                                                                                                                  \
+  void process##particleId(CollisionCandidate const& collision,                                                                                                    \
+                           TrackCandidates const& tracks)                                                                                                          \
+  {                                                                                                                                                                \
+    auto tracksWithPid = soa::Attach<TrackCandidates, aod::TOFExpSigmaDyn##inputPid, aod::TOFNSigmaDyn##inputPid, aod::TOFExpSigmaDyn, aod::TOFNSigmaDyn>(tracks); \
+    processSingleParticle<PID::particleId, false>(collision, tracksWithPid);                                                                                       \
+  }                                                                                                                                                                \
   PROCESS_SWITCH(tofPidQaDynamic, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
 
   makeProcessFunction(El, Electron);
@@ -697,13 +698,13 @@ struct tofPidQaDynamic {
 #undef makeProcessFunction
 
 // QA of full tables
-#define makeProcessFunction(inputPid, particleId)                                                                          \
-  void processFull##particleId(CollisionCandidate const& collision,                                                        \
-                               soa::Filtered<TrackCandidates> const& tracks)                                               \
-  {                                                                                                                        \
-    auto tracksWithPid = soa::Attach<TrackCandidates, aod::TOFNSigmaDyn##inputPid, aod::TOFExpSigmaDyn##inputPid>(tracks); \
-    processSingleParticle<PID::particleId, true>(collision, tracksWithPid);                                                \
-  }                                                                                                                        \
+#define makeProcessFunction(inputPid, particleId)                                                                                                                  \
+  void processFull##particleId(CollisionCandidate const& collision,                                                                                                \
+                               soa::Filtered<TrackCandidates> const& tracks)                                                                                       \
+  {                                                                                                                                                                \
+    auto tracksWithPid = soa::Attach<TrackCandidates, aod::TOFNSigmaDyn##inputPid, aod::TOFExpSigmaDyn##inputPid, aod::TOFNSigmaDyn, aod::TOFExpSigmaDyn>(tracks); \
+    processSingleParticle<PID::particleId, true>(collision, tracksWithPid);                                                                                        \
+  }                                                                                                                                                                \
   PROCESS_SWITCH(tofPidQaDynamic, processFull##particleId, Form("Process for the %s hypothesis for full TOF PID QA", #particleId), false);
 
   makeProcessFunction(El, Electron);
@@ -749,23 +750,6 @@ struct tofPidQaDynamic {
       const auto& trk = tracks.iteratorAt(t.globalIndex());
       if (!trk.hasTOF()) {
         continue;
-      }
-      float resolution = o2::pid::tof::ExpTimes<TrkPID::iterator, 0>::GetExpectedSigma(tofResponse->parameters, trk);
-      float nsigma = o2::pid::tof::ExpTimes<TrkPID::iterator, 0>::GetSeparation(tofResponse->parameters, trk, resolution);
-
-      const float nsigmaEl = o2::pid::tof::ExpTimes<TrkPID::iterator, 0>::GetSeparation(tofResponse->parameters, trk);
-
-      // LOG(info) << "nsigma " << nsigma << " nsigmaEl " << nsigmaEl << " t.tofNSigmaEl() " << t.tofNSigmaEl() << " t.tofNSigmaDynEl() " << t.tofNSigmaDynEl();
-      // LOG(info) << "Offset for eta " << t.eta() << " and sign " << t.sign() << " is " << offset;
-      const float expEl = o2::pid::tof::ExpTimes<TrkPID::iterator, PID::Electron>::GetCorrectedExpectedSignal(tofResponse->parameters, trk);
-      if (std::abs(t.tofNSigmaEl() - t.tofNSigmaDynEl()) > 1e-1f) {
-        constexpr auto responseEl = o2::pid::tof::ExpTimes<TrkPID::iterator, PID::Electron>();
-        LOG(warning) << " t.tofNSigmaEl() " << t.tofNSigmaEl() << " t.tofNSigmaDynEl() " << t.tofNSigmaDynEl();
-        LOG(warning) << "      t.tofExpSignalEl(t.tofSignal() - t.tofEvTime()) " << t.tofExpSignalEl(t.tofSignal() - t.tofEvTime()) << " t.tofExpTimeEl() " << t.tofExpTimeEl();
-        LOG(warning) << "      responseEl.GetExpectedSigma(tofResponse->parameters, t) " << responseEl.GetExpectedSigma(tofResponse->parameters, trk);
-        LOG(warning) << "      t.tofExpSigmaEl() " << t.tofExpSigmaEl() << " t.tofExpSigmaDynEl() " << t.tofExpSigmaDynEl();
-        LOG(warning) << "      expEl " << expEl;
-        LOG(warning) << "      t.tofSignal() " << t.tofSignal() << " t.tofExpMom() " << t.tofExpMom() << " t.p() " << t.p();
       }
       histos.fill(HIST("check/El/reso"), t.tofExpSigmaEl() - t.tofExpSigmaDynEl());
       histos.fill(HIST("check/El/exp"), t.tofExpSignalEl(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeEl() - offset);
