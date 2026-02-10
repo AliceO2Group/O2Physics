@@ -104,7 +104,7 @@ struct heptaquark {
     const double px = hq.hqPx();
     const double py = hq.hqPy();
     const double pz = hq.hqPz();
-    const double m  = hq.hqMass();
+    const double m = hq.hqMass();
     TLorentzVector v;
     v.SetXYZM(px, py, pz, m);
     return v;
@@ -222,7 +222,7 @@ struct heptaquark {
     TVector3 boost = -ex.BoostVector();
 
     auto hqphipair_boost = hq1 + hq2;
-    auto hqlambda_boost  = hq3;
+    auto hqlambda_boost = hq3;
     hqphipair_boost.Boost(boost);
     hqlambda_boost.Boost(boost);
 
