@@ -23,24 +23,15 @@
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
-#include "Common/DataModel/EventSelection.h"
-
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
-#include <EMCALBase/Geometry.h>
-#include <EMCALBase/GeometryBase.h>
-#include <EMCALCalib/BadChannelMap.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
-#include <Framework/Expressions.h>
-#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -48,14 +39,11 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/GenVector/AxisAngle.h>
-#include <Math/GenVector/Rotation3D.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
 #include <TH1.h>
 #include <TPDGCode.h>
-#include <TString.h>
 
 #include <cmath>
 #include <memory>
@@ -179,11 +167,7 @@ struct PhotonResoTask {
   struct : ConfigurableGroup {
     std::string prefix = "mesonConfig";
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle. Default value one EMCal cell"};
-    Configurable<bool> enableTanThetadPhi{"enableTanThetadPhi", false, "flag to turn cut opening angle in delta theta delta phi on/off"};
-    Configurable<float> minTanThetadPhi{"minTanThetadPhi", 4., "apply min opening angle in delta theta delta phi to cut on late conversion"};
-    Configurable<float> maxEnergyAsymmetry{"maxEnergyAsymmetry", 1., "apply max energy asymmetry for meson candidate"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
-    ConfigurableAxis thConfigAxisTanThetaPhi{"thConfigAxisTanThetaPhi", {180, -90.f, 90.f}, ""};
   } mesonConfig;
 
   struct : ConfigurableGroup {
@@ -213,15 +197,12 @@ struct PhotonResoTask {
 
   SliceCache cache;
 
-  Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
-
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
   using PcmMcLegs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
   using Colls = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
-  using FilteredColls = soa::Filtered<Colls>;
 
   using McColls = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts>;
   using McParticles = EMMCParticles;
@@ -446,7 +427,7 @@ struct PhotonResoTask {
     fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
 
     EMBitFlags v0flags(photons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
+    fV0PhotonCut.AreSelectedRunning<decltype(photons), PcmMcLegs>(v0flags, photons, &registry);
 
     // create iterators for photon mc particles
     auto mcPhoton1 = mcParticles.begin();
@@ -473,7 +454,12 @@ struct PhotonResoTask {
         if (!(emcFlags.test(photonEMC.globalIndex()))) {
           continue;
         }
-        mcPhoton1.setCursor(photonEMC.emmcparticleId());
+        if (photonEMC.emmcparticleIds().size() <= 0) {
+          // this is a cluster with just noise, skip
+          continue;
+        }
+        // we only want to look at the largest contribution
+        mcPhoton1.setCursor(photonEMC.emmcparticleIds()[0]);
 
         if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kGamma) {
           registry.fill(HIST("EMCal/hPhotonReso"), photonEMC.pt(), mcPhoton1.pt(), cent);
@@ -502,9 +488,11 @@ struct PhotonResoTask {
           continue;
         }
 
+        float trueConvRadius = std::hypot(ele1mc.vx(), ele1mc.vy());
+
         mcPhoton1.setCursor(photonid1);
 
-        if (!fV0PhotonCut.IsConversionPointInAcceptance(mcPhoton1)) {
+        if (!fV0PhotonCut.IsConversionPointInAcceptance(mcPhoton1, trueConvRadius)) {
           continue;
         }
 
@@ -547,8 +535,13 @@ struct PhotonResoTask {
           registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
         }
 
-        mcPhoton1.setCursor(g1.emmcparticleId());
-        mcPhoton2.setCursor(g2.emmcparticleId());
+        if (g1.emmcparticleIds().size() <= 0 || g2.emmcparticleIds().size() <= 0) {
+          // there is a cluster which is just noise, skip
+          continue;
+        }
+
+        mcPhoton1.setCursor(g1.emmcparticleIds()[0]);
+        mcPhoton2.setCursor(g2.emmcparticleIds()[0]);
 
         int photonid1 = -1, photonid2 = -1, pi0id = -1, etaid = -1;
         photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcPhoton1, mcParticles, std::vector<int>{111, 221});

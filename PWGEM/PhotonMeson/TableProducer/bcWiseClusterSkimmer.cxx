@@ -10,9 +10,7 @@
 // or submit itself to any jurisdiction.
 ///
 /// \file bcWiseClusterSkimmer.cxx
-///
 /// \brief This task creates minimalistic skimmed tables containing EMC clusters and centrality information
-///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 ///
 
@@ -24,12 +22,15 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "EMCALBase/Geometry.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <EMCALBase/Geometry.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
 
 #include <limits>
 #include <map>
@@ -40,6 +41,7 @@ using namespace o2;
 using namespace o2::aod::emdownscaling;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
 using MyMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::McCollisionLabels>;
@@ -150,13 +152,13 @@ struct bcWiseClusterSkimmer {
   {
     for (const auto& cluster : clusters) {
       clusterTable(bcID,
-                   convertForStorage<int8_t>(cluster.definition(), kDefinition),
-                   convertForStorage<int16_t>(cluster.energy(), kEnergy),
-                   convertForStorage<int16_t>(cluster.eta(), kEta),
-                   convertForStorage<uint16_t>(cluster.phi(), kPhi),
-                   convertForStorage<int8_t>(cluster.nCells(), kNCells),
-                   convertForStorage<int16_t>(cluster.m02(), kM02),
-                   convertForStorage<int16_t>(cluster.time(), kTime),
+                   convertForStorage<int8_t>(cluster.definition(), Observable::kDefinition),
+                   convertForStorage<int16_t>(cluster.energy(), Observable::kEnergy),
+                   convertForStorage<int16_t>(cluster.eta(), Observable::kEta),
+                   convertForStorage<uint16_t>(cluster.phi(), Observable::kPhi),
+                   convertForStorage<int8_t>(cluster.nCells(), Observable::kNCells),
+                   convertForStorage<int16_t>(cluster.m02(), Observable::kM02),
+                   convertForStorage<int16_t>(cluster.time(), Observable::kTime),
                    cluster.isExotic());
     }
   }
@@ -184,12 +186,12 @@ struct bcWiseClusterSkimmer {
       }
       bool isEta = false;
       if (mesonMCIndex >= 0) {
-        if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == 111) {
+        if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == PDG_t::kPi0) {
           if (fMapPi0Index.find(mesonMCIndex) != fMapPi0Index.end()) // Some pi0s might not be found (not gg decay or too large y)
             mesonMCIndex = fMapPi0Index[mesonMCIndex];               // If pi0 was stored in table, change index from the MC index to the pi0 index from this task
           else                                                       // If pi0 was not stored, treat photon as if not from pi0
             mesonMCIndex = -1;
-        } else if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == 221) {
+        } else if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == Pdg::kEta) {
           isEta = true;
           if (fMapEtaIndex.find(mesonMCIndex) != fMapEtaIndex.end()) // Some etas might not be found (not gg decay or too large y)
             mesonMCIndex = fMapEtaIndex[mesonMCIndex];               // If eta was stored in table, change index from the MC index to the eta index from this task
@@ -305,7 +307,7 @@ struct bcWiseClusterSkimmer {
     if (daughtersIds.size() != 2)
       return false;
     for (const auto& daughterId : daughtersIds) {
-      if (mcParticles.iteratorAt(daughterId).pdgCode() != 22)
+      if (mcParticles.iteratorAt(daughterId).pdgCode() != PDG_t::kGamma)
         return false;
     }
     return true;
@@ -318,7 +320,7 @@ struct bcWiseClusterSkimmer {
     if (daughtersIds.size() != 2)
       return false;
     for (const auto& daughterId : daughtersIds) {
-      if (mcParticles.iteratorAt(daughterId).pdgCode() != 22)
+      if (mcParticles.iteratorAt(daughterId).pdgCode() != PDG_t::kGamma)
         return false;
       int iCellID = -1;
       try {
@@ -380,10 +382,10 @@ struct bcWiseClusterSkimmer {
           bool isPrimary = mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator();
           bool isFromWD = (aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcCollision, mcParticle, mcParticles)) > 0;
 
-          if (mcParticle.pdgCode() == 111) {
+          if (mcParticle.pdgCode() == PDG_t::kPi0) {
             mcpi0Table(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapPi0Index[mcParticle.globalIndex()] = static_cast<int32_t>(mcpi0Table.lastIndex());
-          } else if (mcParticle.pdgCode() == 221) {
+          } else if (mcParticle.pdgCode() == Pdg::kEta) {
             mcetaTable(bcTable.lastIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
             fMapEtaIndex[mcParticle.globalIndex()] = static_cast<int32_t>(mcetaTable.lastIndex());
           }
