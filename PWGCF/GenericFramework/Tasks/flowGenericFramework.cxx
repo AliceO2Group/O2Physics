@@ -918,8 +918,8 @@ struct FlowGenericFramework {
   }
 
   struct AcceptedTracks {
-    unsigned int corrected;
-    unsigned int uncorrected;
+    unsigned int corrected = 0;
+    unsigned int uncorrected = 0;
   };
 
   template <typename TTrack>
