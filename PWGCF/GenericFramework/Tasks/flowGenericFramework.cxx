@@ -79,6 +79,9 @@ GFWRegions regions;
 GFWCorrConfigs configs;
 std::vector<double> multGlobalCorrCutPars;
 std::vector<double> multPVCorrCutPars;
+std::vector<double> multGlobalPVCorrCutPars;
+std::vector<double> multGlobalV0ACutPars;
+std::vector<double> multGlobalT0ACutPars;
 } // namespace o2::analysis::gfw
 
 struct FlowGenericFramework {
@@ -87,10 +90,11 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 8, "Highest order of pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
+  O2_DEFINE_CONFIGURABLE(cfgUseNchCorrection, int, 1, "Use correction for Nch; 0: Use size of tracks table, 1: Use efficiency-corrected Nch values, 2: Use uncorrected Nch values");
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Fill histograms on a run-by-run basis")
   O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
@@ -108,24 +112,42 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgEta, float, 0.8, "eta cut");
   O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations");
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
+    O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
+    O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
+    O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
+    O2_DEFINE_CONFIGURABLE(cfgNoCollInRofStandard, bool, true, "kNoCollInRofStandard");
+    O2_DEFINE_CONFIGURABLE(cfgNoHighMultCollInPrevRof, bool, true, "kNoHighMultCollInPrevRof");
+    O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, true, "kNoITSROFrameBorder");
+    O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, true, "kNoTimeFrameBorder");
+    O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "kTVXinTRD - Use kTVXinTRD (reject TRD triggered events)");
+    O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "kIsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
+  } cfgEventCutFlags;
   O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, 2000, "Max occupancy selection, -999 to disable");
-  O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
-  O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
-  O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
-  O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
-  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
-  O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "Use kTVXinTRD (reject TRD triggered events)");
-  O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5, "pt cut on TOF for PID");
   O2_DEFINE_CONFIGURABLE(cfgUseDensityDependentCorrection, bool, false, "Use density dependent efficiency correction based on Run 2 measurements");
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
-  Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global multiplicity cut parameter values"};
-  Configurable<std::vector<double>> cfgMultPVCutPars{"cfgMultPVCutPars", std::vector<double>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}, "PV multiplicity cut parameter values"};
-  O2_DEFINE_CONFIGURABLE(cfgMultCorrHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
-  O2_DEFINE_CONFIGURABLE(cfgMultCorrLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+  struct : ConfigurableGroup {
+    Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global vs FT0C multiplicity cut parameter values"};
+    Configurable<std::vector<double>> cfgMultPVCutPars{"cfgMultPVCutPars", std::vector<double>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}, "PV vs FT0C multiplicity cut parameter values"};
+    Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars", std::vector<double>{-0.223013, 0.715849, 0.664242, 0.0829653, -0.000503733, 1.21185e-06}, "Global vs PV multiplicity cut parameter values"};
+    O2_DEFINE_CONFIGURABLE(cfgMultCorrHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultCorrLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCorrCutFunction, std::string, "[0] + [1]*x + 3*([2] + [3]*x + [4]*x*x + [5]*x*x*x)", "Functional for global vs pv multiplicity correlation cut");
+  } cfgMultCorrCuts;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalASideCorrCutFunction, std::string, "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + [10]*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", "Functional for global vs V0A multiplicity low correlation cut");
+    Configurable<std::vector<double>> cfgMultGlobalV0ACutPars{"cfgMultGlobalV0ACutPars", std::vector<double>{567.785, 172.715, 0.77888, -0.00693466, 1.40564e-05, 679.853, 66.8068, -0.444332, 0.00115002, -4.92064e-07}, "Global vs FV0A multiplicity cut parameter values"};
+    Configurable<std::vector<double>> cfgMultGlobalT0ACutPars{"cfgMultGlobalT0ACutPars", std::vector<double>{241.618, 61.8402, 0.348049, -0.00306078, 6.20357e-06, 315.235, 29.1491, -0.188639, 0.00044528, -9.08912e-08}, "Global vs FT0A multiplicity cut parameter values"};
+    O2_DEFINE_CONFIGURABLE(cfgGlobalV0ALowSigma, float, -3, "Number of sigma deviations below expected value in global vs V0A correlation");
+    O2_DEFINE_CONFIGURABLE(cfgGlobalV0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs V0A correlation");
+    O2_DEFINE_CONFIGURABLE(cfgGlobalT0ALowSigma, float, -3., "Number of sigma deviations below expected value in global vs T0A correlation");
+    O2_DEFINE_CONFIGURABLE(cfgGlobalT0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs T0A correlation");
+  } cfgGlobalAsideCorrCuts;
 
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}}, "Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
@@ -174,7 +196,44 @@ struct FlowGenericFramework {
     kCentFT0CVariant1,
     kCentFT0M,
     kCentFV0A,
-    kCentNTPV
+    kCentNTPV,
+    kCentNGlobal,
+    kCentMFT
+  };
+  std::map<int, std::string> centNamesMap = {{kCentFT0C, "FT0C"}, {kCentFT0CVariant1, "FT0C variant1"}, {kCentFT0M, "FT0M"}, {kCentFV0A, "FV0A"}, {kCentNTPV, "NTPV"}, {kCentNGlobal, "NGlobal"}, {kCentMFT, "MFT"}};
+
+  enum EventSelFlags {
+    kFilteredEvent = 1,
+    kSel8,
+    kOccupancy,
+    kTVXinTRD,
+    kNoSameBunchPileup,
+    kIsGoodZvtxFT0vsPV,
+    kNoCollInTimeRangeStandard,
+    kNoCollInRofStandard,
+    kNoHighMultCollInPrevRof,
+    kNoTimeFrameBorder,
+    kNoITSROFrameBorder,
+    kIsVertexITSTPC,
+    kIsGoodITSLayersAll,
+    kMultCuts,
+    kTrackCent
+  };
+  struct EventCut {
+    bool enabled;
+    int histBin;
+    int flag; // just store the enum
+  };
+  std::vector<EventCut> eventcutflags = {
+    {cfgEventCutFlags.cfgNoSameBunchPileupCut, kNoSameBunchPileup, o2::aod::evsel::kNoSameBunchPileup},
+    {cfgEventCutFlags.cfgIsGoodZvtxFT0vsPV, kIsGoodZvtxFT0vsPV, o2::aod::evsel::kIsGoodZvtxFT0vsPV},
+    {cfgEventCutFlags.cfgNoCollInTimeRangeStandard, kNoCollInTimeRangeStandard, o2::aod::evsel::kNoCollInTimeRangeStandard},
+    {cfgEventCutFlags.cfgNoCollInRofStandard, kNoCollInRofStandard, o2::aod::evsel::kNoCollInRofStandard},
+    {cfgEventCutFlags.cfgNoHighMultCollInPrevRof, kNoHighMultCollInPrevRof, o2::aod::evsel::kNoHighMultCollInPrevRof},
+    {cfgEventCutFlags.cfgNoTimeFrameBorder, kNoTimeFrameBorder, o2::aod::evsel::kIsVertexITSTPC},
+    {cfgEventCutFlags.cfgNoITSROFrameBorder, kNoITSROFrameBorder, o2::aod::evsel::kIsGoodITSLayersAll},
+    {cfgEventCutFlags.cfgIsVertexITSTPC, kIsVertexITSTPC, o2::aod::evsel::kNoTimeFrameBorder},
+    {cfgEventCutFlags.cfgIsGoodITSLayersAll, kIsGoodITSLayersAll, o2::aod::evsel::kNoITSROFrameBorder},
   };
 
   // Define global variables
@@ -186,6 +245,7 @@ struct FlowGenericFramework {
   TAxis* fPtAxis;
   int lastRun = -1;
   std::vector<int> runNumbers;
+  TH1D* event_pt_spectrum;
 
   // Density dependent eff correction
   std::vector<TF1*> funcEff;
@@ -204,14 +264,16 @@ struct FlowGenericFramework {
     DensityCorr() : psi2Est(0.), psi3Est(0.), psi4Est(0.), v2(0.), v3(0.), v4(0.), density(0) {}
   };
 
-  // Event selection cuts - Alex
-  TF1* fPhiCutLow = nullptr;
-  TF1* fPhiCutHigh = nullptr;
+  // Event selection cuts - multiplicity correlation
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
   TF1* fMultCutLow = nullptr;
   TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
+  TF1* fMultPVGlobalCutHigh = nullptr;
+  TF1* fMultGlobalV0ACutLow = nullptr;
+  TF1* fMultGlobalV0ACutHigh = nullptr;
+  TF1* fMultGlobalT0ACutLow = nullptr;
+  TF1* fMultGlobalT0ACutHigh = nullptr;
 
   void init(InitContext const&)
   {
@@ -244,34 +306,17 @@ struct FlowGenericFramework {
     o2::analysis::gfw::nchup = cfgGFWBinning->GetNchMax();
     o2::analysis::gfw::centbinning = cfgGFWBinning->GetCentBinning();
     cfgGFWBinning->Print();
-    o2::analysis::gfw::multGlobalCorrCutPars = cfgMultGlobalCutPars;
-    o2::analysis::gfw::multPVCorrCutPars = cfgMultPVCutPars;
+    o2::analysis::gfw::multGlobalCorrCutPars = cfgMultCorrCuts.cfgMultGlobalCutPars;
+    o2::analysis::gfw::multPVCorrCutPars = cfgMultCorrCuts.cfgMultPVCutPars;
+    o2::analysis::gfw::multGlobalPVCorrCutPars = cfgMultCorrCuts.cfgMultGlobalPVCutPars;
+    o2::analysis::gfw::multGlobalV0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalV0ACutPars;
+    o2::analysis::gfw::multGlobalT0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalT0ACutPars;
 
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
     AxisSpec ptAxis = {o2::analysis::gfw::ptbinning, "#it{p}_{T} GeV/#it{c}"};
-    std::string sCentralityEstimator;
-    switch (cfgCentEstimator) {
-      case kCentFT0C:
-        sCentralityEstimator = "FT0C";
-        break;
-      case kCentFT0CVariant1:
-        sCentralityEstimator = "FT0C variant 1";
-        break;
-      case kCentFT0M:
-        sCentralityEstimator = "FT0M";
-        break;
-      case kCentFV0A:
-        sCentralityEstimator = "FV0A";
-        break;
-      case kCentNTPV:
-        sCentralityEstimator = "NTPV";
-        break;
-      default:
-        sCentralityEstimator = "FT0C";
-    }
-    sCentralityEstimator += " centrality (%)";
+    std::string sCentralityEstimator = centNamesMap[cfgCentEstimator] + " centrality (%)";
     AxisSpec centAxis = {o2::analysis::gfw::centbinning, sCentralityEstimator.c_str()};
     std::vector<double> nchbinning;
     int nchskip = (o2::analysis::gfw::nchup - o2::analysis::gfw::nchlow) / o2::analysis::gfw::nchbins;
@@ -280,9 +325,10 @@ struct FlowGenericFramework {
     }
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
     AxisSpec bAxis = {200, 0, 20, "#it{b}"};
-    AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
-    AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
-    AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
+    AxisSpec t0cAxis = {1000, 0, 10000, "N_{ch} (T0C)"};
+    AxisSpec t0aAxis = {300, 0, 30000, "N_{ch} (T0A)"};
+    AxisSpec v0aAxis = {800, 0, 80000, "N_{ch} (V0A)"};
+    AxisSpec multpvAxis = {600, 0, 600, "N_{ch} (PV)"};
     AxisSpec multAxis = (doprocessOnTheFly && !cfgUseNch) ? bAxis : (cfgUseNch) ? nchAxis
                                                                                 : centAxis;
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
@@ -351,6 +397,17 @@ struct FlowGenericFramework {
           registry.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
         }
       }
+
+      // v0
+      const TArrayD* bins = fPtAxis->GetXbins();
+      if (bins->fN > 0) {
+        event_pt_spectrum = new TH1D("event_pt_spectrum", "event_pt_spectrum", bins->fN - 1, bins->fArray);
+      }
+      registry.add<TProfile>("meanNpt", "", {HistType::kTProfile, {ptAxis}});
+      registry.add<TProfile>("meanpt", "", {HistType::kTProfile, {ptAxis}});
+      registry.add<TProfile2D>("Npt_pt", "", {HistType::kTProfile2D, {ptAxis, multAxis}});
+      registry.add<TH1>("trackQA/after/Nch_corrected", "", {HistType::kTH1D, {nchAxis}});
+      registry.add<TH1>("trackQA/after/Nch_uncorrected", "", {HistType::kTH1D, {nchAxis}});
     }
 
     if (o2::analysis::gfw::regions.GetSize() < 0)
@@ -380,17 +437,52 @@ struct FlowGenericFramework {
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(cfgUseGapMethod);
     fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
-    // Event selection - Alex
-    if (cfgUseAdditionalEventCut) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
+
+    // Multiplicity correlation cuts
+    if (cfgMultCut) {
+      fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
       fMultPVCutLow->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", cfgMultCorrHighCutFunction->c_str(), 0, 100);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
       fMultPVCutHigh->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
-      fMultCutLow = new TF1("fMultCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
+      fMultCutLow = new TF1("fMultCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
       fMultCutLow->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
-      fMultCutHigh = new TF1("fMultCutHigh", cfgMultCorrHighCutFunction->c_str(), 0, 100);
+      fMultCutHigh = new TF1("fMultCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
       fMultCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
+      fMultPVGlobalCutHigh = new TF1("fMultPVGlobalCutHigh", cfgMultCorrCuts.cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
+      fMultPVGlobalCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalPVCorrCutPars[0]));
+
+      LOGF(info, "Global V0A function: %s in range 0-%g", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), v0aAxis.binEdges.back());
+      fMultGlobalV0ACutLow = new TF1("fMultGlobalV0ACutLow", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
+      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalV0ACutPars.size(); ++i)
+        fMultGlobalV0ACutLow->SetParameter(i, o2::analysis::gfw::multGlobalV0ACutPars[i]);
+      fMultGlobalV0ACutLow->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0ALowSigma);
+      for (int i = 0; i < fMultGlobalV0ACutLow->GetNpar(); ++i)
+        LOGF(info, "fMultGlobalV0ACutLow par %d = %g", i, fMultGlobalV0ACutLow->GetParameter(i));
+
+      fMultGlobalV0ACutHigh = new TF1("fMultGlobalV0ACutHigh", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
+      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalV0ACutPars.size(); ++i)
+        fMultGlobalV0ACutHigh->SetParameter(i, o2::analysis::gfw::multGlobalV0ACutPars[i]);
+      fMultGlobalV0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0AHighSigma);
+      for (int i = 0; i < fMultGlobalV0ACutHigh->GetNpar(); ++i)
+        LOGF(info, "fMultGlobalV0ACutHigh par %d = %g", i, fMultGlobalV0ACutHigh->GetParameter(i));
+
+      LOGF(info, "Global T0A function: %s", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str());
+      fMultGlobalT0ACutLow = new TF1("fMultGlobalT0ACutLow", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
+      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalT0ACutPars.size(); ++i)
+        fMultGlobalT0ACutLow->SetParameter(i, o2::analysis::gfw::multGlobalT0ACutPars[i]);
+      fMultGlobalT0ACutLow->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0ALowSigma);
+      for (int i = 0; i < fMultGlobalT0ACutLow->GetNpar(); ++i)
+        LOGF(info, "fMultGlobalT0ACutLow par %d = %g", i, fMultGlobalT0ACutLow->GetParameter(i));
+
+      fMultGlobalT0ACutHigh = new TF1("fMultGlobalT0ACutHigh", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
+      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalT0ACutPars.size(); ++i)
+        fMultGlobalT0ACutHigh->SetParameter(i, o2::analysis::gfw::multGlobalT0ACutPars[i]);
+      fMultGlobalT0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0AHighSigma);
+      for (int i = 0; i < fMultGlobalT0ACutHigh->GetNpar(); ++i)
+        LOGF(info, "fMultGlobalT0ACutHigh par %d = %g", i, fMultGlobalT0ACutHigh->GetParameter(i));
     }
+
+    // Density dependent corrections
     if (cfgUseDensityDependentCorrection) {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
       hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
@@ -499,93 +591,69 @@ struct FlowGenericFramework {
       return 1. / eff;
   }
 
-  template <typename TTrack>
-  int getNsigmaPID(TTrack track)
-  {
-    // Computing Nsigma arrays for pion, kaon, and protons
-    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-    std::array<float, 3> nSigmaCombined = {std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr())};
-    int pid = -1;
-    float nsigma = 3.0;
+  /*   template <typename TTrack>
+    int getNsigmaPID(TTrack track)
+    {
+      // Computing Nsigma arrays for pion, kaon, and protons
+      std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+      std::array<float, 3> nSigmaCombined = {std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr())};
+      int pid = -1;
+      float nsigma = 3.0;
 
-    // Choose which nSigma to use
-    std::array<float, 3> nSigmaToUse = (track.pt() > cfgTofPtCut && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
-    if (track.pt() >= cfgTofPtCut && !track.hasTOF())
-      return -1;
+      // Choose which nSigma to use
+      std::array<float, 3> nSigmaToUse = (track.pt() > cfgTofPtCut && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
+      if (track.pt() >= cfgTofPtCut && !track.hasTOF())
+        return -1;
 
-    // Select particle with the lowest nsigma
-    const int nspecies = 3;
-    for (int i = 0; i < nspecies; ++i) {
-      if (std::abs(nSigmaToUse[i]) < nsigma) {
-        pid = i;
-        nsigma = std::abs(nSigmaToUse[i]);
+      // Select particle with the lowest nsigma
+      const int nspecies = 3;
+      for (int i = 0; i < nspecies; ++i) {
+        if (std::abs(nSigmaToUse[i]) < nsigma) {
+          pid = i;
+          nsigma = std::abs(nSigmaToUse[i]);
+        }
       }
+      return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
     }
-    return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
-  }
-
+   */
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
   {
-    if (cfgTVXinTRD) {
+    // Cut on trigger alias
+    if (cfgEventCutFlags.cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
         // TRD triggered
         // "CMTVX-B-NOPF-TRD,minbias_TVX"
-        return 0;
+        return false;
       }
-      registry.fill(HIST("eventQA/eventSel"), 3.5);
+      registry.fill(HIST("eventQA/eventSel"), kTVXinTRD);
       if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(3.5);
+        th1sList[run][hEventSel]->Fill(kTVXinTRD);
     }
+    // Cut on event selection flags
+    for (auto& cut : eventcutflags) {
+      if (!cut.enabled)
+        continue;
+      if (!collision.selection_bit(cut.flag))
+        return false;
+      registry.fill(HIST("eventQA/eventSel"), cut.histBin);
+      if (cfgRunByRun)
+        th1sList[run][hEventSel]->Fill(cut.histBin);
+    }
+    // Cut on vertex
+    if (!selectVertex(collision))
+      return false;
+    // Cut on multiplicity correlations - data driven
+    if (cfgMultCut) {
+      if (!selectMultiplicityCorrelation(collision, multTrk, centrality, run))
+        return false;
+    }
+    return true;
+  }
 
-    if (cfgNoSameBunchPileupCut) {
-      if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-        // rejects collisions which are associated with the same "found-by-T0" bunch crossing
-        // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
-        return 0;
-      }
-      registry.fill(HIST("eventQA/eventSel"), 4.5);
-      if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(4.5);
-    }
-    if (cfgIsGoodZvtxFT0vsPV) {
-      if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
-        // use this cut at low multiplicities with caution
-        return 0;
-      }
-      registry.fill(HIST("eventQA/eventSel"), 5.5);
-      if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(5.5);
-    }
-    if (cfgNoCollInTimeRangeStandard) {
-      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        //  Rejection of the collisions which have other events nearby
-        return 0;
-      }
-      registry.fill(HIST("eventQA/eventSel"), 6.5);
-      if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(6.5);
-    }
-
-    if (cfgIsVertexITSTPC) {
-      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-        // selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks
-        return 0;
-      }
-      registry.fill(HIST("eventQA/eventSel"), 7.5);
-      if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(7.5);
-    }
-
-    if (cfgIsGoodITSLayersAll) {
-      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-        return 0;
-      }
-      registry.fill(HIST("eventQA/eventSel"), 8.5);
-      if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(8.5);
-    }
+  template <typename TCollision>
+  bool selectVertex(TCollision collision)
+  {
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -595,28 +663,39 @@ struct FlowGenericFramework {
       if (zRes > minZRes && collision.numContrib() < minNContrib)
         vtxz = -999;
     }
-    // auto multV0A = collision.multFV0A();
-    // auto multT0A = collision.multFT0A();
-    // auto multT0C = collision.multFT0C();
-    auto multNTracksPV = collision.multNTracksPV();
-
     if (vtxz > o2::analysis::gfw::vtxZup || vtxz < o2::analysis::gfw::vtxZlow)
-      return 0;
+      return false;
+    else
+      return true;
+  }
 
-    if (cfgMultCut) {
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-        return 0;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-        return 0;
-      if (multTrk < fMultCutLow->Eval(centrality))
-        return 0;
-      if (multTrk > fMultCutHigh->Eval(centrality))
-        return 0;
-      registry.fill(HIST("eventQA/eventSel"), 9.5);
-      if (cfgRunByRun)
-        th1sList[run][hEventSel]->Fill(9.5);
-    }
-    return 1;
+  template <typename TCollision>
+  bool selectMultiplicityCorrelation(TCollision collision, const int& multTrk, const float& centrality, const int& run)
+  {
+    auto multNTracksPV = collision.multNTracksPV();
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return false;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return false;
+    if (multTrk < fMultCutLow->Eval(centrality))
+      return false;
+    if (multTrk > fMultCutHigh->Eval(centrality))
+      return false;
+    if (multTrk > fMultPVGlobalCutHigh->Eval(collision.multNTracksPV()))
+      return false;
+
+    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFV0A()) < fMultGlobalV0ACutLow->Eval(multTrk))
+      return false;
+    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFV0A()) > fMultGlobalV0ACutHigh->Eval(multTrk))
+      return false;
+    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) < fMultGlobalT0ACutLow->Eval(multTrk))
+      return false;
+    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) > fMultGlobalT0ACutHigh->Eval(multTrk))
+      return false;
+    registry.fill(HIST("eventQA/eventSel"), kMultCuts);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(kMultCuts);
+    return true;
   }
 
   template <typename TTrack>
@@ -743,6 +822,13 @@ struct FlowGenericFramework {
           (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm);
       }
     }
+
+    double mean_pt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
+    registry.fill(HIST("meanpt"), centmult, mean_pt);
+    for (int bin = 1; bin <= event_pt_spectrum->GetNbinsX(); ++bin) {
+      registry.fill(HIST("meanNpt"), event_pt_spectrum->GetXaxis()->GetBinCenter(bin), event_pt_spectrum->GetBinContent(bin));
+      registry.fill(HIST("Npt_pt"), event_pt_spectrum->GetXaxis()->GetBinCenter(bin), centmult, event_pt_spectrum->GetBinContent(bin) * mean_pt);
+    }
     return;
   }
 
@@ -766,6 +852,7 @@ struct FlowGenericFramework {
     }
     fGFW->Clear();
     fFCpt->clearVector();
+    event_pt_spectrum->Reset();
     float lRandom = fRndm->Rndm();
 
     // be cautious, this only works for Pb-Pb
@@ -803,15 +890,40 @@ struct FlowGenericFramework {
       densitycorrections.density = tracks.size();
     }
 
+    AcceptedTracks acceptedTracks;
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, run, densitycorrections);
+      processTrack(track, vtxz, run, densitycorrections, acceptedTracks);
     }
+    registry.fill(HIST("TrackQA/after/Nch_corrected"), acceptedTracks.corrected);
+    registry.fill(HIST("TrackQA/after/Nch_uncorrected"), acceptedTracks.uncorrected);
+
+    int multiplicity = 0;
+    switch (cfgUseNchCorrection) {
+      case 0:
+        multiplicity = tracks.size();
+        break;
+      case 1:
+        multiplicity = acceptedTracks.corrected;
+        break;
+      case 2:
+        multiplicity = acceptedTracks.uncorrected;
+        break;
+      default:
+        multiplicity = tracks.size();
+        break;
+    }
+
     if (!cfgFillWeights)
-      fillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, lRandom);
+      fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom);
   }
 
+  struct AcceptedTracks {
+    unsigned int corrected;
+    unsigned int uncorrected;
+  };
+
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& run, DensityCorr densitycorrections)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& run, DensityCorr densitycorrections, AcceptedTracks& acceptedTracks)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
@@ -828,6 +940,10 @@ struct FlowGenericFramework {
 
       if (!trackSelected(track))
         return;
+
+      acceptedTracks.corrected += getEfficiency(track);
+      ;
+      ++acceptedTracks.uncorrected;
 
       int pidIndex = 0;
       if (cfgUsePID) {
@@ -872,7 +988,8 @@ struct FlowGenericFramework {
         if (std::abs(track.pdgCode()) == kProton)
           pidIndex = 3;
       }
-
+      ++acceptedTracks.corrected;
+      ++acceptedTracks.uncorrected;
       fillPtSums<kGen>(track, vtxz);
       fillGFW<kGen>(track, vtxz, pidIndex, densitycorrections);
 
@@ -885,16 +1002,22 @@ struct FlowGenericFramework {
       if (!trackSelected(track))
         return;
 
+      acceptedTracks.corrected += getEfficiency(track);
+      ;
+      ++acceptedTracks.uncorrected;
+
       int pidIndex = 0;
       if (cfgUsePID) {
         // pid_index = getBayesPIDIndex(track);
-        pidIndex = getNsigmaPID(track);
+        // pidIndex = getNsigmaPID(track);
+        pidIndex = 0;
       }
       if (cfgFillWeights) {
         fillWeights(track, vtxz, pidIndex, run);
       } else {
         fillPtSums<kReco>(track, vtxz);
         fillGFW<kReco>(track, vtxz, pidIndex, densitycorrections);
+        event_pt_spectrum->Fill(track.pt(), (cfgUseNchCorrection == 1) ? getEfficiency(track) : 1.);
       }
       if (cfgFillQA) {
         fillTrackQA<kReco, kAfter>(track, vtxz);
@@ -1005,6 +1128,29 @@ struct FlowGenericFramework {
     }
   }
 
+  template <typename TCollision>
+  float getCentrality(TCollision collision)
+  {
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        return collision.centFT0C();
+      case kCentFT0CVariant1:
+        return collision.centFT0CVariant1();
+      case kCentFT0M:
+        return collision.centFT0M();
+      case kCentFV0A:
+        return collision.centFV0A();
+      case kCentNTPV:
+        return collision.centNTPV();
+      case kCentNGlobal:
+        return collision.centNGlobal();
+      case kCentMFT:
+        return collision.centMFT();
+      default:
+        return collision.centFT0C();
+    }
+  }
+
   template <QAFillTime ft, typename CollisionObject, typename TracksObject>
   inline void fillEventQA(CollisionObject collision, TracksObject tracks)
   {
@@ -1021,10 +1167,12 @@ struct FlowGenericFramework {
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
 
-  using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
+  // using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
+  using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
+    LOGF(info, "TRACKS SIZE = %d", tracks.size());
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
     if (run != lastRun) {
@@ -1060,31 +1208,12 @@ struct FlowGenericFramework {
     registry.fill(HIST("eventQA/eventSel"), 2.5);
     if (cfgRunByRun)
       th1sList[run][hEventSel]->Fill(2.5);
-    float centrality;
-    switch (cfgCentEstimator) {
-      case kCentFT0C:
-        centrality = collision.centFT0C();
-        break;
-      case kCentFT0CVariant1:
-        centrality = collision.centFT0CVariant1();
-        break;
-      case kCentFT0M:
-        centrality = collision.centFT0M();
-        break;
-      case kCentFV0A:
-        centrality = collision.centFV0A();
-        break;
-      case kCentNTPV:
-        centrality = collision.centNTPV();
-        break;
-      default:
-        centrality = collision.centFT0C();
-    }
+    float centrality = getCentrality(collision);
     if (cfgFillQA)
       fillEventQA<kBefore>(collision, tracks);
     registry.fill(HIST("eventQA/before/centrality"), centrality);
     registry.fill(HIST("eventQA/before/multiplicity"), tracks.size());
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality, run))
+    if (!eventSelected(collision, tracks.size(), centrality, run))
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, tracks);
@@ -1094,7 +1223,7 @@ struct FlowGenericFramework {
   }
   PROCESS_SWITCH(FlowGenericFramework, processData, "Process analysis for non-derived data", true);
 
-  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
+  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -1105,10 +1234,10 @@ struct FlowGenericFramework {
     }
     if (!collision.sel8())
       return;
-    const auto centrality = collision.centFT0C();
+    const auto centrality = getCentrality(collision);
     if (cfgFillQA)
       fillEventQA<kBefore>(collision, tracks);
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality, run))
+    if (!eventSelected(collision, tracks.size(), centrality, run))
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, tracks);
@@ -1120,13 +1249,13 @@ struct FlowGenericFramework {
   PROCESS_SWITCH(FlowGenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
 
   o2::framework::expressions::Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
-  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles)
+  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>> const& collisions, aod::McParticles const& particles)
   {
     if (collisions.size() != 1)
       return;
     float centrality = -1;
     for (const auto& collision : collisions) {
-      centrality = collision.centFT0C();
+      centrality = getCentrality(collision);
     }
     int run = 0;
     processCollision<kGen>(mcCollision, particles, centrality, run);
