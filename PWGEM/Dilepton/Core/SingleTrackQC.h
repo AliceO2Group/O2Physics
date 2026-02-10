@@ -27,6 +27,7 @@
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/Zorro.h"
 #include "Tools/ML/MlResponse.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -56,9 +57,6 @@ using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBits>;
-using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
-
 using MyElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyElectron = MyElectrons::iterator;
 using FilteredMyElectrons = soa::Filtered<MyElectrons>;
@@ -83,8 +81,6 @@ struct SingleTrackQC {
   Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
-  Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
-  Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
@@ -122,6 +118,9 @@ struct SingleTrackQC {
     Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -212,11 +211,27 @@ struct SingleTrackQC {
     Configurable<float> cfg_max_DPhi_wrt_matchedMCHMID{"cfg_max_DPhi_wrt_matchedMCHMID", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
     Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to apply MFT hit map"};
     Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
+    Configurable<float> cfg_slope_dr_chi2MatchMFTMCH{"cfg_slope_dr_chi2MatchMFTMCH", -0.15 / 30, "slope of chiMatchMCHMFT vs. dR"};
+    Configurable<float> cfg_intercept_dr_chi2MatchMFTMCH{"cfg_intercept_dr_chi2MatchMFTMCH", 1e+10f, "intercept of chiMatchMCHMFT vs. dR"};
   } dimuoncuts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "zorroGroup";
+    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name. 1 trigger per 1 task."}; // 1 trigger per 1 task
+    o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+    Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  } zorroGroup;
+
+  Zorro zorro;
+  int mToIidx = 0;
+  int mTOICounter = 0;
+  int mATCounter = 0;
+
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
-  o2::ccdb::CcdbApi ccdbApi;
+  // o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber = 0;
+  float d_bz = 0;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
@@ -295,20 +310,23 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
       fRegistry.add("Track/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
       fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
+      fRegistry.add("Track/positive/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("Track/positive/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("Track/positive/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+      fRegistry.add("Track/positive/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
       fRegistry.add("Track/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
       fRegistry.add("Track/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
       fRegistry.add("Track/positive/hPDCA", "pDCA;R at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
-      fRegistry.add("Track/positive/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-      fRegistry.add("Track/positive/hChi2MFT", "chi2MFT;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-      fRegistry.add("Track/positive/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-      fRegistry.add("Track/positive/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+      fRegistry.add("Track/positive/hChi2_Pt", "chi2;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
+      fRegistry.add("Track/positive/hChi2MFT_Pt", "chi2MFT;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
+      fRegistry.add("Track/positive/hChi2MatchMCHMID_Pt", "chi2 match MCH-MID;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {200, 0.0f, 20}}, false);
+      fRegistry.add("Track/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {500, 0.0f, 50}}, false);
       fRegistry.add("Track/positive/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
+      fRegistry.add("Track/positive/hdR_Chi2MatchMCHMFT", "dr vs. matching chi2 MCH-MFT;chi2 match MCH-MFT;#DeltaR;", kTH2F, {{200, 0, 50}, {200, 0, 0.5}}, false);
       fRegistry.addClone("Track/positive/", "Track/negative/");
     }
   }
 
-  int mRunNumber;
-  float d_bz;
   void init(InitContext&)
   {
     ccdb->setURL(ccdburl);
@@ -323,18 +341,21 @@ struct SingleTrackQC {
     addhistograms();
     mRunNumber = 0;
     d_bz = 0;
+    mToIidx = 0;
+    mTOICounter = 0;
+    mATCounter = 0;
+
+    if (doprocessQC_TriggeredData) {
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
+      fRegistry.add("Event/trigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                  // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hScaler", "trigger counter before DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                            // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hSelection", "trigger counter after DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                          // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedTrigger", Form("analysed trigger %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true); // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedToI", Form("analysed ToI %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true);         // extend X range in Run 4/5
+    }
 
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
-    }
-    if (doprocessQC_TriggeredData) {
-      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value.data());
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", cfg_swt_name.value.data()), kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
-      hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
-      hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
     }
     if (doprocessBC) {
       auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{6, -0.5f, 5.5f}});
@@ -347,7 +368,7 @@ struct SingleTrackQC {
     }
   }
 
-  template <typename TCollision>
+  template <bool isTriggerAnalysis, typename TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
@@ -387,6 +408,23 @@ struct SingleTrackQC {
 
     mRunNumber = collision.runNumber();
     fDielectronCut.SetTrackPhiPositionRange(dielectroncuts.cfg_min_phiposition_track, dielectroncuts.cfg_max_phiposition_track, dielectroncuts.cfgRefR, d_bz, dielectroncuts.cfg_mirror_phi_track);
+
+    // zorro
+    if constexpr (isTriggerAnalysis) {
+      zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
+      mToIidx = zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value)[0];
+      zorro.populateHistRegistry(fRegistry, collision.runNumber());
+
+      uint64_t nInspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
+      uint64_t nScalers = zorro.getScalers()->GetBinContent(zorro.getScalers()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      uint64_t nSelections = zorro.getSelections()->GetBinContent(zorro.getSelections()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      LOGF(info, "run number %d: total inspected TVX events = %llu, scalers = %llu, selections = %llu", collision.runNumber(), nInspectedTVX, nScalers, nSelections);
+
+      fRegistry.fill(HIST("Event/trigger/hInspectedTVX"), collision.runNumber(), nInspectedTVX);
+      fRegistry.fill(HIST("Event/trigger/hScaler"), collision.runNumber(), nScalers);
+      fRegistry.fill(HIST("Event/trigger/hSelection"), collision.runNumber(), nSelections);
+    }
   }
 
   void DefineEMEventCut()
@@ -506,6 +544,7 @@ struct SingleTrackQC {
     fDimuonCut.SetMaxPDCARabsDep([&](float rabs) { return (rabs < 26.5 ? 594.f : 324.f); });
     fDimuonCut.SetMaxdPtdEtadPhiwrtMCHMID(dimuoncuts.cfg_max_relDPt_wrt_matchedMCHMID, dimuoncuts.cfg_max_DEta_wrt_matchedMCHMID, dimuoncuts.cfg_max_DPhi_wrt_matchedMCHMID); // this is relevant for global muons
     fDimuonCut.SetMFTHitMap(dimuoncuts.requireMFTHitMap, dimuoncuts.requiredMFTDisks);
+    fDimuonCut.SetSlopeAndInterceptDRvsChi2MCHMFT(dimuoncuts.cfg_slope_dr_chi2MatchMFTMCH, dimuoncuts.cfg_intercept_dr_chi2MatchMFTMCH);
   }
 
   template <typename TTrack>
@@ -603,8 +642,8 @@ struct SingleTrackQC {
     }
   }
 
-  template <typename TTrack>
-  void fillMuonInfo(TTrack const& track)
+  template <typename TTrack, typename TCollision>
+  void fillMuonInfo(TTrack const& track, TCollision const& collision)
   {
     float weight = 1.f;
     if (cfgApplyWeightTTCA) {
@@ -628,14 +667,19 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
+      fRegistry.fill(HIST("Track/positive/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
+      fRegistry.fill(HIST("Track/positive/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+      fRegistry.fill(HIST("Track/positive/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+      fRegistry.fill(HIST("Track/positive/hDCAy_Phi"), track.phi(), track.fwdDcaY());
       fRegistry.fill(HIST("Track/positive/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/positive/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
-      fRegistry.fill(HIST("Track/positive/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
-      fRegistry.fill(HIST("Track/positive/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
-      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
-      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
+      fRegistry.fill(HIST("Track/positive/hChi2_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+      fRegistry.fill(HIST("Track/positive/hChi2MFT_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
+      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMID_Pt"), track.pt(), track.chi2MatchMCHMID());
+      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/positive/hMFTClusterMap"), track.mftClusterMap());
+      fRegistry.fill(HIST("Track/positive/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
     } else {
       fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_xy, weight);
       fRegistry.fill(HIST("Track/negative/hEtaPhi_MatchMCHMID"), track.phiMatchedMCHMID(), track.etaMatchedMCHMID(), weight);
@@ -647,14 +691,19 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
+      fRegistry.fill(HIST("Track/negative/hDCAx_PosZ"), collision.posZ(), track.fwdDcaX());
+      fRegistry.fill(HIST("Track/negative/hDCAy_PosZ"), collision.posZ(), track.fwdDcaY());
+      fRegistry.fill(HIST("Track/negative/hDCAx_Phi"), track.phi(), track.fwdDcaX());
+      fRegistry.fill(HIST("Track/negative/hDCAy_Phi"), track.phi(), track.fwdDcaY());
       fRegistry.fill(HIST("Track/negative/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/negative/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
-      fRegistry.fill(HIST("Track/negative/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
-      fRegistry.fill(HIST("Track/negative/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
-      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
-      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
+      fRegistry.fill(HIST("Track/negative/hChi2_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+      fRegistry.fill(HIST("Track/negative/hChi2MFT_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
+      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMID_Pt"), track.pt(), track.chi2MatchMCHMID());
+      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/negative/hMFTClusterMap"), track.mftClusterMap());
+      fRegistry.fill(HIST("Track/negative/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
     }
   }
 
@@ -662,15 +711,10 @@ struct SingleTrackQC {
   void runQC(TCollisions const& collisions, TTracks const& tracks, TPreslice const& perCollision, TCut const& cut)
   {
     for (const auto& collision : collisions) {
-      initCCDB(collision);
+      initCCDB<isTriggerAnalysis>(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
-      }
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
       }
 
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
@@ -680,6 +724,30 @@ struct SingleTrackQC {
       if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
+
+      if constexpr (isTriggerAnalysis) {
+        if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+          continue;
+        }
+
+        auto swt_bitset = zorro.getLastResult();         // this has to be called after zorro::isSelected
+        auto TOIcounter = zorro.getTOIcounters()[0];     // this has to be called after zorro::isSelected
+        auto ATcounter = zorro.getATcounters()[mToIidx]; // this has to be called after zorro::isSelected
+
+        if (swt_bitset.test(mToIidx)) {
+          while (ATcounter > mATCounter) {
+            mATCounter++;
+            fRegistry.fill(HIST("Event/trigger/hAnalysedTrigger"), collision.runNumber());
+          }
+
+          while (TOIcounter > mTOICounter) {
+            fRegistry.fill(HIST("Event/trigger/hAnalysedToI"), collision.runNumber());
+            mTOICounter++; // always incremented by 1 in zorro!!
+          }
+          // LOGF(info, "collision.globalIndex() = %d, collision.globalBC() = %llu, mTOICounter = %d, mATcounter = %d", collision.globalIndex(), collision.globalBC(), mTOICounter, mATCounter);
+        }
+      }
+
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
@@ -708,7 +776,7 @@ struct SingleTrackQC {
             continue;
           }
 
-          fillMuonInfo(track);
+          fillMuonInfo(track, collision);
         } // end of track loop
       }
     } // end of collision loop
@@ -721,16 +789,17 @@ struct SingleTrackQC {
     std::vector<int> passed_trackIds;
     passed_trackIds.reserve(tracks.size());
     for (const auto& collision : collisions) {
-      initCCDB(collision);
+      initCCDB<isTriggerAnalysis>(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      if constexpr (isTriggerAnalysis) {
-        if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
-          continue;
-        }
-      }
+
+      // if constexpr (isTriggerAnalysis) {
+      //   if (!collision.swtalias_bit(o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value))) {
+      //     continue;
+      //   }
+      // }
 
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -808,7 +877,7 @@ struct SingleTrackQC {
   Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -833,8 +902,7 @@ struct SingleTrackQC {
   }
   PROCESS_SWITCH(SingleTrackQC, processQC, "run single track QC", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processQC_TriggeredData(FilteredMyCollisionsWithSWT const& collisions, aod::EMSWTriggerInfos const& cefpinfos, aod::EMSWTriggerATCounters const& countersAT, aod::EMSWTriggerTOICounters const& countersTOI, Types const&... args)
+  void processQC_TriggeredData(FilteredMyCollisions const& collisions, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
@@ -850,25 +918,6 @@ struct SingleTrackQC {
       runQC<true>(collisions, muons, perCollision_muon, fDimuonCut);
     }
     map_weight.clear();
-
-    // for nomalization
-    int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value);
-    for (const auto& counter : countersAT) {
-      if (counter.isAnalyzed_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 0);
-      }
-    }
-    for (const auto& counter : countersTOI) {
-      if (counter.isAnalyzedToI_bit(emswtId)) {
-        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 1);
-      }
-    }
-
-    for (const auto& info : cefpinfos) {
-      fRegistry.fill(HIST("NormTrigger/hInspectedTVX"), info.runNumber(), info.nInspectedTVX());
-      fRegistry.fill(HIST("NormTrigger/hScalers"), info.runNumber(), info.nScalers()[emswtId]);
-      fRegistry.fill(HIST("NormTrigger/hSelections"), info.runNumber(), info.nSelections()[emswtId]);
-    }
   }
   PROCESS_SWITCH(SingleTrackQC, processQC_TriggeredData, "run single track QC on triggered data", false);
 

@@ -216,6 +216,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   ctpRateFetcher irFetcher;
   std::string irSourceForCptFetcher;
 
+  // guard variable to guarantee full configuration
+  // important for RCT, Zorro
+  bool isInitCalled{false};
+
+  // guard variable to guarantee that histograms are added to the registry before filling them
+  bool areHistosInRegistry{false};
+
   /// Set standard preselection gap trigger (values taken from UD group)
   SGCutParHolder setSgPreselection()
   {
@@ -250,12 +257,15 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
     hCollisionsCentIR = registry.add<TH2>(NameHistCollisionsCentIR, "selected events;Centrality; Interaction Rate [Hz]", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisInteractionRate}});
+
+    // histograms in registry
+    // let's update the guard variable
+    areHistosInRegistry = true;
   }
 
   /// \brief Inits the HF event selection object
   /// \param registry reference to the histogram registry
-  template <typename T>
-  void init(o2::framework::HistogramRegistry& registry, T& zorroSummary)
+  void init(o2::framework::HistogramRegistry& registry, o2::framework::OutputObj<ZorroSummary>* zorroSummary = nullptr)
   {
     // we initialise the RCT checker
     if (requireGoodRct) {
@@ -264,11 +274,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     // we initialise the summary object
     if (!softwareTrigger.value.empty()) {
-      if constexpr (std::is_same_v<T, o2::framework::OutputObj<ZorroSummary>>) {
-        zorroSummary.setObject(zorro.getZorroSummary());
-      } else {
-        LOGP(fatal, "No o2::framework::OutputObj<ZorroSummary> provided to HF event selection object in your task, add it if you want to get the normalisation from Zorro.");
+      if (zorroSummary == nullptr) {
+        LOGP(fatal, "No OutputObj<ZorroSummary> provided to HF event selection object in your task. Add it if you want to get the normalisation from Zorro.");
+        return;
       }
+      zorroSummary->setObject(zorro.getZorroSummary());
     }
 
     // we initialise histograms
@@ -278,6 +288,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     if (!irSource.value.empty()) {
       irSourceForCptFetcher = irSource.value;
     }
+
+    // full configuration complete: update the guard variable
+    isInitCalled = true;
   }
 
   /// \brief Applies event selection.
@@ -305,8 +318,14 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     if constexpr (UseEvSel) {
       /// RCT condition
-      if (requireGoodRct && !rctChecker.checkTable(collision)) {
-        SETBIT(rejectionMask, EventRejection::Rct);
+      if (requireGoodRct) {
+        if (!isInitCalled) {
+          // protect against incomplete configuration
+          LOG(fatal) << "Checking RCT flags w/o full HF event-selection configuration. Call the function HfEventSelection::init() to fix.";
+        }
+        if (!rctChecker.checkTable(collision)) {
+          SETBIT(rejectionMask, EventRejection::Rct);
+        }
       }
       /// trigger condition
       if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
@@ -369,6 +388,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     if (!softwareTrigger.value.empty()) {
+      if (!isInitCalled) {
+        // protect against incomplete configuration
+        LOG(fatal) << "Using Zorro utility w/o full HF event-selection configuration. Call the function HfEventSelection::init() to fix.";
+      }
       // we might have to update it from CCDB
       const auto bc = collision.template bc_as<TBcs>();
       const auto runNumber = bc.runNumber();
@@ -429,6 +452,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
                       const float occupancy = -1.f,
                       const float ir = -1.f)
   {
+    if (!areHistosInRegistry) {
+      // protect against missing histograms in registry
+      LOG(fatal) << "You are trying to fill histograms, but they are not in the histogram registry. Call the function HfEventSelection::addHistograms() to fix.";
+    }
+
     hCollisions->Fill(EventRejection::None);
     const auto posZ = collision.posZ();
     hPosZBeforeEvSel->Fill(posZ);
@@ -481,6 +509,8 @@ struct HfEventSelectionMc {
   std::string rctLabel;                       // RCT selection flag
   bool rctCheckZDC{false};                    // require ZDC from RCT
   bool rctTreatLimitedAcceptanceAsBad{false}; // RCT flag to reject events with limited acceptance for selected detectors
+  bool isInitCalled{false};                   // guard variable to guarantee full configuration, important for RCT
+  bool areHistosInRegistry{false};            // guard variable to guarantee that histograms are added to the registry before filling them
 
   // util to retrieve the RCT info from CCDB
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -506,6 +536,10 @@ struct HfEventSelectionMc {
     hGenCollisions = registry.add<TH1>(NameHistGenCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
     setEventRejectionLabels(hGenCollisions);
+
+    // histograms in registry
+    // let's update the guard variable
+    areHistosInRegistry = true;
   }
 
   /// \brief Configures the object from the reco workflow
@@ -558,6 +592,9 @@ struct HfEventSelectionMc {
 
     // we initialise histograms
     addHistograms(registry);
+
+    // full configuration complete: update the guard variable
+    isInitCalled = true;
   }
 
   /// \brief Function to apply event selections to generated MC collisions
@@ -584,11 +621,12 @@ struct HfEventSelectionMc {
 
     /// RCT condition
     if (requireGoodRct) {
-      for (auto const& collision : collSlice) {
-        if (!rctChecker.checkTable(collision)) {
-          SETBIT(rejectionMask, EventRejection::Rct);
-          break;
-        }
+      if (!isInitCalled) {
+        // protect against incomplete configuration
+        LOG(fatal) << "Checking RCT flags w/o full HF event-selection configuration (MC). Call the function HfEventSelectionMc::init() to fix.";
+      }
+      if (!rctChecker.checkTable(bc)) {
+        SETBIT(rejectionMask, EventRejection::Rct);
       }
     }
     /// Sel8 trigger selection
@@ -623,6 +661,11 @@ struct HfEventSelectionMc {
                       const HfCollisionRejectionMask rejectionMask,
                       const int nSplitColl = 0)
   {
+    if (!areHistosInRegistry) {
+      // protect against missing histograms in registry
+      LOG(fatal) << "You are trying to fill histograms, but they are not in the histogram registry. Call the function HfEventSelectionMc::addHistograms() to fix.";
+    }
+
     hGenCollisions->Fill(EventRejection::None);
 
     if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {

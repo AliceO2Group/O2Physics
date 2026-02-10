@@ -94,6 +94,14 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> activateSecVtxForB{"activateSecVtxForB", false, "flag to enable 2nd vertex fitting - only beauty hadrons"};
 
   // parameters for all triggers
+  // event selection
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> applyTVX{"applyTVX", true, "flag to apply TVX selection"};
+    Configurable<bool> applyTFBorderCut{"applyTFBorderCut", true, "apply TF border cut"};
+    Configurable<bool> applyITSROFBorderCut{"applyITSROFBorderCut", false, "apply ITS ROF border cut"};
+    Configurable<float> maxPvZ{"maxPvZ", 11.f, "maximum absolute value of PV position in the Z coordinate"};
+  } evSel;
+
   // nsigma PID (except for V0 and cascades)
   Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 4, 8, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for ITS/TPC/TOF PID (except for V0 and cascades)"};
   // min and max pts for tracks and bachelors (except for V0 and cascades)
@@ -141,7 +149,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for charm baryons to Xi bachelor
   Configurable<LabeledArray<float>> cutsXiCascades{"cutsXiCascades", {cutsCascades[0], 1, 8, labelsEmpty, labelsColumnsCascades}, "Selections for cascades (Xi) for Xi+bachelor triggers"};
-  Configurable<LabeledArray<float>> cutsXiBachelor{"cutsXiBachelor", {cutsCharmBaryons[0], 1, 11, labelsEmpty, labelsColumnsCharmBarCuts}, "Selections for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi)"};
+  Configurable<LabeledArray<float>> cutsXiBachelor{"cutsXiBachelor", {cutsCharmBaryons[0], 1, 15, labelsEmpty, labelsColumnsCharmBarCuts}, "Selections for charm baryons (Xi+Pi, Xi+Ka, Xi+Pi+Pi)"};
   Configurable<LabeledArray<double>> cutsTrackCharmBaryonBachelor{"cutsTrackCharmBaryonBachelor", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for charm-baryon bachelor candidates"};
   Configurable<LabeledArray<int>> requireStrangenessTracking{"requireStrangenessTracking", {requireStrangenessTrackedXi[0], 1, 2, labelsEmpty, labelsColumnsCharmBaryons}, "Flags to require strangeness tracking for channels with Xi"};
 
@@ -223,7 +231,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreNonPrompt{};
   std::array<std::shared_ptr<TH2>, kNV0> hArmPod{};
   std::shared_ptr<TH2> hV0Selected;
-  std::array<std::shared_ptr<TH1>, 2> hMassXi{}; // not tracked and tracked
+  std::array<std::shared_ptr<TH2>, 2> hMassXi{}; // not tracked and tracked
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hCpaVsPtB{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hDecayLengthVsPtB{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hImpactParamProductVsPtB{};
@@ -265,7 +273,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setForceTofForFemto(forceTofProtonForFemto, forceTofDeuteronForFemto);
     helper.setV0Selections(cutsGammaK0sLambda->get(0u, 0u), cutsGammaK0sLambda->get(0u, 1u), cutsGammaK0sLambda->get(0u, 2u), cutsGammaK0sLambda->get(0u, 3u), cutsGammaK0sLambda->get(0u, 4u), cutsGammaK0sLambda->get(0u, 5u));
     helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u), cutsXiCascades->get(0u, 7u));
-    helper.setXiBachelorSelections(cutsXiBachelor->get(0u, 0u), cutsXiBachelor->get(0u, 1u), cutsXiBachelor->get(0u, 2u), cutsXiBachelor->get(0u, 3u), cutsXiBachelor->get(0u, 4u), cutsXiBachelor->get(0u, 5u), cutsXiBachelor->get(0u, 6u), cutsXiBachelor->get(0u, 7u), cutsXiBachelor->get(0u, 8u), cutsXiBachelor->get(0u, 9u), cutsXiBachelor->get(0u, 10u));
+    helper.setXiBachelorSelections(cutsXiBachelor->get(0u, 0u), cutsXiBachelor->get(0u, 1u), cutsXiBachelor->get(0u, 2u), cutsXiBachelor->get(0u, 3u), cutsXiBachelor->get(0u, 4u), cutsXiBachelor->get(0u, 5u), cutsXiBachelor->get(0u, 6u), cutsXiBachelor->get(0u, 7u), cutsXiBachelor->get(0u, 8u), cutsXiBachelor->get(0u, 9u), cutsXiBachelor->get(0u, 10u), cutsXiBachelor->get(0u, 11u), cutsXiBachelor->get(0u, 12u), cutsXiBachelor->get(0u, 13u), cutsXiBachelor->get(0u, 14u));
     helper.setNsigmaPiCutsForCharmBaryonBachelor(nSigmaPidCuts->get(0u, 4u), nSigmaPidCuts->get(1u, 4u));
     helper.setTpcPidCalibrationOption(setTPCCalib);
     helper.setMassResolParametrisation(paramCharmMassShape);
@@ -390,8 +398,8 @@ struct HfFilter { // Main struct for HF triggers
       for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
         hArmPod[iV0] = registry.add<TH2>(Form("fArmPod%s", v0Names[iV0].data()), Form("Armenteros Podolanski plot for selected %s;#it{#alpha};#it{q}_{T} (GeV/#it{c})", v0Labels[iV0].data()), HistType::kTH2D, {alphaAxis, qtAxis});
       }
-      hMassXi[0] = registry.add<TH1>("fMassXi", "#it{M} distribution of #Xi candidates;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH1D, {{100, 1.28f, 1.36f}});
-      hMassXi[1] = registry.add<TH1>("fMassTrackedXi", "#it{M} distribution of #Xi candidates;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH1D, {{100, 1.28f, 1.36f}});
+      hMassXi[0] = registry.add<TH2>("fMassXi", "#it{M} distribution of #Xi candidates;sign;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {{3, -1.5f, 1.5f}, {100, 1.28f, 1.36f}});
+      hMassXi[1] = registry.add<TH2>("fMassTrackedXi", "#it{M} distribution of #Xi candidates;sign;#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2D, {{3, -1.5f, 1.5f}, {100, 1.28f, 1.36f}});
 
       if (activateQA > 1) {
         hPrDePID[0] = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2D, {pAxis, nSigmaAxis});
@@ -442,7 +450,11 @@ struct HfFilter { // Main struct for HF triggers
     for (const auto& collision : collisions) {
 
       bool keepEvent[kNtriggersHF]{false};
-      if (!collision.sel8() || std::fabs(collision.posZ()) > 11.f) { // safety margin for Zvtx
+      bool isSelectedTVX = evSel.applyTVX ? collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) : true;
+      bool isSelectedTFBorder = evSel.applyTFBorderCut ? collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) : true;
+      bool isSelectedITSROFBorder = evSel.applyITSROFBorderCut ? collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) : true;
+      bool isSelectedPvZ = (std::fabs(collision.posZ()) < evSel.maxPvZ);
+      if (!isSelectedTVX || !isSelectedTFBorder || !isSelectedITSROFBorder || !isSelectedPvZ) {
         tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P], keepEvent[kCharmBarToXi2Bach], keepEvent[kPrCharm2P], keepEvent[kBtoJPsiKa], keepEvent[kBtoJPsiKstar], keepEvent[kBtoJPsiPhi], keepEvent[kBtoJPsiPrKa], keepEvent[kBtoJPsiPi]);
         continue;
       }
@@ -803,9 +815,11 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 2-prong femto
-          if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isD0CharmTagged && track.collisionId() == thisCollId) {
-            bool isProton = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hPrDePID[0], hPrDePID[1], kProtonForFemto);
-            if (isProton) {
+          bool isProtonForCharm2Prong = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hPrDePID[0], hPrDePID[1], kProtonForFemto);
+          bool isDeuteronForCharm2Prong = helper.isSelectedTrack4Femto(track, trackParThird, activateQA, hPrDePID[2], hPrDePID[3], kDeuteronForFemto);
+
+          if (track.collisionId() == thisCollId) {
+            if (isProtonForCharm2Prong && !keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isD0CharmTagged) {
               float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
                 optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
@@ -817,7 +831,20 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
             }
-          } // end femto selection
+
+            if (isDeuteronForCharm2Prong && !keepEvent[kFemto2P] && enableFemtoChannels->get(1u, 0u) && isD0CharmTagged) {
+              float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
+              if (applyOptimisation) {
+                optimisationTreeFemto(thisCollId, o2::constants::physics::Pdg::kD0, pt2Prong, scores[0], scores[1], scores[2], relativeMomentum, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());
+              }
+              if (relativeMomentum < femtoMaxRelativeMomentum) {
+                keepEvent[kFemto2P] = true;
+                if (activateQA) {
+                  hCharmDeuteronKstarDistr[kD0]->Fill(relativeMomentum);
+                }
+              }
+            }
+          } // end femto charm 2prong selection
 
           // Beauty with JPsi
           if (preselJPsiToMuMu) {
@@ -1827,9 +1854,9 @@ struct HfFilter { // Main struct for HF triggers
           }
 
           if (activateQA) {
-            hMassXi[0]->Fill(cascCand.mXi);
+            hMassXi[0]->Fill(cascCand.sign, cascCand.mXi);
             if (hasStrangeTrack) {
-              hMassXi[1]->Fill(cascCand.mXi);
+              hMassXi[1]->Fill(cascCand.sign, cascCand.mXi);
             }
           }
 

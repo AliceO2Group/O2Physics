@@ -174,7 +174,7 @@ struct HfCandidateCreatorDstar {
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // init HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     // LOG(info) << "Init Function Invoked";
     massPi = MassPiPlus;
@@ -286,8 +286,6 @@ struct HfCandidateCreatorDstar {
       registry.fill(HIST("Refit/hCovSVXZ"), covMatrixPCA[3]);
       registry.fill(HIST("Refit/hCovSVZZ"), covMatrixPCA[5]);
 
-      // Doubt:................Below, track object are at secondary vertex!
-      // < track param propagated to V0 candidate (no check for the candidate validity). propagateTracksToVertex must be called in advance
       auto trackD0ProngParVar0 = df.getTrack(0);
       auto trackD0ProngParVar1 = df.getTrack(1);
 

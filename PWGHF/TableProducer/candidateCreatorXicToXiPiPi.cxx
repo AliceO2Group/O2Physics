@@ -186,7 +186,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     runNumber = 0;
 
     // initialize HF event selection helper
-    hfEvSel.init(registry, zorroSummary);
+    hfEvSel.init(registry, &zorroSummary);
 
     // initialize 3-prong vertex fitter
     df.setPropagateToPCA(propagateToPCA);

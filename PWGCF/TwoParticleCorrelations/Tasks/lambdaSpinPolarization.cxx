@@ -45,13 +45,18 @@ namespace lambdacollision
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Mult, mult, float);
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, uint64_t);
+// DECALRE_SOA_
 } // namespace lambdacollision
 DECLARE_SOA_TABLE(LambdaCollisions, "AOD", "LAMBDACOLS", o2::soa::Index<>,
                   lambdacollision::Cent,
                   lambdacollision::Mult,
                   aod::collision::PosX,
                   aod::collision::PosY,
-                  aod::collision::PosZ);
+                  aod::collision::PosZ,
+                  lambdacollision::TimeStamp
+                  //, lambdacollision::CollisionId
+);
 using LambdaCollision = LambdaCollisions::iterator;
 
 namespace lambdamcgencollision
@@ -156,7 +161,8 @@ DECLARE_SOA_COLUMN(CollisionIndex, collisionIndex, int);
 DECLARE_SOA_TABLE(LambdaMixEventCollisions, "AOD", "LAMBDAMIXCOLS", o2::soa::Index<>,
                   lambdamixeventcollision::CollisionIndex,
                   lambdacollision::Cent,
-                  aod::collision::PosZ);
+                  aod::collision::PosZ,
+                  lambdacollision::TimeStamp);
 
 using LambdaMixEventCollision = LambdaMixEventCollisions::iterator;
 
@@ -165,6 +171,8 @@ namespace lambdamixeventtracks
 // DECLARE_SOA_INDEX_COLUMN(LambdaMixEventCollision, lambdaMixEventCollision);
 DECLARE_SOA_COLUMN(LambdaMixEventCollisionIdx, lambdaMixEventCollisionIdx, int);
 DECLARE_SOA_COLUMN(LambdaMixEventTrackIdx, lambdaMixEventTrackIdx, int);
+DECLARE_SOA_COLUMN(LambdaMixEventTimeStamp, lambdaMixEventTimeStamp, uint64_t);
+
 } // namespace lambdamixeventtracks
 
 DECLARE_SOA_TABLE(LambdaMixEventTracks, "AOD", "LAMBDAMIXTRKS", o2::soa::Index<>,
@@ -178,7 +186,8 @@ DECLARE_SOA_TABLE(LambdaMixEventTracks, "AOD", "LAMBDAMIXTRKS", o2::soa::Index<>
                   lambdatrack::PrPx,
                   lambdatrack::PrPy,
                   lambdatrack::PrPz,
-                  lambdatrack::V0Type);
+                  lambdatrack::V0Type,
+                  lambdamixeventtracks::LambdaMixEventTimeStamp);
 
 using LambdaMixEventTrack = LambdaMixEventTracks::iterator;
 } // namespace o2::aod
@@ -459,7 +468,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCRun3 || doprocessMCRun2 || doprocessMCRecoRun3 || doprocessMCRecoRun2) {
+    if (doprocessMCRun3 || doprocessMCRun2 /*|| doprocessMCRecoRun3 || doprocessMCRecoRun2*/) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -1008,8 +1017,8 @@ struct LambdaTableProducer {
   }
 
   // Reconstructed Level Tables
-  template <RunType run, DMCType dmc, typename C, typename V, typename T>
-  void fillLambdaRecoTables(C const& collision, V const& v0tracks, T const& tracks)
+  template <RunType run, DMCType dmc, typename C, typename B, typename V, typename T>
+  void fillLambdaRecoTables(C const& collision, B const& bc, V const& v0tracks, T const& tracks)
   {
     // Total Collisions
     histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
@@ -1025,7 +1034,7 @@ struct LambdaTableProducer {
     histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
 
     // Fill Collision Table
-    lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ());
+    lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ(), bc.timestamp());
 
     // initialize v0track objects
     ParticleType v0Type = kLambda;
@@ -1262,7 +1271,7 @@ struct LambdaTableProducer {
   }
 
   template <RunType run, DMCType dmc, typename M, typename C, typename V, typename T, typename P>
-  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& tracks, P const& mcParticles)
+  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& /*tracks*/, P const& mcParticles)
   {
     // Number of Rec Collisions Associated to the McGen Collision
     int nRecCols = collisions.size();
@@ -1281,7 +1290,7 @@ struct LambdaTableProducer {
     histos.fill(HIST("McGen/h1f_collisions_info"), kPassSelCol);
     histos.fill(HIST("McGen/h2f_collision_posZ"), mcCollision.posZ(), collisions.begin().posZ());
     auto v0Tracks = V0s.sliceBy(perCollision, collisions.begin().globalIndex());
-    fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks);
+    // fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks);
     fillLambdaMcGenTables<run>(mcCollision, mcParticles);
   }
 
@@ -1296,14 +1305,15 @@ struct LambdaTableProducer {
   using TracksMCRun2 = soa::Join<TracksRun2, aod::McTrackLabels>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
-  void processDataRun3(CollisionsRun3::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks)
+  void processDataRun3(CollisionsRun3::iterator const& collision, aod::BCsWithTimestamps const&, aod::V0Datas const& V0s, Tracks const& tracks)
   {
-    fillLambdaRecoTables<kRun3, kData>(collision, V0s, tracks);
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    fillLambdaRecoTables<kRun3, kData>(collision, bc, V0s, tracks);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processDataRun3, "Process for Run3 DATA", true);
 
-  void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, TracksRun2 const& tracks)
+  /* void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, TracksRun2 const& tracks)
   {
     fillLambdaRecoTables<kRun2, kData>(collision, V0s, tracks);
   }
@@ -1330,9 +1340,9 @@ struct LambdaTableProducer {
       return;
     }
     fillLambdaRecoTables<kRun2, kMC>(collision, V0s, tracks);
-  }
+  } */
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun2, "Process for Run2 McReco DATA", false);
+  // PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun2, "Process for Run2 McReco DATA", false);
 
   void processMCRun3(aod::McCollisions::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun3, aod::McCollisionLabels>> const& collisions,
@@ -1533,9 +1543,16 @@ struct LambdaSpinPolarization {
   Configurable<int> cNPhiBins{"cNPhiBins", 36, "N Phi Bins"};
   Configurable<int> cNBinsCosTS{"cNBinsCosTS", 10, "N CosTS Bins"};
   Configurable<bool> cInvBoostFlag{"cInvBoostFlag", true, "Inverse Boost Flag"};
+  Configurable<int> mixingParameter{"mixingParameter", 5, "How many events are mixed"};
 
   // Centrality Axis
   ConfigurableAxis cMultBins{"cMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 30.0f, 50.f, 80.0f, 100.f}, "Variable Mult-Bins"};
+  ConfigurableAxis axisCentME{"axisCentME", {VARIABLE_WIDTH, 0, 10, 30, 50, 100}, "Mixing bins - centrality (%)"};
+  ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -7, -3, 0, 3, 7}, "Mixing bins - z-vertex"};
+
+  Configurable<float> cMaxDeltaPt{"cMaxDeltaPt", 0.1f, "Max delta pT for kinematic matching (GeV/c)"};
+  Configurable<float> cMaxDeltaPhi{"cMaxDeltaPhi", 0.1f, "Max delta phi for kinematic matching (rad)"};
+  Configurable<float> cMaxDeltaRap{"cMaxDeltaRap", 0.1f, "Max delta rapidity for kinematic matching"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1560,8 +1577,14 @@ struct LambdaSpinPolarization {
     const AxisSpec axisCosTS(cNBinsCosTS, -1, 1, "cos(#theta*)");
     const AxisSpec axisDR(10, 0, 2, "#DeltaR");
 
-    // Single and Two Particle Densities
-    // 1D Histograms
+    // Pool occupancy
+    histos.add("QA/ME/hPoolCentVz", "ME pool occupancy;centrality (%);V_{z} (cm)", kTH2F, {axisCentME, axisVtxZME});
+
+    // Lambda multiplicity vs centrality
+    histos.add("QA/ME/hLambdaMultVsCent", "ME #Lambda multiplicity;centrality (%);N_{#Lambda}", kTH2F, {axisCentME, {50, 0, 50}});
+    histos.add("QA/ME/hAntiLambdaMultVsCent", "ME #bar{#Lambda} multiplicity;centrality (%);N_{#bar{#Lambda}}", kTH2F, {axisCentME, {50, 0, 50}});
+
+    // inv mass vs pt for Lambda and AntiLambda
     histos.add("Reco/h2f_n2_mass_LaPLaM", "m_{inv}^{#Lambda} vs m_{inv}^{#bar{#Lambda}}", kTHnSparseF, {axisMass, axisMass, axisPt, axisPt});
     histos.add("Reco/h2f_n2_mass_LaPLaP", "m_{inv}^{#Lambda} vs m_{inv}^{#Lambda}", kTHnSparseF, {axisMass, axisMass, axisPt, axisPt});
     histos.add("Reco/h2f_n2_mass_LaMLaM", "m_{inv}^{#bar{#Lambda}} vs m_{inv}^{#bar{#Lambda}}", kTHnSparseF, {axisMass, axisMass, axisPt, axisPt});
@@ -1573,9 +1596,6 @@ struct LambdaSpinPolarization {
     histos.add("RecoCorr/h2f_n2_ctheta_LaPLaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisCosTS});
     histos.add("RecoCorr/h2f_n2_ctheta_LaPLaP", "#rho_{2}^{#Lambda#Lambda}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisCosTS});
     histos.add("RecoCorr/h2f_n2_ctheta_LaMLaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisCosTS});
-    // histos.add("RecoCorr/h2f_n2_dphi_LaPLaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDPhi});
-    // histos.add("RecoCorr/h2f_n2_dphi_LaPLaP", "#rho_{2}^{#Lambda#Lambda}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDPhi});
-    // histos.add("RecoCorr/h2f_n2_dphi_LaMLaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTHnSparseF, {axisCent, axisDRap, axisDPhi, axisDPhi});
   }
 
   void getBoostVector(std::array<float, 4> const& p, std::array<float, 3>& v, bool inverseBoostFlag = true)
@@ -1609,7 +1629,7 @@ struct LambdaSpinPolarization {
     static constexpr std::string_view SubDirHist[] = {"LaPLaM", "LaPLaP", "LaMLaM"};
 
     // Fill lambda pair mass
-    histos.fill(HIST("Reco/h2f_n2_mass_") + HIST(SubDirHist[part_pair]), p1.mass(), p2.mass(), p1.pt(), p2.pt());
+    // histos.fill(HIST("Reco/h2f_n2_mass_") + HIST(SubDirHist[part_pair]), p1.mass(), p2.mass(), p1.pt(), p2.pt());
     float drap = p1.rap() - p2.rap();
     float dphi = RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PI);
     float dR = std::sqrt(drap * drap + dphi * dphi);
@@ -1628,11 +1648,7 @@ struct LambdaSpinPolarization {
     std::array<float, 3> pr1tv = {pr1[0], pr1[1], pr1[2]};
     std::array<float, 3> pr2tv = {pr2[0], pr2[1], pr2[2]};
     float ctheta = RecoDecay::dotProd(pr1tv, pr2tv) / (RecoDecay::sqrtSumOfSquares(pr1tv[0], pr1tv[1], pr1tv[2]) * RecoDecay::sqrtSumOfSquares(pr2tv[0], pr2tv[1], pr2tv[2]));
-    // float prdphi = RecoDecay::constrainAngle(RecoDecay::phi(pr1) - RecoDecay::phi(pr2), -PI);
-    // float prdrap = RecoDecay::eta(pr1tv) - RecoDecay::eta(pr2tv);
 
-    // Fill pair density
-    // histos.fill(HIST("RecoCorr/h2f_n2_dphi_") + HIST(SubDirHist[part_pair]), cent, drap, dphi, prdphi);
     histos.fill(HIST("RecoCorr/h2f_n2_ctheta_") + HIST(SubDirHist[part_pair]), cent, drap, dphi, ctheta);
     histos.fill(HIST("RecoCorr/h2f_n2_dltaR_") + HIST(SubDirHist[part_pair]), cent, dR, ctheta);
   }
@@ -1651,9 +1667,32 @@ struct LambdaSpinPolarization {
     }
   }
 
+  template <ParticlePairType part_pair, bool samelambda, typename T>
+  void analyzePairsWithKinematicMatching(T const& trks_1, T const& trks_2)
+  {
+    for (auto const& trk_1 : trks_1) {
+      for (auto const& trk_2 : trks_2) {
+        if (samelambda && ((trk_1.index() == trk_2.index()))) {
+          continue;
+        }
+
+        // Kinematic matching with named constants
+        float deltaPt = std::abs(trk_1.pt() - trk_2.pt());
+        float deltaPhi = std::abs(RecoDecay::constrainAngle(trk_1.phi() - trk_2.phi(), -PI));
+        float deltaRap = std::abs(trk_1.rap() - trk_2.rap());
+
+        if (deltaPt < cMaxDeltaPt && deltaPhi < cMaxDeltaPhi && deltaRap < cMaxDeltaRap) {
+          fillPairHistos<part_pair>(trk_1, trk_2);
+        }
+      }
+    }
+  }
+
   // Initialize tables
   using LambdaCollisions = aod::LambdaCollisions;
   using LambdaTracks = soa::Join<aod::LambdaTracks, aod::LambdaTracksExt>;
+
+  Preslice<LambdaTracks> perCollisionLambda = aod::lambdatrack::lambdaCollisionId;
 
   SliceCache cache;
   Partition<LambdaTracks> partLambdaTracks = (aod::lambdatrack::v0Type == (int8_t)kLambda) && (aod::lambdatrackext::trueLambdaFlag == true) && (aod::lambdatrack::v0PrmScd == (int8_t)kPrimary);
@@ -1679,7 +1718,55 @@ struct LambdaSpinPolarization {
     analyzePairs<kAntiLambdaAntiLambda, true>(antiLambdaTracks, antiLambdaTracks);
   }
 
-  PROCESS_SWITCH(LambdaSpinPolarization, processDataReco, "Process for Data and MCReco", true);
+  PROCESS_SWITCH(LambdaSpinPolarization, processDataReco, "Process for Data and MCReco", false);
+
+  struct GetMultiplicity {
+    float operator()(auto const& col) const
+    {
+      return col.cent();
+    }
+  };
+
+  using MixedBinning = FlexibleBinningPolicy<std::tuple<GetMultiplicity>, o2::aod::collision::PosZ, GetMultiplicity>;
+  MixedBinning binningOnVtxAndMult{
+    {GetMultiplicity{}},
+    {axisVtxZME, axisCentME},
+    true};
+
+  void processDataRecoMixed(LambdaCollisions const& col, LambdaTracks const&)
+  {
+    for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
+
+      if (col1.globalIndex() == col2.globalIndex()) {
+        continue;
+      }
+
+      cent = col1.cent();
+
+      // QA: pool occupancy
+      histos.fill(HIST("QA/ME/hPoolCentVz"), col1.cent(), col1.posZ());
+
+      // Lambda slices
+      auto lambdaTracks_col1 = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col1.globalIndex(), cache);
+      auto lambdaTracks_col2 = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
+
+      // Anti-lambda slices
+      auto antiLambdaTracks_col1 = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col1.globalIndex(), cache);
+      auto antiLambdaTracks_col2 = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
+
+      // QA: multiplicities
+      histos.fill(HIST("QA/ME/hLambdaMultVsCent"), col1.cent(), lambdaTracks_col1.size());
+      histos.fill(HIST("QA/ME/hAntiLambdaMultVsCent"), col1.cent(), antiLambdaTracks_col1.size());
+
+      // Mixed-event pairs
+      analyzePairsWithKinematicMatching<kLambdaAntiLambda, false>(lambdaTracks_col1, antiLambdaTracks_col2);
+      analyzePairsWithKinematicMatching<kLambdaAntiLambda, false>(antiLambdaTracks_col1, lambdaTracks_col2);
+      analyzePairsWithKinematicMatching<kLambdaLambda, true>(lambdaTracks_col1, lambdaTracks_col2);
+      analyzePairsWithKinematicMatching<kAntiLambdaAntiLambda, true>(antiLambdaTracks_col1, antiLambdaTracks_col2);
+    }
+  }
+
+  PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixed, "Process for Data and MCReco for Mixed events", true);
 
   void processDataRecoMixEvent(LambdaCollisions::iterator const& collision, LambdaTracks const& tracks)
   {
@@ -1689,11 +1776,11 @@ struct LambdaSpinPolarization {
     }
 
     // fill collision table
-    lambdaMixEvtCol(collision.index(), collision.cent(), collision.posZ());
+    lambdaMixEvtCol(collision.index(), collision.cent(), collision.posZ(), collision.timeStamp());
 
     for (auto const& track : tracks) {
-      lambdaMixEvtTrk(collision.index(), track.index(), track.px(), track.py(), track.pz(), track.mass(),
-                      track.prPx(), track.prPy(), track.prPz(), track.v0Type());
+      lambdaMixEvtTrk(collision.index(), track.globalIndex(), track.px(), track.py(), track.pz(), track.mass(),
+                      track.prPx(), track.prPy(), track.prPz(), track.v0Type(), collision.timeStamp());
     }
   }
 

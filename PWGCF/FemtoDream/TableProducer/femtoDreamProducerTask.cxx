@@ -149,6 +149,9 @@ struct femtoDreamProducerTask {
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
+  Configurable<int> ConfV0PDGCode{"ConfV0PDGCode", 3122, "PDG code of the selected v0 for Monte Carlo truth"};
+  Configurable<int> ConfV0posDaughPDGCode{"ConfV0posDaughPDGCode", 2212, "PDG code of the selected v0's positive daughter for Monte Carlo truth"};
+  Configurable<int> ConfV0negDaughPDGCode{"ConfV0negDaughPDGCode", 211, "PDG code of the selected v0's negative daughter for Monte Carlo truth"};
   FemtoDreamV0Selection v0Cuts;
   Configurable<std::vector<float>> ConfV0Sign{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0Sign, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMin{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMin, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMin, "V0 selection: ")};
@@ -175,6 +178,10 @@ struct femtoDreamProducerTask {
 
   FemtoDreamCascadeSelection cascadeCuts;
   struct : o2::framework::ConfigurableGroup {
+    Configurable<int> ConfCascPDGCode{"ConfCascPDGCode", 3122, "PDG code of the selected cascade for Monte Carlo truth"};
+    Configurable<int> ConfCascPosDaughPDGCode{"ConfCascPosDaughPDGCode", 2212, "PDG code of the selected cascade's positive daughter for Monte Carlo truth"};
+    Configurable<int> ConfCascNegDaughPDGCode{"ConfCascNegDaughPDGCode", 211, "PDG code of the selected cascade's negative daughter for Monte Carlo truth"};
+    Configurable<int> ConfCascBachDaughPDGCode{"ConfCascBachDaughPDGCode", 211, "PDG code of the selected cascade's bachelor daughter for Monte Carlo truth"};
     Configurable<float> ConfCascInvMassLowLimit{"ConfCascInvMassLowLimit", 1.2, "Lower limit of the Cascade invariant mass"};
     Configurable<float> ConfCascInvMassUpLimit{"ConfCascInvMassUpLimit", 1.5, "Upper limit of the Cascade invariant mass"};
     Configurable<bool> ConfCascIsSelectedOmega{"ConfCascIsSelectedOmega", false, "Select Omegas instead of Xis (invariant mass)"};
@@ -615,7 +622,7 @@ struct femtoDreamProducerTask {
   }
 
   template <typename CollisionType, typename ParticleType>
-  void fillMCParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
+  void fillMCParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype, int confPDGCode)
   {
     if (particle.has_mcParticle()) {
       // get corresponding MC particle and its info
@@ -629,8 +636,9 @@ struct femtoDreamProducerTask {
       // check pdg code
       TrackRegistry.fill(HIST("AnalysisQA/getGenStatusCode"), particleMC.getGenStatusCode());
       TrackRegistry.fill(HIST("AnalysisQA/getProcess"), particleMC.getProcess());
+
       // if this fails, the particle is a fake
-      if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
+      if (abs(pdgCode) == abs(confPDGCode)) {
         // check first if particle is from pile up
         // check if the collision associated with the particle is the same as the analyzed collision by checking their Ids
         if ((col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
@@ -819,7 +827,7 @@ struct femtoDreamProducerTask {
       }
 
       if constexpr (isMC) {
-        fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
+        fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack, ConfTrkPDGCode.value);
       }
 
       if (ConfIsActivateReso.value) {
@@ -894,7 +902,7 @@ struct femtoDreamProducerTask {
                     0);
         const int rowOfPosTrack = outputParts.lastIndex();
         if constexpr (isMC) {
-          fillMCParticle(col, postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
+          fillMCParticle(col, postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child, ConfV0posDaughPDGCode.value);
         }
         int negtrackID = v0.negTrackId();
         int rowInPrimaryTrackTableNeg = -1;
@@ -914,7 +922,7 @@ struct femtoDreamProducerTask {
                     0);
         const int rowOfNegTrack = outputParts.lastIndex();
         if constexpr (isMC) {
-          fillMCParticle(col, negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
+          fillMCParticle(col, negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child, ConfV0posDaughPDGCode.value);
         }
         std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
         outputParts(outputCollision.lastIndex(),
@@ -934,7 +942,7 @@ struct femtoDreamProducerTask {
           fillDebugParticle<false, false>(v0);      // QA for v0
         }
         if constexpr (isMC) {
-          fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
+          fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0, ConfV0PDGCode.value);
         }
       }
     }
@@ -973,8 +981,9 @@ struct femtoDreamProducerTask {
                     0,
                     0);
         const int rowOfPosCascadeTrack = outputParts.lastIndex();
-        // TODO: include here MC filling
-        //------
+        if constexpr (isMC) {
+          fillMCParticle(col, posTrackCasc, o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child, ConfCascSel.ConfCascPosDaughPDGCode.value);
+        }
 
         // Fill negative child
         int negcasctrackID = casc.negTrackId();
@@ -995,8 +1004,9 @@ struct femtoDreamProducerTask {
                     0,
                     0);
         const int rowOfNegCascadeTrack = outputParts.lastIndex();
-        // TODO: include here MC filling
-        //------
+        if constexpr (isMC) {
+          fillMCParticle(col, negTrackCasc, o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child, ConfCascSel.ConfCascNegDaughPDGCode.value);
+        }
 
         // Fill bachelor child
         int bachelorcasctrackID = casc.bachelorId();
@@ -1017,8 +1027,9 @@ struct femtoDreamProducerTask {
                     0,
                     0);
         const int rowOfBachelorCascadeTrack = outputParts.lastIndex();
-        // TODO: include here MC filling
-        //------
+        if constexpr (isMC) {
+          fillMCParticle(col, bachTrackCasc, o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor, ConfCascSel.ConfCascBachDaughPDGCode.value);
+        }
 
         // Fill cascades
         float invMassCasc = ConfCascSel.ConfCascIsSelectedOmega ? casc.mOmega() : casc.mXi();
@@ -1034,8 +1045,9 @@ struct femtoDreamProducerTask {
                     indexCascadeChildID,
                     invMassCasc,
                     casc.mLambda());
-        // TODO: include here MC filling
-        //------
+        if constexpr (isMC) {
+          fillMCParticle(col, casc, o2::aod::femtodreamparticle::ParticleType::kCascade, ConfCascSel.ConfCascPDGCode);
+        }
 
         if (ConfIsDebug.value) {
           fillDebugParticle<true, false>(posTrackCasc);  // QA for positive daughter
@@ -1134,7 +1146,7 @@ struct femtoDreamProducerTask {
     if (epCal.ConfFillFlowQA) {
       colCuts.fillEPQA(mult, spher, myqn, myEP);
       if (epCal.ConfDoCumlant) {
-        colCuts.doCumulants(col, tracks, mult, epCal.ConfQnSeparation);
+        colCuts.doCumulants(col, tracks, trackCuts, mult, epCal.ConfQnSeparation);
       }
     }
   }

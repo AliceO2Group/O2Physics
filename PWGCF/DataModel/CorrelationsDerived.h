@@ -94,8 +94,11 @@ enum MultiplicityEstimators : uint8_t {
   CentFT0C = 0x1,
   MultFV0A = 0x2,
   MultNTracksPV = 0x4,
-  MultNTracksGlobal = 0x8
+  MultNTracksGlobal = 0x8,
+  CentFT0M = 0x10,
 };
+
+inline constexpr uint32_t NMultiplicityEstimators = __builtin_ctz(CentFT0M) + 1;
 
 } // namespace cfmultset
 DECLARE_SOA_TABLE(CFMultSets, "AOD", "CFMULTSET", cfmultset::Multiplicities); //! Auxilary multiplicity set table
@@ -136,7 +139,7 @@ DECLARE_SOA_COLUMN(InvMass, invMass, float);                                    
 DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                        //! Particle decay
 enum ParticleDecay {
   D0ToPiK,
-  D0barToKPi,
+  D0barToKPi, // note: often duplicate to D0ToPiK. Choose D0barToKPiExclusive to select uniquely reconstructed D0bars
   JPsiToEE,
   JPsiToMuMu,
   Generic2Prong,
@@ -153,7 +156,8 @@ enum ParticleDecay {
   LambdaToPPiLoose,
   LambdaToPPiTight,
   AntiLambdaToPiPLoose,
-  AntiLambdaToPiPTight
+  AntiLambdaToPiPTight,
+  D0barToKPiExclusive
 };
 } // namespace cf2prongtrack
 DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track table

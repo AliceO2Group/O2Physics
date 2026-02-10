@@ -81,7 +81,7 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, -0.5, 162.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, -0.5, 162.5}, {163, -0.5, 162.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfractionSharedCls").c_str(), "; TPC fraction of shared clusters; Entries", kTH1F, {{100, 0.0, 100.0}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfractionSharedCls").c_str(), "; TPC fraction of shared clusters; Entries", kTH1F, {{100, 0.0, 1.0}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
@@ -141,6 +141,10 @@ class FemtoUniverseParticleHisto
     mHistogramRegistry->add((folderName + folderSuffix + "/hPDG").c_str(), "; PDG; Entries", kTH1I, {{6001, -3000, 3000}});
     mHistogramRegistry->add((folderName + folderSuffix + "/hOrigin_MC").c_str(), "; Origin; Entries", kTH1I, {{100, 0, 100}});
     mHistogramRegistry->add((folderName + folderSuffix + "/hNoMCtruthCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
+
+    mHistogramRegistry->add((folderName + folderSuffix + "/hTrueRecoMomPart1").c_str(), "; #it{p}_{reco} (GeV/#it{c}); #it{p}_{truth} - #it{p}_{reco} (GeV/#it{c})", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hTrueRecoThetaPart1").c_str(), "; #it{p}_{reco} (GeV/#it{c}); #it{#theta}_{truth} - #it{#theta}_{reco} (GeV/#it{c})", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
+    mHistogramRegistry->add((folderName + folderSuffix + "/hTrueRecoPhiPart1").c_str(), "; #it{p}_{reco} (GeV/#it{c}); #it{#phi}_{truth} - #it{#phi}_{reco} (GeV/#it{c})", kTH2F, {tempFitVarpTAxis, tempFitVarAxis});
 
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
       /// Track histograms
@@ -247,6 +251,7 @@ class FemtoUniverseParticleHisto
       if (isMC) {
         init_base<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
         init_MC(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis, isDebug);
+        // init_MC_reso(folderName, tempFitVarAxisTitle, tempFitVarpTAxis);
       }
     }
   }
@@ -343,6 +348,17 @@ class FemtoUniverseParticleHisto
 
       if (std::abs(pdgcode) == mPDG) { // fill this histogramm only for TRUE protons (independently of their origin) for the track purity estimation
         mHistogramRegistry->fill(histFolder + HIST("_MC/hPt_ReconNoFake"), part.pt());
+        if (part.has_fdMCParticle()) {
+
+          float part_p = part.pt() * std::cosh(part.eta());
+          float part_MC_p = part.fdMCParticle().pt() * std::cosh(part.fdMCParticle().eta());
+          float part_theta = 2.0 * std::atan(std::exp(-part.eta()));
+          float part_MC_theta = 2.0 * std::atan(std::exp(-part.fdMCParticle().eta()));
+
+          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoMomPart1"), part_p, (part_MC_p - part_p));
+          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoThetaPart1"), part_p, (part_MC_theta - part_theta));
+          mHistogramRegistry->fill(histFolder + HIST("_MC/hTrueRecoPhiPart1"), part_p, part.fdMCParticle().phi() - part.phi());
+        }
       }
 
       if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {

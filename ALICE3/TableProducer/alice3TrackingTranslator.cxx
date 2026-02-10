@@ -16,6 +16,7 @@
 /// \author Nicolò Jacazio, Universita del Piemonte Orientale (IT)
 ///
 
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -67,6 +68,9 @@ struct Alice3TrackingTranslator {
   o2::framework::Produces<o2::aod::TrackSelectionExtension> tableTrackSelectionExtension;
   o2::framework::Produces<o2::aod::StoredMcParticles> tableStoredMcParticles;
   o2::framework::Produces<o2::aod::McCollisions> tableMcCollisions;
+  o2::framework::Produces<o2::aod::OTFLUTConfigId> tableOTFLUTConfigId;
+
+  o2::framework::Configurable<int> maxCollisions{"maxCollisions", -1000, "Maximum number of collisions translated"};
 
   void init(o2::framework::InitContext&)
   {
@@ -80,6 +84,7 @@ struct Alice3TrackingTranslator {
   if (mTree->SetBranchAddress(branchname, &branchvar)) {             \
     LOG(fatal) << "Could not set branch address for " << branchname; \
   }
+
   struct FileStruct {
     FileStruct(std::string filename, std::string treename) : mFile(filename.c_str(), "READ")
     {
@@ -252,6 +257,10 @@ struct Alice3TrackingTranslator {
 
     const Long64_t kEvents = fileParticles.getEntries();
     for (Long64_t iEvent = 0; iEvent < kEvents; ++iEvent) {
+      if (iEvent > 0 && maxCollisions.value > 0 && (iEvent % maxCollisions) == 0) {
+        LOG(info) << "Processing event " << iEvent << "/" << kEvents;
+        break;
+      }
       fileParticles.setEventEntry(iEvent);
       // fileVertices.setEventEntry(iEvent);
       fileTracksummary.setEventEntry(iEvent);
@@ -265,6 +274,7 @@ struct Alice3TrackingTranslator {
       float collisionY = 0.0f;
       float collisionZ = 0.0f;
 
+      tableOTFLUTConfigId(0);     // dummy for the moment
       tableCollisions(0,          // bcId
                       collisionX, // posX
                       collisionY, // posY
@@ -326,6 +336,7 @@ struct Alice3TrackingTranslator {
                                                                                          fileTracksummary.m_t_vx->at(iParticle),
                                                                                          fileTracksummary.m_t_vy->at(iParticle),
                                                                                          fileTracksummary.m_t_vz->at(iParticle)});
+
         tableStoredMcParticles(tableMcCollisions.lastIndex(),                         // mcCollisionId
                                fileTracksummary.m_majorityParticlePDG->at(iParticle), // pdgCode
                                0,                                                     // statusCode

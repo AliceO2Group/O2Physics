@@ -33,6 +33,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <string>
 
 ///////////////////////////////
 /// DelphesO2/src/lutCovm.hh //
@@ -250,6 +251,8 @@ class TrackSmearer
   }
   void setdNdEta(float val) { mdNdEta = val; }                                 //;
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; } //;
+  void setCleanupDownloadedFile(bool val) { mCleanupDownloadedFile = val; }    //;
+  void setDownloadPath(const std::string& path) { mOutPath = path; }           //;
 
  protected:
   static constexpr unsigned int nLUTs = 9; // Number of LUT available
@@ -263,6 +266,8 @@ class TrackSmearer
 
  private:
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
+  bool mCleanupDownloadedFile = true;       // Flag to cleanup the LUT after it's used
+  std::string mOutPath = "./.ALICE3/LUTs/"; // Path where to download LUTs from CCDB
 };
 
 } // namespace delphes

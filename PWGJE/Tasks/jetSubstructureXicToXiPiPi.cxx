@@ -13,11 +13,10 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/Tasks/jetSubstructureHF.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGJE/Tasks/jetSubstructureHF.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
@@ -27,7 +26,11 @@
 
 #include <vector>
 
-using JetSubstructureXicToXiPiPi = JetSubstructureHFTask<soa::Join<aod::XicToXiPiPiChargedJets, aod::XicToXiPiPiChargedJetConstituents>, soa::Join<aod::XicToXiPiPiChargedMCDetectorLevelJets, aod::XicToXiPiPiChargedMCDetectorLevelJetConstituents>, soa::Join<aod::XicToXiPiPiChargedMCParticleLevelJets, aod::XicToXiPiPiChargedMCParticleLevelJetConstituents>, soa::Join<aod::XicToXiPiPiChargedEventWiseSubtractedJets, aod::XicToXiPiPiChargedEventWiseSubtractedJetConstituents>, aod::CandidatesXicToXiPiPiData, aod::CandidatesXicToXiPiPiMCP, aod::XicToXiPiPiCJetSSs, aod::XicToXiPiPiChargedSPs, aod::XicToXiPiPiChargedPRs, aod::XicToXiPiPiCMCDJetSSs, aod::XicToXiPiPiChargedMCDetectorLevelSPs, aod::XicToXiPiPiChargedMCDetectorLevelPRs, aod::XicToXiPiPiCMCPJetSSs, aod::XicToXiPiPiChargedMCParticleLevelSPs, aod::XicToXiPiPiChargedMCParticleLevelPRs, aod::XicToXiPiPiCEWSJetSSs, aod::XicToXiPiPiChargedEventWiseSubtractedSPs, aod::XicToXiPiPiChargedEventWiseSubtractedPRs, aod::JTrackXicToXiPiPiSubs>;
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+using JetSubstructureXicToXiPiPi = JetSubstructureHFTask<soa::Join<aod::XicToXiPiPiChargedJets, aod::XicToXiPiPiChargedJetConstituents>, soa::Join<aod::XicToXiPiPiChargedMCDetectorLevelJets, aod::XicToXiPiPiChargedMCDetectorLevelJetConstituents>, soa::Join<aod::XicToXiPiPiChargedMCParticleLevelJets, aod::XicToXiPiPiChargedMCParticleLevelJetConstituents>, soa::Join<aod::XicToXiPiPiChargedEventWiseSubtractedJets, aod::XicToXiPiPiChargedEventWiseSubtractedJetConstituents>, aod::CandidatesXicToXiPiPiData, aod::CandidatesXicToXiPiPiMCP, aod::XicToXiPiPiCJetSSs, aod::XicToXiPiPiCJetRs, aod::XicToXiPiPiChargedSPs, aod::XicToXiPiPiChargedPRs, aod::XicToXiPiPiCMCDJetSSs, aod::XicToXiPiPiCMCDJetRs, aod::XicToXiPiPiChargedMCDetectorLevelSPs, aod::XicToXiPiPiChargedMCDetectorLevelPRs, aod::XicToXiPiPiCMCPJetSSs, aod::XicToXiPiPiCMCPJetRs, aod::XicToXiPiPiChargedMCParticleLevelSPs, aod::XicToXiPiPiChargedMCParticleLevelPRs, aod::XicToXiPiPiCEWSJetSSs, aod::XicToXiPiPiChargedEventWiseSubtractedSPs, aod::XicToXiPiPiChargedEventWiseSubtractedPRs, aod::JTrackXicToXiPiPiSubs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

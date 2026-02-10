@@ -107,6 +107,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true"};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"};
+  Configurable<bool> doUPCanalysis{"doUPCanalysis", true, "Study V0s in hadronic and UPC collisions"};
 
   Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
   Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
@@ -705,9 +706,11 @@ struct derivedlambdakzeroanalysis {
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1D, {axisConfigurations.axisOccupancy});
     histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisOccupancy});
 
-    histos.add("hGapSide", "Gap side; Entries", kTH1D, {{5, -0.5, 4.5}});
-    histos.add("hSelGapSide", "Selected gap side; Entries", kTH1D, {axisConfigurations.axisSelGap});
-    histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisSelGap});
+    if (doUPCanalysis) {
+      histos.add("hGapSide", "Gap side; Entries", kTH1D, {{5, -0.5, 4.5}});
+      histos.add("hSelGapSide", "Selected gap side; Entries", kTH1D, {axisConfigurations.axisSelGap});
+      histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisSelGap});
+    }
 
     histos.add("hInteractionRate", "hInteractionRate", kTH1D, {axisConfigurations.axisIRBinning});
     histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisIRBinning});
@@ -773,12 +776,14 @@ struct derivedlambdakzeroanalysis {
     if (analyseK0Short) {
       histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
-      // Non-UPC info
-      histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
-      // UPC info
-      histos.add("h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
-      histos.add("h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
-      histos.add("h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+      if (doUPCanalysis) {
+        // Non-UPC info
+        histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+        // UPC info
+        histos.add("h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+        histos.add("h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+        histos.add("h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+      }
       if (doTPCQA) {
         histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
         histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
@@ -845,12 +850,14 @@ struct derivedlambdakzeroanalysis {
     if (analyseLambda) {
       histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      // Non-UPC info
-      histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      // UPC info
-      histos.add("h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      histos.add("h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      histos.add("h3dMassLambdaDG", "h3dMassLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      if (doUPCanalysis) {
+        // Non-UPC info
+        histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        // UPC info
+        histos.add("h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("h3dMassLambdaDG", "h3dMassLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      }
       if (doTPCQA) {
         histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
         histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
@@ -917,12 +924,14 @@ struct derivedlambdakzeroanalysis {
     if (analyseAntiLambda) {
       histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      // Non-UPC info
-      histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      // UPC info
-      histos.add("h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      histos.add("h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      histos.add("h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      if (doUPCanalysis) {
+        // Non-UPC info
+        histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        // UPC info
+        histos.add("h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      }
       if (doTPCQA) {
         histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
         histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
@@ -987,10 +996,14 @@ struct derivedlambdakzeroanalysis {
       }
     }
 
-    if (analyseLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
+    if (analyseLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
       histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
-    if (analyseAntiLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
+      histos.add("h3dLambdaFeeddownFromXi0", "h3dLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+    }
+    if (analyseAntiLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
       histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+      histos.add("h3dAntiLambdaFeeddownFromXi0", "h3dAntiLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+    }
 
     if (analyseK0Short)
       histos.add("hMassK0Short", "hMassK0Short", kTH1D, {axisConfigurations.axisK0Mass});
@@ -1635,14 +1648,16 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2);      //
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
       histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
-      if (gapSide == 0)
-        histos.fill(HIST("h3dMassK0ShortSGA"), centrality, pt, v0.mK0Short());
-      else if (gapSide == 1)
-        histos.fill(HIST("h3dMassK0ShortSGC"), centrality, pt, v0.mK0Short());
-      else if (gapSide == 2)
-        histos.fill(HIST("h3dMassK0ShortDG"), centrality, pt, v0.mK0Short());
-      else
-        histos.fill(HIST("h3dMassK0ShortHadronic"), centrality, pt, v0.mK0Short());
+      if (doUPCanalysis) {
+        if (gapSide == 0)
+          histos.fill(HIST("h3dMassK0ShortSGA"), centrality, pt, v0.mK0Short());
+        else if (gapSide == 1)
+          histos.fill(HIST("h3dMassK0ShortSGC"), centrality, pt, v0.mK0Short());
+        else if (gapSide == 2)
+          histos.fill(HIST("h3dMassK0ShortDG"), centrality, pt, v0.mK0Short());
+        else
+          histos.fill(HIST("h3dMassK0ShortHadronic"), centrality, pt, v0.mK0Short());
+      }
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
       if (doPlainTopoQA) {
         histos.fill(HIST("K0Short/hPosDCAToPV"), v0.dcapostopv());
@@ -1718,14 +1733,16 @@ struct derivedlambdakzeroanalysis {
     if (passLambdaSelections && analyseLambda) {
       histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2); //
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
-      if (gapSide == 0)
-        histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
-      else if (gapSide == 1)
-        histos.fill(HIST("h3dMassLambdaSGC"), centrality, pt, v0.mLambda());
-      else if (gapSide == 2)
-        histos.fill(HIST("h3dMassLambdaDG"), centrality, pt, v0.mLambda());
-      else
-        histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
+      if (doUPCanalysis) {
+        if (gapSide == 0)
+          histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
+        else if (gapSide == 1)
+          histos.fill(HIST("h3dMassLambdaSGC"), centrality, pt, v0.mLambda());
+        else if (gapSide == 2)
+          histos.fill(HIST("h3dMassLambdaDG"), centrality, pt, v0.mLambda());
+        else
+          histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
+      }
       histos.fill(HIST("hMassLambda"), v0.mLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
@@ -1801,14 +1818,16 @@ struct derivedlambdakzeroanalysis {
     if (passAntiLambdaSelections && analyseAntiLambda) {
       histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2); //
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
-      if (gapSide == 0)
-        histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
-      else if (gapSide == 1)
-        histos.fill(HIST("h3dMassAntiLambdaSGC"), centrality, pt, v0.mAntiLambda());
-      else if (gapSide == 2)
-        histos.fill(HIST("h3dMassAntiLambdaDG"), centrality, pt, v0.mAntiLambda());
-      else
-        histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
+      if (doUPCanalysis) {
+        if (gapSide == 0)
+          histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
+        else if (gapSide == 1)
+          histos.fill(HIST("h3dMassAntiLambdaSGC"), centrality, pt, v0.mAntiLambda());
+        else if (gapSide == 2)
+          histos.fill(HIST("h3dMassAntiLambdaDG"), centrality, pt, v0.mAntiLambda());
+        else
+          histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
+      }
       histos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
@@ -1962,12 +1981,20 @@ struct derivedlambdakzeroanalysis {
 
     // __________________________________________
     if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
-      if (v0mother.pdgCode() == PDG_t::kXiMinus && v0mother.isPhysicalPrimary())
-        histos.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+      if (v0mother.isPhysicalPrimary()) {
+        if (v0mother.pdgCode() == PDG_t::kXiMinus)
+          histos.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+        if (v0mother.pdgCode() == PDG_t::kXiMinus || v0mother.pdgCode() == o2::constants::physics::Pdg::kXi0)
+          histos.fill(HIST("h3dLambdaFeeddownFromXi0"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+      }
     }
     if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
-      if (v0mother.pdgCode() == PDG_t::kXiPlusBar && v0mother.isPhysicalPrimary())
-        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+      if (v0mother.isPhysicalPrimary()) {
+        if (v0mother.pdgCode() == PDG_t::kXiPlusBar)
+          histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+        if (v0mother.pdgCode() == PDG_t::kXiPlusBar || v0mother.pdgCode() == -o2::constants::physics::Pdg::kXi0)
+          histos.fill(HIST("h3dAntiLambdaFeeddownFromXi0"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+      }
     }
   }
 
@@ -2375,13 +2402,19 @@ struct derivedlambdakzeroanalysis {
         centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
       }
 
-      // gap side
-      gapSide = collision.gapSide();
-      // -1 --> Hadronic
-      // 0 --> Single Gap - A side
-      // 1 --> Single Gap - C side
-      // 2 --> Double Gap - both A & C sides
-      selGapSide = sgSelector.trueGap(collision, upcCuts.fv0Cut, upcCuts.ft0Acut, upcCuts.ft0Ccut, upcCuts.zdcCut);
+      if (doUPCanalysis) {
+        // gap side
+        gapSide = collision.gapSide();
+        // -1 --> Hadronic
+        // 0 --> Single Gap - A side
+        // 1 --> Single Gap - C side
+        // 2 --> Double Gap - both A & C sides
+        selGapSide = sgSelector.trueGap(collision, upcCuts.fv0Cut, upcCuts.ft0Acut, upcCuts.ft0Ccut, upcCuts.zdcCut);
+
+        histos.fill(HIST("hGapSide"), gapSide);
+        histos.fill(HIST("hSelGapSide"), selGapSide);
+        histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
+      }
     } else { // no, we are in Run 2
       centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
     }

@@ -356,6 +356,7 @@ struct AssociateMCInfoPhoton {
         }
         auto mcCollisionFromEMC = collisionFromEMC.mcCollision();
 
+        // TODO: check that this does not cause issues, since we have sometimes clusters that are only noise!
         auto mcphoton = mcParticles.iteratorAt(emccluster.emmcparticleIds()[0]);
 
         // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack

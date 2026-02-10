@@ -9,14 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for dilepton Cut
-//
+/// \file EMCPhotonCut.cxx
+/// \brief header of class for dalitz ee cuts.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 
 #include "Framework/Logger.h"
 
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <functional>
 #include <set>
 #include <utility>
 
