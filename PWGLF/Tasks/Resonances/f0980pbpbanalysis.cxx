@@ -81,7 +81,7 @@ struct F0980pbpbanalysis {
   Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
 
-  // Evnet Selection Configurables
+  // Event Selection Configurables
   struct : ConfigurableGroup {
     Configurable<float> cfgEventCutVertex{"cfgEventCutVertex", 10.0, "PV selection"};
     Configurable<bool> cfgEventQvecSel{"cfgEventQvecSel", true, "Reject events when no QVector"};
@@ -101,7 +101,7 @@ struct F0980pbpbanalysis {
   // Track Selection Configurables
   struct : ConfigurableGroup {
     Configurable<float> cfgTrackPtMin{"cfgTrackPtMin", 0.15, "Minimum transverse momentum for charged track"};
-    Configurable<float> cfgTrackEtaMax{"cfgTrackEtaMax", 0.8, "Maximum pseudorapidiy for charged track"};
+    Configurable<float> cfgTrackEtaMax{"cfgTrackEtaMax", 0.8, "Maximum pseudorapidity for charged track"};
     Configurable<float> cfgTrackRapMin{"cfgTrackRapMin", -0.5, "Minimum rapidity for pair"};
     Configurable<float> cfgTrackRapMax{"cfgTrackRapMax", 0.5, "Maximum rapidity for pair"};
 
@@ -111,8 +111,8 @@ struct F0980pbpbanalysis {
 
     Configurable<double> cfgTrackTPCCrossedRows{"cfgTrackTPCCrossedRows", 70, "nCrossed TPC Rows"};
     Configurable<double> cfgTrackTPCFindableClusters{"cfgTrackTPCFindableClusters", 50, "nFindable TPC Clusters"};
-    Configurable<double> cfgTrackTPCRRaioMin{"cfgTrackTPCRatioMin", 0.8, "Minimum nRowsOverFindable TPC CLusters"};
-    Configurable<double> cfgTrackTPCRRaioMax{"cfgTrackTPCRatioMax", 1.2, "Maximum nRowsOverFindable TPC CLusters"};
+    Configurable<double> cfgTrackTPCRatioMin{"cfgTrackTPCRatioMin", 0.8, "Minimum nRowsOverFindable TPC Clusters"};
+    Configurable<double> cfgTrackTPCRatioMax{"cfgTrackTPCRatioMax", 1.2, "Maximum nRowsOverFindable TPC Clusters"};
     Configurable<double> cfgTrackTPCChi2{"cfgTrackTPCChi2", 4.0, "nTPC Chi2 per Cluster"};
 
     Configurable<double> cfgTrackITSChi2{"cfgTrackITSChi2", 36.0, "nITS Chi2 per Cluster"};
@@ -472,7 +472,7 @@ struct F0980pbpbanalysis {
     if (TrackConfig.cfgTrackTPCCrossedRows > 0 && track.tpcNClsCrossedRows() < TrackConfig.cfgTrackTPCCrossedRows) {
       return 0;
     }
-    if (TrackConfig.cfgTrackTPCRRaioMin > 0 && track.tpcCrossedRowsOverFindableCls() < TrackConfig.cfgTrackTPCRRaioMin) {
+    if (TrackConfig.cfgTrackTPCRatioMin > 0 && track.tpcCrossedRowsOverFindableCls() < TrackConfig.cfgTrackTPCRatioMin) {
       return 0;
     }
     if (TrackConfig.cfgTrackTPCChi2 > 0 && track.tpcChi2NCl() > TrackConfig.cfgTrackTPCChi2) {
@@ -493,15 +493,15 @@ struct F0980pbpbanalysis {
         return 0;
       }
     }
-    // if (cfgTrackDCAzDepPTSel) {
-    //   if (std::abs(track.dcaZ()) > (cfgTrackDCAzDepPTP0 + (cfgTrackDCAzDepPTExp / track.pt()))) {
-    //     return 0;
-    //   }
-    // } else {
-    //   if (std::abs(track.dcaZ()) > cfgTrackDCAzToPVcutMax) {
-    //     return 0;
-    //   }
-    // }
+    if (TrackConfig.cfgTrackDCAzDepPTSel) {
+      if (std::abs(track.dcaZ()) > (TrackConfig.cfgTrackDCAzDepPTP0 + (TrackConfig.cfgTrackDCAzDepPTExp / track.pt()))) {
+        return 0;
+      }
+    } else {
+      if (std::abs(track.dcaZ()) > TrackConfig.cfgTrackDCAzToPVcutMax) {
+        return 0;
+      }
+    }
     if (QAConfig.cfgQATrackFlowCut && QA)
       histos.fill(HIST("TrackQA/hnTracks"), 5); // DCA cuts
     // Primary Track
@@ -514,7 +514,7 @@ struct F0980pbpbanalysis {
     if (TrackConfig.cfgTrackTPCFindableClusters > 0 && track.tpcNClsFindable() < TrackConfig.cfgTrackTPCFindableClusters) {
       return 0;
     }
-    if (TrackConfig.cfgTrackTPCRRaioMax > 0 && track.tpcCrossedRowsOverFindableCls() > TrackConfig.cfgTrackTPCRRaioMax) {
+    if (TrackConfig.cfgTrackTPCRatioMax > 0 && track.tpcCrossedRowsOverFindableCls() > TrackConfig.cfgTrackTPCRatioMax) {
       return 0;
     }
     if (QAConfig.cfgQATrackFlowCut && QA)
@@ -814,7 +814,7 @@ struct F0980pbpbanalysis {
       histos.add("TrackQA/TPCChi2_BC", "", kTH1F, {{200, 0, 100}});
       histos.add("TrackQA/ITSChi2_BC", "", kTH1F, {{200, 0, 100}});
       //
-      histos.add("TrackQA/DCArToPv_AC", "", {HistType::kTH1F, {histAxisDCAz}});
+      histos.add("TrackQA/DCArToPv_AC", "", {HistType::kTH1F, {histAxisDCAr}});
       histos.add("TrackQA/DCAzToPv_AC", "", {HistType::kTH1F, {histAxisDCAz}});
       histos.add("TrackQA/DCArVsPT_AC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAr}});
       histos.add("TrackQA/DCAzVsPT_AC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAz}});
@@ -829,12 +829,12 @@ struct F0980pbpbanalysis {
     }
 
     // PID QA
-    histos.add("PI1DQA/Nsigma_TPC_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
-    histos.add("PI1DQA/Nsigma_TOF_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
-    histos.add("PI1DQA/TPC_TOF_BC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
+    histos.add("PIDQA/Nsigma_TPC_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    histos.add("PIDQA/Nsigma_TOF_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    histos.add("PIDQA/TPC_TOF_BC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
     //
-    histos.add("PI1DQA/Nsigma_TPC_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
-    histos.add("PI1DQA/Nsigma_TOF_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    histos.add("PIDQA/Nsigma_TPC_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
+    histos.add("PIDQA/Nsigma_TOF_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     histos.add("PIDQA/TPC_TOF_AC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
     //
     // histos.add("PIDQA/Nsigma_TPC_selected", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
@@ -901,7 +901,7 @@ struct F0980pbpbanalysis {
     // Track Flow Histograms
     if (QAConfig.cfgQATrackFlowCut) {
       histos.add("TrackQA/hnTracks", "Track selection steps", {HistType::kTH1F, {{8, -0.5, 7.5}}});
-      std::shared_ptr<TH1> hTracksCutFlow = histos.get<TH1>(HIST("TrackQA/hnTracks:"));
+      std::shared_ptr<TH1> hTracksCutFlow = histos.get<TH1>(HIST("TrackQA/hnTracks"));
       std::vector<std::string> trackCutLabels = {
         "All Tracks",
         "Kinematic",
