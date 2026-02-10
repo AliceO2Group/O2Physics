@@ -303,8 +303,7 @@ struct HfFilter { // Main struct for HF triggers
       cutsSigmaCPr->get(0u, 0u),              // min pT proton
       cutsSigmaCPr->get(1u, 0u),              // max pT proton
       cutsSigmaCPr->get(2u, 2u),              // TOF pT threshold
-      forceTofProtonForSigmaCPr               // set True for force TOF on proton candidate after threshold
-    );
+      forceTofProtonForSigmaCPr);             // set True for force TOF on proton candidate after threshold
     dfStrangeness.setMatCorrType(matCorr);
     dfStrangeness3.setMatCorrType(matCorr);
     helper.setVtxConfiguration(df2, false); // (DCAFitterN, useAbsDCA)
