@@ -254,12 +254,18 @@ namespace pidtofsignal
 DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                   //! TOF signal from track time
 DECLARE_SOA_DYNAMIC_COLUMN(EventCollisionTime, eventCollisionTime, //! Event collision time used for the track. Needs the TOF
                            [](float signal, float tMinusTexp, float texp) -> float { return texp + tMinusTexp - signal; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFSignalInAnotherBC, tofSignalInAnotherBC, //! TOF signal but computed in another Bunch Crossing. Needs the original globalBC and the new globalBC to compute the delta time to apply to the signal.
+                           [](float signal, int64_t originalGlobalBC, int64_t newGlobalBC) -> float {
+                             const int64_t deltaBcPos = originalGlobalBC - newGlobalBC;
+                             return signal + o2::constants::lhc::LHCBunchSpacingNS * deltaBcPos * 1000.0f;
+                           });
 
 } // namespace pidtofsignal
 
 DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
                   pidtofsignal::TOFSignal,
-                  pidtofsignal::EventCollisionTime<pidtofsignal::TOFSignal>);
+                  pidtofsignal::EventCollisionTime<pidtofsignal::TOFSignal>,
+                  pidtofsignal::TOFSignalInAnotherBC<pidtofsignal::TOFSignal>);
 
 namespace pidtofevtime
 {
