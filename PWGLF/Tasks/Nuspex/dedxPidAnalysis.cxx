@@ -49,7 +49,7 @@ using PIDTracks = soa::Join<
   aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection,
   aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCEl>;
 
-using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, o2::aod::BarrelMults>;
 using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 static constexpr int NCentHists{10};
@@ -85,6 +85,13 @@ struct DedxPidAnalysis {
 
   };
 
+  enum NINELSelectionMode {
+    NoSelINEL = 1,
+    SelINELgt0 = 2,
+    SelINELgt1 = 3
+
+  };
+
   enum MomentumMode {
     TpcInnerParam = 1,
     TotalMomentum = 2
@@ -96,8 +103,8 @@ struct DedxPidAnalysis {
     SelEigth,
     ZVtxCut,
     NoSameBunchPileup,
-    GoodZvtxFT0vsPV
-
+    GoodZvtxFT0vsPV,
+    INELgt
   };
 
   // Track primary label
@@ -173,9 +180,10 @@ struct DedxPidAnalysis {
   Configurable<bool> nClTPCFoundCut{"nClTPCFoundCut", false, "number of found clusters in TPC cut"};
   Configurable<bool> nClTPCPIDCut{"nClTPCPIDCut", true, "number of PID clusters in TPC cut"};
   Configurable<bool> nGoodZvtx{"nGoodZvtx", true, "Rejects events with no vertex match between FT0 and PV"}; //
-  Configurable<bool> nPileUp{"nPileUp", true, "Rejects events with pileup in the same bunch crossing"};      //
+  Configurable<bool> nPileUp{"nPileUp", true, "Rejects events with pileup in the same bunch crossing"};
+  Configurable<int> nINELSelectionMode{"nINELSelectionMode", 2, "INEL event selection: 1 no sel, 2 INEL>0, 3 INEL>1"};
   Configurable<int> v0SelectionMode{"v0SelectionMode", 3, "V0 Selection base on TPC: 1, TOF:2 ,Both:3"};
-  Configurable<int> momentumMode{"momentumMode", 1, "1: TPC inner param, 2: Total momentum p"};
+  Configurable<int> momentumMode{"momentumMode", 2, "1: TPC inner param, 2: Total momentum p"};
   Configurable<uint8_t> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
   Configurable<double> lowParam1{"lowParam1", 0.119297, "First parameter for low phi cut"};
   Configurable<double> lowParam2{"lowParam2", 0.000379693, "Second parameter for low phi cut"};
@@ -230,6 +238,7 @@ struct DedxPidAnalysis {
 
   void init(InitContext const&)
   {
+    const char* label = "No INEL selection";
     if (nPileUp) {
       LOGF(info, "Applying NoSameBunchPileup cut");
     } else {
@@ -239,6 +248,15 @@ struct DedxPidAnalysis {
       LOGF(info, "Applying GoodZvtxFT0vsPV cut");
     } else {
       LOGF(info, "GoodZvtxFT0vsPV cut disabled");
+    }
+    if (nINELSelectionMode == NoSelINEL) {
+      LOGF(info, "INEL cut disabled");
+    } else if (nINELSelectionMode == SelINELgt0) {
+      LOGF(info, "Applying INEL > 0 cut");
+      label = "INEL > 0";
+    } else if (nINELSelectionMode == SelINELgt1) {
+      LOGF(info, "Applying INEL > 1 cut");
+      label = "INEL > 1";
     }
     if (v0SelectionMode == V0TPC) {
       LOGF(info, "V0 seleccion using TPC only");
@@ -540,7 +558,7 @@ struct DedxPidAnalysis {
     registryDeDx.add("histCentrality", "collision centrality", HistType::kTH1F, {{100, 0.0, 100, "cent"}});
 
     // Event Counter
-    registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{5, 0.5, 5.5, ""}});
+    registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
     auto hstat = registryDeDx.get<TH1>(HIST("evsel"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(AllEv, "AllEv");
@@ -548,6 +566,7 @@ struct DedxPidAnalysis {
     x->SetBinLabel(ZVtxCut, "ZVtxCut");
     x->SetBinLabel(NoSameBunchPileup, "NoSameBunchPileup");
     x->SetBinLabel(GoodZvtxFT0vsPV, "GoodZvtxFT0vsPV");
+    x->SetBinLabel(INELgt, label);
 
     // Track Prim Counter
     registryDeDx.add("trackselAll", "track selected all particles", HistType::kTH1F, {{5, 0.5, 5.5, ""}});
@@ -1237,6 +1256,17 @@ struct DedxPidAnalysis {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
         return;
       registryDeDx.fill(HIST("evsel"), EvCutLabel::GoodZvtxFT0vsPV);
+    }
+
+    if (nINELSelectionMode == NoSelINEL) {
+    } else if (nINELSelectionMode == SelINELgt0) {
+      if (!collision.isInelGt0())
+        return;
+      registryDeDx.fill(HIST("evsel"), EvCutLabel::INELgt);
+    } else if (nINELSelectionMode == SelINELgt1) {
+      if (!collision.isInelGt1())
+        return;
+      registryDeDx.fill(HIST("evsel"), EvCutLabel::INELgt);
     }
 
     // Event Counter
