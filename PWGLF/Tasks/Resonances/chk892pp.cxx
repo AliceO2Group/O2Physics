@@ -444,10 +444,13 @@ struct Chk892pp {
       histos.add("EffK0s/recoK0s", "Reco K0s (|y<0.8|)", HistType::kTH2F, {ptAxis, centAxis});
 
       histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("EffKstar/genKstar_pri", "Gen primary Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
 
       histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_num", "Gen Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num_pri", "Gen primary Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
       histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
       histos.add("Correction/MCTruthCent_all", "MC truth FT0M centrality (all mcCollisions)", HistType::kTH1F, {centAxis});
@@ -964,6 +967,10 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
+
+      if (part.vt() == 0) {
+        histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
+      }
     }
   } // effKstarProcessGen
 
@@ -1052,6 +1059,9 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
+      }
     }
   } // fillSigLossNum
 
@@ -1076,6 +1086,9 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
     }
   } // fillSigLossDen
 
