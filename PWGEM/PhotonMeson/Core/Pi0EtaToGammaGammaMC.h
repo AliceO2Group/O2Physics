@@ -634,8 +634,8 @@ struct Pi0EtaToGammaGammaMC {
             photonid1 = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
             photonid2 = o2::aod::pwgem::dilepton::utils::mcutil::FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
           } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kEMCEMC) {
-            auto cluster1mcparticle = mcparticles.iteratorAt(g1.emmcparticleId());
-            auto cluster2mcparticle = mcparticles.iteratorAt(g2.emmcparticleId());
+            auto cluster1mcparticle = mcparticles.iteratorAt(g1.emmcparticleIds()[0]);
+            auto cluster2mcparticle = mcparticles.iteratorAt(g2.emmcparticleIds()[0]);
 
             photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(cluster1mcparticle, mcparticles, std::vector<int>{111, 221});
             photonid2 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(cluster2mcparticle, mcparticles, std::vector<int>{111, 221});

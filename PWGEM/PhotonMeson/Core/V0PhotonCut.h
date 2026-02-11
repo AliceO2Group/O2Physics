@@ -897,23 +897,20 @@ class V0PhotonCut : public TNamed
   }
 
   template <o2::soa::is_iterator TMCPhoton>
-  bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton) const
+  bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, float convRadius) const
   {
-
-    float rGenXY = std::sqrt(std::pow(mcphoton.vx(), 2) + std::pow(mcphoton.vy(), 2));
-
     // eta cut
-    if (mcphoton.eta() >= mMinV0Eta && mcphoton.eta() <= mMaxV0Eta) {
+    if (mcphoton.eta() < mMinV0Eta || mcphoton.eta() > mMaxV0Eta) {
       return false;
     }
 
     // radius cut
-    if (rGenXY < mMinRxy || mMaxRxy < rGenXY) {
+    if (convRadius < mMinRxy || mMaxRxy < convRadius) {
       return false;
     }
 
     // line cut
-    if (rGenXY < std::abs(mcphoton.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ) {
+    if (convRadius <= std::abs(mcphoton.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ) {
       return false;
     }
 
