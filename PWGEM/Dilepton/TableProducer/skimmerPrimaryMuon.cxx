@@ -614,7 +614,7 @@ struct skimmerPrimaryMuon {
 
   // PresliceUnsorted<aod::FwdTracks> perMFTTrack = o2::aod::fwdtrack::matchMFTTrackId;
   template <typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
-  bool isBestMatch(TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const& mfttracks)
+  bool isBestMatch(TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const&)
   {
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
       std::map<int, float> map_chi2MCHMFT;
