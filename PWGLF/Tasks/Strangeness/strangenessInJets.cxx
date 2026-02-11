@@ -376,9 +376,9 @@ struct StrangenessInJets {
 
     // Histograms for MC K0 short in jets
     if (doprocessMCK0shortInJets) {
-        registryMC.add("ptSpectrumK0DaughtersAll", "ptSpectrumK0DaughtersAll", HistType::kTH1D, {{1000, 0, 100, "p_{T}"}});
-        registryMC.add("fractionJetPtCarriedByK0", "fractionJetPtCarriedByK0", HistType::kTH1D, {{1000, 0, 1, "fraction"}});
-        registryMC.add("ptSpectrumK0DaughtersInJet", "ptSpectrumK0DaughtersInJet", HistType::kTH1D, {{1000, 0, 100, "p_{T}"}});
+      registryMC.add("ptSpectrumK0DaughtersAll", "ptSpectrumK0DaughtersAll", HistType::kTH1D, {{1000, 0, 100, "p_{T}"}});
+      registryMC.add("fractionJetPtCarriedByK0", "fractionJetPtCarriedByK0", HistType::kTH1D, {{1000, 0, 1, "fraction"}});
+      registryMC.add("ptSpectrumK0DaughtersInJet", "ptSpectrumK0DaughtersInJet", HistType::kTH1D, {{1000, 0, 100, "p_{T}"}});
     }
 
     // Histograms for mc reconstructed
@@ -2195,7 +2195,7 @@ struct StrangenessInJets {
 
   // Process MC K0 short in jets
   void processMCK0shortInJets(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
-                                DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
+                              DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
   {
     // Define particle container for FastJet and array of vectors for selected jets
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -2311,8 +2311,8 @@ struct StrangenessInJets {
         if (static_cast<int>(pions.size()) < minimumSize)
           continue;
 
-        for (int i=0 ; i < static_cast<int>(pions.size()) ; i++) {
-          for (int j=i+1 ; j < static_cast<int>(pions.size()) ; j++) {
+        for (int i = 0; i < static_cast<int>(pions.size()); i++) {
+          for (int j = i + 1; j < static_cast<int>(pions.size()); j++) {
 
             if (pions[i].idParent != pions[j].idParent)
               continue;
@@ -2323,7 +2323,7 @@ struct StrangenessInJets {
             registryMC.fill(HIST("ptSpectrumK0DaughtersInJet"), pions[i].ptGen + pions[j].ptGen);
           }
         }
-      }// end loop over jets
+      } // end loop over jets
 
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
         for (const auto& v0 : v0sPerColl) {
@@ -2353,9 +2353,9 @@ struct StrangenessInJets {
 
           if (deltaRjet < rJet && passedK0ShortSelection(v0, pos, neg))
             registryMC.fill(HIST("ptSpectrumK0DaughtersAll"), mother.pt());
-        }// end loop on V0s
-      }// end loop on selected jets
-    }// end loop on collisions
+        } // end loop on V0s
+      } // end loop on selected jets
+    } // end loop on collisions
   }
   PROCESS_SWITCH(StrangenessInJets, processMCK0shortInJets, "process reconstructed events", false);
 };
