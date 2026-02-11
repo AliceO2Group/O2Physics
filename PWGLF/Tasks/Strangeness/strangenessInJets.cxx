@@ -126,6 +126,14 @@ struct ParticlePositionWithRespectToJet {
 };
 double ParticlePositionWithRespectToJet::mJetRadius = 0.0;
 
+// Reduced particle container with pions from K0s
+struct PionsFromK0 {
+  double ptRec;
+  double ptGen;
+  int pdgCode;
+  int idParent;
+};
+
 struct StrangenessInJets {
 
   // Instantiate the CCDB service and API interface
@@ -364,6 +372,13 @@ struct StrangenessInJets {
         const AxisSpec axisParticleType = AxisSpec{3, -0.5, 2.5, "Particle Type"};
         registryMC.add("LongLivedGenerated", "LongLivedGenerated", HistType::kTHnSparseF, {axisInJetOutOfJet, axisParticleType, axisCharge, ptAxisLongLived, multAxis});
       }
+    }
+
+    // Histograms for MC K0 short in jets
+    if (doprocessMCK0shortInJets) {
+        registryMC.add("ptSpectrumK0DaughtersAll", "ptSpectrumK0DaughtersAll", HistType::kTH1D, {{1000, 0, 100, "p_{T}"}});
+        registryMC.add("fractionJetPtCarriedByK0", "fractionJetPtCarriedByK0", HistType::kTH1D, {{1000, 0, 1, "fraction"}});
+        registryMC.add("ptSpectrumK0DaughtersInJet", "ptSpectrumK0DaughtersInJet", HistType::kTH1D, {{1000, 0, 100, "p_{T}"}});
     }
 
     // Histograms for mc reconstructed
@@ -2029,7 +2044,7 @@ struct StrangenessInJets {
       }
 
       // PID selections
-      Bool_t isPIDK0s = false, isPIDLam = false, isPIDALam = false;
+      bool isPIDK0s = false, isPIDLam = false, isPIDALam = false;
 
       // PID selections (TPC) -- K0s
       if (v0.ntpcsigmapospi() >= nsigmaTPCmin && v0.ntpcsigmapospi() <= nsigmaTPCmax &&
@@ -2106,10 +2121,10 @@ struct StrangenessInJets {
         continue;
 
       // PID selection
-      Bool_t isPIDXiminus = false, isPIDXiplus = false, isPIDOmminus = false, isPIDOmplus = false;
+      bool isPIDXiminus = false, isPIDXiplus = false, isPIDOmminus = false, isPIDOmplus = false;
 
       // PID selection bachelor
-      Bool_t isPIDLam = false, isPIDALam = false;
+      bool isPIDLam = false, isPIDALam = false;
       if (casc.sign() > 0) {
         // antiLambda: (p-)neg + (pi+)pos
         if (casc.ntpcsigmanegpr() >= nsigmaTPCmin && casc.ntpcsigmanegpr() <= nsigmaTPCmax &&
@@ -2132,15 +2147,15 @@ struct StrangenessInJets {
         continue;
 
       // PID selection on bachelor
-      const Bool_t isBachPi =
+      const bool isBachPi =
         (casc.ntpcsigmabachpi() >= nsigmaTPCmin && casc.ntpcsigmabachpi() <= nsigmaTPCmax);
 
-      const Bool_t isBachKa =
+      const bool isBachKa =
         (casc.ntpcsigmabachka() >= nsigmaTPCmin && casc.ntpcsigmabachka() <= nsigmaTPCmax);
 
       // Cross-contamination rejection flags
-      const Bool_t isOmegaLike = (std::fabs(casc.massomega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega);
-      const Bool_t isXiLike = (std::fabs(casc.massxi() - o2::constants::physics::MassXiMinus) < deltaMassXi);
+      const bool isOmegaLike = (std::fabs(casc.massomega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega);
+      const bool isXiLike = (std::fabs(casc.massxi() - o2::constants::physics::MassXiMinus) < deltaMassXi);
 
       // Final PID flags
       if (casc.sign() > 0) {
@@ -2177,6 +2192,169 @@ struct StrangenessInJets {
     }
   }
   PROCESS_SWITCH(StrangenessInJets, processDerivedAnalysis, "Postprocessing for derived data analysis", false);
+
+  // Process MC K0 short in jets
+  void processMCK0shortInJets(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                                DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
+  {
+    // Define particle container for FastJet and array of vectors for selected jets
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> selectedJet;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over all reconstructed collisions
+    for (const auto& collision : collisions) {
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      selectedJet.clear();
+
+      // Apply event selection: require sel8 and vertex position to be within 10 cm from ALICE center
+      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Reject events near the ITS Read-Out Frame border
+      if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+        continue;
+
+      // Reject events at the Time Frame border
+      if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      // Require at least one ITS-TPC matched track
+      if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+        continue;
+
+      // Reject events with same-bunch pileup
+      if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      // Require consistent FT0 vs PV z-vertex
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+
+      // Loop over reconstructed tracks
+      int id(-1);
+      for (auto const& track : perCollisionTrk) {
+        id++;
+
+        // Ensure tracks have corresponding MC particles
+        if (!track.has_mcParticle())
+          continue;
+
+        // Apply track selection for jet reconstruction
+        if (!passedTrackSelectionForJetReconstruction(track))
+          continue;
+
+        // Store particle in particle container
+        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
+        fourMomentum.set_user_index(id);
+        fjParticles.emplace_back(fourMomentum);
+      }
+
+      // Reject empty events
+      if (fjParticles.empty())
+        continue;
+
+      // Cluster particles using the anti-kt algorithm
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
+
+      // Loop over reconstructed jets
+      for (const auto& jet : jets) {
+
+        // Jet must be fully contained in the acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+          continue;
+
+        // Jet pt must be larger than threshold
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+        if (jetMinusBkg.pt() < minJetPt)
+          continue;
+
+        // Jet axis
+        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+        selectedJet.emplace_back(jetAxis);
+
+        // Containers
+        std::vector<PionsFromK0> pions;
+        std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
+
+        // Loop over jet constituents
+        for (const auto& particle : jetConstituents) {
+
+          auto const& track = perCollisionTrk.iteratorAt(particle.user_index());
+          const auto mcparticle = track.mcParticle();
+          if (std::abs(mcparticle.pdgCode()) != PDG_t::kPiPlus)
+            continue;
+
+          auto motherId = mcparticle.mothersIds()[0];
+          if (motherId < 0)
+            continue;
+
+          auto mother = mcParticles.iteratorAt(motherId);
+          if (std::abs(mother.pdgCode()) != kK0Short)
+            continue;
+
+          pions.push_back({track.pt(), mcparticle.pt(), mcparticle.pdgCode(), motherId});
+        }
+
+        const int minimumSize = 2;
+        if (static_cast<int>(pions.size()) < minimumSize)
+          continue;
+
+        for (int i=0 ; i < pions.size() ; i++) {
+          for (int j=i+1 ; j < pions.size() ; j++) {
+
+            if (pions[i].idParent != pions[j].idParent)
+              continue;
+            if (pions[i].pdgCode == pions[j].pdgCode)
+              continue;
+
+            registryMC.fill(HIST("fractionJetPtCarriedByK0"), (pions[i].ptRec + pions[j].ptRec) / jetMinusBkg.pt());
+            registryMC.fill(HIST("ptSpectrumK0DaughtersInJet"), pions[i].ptGen + pions[j].ptGen);
+          }
+        }
+      }// end loop over jets
+
+      for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+        for (const auto& v0 : v0sPerColl) {
+          const auto& pos = v0.posTrack_as<DaughterTracksMC>();
+          const auto& neg = v0.negTrack_as<DaughterTracksMC>();
+
+          // Get MC particles
+          if (!pos.has_mcParticle() || !neg.has_mcParticle())
+            continue;
+          const auto& posParticle = pos.mcParticle_as<aod::McParticles>();
+          const auto& negParticle = neg.mcParticle_as<aod::McParticles>();
+          if (!posParticle.has_mothers() || !negParticle.has_mothers())
+            continue;
+
+          // Select particles originating from the same parent
+          if (posParticle.mothersIds()[0] != negParticle.mothersIds()[0])
+            continue;
+
+          const auto& mother = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+          if (mother.pdgCode() != kK0Short)
+            continue;
+
+          TVector3 v0dir(v0.px(), v0.py(), v0.pz());
+          float deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
+          float deltaPhiJet = getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
+          float deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+
+          if (deltaRjet < rJet && passedK0ShortSelection(v0, pos, neg))
+            registryMC.fill(HIST("ptSpectrumK0DaughtersAll"), mother.pt());
+        }// end loop on V0s
+      }// end loop on selected jets
+    }// end loop on collisions
+  }
+  PROCESS_SWITCH(StrangenessInJets, processMCK0shortInJets, "process reconstructed events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
