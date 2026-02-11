@@ -152,6 +152,8 @@ struct JetCorrelationD0 {
   // Configurables
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   // Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
+  Configurable<float> jetPtCutMin{"jetPtCutMin", 5.0, "minimum value of jet pt"};
+  Configurable<float> d0PtCutMin{"d0PtCutMin", 3.0, "minimum value of d0 pt"};
   Configurable<bool> doSumw{"doSumw", false, "enable sumw2 for weighted histograms"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
@@ -201,7 +203,7 @@ struct JetCorrelationD0 {
   }
 
   template <typename T, typename U>
-  // Jetbase is the jet we take, i.e. an MCD jet. We then loop through jettag, i.e. MCP jets to test if they match
+  // Jetbase is an MCD jet. We then loop through jettagv(MCP jets) to test if they match
   // void fillMatchedHistograms(T const& jetBase, float weight = 1.0) // float leadingTrackPtBase,
   void fillMatchedHistograms(T const& jetsBase, U const&, float weight = 1.0, float rho = 0.0)
   {
@@ -211,7 +213,7 @@ struct JetCorrelationD0 {
         return;
       }
       if (jetBase.has_matchedJetGeo()) {                                            // geometric matching
-        for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) { // this tests if jet base does have a matched jettag jet
+        for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
           if (jetTag.pt() > pTHatMaxMCP * pTHat) {                                  // cuts overly hard jets from jettag (mcp) sample
             continue;
           }
@@ -268,26 +270,34 @@ struct JetCorrelationD0 {
   }
 
   void processData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
-                   aod::CandidatesD0Data const& d0DataCandidates,
+                   aod::CandidatesD0Data const& d0Candidates,
                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
     applyCollisionSelections(collision, eventSelectionBits);
     tableCollision(collision.posZ());
 
-    for (const auto& d0DataCandidate : d0DataCandidates) {
-      const auto scores = d0DataCandidate.mlScores();
-      fillD0Histograms(d0DataCandidate, scores);
+    for (const auto& d0Candidate : d0Candidates) {
+      const auto scores = d0Candidate.mlScores();
+      if(d0Candidate.pt() < d0PtCutMin) {
+        return;
+      }
+      fillD0Histograms(d0Candidate, scores);
       tableD0(tableCollision.lastIndex(),
               scores[2],
               scores[1],
               scores[0],
-              d0DataCandidate.m(),
-              d0DataCandidate.pt(),
-              d0DataCandidate.eta(),
-              d0DataCandidate.phi());
-      // LOGF(info, "table row %i d0_mass %.2f d0_pt %.2f d0_eta %.2f d0_phi %.2f", tableD0.lastIndex(), d0.m(), d0.pt(), d0.eta(), d0.phi());
+              d0Candidate.m(),
+              d0Candidate.pt(),
+              d0Candidate.eta(),
+              d0Candidate.phi());
       for (const auto& jet : jets) {
-        float dphi = RecoDecay::constrainAngle(jet.phi() - d0DataCandidate.phi());
+        if(jet.pt() < jetPtCutMin) {
+          return;
+        }
+        float dphi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi());
+                if (abs(dphi - M_PI) > (M_PI /2)) {
+          return;
+        }
         fillJetHistograms(jet, dphi);
         tableJet(tableCollision.lastIndex(),
                  tableD0.lastIndex(),
@@ -295,7 +305,6 @@ struct JetCorrelationD0 {
                  jet.eta(),
                  jet.phi(),
                  dphi);
-        // LOGF(info, "table row %i D0_index %i jet_pt %.2f jet_eta %.2f jet_phi %.2f dphi %.2f" ,tableJet.lastIndex(), tableD0.lastIndex(), jet.pt(), jet.eta(), jet.phi(), dphi);
       }
     }
   }
@@ -305,17 +314,13 @@ struct JetCorrelationD0 {
                          aod::CandidatesD0MCP const& d0MCPCandidates,
                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets)
   {
-    registry.fill(HIST("hCollisions"), 0.5); // All collisions
-    if (std::abs(collision.posZ()) > vertexZCut) {
-      return;
-    }
-    registry.fill(HIST("hCollisions"), 1.5); // Selected collisions
-    registry.fill(HIST("hZvtxSelected"), collision.posZ());
-
     applyCollisionSelections(collision, eventSelectionBits);
     tableCollision(collision.posZ());
 
     for (const auto& d0MCPCandidate : d0MCPCandidates) {
+      if(d0MCPCandidate.pt() < d0PtCutMin) {
+        return;
+      }
       tableD0MCParticle(tableCollision.lastIndex(),
                         d0MCPCandidate.originMcGen(),
                         d0MCPCandidate.pt(),
@@ -323,7 +328,13 @@ struct JetCorrelationD0 {
                         d0MCPCandidate.phi());
 
       for (const auto& jet : jets) {
+        if(jet.pt() < jetPtCutMin) {
+          return;
+        }
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0MCPCandidate.phi());
+                if (abs(dphi - M_PI) > (M_PI /2)) {
+          return;
+        }
         fillJetHistograms(jet, dphi);
         tableJetMCParticle(tableCollision.lastIndex(),
                            tableD0MCParticle.lastIndex(),
@@ -350,8 +361,6 @@ struct JetCorrelationD0 {
     const auto CollIdx = collision.mcCollisionId();
 
     for (const auto& d0MCDCandidate : d0MCDCandidates) {
-      // Loop over d0 detector level candidates, apply d0 matching logic, fill d0 particle level that has been matched;
-      // Loop over jet detector level, apply jet matching logic (similar to jet finder QA task), fill jet particle level that has been matched.
 
       // D or D bar?
       int matchedFrom = 0;
@@ -397,7 +406,7 @@ struct JetCorrelationD0 {
         LOGF(info, "Collision ID %i, D0 pt %.2f, D0 eta %.2f, D0 phi %.2f, MCP origin %hhd, Reflection %i", CollIdx, particleMother.pt(), particleMother.eta(), particleMother.phi(), particleMother.originMcGen(), reflection);
 
         // Jet matching
-        fillMatchedHistograms(mcdJets, mcpJets);
+        fillMatchedHistograms(mcdJets, mcpJets); // Do I need to include pthat cuts in loop rather than this function to actually do jet matching? 
 
         for (const auto& mcpJet : mcpJets) {
           float dphi = RecoDecay::constrainAngle(mcpJet.phi() - d0MCDCandidate.phi());
