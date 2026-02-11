@@ -90,6 +90,9 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(nsigmaCutITSProton, float, 3, "proton nsigma ITS")
   O2_DEFINE_CONFIGURABLE(dcaxymax, float, 999.f, "maximum dcaxy of tracks")
   O2_DEFINE_CONFIGURABLE(dcazmax, float, 999.f, "maximum dcaz of tracks")
+  O2_DEFINE_CONFIGURABLE(enablePtDepDCAxy, bool, false, "Enable pT-dependent DCAxy cut: |DCAxy| < a + b/pT")
+  O2_DEFINE_CONFIGURABLE(dcaXyConst, float, 0.004f, "Constant term 'a' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm)")
+  O2_DEFINE_CONFIGURABLE(dcaXySlope, float, 0.013f, "Slope term 'b' for pT-dependent DCAxy cut: |DCAxy| < a + b/pT (cm x GeV/c)")
   O2_DEFINE_CONFIGURABLE(itsnclusters, int, 5, "minimum number of ITS clusters for tracks")
   O2_DEFINE_CONFIGURABLE(tpcncrossedrows, int, 80, "minimum number of TPC crossed rows for tracks")
   O2_DEFINE_CONFIGURABLE(tpcnclusters, int, 50, "minimum number of TPC clusters found")
@@ -265,6 +268,14 @@ struct FilterCF {
     return 0;
   }
 
+  float getMaxDCAxy(float pt)
+  {
+    if (!enablePtDepDCAxy) {
+      return dcaxymax; // Use constant cut if pT-dependent cut is disabled
+    }
+    return dcaXyConst + dcaXySlope / pt; // a + b/pT
+  }
+
   template <class T>
   using HasMultTables = decltype(std::declval<T&>().multNTracksPV());
 
@@ -303,10 +314,11 @@ struct FilterCF {
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
     for (auto& track : tracks) {
-      if ((std::abs(track.dcaXY()) > dcaxymax) || (std::abs(track.dcaZ()) > dcazmax)) {
-        continue;
+      float maxDCAxy = enablePtDepDCAxy ? getMaxDCAxy(track.pt()) : dcaxymax;
+      if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
+        continue; 
       }
-
+      
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
       if (cfgTransientTables)
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
@@ -336,10 +348,17 @@ struct FilterCF {
 
   void processTrackQA(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
   {
+    if (!keepCollision(collision)) {
+      return;
+    }
     registrytrackQA.fill(HIST("zvtx"), collision.posZ());
     for (const auto& track : tracks) {
       if (!track.isGlobalTrack()) {
-        return; // trackQA for global tracks only
+        continue; // trackQA for global tracks only
+      }
+      float maxDCAxy = enablePtDepDCAxy ? getMaxDCAxy(track.pt()) : dcaxymax;
+      if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
+        continue; 
       }
       registrytrackQA.fill(HIST("eta"), track.eta());
       registrytrackQA.fill(HIST("pT"), track.pt());
