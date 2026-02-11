@@ -29,11 +29,12 @@ namespace lambdajetpol
 {
 
 DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t);
-DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
 
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
+DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, uint64_t);
 
 DECLARE_SOA_COLUMN(V0Pt, v0Pt, float);
 DECLARE_SOA_COLUMN(V0Eta, v0Eta, float);
@@ -51,17 +52,19 @@ DECLARE_SOA_COLUMN(NegPt, negPt, float);
 DECLARE_SOA_COLUMN(NegEta, negEta, float);
 DECLARE_SOA_COLUMN(NegPhi, negPhi, float);
 
+// (TODO: add dynamic columns with jet px, py, pz)
+
 } // namespace lambdajetpol
 
-DECLARE_SOA_TABLE(JetsRing, "AOD", "JETSRING",
+DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS", // Renamed to follow convention on "s" at the end of table name.
                   lambdajetpol::CollIdx,
                   lambdajetpol::JetPt,
                   lambdajetpol::JetEta,
-                  lambdajetpol::JetPhi);
+                  lambdajetpol::JetPhi,
+                  lambdajetpol::JetNConstituents);
 
-DECLARE_SOA_TABLE(LambdaLikeV0sRing, "AOD", "LAMBDALIKEV0SRING",
+DECLARE_SOA_TABLE(RingLambdaLikeV0s, "AOD", "RINGLAMBDALIKEV0S",
                   lambdajetpol::CollIdx,
-                  lambdajetpol::CentFT0M,
                   lambdajetpol::V0Pt,
                   lambdajetpol::V0Eta,
                   lambdajetpol::V0Phi,
@@ -75,6 +78,10 @@ DECLARE_SOA_TABLE(LambdaLikeV0sRing, "AOD", "LAMBDALIKEV0SRING",
                   lambdajetpol::NegPt,
                   lambdajetpol::NegEta,
                   lambdajetpol::NegPhi);
+
+DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
+                  lambdajetpol::CollIdx,
+                  lambdajetpol::Centrality);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_lambdajetpol_H_

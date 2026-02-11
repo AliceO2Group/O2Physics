@@ -147,8 +147,9 @@ struct lambdajetpolarizationions {
 
     // struct : ProducesGroup {
     // } products;
-    Produces<aod::LambdaLikeV0sRing> tableV0s;
-    Produces<aod::JetsRing> tableJets;
+    Produces<aod::RingLambdaLikeV0s> tableV0s;
+    Produces<aod::RingJets> tableJets;
+    Produces<aod::RingCollisions> tableCollisions;
 
     // Define histogram registries:
     HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1015,7 +1016,7 @@ struct lambdajetpolarizationions {
         return false;  // reject track
     }
 
-    inline double cosThetaJets(const fastjet::PseudoJet& a, const fastjet::PseudoJet& b){
+    inline float cosThetaJets(const fastjet::PseudoJet& a, const fastjet::PseudoJet& b){
         const double dot = a.px() * b.px() + a.py() * b.py() + a.pz() * b.pz();
         const double magA = std::sqrt(a.px()*a.px() + a.py()*a.py() + a.pz()*a.pz());
         const double magB = std::sqrt(b.px()*b.px() + b.py()*b.py() + b.pz()*b.pz());
@@ -1367,7 +1368,8 @@ struct lambdajetpolarizationions {
                 tableJets(collIdx,
                         jetMinusBkg.pt(),
                         jetMinusBkg.eta(), // Using eta instead of rapidity
-                        jetMinusBkg.phi()
+                        jetMinusBkg.phi(),
+                        jetMinusBkg.constituents().size()
                         );
 
                 // Finding the leading jet after subtraction (leading jet is NOT known a priori!):
@@ -1393,10 +1395,10 @@ struct lambdajetpolarizationions {
 
                     if (jetMinusBkg.pt() < jetConfigurations.minJetPt) continue;
 
-                    double cosTheta = cosThetaJets(leadingJetSub, jetMinusBkg);
-                    double deltaPhi = leadingJetSub.phi() - jetMinusBkg.phi();
-                    double deltaEta = leadingJetSub.eta() - jetMinusBkg.eta();
-                    double deltaR = std::sqrt(deltaPhi*deltaPhi + deltaEta*deltaEta);
+                    float cosTheta = cosThetaJets(leadingJetSub, jetMinusBkg);
+                    float deltaPhi = leadingJetSub.phi() - jetMinusBkg.phi();
+                    float deltaEta = leadingJetSub.eta() - jetMinusBkg.eta();
+                    float deltaR = std::sqrt(deltaPhi*deltaPhi + deltaEta*deltaEta);
 
                     histos.fill(HIST("JetKinematicsQA/hCosThetaToLeadingJet"), cosTheta);
                     histos.fill(HIST("JetKinematicsQA/hDeltaPhiToLeadingJet"), deltaPhi);
@@ -1426,9 +1428,9 @@ struct lambdajetpolarizationions {
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
 
-                double deltaPhiParticleToJet = leadingJetSub.phi() - leadingParticle.phi();
-                double deltaEtaParticleToJet = leadingJetSub.eta() - leadingParticle.eta();
-                double cosThetaParticleToJet = cosThetaJets(leadingJetSub, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
+                float deltaPhiParticleToJet = leadingJetSub.phi() - leadingParticle.phi();
+                float deltaEtaParticleToJet = leadingJetSub.eta() - leadingParticle.eta();
+                float cosThetaParticleToJet = cosThetaJets(leadingJetSub, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
 
                 histos.fill(HIST("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet"), cosThetaParticleToJet);
                 histos.fill(HIST("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet"), deltaPhiParticleToJet);
@@ -1475,7 +1477,8 @@ struct lambdajetpolarizationions {
                 tableJets(collIdx,
                         jet.pt(),
                         jet_eta, // Using eta instead of rapidity
-                        jet.phi()
+                        jet.phi(),
+                        jet.constituents().size()
                         );
                 
                 if (doJetKinematicsQA){
@@ -1484,12 +1487,12 @@ struct lambdajetpolarizationions {
                     histos.fill(HIST("JetKinematicsQA/hJetPhi"), jet.phi());
 
                     // Calculate angle to leading jet:
-                    double cosTheta = cosThetaJets(leadingJet, jet);
+                    float cosTheta = cosThetaJets(leadingJet, jet);
 
                     // Calculate angular separation in projected angles:
-                    double deltaPhi = leadingJet.phi() - jet.phi();
-                    double deltaEta = leadingJet.eta() - jet_eta;
-                    double deltaR = std::sqrt(deltaPhi*deltaPhi + deltaEta*deltaEta); // 2D angular distance in the eta-phi plane
+                    float deltaPhi = leadingJet.phi() - jet.phi();
+                    float deltaEta = leadingJet.eta() - jet_eta;
+                    float deltaR = std::sqrt(deltaPhi*deltaPhi + deltaEta*deltaEta); // 2D angular distance in the eta-phi plane
 
                     histos.fill(HIST("JetKinematicsQA/hCosThetaToLeadingJet"), cosTheta); // Measuring the cosine, not angle, because it is faster!
                     histos.fill(HIST("JetKinematicsQA/hDeltaPhiToLeadingJet"), deltaPhi);
@@ -1564,6 +1567,7 @@ struct lambdajetpolarizationions {
         const uint64_t collIdx = collision.globalIndex();
         if (v0Selections.rejectTPCsectorBoundary) initCCDB(bc); // Substituted call from collision to bc for raw data
 
+        bool hasValidV0 = false; // Bool to know if event information can be saved.
         for (auto const& v0 : fullV0s){
             V0SelCounter.resetForNewV0();
             V0SelCounter.fill(); // Fill for all v0 candidates
@@ -1579,6 +1583,7 @@ struct lambdajetpolarizationions {
             if (analyseAntiLambda) isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
 
             if (!isLambda && !isAntiLambda) continue; // Candidate is not considered to be a Lambda (TODO: expand this to a full if block with QA about rejections)
+            hasValidV0 = true;
             
             if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
             if (isLambda && isAntiLambda) histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
@@ -1591,7 +1596,6 @@ struct lambdajetpolarizationions {
             // Saving the Lambdas into a derived data column:
             auto const v0pt = v0.pt();
             tableV0s(collIdx,
-                    centrality,
                     v0pt,
                     v0.eta(), // Using eta instead of rapidity
                     v0.phi(),
@@ -1738,6 +1742,10 @@ struct lambdajetpolarizationions {
                     }
                 }
             } // end CompleteTopoQA
+        }
+        if (hasValidV0){
+            tableCollisions(collIdx,
+                            centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
         }
     }
 
