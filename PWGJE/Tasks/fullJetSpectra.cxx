@@ -799,7 +799,7 @@ struct FullJetSpectra {
       for (const auto& constituent : jet.template tracks_as<T>()) {
         const float pt = constituent.pt();
 
-        //Reject entire jet if ANY track fails the cuts
+        // Reject entire jet if ANY track fails the cuts
         if ((minTrackPt > kLeadingTrackPtMinThreshold && pt < minTrackPt) ||
             (maxTrackPt < kLeadingTrackPtMaxThreshold && pt > maxTrackPt)) {
           return false; // Reject the jet
@@ -820,7 +820,7 @@ struct FullJetSpectra {
       for (const auto& cluster : jet.template clusters_as<S>()) {
         const double pt = cluster.energy() / std::cosh(cluster.eta());
 
-        //Reject entire jet if ANY cluster fails the cuts
+        // Reject entire jet if ANY cluster fails the cuts
         if ((minClusterPt > kLeadingClusterPtMinThreshold && pt < minClusterPt) ||
             (maxClusterPt < kLeadingClusterPtMaxThreshold && pt > maxClusterPt)) {
           return false;
