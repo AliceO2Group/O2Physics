@@ -794,41 +794,48 @@ struct FullJetSpectra {
     filteredClusterPt = 0.0;
 
     // --- Track cuts: ALL tracks must satisfy 0.15 <= pT <= 140 GeV/c---
-    // if (leadingTrackPtMin > kLeadingTrackPtMinThreshold || leadingTrackPtMax < kLeadingTrackPtMaxThreshold) {
-    bool hasValidTrack = false;
-    for (const auto& constituent : jet.template tracks_as<T>()) {
-      const float pt = constituent.pt();
-      if ((minTrackPt > kLeadingTrackPtMinThreshold && pt < minTrackPt) ||
-          (maxTrackPt < kLeadingTrackPtMaxThreshold && pt > maxTrackPt)) {
-        continue; // SKIP this invalid track
+    if (minTrackPt > kLeadingTrackPtMinThreshold || maxTrackPt < kLeadingTrackPtMaxThreshold) {
+      bool hasValidTrack = false;
+      for (const auto& constituent : jet.template tracks_as<T>()) {
+        const float pt = constituent.pt();
+
+        // Reject entire jet if ANY track fails the cuts
+        if ((minTrackPt > kLeadingTrackPtMinThreshold && pt < minTrackPt) ||
+            (maxTrackPt < kLeadingTrackPtMaxThreshold && pt > maxTrackPt)) {
+          return false; // Reject the jet
+        }
+        filteredTrackPt += pt; // Accumulate valid track pT
+        hasValidTrack = true;  // At least one track exists (if needed)
       }
-      filteredTrackPt += pt; // Accumulate valid track pT
-      hasValidTrack = true;  // At least one track exists (if needed)
+      // Reject jets without valid tracks (edge case) when minimum cut is active
+      if (minTrackPt > kLeadingTrackPtMinThreshold && !hasValidTrack) {
+        return false;
+      }
     }
-    // Reject jets without valid tracks (edge case)
-    if (!hasValidTrack) {
-      return false;
-    }
-    // }
 
     // --- Cluster cuts: ALL clusters must satisfy min <= pT <= max == 0.3 <= pT <= 250
-    // if (leadingClusterPtMin > kLeadingClusterPtMinThreshold || leadingClusterPtMax < kLeadingClusterPtMaxThreshold) {
-    bool hasValidCluster = false;
-    for (const auto& cluster : jet.template clusters_as<S>()) {
-      const double pt = cluster.energy() / std::cosh(cluster.eta());
-      if ((minClusterPt > kLeadingClusterPtMinThreshold && pt < minClusterPt) ||
-          (maxClusterPt < kLeadingClusterPtMaxThreshold && pt > maxClusterPt)) {
-        continue; // SKIP this invalid cluster
+    // Reject jet if ANY cluster is outside range
+    if (minClusterPt > kLeadingClusterPtMinThreshold || maxClusterPt < kLeadingClusterPtMaxThreshold) {
+      bool hasValidCluster = false;
+      for (const auto& cluster : jet.template clusters_as<S>()) {
+        const double pt = cluster.energy() / std::cosh(cluster.eta());
+
+        // Reject entire jet if ANY cluster fails the cuts
+        if ((minClusterPt > kLeadingClusterPtMinThreshold && pt < minClusterPt) ||
+            (maxClusterPt < kLeadingClusterPtMaxThreshold && pt > maxClusterPt)) {
+          return false;
+        }
+        filteredClusterPt += pt;
+        hasValidCluster = true; // At least one cluster exists
       }
-      filteredClusterPt += pt;
-      hasValidCluster = true; // At least one cluster exists
+      // Reject jets without valid clusters (edge case)
+      // Reject if no clusters exist when minimum cut is active
+      if (minClusterPt > kLeadingClusterPtMinThreshold && !hasValidCluster) {
+        return false;
+      }
     }
-    // Reject jets without valid clusters (edge case)
-    if (!hasValidCluster) {
-      return false;
-    }
-    // }
-    return true; // Valid Jet
+
+    return true; // Valid Jet that passes all cuts
   } // isAcceptedRecoJet ends
 
   /*  template <typename T, typename U>
