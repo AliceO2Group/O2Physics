@@ -394,8 +394,14 @@ struct JetDerivedDataProducerTask {
 
   void processTrackSelectionForWeightedMC(soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, soa::Join<aod::Collisions, aod::McCollisionLabels> const&, aod::McCollisions const& mcCollisions, aod::McParticles const&)
   {
-    if (mcCollisions.iteratorAt(0).getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap || mcCollisions.iteratorAt(1).getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
-
+    bool hasMBGap = false;
+    for (auto const& mcCollision : mcCollisions) {
+      if (mcCollision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+        hasMBGap = true;
+        break;
+      }
+    }
+    if (hasMBGap) {
       for (auto const& track : tracks) {
         if (track.has_collision()) {
           auto const& trackCollision = track.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();

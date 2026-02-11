@@ -349,3 +349,9 @@ void V0PhotonCut::SetLabelsCutScoresMl(const std::vector<std::string>& labelsCut
   mLabelsCutScoresMl = labelsCutScores;
   LOG(info) << "V0 Photon Cut, set ML labels cut scores with size:" << mLabelsCutScoresMl.size();
 }
+
+void V0PhotonCut::setDoQA(bool flag)
+{
+  mDoQA = flag;
+  LOG(info) << "V0 Photon Cut, set do QA flag to: " << mDoQA;
+}
