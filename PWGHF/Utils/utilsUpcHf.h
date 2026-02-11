@@ -40,7 +40,7 @@ struct HfUpcGapThresholds : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> nBcsMin{"nBcsMin", 2, "Minimum number of BCs to consider in BC range"};
   o2::framework::Configurable<int> nContributorsPvMin{"nContributorsPvMin", 2, "Minimum number of PV contributors"};
   o2::framework::Configurable<int> nContributorsPvMax{"nContributorsPvMax", 1000, "Maximum number of PV contributors"};
-  o2::framework::Configurable<float> fITTimeMax{"fITTimeMax", 34, "Maximum time in FIT"};
+  o2::framework::Configurable<float> timeFitMax{"timeFitMax", 34, "Maximum time in FIT"};
   o2::framework::Configurable<float> fv0aThreshold{"fv0aThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0aThreshold{"ft0aThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0cThreshold{"ft0cThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
@@ -75,7 +75,7 @@ inline auto determineGapType(TCollision const& collision,
                              int nBcsMin = defaults::MinNBCs,
                              int nContributorsPvMin = defaults::MinNTracks,
                              int nContributorsPvMax = defaults::MaxNTracks,
-                             float fITTimeMax = defaults::MaxFITTime,
+                             float timeFitMax = defaults::MaxFITTime,
                              float amplitudeThresholdFV0A = defaults::AmplitudeThresholdFV0A,
                              float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
                              float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C)
@@ -87,7 +87,7 @@ inline auto determineGapType(TCollision const& collision,
   sgCuts.SetNDtcoll(nDtColl);
   sgCuts.SetMinNBCs(nBcsMin);
   sgCuts.SetNTracks(nContributorsPvMin, nContributorsPvMax);
-  sgCuts.SetMaxFITtime(fITTimeMax);
+  sgCuts.SetMaxFITtime(timeFitMax);
   sgCuts.SetFITAmpLimits({amplitudeThresholdFV0A, amplitudeThresholdFT0A, amplitudeThresholdFT0C});
 
   // Get BC and BC range
@@ -122,7 +122,7 @@ inline auto determineGapType(TCollision const& collision,
                           thresholds.nBcsMin.value,
                           thresholds.nContributorsPvMin.value,
                           thresholds.nContributorsPvMax.value,
-                          thresholds.fITTimeMax.value,
+                          thresholds.timeFitMax.value,
                           thresholds.fv0aThreshold.value,
                           thresholds.ft0aThreshold.value,
                           thresholds.ft0cThreshold.value);
