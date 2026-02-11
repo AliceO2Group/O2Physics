@@ -120,7 +120,7 @@ struct LumiStabilityPP {
   ctpRateFetcher mRateFetcher;
   std::string injectionScheme;
 
-HistogramRegistry registry{"registry"};
+  HistogramRegistry registry{"registry"};
 
   std::array<std::array<std::map<int, std::shared_ptr<TH1>>, NBCCategories>, NTriggerAliases> histBcVsTime;
   std::array<std::array<std::map<int, std::shared_ptr<TH1>>, NBCCategories>, NTriggerAliases> histBcVsBcId;
@@ -146,7 +146,7 @@ HistogramRegistry registry{"registry"};
      {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_SL/nBCsVsBCID"},
      {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_SL/nBCsVsBCID"}};
 
-  static constexpr std::string_view MuHistNames[NTriggerAliases][NBCCategories-1] =
+  static constexpr std::string_view MuHistNames[NTriggerAliases][NBCCategories - 1] =
     {{"AllBCs/BC_A/Mu", "AllBCs/BC_B/Mu", "AllBCs/BC_C/Mu", "AllBCs/BC_E/Mu", "AllBCs/BC_L/Mu"},
      {"FT0VTx/BC_A/Mu", "FT0VTx/BC_B/Mu", "FT0VTx/BC_C/Mu", "FT0VTx/BC_E/Mu", "FT0VTx/BC_L/Mu"},
      {"FT0CE/BC_A/Mu", "FT0CE/BC_B/Mu", "FT0CE/BC_C/Mu", "FT0CE/BC_E/Mu", "FT0CE/BC_L/Mu"},
@@ -438,9 +438,9 @@ HistogramRegistry registry{"registry"};
         }
         float mu{0.};
         if (iBCCategory != BCSL) {
-          mu = getMu(nTriggersPerDf[iTrigger][iBCCategory]/deltaTime, nBCs[0]);
+          mu = getMu(nTriggersPerDf[iTrigger][iBCCategory] / deltaTime, nBCs[0]);
         } else {
-          mu = getMu(nTriggersPerDf[iTrigger][iBCCategory]/deltaTime, nBCs[1]);
+          mu = getMu(nTriggersPerDf[iTrigger][iBCCategory] / deltaTime, nBCs[1]);
         }
         fillMuHistograms(iTrigger, iBCCategory, mu);
       }
