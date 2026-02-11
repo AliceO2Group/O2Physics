@@ -138,9 +138,7 @@ struct kstarInOO {
 
   Configurable<bool> cfgMCHistos{"cfgMCHistos", false, "Enable MC Hists"};
   Configurable<bool> cfgMixedHistos{"cfgMixedHistos", false, "Enable Mixed Histos"};
-
   Configurable<bool> cfgJetHistos{"cfgJetHistos", false, "Enable Jet Histos"};
-
   Configurable<bool> cfgJetMCHistos{"cfgJetMCHistos", false, "Enable Jet MC Histos"};
   Configurable<bool> cfgCutonTrig{"cfgCutonTrig", false, "Enable Jet Cut on Trig"};
 
@@ -273,6 +271,8 @@ struct kstarInOO {
       histos.add("hEffRecTest6_pT", "EffRecTest6_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest7_pT", "EffRecTest7_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest8_pT", "EffRecTest8_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
+
+      histos.add("hEffGen_pT_Raw", "EffGen_pT_Raw (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffGen_pT", "EffGen_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
 
       histos.add("hMotherPdg1", "hMotherPdg1", kTH1F, {{5000, 0., 5000.}});
@@ -1512,6 +1512,12 @@ struct kstarInOO {
       return;
     if (recocolls.size() <= 0) { // not reconstructed
       return;
+    }
+
+    for (auto& particle : mcParticles) {
+      if (cfgJetMCHistos) {
+        histos.fill(HIST("hEffGen_pT_Raw"), particle.pt());
+      }
     }
 
     for (auto& recocoll : recocolls) { // poorly reconstructed
