@@ -36,11 +36,11 @@ using o2::aod::sgselector::TrueGap;
 /// \brief Configurable group for UPC gap determination thresholds
 struct HfUpcGapThresholds : o2::framework::ConfigurableGroup {
   std::string prefix = "upc"; // JSON group name
-  o2::framework::Configurable<int> fNDtColl{"fNDtColl", 1, "Number of standard deviations to consider in BC range"};
-  o2::framework::Configurable<int> fNBCsMin{"fNBCsMin", 2, "Minimum number of BCs to consider in BC range"};
-  o2::framework::Configurable<int> fNPVCsMin{"fNPVCsMin", 2, "Minimum number of PV contributors"};
-  o2::framework::Configurable<int> fNPVCsMax{"fNPVCsMax", 1000, "Maximum number of PV contributors"};
-  o2::framework::Configurable<float> fFITTimeMax{"fFITTimeMax", 34, "Maximum time in FIT"};
+  o2::framework::Configurable<int> nDtColl{"nDtColl", 1, "Number of standard deviations to consider in BC range"};
+  o2::framework::Configurable<int> nBCsMin{"nBCsMin", 2, "Minimum number of BCs to consider in BC range"};
+  o2::framework::Configurable<int> nPVCsMin{"nPVCsMin", 2, "Minimum number of PV contributors"};
+  o2::framework::Configurable<int> nPVCsMax{"nPVCsMax", 1000, "Maximum number of PV contributors"};
+  o2::framework::Configurable<float> fITTimeMax{"fITTimeMax", 34, "Maximum time in FIT"};
   o2::framework::Configurable<float> fv0aThreshold{"fv0aThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0aThreshold{"ft0aThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0cThreshold{"ft0cThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
@@ -119,11 +119,11 @@ inline auto determineGapType(TCollision const& collision,
                              HfUpcGapThresholds const& thresholds)
 {
   return determineGapType(collision, bcs,
-                          thresholds.fNDtColl.value,
-                          thresholds.fNBCsMin.value,
-                          thresholds.fNPVCsMin.value,
-                          thresholds.fNPVCsMax.value,
-                          thresholds.fFITTimeMax.value,
+                          thresholds.nDtColl.value,
+                          thresholds.nBCsMin.value,
+                          thresholds.nPVCsMin.value,
+                          thresholds.nPVCsMax.value,
+                          thresholds.fITTimeMax.value,
                           thresholds.fv0aThreshold.value,
                           thresholds.ft0aThreshold.value,
                           thresholds.ft0cThreshold.value);
