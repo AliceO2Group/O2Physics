@@ -65,6 +65,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/Vertex.h> // for PV refit
 
@@ -132,6 +133,7 @@ enum ChannelsLightNucleiPid {
   CdToDeKPi = 0,
   CtToTrKPi,
   ChToHeKPi,
+  CaToAlKPi,
   NChannelsLightNucleiPid
 };
 
@@ -140,12 +142,14 @@ constexpr int ChannelKaonPid = ChannelsProtonPid::NChannelsProtonPid;
 constexpr int ChannelsDeuteronPid = ChannelsProtonPid::NChannelsProtonPid + 1;
 constexpr int ChannelsTritonPid = ChannelsProtonPid::NChannelsProtonPid + 2;
 constexpr int ChannelsHeliumPid = ChannelsProtonPid::NChannelsProtonPid + 3;
+constexpr int ChannelsAlphaPid = ChannelsProtonPid::NChannelsProtonPid + 4;
 constexpr int NChannelsPidFor3Prong = static_cast<int>(ChannelsProtonPid::NChannelsProtonPid) + static_cast<int>(ChannelsKaonPid::NChannelsKaonPid) + static_cast<int>(ChannelsLightNucleiPid::NChannelsLightNucleiPid);
 
 enum class ChannelsNucleiQA : int {
   Deuteron = 0,
   Triton = 1,
-  Helium3 = 2
+  Helium3 = 2,
+  Alpha = 3
 };
 /// Event selection
 struct HfTrackIndexSkimCreatorTagSelCollisions {
@@ -332,6 +336,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     Configurable<bool> useIsGlobalTrackForSoftPion{"useIsGlobalTrackForSoftPion", false, "check isGlobalTrack status for soft pion tracks"};
     Configurable<bool> useIsGlobalTrackWoDCAForSoftPion{"useIsGlobalTrackWoDCAForSoftPion", false, "check isGlobalTrackWoDCA status for soft pion tracks"};
     Configurable<bool> useIsQualityTrackITSForSoftPion{"useIsQualityTrackITSForSoftPion", true, "check qualityTracksITS status for soft pion tracks"};
+    // CharmNuclei track selection
+    Configurable<LabeledArray<float>> selectionsLightNuclei{"selectionsLightNuclei", {hf_presel_lightnuclei::CutsTrackQuality[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NVarCuts, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsCutsTrack}, "nuclei track selections for deuteron / triton / helium applied if proper process function enabled"};
+    Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams}, "TPC PID Bethe–Bloch parameter configurations for light nuclei (deuteron, triton, helium-3)"};
     // proton PID, applied only if corresponding process function enabled
     Configurable<LabeledArray<float>> selectionsPid{"selectionsPid", {hf_presel_pid::CutsPid[0], hf_presel_pid::NPidRows, hf_presel_pid::NPidCuts, hf_presel_pid::labelsRowsPid, hf_presel_pid::labelsCutsPid}, "PID selections for proton / kaon / deuteron / triton /helium applied if proper process function enabled"};
     // CCDB
@@ -364,9 +371,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   // proton PID, if enabled
   std::array<TrackSelectorPr, ChannelsProtonPid::NChannelsProtonPid> selectorProton{};
   TrackSelectorKa selectorKaon;
-  TrackSelectorDe selectorDeuteron;
-  TrackSelectorTr selectorTriton;
-  TrackSelectorHe selectorHelium;
 
   Partition<TracksWithSelAndDca> pvContributors = ((aod::track::flags & static_cast<uint32_t>(aod::track::PVContributor)) == static_cast<uint32_t>(aod::track::PVContributor));
   Partition<TracksWithSelAndDcaAndPidTpc> pvContributorsWithPidTpc = ((aod::track::flags & static_cast<uint32_t>(aod::track::PVContributor)) == static_cast<uint32_t>(aod::track::PVContributor));
@@ -432,9 +436,11 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       registry.add("hDCAToPrimXYVsPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {axisPtProng, axisDca}});
       registry.add("hEtaCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(scaleEtaMax * (config.etaMaxSoftPionForDstar - config.etaMinSoftPionForDstar) * nBinsPerEta), scaleEtaMax * config.etaMinSoftPionForDstar, scaleEtaMax * config.etaMaxSoftPionForDstar}}});
       // bachelor (for cascade + bachelor decays) histograms
+
       registry.add("hPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {axisPtProng}});
       registry.add("hDCAToPrimXYVsPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {axisPtProng, axisDca}});
       registry.add("hEtaCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(scaleEtaMax * (config.etaMaxTrackBachLfCasc - config.etaMinTrackBachLfCasc) * nBinsPerEta), scaleEtaMax * config.etaMinTrackBachLfCasc, scaleEtaMax * config.etaMaxTrackBachLfCasc}}});
+      registry.add("hTPCSignalsLightNuclei", "Light Nuclei;p_{TPC}/z (GeV/#it{c}); d#it{E}/d#it{x}", {HistType::kTH2D, {{2000, -10., 10.}, {1000, 0., 2000.}}});
 
       const std::string cutNames[nCuts + 1] = {"selected", "rej pT", "rej eta", "rej track quality", "rej dca"};
       const std::string candNames[CandidateType::NCandidateTypes] = {"2-prong", "3-prong", "bachelor", "dstar", "lfCascBachelor"};
@@ -494,39 +500,173 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     selectorKaon.setRangePtTof(config.selectionsPid->get(ChannelKaonPid, 3u), config.selectionsPid->get(ChannelKaonPid, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
     selectorKaon.setRangeNSigmaTpc(-config.selectionsPid->get(ChannelKaonPid, 2u), config.selectionsPid->get(ChannelKaonPid, 2u)); // 2u == "nSigmaMaxTpc"
     selectorKaon.setRangeNSigmaTof(-config.selectionsPid->get(ChannelKaonPid, 5u), config.selectionsPid->get(ChannelKaonPid, 5u)); // 5u == "nSigmaMaxTof"
+  }
 
-    selectorDeuteron.setRangePtTpc(config.selectionsPid->get(ChannelsDeuteronPid, 0u), config.selectionsPid->get(ChannelsDeuteronPid, 1u));      // 0u == "minPtTpc", 1u == "maxPtTpc"
-    selectorDeuteron.setRangePtTof(config.selectionsPid->get(ChannelsDeuteronPid, 3u), config.selectionsPid->get(ChannelsDeuteronPid, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
-    selectorDeuteron.setRangeNSigmaTpc(-config.selectionsPid->get(ChannelsDeuteronPid, 2u), config.selectionsPid->get(ChannelsDeuteronPid, 2u)); // 2u == "nSigmaMaxTpc"
-    selectorDeuteron.setRangeNSigmaTof(-config.selectionsPid->get(ChannelsDeuteronPid, 5u), config.selectionsPid->get(ChannelsDeuteronPid, 5u)); // 5u == "nSigmaMaxTof"
+  /// Apply track-quality (ITS/TPC) + optional ITS-PID preselection for light-nucleus daughters used in charm-nuclei 3-prong channels (Cd/Ct/Ch).
+  /// \tparam TrackType   Track  providing ITS/TPC quality accessors.
+  /// \param track        Daughter track to be tested (either prong0 or prong2).
+  /// \param lightnuclei  Species selector: 0=Deuteron, 1=Triton, 2=Helium3.
+  /// \return             true if the track passes all enabled selections.
+  template <typename TrackType>
+  bool applyPidAndTrackSelectionForCharmNuclei(const TrackType& track,
+                                               ChannelsNucleiQA lightnuclei)
+  {
+    // Row index in the selection table: 0 (De), 1 (Tr), 2 (He3)
+    const int row = static_cast<int>(lightnuclei);
+    if (row < 0 || row >= NChannelsLightNucleiPid) {
+      return false;
+    }
 
-    selectorTriton.setRangePtTpc(config.selectionsPid->get(ChannelsTritonPid, 0u), config.selectionsPid->get(ChannelsTritonPid, 1u));      // 0u == "minPtTpc", 1u == "maxPtTpc"
-    selectorTriton.setRangePtTof(config.selectionsPid->get(ChannelsTritonPid, 3u), config.selectionsPid->get(ChannelsTritonPid, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
-    selectorTriton.setRangeNSigmaTpc(-config.selectionsPid->get(ChannelsTritonPid, 2u), config.selectionsPid->get(ChannelsTritonPid, 2u)); // 2u == "nSigmaMaxTpc"
-    selectorTriton.setRangeNSigmaTof(-config.selectionsPid->get(ChannelsTritonPid, 5u), config.selectionsPid->get(ChannelsTritonPid, 5u)); // 5u == "nSigmaMaxTof"
+    float nSigmaIts = -999.f;
 
-    selectorHelium.setRangePtTpc(config.selectionsPid->get(ChannelsHeliumPid, 0u), config.selectionsPid->get(ChannelsHeliumPid, 1u));      // 0u == "minPtTpc", 1u == "maxPtTpc"
-    selectorHelium.setRangePtTof(config.selectionsPid->get(ChannelsHeliumPid, 3u), config.selectionsPid->get(ChannelsHeliumPid, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
-    selectorHelium.setRangeNSigmaTpc(-config.selectionsPid->get(ChannelsHeliumPid, 2u), config.selectionsPid->get(ChannelsHeliumPid, 2u)); // 2u == "nSigmaMaxTpc"
-    selectorHelium.setRangeNSigmaTof(-config.selectionsPid->get(ChannelsHeliumPid, 5u), config.selectionsPid->get(ChannelsHeliumPid, 5u)); // 5u == "nSigmaMaxTof"
+    switch (lightnuclei) {
+      case ChannelsNucleiQA::Deuteron:
+        nSigmaIts = track.itsNSigmaDe();
+        break;
+      case ChannelsNucleiQA::Triton:
+        nSigmaIts = track.itsNSigmaTr();
+        break;
+      case ChannelsNucleiQA::Helium3:
+        nSigmaIts = track.itsNSigmaHe();
+        break;
+      case ChannelsNucleiQA::Alpha:
+        nSigmaIts = track.itsNSigmaAl();
+        break;
+      default:
+        LOG(fatal) << "Unhandled ChannelsNucleiQA " << static_cast<int>(lightnuclei);
+    }
+
+    // Load cuts for the selected species.
+    const float itsPidNsigmaMin = config.selectionsLightNuclei->get(row, 0u);
+    const float itsClusterSizeMin = config.selectionsLightNuclei->get(row, 1u);
+    const float itsClusterMin = config.selectionsLightNuclei->get(row, 2u);
+    const float itsIbClusterMin = config.selectionsLightNuclei->get(row, 3u);
+    const float tpcClusterMin = config.selectionsLightNuclei->get(row, 4u);
+    const float tpcCrossedRowsMin = config.selectionsLightNuclei->get(row, 5u);
+    const float tpcCrossedRowsOverFindMin = config.selectionsLightNuclei->get(row, 6u);
+    const float tpcSharedMax = config.selectionsLightNuclei->get(row, 7u);
+    const float tpcFracSharedMax = config.selectionsLightNuclei->get(row, 8u);
+
+    // Optional: BB-based TPC nσ selection (only if enabled)
+    const float tpcBbPidNsigmaMax = config.selectionsLightNuclei->get(row, 9u);
+
+    if (nSigmaIts < itsPidNsigmaMin) {
+      return false;
+    }
+    if (track.itsClusterSizes() < static_cast<unsigned int>(itsClusterSizeMin)) {
+      return false;
+    }
+    if (track.itsNCls() < itsClusterMin) {
+      return false;
+    }
+    if (track.itsNClsInnerBarrel() < itsIbClusterMin) {
+      return false;
+    }
+    if (track.tpcNClsFound() < tpcClusterMin) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < tpcCrossedRowsMin) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindMin) {
+      return false;
+    }
+    if (track.tpcNClsShared() > tpcSharedMax) {
+      return false;
+    }
+    if (track.tpcFractionSharedCls() > tpcFracSharedMax) {
+      return false;
+    }
+
+    const float tpcBbPidNsigma = getTPCNSigmaLightNucleiBetheBloch(track, lightnuclei);
+    if (std::abs(tpcBbPidNsigma) > tpcBbPidNsigmaMax) {
+      return false;
+    }
+    registry.fill(HIST("hTPCSignalsLightNuclei"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+    return true;
+  }
+
+  /// Compute TPC nσ for light nuclei (De/Tr/He3) using a Bethe–Bloch parameter configuration (BB-based PID).
+  ///
+  /// \tparam TrackType   Track/ASoA row type providing TPC accessors.
+  /// \param track        Track to be tested.
+  /// \param lightnuclei  Species selector: 0=Deuteron, 1=Triton, 2=Helium3.
+  /// \return             TPC nσ for the chosen nucleus hypothesis (or -999 if not applicable).
+  template <typename TrackType>
+  float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track, ChannelsNucleiQA lightnuclei)
+  {
+    if (!track.hasTPC()) {
+      return -999.f;
+    }
+
+    const int row = static_cast<int>(lightnuclei);
+    if (row < 0 || row >= NChannelsLightNucleiPid) {
+      return -999.f;
+    }
+
+    // Columns: [0..4] BB params, [5] relative resolution (sigma/mean)
+    const double bb0 = config.tpcPidBBParamsLightNuclei->get(row, 0u);
+    const double bb1 = config.tpcPidBBParamsLightNuclei->get(row, 1u);
+    const double bb2 = config.tpcPidBBParamsLightNuclei->get(row, 2u);
+    const double bb3 = config.tpcPidBBParamsLightNuclei->get(row, 3u);
+    const double bb4 = config.tpcPidBBParamsLightNuclei->get(row, 4u);
+    const double relRes = config.tpcPidBBParamsLightNuclei->get(row, 5u);
+
+    if (relRes <= 0.f) {
+      return -999.f;
+    }
+
+    // Mass/charge hypothesis for the selected nucleus.
+    double mass = 0.;
+    switch (lightnuclei) {
+      case ChannelsNucleiQA::Deuteron:
+        mass = MassDeuteron;
+        break;
+      case ChannelsNucleiQA::Triton:
+        mass = MassTriton;
+        break;
+      case ChannelsNucleiQA::Helium3:
+        mass = MassHelium3;
+        break;
+      case ChannelsNucleiQA::Alpha:
+        mass = MassAlpha;
+        break;
+      default:
+        LOG(fatal) << "Unhandled ChannelsNucleiQA " << static_cast<int>(lightnuclei);
+    }
+
+    const int charge = (lightnuclei == ChannelsNucleiQA::Helium3 || lightnuclei == ChannelsNucleiQA::Alpha) ? 2 : 1;
+    const float rigidity = track.tpcInnerParam(); // p / |q| note: here we didn't apply rigidity correction
+
+    const double x = static_cast<double>(charge) * static_cast<double>(rigidity) / mass;
+    const double expBethe = common::BetheBlochAleph(x, bb0, bb1, bb2, bb3, bb4);
+    const double expSigma = expBethe * static_cast<double>(relRes);
+
+    if (expSigma <= 0.) {
+      return -999.f;
+    }
+
+    return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }
 
   /// PID track cuts (for proton only)
   /// \param hfTrack is a track
-  /// \return true if the track is compatible with a proton hypothesis
-  template <int PidStrategy, typename T>
-  uint8_t isSelectedPid(const T& hfTrack)
+  /// \param hfTrackWithIts is a track joined with the ITS PID table
+  /// \return bit mask encoding PID compatibility per channel
+  template <int PidStrategy, typename T, typename TrackWithIts>
+  uint8_t isSelectedPid(const T& hfTrack, const TrackWithIts& hfTrackWithIts)
   {
-    std::array statusPid{TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted};
+    std::array statusPid{TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted};
+    auto boolToStatus = [](bool passed) {
+      return passed ? TrackSelectorPID::Accepted : TrackSelectorPID::Rejected;
+    };
+
     if constexpr (PidStrategy == ProtonPidStrategy::PidTofOnly) {
       if (hfTrack.hasTOF()) {
         for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
           statusPid[iChannel] = selectorProton[iChannel].statusTof(hfTrack);
         }
         statusPid[ChannelKaonPid] = selectorKaon.statusTof(hfTrack);
-        statusPid[ChannelsDeuteronPid] = selectorDeuteron.statusTof(hfTrack);
-        statusPid[ChannelsTritonPid] = selectorTriton.statusTof(hfTrack);
-        statusPid[ChannelsHeliumPid] = selectorHelium.statusTof(hfTrack);
       }
     }
     if constexpr (PidStrategy == ProtonPidStrategy::PidTpcOnly) {
@@ -535,9 +675,10 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
           statusPid[iChannel] = selectorProton[iChannel].statusTpc(hfTrack);
         }
         statusPid[ChannelKaonPid] = selectorKaon.statusTpc(hfTrack);
-        statusPid[ChannelsDeuteronPid] = selectorDeuteron.statusTpc(hfTrack);
-        statusPid[ChannelsTritonPid] = selectorTriton.statusTpc(hfTrack);
-        statusPid[ChannelsHeliumPid] = selectorHelium.statusTpc(hfTrack);
+        statusPid[ChannelsDeuteronPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Deuteron));
+        statusPid[ChannelsTritonPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Triton));
+        statusPid[ChannelsHeliumPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Helium3));
+        statusPid[ChannelsAlphaPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Alpha));
       }
     }
     if constexpr (PidStrategy == ProtonPidStrategy::PidTpcOrTof) {
@@ -545,18 +686,20 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcOrTof(hfTrack);
       }
       statusPid[ChannelKaonPid] = selectorKaon.statusTpcOrTof(hfTrack);
-      statusPid[ChannelsDeuteronPid] = selectorDeuteron.statusTpcOrTof(hfTrack);
-      statusPid[ChannelsTritonPid] = selectorTriton.statusTpcOrTof(hfTrack);
-      statusPid[ChannelsHeliumPid] = selectorHelium.statusTpcOrTof(hfTrack);
+      statusPid[ChannelsDeuteronPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Deuteron));
+      statusPid[ChannelsTritonPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Triton));
+      statusPid[ChannelsHeliumPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Helium3));
+      statusPid[ChannelsAlphaPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Alpha));
     }
     if constexpr (PidStrategy == ProtonPidStrategy::PidTpcAndTof) {
       for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcAndTof(hfTrack);
       }
       statusPid[ChannelKaonPid] = selectorKaon.statusTpcAndTof(hfTrack);
-      statusPid[ChannelsDeuteronPid] = selectorDeuteron.statusTpcAndTof(hfTrack);
-      statusPid[ChannelsTritonPid] = selectorTriton.statusTpcAndTof(hfTrack);
-      statusPid[ChannelsHeliumPid] = selectorHelium.statusTpcAndTof(hfTrack);
+      statusPid[ChannelsDeuteronPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Deuteron));
+      statusPid[ChannelsTritonPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Triton));
+      statusPid[ChannelsHeliumPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Helium3));
+      statusPid[ChannelsAlphaPid] = boolToStatus(applyPidAndTrackSelectionForCharmNuclei(hfTrackWithIts, ChannelsNucleiQA::Alpha));
     }
 
     int8_t flag = BIT(NChannelsPidFor3Prong) - 1; // all bits on (including the kaon one)
@@ -985,7 +1128,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param pvRefitPvCovMatrixPerTrack is a vector to be filled with PV coordinate covariances after PV refit
   template <int PidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
   void runTagSelTracks(aod::Collision const& collision,
-                       TTracks const&,
+                       TTracks const& tracks,
                        GroupedTrackIndices const& trackIndicesCollision,
                        GroupedPvContributors const& pvContrCollision,
                        aod::BCsWithTimestamps const& bcWithTimeStamps,
@@ -994,9 +1137,13 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
                        std::vector<std::array<float, 6>>& pvRefitPvCovMatrixPerTrack)
   {
     const auto thisCollId = collision.globalIndex();
+    auto tracksWithItsPid = soa::Attach<TTracks, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
+
     for (const auto& trackId : trackIndicesCollision) {
       int statusProng = BIT(CandidateType::NCandidateTypes) - 1; // all bits on
       const auto track = trackId.template track_as<TTracks>();
+      const auto trackWithItsPid = tracksWithItsPid.rawIteratorAt(trackId.trackId());
+
       float trackPt = track.pt();
       float trackEta = track.eta();
 
@@ -1050,7 +1197,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       // }
 
       isSelectedTrack(track, trackPt, trackEta, pvRefitDcaXYDcaZ, statusProng);
-      const int8_t isIdentifiedPid = isSelectedPid<PidStrategy>(track);
+      const int8_t isIdentifiedPid = isSelectedPid<PidStrategy>(track, trackWithItsPid);
       const bool isPositive = track.sign() > 0;
       rowSelectedTrack(statusProng, isIdentifiedPid, isPositive);
     }
@@ -1298,16 +1445,16 @@ struct HfTrackIndexSkimCreator {
     Configurable<LabeledArray<double>> cutsCdToDeKPi{"cutsCdToDeKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Cd->deKpi selections per pT bin"};
     // Ct cuts
     Configurable<std::vector<double>> binsPtCtToTrKPi{"binsPtCtToTrKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Ct->tKpi pT-dependent cuts"};
-    Configurable<LabeledArray<double>> cutsCtToTrKPi{"cutsCdToTrKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ct->tKpi selections per pT bin"};
+    Configurable<LabeledArray<double>> cutsCtToTrKPi{"cutsCtToTrKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ct->tKpi selections per pT bin"};
     // Ch cuts
     Configurable<std::vector<double>> binsPtChToHeKPi{"binsPtChToHeKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Ch->heKpi pT-dependent cuts"};
     Configurable<LabeledArray<double>> cutsChToHeKPi{"cutsChToHeKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ch->heKpi selections per pT bin"};
+    // Ca cuts
+    Configurable<std::vector<double>> binsPtCaToAlKPi{"binsPtCaToAlKPi", std::vector<double>{hf_cuts_presel_3prong::vecBinsPt}, "pT bin limits for Ca->alKpi pT-dependent cuts"};
+    Configurable<LabeledArray<double>> cutsCaToAlKPi{"cutsCaToAlKPi", {hf_cuts_presel_3prong::Cuts[0], hf_cuts_presel_3prong::NBinsPt, hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::labelsPt, hf_cuts_presel_3prong::labelsCutVar}, "Ca->alKpi selections per pT bin"};
     // D*+ cuts
     Configurable<std::vector<double>> binsPtDstarToD0Pi{"binsPtDstarToD0Pi", std::vector<double>{hf_cuts_presel_dstar::vecBinsPt}, "pT bin limits for D*+->D0pi pT-dependent cuts"};
     Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
-
-    // CharmNuclei track selection
-    Configurable<LabeledArray<float>> selectionsLightNuclei{"selectionsLightNuclei", {hf_presel_lightnuclei::CutsTrackQuality[0], 3, 9, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsCutsTrack}, "nuclei track selections for deuteron / triton / helium applied if proper process function enabled"};
 
     // proton PID selections for Lc and Xic
     Configurable<bool> applyProtonPidForLcToPKPi{"applyProtonPidForLcToPKPi", false, "Apply proton PID for Lc->pKpi"};
@@ -1316,8 +1463,8 @@ struct HfTrackIndexSkimCreator {
     Configurable<bool> applyDeuteronPidForCdToDeKPi{"applyDeuteronPidForCdToDeKPi", false, "Require deuteron PID for Cd->deKpi"};
     Configurable<bool> applyTritonPidForCtToTrKPi{"applyTritonPidForCtToTrKPi", false, "Require triton PID for Ct->tKpi"};
     Configurable<bool> applyHeliumPidForChToHeKPi{"applyHeliumPidForChToHeKPi", false, "Require helium3 PID for Ch->heKpi"};
-    // lightnuclei track selection for charmnuclei
-    Configurable<bool> applyNucleiSelcForCharmNuclei{"applyNucleiSelcForCharmNuclei", false, "Require track selection for charm nuclei"};
+    Configurable<bool> applyHeliumPidForCaToAlKPi{"applyHeliumPidForCaToAlKPi", false, "Require Alpha PID for Ca->AlKpi"};
+
     // ML models for triggers
     Configurable<bool> applyMlForHfFilters{"applyMlForHfFilters", false, "Flag to enable ML application for HF Filters"};
     Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "EventFiltering/PWGHF/BDTSmeared", "Path on CCDB of ML models for HF Filters"};
@@ -1344,12 +1491,12 @@ struct HfTrackIndexSkimCreator {
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
-  static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays;                                                                                                                                                                                                                              // number of 2-prong hadron types
-  static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays;                                                                                                                                                                                                                              // number of 3-prong hadron types
-  static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars};                                                                                                                                                     // how many different selections are made on 2-prongs
-  static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_ds::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_3prong::NCutVars + 2, hf_cuts_presel_3prong::NCutVars + 2, hf_cuts_presel_3prong::NCutVars + 2}; // how many different selections are made on 3-prongs (Lc， Xic and CharmNuclei have also PID potentially, charmnuclei has also daughter track quality cut potentially)
-  static constexpr int kNCutsDstar = 3;                                                                                                                                                                                                                                                                        // how many different selections are made on Dstars
-  static constexpr int kN3ProngDecaysUsedMlForHfFilters = kN3ProngDecays - NChannelsLightNucleiPid;                                                                                                                                                                                                            // number of 3-prong HF decays using ML filters
+  static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays;                                                                                                                                                                                                                                                                   // number of 2-prong hadron types
+  static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays;                                                                                                                                                                                                                                                                   // number of 3-prong hadron types
+  static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars};                                                                                                                                                                                          // how many different selections are made on 2-prongs
+  static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_ds::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_3prong::NCutVars + 2, hf_cuts_presel_3prong::NCutVars + 2, hf_cuts_presel_3prong::NCutVars + 2, hf_cuts_presel_3prong::NCutVars + 2}; // how many different selections are made on 3-prongs (Lc， Xic and CharmNuclei have also PID potentially, charmnuclei has also daughter track quality cut potentially)
+  static constexpr int kNCutsDstar = 3;                                                                                                                                                                                                                                                                                                             // how many different selections are made on Dstars
+  static constexpr int kN3ProngDecaysUsedMlForHfFilters = kN3ProngDecays - NChannelsLightNucleiPid;                                                                                                                                                                                                                                                 // number of 3-prong HF decays using ML filters
   std::array<std::array<std::array<double, 2>, 2>, kN2ProngDecays> arrMass2Prong{};
   std::array<std::array<std::array<double, 3>, 2>, kN3ProngDecays> arrMass3Prong{};
   // arrays of 2-prong and 3-prong cuts
@@ -1426,12 +1573,15 @@ struct HfTrackIndexSkimCreator {
     arrMass3Prong[hf_cand_3prong::DecayType::ChToHeKPi] = std::array{std::array{MassHelium3, MassKPlus, MassPiPlus},
                                                                      std::array{MassPiPlus, MassKPlus, MassHelium3}};
 
+    arrMass3Prong[hf_cand_3prong::DecayType::CaToAlKPi] = std::array{std::array{MassAlpha, MassKPlus, MassPiPlus},
+                                                                     std::array{MassPiPlus, MassKPlus, MassAlpha}};
+
     // cuts for 2-prong decays retrieved by json. the order must be then one in hf_cand_2prong::DecayType
     cut2Prong = {config.cutsD0ToPiK, config.cutsJpsiToEE, config.cutsJpsiToMuMu};
     binsPt2Prong = {config.binsPtD0ToPiK, config.binsPtJpsiToEE, config.binsPtJpsiToMuMu};
     // cuts for 3-prong decays retrieved by json. the order must be then one in hf_cand_3prong::DecayType
-    cut3Prong = {config.cutsDplusToPiKPi, config.cutsLcToPKPi, config.cutsDsToKKPi, config.cutsXicToPKPi, config.cutsCdToDeKPi, config.cutsCtToTrKPi, config.cutsChToHeKPi};
-    binsPt3Prong = {config.binsPtDplusToPiKPi, config.binsPtLcToPKPi, config.binsPtDsToKKPi, config.binsPtXicToPKPi, config.binsPtCdToDeKPi, config.binsPtCtToTrKPi, config.binsPtChToHeKPi};
+    cut3Prong = {config.cutsDplusToPiKPi, config.cutsLcToPKPi, config.cutsDsToKKPi, config.cutsXicToPKPi, config.cutsCdToDeKPi, config.cutsCtToTrKPi, config.cutsChToHeKPi, config.cutsCaToAlKPi};
+    binsPt3Prong = {config.binsPtDplusToPiKPi, config.binsPtLcToPKPi, config.binsPtDsToKKPi, config.binsPtXicToPKPi, config.binsPtCdToDeKPi, config.binsPtCtToTrKPi, config.binsPtChToHeKPi, config.binsPtCaToAlKPi};
 
     df2.setPropagateToPCA(config.propagateToPCA);
     df2.setMaxR(config.maxR);
@@ -1482,6 +1632,7 @@ struct HfTrackIndexSkimCreator {
       registry.add("hMassCdToDeKPi", "C Deuteron candidates;inv. mass (De K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassCtToTrKPi", "C Triton candidates;inv. mass (Tr K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassChToHeKPi", "C Helium3 candidates;inv. mass (He3 K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassCaToAlKPi", "C Alpha candidates;inv. mass (Alpha K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 7.}}});
 
       // needed for PV refitting
       if (doprocess2And3ProngsWithPvRefit || doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt) {
@@ -1658,60 +1809,6 @@ struct HfTrackIndexSkimCreator {
     }
   }
 
-  /// Apply track-quality (ITS/TPC) + optional ITS-PID preselection for light-nucleus daughters used in charm-nuclei 3-prong channels (Cd/Ct/Ch).
-  /// \tparam TrackType  Track/ASoA row type providing ITS/TPC quality accessors.
-  /// \param track        Daughter track to be tested (either prong0 or prong2).
-  /// \param lightnuclei  Species selector  0: Deuteron, 1: Triton, 2: Helium3.
-  /// \param nSigmaItsPid ITS nσ value for the selected light nucleus hypothesis
-  template <typename TrackType>
-  bool applyTrackSelectionForCharmNuclei(const TrackType& track,
-                                         ChannelsNucleiQA lightnuclei,
-                                         float nSigmaItsPid)
-  {
-    // Row index in the selection table: 0 (De), 1 (Tr), 2 (He3)
-    const int row = static_cast<int>(lightnuclei);
-    const float nSigmaItsNuclei = nSigmaItsPid;
-    // Load cuts for the selected species.
-    const float minItsNSigmaPid = config.selectionsLightNuclei->get(row, 0u);
-    const int minItsClusterSizes = config.selectionsLightNuclei->get(row, 1u);
-    const int minItsCluster = config.selectionsLightNuclei->get(row, 2u);
-    const int minItsIbCluster = config.selectionsLightNuclei->get(row, 3u);
-    const int minTpcCluster = config.selectionsLightNuclei->get(row, 4u);
-    const int minTpcRow = config.selectionsLightNuclei->get(row, 5u);
-    const float minTpcCrossedOverFound = config.selectionsLightNuclei->get(row, 6u);
-    const int maxTpcShared = config.selectionsLightNuclei->get(row, 7u);
-    const float maxTpcFracShared = config.selectionsLightNuclei->get(row, 8u);
-
-    if (nSigmaItsNuclei < minItsNSigmaPid) {
-      return false;
-    }
-    if (track.itsClusterSizes() < static_cast<unsigned int>(minItsClusterSizes)) {
-      return false;
-    }
-    if (track.itsNCls() < minItsCluster) {
-      return false;
-    }
-    if (track.itsNClsInnerBarrel() < minItsIbCluster) {
-      return false;
-    }
-    if (track.tpcNClsFound() < minTpcCluster) {
-      return false;
-    }
-    if (track.tpcNClsCrossedRows() < minTpcRow) {
-      return false;
-    }
-    if (track.tpcCrossedRowsOverFindableCls() < minTpcCrossedOverFound) {
-      return false;
-    }
-    if (maxTpcShared >= 0 && track.tpcNClsShared() > maxTpcShared) {
-      return false;
-    }
-    if (track.tpcFractionSharedCls() > maxTpcFracShared) {
-      return false;
-    }
-    return true;
-  }
-
   /// Method to perform selections on difference from nominal mass for phi decay
   /// \param binPt pt bin for the cuts
   /// \param pVecTrack0 is the momentum array of the first daughter track
@@ -1753,8 +1850,8 @@ struct HfTrackIndexSkimCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param whichHypo information of the mass hypoteses that were selected
   /// \param isSelected is a bitmap with selection outcome
-  template <typename T1, typename T2, typename T3, typename T4>
-  void applyPreselection3Prong(T1 const& track0, T1 const& track2, T2 const& pVecTrack0, T2 const& pVecTrack1, T2 const& pVecTrack2, const auto isIdentifiedPidTrack0, const auto isIdentifiedPidTrack2, T3& cutStatus, T4& whichHypo, auto& isSelected)
+  template <typename T2, typename T3, typename T4>
+  void applyPreselection3Prong(T2 const& pVecTrack0, T2 const& pVecTrack1, T2 const& pVecTrack2, const auto isIdentifiedPidTrack0, const auto isIdentifiedPidTrack2, T3& cutStatus, T4& whichHypo, auto& isSelected)
   {
     const auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
 
@@ -1762,50 +1859,13 @@ struct HfTrackIndexSkimCreator {
 
       whichHypo[iDecay3P] = 3; // 2 bits on
 
-      if (config.applyNucleiSelcForCharmNuclei &&
-          (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi ||
-           iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi ||
-           iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi)) {
-
-        ChannelsNucleiQA nucleiType = ChannelsNucleiQA::Deuteron;
-        float nSigmaItsNuclei0 = track0.itsNSigmaDe();
-        float nSigmaItsNuclei2 = track2.itsNSigmaDe();
-
-        if (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi) {
-          nucleiType = ChannelsNucleiQA::Triton;
-          nSigmaItsNuclei0 = track0.itsNSigmaTr();
-          nSigmaItsNuclei2 = track2.itsNSigmaTr();
-        } else if (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi) {
-          nucleiType = ChannelsNucleiQA::Helium3;
-          nSigmaItsNuclei0 = track0.itsNSigmaHe();
-          nSigmaItsNuclei2 = track2.itsNSigmaHe();
-        }
-
-        // hypo0: nucleus on track0
-        if (!applyTrackSelectionForCharmNuclei(track0, nucleiType, nSigmaItsNuclei0)) {
-          CLRBIT(whichHypo[iDecay3P], 0);
-        }
-        // hypo1: nucleus on track2
-        if (!applyTrackSelectionForCharmNuclei(track2, nucleiType, nSigmaItsNuclei2)) {
-          CLRBIT(whichHypo[iDecay3P], 1);
-        }
-
-        if (whichHypo[iDecay3P] == 0) {
-          CLRBIT(isSelected, iDecay3P);
-          if (config.debug) {
-            cutStatus[iDecay3P][hf_cuts_presel_3prong::NCutVars + 1] = false; // nuclei track QA slot
-          }
-          continue;
-        }
-      }
-
       // check proton PID for 3prongs
-      if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && config.applyProtonPidForLcToPKPi) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && config.applyProtonPidForXicToPKPi) || (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi && config.applyDeuteronPidForCdToDeKPi) || (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi && config.applyTritonPidForCtToTrKPi) || (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi && config.applyHeliumPidForChToHeKPi)) {
+      if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && config.applyProtonPidForLcToPKPi) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && config.applyProtonPidForXicToPKPi) || (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi && config.applyDeuteronPidForCdToDeKPi) || (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi && config.applyTritonPidForCtToTrKPi) || (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi && config.applyHeliumPidForChToHeKPi) || (iDecay3P == hf_cand_3prong::DecayType::CaToAlKPi && config.applyHeliumPidForCaToAlKPi)) {
 
-        if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsProtonPid::LcToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsProtonPid::XicToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsDeuteronPid)) || (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsTritonPid)) || (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsHeliumPid))) {
+        if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsProtonPid::LcToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsProtonPid::XicToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsDeuteronPid)) || (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsTritonPid)) || (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsHeliumPid)) || (iDecay3P == hf_cand_3prong::DecayType::CaToAlKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsAlphaPid))) {
           CLRBIT(whichHypo[iDecay3P], 0);
         }
-        if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsProtonPid::LcToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsProtonPid::XicToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsDeuteronPid)) || (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsTritonPid)) || (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsHeliumPid))) {
+        if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsProtonPid::LcToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsProtonPid::XicToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::CdToDeKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsDeuteronPid)) || (iDecay3P == hf_cand_3prong::DecayType::CtToTrKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsTritonPid)) || (iDecay3P == hf_cand_3prong::DecayType::ChToHeKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsHeliumPid)) || (iDecay3P == hf_cand_3prong::DecayType::CaToAlKPi && !TESTBIT(isIdentifiedPidTrack2, ChannelsAlphaPid))) {
           CLRBIT(whichHypo[iDecay3P], 1);
         }
         if (whichHypo[iDecay3P] == 0) {
@@ -2317,14 +2377,12 @@ struct HfTrackIndexSkimCreator {
       //}
 
       const auto thisCollId = collision.globalIndex();
-      auto tracksWithItsPid = soa::Attach<TTracks, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
 
       // first loop over positive tracks
       const auto groupedTrackIndicesPos1 = positiveFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       int lastFilledD0 = -1; // index to be filled in table for D* mesons
       for (auto trackIndexPos1 = groupedTrackIndicesPos1.begin(); trackIndexPos1 != groupedTrackIndicesPos1.end(); ++trackIndexPos1) {
         const auto trackPos1 = trackIndexPos1.template track_as<TTracks>();
-        const auto trackPosWithItsPid1 = tracksWithItsPid.rawIteratorAt(trackIndexPos1.trackId());
 
         // retrieve the selection flag that corresponds to this collision
         const auto isSelProngPos1 = trackIndexPos1.isSelProng();
@@ -2343,7 +2401,6 @@ struct HfTrackIndexSkimCreator {
         const auto groupedTrackIndicesNeg1 = negativeFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         for (auto trackIndexNeg1 = groupedTrackIndicesNeg1.begin(); trackIndexNeg1 != groupedTrackIndicesNeg1.end(); ++trackIndexNeg1) {
           const auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
-          const auto trackNegWithItsPid1 = tracksWithItsPid.rawIteratorAt(trackIndexNeg1.trackId());
 
           // retrieve the selection flag that corresponds to this collision
           const auto isSelProngNeg1 = trackIndexNeg1.isSelProng();
@@ -2583,7 +2640,6 @@ struct HfTrackIndexSkimCreator {
               }
 
               const auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
-              const auto trackPosWithItsPid2 = tracksWithItsPid.rawIteratorAt(trackIndexPos2.trackId());
 
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
@@ -2607,7 +2663,7 @@ struct HfTrackIndexSkimCreator {
                 // 3-prong preselections
                 const auto isIdentifiedPidTrackPos1 = trackIndexPos1.isIdentifiedPid();
                 const auto isIdentifiedPidTrackPos2 = trackIndexPos2.isIdentifiedPid();
-                applyPreselection3Prong(trackPosWithItsPid1, trackPosWithItsPid2, pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, isIdentifiedPidTrackPos1, isIdentifiedPidTrackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+                applyPreselection3Prong(pVecTrackPos1, pVecTrackNeg1, pVecTrackPos2, isIdentifiedPidTrackPos1, isIdentifiedPidTrackPos2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
                 if (!config.debug && isSelected3ProngCand == 0) {
                   continue;
                 }
@@ -2804,6 +2860,9 @@ struct HfTrackIndexSkimCreator {
                         case hf_cand_3prong::DecayType::ChToHeKPi:
                           registry.fill(HIST("hMassChToHeKPi"), mass3Prong);
                           break;
+                        case hf_cand_3prong::DecayType::CaToAlKPi:
+                          registry.fill(HIST("hMassCaToAlKPi"), mass3Prong);
+                          break;
                       }
                     }
                     if (TESTBIT(whichHypo3Prong[iDecay3P], 1)) {
@@ -2826,6 +2885,9 @@ struct HfTrackIndexSkimCreator {
                           break;
                         case hf_cand_3prong::DecayType::ChToHeKPi:
                           registry.fill(HIST("hMassChToHeKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::CaToAlKPi:
+                          registry.fill(HIST("hMassCaToAlKPi"), mass3Prong);
                           break;
                       }
                     }
@@ -2853,7 +2915,6 @@ struct HfTrackIndexSkimCreator {
               }
 
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
-              const auto trackNegWithItsPid2 = tracksWithItsPid.rawIteratorAt(trackIndexNeg2.trackId());
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
               std::array dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
 
@@ -2876,7 +2937,7 @@ struct HfTrackIndexSkimCreator {
                 // 3-prong preselections
                 int8_t const isIdentifiedPidTrackNeg1 = trackIndexNeg1.isIdentifiedPid();
                 int8_t const isIdentifiedPidTrackNeg2 = trackIndexNeg2.isIdentifiedPid();
-                applyPreselection3Prong(trackNegWithItsPid1, trackNegWithItsPid2, pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, isIdentifiedPidTrackNeg1, isIdentifiedPidTrackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
+                applyPreselection3Prong(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, isIdentifiedPidTrackNeg1, isIdentifiedPidTrackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
                 if (!config.debug && isSelected3ProngCand == 0) {
                   continue;
                 }
@@ -3074,6 +3135,9 @@ struct HfTrackIndexSkimCreator {
                         case hf_cand_3prong::DecayType::ChToHeKPi:
                           registry.fill(HIST("hMassChToHeKPi"), mass3Prong);
                           break;
+                        case hf_cand_3prong::DecayType::CaToAlKPi:
+                          registry.fill(HIST("hMassCaToAlKPi"), mass3Prong);
+                          break;
                       }
                     }
                     if (TESTBIT(whichHypo3Prong[iDecay3P], 1)) {
@@ -3096,6 +3160,9 @@ struct HfTrackIndexSkimCreator {
                           break;
                         case hf_cand_3prong::DecayType::ChToHeKPi:
                           registry.fill(HIST("hMassChToHeKPi"), mass3Prong);
+                          break;
+                        case hf_cand_3prong::DecayType::CaToAlKPi:
+                          registry.fill(HIST("hMassCaToAlKPi"), mass3Prong);
                           break;
                       }
                     }
