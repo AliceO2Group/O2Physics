@@ -119,7 +119,7 @@ struct StrangeCascTrack {
     Configurable<float> cutZVertex{"cutZVertex", 10.0f, "max Z-vertex position"};
     Configurable<bool> cutDoSel8{"cutDoSel8", true, "choose events with sel8"};
     Configurable<bool> cutDoNoPileup{"cutDoNoPileup", true, "choose events with no bunch pileup"};
-    Configurable<bool> cutDoGoodFT0 {"cutDoGoodFT0", true, "choose events with IsGoodZvtxFT0VsPV"};
+    Configurable<bool> cutDoGoodFT0{"cutDoGoodFT0", true, "choose events with IsGoodZvtxFT0VsPV"};
     // cascade cuts
     Configurable<bool> cutDoPropagateDCA{"cutDoPropagateDCA", false, "choose events with sel8"};
     Configurable<float> cutPropDCAtoPVxy{"cutPropDCAtoPVxy", 0.02f, "max cascade dca to PV in xy - propagated"};
@@ -132,8 +132,7 @@ struct StrangeCascTrack {
     Configurable<std::vector<float>> cutMinCascCosPaVsPt{
       "cutMinCascCosPaVsPt",
       {0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 0.999, 0.999, 0.999},
-      "Min Casc CosPA per pT bin (same binning as axisPt)"
-    };
+      "Min Casc CosPA per pT bin (same binning as axisPt)"};
     Configurable<float> cutRapidity{"cutRapidity", 0.5f, "max rapidity"};
     Configurable<float> cutDauEta{"cutDauEta", 1.0f, "max eta of dau tracks"};
     Configurable<float> cutCompMassRej{"cutCompMassRej", 0.008f, "Competing mass rejection"};
@@ -405,11 +404,10 @@ struct StrangeCascTrack {
     bool passedCascCosPA = true;
     double casccospa = cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ());
     const auto& edges = axesConfig.axisPt.value;
-    int ptBin = std::upper_bound(edges.begin(), edges.end(), cascade.pt())
-                - edges.begin() - 1;
+    int ptBin = std::upper_bound(edges.begin(), edges.end(), cascade.pt()) - edges.begin() - 1;
     if (ptBin < 0 || ptBin >= (int)selCuts.cutMinCascCosPaVsPt->size()) {
       ptBin = 1;
-    } // safety check - if pt bin not determined, default to loosest cut 
+    } // safety check - if pt bin not determined, default to loosest cut
     if (casccospa < selCuts.cutMinCascCosPaVsPt->at(ptBin)) {
       passedCascCosPA = false;
       passedAllSels = false;
@@ -976,22 +974,22 @@ struct StrangeCascTrack {
             histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecPt"), genPt, pt);
           if (passedAllSelsOmega || passedAllSelsXi) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecPt"), genPt, pt);
-              if (fillTruthXi || fillTruthOmega)
-                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecPt"), genPt, pt);
+            if (fillTruthXi || fillTruthOmega)
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecPt"), genPt, pt);
           }
           if (fillTruthXi)
             histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecRapidityXi"), genYXi, cascade.yXi());
           if (passedAllSelsXi) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityXi"), genYXi, cascade.yXi());
-              if (fillTruthXi)
-                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityXi"), genYXi, cascade.yXi());
+            if (fillTruthXi)
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityXi"), genYXi, cascade.yXi());
           }
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
           if (passedAllSelsOmega) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
-              if (fillTruthOmega)
-                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
+            if (fillTruthOmega)
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
           }
         }
       }
@@ -1002,7 +1000,7 @@ struct StrangeCascTrack {
   {
     // check if cut configuration is valid
     if (selCuts.cutMinCascCosPaVsPt->size() != axesConfig.axisPt.value.size() - 1) {
-    LOGF(fatal, "cutMinCascCosPaVsPt size does not match axisPt binning");
+      LOGF(fatal, "cutMinCascCosPaVsPt size does not match axisPt binning");
     }
     // for all events processing
     histos.add("NoSel-Events/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
@@ -1121,17 +1119,17 @@ struct StrangeCascTrack {
     histos.add("MC/Gen/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
     histos.add("MC/Gen/Mult", "Event charged multiplicty (all gen events)", kTH1D, {{3200, 0, 3200}});
     histos.add("MC/Gen/RapidityXi", "Generated y (Xi)", kTH1D, {{200, -1.0, 1.0}});
-    histos.add("MC/Gen/Xi", "Xi", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                                             // generated Xis
-    histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                            // generated primary Xis
-    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});             // generated primary Xis in selected rapidity range
-    histos.add("MC/Gen/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});      // generated primary Xi-minus in selected rapidity range
-    histos.add("MC/Gen/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});        // generated primary Xi-plus in selected rapidity range
+    histos.add("MC/Gen/Xi", "Xi", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                                        // generated Xis
+    histos.add("MC/Gen/PrimaryXi", "Xi primaries", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                       // generated primary Xis
+    histos.add("MC/Gen/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});        // generated primary Xis in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}}); // generated primary Xi-minus in selected rapidity range
+    histos.add("MC/Gen/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});   // generated primary Xi-plus in selected rapidity range
     histos.add("MC/Gen/RapidityOmega", "Generated y (Omega)", kTH1D, {{200, -1.0, 1.0}});
-    histos.add("MC/Gen/Omega", "Omega", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                                             // generated Omegas
-    histos.add("MC/Gen/PrimaryOmega", "Omega primaries", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                            // generated primary Omegas
-    histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});             // generated primary Omegas in selected rapidity range
-    histos.add("MC/Gen/PrimaryOmegaMinusRapidity", "Omega- primaries in |y| ", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});      // generated primary Omega-minus in selected rapidity range
-    histos.add("MC/Gen/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});        // generated primary Omega-plus in selected rapidity range
+    histos.add("MC/Gen/Omega", "Omega", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                                        // generated Omegas
+    histos.add("MC/Gen/PrimaryOmega", "Omega primaries", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});                       // generated primary Omegas
+    histos.add("MC/Gen/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});        // generated primary Omegas in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaMinusRapidity", "Omega- primaries in |y| ", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}}); // generated primary Omega-minus in selected rapidity range
+    histos.add("MC/Gen/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {{3200, 0, 3200}, {100, 0.0, 10.0}});   // generated primary Omega-plus in selected rapidity range
     // generated events with reco >= 1:
     histos.add("MC/EvRec/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
     histos.add("MC/EvRec/Mult", "Event charged multiplicty (gen events with reco>=1)", kTH1D, {{3200, 0, 3200}});
@@ -1141,11 +1139,11 @@ struct StrangeCascTrack {
     histos.add("MC/EvRec/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});             // generated primary Xis in selected rapidity range in reco>=1
     histos.add("MC/EvRec/PrimaryXiMinusRapidity", "Xi- primaries in |y| ", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});      // generated primary Xi-minus in selected rapidity range in reco>=1
     histos.add("MC/EvRec/PrimaryXiPlusRapidity", "Xi+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});        // generated primary Xi-plus in selected rapidity range in reco>=1
-    histos.add("MC/EvRec/Omega", "Omega", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                             // generated Omegas in reco>=1
-    histos.add("MC/EvRec/PrimaryOmega", "Omega primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                            // generated primary Omegas in reco>=1
-    histos.add("MC/EvRec/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});             // generated primary Omegas in selected rapidity range in reco>=1
-    histos.add("MC/EvRec/PrimaryOmegaMinusRapidity", "Omega- primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});      // generated primary Omega-minus in selected rapidity range in reco>=1
-    histos.add("MC/EvRec/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});        // generated primary Omega-plus in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/Omega", "Omega", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                       // generated Omegas in reco>=1
+    histos.add("MC/EvRec/PrimaryOmega", "Omega primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                      // generated primary Omegas in reco>=1
+    histos.add("MC/EvRec/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Omegas in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/PrimaryOmegaMinusRapidity", "Omega- primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omega-minus in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});  // generated primary Omega-plus in selected rapidity range in reco>=1
     // label filter statistic bins for standard cascs
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
@@ -1293,35 +1291,35 @@ struct StrangeCascTrack {
       auto slicedGenCascs = genCascs.sliceBy(cascsPerMcCollision, genColl.globalIndex());
       for (auto const& casc : slicedGenCascs) {
         if (casc.straMCCollisionId() != genColl.index())
-             continue; // safety check for correct slicing
+          continue; // safety check for correct slicing
         // fill generated Xi and Omega (all) for statistics
         double cascPt = casc.ptMC();
         if (isValidPDG(casc, "Xi"))
-            histos.fill(HIST("MC/Gen/Xi"), genMult, cascPt);
+          histos.fill(HIST("MC/Gen/Xi"), genMult, cascPt);
         if (isValidPDG(casc, "Omega"))
-            histos.fill(HIST("MC/Gen/Omega"), genMult, cascPt);
+          histos.fill(HIST("MC/Gen/Omega"), genMult, cascPt);
         if (casc.isPhysicalPrimary()) {
           // fill generated primary Xi and Omega for statistics
-            if (isValidPDG(casc, "Xi"))
-              histos.fill(HIST("MC/Gen/PrimaryXi"), genMult, cascPt);
-            if (isValidPDG(casc, "Omega"))
-              histos.fill(HIST("MC/Gen/PrimaryOmega"), genMult, cascPt);
+          if (isValidPDG(casc, "Xi"))
+            histos.fill(HIST("MC/Gen/PrimaryXi"), genMult, cascPt);
+          if (isValidPDG(casc, "Omega"))
+            histos.fill(HIST("MC/Gen/PrimaryOmega"), genMult, cascPt);
           // fill generated primary Xi within rapidity for corrections
-            if (isValidPDG(casc, "Xi") && std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity) {
-              histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), genMult, cascPt);
-              if (casc.pdgCode() == PDG_t::kXiMinus)
-                histos.fill(HIST("MC/Gen/PrimaryXiMinusRapidity"), genMult, cascPt);
-              if (casc.pdgCode() == PDG_t::kXiPlusBar)
-                histos.fill(HIST("MC/Gen/PrimaryXiPlusRapidity"), genMult, cascPt);
-            }
+          if (isValidPDG(casc, "Xi") && std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity) {
+            histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kXiMinus)
+              histos.fill(HIST("MC/Gen/PrimaryXiMinusRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kXiPlusBar)
+              histos.fill(HIST("MC/Gen/PrimaryXiPlusRapidity"), genMult, cascPt);
+          }
           // fill generated primary Omega within rapidity for corrections
-            if (isValidPDG(casc, "Omega") && std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity) {
-              histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), genMult, cascPt);
-              if (casc.pdgCode() == PDG_t::kOmegaMinus)
-                histos.fill(HIST("MC/Gen/PrimaryOmegaMinusRapidity"), genMult, cascPt);
-              if (casc.pdgCode() == PDG_t::kOmegaPlusBar)
-                histos.fill(HIST("MC/Gen/PrimaryOmegaPlusRapidity"), genMult, cascPt);
-            }
+          if (isValidPDG(casc, "Omega") && std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity) {
+            histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kOmegaMinus)
+              histos.fill(HIST("MC/Gen/PrimaryOmegaMinusRapidity"), genMult, cascPt);
+            if (casc.pdgCode() == PDG_t::kOmegaPlusBar)
+              histos.fill(HIST("MC/Gen/PrimaryOmegaPlusRapidity"), genMult, cascPt);
+          }
         }
         // fill gen rapidity for statistics
         if (isValidPDG(casc, "Xi"))
@@ -1332,13 +1330,13 @@ struct StrangeCascTrack {
       // look at rec. ev. >= 1 for corrections
       auto slicedRecColls = recColls.sliceBy(perMcCollision, genColl.globalIndex());
       if (slicedRecColls.size() > 0) {
-      histos.fill(HIST("MC/EvRec/EvCounter"), 0.5);
-      histos.fill(HIST("MC/EvRec/Mult"), genMult);
+        histos.fill(HIST("MC/EvRec/EvCounter"), 0.5);
+        histos.fill(HIST("MC/EvRec/Mult"), genMult);
       }
       for (auto const& recColl : slicedRecColls) {
         int64_t genCollId = recColl.straMCCollisionId();
         if (genColl.index() != genCollId)
-            continue; // safety check for correct slicing
+          continue; // safety check for correct slicing
         // fill multiplicity-centrality distribution
         double recoMult = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
         histos.fill(HIST("MC/EvRec/MultCent"), recoMult, genMult);
