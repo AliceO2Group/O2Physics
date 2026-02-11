@@ -2236,9 +2236,12 @@ struct StrangenessInJets {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
 
+      const auto& v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      const auto& tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+
       // Loop over reconstructed tracks
       int id(-1);
-      for (auto const& track : perCollisionTrk) {
+      for (auto const& track : tracksPerColl) {
         id++;
 
         // Ensure tracks have corresponding MC particles
@@ -2268,7 +2271,7 @@ struct StrangenessInJets {
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
           continue;
 
         // Jet pt must be larger than threshold
@@ -2288,7 +2291,7 @@ struct StrangenessInJets {
         // Loop over jet constituents
         for (const auto& particle : jetConstituents) {
 
-          auto const& track = perCollisionTrk.iteratorAt(particle.user_index());
+          auto const& track = mcTracks.iteratorAt(particle.user_index());
           const auto mcparticle = track.mcParticle();
           if (std::abs(mcparticle.pdgCode()) != PDG_t::kPiPlus)
             continue;
@@ -2308,8 +2311,8 @@ struct StrangenessInJets {
         if (static_cast<int>(pions.size()) < minimumSize)
           continue;
 
-        for (int i=0 ; i < pions.size() ; i++) {
-          for (int j=i+1 ; j < pions.size() ; j++) {
+        for (int i=0 ; i < static_cast<int>(pions.size()) ; i++) {
+          for (int j=i+1 ; j < static_cast<int>(pions.size()) ; j++) {
 
             if (pions[i].idParent != pions[j].idParent)
               continue;
@@ -2345,7 +2348,7 @@ struct StrangenessInJets {
 
           TVector3 v0dir(v0.px(), v0.py(), v0.pz());
           float deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
-          float deltaPhiJet = getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
+          float deltaPhiJet = ParticlePositionWithRespectToJet::getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
           float deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
 
           if (deltaRjet < rJet && passedK0ShortSelection(v0, pos, neg))
