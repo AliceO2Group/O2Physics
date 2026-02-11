@@ -84,7 +84,7 @@ void GeometryContainer::init(o2::framework::InitContext& initContext)
 
   bool cleanLutWhenLoaded;
   const bool foundCleanLutWhenLoaded = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "cleanLutWhenLoaded", cleanLutWhenLoaded, false);
-  if (!foundDetectorConfiguration) {
+  if (!foundCleanLutWhenLoaded) {
     LOG(fatal) << "Could not retrieve foundCleanLutWhenLoaded option from OnTheFlyDetectorGeometryProvider task.";
     return;
   }
