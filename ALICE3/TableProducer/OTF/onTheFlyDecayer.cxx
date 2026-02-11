@@ -73,7 +73,7 @@ struct OnTheFlyDecayer {
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
-  std::map<int64_t, std::vector<o2::upgrade::OTFParticle>> mDecayDaughters;
+  std::map<int, std::vector<o2::upgrade::OTFParticle>> mDecayDaughters;
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
@@ -84,9 +84,62 @@ struct OnTheFlyDecayer {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
+  struct McParticleAlice3 {
+    McParticleAlice3() = default;
+    ~McParticleAlice3() = default;
+    McParticleAlice3(const McParticleAlice3& src) = default;
+    McParticleAlice3(int collisionId,
+                     int pdgCode,
+                     int statusCode,
+                     int flags,
+                     int mother0,
+                     int mother1,
+                     int daughter0,
+                     int daughter1,
+                     float weight,
+                     float px, float py, float pz, float e,
+                     float vx, float vy, float vz, float vt,
+                     float phi, float eta, float pt, float p, float y,
+                     bool isAlive, bool isPrimary) : collisionId(collisionId),
+                                                     pdgCode(pdgCode),
+                                                     statusCode(statusCode),
+                                                     flags(flags),
+                                                     mothersIds{mother0, mother1},
+                                                     daughtersIdSlice{daughter0, daughter1},
+                                                     weight(weight),
+                                                     px(px),
+                                                     py(py),
+                                                     pz(pz),
+                                                     e(e),
+                                                     vx(vx),
+                                                     vy(vy),
+                                                     vz(vz),
+                                                     vt(vt),
+                                                     phi(phi),
+                                                     eta(eta),
+                                                     pt(pt),
+                                                     p(p),
+                                                     y(y),
+                                                     isAlive(isAlive),
+                                                     isPrimary(isPrimary) {}
+    int collisionId;
+    int pdgCode;
+    int statusCode;
+    int flags;
+    int mothersIds[2];
+    int daughtersIdSlice[2];
+    float weight;
+    float px, py, pz, e;
+    float vx, vy, vz, vt;
+    float phi, eta, pt, p, y;
+    bool isAlive;
+    bool isPrimary;
+  };
+
   std::vector<int> mEnabledDecays;
   void init(o2::framework::InitContext&)
   {
+    LOG(info) << "Initializing on-the-fly-decayer.";
     decayer.setSeed(seed);
     decayer.setBField(magneticField);
     for (int i = 0; i < NumDecays; ++i) {
@@ -115,11 +168,13 @@ struct OnTheFlyDecayer {
     return std::find(mEnabledDecays.begin(), mEnabledDecays.end(), pdgCode) != mEnabledDecays.end();
   }
 
+  std::vector<McParticleAlice3> mcParticlesAlice3;
   void process(aod::McCollision const&, aod::McParticles const& mcParticles)
   {
     mDecayDaughters.clear();
+    mcParticlesAlice3.clear();
     u_int64_t nStoredDaughters = 0;
-    for (int64_t index{0}; index < mcParticles.size(); ++index) {
+    for (int index{0}; index < static_cast<int>(mcParticles.size()); ++index) {
       const auto& particle = mcParticles.iteratorAt(index);
       std::vector<o2::upgrade::OTFParticle> decayDaughters;
       static constexpr int MaxNestedDecays = 10;
@@ -129,13 +184,14 @@ struct OnTheFlyDecayer {
         o2::upgrade::convertMCParticleToO2Track(particle, o2track, pdgDB);
         decayDaughters = decayer.decayParticle(pdgDB, o2track, particle.pdgCode());
         for (size_t idau{0}; idau < decayDaughters.size(); ++idau) {
-          o2::upgrade::OTFParticle& dau = decayDaughters[idau];
+          o2::upgrade::OTFParticle dau = decayDaughters[idau];
           o2::track::TrackParCov dauTrack;
           o2::upgrade::convertOTFParticleToO2Track(dau, dauTrack, pdgDB);
           if (canDecay(dau.pdgCode())) {
             dau.setIsAlive(false);
             std::vector<o2::upgrade::OTFParticle> cascadingDaughers = decayer.decayParticle(pdgDB, dauTrack, dau.pdgCode());
-            for (const auto& daudau : cascadingDaughers) {
+            for (size_t idaudau{0}; idaudau < cascadingDaughers.size(); ++idaudau) {
+              o2::upgrade::OTFParticle daudau = cascadingDaughers[idaudau];
               decayDaughters.push_back(daudau);
               if (MaxNestedDecays < ++nDecays) {
                 LOG(error) << "Seemingly stuck trying to perpetually decay products from pdg: " << particle.pdgCode();
@@ -194,14 +250,13 @@ struct OnTheFlyDecayer {
         daughtersIdSlice[1] = static_cast<int>(particle.daughtersIds()[1]);
       }
 
-      std::span<const int> motherSpan(particle.mothersIds().data(), particle.mothersIds().size());
       mDecayDaughters.emplace(index, decayDaughters);
       nStoredDaughters += decayDaughters.size();
 
-      float phi = o2::constants::math::PI + std::atan2(-1.0f * particle.py(), -1.0f * particle.px());
+      const float phi = o2::constants::math::PI + std::atan2(-1.0f * particle.py(), -1.0f * particle.px());
       float eta; // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1922
-      float pt = std::sqrt(particle.px() * particle.px() + particle.py() * particle.py());
-      float p = std::sqrt(particle.px() * particle.px() + particle.py() * particle.py() + particle.pz() * particle.pz());
+      const float pt = std::sqrt(particle.px() * particle.px() + particle.py() * particle.py());
+      const float p = std::sqrt(particle.px() * particle.px() + particle.py() * particle.py() + particle.pz() * particle.pz());
       float y; // As https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
 
       if ((p - particle.pz()) < Tolerance) {
@@ -218,29 +273,29 @@ struct OnTheFlyDecayer {
 
       // TODO: Particle status code
       // TODO: Expression columns
-      tableMcParticlesWithDau(particle.mcCollisionId(), particle.pdgCode(), particle.statusCode(),
-                              particle.flags(), motherSpan, daughtersIdSlice, particle.weight(),
-                              particle.px(), particle.py(), particle.pz(), particle.e(),
-                              particle.vx(), particle.vy(), particle.vz(), particle.vt(),
-                              phi, eta, pt, p, y, !canDecay(particle.pdgCode()), true);
+      auto mothers = particle.mothersIds();
+      int mother0 = mothers.size() > 0 ? mothers[0] : -1;
+      int mother1 = mothers.size() > 1 ? mothers[1] : mother0;
+      mcParticlesAlice3.push_back(McParticleAlice3{particle.mcCollisionId(), particle.pdgCode(), particle.statusCode(),
+                                                   particle.flags(), mother0, mother1,
+                                                   daughtersIdSlice[0], daughtersIdSlice[1], particle.weight(),
+                                                   particle.px(), particle.py(), particle.pz(), particle.e(),
+                                                   particle.vx(), particle.vy(), particle.vz(), particle.vt(),
+                                                   phi, eta, pt, p, y, !canDecay(particle.pdgCode()), true});
     }
 
     int daughtersIdSlice[2] = {-1, -1};
     for (const auto& [index, decayDaughters] : mDecayDaughters) {
       for (const auto& dau : decayDaughters) {
         if (index >= mcParticles.size()) {
-          LOG(warn) << "--- Index " << index << " out of bounds for mcParticles table of size " << mcParticles.size();
+          LOG(error) << "--- Index " << index << " out of bounds for mcParticles table of size " << mcParticles.size() << std::endl;
           continue;
         }
 
-        auto mother = mcParticles.iteratorAt(index);
-        std::vector<int> motherIds = {static_cast<int>(index)};
-        std::span<const int> motherSpan(motherIds.data(), motherIds.size());
-
-        float phi = o2::constants::math::PI + std::atan2(-1.0f * dau.py(), -1.0f * dau.px());
+        const float phi = o2::constants::math::PI + std::atan2(-1.0f * dau.py(), -1.0f * dau.px());
         float eta; // Conditional as https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1922
-        float pt = std::sqrt(dau.px() * dau.px() + dau.py() * dau.py());
-        float p = std::sqrt(dau.px() * dau.px() + dau.py() * dau.py() + dau.pz() * dau.pz());
+        const float pt = std::sqrt(dau.px() * dau.px() + dau.py() * dau.py());
+        const float p = std::sqrt(dau.px() * dau.px() + dau.py() * dau.py() + dau.pz() * dau.pz());
         float y; // Conditional as https://github.com/AliceO2Group/AliceO2/blob/dev/Framework/Core/include/Framework/AnalysisDataModel.h#L1943
 
         if ((p - dau.pz()) < Tolerance) {
@@ -283,12 +338,24 @@ struct OnTheFlyDecayer {
         // TODO: Particle status code
         // TODO: Expression columns
         // TODO: vt
-        tableMcParticlesWithDau(mother.mcCollisionId(), dau.pdgCode(), 1,
-                                mother.flags(), motherSpan, daughtersIdSlice, mother.weight(),
-                                dau.px(), dau.py(), dau.pz(), dau.e(),
-                                dau.vx(), dau.vy(), dau.vz(), mother.vt(),
-                                phi, eta, pt, p, y, dau.isAlive(), false);
+        auto mother = mcParticles.iteratorAt(index);
+        mcParticlesAlice3.push_back(McParticleAlice3{mother.mcCollisionId(), dau.pdgCode(), 1,
+                                                     -1, index, index, daughtersIdSlice[0], daughtersIdSlice[1], mother.weight(),
+                                                     dau.px(), dau.py(), dau.pz(), dau.e(),
+                                                     dau.vx(), dau.vy(), dau.vz(), mother.vt(),
+                                                     phi, eta, pt, p, y, dau.isAlive(), false});
       }
+    }
+
+    for (const auto& particle : mcParticlesAlice3) {
+      std::span<const int> motherSpan(particle.mothersIds, 2);
+
+      tableMcParticlesWithDau(particle.collisionId, particle.pdgCode, particle.statusCode,
+                              particle.flags, motherSpan, particle.daughtersIdSlice, particle.weight,
+                              particle.px, particle.py, particle.pz, particle.e,
+                              particle.vx, particle.vy, particle.vz, particle.vt,
+                              particle.phi, particle.eta, particle.pt, particle.p, particle.y,
+                              particle.isAlive, particle.isPrimary);
     }
   }
 };

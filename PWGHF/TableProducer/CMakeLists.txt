@@ -95,11 +95,6 @@ o2physics_add_dpl_workflow(candidate-creator-xic-to-xi-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-creator-xicc
-                    SOURCES candidateCreatorXicc.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(candidate-creator-mc-gen
                     SOURCES candidateCreatorMcGen.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -197,12 +192,7 @@ o2physics_add_dpl_workflow(candidate-selector-xic-to-xi-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-selector-xicc-to-p-k-pi-pi
-                    SOURCES candidateSelectorXiccToPKPiPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
- o2physics_add_dpl_workflow(candidate-selector-cd
+o2physics_add_dpl_workflow(candidate-selector-cd
                      SOURCES candidateSelectorCd.cxx
                      PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                      COMPONENT_NAME Analysis)
@@ -236,6 +226,11 @@ o2physics_add_dpl_workflow(tree-creator-dplus-to-pi-k-pi
 
 o2physics_add_dpl_workflow(tree-creator-ds-to-k-k-pi
                     SOURCES treeCreatorDsToKKPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-dstar-to-d0-pi
+                    SOURCES treeCreatorDstarToD0Pi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -291,16 +286,6 @@ o2physics_add_dpl_workflow(tree-creator-xic-to-p-k-pi
 
 o2physics_add_dpl_workflow(tree-creator-xic-to-xi-pi-pi
                     SOURCES treeCreatorXicToXiPiPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(tree-creator-xicc-to-p-k-pi-pi
-                    SOURCES treeCreatorXiccToPKPiPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(tree-creator-dstar-to-d0-pi
-                    SOURCES treeCreatorDstarToD0Pi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

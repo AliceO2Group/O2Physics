@@ -212,6 +212,7 @@ struct TaskPi0FlowEMC {
     o2::framework::Configurable<float> maxTPCNSigmaEl{"maxTPCNSigmaEl", +3.0f, "max. TPC n sigma for electron"};
     o2::framework::Configurable<bool> disableITSOnly{"disableITSOnly", false, "flag to disable ITSonly tracks"};
     o2::framework::Configurable<bool> disableTPCOnly{"disableTPCOnly", false, "flag to disable TPConly tracks"};
+    o2::framework::Configurable<bool> doQA{"doQA", false, "flag to set QA flag."};
   } pcmcuts;
 
   struct : ConfigurableGroup {
@@ -348,6 +349,7 @@ struct TaskPi0FlowEMC {
     fEMCCut.SetClusterizer(emccuts.clusterDefinition);
     fEMCCut.SetUseTM(emccuts.cfgEMCUseTM.value);                // disables or enables TM
     fEMCCut.SetUseSecondaryTM(emccuts.emcUseSecondaryTM.value); // disables or enables secondary TM
+    fEMCCut.SetDoQA(emccuts.cfgEnableQA.value);
   }
 
   void definePCMCut()
@@ -379,6 +381,8 @@ struct TaskPi0FlowEMC {
     fV0PhotonCut.SetRequireITSTPC(pcmcuts.requireV0WithITSTPC);
     fV0PhotonCut.SetRequireITSonly(pcmcuts.requireV0WithITSOnly);
     fV0PhotonCut.SetRequireTPConly(pcmcuts.requireV0WithTPCOnly);
+
+    fV0PhotonCut.setDoQA(pcmcuts.doQA.value);
   }
 
   void init(InitContext&)
@@ -389,7 +393,9 @@ struct TaskPi0FlowEMC {
 
     defineEMEventCut();
     defineEMCCut();
+    fEMCCut.addQAHistograms(&registry);
     definePCMCut();
+    fV0PhotonCut.addQAHistograms(&registry);
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
@@ -1095,14 +1101,14 @@ struct TaskPi0FlowEMC {
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     EMBitFlags flags(clusters.size());
-    fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds, &registry);
 
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
     }
     for (const auto& collision : collisions) {
 
-      if (!isFullEventSelected(collision)) {
+      if (!isFullEventSelected(collision, true)) {
         continue;
       }
       runNow = collision.runNumber();
@@ -1238,14 +1244,17 @@ struct TaskPi0FlowEMC {
   void processEMCalPCMC(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+
+    EMBitFlags v0flags(photons.size());
+    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
 
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
     }
     for (const auto& collision : collisions) {
 
-      if (!isFullEventSelected(collision)) {
+      if (!isFullEventSelected(collision, true)) {
         continue;
       }
       runNow = collision.runNumber();
@@ -1267,7 +1276,7 @@ struct TaskPi0FlowEMC {
         }
       }
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonsEMCPerCollision, photonsPCMPerCollision))) {
-        if (!(emcFlags.test(g1.globalIndex())) || !(fV0PhotonCut.IsSelected<decltype(g2), aod::V0Legs>(g2))) {
+        if (!(emcFlags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
           continue;
         }
 
@@ -1304,7 +1313,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("hMesonCuts"), 4);
           continue;
         }
-        if (mesonConfig.cfgEnableQA) {
+        if (mesonConfig.cfgEnableQA.value) {
           registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
           registry.fill(HIST("mesonQA/hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
@@ -1332,6 +1341,10 @@ struct TaskPi0FlowEMC {
     float energyCorrectionFactor = 1.f;
     EMBitFlags emcFlags(clusters.size());
     fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+
+    EMBitFlags v0flags(pcmPhotons.size());
+    fV0PhotonCut.AreSelectedRunning<decltype(pcmPhotons), aod::V0Legs>(v0flags, pcmPhotons);
+
     for (const auto& [c1, photonEMC, c2, photonPCM] : pairPCMEMC) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
         // general event selection
@@ -1352,7 +1365,7 @@ struct TaskPi0FlowEMC {
       }
       registry.fill(HIST("h3DMixingCount"), c1.posZ(), getCentrality(c1), c1.ep2ft0m());
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonEMC, photonPCM))) {
-        if (!(emcFlags.test(g1.globalIndex())) || !(fV0PhotonCut.IsSelected<decltype(g2), aod::V0Legs>(g2))) {
+        if (!(emcFlags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
@@ -1383,7 +1396,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("hMesonCutsMixed"), 4);
           continue;
         }
-        if (mesonConfig.cfgEnableQA) {
+        if (mesonConfig.cfgEnableQA.value) {
           registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
           registry.fill(HIST("mesonQA/hTanThetaPhiMixed"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
           registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
@@ -1402,6 +1415,9 @@ struct TaskPi0FlowEMC {
   // Pi0 from EMCal
   void processM02(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    EMBitFlags emcFlags(clusters.size());
+    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+
     for (const auto& collision : collisions) {
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
       if (!(fEMEventCut.IsSelected(collision))) {
@@ -1439,7 +1455,7 @@ struct TaskPi0FlowEMC {
         }
         auto matchedPrimsPerCluster = matchedPrims.sliceBy(perEMCClusterMT, photon.globalIndex());
         auto matchedSecondsPerCluster = matchedSeconds.sliceBy(perEMCClusterMS, photon.globalIndex());
-        if (!(fEMCCut.IsSelected(photon, matchedPrimsPerCluster, matchedSecondsPerCluster))) {
+        if (!(emcFlags.test(photon.globalIndex()))) {
           continue;
         }
         if (cfgDistanceToEdge.value && (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelSameEvent.value)) {
@@ -1471,6 +1487,133 @@ struct TaskPi0FlowEMC {
     } // end of loop over collisions
   } // processM02
   PROCESS_SWITCH(TaskPi0FlowEMC, processM02, "Process single EMCal clusters as function of M02", false);
+
+  // Pi0 from EMCal
+  void processPCM(CollsWithQvecs const& collisions, PCMPhotons const& photons, aod::V0Legs const&)
+  {
+    EMBitFlags v0flags(photons.size());
+    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
+    for (const auto& collision : collisions) {
+
+      if (!isFullEventSelected(collision, true)) {
+        continue;
+      }
+      runNow = collision.runNumber();
+      if (runNow != runBefore) {
+        initCCDB(collision);
+        runBefore = runNow;
+      }
+
+      auto photonsPerCollision = photons.sliceBy(perCollisionPCM, collision.globalIndex());
+      for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photonsPerCollision, photonsPerCollision))) {
+        if (!(v0flags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
+          continue;
+        }
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g1.e() > MinEnergy ? g1.e() : MinEnergy);
+        }
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g2.e() > MinEnergy ? g2.e() : MinEnergy);
+        }
+
+        ROOT::Math::PtEtaPhiMVector v1(energyCorrectionFactor * g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(energyCorrectionFactor * g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
+
+        float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+
+        registry.fill(HIST("hMesonCuts"), 1);
+        if (openingAngle <= mesonConfig.minOpenAngle) {
+          registry.fill(HIST("hMesonCuts"), 2);
+          continue;
+        }
+        if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
+          registry.fill(HIST("hMesonCuts"), 3);
+          continue;
+        }
+        if (thnConfigAxisPt.value[1] > vMeson.Pt() || thnConfigAxisPt.value.back() < vMeson.Pt()) {
+          registry.fill(HIST("hMesonCuts"), 4);
+          continue;
+        }
+        if (mesonConfig.cfgEnableQA.value) {
+          registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+        }
+        registry.fill(HIST("hMesonCuts"), 6);
+        runFlowAnalysis<0>(collision, vMeson);
+      }
+    } // end of loop over collisions
+  }
+  PROCESS_SWITCH(TaskPi0FlowEMC, processPCM, "Process PCM Pi0 candidates", false);
+
+  // PCM-EMCal mixed event
+  void processPCMMixed(FilteredCollsWithQvecs const& collisions, PCMPhotons const& pcmPhotons, aod::V0Legs const&)
+  {
+
+    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
+
+    auto pcmPhotonTuple = std::make_tuple(pcmPhotons);
+    SameKindPair<FilteredCollsWithQvecs, PCMPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, pcmPhotonTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+
+    float energyCorrectionFactor = 1.f;
+
+    EMBitFlags v0flags(pcmPhotons.size());
+    fV0PhotonCut.AreSelectedRunning<decltype(pcmPhotons), aod::V0Legs>(v0flags, pcmPhotons);
+
+    for (const auto& [c1, photon1, c2, photon2] : pair) {
+      if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
+        // general event selection
+        continue;
+      }
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+        // occupancy selection
+        continue;
+      }
+      if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {
+        // event selection
+        continue;
+      }
+      runNow = c1.runNumber();
+      if (runNow != runBefore) {
+        initCCDB(c1);
+        runBefore = runNow;
+      }
+      registry.fill(HIST("h3DMixingCount"), c1.posZ(), getCentrality(c1), c1.ep2ft0m());
+      for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photon1, photon2))) {
+        if (!(v0flags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
+          continue;
+        }
+        energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g1.e() > MinEnergy ? g1.e() : MinEnergy);
+        ROOT::Math::PtEtaPhiMVector v1(energyCorrectionFactor * g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
+
+        float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+
+        registry.fill(HIST("hMesonCutsMixed"), 1);
+        if (openingAngle <= mesonConfig.minOpenAngle) {
+          registry.fill(HIST("hMesonCutsMixed"), 2);
+          continue;
+        }
+        if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
+          registry.fill(HIST("hMesonCutsMixed"), 3);
+          continue;
+        }
+        if (thnConfigAxisPt.value[1] > vMeson.Pt() || thnConfigAxisPt.value.back() < vMeson.Pt()) {
+          registry.fill(HIST("hMesonCutsMixed"), 4);
+          continue;
+        }
+        if (mesonConfig.cfgEnableQA.value) {
+          registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+        }
+        registry.fill(HIST("hMesonCutsMixed"), 6);
+        runFlowAnalysis<2>(c1, vMeson);
+      }
+    }
+  }
+  PROCESS_SWITCH(TaskPi0FlowEMC, processPCMMixed, "Process neutral meson flow using PCM-EMC mixed event", false);
 
 }; // End struct TaskPi0FlowEMC
 

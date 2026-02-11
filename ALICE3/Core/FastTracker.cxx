@@ -24,9 +24,11 @@
 #include <TRandom.h>
 #include <TSystem.h>
 
+#include <chrono>
 #include <fstream>
 #include <map>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace o2
@@ -34,10 +36,11 @@ namespace o2
 namespace fastsim
 {
 
-std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string filename, std::vector<std::string>& layers)
+std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string& filename, std::vector<std::string>& layers)
 {
   std::map<std::string, std::map<std::string, std::string>> configMap;
   filename = gSystem->ExpandPathName(filename.c_str());
+  LOG(info) << "Parsing TEnv configuration file: " << filename;
   TEnv env(filename.c_str());
   THashList* table = env.GetTable();
   layers.clear();
@@ -72,15 +75,47 @@ std::map<std::string, std::map<std::string, std::string>> GeometryContainer::par
 void GeometryContainer::init(o2::framework::InitContext& initContext)
 {
   std::vector<std::string> detectorConfiguration;
-  const bool found = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "detectorConfiguration", detectorConfiguration, false);
-  if (!found) {
+  const bool foundDetectorConfiguration = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "detectorConfiguration", detectorConfiguration, false);
+  if (!foundDetectorConfiguration) {
     LOG(fatal) << "Could not retrieve detector configuration from OnTheFlyDetectorGeometryProvider task.";
     return;
   }
   LOG(info) << "Size of detector configuration: " << detectorConfiguration.size();
-  for (const auto& configFile : detectorConfiguration) {
+
+  bool cleanLutWhenLoaded;
+  const bool foundCleanLutWhenLoaded = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "cleanLutWhenLoaded", cleanLutWhenLoaded, false);
+  if (!foundCleanLutWhenLoaded) {
+    LOG(fatal) << "Could not retrieve foundCleanLutWhenLoaded option from OnTheFlyDetectorGeometryProvider task.";
+    return;
+  }
+
+  for (std::string& configFile : detectorConfiguration) {
+    if (configFile.rfind("ccdb:", 0) == 0) {
+      LOG(info) << "ccdb source detected from on-the-fly-detector-geometry-provider";
+      const std::string ccdbPath = configFile.substr(5); // remove "ccdb:" prefix
+      const std::string outPath = "./.ALICE3/Configuration/";
+      configFile = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
+
+      int timeout = 600; // Wait max 10 minutes
+      while (--timeout > 0) {
+        std::ifstream file(configFile);
+        if (file.good()) {
+          break;
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+
+      std::ifstream checkFile(configFile);
+      if (!checkFile.good()) {
+        LOG(fatal) << "Timed out waiting for geometry snapshot: " << configFile;
+        return;
+      }
+    }
+
     LOG(info) << "Detector geometry configuration file used: " << configFile;
     addEntry(configFile);
+    setLutCleanupSetting(cleanLutWhenLoaded);
   }
 }
 
@@ -95,6 +130,16 @@ std::map<std::string, std::string> GeometryContainer::GeometryEntry::getConfigur
   }
 }
 
+bool GeometryContainer::GeometryEntry::hasValue(const std::string& layerName, const std::string& key) const
+{
+  auto layerIt = mConfigurations.find(layerName);
+  if (layerIt != mConfigurations.end()) {
+    auto keyIt = layerIt->second.find(key);
+    return keyIt != layerIt->second.end();
+  }
+  return false;
+}
+
 std::string GeometryContainer::GeometryEntry::getValue(const std::string& layerName, const std::string& key, bool require) const
 {
   auto layer = getConfiguration(layerName);
@@ -107,6 +152,14 @@ std::string GeometryContainer::GeometryEntry::getValue(const std::string& layerN
   } else {
     return "";
   }
+}
+
+void GeometryContainer::GeometryEntry::replaceValue(const std::string& layerName, const std::string& key, const std::string& value)
+{
+  if (!hasValue(layerName, key)) { // check that the key exists
+    LOG(fatal) << "Key " << key << " does not exist in layer " << layerName << ". Cannot replace value.";
+  }
+  setValue(layerName, key, value);
 }
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
@@ -167,106 +220,6 @@ void FastTracker::Print()
     LOG(info) << " Layer #" << il << "\t" << layers[il];
   }
   LOG(info) << "+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+";
-}
-
-void FastTracker::AddSiliconALICE3v4(std::vector<float> pixelResolution)
-{
-  LOG(info) << " ALICE 3: Adding v4 tracking layers";
-  float x0IT = 0.001;        // 0.1%
-  float x0OT = 0.005;        // 0.5%
-  float xrhoIB = 1.1646e-02; // 50 mum Si
-  float xrhoOT = 1.1646e-01; // 500 mum Si
-  float eff = 1.00;
-
-  float resRPhiIT = pixelResolution[0];
-  float resZIT = pixelResolution[1];
-  float resRPhiOT = pixelResolution[2];
-  float resZOT = pixelResolution[3];
-
-  AddLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
-  AddLayer("ddd0", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("ddd1", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("ddd2", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("bpipe1", 5.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
-  AddLayer("ddd3", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("ddd4", 10., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("ddd5", 13., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("ddd6", 16., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("ddd7", 25., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("ddd8", 40., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("ddd9", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-}
-
-void FastTracker::AddSiliconALICE3v2(std::vector<float> pixelResolution)
-{
-  LOG(info) << "ALICE 3: Adding v2 tracking layers;";
-  float x0IT = 0.001;        // 0.1%
-  float x0OT = 0.01;         // 1.0%
-  float xrhoIB = 2.3292e-02; // 100 mum Si
-  float xrhoOT = 2.3292e-01; // 1000 mum Si
-  float eff = 1.00;
-
-  float resRPhiIT = pixelResolution[0];
-  float resZIT = pixelResolution[1];
-  float resRPhiOT = pixelResolution[2];
-  float resZOT = pixelResolution[3];
-
-  AddLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
-  AddLayer("B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
-  AddLayer("B03", 3.75, 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B04", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B09", 60., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-}
-
-void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution)
-{
-  float x0Pipe0 = 0.001592;  // 200 um AlBe
-  float x0VDL0 = 0.00076;    // 30 um Si + 50 um glue + carbon foam 0.03%
-  float x0VDL1 = 0.00096;    // 30 um Si + 50 um glue + carbon foam 0.05%
-  float x0VDL2 = 0.00167;    // 30 um Si + 50 um glue + carbon foam 0.05% + 0.07% Be case
-  float x0Coldplate = 0.02f; // (1.5 mm Al2O3 2%)
-  float x0Pipe1 = 0.0023f;   // 800 um Be
-  float x0OT = 0.01;         // 1.0%
-  float x0iTOF = x0OT * 3.;
-
-  float resRPhiVD = pixelResolution[0];
-  float resZVD = pixelResolution[1];
-  float resRPhiOT = pixelResolution[2];
-  float resZOT = pixelResolution[3];
-
-  float xrhoPipe0 = 0;
-  float xrhoVDL0 = 0;
-  float xrhoVDL1 = 0;
-  float xrhoVDL2 = 0;
-  float xrhoColdplate = 0;
-  float xrhoPipe1 = 0;
-  float xrhoOT = 2.3292e-01;
-  float xrhoiTOF = 0.03;
-  float eff = 1.00;
-
-  AddLayer("bpipe0", 0.48, 250, x0Pipe0, xrhoPipe0, 0.0f, 0.0f, 0.0f, 0);
-  AddLayer("B00", 0.5, 250, x0VDL0 * scaleX0VD, xrhoVDL0, resRPhiVD, resZVD, eff, 1);
-  AddLayer("B01", 1.2, 250, x0VDL1 * scaleX0VD, xrhoVDL1, resRPhiVD, resZVD, eff, 1);
-  AddLayer("B02", 2.5, 250, x0VDL2 * scaleX0VD, xrhoVDL2, resRPhiVD, resZVD, eff, 1);
-  AddLayer("coldplate", 2.6, 250, x0Coldplate, xrhoColdplate, 0.0f, 0.0f, 0.0f, 0);
-  AddLayer("bpipe1", 5.7, 250, x0Pipe1, xrhoPipe1, 0.0f, 0.0f, 0.0f, 0);
-  AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B04", 9., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, eff, 0);
-  AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B09", 60., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
 }
 
 void FastTracker::AddTPC(float phiResMean, float zResMean)

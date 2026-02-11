@@ -96,7 +96,12 @@ struct matchingMFT {
   Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to require MFT hit map"};
   Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
-  Configurable<int> cfgBestMatchFinder{"cfgBestMatchFinder", 0, "matching chi2:0, dr:1"};
+  Configurable<int> cfgBestMatchFinder{"cfgBestMatchFinder", 0, "matching chi2:0, dr:1, 2d:2"};
+  Configurable<bool> cfgApplyPreselectionInBestMatch{"cfgApplyPreselectionInBestMatch", false, "flag to apply preselection in find best match function"};
+  Configurable<float> cfgSlope_dr_chi2MatchMFTMCH{"cfgSlope_dr_chi2MatchMFTMCH", -0.15 / 30, "slope of chiMatchMCHMFT vs. dR"};
+  Configurable<float> cfgIntercept_dr_chi2MatchMFTMCH{"cfgIntercept_dr_chi2MatchMFTMCH", 1e+10f, "intercept of chiMatchMCHMFT vs. dR"};
+  Configurable<float> cfgPeakPosition_chi2MatchMFTMCH{"cfgPeakPosition_chi2MatchMFTMCH", 2.f, "peak position of chiMatchMCHMFT distribution"};
+  Configurable<float> cfgPeakPosition_dr{"cfgPeakPosition_dr", 0.01, "peak position of dr distribution"};
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
@@ -226,6 +231,7 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm);", kTH2F, {{100, 0, 1}, {200, -0.1, 0.1}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hMCHBitMap", "MCH bit map;MCH bit map", kTH1F, {{1024, -0.5, 1023.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hMIDBitMap", "MID bit map;MID bit map", kTH1F, {{256, -0.5, 255.5}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hdR_Chi2MatchMCHMFT", "dr vs. matching chi2 MCH-MFT;chi2 match MCH-MFT;#DeltaR;", kTH2F, {{200, 0, 50}, {200, 0, 0.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hCorrectAsocc", "correct fwdtrack-to-collision association", kTH1F, {{2, -0.5, +1.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hIsCA", "cellular automaton;isCA", kTH1F, {{2, -0.5, 1.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hProdVtxZ", "prod. vtx Z of muon;V_{z} (cm)", kTH1F, {{200, -100, 100}}, false);
@@ -279,6 +285,7 @@ struct matchingMFT {
       if (chi2_per_ndf < 0.f || maxChi2GL < chi2_per_ndf) {
         return false;
       }
+
     } else if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
       if (eta < minEtaSA || maxEtaSA < eta) {
         return false;
@@ -534,6 +541,8 @@ struct matchingMFT {
     float deta = etaMatchedMCHMID - eta;
     float dphi = phiMatchedMCHMID - phi;
     o2::math_utils::bringToPMPi(dphi);
+    float dr = std::sqrt(deta * deta + dphi * dphi);
+
     if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
       return;
     }
@@ -541,6 +550,10 @@ struct matchingMFT {
       return;
     }
     if (std::fabs(dpt) > maxRelDPt) {
+      return;
+    }
+
+    if (cfgSlope_dr_chi2MatchMFTMCH * fwdtrack.chi2MatchMCHMFT() + cfgIntercept_dr_chi2MatchMFTMCH < dr) {
       return;
     }
 
@@ -741,10 +754,11 @@ struct matchingMFT {
 
   std::vector<std::tuple<int, int, int>> vec_min_chi2MatchMCHMFT; // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> chi2MatchMCHMFT;
   std::vector<std::tuple<int, int, int>> vec_min_dr;              // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> deta + dphi;
+  std::vector<std::tuple<int, int, int>> vec_min_2d;              // std::pair<globalIndex of global muon, globalIndex of matched MCH-MID, globalIndex of MFT> -> deta + dphi;
   std::map<std::tuple<int, int, int>, bool> mapCorrectMatch;
 
-  template <bool withMFTCov, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
-  void findBestMatchPerMCHMID(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const&, TMFTTracksCov const& mftCovs)
+  template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
+  void findBestMatchPerMCHMID(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const&)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
       return;
@@ -755,32 +769,69 @@ struct matchingMFT {
 
     std::tuple<int, int, int> tupleIds_at_min_chi2mftmch;
     std::tuple<int, int, int> tupleIds_at_min_dr;
+    std::tuple<int, int, int> tupleIds_at_min_distance_2d;
     float min_chi2MatchMCHMFT = 1e+10;
     float min_dr = 1e+10;
+    float min_distance_2d = 1e+10;
     auto muons_per_MCHMID = fwdtracks.sliceBy(fwdtracksPerMCHTrack, fwdtrack.globalIndex());
     // LOGF(info, "muons_per_MCHMID.size() = %d", muons_per_MCHMID.size());
 
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(fwdtrack, fwdtrack, collision, propagationPoint::kToVertex, matchingZ, mBz, mZShift);
+    float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
+    float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
+    o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
+
     for (const auto& muon_tmp : muons_per_MCHMID) {
       if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-
         auto tupleId = std::make_tuple(muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId());
         auto mchtrack = muon_tmp.template matchMCHTrack_as<MyFwdTracks>(); // MCH-MID
         auto mfttrack = muon_tmp.template matchMFTTrack_as<MyMFTTracks>();
+
+        // LOGF(info, "muon_tmp.has_mcParticle() = %d, mchtrack.has_mcParticle() = %d, mfttrack.has_mcParticle() = %d", muon_tmp.has_mcParticle(), mchtrack.has_mcParticle(), mfttrack.has_mcParticle());
 
         if (!muon_tmp.has_mcParticle() || !mchtrack.has_mcParticle() || !mfttrack.has_mcParticle()) {
           continue;
         }
 
-        float dx = 999.f, dy = 999.f;
-        if constexpr (withMFTCov) {
-          getDxDyAtMatchingPlane<TFwdTracks, TMFTTracks>(collision, muon_tmp, mftCovs, dx, dy);
-        }
-        float dr = std::sqrt(dx * dx + dy * dy);
-
         // auto mcParticle_MFTMCHMID = muon_tmp.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MCHMID
         auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
         auto mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
+
+        bool isPrimary = mcParticle_MCHMID.isPhysicalPrimary() || mcParticle_MCHMID.producedByGenerator();
+        bool isMatched = (mcParticle_MFT.globalIndex() == mcParticle_MCHMID.globalIndex()) && (mcParticle_MFT.mcCollisionId() == mcParticle_MCHMID.mcCollisionId());
+
+        o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(muon_tmp, muon_tmp, collision, propagationPoint::kToVertex, matchingZ, mBz, mZShift);
+        // float pt = propmuonAtPV.getPt();
+        float eta = propmuonAtPV.getEta();
+        float phi = propmuonAtPV.getPhi();
+        o2::math_utils::bringTo02Pi(phi);
+        // if (refitGlobalMuon) {
+        //   pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
+        // }
+
+        float deta = etaMatchedMCHMID - eta;
+        float dphi = phiMatchedMCHMID - phi;
+        o2::math_utils::bringToPMPi(dphi);
+        float dr = std::sqrt(deta * deta + dphi * dphi);
         // float chi2ndf = muon_tmp.chi2() / (2.f * (mchtrack.nClusters() + mfttrack.nClusters()) - 5.f);
+
+        if (cfgApplyPreselectionInBestMatch && cfgSlope_dr_chi2MatchMFTMCH * muon_tmp.chi2MatchMCHMFT() + cfgIntercept_dr_chi2MatchMFTMCH < dr) {
+          continue;
+        }
+
+        if (isPrimary) {
+          if (isMatched) {
+            fRegistry.fill(HIST("MFTMCHMID/primary/correct/hdR_Chi2MatchMCHMFT"), muon_tmp.chi2MatchMCHMFT(), dr);
+          } else {
+            fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hdR_Chi2MatchMCHMFT"), muon_tmp.chi2MatchMCHMFT(), dr);
+          }
+        } else {
+          if (isMatched) {
+            fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hdR_Chi2MatchMCHMFT"), muon_tmp.chi2MatchMCHMFT(), dr);
+          } else {
+            fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hdR_Chi2MatchMCHMFT"), muon_tmp.chi2MatchMCHMFT(), dr);
+          }
+        }
 
         if (mcParticle_MFT.globalIndex() == mcParticle_MCHMID.globalIndex()) {
           mapCorrectMatch[tupleId] = true;
@@ -790,20 +841,26 @@ struct matchingMFT {
 
         // if (std::abs(mcParticle_MCHMID.pdgCode()) == 13 && mcParticle_MCHMID.isPhysicalPrimary()) {
         //   if (mcParticle_MFT.globalIndex() == mcParticle_MCHMID.globalIndex()) {
-        //     LOGF(info, "This is correct match between MFT and MCH-MID: muon_tmp.globalIndex() = %d, chi2/ndf = %f, matching chi2/ndf = %f, mcParticle.pt() = %f, mcParticle.eta() = %f, mcParticle.phi() = %f, reldpt = %f, deta = %f, dphi = %f, dr = %f", muon_tmp.globalIndex(), chi2ndf, muon_tmp.chi2MatchMCHMFT(),  mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi(), reldpt, deta, dphi, dr);
+        //     LOGF(info, "This is correct match between MFT and MCH-MID: muon_tmp.globalIndex() = %d, chi2/ndf = %f, matching chi2/ndf = %f, mcParticle.pt() = %f, mcParticle.eta() = %f, mcParticle.phi() = %f, dr = %f", muon_tmp.globalIndex(), chi2ndf, muon_tmp.chi2MatchMCHMFT(),  mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi(), dr);
         //   } else {
-        //     LOGF(info, "This is wrong match between MFT and MCH-MID: muon_tmp.globalIndex() = %d, chi2/ndf = %f, matching chi2/ndf = %f , mcParticle.pt() = %f, mcParticle.eta() = %f, mcParticle.phi() = %f, reldpt = %f, deta = %f, dphi = %f, dr = %f" , muon_tmp.globalIndex(), chi2ndf, muon_tmp.chi2MatchMCHMFT(), mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi(), reldpt, deta, dphi, dr);
+        //     LOGF(info,  "This is wrong match between MFT and MCH-MID: muon_tmp.globalIndex() = %d, chi2/ndf = %f, matching chi2/ndf = %f , mcParticle.pt() = %f, mcParticle.eta() = %f, mcParticle.phi() = %f, dr = %f" , muon_tmp.globalIndex(), chi2ndf, muon_tmp.chi2MatchMCHMFT(), mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi(), dr);
         //   }
         // }
 
-        if (0.f < muon_tmp.chi2MatchMCHMFT() && muon_tmp.chi2MatchMCHMFT() < min_chi2MatchMCHMFT) {
-          min_chi2MatchMCHMFT = muon_tmp.chi2MatchMCHMFT();
+        if (0.f < muon_tmp.chi2MatchMCHMFT() && std::sqrt(std::pow(muon_tmp.chi2MatchMCHMFT() - cfgPeakPosition_chi2MatchMFTMCH, 2)) < min_chi2MatchMCHMFT) {
+          min_chi2MatchMCHMFT = std::sqrt(std::pow(muon_tmp.chi2MatchMCHMFT() - cfgPeakPosition_chi2MatchMFTMCH, 2));
           tupleIds_at_min_chi2mftmch = tupleId;
         }
 
-        if (dr < min_dr) {
-          min_dr = dr;
+        if (std::sqrt(std::pow(dr - cfgPeakPosition_dr, 2)) < min_dr) {
+          min_dr = std::sqrt(std::pow(dr - cfgPeakPosition_dr, 2));
           tupleIds_at_min_dr = tupleId;
+        }
+
+        float distance_2d = std::sqrt(std::pow(muon_tmp.chi2MatchMCHMFT() - cfgPeakPosition_chi2MatchMFTMCH, 2) + std::pow(dr - cfgPeakPosition_dr, 2));
+        if (distance_2d < min_distance_2d) {
+          min_distance_2d = distance_2d;
+          tupleIds_at_min_distance_2d = tupleId;
         }
 
       } // end of if global muon
@@ -811,11 +868,13 @@ struct matchingMFT {
 
     vec_min_chi2MatchMCHMFT.emplace_back(tupleIds_at_min_chi2mftmch);
     vec_min_dr.emplace_back(tupleIds_at_min_dr);
+    vec_min_2d.emplace_back(tupleIds_at_min_distance_2d);
 
     // auto mcParticleTMP = fwdtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
     // if (std::abs(mcParticleTMP.pdgCode()) == 13 && mcParticleTMP.isPhysicalPrimary()) {
     //   LOGF(info, "min chi2: muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, muon_tmp.chi2MatchMCHMFT() = %f, correct match = %d", std::get<0>(tupleIds_at_min_chi2mftmch), std::get<1>(tupleIds_at_min_chi2mftmch), std::get<2>(tupleIds_at_min_chi2mftmch), min_chi2MatchMCHMFT, mapCorrectMatch[tupleIds_at_min_chi2mftmch]);
-    //   LOGF(info, "min dr: muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, dr = %f, correct match = %d", std::get<0>(tupleIds_at_min_dr), std::get<1>(tupleIds_at_min_dr), std::get<2>(tupleIds_at_min_dr), min_dr, mapCorrectMatch[tupleIds_at_min_dr]);
+    //   LOGF(info, "min dr: muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, correct match = %d", std::get<0>(tupleIds_at_min_dr), std::get<1>(tupleIds_at_min_dr), std::get<2>(tupleIds_at_min_dr), mapCorrectMatch[tupleIds_at_min_dr]);
+    //   LOGF(info, "min 2d: muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, correct match = %d", std::get<0>(tupleIds_at_min_distance_2d), std::get<1>(tupleIds_at_min_distance_2d), std::get<2>(tupleIds_at_min_distance_2d), mapCorrectMatch[tupleIds_at_min_distance_2d]);
     // }
   }
 
@@ -964,12 +1023,13 @@ struct matchingMFT {
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
     vec_min_dr.reserve(fwdtracks.size());
+    vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       auto fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& fwdtrack : fwdtracks_per_coll) {
-        findBestMatchPerMCHMID<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
+        findBestMatchPerMCHMID(collision, fwdtrack, fwdtracks, mfttracks);
       } // end of fwdtrack loop
     } // end of collision loop
 
@@ -1008,6 +1068,10 @@ struct matchingMFT {
           if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
             continue;
           }
+        } else if (cfgBestMatchFinder == 2) { // 2d
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_2d.begin(), vec_min_2d.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_2d.end()) {
+            continue;
+          }
         }
 
         fillHistograms<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
@@ -1018,6 +1082,8 @@ struct matchingMFT {
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
     vec_min_dr.clear();
     vec_min_dr.shrink_to_fit();
+    vec_min_2d.clear();
+    vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(matchingMFT, processWithoutFTTCA, "process without FTTCA", false);
 
@@ -1025,13 +1091,14 @@ struct matchingMFT {
   {
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
     vec_min_dr.reserve(fwdtracks.size());
+    vec_min_2d.reserve(fwdtracks.size());
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
-        findBestMatchPerMCHMID<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
+        findBestMatchPerMCHMID(collision, fwdtrack, fwdtracks, mfttracks);
       } // end of fwdtrack loop
     } // end of collision loop
 
@@ -1070,6 +1137,10 @@ struct matchingMFT {
           if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
             continue;
           }
+        } else if (cfgBestMatchFinder == 2) { // 2d
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_2d.begin(), vec_min_2d.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_2d.end()) {
+            continue;
+          }
         }
 
         fillHistograms<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr);
@@ -1080,6 +1151,8 @@ struct matchingMFT {
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
     vec_min_dr.clear();
     vec_min_dr.shrink_to_fit();
+    vec_min_2d.clear();
+    vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(matchingMFT, processWithFTTCA, "process with FTTCA", true);
 
@@ -1093,6 +1166,7 @@ struct matchingMFT {
 
     vec_min_chi2MatchMCHMFT.reserve(fwdtracks.size());
     vec_min_dr.reserve(fwdtracks.size());
+    vec_min_2d.reserve(fwdtracks.size());
 
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -1100,7 +1174,7 @@ struct matchingMFT {
       auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         auto fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
-        findBestMatchPerMCHMID<true>(collision, fwdtrack, fwdtracks, mfttracks, mftCovs);
+        findBestMatchPerMCHMID(collision, fwdtrack, fwdtracks, mfttracks);
       } // end of fwdtrack loop
     } // end of collision loop
 
@@ -1139,6 +1213,10 @@ struct matchingMFT {
           if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_dr.begin(), vec_min_dr.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_dr.end()) {
             continue;
           }
+        } else if (cfgBestMatchFinder == 2) { // 2d
+          if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_2d.begin(), vec_min_2d.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_2d.end()) {
+            continue;
+          }
         }
         fillHistograms<true>(collision, fwdtrack, fwdtracks, mfttracks, mftCovs);
       } // end of fwdtrack loop
@@ -1149,6 +1227,8 @@ struct matchingMFT {
     vec_min_chi2MatchMCHMFT.shrink_to_fit();
     vec_min_dr.clear();
     vec_min_dr.shrink_to_fit();
+    vec_min_2d.clear();
+    vec_min_2d.shrink_to_fit();
   }
   PROCESS_SWITCH(matchingMFT, processWithFTTCA_withMFTCov, "process with FTTCA with MFTCov", false);
 };

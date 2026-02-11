@@ -76,7 +76,7 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
   }
 }
 
-template <typename TDiphoton, typename TMCParitlce, typename TMCParticles, typename TMCCollisions>
+template <typename TDiphoton, o2::soa::is_iterator TMCParitlce, o2::soa::is_table TMCParticles, o2::soa::is_table TMCCollisions>
 void fillTruePairInfo(o2::framework::HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, TMCCollisions const&, const TF1* f1fd_k0s_to_pi0 = nullptr, float eventWeight = 1.f)
 {
   int pdg = std::abs(mcparticle.pdgCode());
