@@ -107,6 +107,7 @@ struct LumiStabilityPP {
   Configurable<bool> doBCSL{"doBCSL", false, "Create and fill histograms for super-leading BCs (no preceding FT0/FDD activity) of type B"};
   Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of empty BCs before a leading BC"};
   Configurable<bool> requireNoT0ForSLBC{"requireNoT0ForSLBC", false, "Require no T0 signal for definition of super leading BC (otherwise only no FDD)"};
+  Configurable<int> bcShiftFDDForData2023{"bcShiftFDDForData2023", -15, "Number of bc to shift for FDD to be applied for 2023 data only"};
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE, bcPatternL;
@@ -128,6 +129,7 @@ struct LumiStabilityPP {
   std::map<int, std::shared_ptr<TH1>> histBcHasFDD;
   std::map<int, std::shared_ptr<TH1>> histFillingScheme;
   std::map<int, std::shared_ptr<TH1>> histFillTime;
+  std::map<int, std::shared_ptr<TH1>> histInteractionRate;
 
   static constexpr std::string_view NBCsVsTimeHistNames[NTriggerAliases][NBCCategories] =
     {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime", "AllBCs/BC_SL/nBCsVsTime"},
@@ -160,6 +162,7 @@ struct LumiStabilityPP {
     histTfPerMin[runNumber] = registry.add<TH1>(Form("%d/TFsPerMinute", runNumber), "TFs seen in this minute (to account for failed jobs);#bf{t-t_{SOF} (min)};#bf{#it{N}_{TFs}}", HistType::kTH1D, {timeAxis});
     histFillingScheme[runNumber] = registry.add<TH1>(Form("%d/FillingScheme", runNumber), "Filling Scheme;Filling Scheme;", HistType::kTH1D, {{1, 0, 1}});
     histFillTime[runNumber] = registry.add<TH1>(Form("%d/FillTime", runNumber), "Fill time;Fill time;", HistType::kTH1D, {{1, 0, 1}});
+    histInteractionRate[runNumber] = registry.add<TH1>(Form("%d/InteractionRate", runNumber), "Interaction rate (kHz);Interaction rate (kHz);", HistType::kTH1D, {{3000, 0., 3000.}});
 
     histBcHasFT0[runNumber] = registry.add<TH2>(Form("%d/FITQA/BCHasFT0", runNumber), "Does the BC have FT0?;BC has FT0;TVX triggered according to CTP;#bf{#it{N}_{BC}}", HistType::kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
     histBcHasFT0[runNumber]->GetYaxis()->SetBinLabel(1, "No CTP trigger");
@@ -182,10 +185,17 @@ struct LumiStabilityPP {
     }
   }
 
-  void setLHCIFData(const auto& bc)
+  bool setLHCIFData(const auto& bc)
   {
+    bool isData23{false};
+    const int runStart2023{535069};
+    const int runStop2023{539908};
+    if (bc.runNumber() >= runStart2023 && bc.runNumber() <= runStop2023) {
+      isData23 = true;
+    }
+
     if (runNumber == bc.runNumber()) {
-      return;
+      return isData23;
     }
 
     auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
@@ -241,7 +251,7 @@ struct LumiStabilityPP {
     LOG(info) << "BC SOR: " << bcSOR << " (orbit SOR: " << runInfo.orbitSOR << ") NBCs per orbit: " << nBCsPerOrbit;
     nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit; // duration of TF in bcs
 
-    return;
+    return isData23;
   }
 
   float getTimeSinceSOF(const auto& bc)
@@ -267,24 +277,37 @@ struct LumiStabilityPP {
         continue;
       }
 
-      setLHCIFData(bc);
+      bool isData23 = setLHCIFData(bc);
+      BCsWithTimeStamps::iterator bcFDD;
+      auto idxBc = bc.globalIndex()
+      if (isData23) {
+        if (idxBc < bcShiftFDDForData2023) { // we need to skip the first 15 because of the FDD-FT0 shift
+          continue;
+        }
+        bcFDD = bcs.rawIteratorAt(idxBc - bcShiftFDDForData2023);
+      } else {
+        bcFDD = bc;
+      }
 
       float timeSinceSOF = getTimeSinceSOF(bc);
       bool isTriggerTVX = (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex) : false);
 
       if (isTriggerTVX) {
         histNBcsVsTime[runNumber]->Fill(timeSinceSOF);
+        histInteractionRate[runNumber]->Fill(mRateFetcher.fetch(ccdbMgr, bc.timestamp(), bc.runNumber(), std::string("T0VTX"), true));
       }
 
       int64_t globalBC = bc.globalBC();
+      int64_t globalBCFDD = bcFDD.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
+      int localBCFDD = globalBCFDD % nBCsPerOrbit;
 
       bool isSuperLeadingBc{true};
       if (globalBC - globalBCIdOfLastBCWithActivity < numEmptyBCsBeforeLeadingBC) {
         isSuperLeadingBc = false; // not a super-leading BC
       }
 
-      if (bc.has_fdd() || (requireNoT0ForSLBC && bc.has_ft0())) {
+      if (bcFDD.has_fdd() || (requireNoT0ForSLBC && bc.has_ft0())) {
         globalBCIdOfLastBCWithActivity = globalBC;
       }
 
@@ -300,9 +323,10 @@ struct LumiStabilityPP {
       }
 
       std::bitset<64> ctpInputMask(bc.inputMask());
+      std::bitset<64> ctpInputMaskFDD(bcFDD.inputMask());
 
       histBcHasFT0[runNumber]->Fill(bc.has_ft0(), ctpInputMask.test(2));
-      histBcHasFDD[runNumber]->Fill(bc.has_fdd(), ctpInputMask.test(15));
+      histBcHasFDD[runNumber]->Fill(bcFDD.has_fdd(), ctpInputMaskFDD.test(15));
 
       for (int iTrigger{0}; iTrigger < NTriggerAliases; ++iTrigger) {
         for (int iBCCategory{0}; iBCCategory < NBCCategories; ++iBCCategory) {
@@ -349,19 +373,19 @@ struct LumiStabilityPP {
               if (iBCCategory == BCSL && isSuperLeadingBc)
                 fillHistograms<FT0CE, BCSL>(timeSinceSOF, localBC);
             }
-            if (iTrigger == FDD && ctpInputMask.test(15)) {
-              if (iBCCategory == BCA && bcPatternA[localBC])
-                fillHistograms<FDD, BCA>(timeSinceSOF, localBC);
-              if (iBCCategory == BCB && bcPatternB[localBC])
-                fillHistograms<FDD, BCB>(timeSinceSOF, localBC);
-              if (iBCCategory == BCC && bcPatternC[localBC])
-                fillHistograms<FDD, BCC>(timeSinceSOF, localBC);
-              if (iBCCategory == BCE && bcPatternE[localBC])
-                fillHistograms<FDD, BCE>(timeSinceSOF, localBC);
-              if (iBCCategory == BCL && bcPatternL[localBC])
-                fillHistograms<FDD, BCL>(timeSinceSOF, localBC);
+            if (iTrigger == FDD && ctpInputMaskFDD.test(15)) {
+              if (iBCCategory == BCA && bcPatternA[localBCFDD])
+                fillHistograms<FDD, BCA>(timeSinceSOF, localBCFDD);
+              if (iBCCategory == BCB && bcPatternB[localBCFDD])
+                fillHistograms<FDD, BCB>(timeSinceSOF, localBCFDD);
+              if (iBCCategory == BCC && bcPatternC[localBCFDD])
+                fillHistograms<FDD, BCC>(timeSinceSOF, localBCFDD);
+              if (iBCCategory == BCE && bcPatternE[localBCFDD])
+                fillHistograms<FDD, BCE>(timeSinceSOF, localBCFDD);
+              if (iBCCategory == BCL && bcPatternL[localBCFDD])
+                fillHistograms<FDD, BCL>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCSL && isSuperLeadingBc)
-                fillHistograms<FDD, BCSL>(timeSinceSOF, localBC);
+                fillHistograms<FDD, BCSL>(timeSinceSOF, localBCFDD);
             }
           }
         }
