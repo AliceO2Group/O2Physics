@@ -66,6 +66,18 @@ DECLARE_SOA_COLUMN(NTPCoccupMeanTimeShortA, nTPCoccupMeanTimeShortA, float);    
 DECLARE_SOA_COLUMN(NTPCoccupMeanTimeShortC, nTPCoccupMeanTimeShortC, float);     //!  TPC pileup mean time on C side (short time range)
 DECLARE_SOA_COLUMN(NTPCoccupMedianTimeShortA, nTPCoccupMedianTimeShortA, float); //!  TPC pileup median time on A side (short time range)
 DECLARE_SOA_COLUMN(NTPCoccupMedianTimeShortC, nTPCoccupMedianTimeShortC, float); //!  TPC pileup median time on C side (short time range)
+DECLARE_SOA_COLUMN(DCAzBinomialCoefficient, dcazBinomialCoefficient, float);     //!  Bimodality coefficient of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzMean, dcazMean, float);                                   //!  Mean of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzRMS, dcazRMS, float);                                     //!  RMS of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzSkewness, dcazSkewness, float);                           //!  Skewness of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzKurtosis, dcazKurtosis, float);                           //!  Kurtosis of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzFracAbove100um, dcazFracAbove100um, float);               //!  Fraction of tracks in the event with |DCAz| > 100um
+DECLARE_SOA_COLUMN(DCAzFracAbove200um, dcazFracAbove200um, float);               //!  Fraction of tracks in the event with |DCAz| > 200um
+DECLARE_SOA_COLUMN(DCAzFracAbove500um, dcazFracAbove500um, float);               //!  Fraction of tracks in the event with |DCAz| > 500um
+DECLARE_SOA_COLUMN(DCAzFracAbove1mm, dcazFracAbove1mm, float);                   //!  Fraction of tracks in the event with |DCAz| > 1mm
+DECLARE_SOA_COLUMN(DCAzFracAbove2mm, dcazFracAbove2mm, float);                   //!  Fraction of tracks in the event with |DCAz| > 2mm
+DECLARE_SOA_COLUMN(DCAzFracAbove5mm, dcazFracAbove5mm, float);                   //!  Fraction of tracks in the event with |DCAz| > 5mm
+DECLARE_SOA_COLUMN(DCAzFracAbove10mm, dcazFracAbove10mm, float);                 //!  Fraction of tracks in the event with |DCAz| > 10mm
 
 // Columns declared to guarantee the backward compatibility of the tables
 DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float);
@@ -196,6 +208,12 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorZN, "AOD", "REQVECTORZN", //!    Event Q-v
 
 DECLARE_SOA_TABLE(ReducedEventsInfo, "AOD", "REDUCEVENTINFO", //!   Main event index table
                   reducedevent::CollisionId);
+
+DECLARE_SOA_TABLE(ReducedEventsMergingTable, "AOD", "REMERGE", //!   Collision merging quatities
+                  reducedevent::DCAzBinomialCoefficient, 
+                  reducedevent::DCAzMean, reducedevent::DCAzRMS, reducedevent::DCAzSkewness, reducedevent::DCAzKurtosis,
+                  reducedevent::DCAzFracAbove100um, reducedevent::DCAzFracAbove200um, reducedevent::DCAzFracAbove500um, 
+                  reducedevent::DCAzFracAbove1mm, reducedevent::DCAzFracAbove2mm, reducedevent::DCAzFracAbove5mm, reducedevent::DCAzFracAbove10mm);                  
 
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!

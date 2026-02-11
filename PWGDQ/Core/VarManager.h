@@ -293,6 +293,18 @@ class VarManager : public TObject
     kNTPCmeanTimeShortC,
     kNTPCmedianTimeShortA,
     kNTPCmedianTimeShortC,
+    kDCAzBimodalityCoefficient,
+    kDCAzMean,
+    kDCAzRMS,
+    kDCAzSkewness,
+    kDCAzKurtosis,
+    kDCAzFracAbove100um,
+    kDCAzFracAbove200um,
+    kDCAzFracAbove500um,
+    kDCAzFracAbove1mm,
+    kDCAzFracAbove2mm,
+    kDCAzFracAbove5mm,
+    kDCAzFracAbove10mm,
     kMCEventGeneratorId,
     kMCEventSubGeneratorId,
     kMCVtxX,
@@ -1254,7 +1266,10 @@ class VarManager : public TObject
     return deltaPsi;
   }
   template <typename T, typename T1>
-  static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
+  static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);  
+  
+  static std::tuple<double, double, double, double, double> BimodalityCoefficient(const std::vector<double>& data);
+
   template <typename T, typename C>
   static o2::track::TrackParCovFwd FwdToTrackPar(const T& track, const C& cov);
   template <typename T, typename C>
@@ -1269,6 +1284,8 @@ class VarManager : public TObject
   static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
+  template <typename E, typename T>
+  static void FillEventTracks(E const& event, T const& tracks, float* values = nullptr);
   template <typename T>
   static void FillTimeFrame(T const& tfTable, float* values = nullptr);
   template <typename T>
@@ -1486,7 +1503,7 @@ class VarManager : public TObject
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDef(VarManager, 5);
+  ClassDef(VarManager, 6);
 };
 
 template <typename T, typename C>
@@ -2327,6 +2344,105 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   // FillEventDerived(values);
+}
+
+std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficient(const std::vector<double>& data) {
+    // Bimodality coefficient = (skewness^2 + 1) / kurtosis
+    // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
+    size_t n = data.size();
+    if (n < 3) {
+      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    }
+    double mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
+
+    double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+    for (double x : data) {
+        double diff = x - mean;
+        double diff2 = diff * diff;
+        double diff3 = diff2 * diff;
+        double diff4 = diff3 * diff;
+        m2 += diff2;
+        m3 += diff3;
+        m4 += diff4;
+    }
+
+    m2 /= n;
+    m3 /= n;
+    m4 /= n;
+
+    if (m2 == 0.0) {
+      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    }
+
+    double stddev = std::sqrt(m2);
+    double skewness = m3 / (stddev * stddev * stddev);
+    double kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
+
+    return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
+}
+
+template <typename E, typename T>
+void VarManager::FillEventTracks(E const& event, T const& tracks, float* values = nullptr)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  // compute event properties based on DCAz of the tracks
+  std::vector<double> dcazValues;
+  for (const auto& track : tracks) {
+    dcazValues.push_back(track.dcaZ());
+  }
+
+  if (!dcazValues.empty()) {
+    auto [bimodality, mean, stddev, skewness, kurtosis] = BimodalityCoefficient(dcazValues);
+    values[kDCAzBimodalityCoefficient] = bimodality;
+    values[kDCAzMean] = mean;
+    values[kDCAzRMS] = stddev;
+    values[kDCAzSkewness] = skewness;
+    values[kDCAzKurtosis] = kurtosis;
+    // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
+    // make a loop over the DCAz values and count how many are above each threshold
+    int counter100um = 0;
+    int counter200um = 0;
+    int counter500um = 0;
+    int counter1mm = 0;
+    int counter2mm = 0;
+    int counter5mm = 0;
+    int counter10mm = 0;
+    for (auto& d : dcazValues) {
+      double absD = std::abs(d);
+      if (absD > 0.01) {
+        counter100um++;
+        if (absD > 0.02) {
+          counter200um++;
+          if (absD > 0.05) {
+            counter500um++;
+            if (absD > 0.1) {
+              counter1mm++;
+              if (absD > 0.2) {
+                counter2mm++;
+                if (absD > 0.5) {
+                  counter5mm++;
+                  if (absD > 1.0) {
+                    counter10mm++;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    int totalTracks = static_cast<int>(dcazValues.size());
+    values[kDCAzFracAbove100um] = static_cast<float>(counter100um) / totalTracks;
+    values[kDCAzFracAbove200um] = static_cast<float>(counter200um) / totalTracks;
+    values[kDCAzFracAbove500um] = static_cast<float>(counter500um) / totalTracks;
+    values[kDCAzFracAbove1mm] = static_cast<float>(counter1mm) / totalTracks;
+    values[kDCAzFracAbove2mm] = static_cast<float>(counter2mm) / totalTracks;
+    values[kDCAzFracAbove5mm] = static_cast<float>(counter5mm) / totalTracks;
+    values[kDCAzFracAbove10mm] = static_cast<float>(counter10mm) / totalTracks;
+  }
 }
 
 template <typename T>
