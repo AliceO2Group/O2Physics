@@ -239,17 +239,6 @@ class TrackSmearer
         return "proton";
       case 1000010020:
         return "deuteron";
-
-
-
-
-
-
-
-
-
-
-        
       case 1000010030:
         return "triton";
       case 1000020030:
