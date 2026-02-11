@@ -74,7 +74,6 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
       }
       std::map<std::string, std::string> metadata;
       mCcdbManager->getCCDBAccessor().retrieveBlob(path, mOutPath, metadata, 1);
-
       // Add CCDB handling logic here if needed
       LOG(info) << " --- Now retrieving LUT file from CCDB to: " << filename;
       if (mCleanupDownloadedFile) { // Clean up the downloaded file if needed
