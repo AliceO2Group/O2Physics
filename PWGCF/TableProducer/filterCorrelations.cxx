@@ -316,9 +316,9 @@ struct FilterCF {
     for (auto& track : tracks) {
       float maxDCAxy = enablePtDepDCAxy ? getMaxDCAxy(track.pt()) : dcaxymax;
       if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
-        continue; 
+        continue;
       }
-      
+
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
       if (cfgTransientTables)
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
@@ -358,7 +358,7 @@ struct FilterCF {
       }
       float maxDCAxy = enablePtDepDCAxy ? getMaxDCAxy(track.pt()) : dcaxymax;
       if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
-        continue; 
+        continue;
       }
       registrytrackQA.fill(HIST("eta"), track.eta());
       registrytrackQA.fill(HIST("pT"), track.pt());
