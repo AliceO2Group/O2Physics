@@ -568,7 +568,7 @@ struct FlowTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2 2} refP10 {-2 -2}", "Ch10Gap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {2 2} refP10 {-2 -2}", "Ch10Gap24", kTRUE));
     LOGF(info, "Embedded GFW CorrelatorConfig:");
-    for (auto icorr = 0; icorr < corrconfigs.size(); icorr++) {
+    for (auto icorr = 0; icorr < static_cast<int>(corrconfigs.size()); icorr++) {
       LOGF(info, "corrconfigs.at(%d): %s", icorr, corrconfigs.at(icorr).Head.c_str());
     }
     if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
