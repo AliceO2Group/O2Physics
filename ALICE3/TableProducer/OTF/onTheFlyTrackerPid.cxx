@@ -20,10 +20,10 @@
 /// \since  May 22, 2025
 ///
 
-#include "TableHelper.h"
-
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -37,7 +37,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -46,6 +45,7 @@
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 
 #include <TF1.h>
 #include <TFile.h>
@@ -140,20 +140,21 @@ class ToTLUT
       LOG(warning) << "Provided filename is empty for PDG " << pdg;
       return false;
     }
-    if (strncmp(filename.c_str(), "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
-      const std::string basePath = std::string(filename).substr(5);
-      const std::string outPath = "/tmp/ToTLUTs/" + basePath;
-      const std::string localFilename = outPath + "/snapshot.root";
+    if (filename.rfind("ccdb:", 0) == 0) {       // Check if filename starts with "ccdb:"
+      std::string ccdbPath = filename.substr(5); // remove "ccdb:" prefix
+      const std::string outPath = "/tmp/ToTLUTs/";
+      const std::string localFilename = outPath + ccdbPath + "/snapshot.root";
       std::ifstream checkFile(localFilename);
       if (!checkFile.is_open()) { // File is not found, need to download it from CCDB
         if (!mCcdbManager) {
           LOG(fatal) << "CCDB manager not set. Please set it before loading LUT from CCDB.";
         }
         std::map<std::string, std::string> metadata;
-        mCcdbManager->getCCDBAccessor().retrieveBlob(basePath, outPath, metadata, 1);
+        LOG(info) << "Retrieving " << localFilename << " from CCDB path: " << ccdbPath;
+        mCcdbManager->getCCDBAccessor().retrieveBlob(ccdbPath, outPath, metadata, 1);
         std::ifstream testFile(localFilename);
         if (!testFile.is_open()) {
-          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg;
+          LOG(fatal) << "Could not find downloaded CCDB file for PDG " << pdg << " in file " << localFilename;
           return false;
         }
         testFile.close();
@@ -396,17 +397,16 @@ struct OnTheFlyTrackerPid {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<std::string> lutTotEl{"lutTotEl", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_11/", "ToT LUT for electrons"};
-  Configurable<std::string> lutTotMu{"lutTotMu", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_13/", "ToT LUT for muons"};
-  Configurable<std::string> lutTotPi{"lutTotPi", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_211/", "ToT LUT for pions"};
-  Configurable<std::string> lutTotKa{"lutTotKa", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_321/", "ToT LUT for kaons"};
-  Configurable<std::string> lutTotPr{"lutTotPr", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_2212/", "ToT LUT for protons"};
-  Configurable<std::string> lutTotDe{"lutTotDe", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000010020/", "ToT LUT for deuteron"};
-  Configurable<std::string> lutTotTr{"lutTotTr", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000010030/", "ToT LUT for triton"};
-  Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020030/", "ToT LUT for helium-3"};
-  Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020040/", "ToT LUT for alphas"};
+  Configurable<std::string> lutTotEl{"lutTotEl", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_11", "ToT LUT for electrons"};
+  Configurable<std::string> lutTotMu{"lutTotMu", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_13", "ToT LUT for muons"};
+  Configurable<std::string> lutTotPi{"lutTotPi", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_211", "ToT LUT for pions"};
+  Configurable<std::string> lutTotKa{"lutTotKa", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_321", "ToT LUT for kaons"};
+  Configurable<std::string> lutTotPr{"lutTotPr", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_2212", "ToT LUT for protons"};
+  Configurable<std::string> lutTotDe{"lutTotDe", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000010020", "ToT LUT for deuteron"};
+  Configurable<std::string> lutTotTr{"lutTotTr", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000010030", "ToT LUT for triton"};
+  Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020030", "ToT LUT for helium-3"};
+  Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs/PDG_1000020040", "ToT LUT for alphas"};
 
-  Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss) for track propagation"};
   Configurable<int> maxBarrelLayers{"maxBarrelLayers", 11, "Maximum number of barrel layers"};
   Configurable<int> numLogBins{"numLogBins", 200, "Number of logarithmic momentum bins"};
   Configurable<float> analysisEtaMin{"analysisEtaMin", 0.0f, "Minimum |eta| for LUT loading optimization"};
@@ -428,8 +428,14 @@ struct OnTheFlyTrackerPid {
     1000020040  // Alpha
   };
 
-  void init(o2::framework::InitContext&)
+  // Configuration defined at init time
+  o2::fastsim::GeometryContainer mGeoContainer;
+  float mMagneticField = 0.0f;
+  void init(o2::framework::InitContext& initContext)
   {
+    mGeoContainer.init(initContext);
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
 
@@ -608,14 +614,14 @@ struct OnTheFlyTrackerPid {
 
       float xPv = -100.f;
       static constexpr float kTrkXThreshold = -99.f;
-      if (o2track.propagateToDCA(mcPvVtx, dBz)) {
+      if (o2track.propagateToDCA(mcPvVtx, mMagneticField)) {
         xPv = o2track.getX();
       }
 
       if (xPv > kTrkXThreshold) {
         for (int layer = 0; layer < maxBarrelLayers.value; ++layer) {
           float layerRadius = kTrackerRadii[layer];
-          float trackLength = computeTrackLength(o2track, layerRadius, dBz);
+          float trackLength = computeTrackLength(o2track, layerRadius, mMagneticField);
 
           if (trackLength > 0) {
             hitMap |= (1 << layer);

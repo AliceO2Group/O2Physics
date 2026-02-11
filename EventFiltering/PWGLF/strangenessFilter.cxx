@@ -16,6 +16,7 @@
 
 #include "../filterTables.h"
 
+#include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
@@ -26,6 +27,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -42,6 +44,8 @@
 #include "ReconstructionDataFormats/TrackParametrization.h"
 
 #include "TVector3.h"
+#include <Math/GenVector/Boost.h>
+#include <TLorentzVector.h>
 
 #include <cmath>
 
@@ -78,8 +82,10 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTopologicalVariables{"QAHistosTopologicalVariables", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry QAHistosSigma{"QAHistosSigma", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 17, -1., 16.)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 21, -1., 20.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Omega events with pT_h higher than thrd; min p_{T, trigg} (GeV/c); Number of events", 11, 0., 11.)};
 
@@ -146,9 +152,15 @@ struct strangenessFilter {
   Configurable<bool> hastof{"hastof", 1, "Has TOF (OOB condition)"};
   Configurable<float> ptthrtof{"ptthrtof", 1.0, "Pt threshold to apply TOF condition"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
-  Configurable<int> LowLimitFT0MMult{"LowLimitFT0MMult", 3100, "FT0M selection for omega + high multiplicity trigger"};
-  Configurable<int> LowLimitFT0MMultNorm{"LowLimitFT0MMultNorm", 70, "FT0M selection for omega + high multiplicity trigger with Normalised FT0M"};
-  Configurable<bool> useNormalisedMult{"useNormalisedMult", 1, "Use avarage multiplicity for HM omega like in multFilter.cxx"};
+  Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Require TVX"};
+  Configurable<int> HMTrgSelectionForOmegaFT0M{"HMTrgSelectionForOmegaFT0M", 1, "0: none, 1: normalised FT0M, 2: FT0M "};
+  Configurable<int> LowLimitHMTrgOmegaT0M{"LowLimitHMTrgOmegaT0M", 3100, "T0M"};
+  Configurable<int> LowLimitHMTrgOmegaT0MNorm{"LowLimitHMTrgOmegaT0MNorm", 70, "normalised T0M selection [2] of multFiler"};
+  Configurable<int> HMTrgSelectionForOmegaTrks{"HMTrgSelectionForOmegaTrks", 2, "0: none, 1: GlobalMult,2: selectTrack"};
+  Configurable<int> LowLimitHMTrgOmegaTrkGlob{"LowLimitHMTrgOmegaTrksGlob", 90, "tracks from table GlobalMult"};
+  Configurable<int> LowLimitHMTrgOmegaTrkSel{"LowLimitHMTrgOmegaTrkSel", 50, "tracks as defined in selectTrackHMO"};
+  Configurable<float> hEtaHM{"hEtaHM", 1.0f, "Eta range for particles defining HM events"};
+  Configurable<float> hMinPtHM{"hMinPtHM", 0.2f, "Min pt for particles defining HM events"};
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
@@ -158,9 +170,11 @@ struct strangenessFilter {
   Configurable<float> massWindowXiNsigma{"massWindowXiNsigma", 6, "Inv. mass window for tracked Xi"};
 
   // Selections criteria for tracks
-  Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
-  Configurable<float> hMinPt{"hMinPt", 1.0f, "Min pt for trigger particles"};
-  Configurable<bool> isTrackFilter{"isTrackFilter", true, "Apply track myTrackSelections"};
+  struct : ConfigurableGroup {
+    Configurable<float> hEta{"hEta", 0.9f, "Eta range for trigger particles"};
+    Configurable<float> hMinPt{"hMinPt", 1.0f, "Min pt for trigger particles"};
+    Configurable<bool> isTrackFilter{"isTrackFilter", true, "Apply track myTrackSelections"};
+  } cfgTrackCuts;
 
   // Settings for strangeness tracking filter
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -190,6 +204,23 @@ struct strangenessFilter {
   Configurable<float> maxCpaTrackedXi{"maxCpaTrackedXi", 1., "Maximum CPA for tracked cascades"};
   Configurable<float> minDcaTrackedOmega{"minDcaTrackedOmega", -1., "Minimum DCA for tracked cascades (ST)"};
   Configurable<float> maxCpaTrackedOmega{"maxCpaTrackedOmega", 1., "Maximum CPA for tracked cascades (ST)"};
+
+  // Settings for sigmaplus filter
+  struct : ConfigurableGroup {
+    Configurable<float> nsigmatpcSigma{"nsigmatpcSigma", 3.f, "N Sigmas TPC Sigma"};
+    Configurable<float> nsigmatofSigma{"nsigmatofSigma", 3.f, "N Sigmas TOF Sigma"};
+    Configurable<float> minMassSigma{"minMassSigma", 1.15f, "min mass for Sigma"};
+    Configurable<float> maxMassSigma{"maxMassSigma", 1.25f, "max mass for Sigma"};
+    Configurable<float> minPtSigma{"minPtSigma", 1.2f, "min Pt for Sigma"};
+    Configurable<float> minQtAPSigma{"minQtAPSigma", 0.15f, "min QtAP for Sigma"};
+    Configurable<float> maxQtAPSigma{"maxQtAPSigma", 0.20f, "max QtAP for Sigma"};
+    Configurable<float> maxDCAtoPVSigma{"maxDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
+    Configurable<float> minRadiusSigma{"minRadiusSigma", 19.f, "Min radius for Sigma+ decay vertex (cm)"};
+    Configurable<float> minCosPASigma{"minCosPASigma", 0.995f, "Min Cosine of pointing angle for Sigma candidates"};
+    Configurable<float> minPtProtonTOF{"minPtProtonTOF", 0.75f, "Min Pt for proton to have TOF signal (GeV/c)"};
+    Configurable<float> maxKStarSigmaProton{"maxKStarSigmaProton", 0.8f, "Max k* for Sigma-Proton pairs (GeV/c)"};
+  } cfgSigma;
+
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
     {stfilter::massSigmaParameters[0], 4, 2,
@@ -209,9 +240,12 @@ struct strangenessFilter {
 
   bool selectTrack(const auto& track)
   {
-    return track.pt() > hMinPt && std::abs(track.eta()) < hEta && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcCrossedRowsOverFindableCls() >= 0.8f && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
+    return track.pt() > cfgTrackCuts.hMinPt && std::abs(track.eta()) < cfgTrackCuts.hEta && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
   }
-
+  bool selectTrackOHM(const auto& track)
+  {
+    return track.pt() > hMinPtHM && std::abs(track.eta()) < hEtaHM && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
+  }
   float getV0V0DCA(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
   {
     TVector3 posdiff = v02pos - v01pos;
@@ -287,6 +321,48 @@ struct strangenessFilter {
     return true;
   }
 
+  float getAlphaAP(const std::array<float, 3>& momMother, const std::array<float, 3>& momKink)
+  {
+    std::array<float, 3> momMissing = {momMother[0] - momKink[0], momMother[1] - momKink[1], momMother[2] - momKink[2]};
+    float lQlP = std::inner_product(momMother.begin(), momMother.end(), momKink.begin(), 0.f);
+    float lQlN = std::inner_product(momMother.begin(), momMother.end(), momMissing.begin(), 0.f);
+    return (lQlP - lQlN) / (lQlP + lQlN);
+  }
+
+  float getQtAP(const std::array<float, 3>& momMother, const std::array<float, 3>& momKink)
+  {
+    float dp = std::inner_product(momMother.begin(), momMother.end(), momKink.begin(), 0.f);
+    float p2V0 = std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f);
+    float p2A = std::inner_product(momKink.begin(), momKink.end(), momKink.begin(), 0.f);
+    return std::sqrt(p2A - dp * dp / p2V0);
+  }
+
+  float getCosPA(const std::array<float, 3>& momMother, const std::array<float, 3>& decayVertex, const std::array<float, 3>& primaryVertex)
+  {
+    std::array<float, 3> decayVec = {decayVertex[0] - primaryVertex[0], decayVertex[1] - primaryVertex[1], decayVertex[2] - primaryVertex[2]};
+    float dotProduct = std::inner_product(momMother.begin(), momMother.end(), decayVec.begin(), 0.f);
+    float momMotherMag = std::sqrt(std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f));
+    float decayVecMag = std::sqrt(std::inner_product(decayVec.begin(), decayVec.end(), decayVec.begin(), 0.f));
+    return dotProduct / (momMotherMag * decayVecMag);
+  }
+
+  float getKStar(TLorentzVector const& part1, TLorentzVector const& part2)
+  {
+    TLorentzVector trackSum, PartOneCMS, PartTwoCMS, trackRelK;
+    trackSum = part1 + part2;
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+    PartOneCMS.SetXYZM(part1.Px(), part1.Py(), part1.Pz(), part1.M());
+    PartTwoCMS.SetXYZM(part2.Px(), part2.Py(), part2.Pz(), part2.M());
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    PartOneCMS = boostPRF(PartOneCMS);
+    PartTwoCMS = boostPRF(PartTwoCMS);
+    trackRelK = PartOneCMS - PartTwoCMS;
+    return 0.5 * trackRelK.P();
+  }
+
   void init(o2::framework::InitContext&)
   {
     // set V0 parameters in the helper
@@ -333,6 +409,10 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(15, aod::filtering::DoubleOmega::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(16, aod::filtering::OmegaXi::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(17, "LL");
+    hProcessedEvents->GetXaxis()->SetBinLabel(18, aod::filtering::OmegaHighMultTrk::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(19, aod::filtering::HighMultFT0M::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(20, aod::filtering::HighMultTrk::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(21, aod::filtering::SigmaProton::columnLabel());
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "PassBuilderSel");
@@ -359,6 +439,7 @@ struct strangenessFilter {
     AxisSpec multAxisNTPV = {100, 0.0f, 100.0f, "N. tracks PV estimator"};
     AxisSpec multAxisT0M = {600, 0.0f, 6000.0f, "T0M multiplicity estimator"};
     AxisSpec multAxisT0MNorm = {150, 0.0f, 150.0f, "Normalised T0M multiplicity estimator"};
+    AxisSpec multAxisTrack = {150, 0.0f, 150.0f, "Track multiplicity"};
     AxisSpec multAxisV0A = {500, 0.0f, 25000.0f, "V0A multiplicity estimator"};
     AxisSpec ximassAxis = {200, 1.28f, 1.36f};
     AxisSpec omegamassAxis = {200, 1.59f, 1.75f};
@@ -421,7 +502,14 @@ struct strangenessFilter {
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNorm", "T0M Normalised of all events", HistType::kTH1F, {multAxisT0MNorm});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MwOmegaNorm", "T0M distribution of events w/ Omega candidate - Normalised FT0M", HistType::kTH1F, {multAxisT0MNorm});
     EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MNoFT0", "T0M distribution of events without FT0", HistType::kTH1F, {multAxisT0M});
-
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityTracks", "Track distribution of all events", HistType::kTH1F, {multAxisTrack});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityTrackswOmega", "Track distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisTrack});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityTracksGlob", "MultGlob Track distribution of all events", HistType::kTH1F, {multAxisTrack});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityTracksGlobwOmega", "MultGlob Track distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisTrack});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MTrackswOmega", "Track distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisTrack});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MTracksGlobwOmega", "MultGlob Track distribution of events w/ Omega candidate", HistType::kTH1F, {multAxisTrack});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MTrackswOmega2D", "2D Track vs FT0M normalised distribution of events w/ Omega candidate", HistType::kTH2F, {multAxisTrack, multAxisT0MNorm});
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityFT0MTracksGlobwOmega2D", "2D Track vs FT0M normalised distribution of events w/ Omega candidate", HistType::kTH2F, {multAxisTrack, multAxisT0MNorm});
     if (doextraQA) {
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of all events", HistType::kTH1F, {multAxisV0A});
       EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of events with hight pT hadron", HistType::kTH1F, {multAxisV0A});
@@ -510,6 +598,13 @@ struct strangenessFilter {
       QAHistosStrangenessTracking.add("hPtVsMassTrkOmega", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1.6, 2.1}});
       QAHistosStrangenessTracking.add("hPtVsMassTrkXiSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1.2, 1.7}});
       QAHistosStrangenessTracking.add("hPtVsMassTrkOmegaSelected", "cascades;p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{200, 0., 10.}, {1000, 1.6, 2.1}});
+
+      // Sigma QA histograms
+      QAHistosSigma.add("hPtVsMassSigmaPlus", ";p_{T} (GeV/#it{c});m (GeV/#it{c}^2)", HistType::kTH2D, {{20, -5, 5.}, {50, 1.1, 1.3}});
+      QAHistosSigma.add("hDecayRadiusSigma", ";R (cm)", HistType::kTH1D, {{100, 0., 40.}});
+      QAHistosSigma.add("hPtNSigmaTPCPrPair", ";p_{T} (GeV/#it{c});#sigma_{TPC}", HistType::kTH2D, {{200, -5., 5.}, {200, -5., 5.}});
+      QAHistosSigma.add("hPtNSigmaTOFPrPair", ";p_{T} (GeV/#it{c});#sigma_{TOF}", HistType::kTH2D, {{200, -5., 5.}, {200, -5., 5.}});
+      QAHistosSigma.add("hKStarSigmaPr", ";k*", HistType::kTH1D, {{200, 0., 2}});
     }
   }
 
@@ -520,11 +615,10 @@ struct strangenessFilter {
       o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", run);
       o2::base::Propagator::initFieldFromGRP(grpmag);
       mBz = static_cast<float>(grpmag->getNominalL3Field());
-      if (useNormalisedMult)
+      if (HMTrgSelectionForOmegaFT0M == 1) {
         mMeanMultT0C = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0C", run);
-      if (useNormalisedMult)
         mMeanMultT0A = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0A", run);
-
+      }
       mDCAFitter.setBz(mBz);
       mDCAFitter.setPropagateToPCA(propToDCA);
       mDCAFitter.setMaxR(maxR);
@@ -546,8 +640,8 @@ struct strangenessFilter {
   }
 
   // Tables
-  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs, aod::FT0Mults>::iterator;
-  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCLfFullPi, aod::pidTPCLfFullPr, aod::pidTPCLfFullKa>;
+  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs, aod::FT0Mults, aod::MultsGlobal>::iterator;
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCLfFullPi, aod::pidTPCLfFullPr, aod::pidTPCLfFullKa, aod::pidTOFFullPr>;
 
   float getMassWindow(const stfilter::species s, const float pt, const float nsigma = 6)
   {
@@ -561,25 +655,28 @@ struct strangenessFilter {
 
   void fillTriggerTable(bool keepEvent[])
   {
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11], keepEvent[12]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11], keepEvent[12], keepEvent[13], keepEvent[14], keepEvent[15], keepEvent[16]);
   }
 
-  void process(CollisionCandidates const& collision, TrackCandidates const& tracks, aod::Cascades const& cascadesBase, aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const& v0Base, aod::BCs const&, aod::FT0s const& /*ft0s*/)
+  void process(CollisionCandidates const& collision, TrackCandidates const& tracks, aod::Cascades const& cascadesBase, aod::AssignedTrackedCascades const& trackedCascades, aod::KinkCands const& kinkCands, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const& v0Base, aod::BCs const&, aod::FT0s const& /*ft0s*/)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
-    bool keepEvent[13]{}; // explicitly zero-initialised
+    bool keepEvent[17]{}; // explicitly zero-initialised
     std::vector<std::array<int64_t, 2>> v0sFromOmegaID;
     std::vector<std::array<int64_t, 2>> v0sFromXiID;
 
     initCCDB(collision.bc().runNumber());
 
+    hProcessedEvents->Fill(-0.5);
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
       return;
     }
-    hProcessedEvents->Fill(-0.5);
-
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      fillTriggerTable(keepEvent);
+      return;
+    }
     if (isTimeFrameBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       fillTriggerTable(keepEvent);
       return;
@@ -600,12 +697,9 @@ struct strangenessFilter {
 
     Bool_t isHighMultEvent = 0;
     float multFT0MNorm = 0.f;
-    EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
-    if (!useNormalisedMult) {
-      if (collision.multFT0M() > LowLimitFT0MMult) {
-        isHighMultEvent = 1;
-      }
-    } else {
+    Bool_t isHighMultEventTrk = 0;
+    float multTrack = 0.f;
+    if (HMTrgSelectionForOmegaFT0M == 1) {
       float meanMultT0C = 0.f;
       float fac_FT0C_ebe = 1.;
       meanMultT0C = (*mMeanMultT0C)[0];
@@ -646,7 +740,7 @@ struct strangenessFilter {
             ampneg++;
           }
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), multFT0MNorm);
-          if (multFT0MNorm > LowLimitFT0MMultNorm) {
+          if (multFT0MNorm > LowLimitHMTrgOmegaT0MNorm) {
             isHighMultEvent = 1;
             LOG(debug) << "Found FT0 using norm mult";
           }
@@ -663,8 +757,28 @@ struct strangenessFilter {
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 149);
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
       }
+    } else if (HMTrgSelectionForOmegaFT0M == 2) {
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
+      if (collision.multFT0M() > LowLimitHMTrgOmegaT0M) {
+        isHighMultEvent = 1;
+      }
     }
-
+    if (HMTrgSelectionForOmegaTrks == 1) {
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracksGlob"), collision.multNTracksGlobal());
+      if (collision.multNTracksGlobal() > LowLimitHMTrgOmegaTrkGlob) {
+        isHighMultEventTrk = 1;
+      }
+    } else if (HMTrgSelectionForOmegaTrks == 2) {
+      for (auto& track : tracks) {
+        if (selectTrackOHM(track)) {
+          multTrack++;
+        }
+      }
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracks"), multTrack);
+      if (multTrack > LowLimitHMTrgOmegaTrkSel) {
+        isHighMultEventTrk = 1;
+      }
+    }
     // constants
     const float ctauxi = 4.91;     // from PDG
     const float ctauomega = 2.461; // from PDG
@@ -1070,7 +1184,7 @@ struct strangenessFilter {
     // QA tracks
     int triggcounterAllEv = 0;
     for (auto track : tracks) { // start loop over tracks
-      if (isTrackFilter && !selectTrack(track)) {
+      if (cfgTrackCuts.isTrackFilter && !selectTrack(track)) {
         continue;
       }
       triggcounterAllEv++;
@@ -1162,14 +1276,32 @@ struct strangenessFilter {
     }
 
     // Omega in high multiplicity events
-    if (omegacounter > 0) {
+    if (omegacounter > 0 && isHighMultEvent) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmegaNorm"), multFT0MNorm);
+    }
+    if (omegacounter > 0 && isHighMultEventTrk) {
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTrackswOmega"), multTrack);
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracksGlobwOmega"), collision.multNTracksGlobal());
+    }
+    if (omegacounter > 0 && (isHighMultEvent || isHighMultEventTrk)) { // to compute "OR" selectivity
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTrackswOmega"), multTrack);
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTracksGlobwOmega"), collision.multNTracksGlobal());
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTrackswOmega2D"), multTrack, multFT0MNorm);
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTracksGlobwOmega2D"), collision.multNTracksGlobal(), multFT0MNorm);
     }
     if (omegacounter > 0 && isHighMultEvent) {
       keepEvent[9] = true;
     }
-
+    if (omegacounter > 0 && isHighMultEventTrk) {
+      keepEvent[13] = true;
+    }
+    if (isHighMultEvent) {
+      keepEvent[14] = true;
+    }
+    if (isHighMultEventTrk) {
+      keepEvent[15] = true;
+    }
     for (const auto& trackedCascade : trackedCascades) {
       const auto trackCasc = trackedCascade.track_as<TrackCandidates>();
       QAHistosStrangenessTracking.fill(HIST("hPtCascTracked"), trackCasc.pt());
@@ -1316,6 +1448,82 @@ struct strangenessFilter {
         }
       }
     }
+    // // Sigma - proton trigger definition
+    for (const auto& kinkCand : kinkCands) {
+      auto dauTrack = kinkCand.trackDaug_as<TrackCandidates>();
+      if (!dauTrack.hasTPC() || !dauTrack.hasTOF()) {
+        continue;
+      }
+      if (std::abs(dauTrack.tpcNSigmaPr()) > cfgSigma.nsigmatpcSigma || std::abs(dauTrack.tofNSigmaPr()) > cfgSigma.nsigmatofSigma) {
+        continue;
+      }
+      if (kinkCand.ptMoth() < cfgSigma.minPtSigma) {
+        continue;
+      }
+      if (kinkCand.mSigmaPlus() < cfgSigma.minMassSigma || kinkCand.mSigmaPlus() > cfgSigma.maxMassSigma) {
+        continue;
+      }
+      QAHistosSigma.fill(HIST("hPtVsMassSigmaPlus"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaPlus());
+      std::array<float, 3> momMoth = {kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()};
+      std::array<float, 3> momDaug = {kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()};
+      std::array<float, 3> primaryVtx = {collision.posX(), collision.posY(), collision.posZ()};
+      std::array<float, 3> decayVtx = {kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()};
+      float qtAP = getQtAP(momMoth, momDaug);
+      float alphaAP = getAlphaAP(momMoth, momDaug);
+      float cosPA = getCosPA(momMoth, decayVtx, primaryVtx);
+      if (alphaAP < 0) {
+        continue;
+      }
+      if (qtAP < cfgSigma.minQtAPSigma || qtAP > cfgSigma.maxQtAPSigma) {
+        continue;
+      }
+      if (cosPA < cfgSigma.minCosPASigma) {
+        continue;
+      }
+      if (std::abs(kinkCand.dcaMothPv()) > cfgSigma.maxDCAtoPVSigma) {
+        continue;
+      }
+      float decRad = std::hypot(kinkCand.xDecVtx(), kinkCand.yDecVtx());
+      if (decRad < cfgSigma.minRadiusSigma) {
+        continue;
+      }
+      QAHistosSigma.fill(HIST("hDecayRadiusSigma"), decRad);
+      // pair a proton
+      bool isProtonPaired = false;
+      for (auto track : tracks) {
+        if (track.globalIndex() == dauTrack.globalIndex()) {
+          continue;
+        }
+        if (std::abs(track.tpcNSigmaPr()) > cfgSigma.nsigmatpcSigma) {
+          continue;
+        }
+        QAHistosSigma.fill(HIST("hPtNSigmaTPCPrPair"), track.sign() * track.pt(), track.tpcNSigmaPr());
+        TLorentzVector sigmaVec, protonVec;
+        sigmaVec.SetXYZM(kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth(), o2::constants::physics::MassSigmaPlus);
+        protonVec.SetXYZM(track.px(), track.py(), track.pz(), o2::constants::physics::MassProton);
+        float kstar = getKStar(sigmaVec, protonVec);
+        if (kstar > cfgSigma.maxKStarSigmaProton) {
+          continue;
+        }
+        QAHistosSigma.fill(HIST("hKStarSigmaPr"), kstar);
+        if (track.pt() < cfgSigma.minPtProtonTOF) {
+          isProtonPaired = true;
+          break;
+        }
+        if (!track.hasTOF()) {
+          continue;
+        }
+        QAHistosSigma.fill(HIST("hPtNSigmaTOFPrPair"), track.sign() * track.pt(), track.tofNSigmaPr());
+        if (std::abs(track.tofNSigmaPr()) > cfgSigma.nsigmatofSigma) {
+          continue;
+        }
+        isProtonPaired = true;
+        break;
+      }
+      if (isProtonPaired) {
+        keepEvent[16] = true;
+      }
+    }
 
     // Fill centrality dependent histos
     if (keepEvent[0]) {
@@ -1359,6 +1567,18 @@ struct strangenessFilter {
     }
     if (keepEvent[12]) {
       hProcessedEvents->Fill(15.5);
+    }
+    if (keepEvent[13]) {
+      hProcessedEvents->Fill(16.5);
+    }
+    if (keepEvent[14]) {
+      hProcessedEvents->Fill(17.5);
+    }
+    if (keepEvent[15]) {
+      hProcessedEvents->Fill(18.5);
+    }
+    if (keepEvent[16]) {
+      hProcessedEvents->Fill(19.5);
     }
     // Filling the table
     fillTriggerTable(keepEvent);

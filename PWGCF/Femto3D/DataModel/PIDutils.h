@@ -19,10 +19,12 @@
 #ifndef PWGCF_FEMTO3D_DATAMODEL_PIDUTILS_H_
 #define PWGCF_FEMTO3D_DATAMODEL_PIDUTILS_H_
 
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include "Common/DataModel/PIDResponse.h"
 
 namespace o2::aod::singletrackselector
 {

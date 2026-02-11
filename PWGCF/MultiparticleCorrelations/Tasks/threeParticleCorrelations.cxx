@@ -76,6 +76,11 @@ struct ThreeParticleCorrelations {
   // Track filter parameters
   float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.3, protonPtMin = 0.6;
   float pionPtMid1 = 1.6, pionPtMid2 = 2.0, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 2.3;
+  struct : ConfigurableGroup {
+    std::string prefix = "TrackSelection";
+    Configurable<float> nSigmaTPCvar{"nSigmaTPCvar", 0.0, "Variation in the TPC nSigma"};
+    Configurable<float> nSigmaTOFvar{"nSigmaTOFvar", 0.0, "Variation in the TOF nSigma"};
+  } trackSelGroup;
 
   // RD filter parameters
   float dEtaMax = 0.05, dEtaMin = 0.023;
@@ -185,6 +190,8 @@ struct ThreeParticleCorrelations {
   void init(InitContext const&)
   {
 
+    TH1::SetDefaultSumw2(true);
+
     // Bins of variable width
     std::vector<double> fineCentBins = {0.0, 2.0, 4.0, 7.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 60.0, 70.0, 80.0, 90.0};
 
@@ -266,6 +273,8 @@ struct ThreeParticleCorrelations {
     rPhiStarRegistry.add("hSEPhiStarMean_SS", "hSEPhiStarMean_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hSEPhiStarMean_SSP", "hSEPhiStarMean_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hSEPhiStarMean_SSN", "hSEPhiStarMean_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEPhiStarRadial_OS", "hSEPhiStarRadial_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
+    rPhiStarRegistry.add("hSEPhiStarRadial_SS", "hSEPhiStarRadial_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
 
     rPhiStarRegistry.add("hMEPhiStarIR_OS", "hMEPhiStarIR_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEPhiStarIR_SS", "hMEPhiStarIR_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
@@ -275,6 +284,8 @@ struct ThreeParticleCorrelations {
     rPhiStarRegistry.add("hMEPhiStarMean_SS", "hMEPhiStarMean_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEPhiStarMean_SSP", "hMEPhiStarMean_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEPhiStarMean_SSN", "hMEPhiStarMean_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEPhiStarRadial_OS", "hMEPhiStarRadial_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
+    rPhiStarRegistry.add("hMEPhiStarRadial_SS", "hMEPhiStarRadial_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {170, 0.8, 2.5}}});
 
     // Efficiency
     rMCRegistry.add("hGenerated", "hGenerated", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
@@ -318,39 +329,39 @@ struct ThreeParticleCorrelations {
     rMCRegistry.add("hTrueSelectProtonN", "hTrueSelectProtonN", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
 
     // Correlations
-    rSECorrRegistry.add("hSameLambdaPion_SGNL", "Same-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaPion_SB", "Same-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaKaon_SGNL", "Same-event #Lambda - K correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaKaon_SB", "Same-event #Lambda - K correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaProton_SGNL", "Same-event #Lambda - p correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaProton_SB", "Same-event #Lambda - p correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaPion_MC", "Same-event #Lambda - #pi correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaKaon_MC", "Same-event #Lambda - K correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaProton_MC", "Same-event #Lambda - p correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rSECorrRegistry.add("hSameLambdaPion_SGNL", "Same-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaPion_SB", "Same-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaKaon_SGNL", "Same-event #Lambda - K correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaKaon_SB", "Same-event #Lambda - K correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaProton_SGNL", "Same-event #Lambda - p correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaProton_SB", "Same-event #Lambda - p correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaPion_MC", "Same-event #Lambda - #pi correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaKaon_MC", "Same-event #Lambda - K correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaProton_MC", "Same-event #Lambda - p correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
 
-    rSECorrRegistry.add("hSameLambdaPion_leftSB", "Same-event #Lambda - #pi correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaPion_rightSB", "Same-event #Lambda - #pi correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaKaon_leftSB", "Same-event #Lambda - K correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaKaon_rightSB", "Same-event #Lambda - K correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaProton_leftSB", "Same-event #Lambda - p correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rSECorrRegistry.add("hSameLambdaProton_rightSB", "Same-event #Lambda - p correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rSECorrRegistry.add("hSameLambdaPion_leftSB", "Same-event #Lambda - #pi correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaPion_rightSB", "Same-event #Lambda - #pi correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaKaon_leftSB", "Same-event #Lambda - K correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaKaon_rightSB", "Same-event #Lambda - K correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaProton_leftSB", "Same-event #Lambda - p correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rSECorrRegistry.add("hSameLambdaProton_rightSB", "Same-event #Lambda - p correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
 
-    rMECorrRegistry.add("hMixLambdaPion_SGNL", "Mixed-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaPion_SB", "Mixed-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaKaon_SGNL", "Mixed-event #Lambda - K correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaKaon_SB", "Mixed-event #Lambda - K correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaProton_SGNL", "Mixed-event #Lambda - p correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaProton_SB", "Mixed-event #Lambda - p correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaPion_MC", "Mixed-event #Lambda - #pi correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaKaon_MC", "Mixed-event #Lambda - K correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaProton_MC", "Mixed-event #Lambda - p correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rMECorrRegistry.add("hMixLambdaPion_SGNL", "Mixed-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaPion_SB", "Mixed-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaKaon_SGNL", "Mixed-event #Lambda - K correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaKaon_SB", "Mixed-event #Lambda - K correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaProton_SGNL", "Mixed-event #Lambda - p correlator (SGNL region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaProton_SB", "Mixed-event #Lambda - p correlator (SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaPion_MC", "Mixed-event #Lambda - #pi correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaKaon_MC", "Mixed-event #Lambda - K correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaProton_MC", "Mixed-event #Lambda - p correlator (MC)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
 
-    rMECorrRegistry.add("hMixLambdaPion_leftSB", "Mixed-event #Lambda - #pi correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaPion_rightSB", "Mixed-event #Lambda - #pi correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaKaon_leftSB", "Mixed-event #Lambda - K correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaKaon_rightSB", "Mixed-event #Lambda - K correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaProton_leftSB", "Mixed-event #Lambda - p correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
-    rMECorrRegistry.add("hMixLambdaProton_rightSB", "Mixed-event #Lambda - p correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
+    rMECorrRegistry.add("hMixLambdaPion_leftSB", "Mixed-event #Lambda - #pi correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaPion_rightSB", "Mixed-event #Lambda - #pi correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaKaon_leftSB", "Mixed-event #Lambda - K correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaKaon_rightSB", "Mixed-event #Lambda - K correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaProton_leftSB", "Mixed-event #Lambda - p correlator (Left SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
+    rMECorrRegistry.add("hMixLambdaProton_rightSB", "Mixed-event #Lambda - p correlator (Right SB region)", {HistType::kTHnSparseF, {{dPhiAxis}, {dEtaAxis}, {centralityAxis}, {zvtxAxis}, {2, -2, 2}, {2, -2, 2}}}, true);
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -1083,21 +1094,21 @@ struct ThreeParticleCorrelations {
     }
 
     if (trackPID(track)[0] == pionID) { // Pions
-      if (std::abs(track.tpcNSigmaPi()) >= nSigma4) {
+      if (std::abs(track.tpcNSigmaPi()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
       if (track.pt() < pionPtMin) {
         return false;
       } else if (track.pt() > pionPtMin && track.pt() < pionPtMid1) {
-        if (std::abs(track.tofNSigmaPi()) >= nSigma4) {
+        if (std::abs(track.tofNSigmaPi()) >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > pionPtMid1 && track.pt() < pionPtMid2) {
-        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma2) {
+        if (track.tofNSigmaPi() <= -nSigma4 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaPi() >= nSigma2 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > pionPtMid2 && track.pt() < pionPtMax) {
-        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma0) {
+        if (track.tofNSigmaPi() <= -nSigma4 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaPi() >= nSigma0 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > pionPtMax) {
@@ -1105,21 +1116,21 @@ struct ThreeParticleCorrelations {
       }
 
     } else if (trackPID(track)[0] == kaonID) { // Kaons
-      if (std::abs(track.tpcNSigmaKa()) >= nSigma4) {
+      if (std::abs(track.tpcNSigmaKa()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
       if (track.pt() < kaonPtMin) {
         return false;
       } else if (track.pt() > kaonPtMin && track.pt() < kaonPtMid1) {
-        if (std::abs(track.tofNSigmaKa()) >= nSigma4) {
+        if (std::abs(track.tofNSigmaKa()) >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > kaonPtMid1 && track.pt() < kaonPtMid2) {
-        if (track.tofNSigmaKa() <= -nSigma1 || track.tofNSigmaKa() >= nSigma4) {
+        if (track.tofNSigmaKa() <= -nSigma1 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaKa() >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > kaonPtMid2 && track.pt() < kaonPtMax) {
-        if (track.tofNSigmaKa() <= nSigma0 || track.tofNSigmaKa() >= nSigma4) {
+        if (track.tofNSigmaKa() <= nSigma0 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaKa() >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > kaonPtMax) {
@@ -1127,17 +1138,17 @@ struct ThreeParticleCorrelations {
       }
 
     } else if (trackPID(track)[0] == protonID) { // Protons
-      if (std::abs(track.tpcNSigmaPr()) >= nSigma4) {
+      if (std::abs(track.tpcNSigmaPr()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
       if (track.pt() < protonPtMin) {
         return false;
       } else if (track.pt() > protonPtMin && track.pt() < protonPtMid) {
-        if (std::abs(track.tofNSigmaPr()) >= nSigma4) {
+        if (std::abs(track.tofNSigmaPr()) >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       } else if (track.pt() > protonPtMid) {
-        if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
+        if (track.tofNSigmaPr() <= -nSigma2 - trackSelGroup.nSigmaTOFvar || track.tofNSigmaPr() >= nSigma4 + trackSelGroup.nSigmaTOFvar) {
           return false;
         }
       }
@@ -1229,7 +1240,7 @@ struct ThreeParticleCorrelations {
       for (double r = rMin; r <= rMax; r += 0.01) {
         dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
 
-        if (r == rMin) {
+        if (r == rMin) {                              // TPC inner radius
           if (!Mix) {                                 // Same-event
             if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
               rPhiStarRegistry.fill(HIST("hSEPhiStarIR_OS"), dPhiStar, dEta);
@@ -1259,6 +1270,21 @@ struct ThreeParticleCorrelations {
             if (std::abs(dEta) < dEtaMin && std::abs(dPhiStar) < dPhiStarMinOS) {
               pass = false;
             }
+          }
+        }
+
+        if (!Mix) {                                 // Same-event
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_OS"), dPhiStar, r);
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hSEPhiStarRadial_SS"), dPhiStar, r);
+          }
+
+        } else {                                    // Mixed-event
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_OS"), dPhiStar, r);
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            rPhiStarRegistry.fill(HIST("hMEPhiStarRadial_SS"), dPhiStar, r);
           }
         }
 

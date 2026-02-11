@@ -1,0 +1,78 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file EventSelectionFlagsMapping.def
+/// \brief X-macro mapping between EventSelectionFlags and collisionCutsGroup
+///
+/// This file defines the canonical mapping between o2::aod::evsel::EventSelectionFlags
+/// enum values and collisionCutsGroup boolean member variables. It is used via X-macros
+/// to auto-generate member declarations, getters, setters, initialization, and metadata.
+///
+/// IMPORTANT: This file should NOT have include guards as it is included multiple times
+/// with different EVSEL_FLAG macro definitions.
+///
+/// Format: EVSEL_FLAG(enumValue, memberName, defaultValue, evtSelEnum, setterName, getterName, label, description)
+///
+/// Parameters:
+///   enumValue    - EventSelectionFlags enum (e.g., kIsTriggerTVX)
+///   memberName   - collisionCutsGroup bool member variable name
+///   defaultValue - Default value (true/false) in constructor
+///   evtSelEnum   - CollisonCuts::EvtSel enum value for histogram binning
+///   setterName   - CollisonCuts setter method name
+///   getterName   - collisionCutsGroup getter method name suffix (without 'get')
+///   label        - Histogram axis label (short, no spaces)
+///   description  - Human-readable description
+///
+/// To add a new event selection flag:
+/// 1. Add a new EVSEL_FLAG line below following the format
+/// 2. Ensure the EvtSel enum in collisionCuts.h has corresponding entry
+/// 3. Ensure the setter method exists in CollisonCuts class
+/// 4. Rebuild - all getters, members, logging, and metadata are auto-generated
+///
+/// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
+
+// Trigger selection
+EVSEL_FLAG(kIsTriggerTVX, triggerTVXSel, false, kFlagTrigerTVX, setTriggerTVX, TriggerTVXSel, "IsTriggerTVX", "Trigger TVX selection")
+
+// Time frame and readout frame borders
+EVSEL_FLAG(kNoTimeFrameBorder, applyTFBorderCut, false, kFlagTimeFrameBorder, setApplyTFBorderCut, ApplyTFBorderCut, "NoTimeFrameBorder", "Apply TF border cut")
+EVSEL_FLAG(kNoITSROFrameBorder, applyNoITSROBorderCut, false, kFlagITSROFrameBorder, setApplyNoITSROBorderCut, ApplyNoITSROBorderCut, "NoITSROFrameBorder", "Apply NoITSRO frame border cut")
+
+// Vertex quality
+EVSEL_FLAG(kIsVertexITSTPC, applyITSTPCvertex, false, kFlagVertexITSTPC, setApplyITSTPCvertex, ApplyITSTPCvertex, "IsVertexITSTPC", "Apply ITS-TPC vertex")
+EVSEL_FLAG(kIsGoodZvtxFT0vsPV, applyZvertexTimedifference, false, kFlagZvtxFT0vsPV, setApplyZvertexTimedifference, ApplyZvertexTimedifference, "IsGoodZvtxFT0vsPV", "Apply Z-vertex time difference")
+EVSEL_FLAG(kIsVertexTRDmatched, applyVertexTRDmatched, false, kFlagVertexTRDmatched, setApplyVertexTRDmatched, ApplyVertexTRDmatched, "IsVertexTRDmatched", "Vertex has TRD-matched track")
+
+// Pileup rejection
+EVSEL_FLAG(kNoSameBunchPileup, applyPileupRejection, false, kFlagBunchPileup, setApplyPileupRejection, ApplyPileupRejection, "NoSameBunchPileup", "Apply Pileup rejection")
+
+// Collision-in-time-range cuts
+EVSEL_FLAG(kNoCollInTimeRangeStandard, applyCollInTimeRangeStandard, false, kNoCollInTimeRangeStandard, setApplyCollInTimeRangeStandard, ApplyCollInTimeRangeStandard, "NoCollInTimeRangeStandard", "Apply NoCollInTimeRangeStandard")
+EVSEL_FLAG(kNoCollInTimeRangeNarrow, applyCollInTimeRangeNarrow, false, kNoCollInTimeRangeNarrow, setApplyCollInTimeRangeNarrow, ApplyCollInTimeRangeNarrow, "NoCollInTimeRangeNarrow", "Apply NoCollInTimeRangeNarrow")
+EVSEL_FLAG(kNoCollInTimeRangeStrict, applyCollInTimeRangeStrict, false, kNoCollInTimeRangeStrict, setApplyCollInTimeRangeStrict, ApplyCollInTimeRangeStrict, "NoCollInTimeRangeStrict", "No collisions in time range (strict)")
+
+// Collision-in-ROF cuts
+EVSEL_FLAG(kNoCollInRofStandard, applyCollInRofStandard, false, kNoCollInRofStandard, setApplyCollInRofStandard, ApplyCollInRofStandard, "NoCollInRofStandard", "No high-mult collisions in this ROF")
+EVSEL_FLAG(kNoCollInRofStrict, applyCollInRofStrict, false, kNoCollInRofStrict, setApplyCollInRofStrict, ApplyCollInRofStrict, "NoCollInRofStrict", "No collisions in this ROF (strict)")
+EVSEL_FLAG(kNoHighMultCollInPrevRof, applyHighMultCollInPrevRof, false, kNoHighMultCollInPrevRof, setApplyHighMultCollInPrevRof, ApplyHighMultCollInPrevRof, "NoHighMultCollInPrevRof", "No high-mult collision in previous ROF")
+
+// ITS layer quality
+EVSEL_FLAG(kIsGoodITSLayersAll, applyGoodITSLayersAll, false, kIsGoodITSLayersAll, setApplyGoodITSLayersAll, ApplyGoodITSLayersAll, "IsGoodITSLayersAll", "Apply GoodITSLayersAll")
+EVSEL_FLAG(kIsGoodITSLayer3, applyGoodITSLayer3, false, kIsGoodITSLayer3, setApplyGoodITSLayer3, ApplyGoodITSLayer3, "IsGoodITSLayer3", "Apply GoodITSLayer3")
+EVSEL_FLAG(kIsGoodITSLayer0123, applyGoodITSLayer0123, false, kIsGoodITSLayer0123, setApplyGoodITSLayer0123, ApplyGoodITSLayer0123, "IsGoodITSLayer0123", "Apply GoodITSLayer0123")
+
+// Beam-beam timing
+EVSEL_FLAG(kIsBBT0A, applyBBT0A, false, kFlagBBT0A, setApplyBBT0A, ApplyBBT0A, "IsBBT0A", "T0A in beam-beam window")
+EVSEL_FLAG(kIsBBT0C, applyBBT0C, false, kFlagBBT0C, setApplyBBT0C, ApplyBBT0C, "IsBBT0C", "T0C in beam-beam window")
+
+// Future flags can be easily added here, for example:
+// EVSEL_FLAG(kIsVertexTOFmatched, applyVertexTOFmatched, false, kFlagVertexTOFmatched, setApplyVertexTOFmatched, ApplyVertexTOFmatched, "IsVertexTOFmatched", "Apply vertex TOF matched")
+// EVSEL_FLAG(kNoCollInTimeRangeStrict, applyCollInTimeRangeStrict, false, kNoCollInTimeRangeStrict, setApplyCollInTimeRangeStrict, ApplyCollInTimeRangeStrict, "NoCollInTimeRangeStrict", "Apply NoCollInTimeRangeStrict")

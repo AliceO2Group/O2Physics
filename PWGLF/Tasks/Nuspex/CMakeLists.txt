@@ -109,6 +109,11 @@ o2physics_add_dpl_workflow(deut-rt-task
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(neutron-skin
+    SOURCES neutronSkin.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hadronnucleicorrelation
     SOURCES hadronnucleicorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -173,6 +178,16 @@ o2physics_add_dpl_workflow(pikp-raa-analysis
 o2physics_add_dpl_workflow(chargedparticle-raa
     SOURCES chargedparticleRaa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(multiplicity-pt
+                    SOURCES MultiplicityPt.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(deuteron-in-jets-trg-pt
+    SOURCES DeuteronInJetsTrgPt.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 endif()

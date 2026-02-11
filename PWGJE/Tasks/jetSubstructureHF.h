@@ -54,7 +54,7 @@
 
 // NB: runDataProcessing.h must be included after customize!
 
-template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTableDataSub, typename CandidateTable, typename CandidateTableMCP, typename SubstructureTableData, typename SplittingsTableData, typename PairsTableData, typename SubstructureTableMCD, typename SplittingsTableMCD, typename PairsTableMCD, typename SubstructureTableMCP, typename SplittingsTableMCP, typename PairsTableMCP, typename SubstructureTableDataSub, typename SplittingsTableDataSub, typename PairsTableDataSub, typename TracksSub>
+template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTableDataSub, typename CandidateTable, typename CandidateTableMCP, typename SubstructureTableData, typename RecoilTableData, typename SplittingsTableData, typename PairsTableData, typename SubstructureTableMCD, typename RecoilTableMCD, typename SplittingsTableMCD, typename PairsTableMCD, typename SubstructureTableMCP, typename RecoilTableMCP, typename SplittingsTableMCP, typename PairsTableMCP, typename SubstructureTableDataSub, typename SplittingsTableDataSub, typename PairsTableDataSub, typename TracksSub>
 struct JetSubstructureHFTask {
   o2::framework::Produces<SubstructureTableData> jetSubstructureDataTable;
   o2::framework::Produces<SubstructureTableMCD> jetSubstructureMCDTable;
@@ -71,6 +71,10 @@ struct JetSubstructureHFTask {
   o2::framework::Produces<PairsTableMCP> jetPairsMCPTable;
   o2::framework::Produces<PairsTableDataSub> jetPairsDataSubTable;
 
+  o2::framework::Produces<RecoilTableData> jetRecoilDataTable;
+  o2::framework::Produces<RecoilTableMCD> jetRecoilMCDTable;
+  o2::framework::Produces<RecoilTableMCP> jetRecoilMCPTable;
+
   // Jet level configurables
   o2::framework::Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   o2::framework::Configurable<float> beta{"beta", 0.0, "soft drop beta"};
@@ -82,6 +86,7 @@ struct JetSubstructureHFTask {
   o2::framework::Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
   o2::framework::Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
   o2::framework::Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
+  o2::framework::Configurable<float> recoilRegion{"recoilRegion", 0.6, "recoil acceptance in phi"};
 
   o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
   float candMass;
@@ -186,7 +191,7 @@ struct JetSubstructureHFTask {
   }
 
   template <bool isMCP, bool isSubtracted, typename T, typename U>
-  void jetReclustering(T const& jet, U& splittingTable)
+  void jetReclustering(T const& jet, U& splittingTable, int nHFCandidates)
   {
     energyMotherVec.clear();
     ptLeadingVec.clear();
@@ -202,24 +207,34 @@ struct JetSubstructureHFTask {
     auto nsd = 0.0;
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
 
-      bool isHFInSubjet1 = false;
+      int nHFInSubjet1 = 0;
       for (auto& subjet1Constituent : parentSubJet1.constituents()) {
-        if (subjet1Constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidate)) {
-          isHFInSubjet1 = true;
-          break;
+        if (subjet1Constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::candidate) {
+          nHFInSubjet1++;
         }
       }
-      if (!isHFInSubjet1) {
+      if (nHFCandidates == 1 && nHFInSubjet1 == 0) {
         std::swap(parentSubJet1, parentSubJet2);
       }
+      if (nHFCandidates == 2) {
+        if (nHFInSubjet1 == 2) {
+          daughterSubJet = parentSubJet1;
+          continue;
+        }
+        if (nHFInSubjet1 == 0) {
+          daughterSubJet = parentSubJet2;
+          continue;
+        }
+      }
+
       std::vector<int32_t> tracks;
       std::vector<int32_t> candidates;
       std::vector<int32_t> clusters;
       for (const auto& constituent : sorted_by_pt(parentSubJet2.constituents())) {
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::track)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::track) {
           tracks.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidate)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::candidate) {
           candidates.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
       }
@@ -251,6 +266,9 @@ struct JetSubstructureHFTask {
         nsd++;
       }
       daughterSubJet = parentSubJet1;
+      if (nHFCandidates == 2 && nHFInSubjet1 == 1) {
+        break;
+      }
     }
     if constexpr (!isSubtracted && !isMCP) {
       registry.fill(HIST("h2_jet_pt_jet_nsd"), jet.pt(), nsd);
@@ -452,7 +470,7 @@ struct JetSubstructureHFTask {
       }
       angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= (std::pow(jet.pt(), kappa) * std::pow((jet.r() / 100.f), alpha));
   }
 
   template <bool isSubtracted, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
@@ -462,14 +480,29 @@ struct JetSubstructureHFTask {
     for (auto& jetConstituent : jet.template tracks_as<U>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
-    for (auto& jetHFCandidate : jet.template candidates_as<V>()) { // should only be one at the moment
-      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
+    int nHFCandidates = 0;
+    for (auto& jetHFCandidate : jet.template candidates_as<V>()) {
+      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), JetConstituentStatus::candidate, candMass);
+      nHFCandidates++;
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-    jetReclustering<false, isSubtracted>(jet, splittingTable);
+    jetReclustering<false, isSubtracted>(jet, splittingTable, nHFCandidates);
     jetPairing<false, isSubtracted>(jet, tracks, candidates, trackSlicer, pairTable);
     jetSubstructureSimple(jet, tracks, candidates);
     outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
+  }
+
+  template <typename T, typename U, typename V, typename M>
+  void analyseRecoilCharged(T const& jets, U const& /*tracks*/, V const& candidates, M& outputRecoilTable)
+  {
+    for (auto const& candidate : candidates) {
+      for (auto const& jet : jets) {
+        if (std::abs(RecoDecay::constrainAngle(jet.phi() - candidate.phi(), -M_PI)) > (M_PI - recoilRegion)) {
+          outputRecoilTable(jet.globalIndex(), candidate.globalIndex(), jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracksIds().size()); // add variables for recoil jet tagging
+          break;
+        }
+      }
+    }
   }
 
   void processChargedJetsData(typename JetTableData::iterator const& jet,
@@ -502,18 +535,47 @@ struct JetSubstructureHFTask {
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<o2::aod::JetParticles>()) {
-      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), JetConstituentStatus::track, pdg->Mass(jetConstituent.pdgCode()));
     }
+    int nHFCandidates = 0;
     for (auto& jetHFCandidate : jet.template candidates_as<CandidateTableMCP>()) {
-      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
+      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), JetConstituentStatus::candidate, candMass);
+      nHFCandidates++;
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, particles, particles, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-    jetReclustering<true, false>(jet, jetSplittingsMCPTable);
+    jetReclustering<true, false>(jet, jetSplittingsMCPTable, nHFCandidates);
     jetPairing<true, false>(jet, particles, candidates, ParticlesPerMcCollision, jetPairsMCPTable);
     jetSubstructureSimple(jet, particles, candidates);
     jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);
+
+  void processChargedRecoilJetsData(o2::aod::JetCollision const& /*collision*/,
+                                    o2::soa::Join<o2::aod::ChargedJets, o2::aod::ChargedJetConstituents> const& jets,
+                                    CandidateTable const& candidates,
+                                    o2::aod::JetTracks const& tracks)
+  {
+    analyseRecoilCharged(jets, tracks, candidates, jetRecoilDataTable);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processChargedRecoilJetsData, "HF recoil jet data", false);
+
+  void processChargedRecoilJetsMCD(o2::aod::JetCollision const& /*collision*/,
+                                   o2::soa::Join<o2::aod::ChargedMCDetectorLevelJets, o2::aod::ChargedMCDetectorLevelJetConstituents> const& jets,
+                                   CandidateTable const& candidates,
+                                   o2::aod::JetTracks const& tracks)
+  {
+    analyseRecoilCharged(jets, tracks, candidates, jetRecoilMCDTable);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processChargedRecoilJetsMCD, "HF recoil jet mcd", false);
+
+  void processChargedRecoilJetsMCP(o2::aod::JetCollision const& /*collision*/,
+                                   o2::soa::Join<o2::aod::ChargedMCParticleLevelJets, o2::aod::ChargedMCParticleLevelJetConstituents> const& jets,
+                                   CandidateTableMCP const& candidates,
+                                   o2::aod::JetParticles const& tracks)
+  {
+    analyseRecoilCharged(jets, tracks, candidates, jetRecoilMCPTable);
+  }
+  PROCESS_SWITCH(JetSubstructureHFTask, processChargedRecoilJetsMCP, "HF recoil jet mcp", false);
 };
 
 #endif // PWGJE_TASKS_JETSUBSTRUCTUREHF_H_

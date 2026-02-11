@@ -39,7 +39,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -48,6 +47,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Framework/runDataProcessing.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include "Math/Vector4D.h"
@@ -79,6 +79,7 @@ struct nucleiQC {
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "Centrality estimator (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3)"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], nuclei::Species::kNspecies, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<int>> cfgUseCentralTpcCalibration{"cfgUseCentralTpcCalibration", {nuclei::useCentralTpcCalibrationDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"UseCentralTpcCalibration"}}, "Use central TPC calibration"};
+  Configurable<LabeledArray<double>> cfgDownscalingFactor{"cfgDownscalingFactor", {nuclei::DownscalingDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"DownscalingFactor"}}, "Save to the AO2D with a downscaling factor"};
 
   Configurable<LabeledArray<int>> cfgUseTrackTuner{"cfgUseTrackTuner", {nuclei::useTrackTuner[0], nuclei::Species::kNspecies, 1, nuclei::names, {"UseTrckTuner"}}, "Use Track Tuner"};
   Configurable<std::string> cfgTrackTunerParams{"cfgTrackTunerParams", "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/pp2023/pass4/correct_names|nameInputFile=trackTuner_DataLHC23hPass4_McLHC23k4g.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=-1.|qOverPtData=-1.|nPhiBins=1|autoDetectDcaCalib=false", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
@@ -455,6 +456,7 @@ struct nucleiQC {
 
   void processMc(const Collision& collision, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles)
   {
+    gRandom->SetSeed(67);
     mNucleiCandidates.clear();
     mFilledMcParticleIds.clear();
 
@@ -493,6 +495,11 @@ struct nucleiQC {
         const auto& particle = track.mcParticle();
         if (cfgDoCheckPdgCode) {
           if (std::abs(particle.pdgCode()) != nuclei::pdgCodes[kSpeciesRt])
+            return;
+        }
+
+        if (cfgDownscalingFactor->get(kSpeciesRt) < 1.) {
+          if ((gRandom->Uniform()) > cfgDownscalingFactor->get(kSpeciesRt))
             return;
         }
 

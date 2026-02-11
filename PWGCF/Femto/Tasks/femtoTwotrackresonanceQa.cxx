@@ -60,7 +60,7 @@ struct FemtoTwotrackresonanceQa {
   // setup for collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
-  colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
+  colhistmanager::CollisionHistManager colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
@@ -74,7 +74,6 @@ struct FemtoTwotrackresonanceQa {
     twotrackresonancehistmanager::PrefixPhi,
     trackhistmanager::PrefixResonancePosDaughterQa,
     trackhistmanager::PrefixResonanceNegDaughterQa,
-    modes::Mode::kAnalysis_Qa,
     modes::TwoTrackResonance::kPhi>
     phiHistManager;
 
@@ -88,7 +87,6 @@ struct FemtoTwotrackresonanceQa {
     twotrackresonancehistmanager::PrefixRho,
     trackhistmanager::PrefixResonancePosDaughterQa,
     trackhistmanager::PrefixResonanceNegDaughterQa,
-    modes::Mode::kAnalysis_Qa,
     modes::TwoTrackResonance::kRho0>
     rho0HistManager;
 
@@ -102,7 +100,6 @@ struct FemtoTwotrackresonanceQa {
     twotrackresonancehistmanager::PrefixKstar,
     trackhistmanager::PrefixResonancePosDaughterQa,
     trackhistmanager::PrefixResonanceNegDaughterQa,
-    modes::Mode::kAnalysis_Qa,
     modes::TwoTrackResonance::kKstar0>
     kstar0HistManager;
 
@@ -118,7 +115,7 @@ struct FemtoTwotrackresonanceQa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init(&hRegistry, colHistSpec, confCollisionQaBinning);
+    colHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);
     auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
@@ -129,45 +126,45 @@ struct FemtoTwotrackresonanceQa {
 
     if (doprocessPhis) {
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confPhiBinning);
-      phiHistManager.init(&hRegistry, phiHistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+      phiHistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, phiHistSpec, confPhiSelection, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
     if (doprocessRho0s) {
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confRho0Binning);
-      rho0HistManager.init(&hRegistry, rho0HistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+      rho0HistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, rho0HistSpec, confRho0Selection, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
 
     if (doprocessKstar0s) {
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confKstar0Binning);
-      kstar0HistManager.init(&hRegistry, kstar0HistSpec, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
+      kstar0HistManager.init<modes::Mode::kAnalysis_Qa>(&hRegistry, kstar0HistSpec, confKstar0Selection, posDaughterHistSpec, confPosDaughterQaBinning, negDaughterHistSpec, confNegDaughterQaBinning);
     }
   };
 
   void processPhis(FilteredFemtoCollision const& col, FemtoPhis const& /*phis*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
     auto phiSlice = phiPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& phi : phiSlice) {
-      phiHistManager.fill(phi, tracks);
+      phiHistManager.fill<modes::Mode::kAnalysis_Qa>(phi, tracks);
     }
   };
   PROCESS_SWITCH(FemtoTwotrackresonanceQa, processPhis, "Process Phis", true);
 
   void processRho0s(FilteredFemtoCollision const& col, FemtoRho0s const& /*rho0s*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
     auto rho0Slice = rho0Partition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& rho0 : rho0Slice) {
-      rho0HistManager.fill(rho0, tracks);
+      rho0HistManager.fill<modes::Mode::kAnalysis_Qa>(rho0, tracks);
     }
   };
   PROCESS_SWITCH(FemtoTwotrackresonanceQa, processRho0s, "Process Rho0s", false);
 
   void processKstar0s(FilteredFemtoCollision const& col, FemtoKstar0s const& /*kstar0s*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill(col);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
     auto kstar0Slice = kstar0Partition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& kstar0 : kstar0Slice) {
-      kstar0HistManager.fill(kstar0, tracks);
+      kstar0HistManager.fill<modes::Mode::kAnalysis_Qa>(kstar0, tracks);
     }
   };
   PROCESS_SWITCH(FemtoTwotrackresonanceQa, processKstar0s, "Process Kstar0s", false);

@@ -20,7 +20,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include "Framework/ASoA.h"
@@ -821,6 +820,17 @@ DECLARE_SOA_TABLE_STAGED(Dielectrons, "RTDIELECTRON", //!
                          reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
 
 DECLARE_SOA_TABLE(Dimuons, "AOD", "RTDIMUON", //!
+                  o2::soa::Index<>, reducedpair::ReducedEventId,
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap, reducedpair::McDecision,
+                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
+
+DECLARE_SOA_TABLE(ElectronMuons, "AOD", "RTELECTRONMUON", //!
                   o2::soa::Index<>, reducedpair::ReducedEventId,
                   reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                   reducedpair::FilterMap, reducedpair::McDecision,

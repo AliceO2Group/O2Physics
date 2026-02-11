@@ -286,8 +286,6 @@ struct HfCandidateCreatorDstar {
       registry.fill(HIST("Refit/hCovSVXZ"), covMatrixPCA[3]);
       registry.fill(HIST("Refit/hCovSVZZ"), covMatrixPCA[5]);
 
-      // Doubt:................Below, track object are at secondary vertex!
-      // < track param propagated to V0 candidate (no check for the candidate validity). propagateTracksToVertex must be called in advance
       auto trackD0ProngParVar0 = df.getTrack(0);
       auto trackD0ProngParVar1 = df.getTrack(1);
 

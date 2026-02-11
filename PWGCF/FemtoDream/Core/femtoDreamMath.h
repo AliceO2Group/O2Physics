@@ -141,6 +141,18 @@ class FemtoDreamMath
   }
 
   template <typename T1>
+  static float calcInvMassV0(const T1& trackpos, const float masspos, const T1& trackneg, const float massneg)
+  {
+    // calculate the invariant mass
+    const ROOT::Math::PtEtaPhiMVector posDaug(trackpos.pt(), trackpos.eta(), trackpos.phi(), masspos);
+    const ROOT::Math::PtEtaPhiMVector negDaug(trackneg.pt(), trackneg.eta(), trackneg.phi(), massneg);
+    // const ROOT::Math::PxPyPzMVector v0 = negDaug + posDaug;
+    const ROOT::Math::PtEtaPhiMVector v0 = negDaug + posDaug;
+
+    return v0.M();
+  }
+
+  template <typename T1>
   static float getInvMassCascade(const T1& trackpos, const float masspos, const T1& trackneg, const float massneg, const T1& trackbach, const float massbach, const float massv0)
   {
     // calculate the invariant mass

@@ -176,6 +176,7 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandSelInfos> candSelInfo;
   Produces<aod::AssocTrackReds> assocTrackReduced;
   Produces<aod::AssocTrackSels> assocTrackSelInfo;
+  Produces<aod::AssocTrackPids> assocTrackPidInfo;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
@@ -241,6 +242,7 @@ struct HfCorrelatorDsHadrons {
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {200, 0., 800.}, "Multiplicity"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPid{"binsPid", {24, -12., 12.}, "n #sigma"};
+  ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
@@ -258,6 +260,7 @@ struct HfCorrelatorDsHadrons {
     AxisSpec const axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisStatus = {15, 0.5, 15.5, "Selection status"};
+    AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
     AxisSpec const axisPid{binsPid, "n #sigma"};
 
     // Histograms for data analysis
@@ -293,6 +296,7 @@ struct HfCorrelatorDsHadrons {
         registry.add("hTpcTofNSigmaCombPion", "n sigma tpc and tof combined for pion hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
         registry.add("hTpcTofNSigmaCombKaon", "n sigma tpc and tof combined for kaon hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
         registry.add("hTpcTofNSigmaCombProton", "n sigma tpc and tof combined for proton hypothesis", {HistType::kTH2F, {{axisPid}, {axisPtHadron}}});
+        registry.add("hDcaXYVsPt", "DCA xy vs pt", {HistType::kTH2F, {{axisDcaXY}, {axisPtHadron}}});
       }
     }
     // Histograms for MC Reco analysis
@@ -626,13 +630,13 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hTpcTofNSigmaCombKaonMc"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), 2)), track.pt());
           registry.fill(HIST("hTpcTofNSigmaCombProtonMc"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), 2)), track.pt());
           // MC truth match
-          if (trkPIDspecies->at(0) == o2::track::PID::Kaon && mcParticle.pdgCode() != kKPlus) {
+          if (trkPIDspecies->at(0) == o2::track::PID::Kaon && std::abs(mcParticle.pdgCode()) != kKPlus) {
             continue;
           }
-          if (trkPIDspecies->at(0) == o2::track::PID::Pion && mcParticle.pdgCode() != kPiPlus) {
+          if (trkPIDspecies->at(0) == o2::track::PID::Pion && std::abs(mcParticle.pdgCode()) != kPiPlus) {
             continue;
           }
-          if (trkPIDspecies->at(0) == o2::track::PID::Proton && mcParticle.pdgCode() != kProton) {
+          if (trkPIDspecies->at(0) == o2::track::PID::Proton && std::abs(mcParticle.pdgCode()) != kProton) {
             continue;
           }
           // Physical primary requirement
@@ -654,9 +658,6 @@ struct HfCorrelatorDsHadrons {
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
           auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
           entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
-          //} else {
-          //  registry.fill(HIST("hFakeTracksMcRec"), track.pt());
-          //}
           // for secondary particle fraction estimation
           if (!isAlreadyFilledEvent) {
             registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
@@ -679,9 +680,6 @@ struct HfCorrelatorDsHadrons {
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
           auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
           entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary, trackOrigin);
-          //} else {
-          //  registry.fill(HIST("hFakeTracksMcRec"), track.pt());
-          //}
           // for secondary particle fraction estimation
           if (!isAlreadyFilledEvent) {
             registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
@@ -762,24 +760,22 @@ struct HfCorrelatorDsHadrons {
             listDaughters.clear();
             RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
             int counterDaughters = 0;
+            // Assign Ds charge sign
             int chargeDs = 0;
+            if (particle.pdgCode() == kDS) {
+              chargeDs = 1;
+            } else {
+              chargeDs = -1;
+            }
+            // Find Ds daughters
             if (listDaughters.size() == NDaughtersDs) {
               for (const auto& dauIdx : listDaughters) {
                 // auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
                 auto daughI = groupedMcParticles.rawIteratorAt(dauIdx - groupedMcParticles.offset());
                 counterDaughters += 1;
-                if (counterDaughters == 1) {
-                  if (daughI.pdgCode() == kKPlus) {
-                    chargeDs = 1;
-                  } else {
-                    chargeDs = -1;
-                  }
-                }
                 prongsId[counterDaughters - 1] = daughI.globalIndex();
               }
             }
-
-            int numberOfCorrKaons = 0;
 
             // Ds Hadron correlation dedicated section
             for (const auto& particleAssoc : groupedMcParticles) {
@@ -795,46 +791,37 @@ struct HfCorrelatorDsHadrons {
               if (!particleAssoc.isPhysicalPrimary()) {
                 continue;
               }
-
-              if (isDsPrompt) {
-                registry.fill(HIST("hCorrAllPrimaryParticles"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                if (std::abs(particleAssoc.pdgCode()) == kPiPlus) {
-                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                  registry.fill(HIST("hCorrAllPrimaryPions"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                } else if (std::abs(particleAssoc.pdgCode()) == kKPlus) {
-                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                  registry.fill(HIST("hCorrAllPrimaryKaons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                } else if (std::abs(particleAssoc.pdgCode()) == kProton) {
-                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                  registry.fill(HIST("hCorrAllPrimaryProtons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+              if (pidTrkApplied) {
+                // MC truth match
+                if (trkPIDspecies->at(0) == o2::track::PID::Kaon && std::abs(particleAssoc.pdgCode()) != kKPlus) {
+                  continue;
                 }
-                if (pidTrkApplied) {
-                  if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKPlus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKMinus))) { // LS pairs
-                    registry.fill(HIST("hCorrKaonsLSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                    numberOfCorrKaons++;
-                  }
-                  if (((chargeDs == 1) && (particleAssoc.pdgCode() == kKMinus)) || ((chargeDs == -1) && (particleAssoc.pdgCode() == kKPlus))) { // ULS pairs
-                    registry.fill(HIST("hCorrKaonsULSPairs"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                    numberOfCorrKaons++;
-                  }
+                if (trkPIDspecies->at(0) == o2::track::PID::Pion && std::abs(particleAssoc.pdgCode()) != kPiPlus) {
+                  continue;
+                }
+                if (trkPIDspecies->at(0) == o2::track::PID::Proton && std::abs(particleAssoc.pdgCode()) != kProton) {
+                  continue;
                 }
               }
 
+              int chargeParticle = 0;
+              if ((particleAssoc.pdgCode() == kElectron) || (particleAssoc.pdgCode() == kMuonMinus) || (particleAssoc.pdgCode() == kPiMinus) || (particleAssoc.pdgCode()) == kKMinus || (particleAssoc.pdgCode() == kProtonBar)) {
+                chargeParticle = -1;
+              } else {
+                chargeParticle = 1;
+              }
               // trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
               trackOrigin = RecoDecay::getCharmHadronOrigin(groupedMcParticles, particleAssoc, true);
               registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
               entryDsHadronPair(getDeltaPhi(particleAssoc.phi(), particle.phi()),
                                 particleAssoc.eta() - particle.eta(),
-                                particle.pt(),
-                                particleAssoc.pt(),
+                                particle.pt() * chargeDs,
+                                particleAssoc.pt() * chargeParticle,
                                 poolBin,
                                 0);
               entryDsHadronRecoInfo(MassDS, true, isDecayChan);
               entryDsHadronGenInfo(isDsPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
             } // end loop generated particles
-            if (numberOfCorrKaons == 0) {
-              registry.fill(HIST("hDsWoKaons"), numberOfCorrKaons);
-            }
           } // if statement for Ds selection
         } // end loop generated Ds
       } // end loop reconstructed collision
@@ -898,8 +885,20 @@ struct HfCorrelatorDsHadrons {
           registry.fill(HIST("hTpcTofNSigmaCombKaon"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Kaon, track), 2)), track.pt());
           registry.fill(HIST("hTpcTofNSigmaCombProton"), std::sqrt(std::pow(o2::aod::pidutils::tpcNSigma(o2::track::PID::Proton, track), 2) + std::pow(o2::aod::pidutils::tofNSigma(o2::track::PID::Proton, track), 2)), track.pt());
         }
+
+        registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
+
         assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
+        if (trkPIDspecies->at(0) == o2::track::PID::Kaon) {
+          assocTrackPidInfo(track.tpcNSigmaKa(), track.tofNSigmaKa());
+        }
+        if (trkPIDspecies->at(0) == o2::track::PID::Pion) {
+          assocTrackPidInfo(track.tpcNSigmaPi(), track.tofNSigmaPi());
+        }
+        if (trkPIDspecies->at(0) == o2::track::PID::Proton) {
+          assocTrackPidInfo(track.tpcNSigmaPr(), track.tofNSigmaPr());
+        }
       }
 
       collReduced(collision.multFT0M(), collision.numContrib(), collision.posZ());
@@ -1029,7 +1028,7 @@ struct HfCorrelatorDsHadrons {
         isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         // Ds Signal
         isDsSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK;
-        isDecayChan = candidate.flagMcDecayChanRec() == decayChannel;
+        isDecayChan = candidate.flagMcDecayChanRec() == channelsResonant[decayChannel];
         if (pAssoc.has_mcParticle()) {
           auto mcParticle = pAssoc.template mcParticle_as<aod::McParticles>();
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -1095,12 +1094,38 @@ struct HfCorrelatorDsHadrons {
           if (!particleAssoc.isPhysicalPrimary()) {
             continue;
           }
+          if (pidTrkApplied) {
+            // MC truth match
+            if (trkPIDspecies->at(0) == o2::track::PID::Kaon && std::abs(particleAssoc.pdgCode()) != kKPlus) {
+              continue;
+            }
+            if (trkPIDspecies->at(0) == o2::track::PID::Pion && std::abs(particleAssoc.pdgCode()) != kPiPlus) {
+              continue;
+            }
+            if (trkPIDspecies->at(0) == o2::track::PID::Proton && std::abs(particleAssoc.pdgCode()) != kProton) {
+              continue;
+            }
+          }
+
+          int chargeDs = 0;
+          if (candidate.pdgCode() == kDS) {
+            chargeDs = 1;
+          } else {
+            chargeDs = -1;
+          }
+
+          int chargeParticle = 0;
+          if ((particleAssoc.pdgCode() == kElectron) || (particleAssoc.pdgCode() == kMuonMinus) || (particleAssoc.pdgCode() == kPiMinus) || (particleAssoc.pdgCode()) == kKMinus || (particleAssoc.pdgCode() == kProtonBar)) {
+            chargeParticle = -1;
+          } else {
+            chargeParticle = 1;
+          }
           int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
           bool isDsPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;
           entryDsHadronPair(getDeltaPhi(particleAssoc.phi(), candidate.phi()),
                             particleAssoc.eta() - candidate.eta(),
-                            candidate.pt(),
-                            particleAssoc.pt(),
+                            candidate.pt() * chargeDs,
+                            particleAssoc.pt() * chargeParticle,
                             poolBin,
                             0);
           entryDsHadronRecoInfo(MassDS, true, true);
