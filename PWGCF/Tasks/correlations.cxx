@@ -1146,7 +1146,8 @@ struct CorrelationTask {
       }
 
       for (const auto& track : groupedTracks) {
-        if (cfgTrackBitMask > 0 && (track.trackType() & (uint8_t)cfgTrackBitMask) != (uint8_t)cfgTrackBitMask) continue;
+        if (cfgTrackBitMask > 0 && (track.trackType() & (uint8_t)cfgTrackBitMask) != (uint8_t)cfgTrackBitMask)
+          continue;
         if (track.has_cfMCParticle()) {
           const auto& mcParticle = track.cfMCParticle();
           if ((doprocessMCEfficiency2Prong || doprocessMCEfficiency2ProngML) && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end())
