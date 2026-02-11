@@ -405,7 +405,7 @@ struct StrangeCascTrack {
     double casccospa = cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ());
     const auto& edges = axesConfig.axisPt.value;
     int ptBin = std::upper_bound(edges.begin(), edges.end(), cascade.pt()) - edges.begin() - 1;
-    if (ptBin < 0 || ptBin >= (int)selCuts.cutMinCascCosPaVsPt->size()) {
+    if (ptBin < 0 || ptBin >= static_cast<int>(selCuts.cutMinCascCosPaVsPt->size())) {
       ptBin = 1;
     } // safety check - if pt bin not determined, default to loosest cut
     if (casccospa < selCuts.cutMinCascCosPaVsPt->at(ptBin)) {
