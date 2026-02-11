@@ -32,7 +32,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-// #include "PWGLF/DataModel/LFStrangenessPIDTables.h" // For V0TOFPIDs and NSigmas getters
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h" // For V0TOFPIDs and NSigmas getters. Better for considering the daughters as coming from V0s instead of from PV?
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "Common/DataModel/Centrality.h"
 
@@ -43,7 +43,7 @@
 #include "Common/DataModel/Multiplicity.h" // for pp
 
 // For PID in raw data:
-#include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
+// #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
 
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -129,6 +129,7 @@ using PseudoJetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, 
 
 // To run in RAW data:
 using V0Candidates = aod::V0Datas;
+using V0CandidatesWithTOF = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>; // Tables created by o2-analysis-lf-strangenesstofpid
 
 
 
@@ -348,10 +349,10 @@ struct lambdajetpolarizationions {
         ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
         ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {200, -10.0f, 10.0f}, "N sigma TOF"};
         ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
-        ConfigurableAxis axisPhi{"axisPhi", {20, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
+        ConfigurableAxis axisPhi{"axisPhi", {50, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
         ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0.0f, constants::math::TwoPI / 18}, "Azimuth angle wrt TPC sector (rad.)"};
-        ConfigurableAxis axisEta{"axisEta", {20, -1.0f, 1.0f}, "#eta"};
-        ConfigurableAxis axisRapidity{"axisRapidity", {20, -1.0f, 1.0f}, "y"};
+        ConfigurableAxis axisEta{"axisEta", {50, -1.0f, 1.0f}, "#eta"};
+        ConfigurableAxis axisRapidity{"axisRapidity", {50, -1.0f, 1.0f}, "y"};
         ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
         ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
         ConfigurableAxis axisTPCrowsOverFindable{"axisTPCrowsOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC crossed rows over findable clusters"};
@@ -376,6 +377,15 @@ struct lambdajetpolarizationions {
         // Jet QA axes:
         ConfigurableAxis JetsPerEvent{"JetsPerEvent", {20, 0, 20}, "Jets per event"};
 
+        // ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt",{VARIABLE_WIDTH,
+        // 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, // very low pT (coarse on purpose)
+        // 3.0f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f, // trigger / intermediate region
+        // 12.0f, 15.0f, 20.0f, 25.0f, 30.0f, // high pT leading particles
+        // 40.0f, 50.0f, 60.0f, 80.0f, 100.0f,
+        // 120.0f, 150.0f, 200.0f}, // ultra-high pT safety net
+        // "Leading particle p_{T} (GeV/c)"};
+        ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt",{200, 0.f, 200.f},"Leading particle p_{T} (GeV/c)"}; // Simpler version!
+        ConfigurableAxis axisJetPt{"axisJetPt",{200, 0.f, 200.f},"Jet p_{t} (GeV)"};
         ConfigurableAxis axisCosTheta{"axisCosTheta", {50, -1.f, 1.f}, "cos(#Delta #theta_{jet})"};
         ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {50, -constants::math::PI, constants::math::PI}, "#Delta #phi"};
         ConfigurableAxis axisDeltaEta{"axisDeltaEta", {50, -1.5f, 1.5f}, "#Delta #phi"}; // Calculated as twice the subtraction "eta_max=0.9 - R_min=0.2", with a margin
@@ -638,10 +648,10 @@ struct lambdajetpolarizationions {
                 {p + "DCA_{#pi} to PV", true},
                 {p + "TPC PID p", v0Selections.tpcPidNsigmaCut > 0},
                 {p + "TPC PID #pi", v0Selections.tpcPidNsigmaCut > 0},
-                // {p + "TOF #Delta t p", v0Selections.maxDeltaTimeProton < 1e8},
-                // {p + "TOF #Delta t #pi", v0Selections.maxDeltaTimePion < 1e8},
-                // {p + "TOF PID p", v0Selections.tofPidNsigmaCutLaPr < 1e8},
-                // {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e8},
+                {p + "TOF #Delta t p", v0Selections.maxDeltaTimeProton < 1e8},
+                {p + "TOF #Delta t #pi", v0Selections.maxDeltaTimePion < 1e8},
+                {p + "TOF PID p", v0Selections.tofPidNsigmaCutLaPr < 1e8},
+                {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e8},
                 {p + "c#tau", v0Selections.lambdaLifetimeCut > 0}
             });
         };
@@ -834,7 +844,7 @@ struct lambdajetpolarizationions {
         // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
         // number of jets per event
         if (doJetKinematicsQA){
-            histos.add("JetKinematicsQA/hJetPt", "hJetPt", kTH1D, {axisConfigurations.axisPt});
+            histos.add("JetKinematicsQA/hJetPt", "hJetPt", kTH1D, {axisConfigurations.axisJetPt});
             histos.add("JetKinematicsQA/hJetEta", "hJetEta", kTH1D, {axisConfigurations.axisEta});
             histos.add("JetKinematicsQA/hJetPhi", "hJetPhi", kTH1D, {axisConfigurations.axisPhi});
 
@@ -843,20 +853,20 @@ struct lambdajetpolarizationions {
             histos.add("JetKinematicsQA/hDeltaEtaToLeadingJet", "hDeltaEtaToLeadingJet", kTH1D, {axisConfigurations.axisDeltaEta});
             histos.add("JetKinematicsQA/hDeltaRToLeadingJet", "hDeltaRToLeadingJet", kTH1D, {axisConfigurations.axisDeltaR});
 
-            histos.add("JetKinematicsQA/hLeadingJetPt", "hLeadingJetPt", kTH1D, {axisConfigurations.axisPt});
+            histos.add("JetKinematicsQA/hLeadingJetPt", "hLeadingJetPt", kTH1D, {axisConfigurations.axisJetPt});
             histos.add("JetKinematicsQA/hLeadingJetEta", "hLeadingJetEta", kTH1D, {axisConfigurations.axisEta});
             histos.add("JetKinematicsQA/hLeadingJetPhi", "hLeadingJetPhi", kTH1D, {axisConfigurations.axisPhi});
 
             // 2D correlations:
-            histos.add("JetKinematicsQA/h2dJetsPerEventvsLeadJetPt", "h2dJetsPerEventvsLeadJetPt", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisPt});
-            histos.add("JetKinematicsQA/h2dJetsPerEventvsJetPt", "h2dJetsPerEventvsJetPt", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisPt});
+            histos.add("JetKinematicsQA/h2dJetsPerEventvsLeadJetPt", "h2dJetsPerEventvsLeadJetPt", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisJetPt});
+            histos.add("JetKinematicsQA/h2dJetsPerEventvsJetPt", "h2dJetsPerEventvsJetPt", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisJetPt});
             histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaPhiToLead", "h2dCosThetaToLeadvsDeltaPhiToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaPhi});
             histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead", "h2dCosThetaToLeadvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaEta});
             histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead", "h2dCosThetaToLeadvsDeltaRToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaR});
             histos.add("JetKinematicsQA/h2dDeltaPhiToLeadvsDeltaEtaToLead", "h2dDeltaPhiToLeadvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta}); // to see existence of back-to-back jets, and in which window
 
             // Comparisons to jet energy:
-            histos.add("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead","h2dJetPtvsDeltaPhiToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisDeltaPhi});
+            histos.add("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead","h2dJetPtvsDeltaPhiToLead",kTH2D,{axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
             histos.add("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead","h2dJetEnergyvsDeltaPhiToLead",kTH2D,{axisConfigurations.axisEnergy, axisConfigurations.axisDeltaPhi});
             histos.add("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead","h2dJetEnergyvsCosThetaToLead",kTH2D,{axisConfigurations.axisEnergy, axisConfigurations.axisCosTheta});
 
@@ -867,7 +877,7 @@ struct lambdajetpolarizationions {
 
             ////////////////////////////
             // Leading particle 1D QA:
-            histos.add("JetVsLeadingParticleQA/hLeadingParticlePt","hLeadingParticlePt",kTH1D,{axisConfigurations.axisPt});
+            histos.add("JetVsLeadingParticleQA/hLeadingParticlePt","hLeadingParticlePt",kTH1D,{axisConfigurations.axisLeadingParticlePt});
             histos.add("JetVsLeadingParticleQA/hLeadingParticleEta","hLeadingParticleEta",kTH1D,{axisConfigurations.axisEta});
             histos.add("JetVsLeadingParticleQA/hLeadingParticlePhi","hLeadingParticlePhi",kTH1D,{axisConfigurations.axisPhi});
 
@@ -885,13 +895,12 @@ struct lambdajetpolarizationions {
             histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead","h2dJetsPerEventvsCosThetaParticleToLead",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisCosTheta});
 
             // Main "Leading jet vs leading particle" correlations:
-            histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt","h2dJetsPerEventvsLeadParticlePt",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisPt});
-            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt","h2dLeadJetPtvsLeadParticlePt",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisPt});
-            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead","h2dLeadJetPtvsCosThetaParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisCosTheta});
-            histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead","h2dLeadParticlePtvsCosThetaParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisCosTheta});
-            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead","h2dLeadJetPtvsDeltaPhiParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisDeltaPhi});
-            histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead","h2dLeadParticlePtvsDeltaPhiParticleToLead",kTH2D,{axisConfigurations.axisPt, axisConfigurations.axisDeltaPhi});
-
+            histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt","h2dJetsPerEventvsLeadParticlePt",kTH2D,{axisConfigurations.JetsPerEvent, axisConfigurations.axisLeadingParticlePt});
+            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt","h2dLeadJetPtvsLeadParticlePt",kTH2D,{axisConfigurations.axisJetPt, axisConfigurations.axisLeadingParticlePt});
+            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead","h2dLeadJetPtvsCosThetaParticleToLead",kTH2D,{axisConfigurations.axisJetPt, axisConfigurations.axisCosTheta});
+            histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead","h2dLeadParticlePtvsCosThetaParticleToLead",kTH2D,{axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisCosTheta});
+            histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead","h2dLeadJetPtvsDeltaPhiParticleToLead",kTH2D,{axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
+            histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead","h2dLeadParticlePtvsDeltaPhiParticleToLead",kTH2D,{axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisDeltaPhi});
         }
 
         // inspect histogram sizes, please
@@ -1249,37 +1258,34 @@ struct lambdajetpolarizationions {
         if (std::fabs(pionTrack.tpcNSigmaPi()) > v0Selections.tpcPidNsigmaCut) return false;
         V0SelCounter.fill();
 
-        // // TOF PID in DeltaT (if TOF is not available, then uses the track. If is available, uses it. In this sense, TOF is optional)
-        // // const bool posHasTOF = posTrackExtra.hasTOF(); // For the older version, which worked only for Lambdas
-        // const bool protonHasTOF = protonTrack.hasTOF();
-        // const bool pionHasTOF = pionTrack.hasTOF();
+        // TOF PID in DeltaT (if TOF is not available, then uses the track. If is available, uses it. In this sense, TOF is optional)
+        // const bool posHasTOF = posTrackExtra.hasTOF(); // For the older version, which worked only for Lambdas
+        const bool protonHasTOF = protonTrack.hasTOF(); // Should work even without PIDResponseTOF.h, as it is a TracksExtra property
+        const bool pionHasTOF = pionTrack.hasTOF();
 
-        // // Proton-like track
-        // if (protonHasTOF && std::abs(Lambda_hypothesis ? v0.posTOFDeltaTLaPr()
-        //               : v0.negTOFDeltaTLaPr()) > v0Selections.maxDeltaTimeProton) return false;
-        // V0SelCounter.fill();
-        // // Pion-like track
-        // if (pionHasTOF && std::abs(Lambda_hypothesis ? v0.negTOFDeltaTLaPi()
-        //               : v0.posTOFDeltaTLaPi()) > v0Selections.maxDeltaTimePion) return false;
-        // V0SelCounter.fill();
+        // Proton-like track
+        if (protonHasTOF && std::abs(Lambda_hypothesis ? v0.posTOFDeltaTLaPr() : v0.negTOFDeltaTLaPr()) 
+                                                        > v0Selections.maxDeltaTimeProton) return false;
+        V0SelCounter.fill();
+        // Pion-like track
+        if (pionHasTOF && std::abs(Lambda_hypothesis ? v0.negTOFDeltaTLaPi() : v0.posTOFDeltaTLaPi())
+                                                        > v0Selections.maxDeltaTimePion) return false;
+        V0SelCounter.fill();
 
-        // // TOF PID in NSigma (TODO: add asymmetric NSigma windows for purity tuning?)
-        // // Proton-like track
-        // // if (protonHasTOF && std::fabs(v0.tofNSigmaLaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
-        //     // Getter for raw data's PIDResponseTOF.h instead of LFStrangenessPIDTables.h:
-        // if (protonHasTOF && std::fabs(v0.tofNSigmaLaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
-        // V0SelCounter.fill();
-        // // Pion-like track
-        // if (pionHasTOF && std::fabs(v0.tofNSigmaLaPi()) > v0Selections.tofPidNsigmaCutLaPi) return false;
-        // V0SelCounter.fill();
+        // TOF PID in NSigma (TODO: add asymmetric NSigma windows for purity tuning?)
+        // Proton-like track
+        if (protonHasTOF && std::fabs(v0.tofNSigmaLaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false; // (No need to select which candidate is which with the Lambda_hypothesis. Automatically done already!)
+        V0SelCounter.fill();
+        // Pion-like track
+        if (pionHasTOF && std::fabs(v0.tofNSigmaLaPi()) > v0Selections.tofPidNsigmaCutLaPi) return false;
+        V0SelCounter.fill();
 
-        // // // PID Selections (TOF)
-        // // if (requireTOF) {
-        // // if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
-        // //     return false;
-        // // if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
-        // //     return false;
-        // // }
+        // (CAUTION!) You cannot use the getter for raw data's PIDResponseTOF.h instead of LFStrangenessPIDTables.h (as below)
+        // If you do use, TOF will just try to identify that track as a proton, instead of using the correct path length from the
+        // V0s PV-DCA and the such! In other words, it is a naive estimator of TOF PID, because it does not correct for the V0
+        // mother's travel time and considers all tracks as if they came from the PV!
+        // if (protonHasTOF && std::fabs(protonTrack.tofNSigmaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
+        // To properly use the LFStrangenessPIDTables version, you need to call o2-analysis-lf-strangenesstofpid too.
 
         // proper lifetime
         if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 > v0Selections.lambdaLifetimeCut) return false;
@@ -1546,12 +1552,10 @@ struct lambdajetpolarizationions {
     }
 
     // Had to include DauTracks in subscription, even though I don't loop in it, for the indices to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
-    void processV0sData(SelCollisions::iterator const& collision, V0Candidates const& fullV0s, aod::BCsWithTimestamps const& bcs, DauTracks const& V0DauTracks){
+    void processV0sData(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& fullV0s, aod::BCsWithTimestamps const& bcs, DauTracks const& V0DauTracks){
         const float centrality = getCentrality(collision);
-        if (doEventQA) {
-            histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
-            histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
-        }
+        histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
+        histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
 
         auto bc = bcs.iteratorAt(collision.bcId());
         if (!isEventAccepted(collision, bc, centrality, doEventQA)) return; // Uses return instead of continue, as there is no explicit loop here
@@ -1667,20 +1671,20 @@ struct lambdajetpolarizationions {
                         histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
                         histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
                     }
-                    // if (doTOFQA) {
-                    //     histos.fill(HIST("Lambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPr());
-                    //     histos.fill(HIST("Lambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPi());
-                    //     histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPr());
-                    //     histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPi());
-                    //     histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaLaPr());
-                    //     histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaLaPi());
-                    //     histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPr());
-                    //     histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPi());
-                    //     histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaLaPr());
-                    //     histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaLaPi());
-                    //     histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
-                    //     histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
-                    // }
+                    if (doTOFQA) {
+                        histos.fill(HIST("Lambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPr());
+                        histos.fill(HIST("Lambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPi());
+                        histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPr());
+                        histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPi());
+                        histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaLaPr());
+                        histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaLaPi());
+                        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPr());
+                        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPi());
+                        histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaLaPr());
+                        histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaLaPi());
+                        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
+                        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
+                    }
                     if (doEtaPhiQA) {
                         histos.fill(HIST("Lambda/h5dV0PhiVsEta"), centrality, v0pt, v0.mLambda(), v0.phi(), v0.eta());
                         histos.fill(HIST("Lambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mLambda(), v0.positivephi(), v0.positiveeta());
@@ -1713,20 +1717,20 @@ struct lambdajetpolarizationions {
                         histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
                         histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
                     }
-                    // if (doTOFQA) {
-                    //     histos.fill(HIST("AntiLambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPi());
-                    //     histos.fill(HIST("AntiLambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPr());
-                    //     histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPi());
-                    //     histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPr());
-                    //     histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaALaPi());
-                    //     histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaALaPr());
-                    //     histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPi());
-                    //     histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPr());
-                    //     histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaALaPi());
-                    //     histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaALaPr());
-                    //     histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
-                    //     histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
-                    // }
+                    if (doTOFQA) {
+                        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPi());
+                        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPr());
+                        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPi());
+                        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPr());
+                        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaALaPi());
+                        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaALaPr());
+                        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPi());
+                        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPr());
+                        histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaALaPi());
+                        histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaALaPr());
+                        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
+                        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
+                    }
                     if (doEtaPhiQA) {
                         histos.fill(HIST("AntiLambda/h5dV0PhiVsEta"), centrality, v0pt, v0.mAntiLambda(), v0.phi(), v0.eta());
                         histos.fill(HIST("AntiLambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mAntiLambda(), v0.positivephi(), v0.positiveeta());
