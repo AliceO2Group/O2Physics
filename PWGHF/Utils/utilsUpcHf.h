@@ -13,6 +13,7 @@
 /// \brief Utility functions for Ultra-Peripheral Collision (UPC) analysis in Heavy Flavor physics
 ///
 /// \author Minjung Kim <minjung.kim@cern.ch>, CERN
+/// \author Ran Tu <ran.tu@cern.ch>, Fudan University, GSI Darmstadt
 
 #ifndef PWGHF_UTILS_UTILSUPCHF_H_
 #define PWGHF_UTILS_UTILSUPCHF_H_
@@ -35,6 +36,11 @@ using o2::aod::sgselector::TrueGap;
 /// \brief Configurable group for UPC gap determination thresholds
 struct HfUpcGapThresholds : o2::framework::ConfigurableGroup {
   std::string prefix = "upc"; // JSON group name
+  o2::framework::Configurable<int> fNDtColl{"fNDtColl", 1, "Number of standard deviations to consider in BC range"};
+  o2::framework::Configurable<int> fNBCsMin{"fNBCsMin", 2, "Minimum number of BCs to consider in BC range"};
+  o2::framework::Configurable<int> fNPVCsMin{"fNPVCsMin", 2, "Minimum number of PV contributors"};
+  o2::framework::Configurable<int> fNPVCsMax{"fNPVCsMax", 1000, "Maximum number of PV contributors"};
+  o2::framework::Configurable<float> fFITTimeMax{"fFITTimeMax", 34, "Maximum time in FIT"};
   o2::framework::Configurable<float> fv0aThreshold{"fv0aThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0aThreshold{"ft0aThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0cThreshold{"ft0cThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
@@ -66,6 +72,11 @@ constexpr int MaxNTracks = 100;                  ///< Maximum number of tracks
 template <typename TCollision, typename TBCs>
 inline auto determineGapType(TCollision const& collision,
                              TBCs const& bcs,
+                             int nDtColl = defaults::NDtColl,
+                             int nBCsMin = defaults::MinNBCs,
+                             int nPVCsMin = defaults::MinNTracks,
+                             int nPVCsMax = defaults::MaxNTracks,
+                             float fITTimeMax = defaults::MaxFITTime,
                              float amplitudeThresholdFV0A = defaults::AmplitudeThresholdFV0A,
                              float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
                              float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C)
@@ -74,10 +85,10 @@ inline auto determineGapType(TCollision const& collision,
 
   // Configure SGSelector thresholds
   SGCutParHolder sgCuts;
-  sgCuts.SetNDtcoll(defaults::NDtColl);
-  sgCuts.SetMinNBCs(defaults::MinNBCs);
-  sgCuts.SetNTracks(defaults::MinNTracks, defaults::MaxNTracks);
-  sgCuts.SetMaxFITtime(defaults::MaxFITTime);
+  sgCuts.SetNDtcoll(nDtColl);
+  sgCuts.SetMinNBCs(nBCsMin);
+  sgCuts.SetNTracks(nPVCsMin, nPVCsMax);
+  sgCuts.SetMaxFITtime(fITTimeMax);
   sgCuts.SetFITAmpLimits({amplitudeThresholdFV0A, amplitudeThresholdFT0A, amplitudeThresholdFT0C});
 
   // Get BC and BC range
@@ -108,6 +119,11 @@ inline auto determineGapType(TCollision const& collision,
                              HfUpcGapThresholds const& thresholds)
 {
   return determineGapType(collision, bcs,
+                          thresholds.fNDtColl.value,
+                          thresholds.fNBCsMin.value,
+                          thresholds.fNPVCsMin.value,
+                          thresholds.fNPVCsMax.value,
+                          thresholds.fFITTimeMax.value,
                           thresholds.fv0aThreshold.value,
                           thresholds.ft0aThreshold.value,
                           thresholds.ft0cThreshold.value);
