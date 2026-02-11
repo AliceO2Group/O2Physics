@@ -75,12 +75,14 @@ class GeometryContainer
 
   // Add a geometry entry from a configuration file
   void addEntry(const std::string& filename) { entries.emplace_back(filename); }
+  void setLutCleanupSetting(const bool cleanLutWhenLoaded) { mCleanLutWhenLoaded = cleanLutWhenLoaded; }
 
   // Getters
   int getNumberOfConfigurations() const { return entries.size(); }
   const std::vector<GeometryEntry>& getEntries() const { return entries; }
   const GeometryEntry& getEntry(const int id) const { return entries.at(id); }
   GeometryEntry getGeometryEntry(const int id) const { return entries.at(id); }
+  bool cleanLutWhenLoaded() const { return mCleanLutWhenLoaded; }
 
   // Get configuration maps
   std::map<std::string, std::map<std::string, std::string>> getConfigurations(const int id) const { return entries.at(id).getConfigurations(); }
@@ -92,6 +94,7 @@ class GeometryContainer
 
  private:
   std::vector<GeometryEntry> entries;
+  bool mCleanLutWhenLoaded = true;
 };
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+

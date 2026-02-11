@@ -75,12 +75,20 @@ std::map<std::string, std::map<std::string, std::string>> GeometryContainer::par
 void GeometryContainer::init(o2::framework::InitContext& initContext)
 {
   std::vector<std::string> detectorConfiguration;
-  const bool found = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "detectorConfiguration", detectorConfiguration, false);
-  if (!found) {
+  const bool foundDetectorConfiguration = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "detectorConfiguration", detectorConfiguration, false);
+  if (!foundDetectorConfiguration) {
     LOG(fatal) << "Could not retrieve detector configuration from OnTheFlyDetectorGeometryProvider task.";
     return;
   }
   LOG(info) << "Size of detector configuration: " << detectorConfiguration.size();
+
+  bool cleanLutWhenLoaded;
+  const bool foundCleanLutWhenLoaded = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "cleanLutWhenLoaded", cleanLutWhenLoaded, false);
+  if (!foundDetectorConfiguration) {
+    LOG(fatal) << "Could not retrieve foundCleanLutWhenLoaded option from OnTheFlyDetectorGeometryProvider task.";
+    return;
+  }
+
   for (std::string& configFile : detectorConfiguration) {
     if (configFile.rfind("ccdb:", 0) == 0) {
       LOG(info) << "ccdb source detected from on-the-fly-detector-geometry-provider";
@@ -107,6 +115,7 @@ void GeometryContainer::init(o2::framework::InitContext& initContext)
 
     LOG(info) << "Detector geometry configuration file used: " << configFile;
     addEntry(configFile);
+    setLutCleanupSetting(cleanLutWhenLoaded);
   }
 }
 

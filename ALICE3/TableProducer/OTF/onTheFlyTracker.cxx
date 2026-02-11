@@ -117,7 +117,6 @@ struct OnTheFlyTracker {
   Configurable<bool> processUnreconstructedTracks{"processUnreconstructedTracks", false, "process (smear) unreco-ed tracks"};
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
-  Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
   Configurable<std::string> primaryVertexOption{"primaryVertexOption", "pvertexer.maxChi2TZDebris=10;pvertexer.acceptableScale2=9;pvertexer.minScale2=2;pvertexer.timeMarginVertexTime=1.3;;pvertexer.maxChi2TZDebris=40;pvertexer.maxChi2Mean=12;pvertexer.maxMultRatDebris=1.;pvertexer.addTimeSigma2Debris=1e-2;pvertexer.meanVertexExtraErrSelection=0.03;", "Option for the primary vertexer"};
 
   struct : ConfigurableGroup {
@@ -316,7 +315,7 @@ struct OnTheFlyTracker {
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
       const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
       mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
-      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
+      mSmearer[icfg]->setCleanupDownloadedFile(mGeoContainer.cleanLutWhenLoaded());
       mSmearer[icfg]->setCcdbManager(ccdb.operator->());
       mSmearer[icfg]->setDownloadPath("./.ALICE3/Tracker/");
       std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
