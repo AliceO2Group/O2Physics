@@ -2419,10 +2419,6 @@ struct derivedlambdakzeroanalysis {
       centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
     }
 
-    histos.fill(HIST("hGapSide"), gapSide);
-    histos.fill(HIST("hSelGapSide"), selGapSide);
-    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
-
     histos.fill(HIST("hEventCentrality"), centrality);
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
