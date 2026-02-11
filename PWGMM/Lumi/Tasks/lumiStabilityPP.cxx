@@ -312,7 +312,7 @@ struct LumiStabilityPP {
         if (idxBc < bcShiftFDDForData2023) { // we need to skip the first 15 because of the FDD-FT0 shift
           continue;
         }
-        bcFDD = bcs.rawIteratorAt(idxBc - bcShiftFDDForData2023);
+        bcFDD = bcs.rawIteratorAt(idxBc + bcShiftFDDForData2023);
       } else {
         bcFDD = bc;
       }
