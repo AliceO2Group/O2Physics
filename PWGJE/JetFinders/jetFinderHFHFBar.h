@@ -14,8 +14,8 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
-#ifndef PWGJE_JETFINDERS_JETFINDERHF_H_
-#define PWGJE_JETFINDERS_JETFINDERHF_H_
+#ifndef PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_
+#define PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
@@ -101,6 +101,8 @@ struct JetFinderHFHFBarTask {
   o2::framework::Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   o2::framework::Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   o2::framework::Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  o2::framework::Configurable<float> jetPhiMin{"jetPhiMin", -99.0, "minimum jet phi"};
+  o2::framework::Configurable<float> jetPhiMax{"jetPhiMax", 99.0, "maximum jet phi"};
   o2::framework::Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
   o2::framework::Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
   o2::framework::Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
@@ -137,6 +139,18 @@ struct JetFinderHFHFBarTask {
     jetFinder.etaMax = trackEtaMax;
     jetFinder.jetPtMin = jetPtMin;
     jetFinder.jetPtMax = jetPtMax;
+    jetFinder.phiMin = trackPhiMin;
+    jetFinder.phiMax = trackPhiMax;
+    if (trackPhiMin < -98.0) {
+      jetFinder.phiMin = -1.0 * M_PI;
+      jetFinder.phiMax = 2.0 * M_PI;
+    }
+    jetFinder.jetPhiMin = jetPhiMin;
+    jetFinder.jetPhiMax = jetPhiMax;
+    if (jetPhiMin < -98.0) {
+      jetFinder.jetPhiMin = -1.0 * M_PI;
+      jetFinder.jetPhiMax = 2.0 * M_PI;
+    }
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
     if (jetEtaMin < -98.0) {
@@ -317,4 +331,4 @@ struct JetFinderHFHFBarTask {
   PROCESS_SWITCH(JetFinderHFHFBarTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
 };
 
-#endif // PWGJE_JETFINDERS_JETFINDERHF_H_
+#endif // PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_

@@ -39,7 +39,7 @@ using namespace std;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 using MyCollisionsWithSC = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorsShifteds>;
-using MyTracks = aod::Tracks;
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
 struct jEPFlowAnalysis {
 
@@ -50,9 +50,17 @@ struct jEPFlowAnalysis {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
 
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgURL{"cfgURL",
+                                     "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
+                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                                      "Latest acceptable timestamp of creation for the object"};
+  } cfgCcdbParam;
+
   // Set Configurables here
   struct : ConfigurableGroup {
-    Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "Minimum pT used for track selection."};
+    Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "Minimum pT used for track seletion."};
     Configurable<float> cfgEtaMax{"cfgEtaMax", 1.f, "Maximum eta used for track selection."};
   } cfgTrackCuts;
 
@@ -60,6 +68,18 @@ struct jEPFlowAnalysis {
   Configurable<int> cfgEvtSel{"cfgEvtSel", 0, "Event selection flags\n0: Sel8\n1: Sel8+kIsGoodZvtxFT0vsPV+kNoSameBunchPileup\n2: Sel8+kIsGoodZvtxFT0vsPV+kNoSameBunchPileup+kNoCollInTimeRangeStandard\n3: Sel8+kNoSameBunchPileup"};
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+
+  Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag for efficiency correction"};
+  Configurable<std::string> cfgEffCorDir{"cfgEffCorDir", "Users/n/nmallick/Run3OO/Eff/LHC25h3b_FT0C", "path for efficiency correction"};
+
+  Configurable<bool> cfgSystStudy{"cfgSystStudy", false, "flag for syst study"};
+  Configurable<int> cfgITSNCls{"cfgITSNCls", 5, "minimum number of its clusters"};
+  Configurable<int> cfgTPCNclsCR{"cfgTPCNclsCR", 70, "minimum number of tpc cluster crossed rows"};
+  Configurable<float> cfgTPCChi2{"cfgTPCChi2", 4.0, "maximum TPC chi2"};
+  Configurable<float> cfgITSChi2{"cfgITSChi2", 36.0, "maximum ITS chi2"};
+  Configurable<float> cfgdcaZ{"cfgdcaZ", 2.0, "maximum dca z"};
+  Configurable<float> cfgdcaXY0{"cfgdcaXY0", 0.0105, "maximum constant dca xy"};
+  Configurable<float> cfgdcaXY1{"cfgdcaXY1", 0.035, "maximum pt deepdent dca xy"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "Total number of detectors in qVectorsTable"};
   Configurable<int> cfgnMode{"cfgnMode", 1, "the number of modulations"};
@@ -90,6 +110,8 @@ struct jEPFlowAnalysis {
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
 
+  THn* effMap = nullptr;
+
   template <typename T>
   int getdetId(const T& name)
   {
@@ -112,8 +134,53 @@ struct jEPFlowAnalysis {
     }
   }
 
+  template <typename Trk>
+  uint8_t trackSel(const Trk& track)
+  {
+    uint8_t tracksel = 0;
+    if (!track.isGlobalTrack()) {
+      tracksel += 1;
+    }
+    if (track.itsNCls() <= cfgITSNCls && cfgSystStudy) {
+      tracksel += 2;
+    }
+    if (track.tpcNClsCrossedRows() <= cfgTPCNclsCR && cfgSystStudy) {
+      tracksel += 4;
+    }
+    if (track.tpcChi2NCl() >= cfgTPCChi2 && cfgSystStudy) {
+      tracksel += 8;
+    }
+    if (track.itsChi2NCl() >= cfgITSChi2 && cfgSystStudy) {
+      tracksel += 16;
+    }
+    if (std::abs(track.dcaZ()) >= cfgdcaZ && cfgSystStudy) {
+      tracksel += 32;
+    }
+    if (std::abs(track.dcaXY()) >= cfgdcaXY0 + cfgdcaXY1 / std::pow(track.pt(), 1.1) && cfgSystStudy) {
+      tracksel += 64;
+    }
+
+    return tracksel;
+  }
+
+  double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
+  {
+    int effVars[4];
+    effVars[0] = eff->GetAxis(0)->FindBin(eta);
+    effVars[1] = eff->GetAxis(1)->FindBin(pt);
+    effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
+    effVars[3] = eff->GetAxis(3)->FindBin(posZ);
+    return eff->GetBinContent(effVars);
+  }
+
   void init(InitContext const&)
   {
+    ccdb->setURL(cfgCcdbParam.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
     detId = getdetId(cfgDetName);
     refAId = getdetId(cfgRefAName);
     refBId = getdetId(cfgRefBName);
@@ -183,6 +250,11 @@ struct jEPFlowAnalysis {
         return;
     }
 
+    if (cfgEffCor) {
+      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+      effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+    }
+
     float cent = coll.cent();
     epFlowHistograms.fill(HIST("hCentrality"), cent);
     epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
@@ -219,6 +291,12 @@ struct jEPFlowAnalysis {
       float weight = 1.0;
 
       for (const auto& track : tracks) {
+        if (trackSel(track))
+          continue;
+        if (cfgEffCor) {
+          weight /= getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
+        }
+
         float vn = std::cos((i + 2) * (track.phi() - eps[0]));
         float vnSin = std::sin((i + 2) * (track.phi() - eps[0]));
 

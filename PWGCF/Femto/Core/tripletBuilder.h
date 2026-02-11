@@ -187,7 +187,7 @@ class TripletTrackTrackTrackBuilder
     } else if (mTrack1Track2AreSameSpecies) {
       auto trackSlice1 = partition1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
       auto trackSlice3 = partition3->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-      if (trackSlice1.size() <= nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
+      if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
       mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice1.size(), trackSlice3.size());

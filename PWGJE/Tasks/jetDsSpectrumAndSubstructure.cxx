@@ -105,7 +105,6 @@ struct JetDsSpecSubs {
                               {"h_ds_mass", ";m_{D_{S}} (GeV/c^{2});dN/dm_{D_{S}}", {HistType::kTH1F, {{1000, 0., 10.}}}},
                               {"h_ds_eta", ";#eta_{D_{S}} (GeV/c^{2});dN/d#eta_{D_{S}}", {HistType::kTH1F, {{250, -5., 5.}}}},
                               {"h_ds_phi", ";#phi_{D_{S}} (GeV/c^{2});dN/d#phi_{D_{S}}", {HistType::kTH1F, {{250, -10., 10.}}}}}};
-
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
@@ -201,11 +200,19 @@ struct JetDsSpecSubs {
         registry.fill(HIST("h_ds_eta"), dsCandidate.eta());
         registry.fill(HIST("h_ds_phi"), dsCandidate.phi());
 
-        // filling table
-        distJetTable(axisDistance,
-                     jet.pt(), jet.eta(), jet.phi(), jet.tracks_as<aod::JetTracks>().size(),
-                     dsCandidate.pt(), dsCandidate.eta(), dsCandidate.phi(), dsCandidate.m(), dsCandidate.y(), dsCandidate.mlScores()[0], dsCandidate.mlScores()[1], dsCandidate.mlScores()[2]);
+        // Retrieve ML scores safely
+        auto scores = dsCandidate.mlScores();
 
+        float s0 = (scores.size() > 0) ? scores[0] : -999.f;
+        float s1 = (scores.size() > 1) ? scores[1] : -999.f;
+        float s2 = (scores.size() > 2) ? scores[2] : -999.f;
+
+        distJetTable(axisDistance,
+                     jet.pt(), jet.eta(), jet.phi(),
+                     static_cast<int>(jet.tracks_as<aod::JetTracks>().size()),
+                     dsCandidate.pt(), dsCandidate.eta(), dsCandidate.phi(),
+                     dsCandidate.m(), dsCandidate.y(),
+                     s0, s1, s2);
         break; // get out of candidates' loop after first HF particle is found in jet
       } // end of DS candidates loop
 
