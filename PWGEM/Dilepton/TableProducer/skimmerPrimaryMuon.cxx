@@ -36,6 +36,7 @@
 #include "Math/Vector4D.h"
 #include "TGeoGlobalMagField.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <tuple>
