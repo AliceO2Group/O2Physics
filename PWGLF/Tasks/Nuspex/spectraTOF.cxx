@@ -2822,7 +2822,6 @@ struct tofSpectra {
         const auto& nsigmaTPCpar = o2::aod::pidutils::tpcNSigma<par>(track);
         const auto& nsigmaTOFpar = o2::aod::pidutils::tofNSigma<par>(track);
         bool isTPCpar = std::abs(nsigmaTPCpar) < trkselOptions.cfgCutNsigma;
-        bool isTOFpar = std::abs(nsigmaTOFpar) < trkselOptions.cfgCutNsigma;
         // Precompute rapidity values to avoid redundant calculations
         double rapiditypar = std::abs(track.rapidity(PID::getMass(par)));
         // TPC Selection and histogram filling
