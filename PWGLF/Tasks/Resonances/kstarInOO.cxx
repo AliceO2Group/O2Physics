@@ -266,7 +266,7 @@ struct kstarInOO {
       histos.add("hGen_pT_GoodEv", "Gen_pT_GoodTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hGen_pT_GoodTrig", "Gen_pT_GoodTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hGen_pT_GoodEvTrig", "Gen_pT_GoodEvTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
-      
+
       histos.add("hEffRec_pT", "EffRec_pT (GeV/c)", kTH1F, {{1600, 0., 80.}});
       histos.add("hEffRecTest1_pT", "EffRecTest1_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest2_pT", "EffRecTest2_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
@@ -277,7 +277,7 @@ struct kstarInOO {
       histos.add("hEffRecTest7_pT", "EffRecTest7_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest8_pT", "EffRecTest8_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffGen_pT", "EffGen_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
-      
+
       histos.add("hMotherPdg1", "hMotherPdg1", kTH1F, {{5000, 0., 5000.}});
       histos.add("hMotherPdg2", "hMotherPdg2", kTH1F, {{5000, 0., 5000.}});
     }
@@ -1510,58 +1510,58 @@ struct kstarInOO {
         std::cout << "Processed MC (GEN) Events: " << nprocessEffEvents << std::endl;
       }
     }
-    if (cfgJetMCHistos){
+    if (cfgJetMCHistos) {
       histos.fill(HIST("nEvents_Gen"), 0.5);
     }
-    
+
     for (auto& particle : mcParticles) {
       if (particle.pdgCode() != 313)
         continue;
       if (std::fabs(particle.eta()) > cfgTrackMaxEta)
         continue;
       if (fabs(collision.posZ()) > cfgEventVtxCut)
-	break;
+        break;
 
-      if (cfgJetMCHistos){
-	histos.fill(HIST("hGen_pT_Raw"), particle.pt());
+      if (cfgJetMCHistos) {
+        histos.fill(HIST("hGen_pT_Raw"), particle.pt());
       }
-    }// Unreconstructed collisions(=Raw coll) for correction
+    } // Unreconstructed collisions(=Raw coll) for correction
 
     if (recocolls.size() <= 0) { // not reconstructed
       return;
     }
 
     for (auto& recocoll : recocolls) { // poorly reconstructed
-      if(recocoll.posZ() > cfgEventVtxCut)
-	continue;
+      if (recocoll.posZ() > cfgEventVtxCut)
+        continue;
       auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
       auto goodTrig = jetderiveddatautilities::selectTrigger(recocoll, RealTriggerMaskBits);
       for (auto& particle : mcParticles) {
-	if (particle.pdgCode() != 313)
-	  continue;
-	if (std::fabs(particle.eta()) > cfgTrackMaxEta)
-	  continue;
-	if (cfgJetMCHistos) {
-	  //check K* PID
-	  if(goodEv) {
-	    histos.fill(HIST("hGen_pT_GoodEv"), particle.pt());
-	  }
-	  if (goodTrig){
-	    histos.fill(HIST("hGen_pT_GoodTrig"), particle.pt());	      
-	  }
-	  if (goodEv && goodTrig) {
-	    histos.fill(HIST("hGen_pT_GoodEvTrig"), particle.pt());	      
-	  }
-	}//cfgJetMCHistos
-      }//mcParticles	     
-    }//recocolls (=reconstructed collisions)
+        if (particle.pdgCode() != 313)
+          continue;
+        if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+          continue;
+        if (cfgJetMCHistos) {
+          // check K* PID
+          if (goodEv) {
+            histos.fill(HIST("hGen_pT_GoodEv"), particle.pt());
+          }
+          if (goodTrig) {
+            histos.fill(HIST("hGen_pT_GoodTrig"), particle.pt());
+          }
+          if (goodEv && goodTrig) {
+            histos.fill(HIST("hGen_pT_GoodEvTrig"), particle.pt());
+          }
+        } // cfgJetMCHistos
+      } // mcParticles
+    } // recocolls (=reconstructed collisions)
 
     //=================
     //|| Efficiency
     //=================
     if (fabs(collision.posZ()) > cfgEventVtxCut)
       return;
-    
+
     for (auto& recocoll : recocolls) { // poorly reconstructed
       auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
       if (goodEv) {
@@ -1580,24 +1580,24 @@ struct kstarInOO {
         continue;
 
       /* // Not Yet
-	 if (cfg_Force_BR) {
-	 bool baddecay = false;
-	 for (auto& phidaughter : particle.daughters_as<aod::McParticles>()) {
-	 if (std::fabs(phidaughter.pdgCode()) != 321) {
-	 baddecay = true;
-	 break;
-	 }
-	 if (cfg_Force_Kaon_Acceptence) {
-	 if (std::fabs(phidaughter.eta()) > cfg_Track_MaxEta) {
-	 baddecay = true;
-	 break;
-	 }
-	 }
-	 } // loop over daughters
+   if (cfg_Force_BR) {
+   bool baddecay = false;
+   for (auto& phidaughter : particle.daughters_as<aod::McParticles>()) {
+   if (std::fabs(phidaughter.pdgCode()) != 321) {
+   baddecay = true;
+   break;
+   }
+   if (cfg_Force_Kaon_Acceptence) {
+   if (std::fabs(phidaughter.eta()) > cfg_Track_MaxEta) {
+   baddecay = true;
+   break;
+   }
+   }
+   } // loop over daughters
 
-	 if (baddecay)
-	 continue;
-	 } // enforce BR restriction
+   if (baddecay)
+   continue;
+   } // enforce BR restriction
       */
 
       if (cfgJetMCHistos) {
