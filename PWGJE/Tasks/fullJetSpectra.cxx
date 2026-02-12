@@ -66,6 +66,7 @@ struct FullJetSpectra {
   Configurable<bool> doMcClosure{"doMcClosure", false, "Enable random splitting for MC closure test"};
   */
   // Event configurables
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
@@ -787,11 +788,11 @@ struct FullJetSpectra {
   PresliceUnsorted<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>> perFoundBC = aod::evsel::foundBCId;
 
   template <typename T, typename S, typename U>
-  bool isAcceptedRecoJet(U const& jet, double& filteredTrackPt, double& filteredClusterPt)
+  bool isAcceptedRecoJet(U const& jet/*, double& filteredTrackPt, double& filteredClusterPt*/)
   {
     // Reset filtered pT accumulators (for QA if needed)
-    filteredTrackPt = 0.0;
-    filteredClusterPt = 0.0;
+    // filteredTrackPt = 0.0;
+    // filteredClusterPt = 0.0;
 
     // --- Track cuts: ALL tracks must satisfy 0.15 <= pT <= 140 GeV/c---
     if (minTrackPt > kLeadingTrackPtMinThreshold || maxTrackPt < kLeadingTrackPtMaxThreshold) {
@@ -804,12 +805,6 @@ struct FullJetSpectra {
             (maxTrackPt < kLeadingTrackPtMaxThreshold && pt > maxTrackPt)) {
           return false; // Reject the jet
         }
-        filteredTrackPt += pt; // Accumulate valid track pT
-        hasValidTrack = true;  // At least one track exists (if needed)
-      }
-      // Reject jets without valid tracks (edge case) when minimum cut is active
-      if (minTrackPt > kLeadingTrackPtMinThreshold && !hasValidTrack) {
-        return false;
       }
     }
 
@@ -825,16 +820,8 @@ struct FullJetSpectra {
             (maxClusterPt < kLeadingClusterPtMaxThreshold && pt > maxClusterPt)) {
           return false;
         }
-        filteredClusterPt += pt;
-        hasValidCluster = true; // At least one cluster exists
-      }
-      // Reject jets without valid clusters (edge case)
-      // Reject if no clusters exist when minimum cut is active
-      if (minClusterPt > kLeadingClusterPtMinThreshold && !hasValidCluster) {
-        return false;
       }
     }
-
     return true; // Valid Jet that passes all cuts
   } // isAcceptedRecoJet ends
 
@@ -1243,7 +1230,7 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 1.5); // DetCollWithVertexZ
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hDetcollisionCounter"), 4.5); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -1272,8 +1259,6 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 7.5); // EMCAcceptedDetColl
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1281,7 +1266,7 @@ struct FullJetSpectra {
       // if (jet.phi() < jetPhiMin || jet.phi() > jetPhiMax) {
       //   continue;
       // }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet)) {
         continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
@@ -1314,7 +1299,7 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetTrigcollisionCounter"), 2.5); // DetTrigCollWithVertexZ
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) { //applyRCTSelections doesn't work here
       registry.fill(HIST("hDetTrigcollisionCounter"), 3.5); // EventsNotSatisfyingEvent+TriggerSelection
       return;
     }
@@ -1408,13 +1393,11 @@ struct FullJetSpectra {
       eventAccepted = true;
     }
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet)) {
         continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
@@ -1478,7 +1461,7 @@ struct FullJetSpectra {
       registry.fill(HIST("hDetcollisionCounter"), 3.5); // MBRejectedDetEvents
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hDetcollisionCounter"), 4.5); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -1507,13 +1490,11 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 7.5); // EMCAcceptedDetColl
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet)) {
         continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
@@ -1575,7 +1556,7 @@ struct FullJetSpectra {
       registry.fill(HIST("hDetcollisionCounter"), 3.5, collision.mcCollision().weight()); // MBRejectedDetEvents
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hDetcollisionCounter"), 4.5, collision.mcCollision().weight()); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -1604,13 +1585,11 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 7.5, collision.mcCollision().weight()); // EMCAcceptedDetColl
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet)) {
         continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       if (!isInPhiAcceptance(jet)) { // Using the new phi acceptance function
@@ -1684,7 +1663,7 @@ struct FullJetSpectra {
     registry.fill(HIST("hPartcollisionCounter"), 5.5); // AcceptedPartCollWithSize>=1
 
     for (auto const& collision : collisionspermcpjet) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
         continue;
       }
       if (doEMCALEventWorkaround) {
@@ -1778,7 +1757,7 @@ struct FullJetSpectra {
     registry.fill(HIST("hPartcollisionCounter"), 5.5, mccollision.weight()); // AcceptedPartCollWithSize>=1
 
     for (auto const& collision : collisionspermcpjet) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
         continue;
       }
       if (doEMCALEventWorkaround) {
@@ -1876,7 +1855,7 @@ struct FullJetSpectra {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hMatchedcollisionCounter"), 5.5); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -1899,8 +1878,6 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hMatchedcollisionCounter"), 8.5); // EMCAcceptedDetColl
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
           !isInPhiAcceptance(mcdjet)) {
@@ -1908,7 +1885,7 @@ struct FullJetSpectra {
         registry.fill(HIST("h2_full_fakemcdjets"), mcdjet.pt(), fakeMcdJet, 1.0);
         continue;
       }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet)) {
         continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
       // Check if MCD jet is within the EMCAL fiducial region; if not then flag it as a fake jet
@@ -1963,7 +1940,7 @@ struct FullJetSpectra {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hMatchedNoFidcollisionCounter"), 5.5, eventWeight); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -1992,8 +1969,6 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hMatchedNoFidcollisionCounter"), 8.5, eventWeight); // EMCAcceptedDetColl
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
           !isInPhiAcceptance(mcdjet)) {
@@ -2001,7 +1976,7 @@ struct FullJetSpectra {
         registry.fill(HIST("h2_full_NoFidfakemcdjets"), mcdjet.pt(), fakeMcdJet, eventWeight);
         continue;
       }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet)) {
         continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
 
@@ -2063,7 +2038,7 @@ struct FullJetSpectra {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 5.5, eventWeight); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -2092,9 +2067,6 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hMatchedNewNoFidcollisionCounter"), 8.5, eventWeight); // EMCAcceptedDetColl
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
-
     // NEW: event-level counter of all MCP–MCD matches (pair count)
     int allMatchedPartJetsEvent = 0;
 
@@ -2113,7 +2085,7 @@ struct FullJetSpectra {
           registry.fill(HIST("h2_full_NewNoFidfakemcdjets"), mcdjet.pt(), fakeMcdJet, eventWeight);
           continue;
         }
-        if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+        if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet)) {
           continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
         }
 
@@ -2200,7 +2172,7 @@ struct FullJetSpectra {
       return;
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hMatchedcollisionCounter"), 5.5, eventWeight); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -2229,8 +2201,6 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hMatchedcollisionCounter"), 8.5, eventWeight); // EMCAcceptedDetColl
 
-    double filteredTrackPt = 0.0;
-    double filteredClusterPt = 0.0;
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax) ||
           !isInPhiAcceptance(mcdjet)) {
@@ -2238,7 +2208,7 @@ struct FullJetSpectra {
         registry.fill(HIST("h2_full_fakemcdjets"), mcdjet.pt(), fakeMcdJet, eventWeight);
         continue;
       }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet)) {
         continue; // maximum cuts on tracks and clusters due to poor detector reso; discard jets
       }
 
@@ -2306,7 +2276,7 @@ struct FullJetSpectra {
       registry.fill(HIST("hCollisionsUnweighted"), 2.5); // MBRejectedDetEvents
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hCollisionsUnweighted"), 3.5); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -2370,7 +2340,7 @@ struct FullJetSpectra {
       registry.fill(HIST("hCollisionsUnweighted"), 2.5); // MBRejectedDetEvents
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hCollisionsUnweighted"), 3.5); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -2428,7 +2398,7 @@ struct FullJetSpectra {
       registry.fill(HIST("hCollisionsWeighted"), 2.5, eventWeight); // MBRejectedDetEvents
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hCollisionsWeighted"), 3.5, eventWeight); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -2479,7 +2449,7 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hEventmultiplicityCounter"), 1.5); // DetCollWithVertexZ
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hEventmultiplicityCounter"), 2.5); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -2515,9 +2485,6 @@ struct FullJetSpectra {
 
     // Verify jet-collision association
     for (auto const& jet : jets) {
-      // Declare variables to store filtered track/cluster pT
-      double filteredTrackPt = 0.0;
-      double filteredClusterPt = 0.0;
       if (jet.collisionId() != collision.globalIndex()) {
         LOGF(warn, "Jet with pT %.2f belongs to collision %d but processing collision %d", jet.pt(), jet.collisionId(), collision.globalIndex());
         continue;
@@ -2527,7 +2494,7 @@ struct FullJetSpectra {
         continue;
       if (jet.phi() < jetPhiMin || jet.phi() > jetPhiMax)
         continue;
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet, filteredTrackPt, filteredClusterPt))
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(jet))
         continue;
 
       selectedJets.push_back(jet);
@@ -2664,7 +2631,7 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hEventmultiplicityCounter"), 1.5); // DetCollWithVertexZ
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hEventmultiplicityCounter"), 2.5); // EventsNotSatisfyingEventSelection
       return;
     }
@@ -2700,9 +2667,6 @@ struct FullJetSpectra {
 
     // Verify jet-collision association
     for (auto const& mcdjet : mcdjets) {
-      // Declare variables to store filtered track/cluster pT
-      double filteredTrackPt = 0.0;
-      double filteredClusterPt = 0.0;
       if (mcdjet.collisionId() != collision.globalIndex()) {
         LOGF(warn, "Jet with pT %.2f belongs to collision %d but processing collision %d", mcdjet.pt(), mcdjet.collisionId(), collision.globalIndex());
         continue;
@@ -2712,7 +2676,7 @@ struct FullJetSpectra {
         continue;
       if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax)
         continue;
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt))
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet))
         continue;
 
       selectedJets.push_back(mcdjet);
@@ -2813,7 +2777,7 @@ struct FullJetSpectra {
       registry.fill(HIST("hEventmultiplicityCounter"), 2.5, eventWeight); // MBRejectedDetEvents
       return;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
       registry.fill(HIST("hEventmultiplicityCounter"), 3.5, eventWeight); // WeightedEventsNotSatisfyingEventSelection
       return;
     }
@@ -2856,10 +2820,6 @@ struct FullJetSpectra {
 
     for (auto const& mcdjet : mcdjets) {
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
-      // Declare variables to store filtered track/cluster pT
-      double filteredTrackPt = 0.0;
-      double filteredClusterPt = 0.0;
-
       if (mcdjet.collisionId() != collision.globalIndex()) {
         LOGF(warn, "Jet with pT %.2f belongs to collision %d but processing collision %d", mcdjet.pt(), mcdjet.collisionId(), collision.globalIndex());
         continue;
@@ -2874,7 +2834,7 @@ struct FullJetSpectra {
       if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax) {
         continue;
       }
-      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet, filteredTrackPt, filteredClusterPt)) {
+      if (!isAcceptedRecoJet<aod::JetTracks, ClusterWithCorrections>(mcdjet)) {
         continue;
       }
       selectedJets.push_back(mcdjet);
@@ -3000,7 +2960,7 @@ struct FullJetSpectra {
     registry.fill(HIST("hPartEventmultiplicityCounter"), 5.5); // AcceptedPartCollWithSize>1
 
     for (auto const& collision : collisionspermcpjet) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
         continue;
       }
       if (doEMCALEventWorkaround) {
@@ -3162,7 +3122,7 @@ struct FullJetSpectra {
     registry.fill(HIST("hPartEventmultiplicityCounter"), 5.5, mccollision.weight()); // AcceptedWeightedPartCollWithSize>1
 
     for (auto const& collision : collisionspermcpjet) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger, applyRCTSelections, "CBT_calo")) {
         continue;
       }
       if (doEMCALEventWorkaround) {
