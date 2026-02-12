@@ -38,8 +38,8 @@
 #include <Framework/Pack.h>
 #include <Framework/runDataProcessing.h>
 
-#include "fastjet/ClusterSequenceArea.hh"
-#include "fastjet/PseudoJet.hh"
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/PseudoJet.hh>
 
 #include <RtypesCore.h>
 
