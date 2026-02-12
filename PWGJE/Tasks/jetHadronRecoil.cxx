@@ -52,6 +52,10 @@ using namespace o2::framework::expressions;
 
 struct JetHadronRecoil {
 
+  using JetParticlesWithOriginal = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
+
+  Preslice<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> perColJetMC = aod::jet::mcCollisionId;
+
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
   JetFinder jetReclusterer;
@@ -617,9 +621,11 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U, typename X, typename Y>
-  void fillMatchedHistograms(T const&, U const& jetsTag, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
+  void fillMatchedHistograms(T const& jetsBase, U const& jetsTag, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0, auto collisionID = 0)
   {
-    for (const auto& jetTag : jetsTag) {
+    const auto jetsTagColl = jetsTag.sliceBy(perColJetMC, collisionID);
+
+    for (const auto& jetTag : jetsTagColl) {
 
       if (jetTag.pt() > pTHatMaxMCP * pTHat) {
         if (outlierRejectEvent) {
@@ -630,11 +636,22 @@ struct JetHadronRecoil {
       }
 
       registry.fill(HIST("hPtTruth1D"), jetTag.pt(), weight);
+    }
 
-      double dR = getWTAaxisDifference(jetTag, particles);
-      if (jetTag.has_matchedJetGeo()) {
-        for (const auto& jetBase : jetTag.template matchedJetGeo_as<std::decay_t<T>>()) {
-          if (jetBase.pt() > pTHatMaxMCD * pTHat) {
+    for (const auto& jetBase : jetsBase) {
+
+      if (jetBase.pt() > pTHatMaxMCD * pTHat) {
+        if (outlierRejectEvent) {
+          return;
+        } else {
+          continue;
+        }
+      }
+      
+      double dR = getWTAaxisDifference(jetBase, tracks);
+      if (jetBase.has_matchedJetGeo()) {
+        for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
+          if (jetTag.pt() > pTHatMaxMCP * pTHat) {
             if (outlierRejectEvent) {
               return;
             } else {
@@ -642,7 +659,7 @@ struct JetHadronRecoil {
             }
           }
 
-          double dRp = getWTAaxisDifference(jetBase, tracks);
+          double dRp = getWTAaxisDifference(jetTag, particles);
 
           registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
           registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
@@ -944,131 +961,99 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCPOnTheFlyWeighted, "process MC particle level for on-the-fly simulations with event weights", false);
 
-  void processJetsMCPMCDMatched(aod::JetMcCollisions::iterator const& mccollision,
-                                soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+  void processJetsMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+                                aod::JMcCollisions const&,
                                 soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                                soa::Filtered<aod::JetParticles> const& particles,
                                 soa::Filtered<aod::JetTracksMCD> const& tracks,
-                                soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets)
+                                soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets,
+                                JetParticlesWithOriginal const& particles)
   {
-    if (std::abs(mccollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
-    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!collision.has_mcCollision()) {
       return;
     }
-    if (mccollision.ptHard() < pTHatMinEvent) {
+    if (collision.mcCollision().ptHard() < pTHatMinEvent) {
       return;
     }
-    if (collisions.size() < 1) {
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    for (auto const& collision : collisions) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-        return;
-      }
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        return;
-      }
-    }
-    registry.fill(HIST("hZvtxSelected"), mccollision.posZ());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles);
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, 1.0, 0.0, collision.mcCollision().ptHard(), collision.mcCollisionId());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatched, "process MC matched (inc jets)", false);
 
-  void processJetsMCPMCDMatchedWithRhoSubtraction(soa::Join<aod::JetMcCollisions, aod::BkgChargedRhos>::iterator const& mccollision,
-                                                  soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+  void processJetsMCPMCDMatchedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::BkgChargedRhos>>::iterator const& collision,
+                                                  aod::JMcCollisions const&,
                                                   soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                                   soa::Filtered<aod::JetTracksMCD> const& tracks,
-                                                  soa::Filtered<aod::JetParticles> const& particles,
-                                                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets)
+                                                  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets,
+                                                  JetParticlesWithOriginal const& particles)
   {
-    if (std::abs(mccollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
-    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!collision.has_mcCollision()) {
       return;
     }
-    if (mccollision.ptHard() < pTHatMinEvent) {
+    if (collision.mcCollision().ptHard() < pTHatMinEvent) {
       return;
     }
-    if (collisions.size() < 1) {
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    for (auto const& collision : collisions) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-        return;
-      }
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        return;
-      }
-    }
-    registry.fill(HIST("hZvtxSelected"), mccollision.posZ());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, 1.0, 0.0, mccollision.ptHard());
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, 1.0, collision.rho(), collision.mcCollision().ptHard(), collision.mcCollisionId());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWithRhoSubtraction, "process MC matched (inc jets) with rho subtraction", false);
 
-  void processJetsMCPMCDMatchedWeighted(aod::JetMcCollisions::iterator const& mccollision,
-                                        soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+                                        aod::JMcCollisions const&,
                                         soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                         soa::Filtered<aod::JetTracksMCD> const& tracks,
-                                        soa::Filtered<aod::JetParticles> const& particles,
-                                        soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets)
+                                        soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets,
+                                        JetParticlesWithOriginal const& particles)
   {
-    if (std::abs(mccollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
-    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!collision.has_mcCollision()) {
       return;
     }
-    if (mccollision.ptHard() < pTHatMinEvent) {
+    if (collision.mcCollision().ptHard() < pTHatMinEvent) {
       return;
     }
-    if (collisions.size() < 1) {
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    for (auto const& collision : collisions) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-        return;
-      }
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        return;
-      }
-    }
-    registry.fill(HIST("hZvtxSelected"), mccollision.posZ(), mccollision.weight());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, mccollision.weight(), 0.0, mccollision.ptHard());
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard(), collision.mcCollisionId());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeighted, "process MC matched with event weights (inc jets)", false);
 
-  void processJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Join<aod::JetMcCollisions, aod::BkgChargedRhos>::iterator const& mccollision,
-                                                          soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+  void processJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::BkgChargedRhos>>::iterator const& collision,
+                                                          aod::JMcCollisions const&,
                                                           soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                                           soa::Filtered<aod::JetTracksMCD> const& tracks,
-                                                          soa::Filtered<aod::JetParticles> const& particles,
-                                                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets)
+                                                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcpjets,
+                                                          JetParticlesWithOriginal const& particles)
   {
-    if (std::abs(mccollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
-    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!collision.has_mcCollision()) {
       return;
     }
-    if (mccollision.ptHard() < pTHatMinEvent) {
+    if (collision.mcCollision().ptHard() < pTHatMinEvent) {
       return;
     }
-    if (collisions.size() < 1) {
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    for (auto const& collision : collisions) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-        return;
-      }
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        return;
-      }
-    }
-    registry.fill(HIST("hZvtxSelected"), mccollision.posZ(), mccollision.weight());
-    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, mccollision.weight(), mccollision.rho(), mccollision.ptHard());
+    registry.fill(HIST("hZvtxSelected"), collision.posZ());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard(), collision.mcCollisionId());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeightedWithRhoSubtraction, "process MC matched with event weights (inc jets) and rho subtraction", false);
 
