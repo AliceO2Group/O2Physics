@@ -33,19 +33,6 @@ namespace o2::analysis::hf_upc
 /// \brief Use TrueGap enum from SGSelector for gap type classification
 using o2::aod::sgselector::TrueGap;
 
-/// \brief Configurable group for UPC gap determination thresholds
-struct HfUpcGapThresholds : o2::framework::ConfigurableGroup {
-  std::string prefix = "upc"; // JSON group name
-  o2::framework::Configurable<int> nDtColl{"nDtColl", 1, "Number of standard deviations to consider in BC range"};
-  o2::framework::Configurable<int> nBcsMin{"nBcsMin", 2, "Minimum number of BCs to consider in BC range"};
-  o2::framework::Configurable<int> nContributorsPvMin{"nContributorsPvMin", 2, "Minimum number of PV contributors"};
-  o2::framework::Configurable<int> nContributorsPvMax{"nContributorsPvMax", 1000, "Maximum number of PV contributors"};
-  o2::framework::Configurable<float> timeFitMax{"timeFitMax", 34.0f, "Maximum time in FIT"};
-  o2::framework::Configurable<float> fv0aThreshold{"fv0aThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
-  o2::framework::Configurable<float> ft0aThreshold{"ft0aThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
-  o2::framework::Configurable<float> ft0cThreshold{"ft0cThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
-};
-
 /// \brief Default thresholds for gap determination
 namespace defaults
 {
@@ -58,6 +45,19 @@ constexpr int MinNBCs = 2;                       ///< Minimum number of BCs to c
 constexpr int MinNTracks = 2;                    ///< Minimum number of tracks
 constexpr int MaxNTracks = 1000;                 ///< Maximum number of tracks
 } // namespace defaults
+
+/// \brief Configurable group for UPC gap determination thresholds
+struct HfUpcGapThresholds : o2::framework::ConfigurableGroup {
+  std::string prefix = "upc"; // JSON group name
+  o2::framework::Configurable<int> nDtColl{"nDtColl", static_cast<int>(defaults::NDtColl), "Number of standard deviations to consider in BC range"};
+  o2::framework::Configurable<int> nBcsMin{"nBcsMin", static_cast<int>(defaults::MinNBCs), "Minimum number of BCs to consider in BC range"};
+  o2::framework::Configurable<int> nContributorsPvMin{"nContributorsPvMin", static_cast<int>(defaults::MinNTracks), "Minimum number of PV contributors"};
+  o2::framework::Configurable<int> nContributorsPvMax{"nContributorsPvMax", static_cast<int>(defaults::MaxNTracks), "Maximum number of PV contributors"};
+  o2::framework::Configurable<float> timeFitMax{"timeFitMax", static_cast<float>(defaults::MaxFITTime), "Maximum time in FIT"};
+  o2::framework::Configurable<float> fv0aThreshold{"fv0aThreshold", static_cast<float>(defaults::AmplitudeThresholdFV0A), "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
+  o2::framework::Configurable<float> ft0aThreshold{"ft0aThreshold", static_cast<float>(defaults::AmplitudeThresholdFT0A), "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
+  o2::framework::Configurable<float> ft0cThreshold{"ft0cThreshold", static_cast<float>(defaults::AmplitudeThresholdFT0C), "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
+};
 
 /// \brief Determine gap type using SGSelector with BC range checking
 /// \tparam TCollision Collision type
