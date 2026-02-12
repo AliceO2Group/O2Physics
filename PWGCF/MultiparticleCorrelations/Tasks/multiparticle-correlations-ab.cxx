@@ -217,8 +217,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
   // I) Process only converted simulated Run 1 data.
 
-  // For testing purposes I have processTest(...)
-  // J) Process data with minimum subscription to the tables.
+  // For testing purposes, enhanced QA, etc., I have:
+  // J) Process data with minimum subscription to the tables;
+  // K) Process data with more than necessary subscriptions to the tables, only for QA purposes;
+  // L) Process extra Monte Carlo info the from table HepMCHeavyIons.
+  // ...
 
   // -------------------------------------------
 
