@@ -265,7 +265,6 @@ struct MftReassociationValidation {
 
   Filter mftTrackEtaFilter = ((aod::fwdtrack::eta < configMft.etaMftTrackMaxFilter) && (aod::fwdtrack::eta > configMft.etaMftTrackMinFilter));
 
-  // Filters below will be used for uncertainties
   Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
   Filter mftTrackDcaXYFilter = (nabs(aod::fwdtrack::bestDCAXY) < configMft.mftMaxDCAxy);
   // Filter mftTrackDcaZFilter = (nabs(aod::fwdtrack::bestDCAZ) < configMft.mftMaxDCAz);
