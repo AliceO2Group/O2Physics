@@ -268,7 +268,7 @@ struct FilterCF {
     return 0;
   }
 
-  float getMaxDCAxy(float pt)
+  inline float getMaxDCAxy(float pt)
   {
     if (!enablePtDepDCAxy) {
       return dcaxymax; // Use constant cut if pT-dependent cut is disabled
@@ -314,7 +314,7 @@ struct FilterCF {
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
     for (auto& track : tracks) {
-      float maxDCAxy = enablePtDepDCAxy ? getMaxDCAxy(track.pt()) : dcaxymax;
+      float maxDCAxy = getMaxDCAxy(track.pt());
       if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
         continue;
       }
@@ -356,7 +356,7 @@ struct FilterCF {
       if (!track.isGlobalTrack()) {
         continue; // trackQA for global tracks only
       }
-      float maxDCAxy = enablePtDepDCAxy ? getMaxDCAxy(track.pt()) : dcaxymax;
+      float maxDCAxy = getMaxDCAxy(track.pt());
       if ((std::abs(track.dcaXY()) > maxDCAxy) || (std::abs(track.dcaZ()) > dcazmax)) {
         continue;
       }
