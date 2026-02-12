@@ -315,6 +315,10 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> minNclsITSGlobalTrack{"minNclsITSGlobalTrack", 5, "min. number of ITS clusters for global tracks"};
   o2::framework::Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
 
+  // MFT track counter configurables
+  o2::framework::Configurable<int> minNclsMFTTrack{"minNclsMFTTrack", 5, "min. number of MFT clusters for MFT tracks"};
+  o2::framework::Configurable<float> maxDCAxyToPVMFTTrack{"maxDCAxyToPVMFTTrack", 2.0f, "max DCAxy to PV for MFT tracks (cm)"};
+
   // ccdb information
   o2::framework::Configurable<std::string> ccdbPathVtxZ{"ccdbPathVtxZ", "Centrality/Calibration", "The CCDB path for vertex-Z calibration"};
   o2::framework::Configurable<std::string> ccdbPathCentrality{"ccdbPathCentrality", "Centrality/Estimators", "The CCDB path for centrality information"};
@@ -976,7 +980,7 @@ class MultModule
     int nTracks = 0;
 
     for (const auto& track : mfttracks) {
-      if (track.nClusters() >= 5) { // hardcoded for now
+      if (track.nClusters() >= minNclsMFTTrack) {
         nAllTracks++;
       }
     }
@@ -984,13 +988,13 @@ class MultModule
     if (retracks.size() > 0) {
       for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-        if (track.nClusters() < 5) {
+        if (track.nClusters() < minNclsMFTTrack) {
           continue; // min cluster requirement
         }
-        if ((track.eta() > -2.0f) && (track.eta() < -3.9f)) {
+        if (track.eta() > -2.45f || track.eta() < -3.6f) {
           continue; // too far to be of true interest
         }
-        if (std::abs(retrack.bestDCAXY()) > 2.0f) {
+        if (std::abs(retrack.bestDCAXY()) > maxDCAxyToPVMFTTrack) {
           continue; // does not point to PV properly
         }
         nTracks++;
