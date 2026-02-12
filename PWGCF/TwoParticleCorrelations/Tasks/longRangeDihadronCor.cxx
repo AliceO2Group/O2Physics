@@ -688,7 +688,7 @@ struct LongRangeDihadronCor {
         ampl = 0.;
       if (system == SameEvent)
         registry.fill(HIST("FT0Amp"), id, ampl);
-      ampl = ampl / cstFT0RelGain[iCh];
+      ampl = ampl / cstFT0RelGain[id];
       if (system == SameEvent) {
         registry.fill(HIST("FT0AmpCorrect"), id, ampl);
         histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
@@ -700,7 +700,7 @@ struct LongRangeDihadronCor {
         ampl = 0.;
       if (system == SameEvent)
         registry.fill(HIST("FT0Amp"), id, ampl);
-      ampl = ampl / cstFT0RelGain[iCh];
+      ampl = ampl / cstFT0RelGain[id];
       if (system == SameEvent) {
         registry.fill(HIST("FT0AmpCorrect"), id, ampl);
         histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
