@@ -329,7 +329,9 @@ struct checkMCPairTemplate {
     "bbbar/b2l_b2l/",         // 16
     "bbbar/b2c2l_b2c2l/",     // 17
     "bbbar/b2c2l_b2l_sameb/", // 18
-    "bbbar/b2c2l_b2l_diffb/"  // 19
+    "bbbar/b2c2l_b2l_diffb/", // 19
+    "bbbar/b2cc2l_b2c2l/",    // 20
+    "bbbar/b2cc2l_b2cc2l/",   // 21
   }; // unordered_map is better, but cannot be constexpr.
   static constexpr std::string_view unfolding_dilepton_source_types[3] = {"sm/", "ccbar/", "bbbar/"};
 
@@ -424,6 +426,8 @@ struct checkMCPairTemplate {
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2c2l_b2c2l/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2c2l_b2l_sameb/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2c2l_b2l_diffb/"); // LS
+    fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2c2l/");
+    fRegistry.addClone("Generated/ccbar/c2l_c2l/", "Generated/bbbar/b2cc2l_b2cc2l/");
 
     // for charmed hadrons // create 28 combinations
     static constexpr std::string_view charmed_mesons[] = {"Dplus", "D0", "Dsplus"}; // 411, 421, 431
@@ -562,6 +566,8 @@ struct checkMCPairTemplate {
     fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2c2l_b2c2l/");
     fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2c2l_b2l_sameb/");
     fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2c2l_b2l_diffb/"); // LS
+    fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2cc2l_b2c2l/");
+    fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2cc2l_b2cc2l/");
 
     if (cfgFillSeparateCharmHadronPairs) {
       for (int im = 0; im < nm_c; im++) {
@@ -2325,6 +2331,12 @@ struct checkMCPairTemplate {
           break;
         case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):
           fillGenHistograms<19>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2c2l_b2l_diffb
+          break;
+        case static_cast<int>(EM_HFeeType::kBCCe_BCe):
+          fillGenHistograms<20>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2l_b2c2l
+          break;
+        case static_cast<int>(EM_HFeeType::kBCCe_BCCe):
+          fillGenHistograms<21>(sign1, sign2, mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), weight); // b2cc2l_b2cc2l
           break;
         default:
           break;
