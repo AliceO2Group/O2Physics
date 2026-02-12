@@ -700,10 +700,10 @@ struct strangenessFilter {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityZeqNTracksPV"), collision.multZeqNTracksPV());
     }
 
-    Bool_t isHighMultEvent = 0;   // tail
-    Bool_t isHighMultEventOmegaCut = 0;  // Omega HM cut
-    float multFT0MNorm = 0.f; 
-    Bool_t isHighMultEventTrk = 0;  // tail
+    Bool_t isHighMultEvent = 0;         // tail
+    Bool_t isHighMultEventOmegaCut = 0; // Omega HM cut
+    float multFT0MNorm = 0.f;
+    Bool_t isHighMultEventTrk = 0;         // tail
     Bool_t isHighMultEventTrkOmegaCut = 0; // Omega HM cut
 
     float multTrack = 0.f;
@@ -794,7 +794,6 @@ struct strangenessFilter {
         isHighMultEventTrk = 1;
       }
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracks"), multTrack);
-
     }
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -1313,7 +1312,7 @@ struct strangenessFilter {
     if (omegacounter > 0 && isHighMultEventTrkOmegaCut) {
       keepEvent[13] = true;
     }
-    if (isHighMultEvent) {    // Normalisation tail
+    if (isHighMultEvent) { // Normalisation tail
       keepEvent[14] = true;
     }
     if (isHighMultEventTrk) { // Normalisation tail
