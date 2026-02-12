@@ -796,7 +796,6 @@ struct FullJetSpectra {
 
     // --- Track cuts: ALL tracks must satisfy 0.15 <= pT <= 140 GeV/c---
     if (minTrackPt > kLeadingTrackPtMinThreshold || maxTrackPt < kLeadingTrackPtMaxThreshold) {
-      bool hasValidTrack = false;
       for (const auto& constituent : jet.template tracks_as<T>()) {
         const float pt = constituent.pt();
 
@@ -811,7 +810,6 @@ struct FullJetSpectra {
     // --- Cluster cuts: ALL clusters must satisfy min <= pT <= max == 0.3 <= pT <= 250
     // Reject jet if ANY cluster is outside range
     if (minClusterPt > kLeadingClusterPtMinThreshold || maxClusterPt < kLeadingClusterPtMaxThreshold) {
-      bool hasValidCluster = false;
       for (const auto& cluster : jet.template clusters_as<S>()) {
         const double pt = cluster.energy() / std::cosh(cluster.eta());
 
