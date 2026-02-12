@@ -11,7 +11,7 @@
 
 // jet analysis tasks (subscribing to jet finder task)
 //
-/// \file JetSubstructureSoftDrop.cxx
+/// \file jetSubstructureSoftDrop.cxx
 /// \brief Task to calculate soft drop jet substructure observables for charged jets, with and without event-wise background subtraction, and for both data and MC, matching to particle level for MC
 /// \author Louise Millot <louise.millot@cern.ch>
 
@@ -29,16 +29,17 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/Pack.h>
+#include <Framework/runDataProcessing.h>
 
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/PseudoJet.hh"
-#include <fairlogger/Logger.h>
 
 #include <RtypesCore.h>
 
@@ -52,8 +53,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 struct JetSubstructureSoftDrop {
 
