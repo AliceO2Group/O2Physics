@@ -1117,11 +1117,11 @@ void defaultConfiguration()
   }
   // 2D:
   for (int AFO_2D = 0; AFO_2D < eAsFunctionOf2D_N; AFO_2D++) {
-    tc.fCalculate2DAsFunctionOf[AFO_2D] = mupa.fCalculateCorrelationsAsFunctionOf[AFO_2D] || t0.fCalculateTest0AsFunctionOf[AFO_2D] || es.fCalculateEtaSeparationsAsFunctionOf[AFO_2D];
+    tc.fCalculate2DAsFunctionOf[AFO_2D] = t0.fCalculate2DTest0AsFunctionOf[AFO_2D]; // TBI 20260212 for the time being, I support 2D only for Test0
   }
   // 3D:
   for (int AFO_3D = 0; AFO_3D < eAsFunctionOf3D_N; AFO_3D++) {
-    tc.fCalculate3DAsFunctionOf[AFO_3D] = mupa.fCalculateCorrelationsAsFunctionOf[AFO_3D] || t0.fCalculateTest0AsFunctionOf[AFO_3D] || es.fCalculateEtaSeparationsAsFunctionOf[AFO_3D];
+    tc.fCalculate3DAsFunctionOf[AFO_3D] = t0.fCalculate3DTest0AsFunctionOf[AFO_3D]; // TBI 20260212 for the time being, I support 3D only for Test0
   }
 
   if (tc.fVerbose) {
