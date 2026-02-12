@@ -1200,7 +1200,7 @@ struct TableMakerMC {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
           VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
         }
-	if (fConfigCCDB.fUseRemoteZShift) {
+        if (fConfigCCDB.fUseRemoteZShift) {
           auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
           if (fZShift != nullptr && !fZShift->empty()) {
             VarManager::SetZShift((*fZShift)[0]);
