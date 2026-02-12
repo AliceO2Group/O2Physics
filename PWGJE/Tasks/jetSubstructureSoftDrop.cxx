@@ -1395,6 +1395,5 @@ struct JetSubstructureSoftDrop {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<JetSubstructureSoftDrop>(
-    cfgc, TaskName{"jet-substructure-softdrop"})}; // o2-linter: disable=name/o2-task(Required for correct DPL workflow)
+  return WorkflowSpec{adaptAnalysisTask<JetSubstructureSoftDrop>(cfgc)};
 }
