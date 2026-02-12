@@ -42,47 +42,59 @@ class GeometryContainer
    * @param layers Vector to store the order of the layers as they appear in the file
    * @return A map where each key is a layer name and the value is another map of key-value pairs for that layer
    */
-  static std::map<std::string, std::map<std::string, std::string>> parseTEnvConfiguration(std::string filename, std::vector<std::string>& layers);
+  static std::map<std::string, std::map<std::string, std::string>> parseTEnvConfiguration(std::string& filename, std::vector<std::string>& layers);
 
   // A container for the geometry info
   struct GeometryEntry {
     // Default constructor
     GeometryEntry() = default;
-    explicit GeometryEntry(std::string filename) : name(filename)
+    explicit GeometryEntry(std::string filename)
     {
-      mConfigurations = GeometryContainer::parseTEnvConfiguration(filename, layerNames);
+      mFileName = filename;
+      mConfigurations = GeometryContainer::parseTEnvConfiguration(mFileName, mLayerNames);
+      LOG(info) << "Loaded geometry configuration from file: " << filename << " with " << mLayerNames.size() << " layers.";
+      if (mLayerNames.empty()) {
+        LOG(warning) << "No layers found in geometry configuration file: " << filename;
+      }
     }
     std::map<std::string, std::map<std::string, std::string>> getConfigurations() const { return mConfigurations; }
     std::map<std::string, std::string> getConfiguration(const std::string& layerName) const;
-    std::vector<std::string> getLayerNames() const { return layerNames; }
+    std::vector<std::string> getLayerNames() const { return mLayerNames; }
+    bool hasValue(const std::string& layerName, const std::string& key) const;
     std::string getValue(const std::string& layerName, const std::string& key, bool require = true) const;
+    void setValue(const std::string& layerName, const std::string& key, const std::string& value) { mConfigurations[layerName][key] = value; }
+    void replaceValue(const std::string& layerName, const std::string& key, const std::string& value);
     float getFloatValue(const std::string& layerName, const std::string& key) const { return std::stof(getValue(layerName, key)); }
     int getIntValue(const std::string& layerName, const std::string& key) const { return std::stoi(getValue(layerName, key)); }
 
    private:
-    std::string name; // Filename of the geometry
-    std::map<std::string, std::map<std::string, std::string>> mConfigurations;
-    std::vector<std::string> layerNames; // Ordered names of the layers
+    std::string mFileName;                                                     // Filename of the geometry
+    std::map<std::string, std::map<std::string, std::string>> mConfigurations; // Layer configurations
+    std::vector<std::string> mLayerNames;                                      // Ordered names of the layers
   };
 
   // Add a geometry entry from a configuration file
   void addEntry(const std::string& filename) { entries.emplace_back(filename); }
+  void setLutCleanupSetting(const bool cleanLutWhenLoaded) { mCleanLutWhenLoaded = cleanLutWhenLoaded; }
 
   // Getters
   int getNumberOfConfigurations() const { return entries.size(); }
   const std::vector<GeometryEntry>& getEntries() const { return entries; }
   const GeometryEntry& getEntry(const int id) const { return entries.at(id); }
   GeometryEntry getGeometryEntry(const int id) const { return entries.at(id); }
+  bool cleanLutWhenLoaded() const { return mCleanLutWhenLoaded; }
 
   // Get configuration maps
   std::map<std::string, std::map<std::string, std::string>> getConfigurations(const int id) const { return entries.at(id).getConfigurations(); }
   std::map<std::string, std::string> getConfiguration(const int id, const std::string& layerName) const { return entries.at(id).getConfiguration(layerName); }
 
   // Get specific values
+  std::string getValue(const int id, const std::string& layerName, const std::string& key, bool require = true) const { return entries.at(id).getValue(layerName, key, require); }
   float getFloatValue(const int id, const std::string& layerName, const std::string& key) const { return entries.at(id).getFloatValue(layerName, key); }
 
  private:
   std::vector<GeometryEntry> entries;
+  bool mCleanLutWhenLoaded = true;
 };
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
@@ -122,9 +134,6 @@ class FastTracker
     SetResolutionZ(layerName, resZ);
   }
 
-  void AddSiliconALICE3v4(std::vector<float> pixelResolution);
-  void AddSiliconALICE3v2(std::vector<float> pixelResolution);
-  void AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
 
   /**

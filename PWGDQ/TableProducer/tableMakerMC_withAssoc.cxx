@@ -70,6 +70,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+using namespace o2::aod::rctsel;
 
 // Declare Joins used in the various process functions
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -178,6 +179,12 @@ struct TableMakerMC {
     Configurable<std::string> fConfigMuonCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
   } fConfigCuts;
 
+  // RCT selection
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigUseRCT{"cfgUseRCT", false, "Enable event selection with RCT flags"};
+    Configurable<std::string> fConfigRCTLabel{"cfgRCTLabel", "CBT", "RCT flag labels : CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
+  } fConfigRCT;
+
   // MC signals to be skimmed
   Configurable<std::string> fConfigMCSignals{"cfgMCsignals", "", "Comma separated list of MC signals"};
   Configurable<std::string> fConfigMCSignalsJSON{"cfgMCsignalsJSON", "", "Additional list of MC signals via JSON"};
@@ -260,6 +267,9 @@ struct TableMakerMC {
   std::vector<double> binsPtMl;
   std::array<double, 1> cutValues;
   std::vector<int> cutDirMl;
+
+  // RCT flag checker
+  RCTFlagsChecker rctChecker{"CBT"};
 
   void init(o2::framework::InitContext& context)
   {
@@ -397,6 +407,10 @@ struct TableMakerMC {
       matchingMlResponse.setModelPathsCCDB(fConfigVariousOptions.fModelNames.value, fCCDBApi, fConfigVariousOptions.fModelPathsCCDB.value, fConfigCCDB.timestampCCDB.value);
       matchingMlResponse.cacheInputFeaturesIndices(fConfigVariousOptions.fInputFeatures.value);
       matchingMlResponse.init();
+    }
+
+    if (fConfigRCT.fConfigUseRCT.value) {
+      rctChecker.init(fConfigRCT.fConfigRCTLabel);
     }
   }
 
@@ -634,7 +648,7 @@ struct TableMakerMC {
       (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // Apply the user specified event selection
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !(rctChecker(collision)))) {
         continue;
       }
 

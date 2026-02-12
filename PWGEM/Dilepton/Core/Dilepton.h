@@ -289,6 +289,8 @@ struct Dilepton {
     Configurable<float> cfg_max_DPhi_wrt_matchedMCHMID{"cfg_max_DPhi_wrt_matchedMCHMID", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
     Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to apply MFT hit map"};
     Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
+    Configurable<float> cfg_slope_dr_chi2MatchMFTMCH{"cfg_slope_dr_chi2MatchMFTMCH", -0.15 / 30, "slope of chiMatchMCHMFT vs. dR"};
+    Configurable<float> cfg_intercept_dr_chi2MatchMFTMCH{"cfg_intercept_dr_chi2MatchMFTMCH", 1e+10f, "intercept of chiMatchMCHMFT vs. dR"};
   } dimuoncuts;
 
   struct : ConfigurableGroup {
@@ -809,6 +811,7 @@ struct Dilepton {
     fDimuonCut.SetMaxPDCARabsDep([&](float rabs) { return (rabs < 26.5 ? 594.f : 324.f); });
     fDimuonCut.SetMaxdPtdEtadPhiwrtMCHMID(dimuoncuts.cfg_max_relDPt_wrt_matchedMCHMID, dimuoncuts.cfg_max_DEta_wrt_matchedMCHMID, dimuoncuts.cfg_max_DPhi_wrt_matchedMCHMID); // this is relevant for global muons
     fDimuonCut.SetMFTHitMap(dimuoncuts.requireMFTHitMap, dimuoncuts.requiredMFTDisks);
+    fDimuonCut.SetSlopeAndInterceptDRvsChi2MCHMFT(dimuoncuts.cfg_slope_dr_chi2MatchMFTMCH, dimuoncuts.cfg_intercept_dr_chi2MatchMFTMCH);
   }
 
   template <typename TQvectors>
@@ -892,8 +895,8 @@ struct Dilepton {
       if (cfgApplyWeightTTCA) {
         weight = map_weight[std::make_pair(t1.globalIndex(), t2.globalIndex())];
       }
+      // LOGF(info, "ev_id = %d, t1.sign() = %d, t2.sign() = %d, map_weight[std::make_pair(%d, %d)] = %f", ev_id, t1.sign(), t2.sign(), t1.globalIndex(), t2.globalIndex(), weight);
     }
-    // LOGF(info, "ev_id = %d, t1.sign() = %d, t2.sign() = %d, map_weight[std::make_pair(%d, %d)] = %f", ev_id, t1.sign(), t2.sign(), t1.globalIndex(), t2.globalIndex(), weight);
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
@@ -1524,7 +1527,6 @@ struct Dilepton {
       for (const auto& pairId : passed_pairIds) {
         auto t1 = tracks.rawIteratorAt(std::get<0>(pairId));
         auto t2 = tracks.rawIteratorAt(std::get<1>(pairId));
-        // LOGF(info, "std::get<0>(pairId) = %d, std::get<1>(pairId) = %d, t1.globalIndex() = %d, t2.globalIndex() = %d", std::get<0>(pairId), std::get<1>(pairId), t1.globalIndex(), t2.globalIndex());
 
         float n = 1.f; // include myself.
         for (const auto& ambId1 : t1.ambiguousElectronsIds()) {

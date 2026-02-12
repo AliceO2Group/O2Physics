@@ -98,25 +98,25 @@ using V0LegMCLabel = V0LegMCLabels::iterator;
 // *  EMC cluster mc label tables:
 // 1. EMCALMCClusters in EMCalClusters.h: Vectors of global mc particle ids and energy fractions of the cluster
 // 2. EMCClusterMCLabels: Vector of global mc particle ids
-// 3. EMEMCClusterMCLabels: EM MC particle ID of largest contributor to cluster
+// 3. EMEMCClusterMCLabels: Vector of EM MC particle ID of largest contributor to cluster
 namespace emcclustermclabel
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_ARRAY_INDEX_COLUMN(McParticle, emmcparticle) //!
 } // namespace emcclustermclabel
 
 // NOTE: MC labels. This table has one vector of global mc particle ids for each reconstructed emc cluster (joinable with emccluster table)
 DECLARE_SOA_TABLE(EMCClusterMCLabels, "AOD", "EMCClsMCLABEL", //!
-                  emcclustermclabel::EMMCParticleIds);
+                  emcclustermclabel::McParticleIds);
 using EMCClusterMCLabel = EMCClusterMCLabels::iterator;
 
 namespace ememcclustermclabel
 {
-DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_ARRAY_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
 } // namespace ememcclustermclabel
 
-// NOTE: MC labels. This table has one entry for each reconstructed emc cluster (joinable with emccluster table)
+// NOTE: MC labels. This table has a vector of entries for each reconstructed emc cluster (joinable with emccluster table)
 DECLARE_SOA_TABLE(EMEMCClusterMCLabels, "AOD", "EMEMCClsMCLABEL", //!
-                  ememcclustermclabel::EMMCParticleId);
+                  ememcclustermclabel::EMMCParticleIds);
 using EMEMCClusterMCLabel = EMEMCClusterMCLabels::iterator;
 
 namespace v0leg

@@ -137,6 +137,24 @@ struct HfProducerCharmHadronsTrackFemtoDream {
 
   // Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
+  // -------------------------
+  // Kaon PID cut parameters
+  // -------------------------
+  struct : ConfigurableGroup {
+    Configurable<float> pTrackMethod1Max{"pTrackMethod1Max", 0.85f, "Kaon PID Method1 (TPC-only): maximum p (GeV/c)"};
+    Configurable<float> pTrackExcludeMin{"pTrackExcludeMin", 0.50f, "Kaon PID Method1: excluded p window minimum (GeV/c)"};
+    Configurable<float> pTrackExcludeMax{"pTrackExcludeMax", 0.65f, "Kaon PID Method1: excluded p window maximum (GeV/c)"};
+    Configurable<float> pTrackPiRejMin{"pTrackPiRejMin", 0.50f, "Kaon PID Method1: pion rejection active for p > this (GeV/c)"};
+    Configurable<float> pTrackElRejMin{"pTrackElRejMin", 0.30f, "Kaon PID Method1: electron rejection active for p > this (GeV/c)"};
+    Configurable<float> pTrackTightMin{"pTrackTightMin", 1.20f, "Kaon PID Method2 (TPC+TOF): tighten cuts for p > this (GeV/c)"};
+    Configurable<float> nSigmaTpcKaMax{"nSigmaTpcKaMax", 3.f, "Kaon PID Method1: require |nSigmaTpcKa| < this"};
+    Configurable<float> nSigmaTpcPiMin{"nSigmaTpcPiMin", 3.f, "Kaon PID Method1: require |nSigmaTpcPi| > this (pion)"};
+    Configurable<float> nSigmaTpcElMin{"nSigmaTpcElMin", 3.f, "Kaon PID Method1: require |nSigmaTpcEl| > this (electron)"};
+    Configurable<float> nSigmaCombKaMax{"nSigmaCombKaMax", 3.f, "Kaon PID Method2: require |nSigmaCombKa| < this"};
+    Configurable<float> nSigmaCombKaTightMax{"nSigmaCombKaTightMax", 2.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombKa| < this"};
+    Configurable<float> nSigmaCombPiMax{"nSigmaCombPiMax", 6.f, "Kaon PID Method2: for p > pTrackTightMin require |nSigmaCombPi| < this"};
+  } kaonPidSel;
+
   Configurable<bool> isDebug{"isDebug", true, "Enable Debug tables"};
   Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
 
@@ -203,7 +221,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
   using FemtoFullMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
   using FemtoFullMcgenCollision = FemtoFullMcgenCollisions::iterator;
-  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
@@ -334,6 +352,64 @@ struct HfProducerCharmHadronsTrackFemtoDream {
         }
       }
     }
+  }
+
+  // -------------------------
+  // Kaon PID selection
+  // -------------------------
+  template <typename TrackType>
+  bool isTrackKaonPidSelected(const TrackType& track)
+  {
+    const float pTrack = track.p();
+
+    // =========================
+    // Method 1: Tpc-only
+    // =========================
+    bool isTrackKaonPidMethod1 = true;
+
+    if (pTrack >= kaonPidSel.pTrackMethod1Max) {
+      isTrackKaonPidMethod1 = false;
+    }
+    if (std::abs(track.tpcNSigmaKa()) >= kaonPidSel.nSigmaTpcKaMax) {
+      isTrackKaonPidMethod1 = false;
+    }
+    if (pTrack >= kaonPidSel.pTrackExcludeMin && pTrack <= kaonPidSel.pTrackExcludeMax) {
+      isTrackKaonPidMethod1 = false;
+    }
+    if (pTrack > kaonPidSel.pTrackPiRejMin && std::abs(track.tpcNSigmaPi()) <= kaonPidSel.nSigmaTpcPiMin) {
+      isTrackKaonPidMethod1 = false;
+    }
+    if (pTrack > kaonPidSel.pTrackElRejMin && std::abs(track.tpcNSigmaEl()) <= kaonPidSel.nSigmaTpcElMin) {
+      isTrackKaonPidMethod1 = false;
+    }
+
+    // =========================
+    // Method 2: Tpc+Tof combined
+    // =========================
+    bool isTrackKaonPidMethod2 = true;
+
+    if (pTrack > kaonPidSel.pTrackMethod1Max && !track.hasTOF()) {
+      isTrackKaonPidMethod2 = false;
+    }
+
+    const float nSigmaCombKa = std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa());
+    const float nSigmaCombPi = std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi());
+
+    if (std::abs(nSigmaCombKa) >= kaonPidSel.nSigmaCombKaMax) {
+      isTrackKaonPidMethod2 = false;
+    }
+
+    if (pTrack > kaonPidSel.pTrackTightMin) {
+      if (std::abs(nSigmaCombKa) >= kaonPidSel.nSigmaCombKaTightMax) {
+        isTrackKaonPidMethod2 = false;
+      }
+      if (std::abs(nSigmaCombPi) >= kaonPidSel.nSigmaCombPiMax) {
+        isTrackKaonPidMethod2 = false;
+      }
+    }
+
+    // OR between the two PID methods
+    return isTrackKaonPidMethod1 || isTrackKaonPidMethod2;
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
@@ -472,14 +548,28 @@ struct HfProducerCharmHadronsTrackFemtoDream {
       outputPartsTime(timeStamp);
       // now the table is filled
 
-      outputParts(outputCollision.lastIndex(),
-                  track.pt(),
-                  track.eta(),
-                  track.phi(),
-                  aod::femtodreamparticle::ParticleType::kTrack,
-                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
-                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
-                  track.dcaXY(), childIDs, 0, 0);
+      if (trkPDGCode == kKPlus) {
+        const auto pidTrackPassBit = static_cast<aod::femtodreamparticle::cutContainerType>(isTrackKaonPidSelected(track));
+
+        outputParts(outputCollision.lastIndex(),
+                    track.pt(),
+                    track.eta(),
+                    track.phi(),
+                    aod::femtodreamparticle::ParticleType::kTrack,
+                    cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                    pidTrackPassBit,
+                    track.dcaXY(), childIDs, 0, 0);
+      } else {
+        outputParts(outputCollision.lastIndex(),
+                    track.pt(),
+                    track.eta(),
+                    track.phi(),
+                    aod::femtodreamparticle::ParticleType::kTrack,
+                    cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
+                    cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
+                    track.dcaXY(), childIDs, 0, 0);
+      }
+
       fIsTrackFilled = true;
       // tmpIDtrack.push_back(track.globalIndex());
       if (isDebug.value) {
