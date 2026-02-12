@@ -752,6 +752,9 @@ struct strangenessFilter {
             isHighMultEventOmegaCut = 1;
             LOG(debug) << "Found FT0 using norm mult";
           }
+          if(multFT0MNorm > cfgHMOmegaCuts.LowLimitHMTrgT0MNorm) {
+            isHighMultEvent = 1;
+          }
         } else {
           LOG(warn) << "Found FT0 but, bith amplitudes are <=0 ";
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 148);
