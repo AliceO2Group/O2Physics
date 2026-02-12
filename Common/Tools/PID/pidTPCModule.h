@@ -595,7 +595,7 @@ class pidTPCModule
               track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
             }
           }
-          track_properties[counter_track_props + 8] = std::fmod(std::fmod(trk.phi(), 2 * M_PI) + 2 * M_PI, M_PI/9.0);
+          track_properties[counter_track_props + 8] = std::fmod(std::fmod(trk.phi(), 2 * M_PI) + 2 * M_PI, M_PI / 9.0);
         }
         counter_track_props += input_dimensions;
       }
