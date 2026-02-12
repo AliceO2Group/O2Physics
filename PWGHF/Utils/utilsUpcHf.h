@@ -53,10 +53,10 @@ constexpr float AmplitudeThresholdFV0A = 100.0f; ///< Amplitude threshold for FV
 constexpr float AmplitudeThresholdFT0A = 100.0f; ///< Amplitude threshold for FT0-A (a.u.)
 constexpr float AmplitudeThresholdFT0C = 50.0f;  ///< Amplitude threshold for FT0-C (a.u.)
 constexpr float MaxFITTime = 4.0f;               ///< Maximum FIT time (ns)
-constexpr int NDtColl = 1000;                    ///< Time window for BC range (ns)
-constexpr int MinNBCs = 7;                       ///< Minimum number of BCs to check
-constexpr int MinNTracks = 0;                    ///< Minimum number of tracks
-constexpr int MaxNTracks = 100;                  ///< Maximum number of tracks
+constexpr int NDtColl = 1;                    ///< Time window for BC range (ns)
+constexpr int MinNBCs = 2;                       ///< Minimum number of BCs to check
+constexpr int MinNTracks = 2;                    ///< Minimum number of tracks
+constexpr int MaxNTracks = 1000;                  ///< Maximum number of tracks
 } // namespace defaults
 
 /// \brief Determine gap type using SGSelector with BC range checking
