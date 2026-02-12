@@ -752,7 +752,7 @@ struct strangenessFilter {
             isHighMultEventOmegaCut = 1;
             LOG(debug) << "Found FT0 using norm mult";
           }
-          if(multFT0MNorm > cfgHMOmegaCuts.LowLimitHMTrgT0MNorm) {
+          if (multFT0MNorm > cfgHMOmegaCuts.LowLimitHMTrgT0MNorm) {
             isHighMultEvent = 1;
           }
         } else {
