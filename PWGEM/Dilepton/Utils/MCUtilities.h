@@ -603,7 +603,7 @@ int find1stHadron(TMCParticle const& mcParticle, TMCParticles const& mcParticles
   return hadronId;
 }
 //_______________________________________________________________________
-template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
+template <bool doMoreDifferentially = false, typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
 int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
 {
   if (!p1.has_mothers() || !p2.has_mothers()) {
@@ -713,17 +713,22 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     mothers_pdg1.shrink_to_fit();
     mothers_id2.shrink_to_fit();
     mothers_pdg2.shrink_to_fit();
-    int n_c_from_b1 = hasNCharmHadronsInBeautyDecay(p1, mcparticles);
-    int n_c_from_b2 = hasNCharmHadronsInBeautyDecay(p2, mcparticles);
-    if (n_c_from_b1 == 1 && n_c_from_b2 == 1) {
-      return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
-    } else if (n_c_from_b1 == 2 && n_c_from_b2 == 2) {
-      return static_cast<int>(EM_HFeeType::kBCCe_BCCe); // b->cc->e and b->cc->e, decay type = 6
-    } else if ((n_c_from_b1 == 1 && n_c_from_b2 == 2) || (n_c_from_b1 == 2 && n_c_from_b2 == 1)) {
-      return static_cast<int>(EM_HFeeType::kBCCe_BCe); // b->cc->e and b->c->e, decay type = 5
-    } else {
-      LOGF(debug, "Unexpected number of charm hadrons from beauty decay: n_c_from_b1 = %d, n_c_from_b2 = %d. Return kBCe_BCe as default.", n_c_from_b1, n_c_from_b2);
+
+    if constexpr (!doMoreDifferentially) {
       return static_cast<int>(EM_HFeeType::kBCe_BCe); // default to b->c->e and b->c->e, decay type = 1
+    } else {
+      int n_c_from_b1 = hasNCharmHadronsInBeautyDecay(p1, mcparticles);
+      int n_c_from_b2 = hasNCharmHadronsInBeautyDecay(p2, mcparticles);
+      if (n_c_from_b1 == 1 && n_c_from_b2 == 1) {
+        return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
+      } else if (n_c_from_b1 == 2 && n_c_from_b2 == 2) {
+        return static_cast<int>(EM_HFeeType::kBCCe_BCCe); // b->cc->e and b->cc->e, decay type = 6
+      } else if ((n_c_from_b1 == 1 && n_c_from_b2 == 2) || (n_c_from_b1 == 2 && n_c_from_b2 == 1)) {
+        return static_cast<int>(EM_HFeeType::kBCCe_BCe); // b->cc->e and b->c->e, decay type = 5
+      } else {
+        LOGF(debug, "Unexpected number of charm hadrons from beauty decay: n_c_from_b1 = %d, n_c_from_b2 = %d. Return kBCe_BCe as default.", n_c_from_b1, n_c_from_b2);
+        return static_cast<int>(EM_HFeeType::kBCe_BCe); // default to b->c->e and b->c->e, decay type = 1
+      }
     }
   }
 

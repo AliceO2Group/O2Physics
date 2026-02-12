@@ -309,7 +309,7 @@ struct checkMCPairTemplate {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   static constexpr std::string_view pair_sign_types[3] = {"uls/", "lspp/", "lsmm/"};
-  static constexpr std::string_view dilepton_source_types[20] = {
+  static constexpr std::string_view dilepton_source_types[22] = {
     "sm/Photon/",             // 0
     "sm/PromptPi0/",          // 1
     "sm/NonPromptPi0/",       // 2
@@ -1955,10 +1955,10 @@ struct checkMCPairTemplate {
     // o2::math_utils::bringToPMPi(phiPol);
     // float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
 
-    if ((FindCommonMotherFrom2ProngsWithoutPDG(t1mc, t2mc) > 0 || IsHF(t1mc, t2mc, mcparticles) > 0) && is_pair_from_same_mcevent) { // for bkg study
-      if (std::abs(t1mc.pdgCode()) != pdg_lepton || std::abs(t2mc.pdgCode()) != pdg_lepton) {                                        // hh or lh correlated bkg
-        if (std::abs(t1mc.pdgCode()) != pdg_lepton && std::abs(t2mc.pdgCode()) != pdg_lepton) {                                      // hh correlated bkg
-          if (t1.sign() * t2.sign() < 0) {                                                                                           // ULS
+    if ((FindCommonMotherFrom2ProngsWithoutPDG(t1mc, t2mc) > 0 || IsHF<true>(t1mc, t2mc, mcparticles) > 0) && is_pair_from_same_mcevent) { // for bkg study
+      if (std::abs(t1mc.pdgCode()) != pdg_lepton || std::abs(t2mc.pdgCode()) != pdg_lepton) {                                              // hh or lh correlated bkg
+        if (std::abs(t1mc.pdgCode()) != pdg_lepton && std::abs(t2mc.pdgCode()) != pdg_lepton) {                                            // hh correlated bkg
+          if (t1.sign() * t2.sign() < 0) {                                                                                                 // ULS
             fRegistry.fill(HIST("Pair/corr_bkg_hh/uls/hs"), v12.M(), v12.Pt(), pair_dca, weight);
           } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
             fRegistry.fill(HIST("Pair/corr_bkg_hh/lspp/hs"), v12.M(), v12.Pt(), pair_dca, weight);
@@ -1996,7 +1996,7 @@ struct checkMCPairTemplate {
       return false;
     }
     int mother_id = std::max({FindSMULS(t1mc, t2mc, mcparticles), FindSMULS(t2mc, t1mc, mcparticles), FindSMLSPP(t1mc, t2mc, mcparticles), FindSMLSMM(t1mc, t2mc, mcparticles)});
-    int hfee_type = IsHF(t1mc, t2mc, mcparticles);
+    int hfee_type = IsHF<true>(t1mc, t2mc, mcparticles);
     if (mother_id < 0 && hfee_type < 0) {
       return false;
     }
@@ -2165,7 +2165,7 @@ struct checkMCPairTemplate {
     }
 
     int mother_id = std::max({FindSMULS(t1, t2, mcparticles), FindSMULS(t2, t1, mcparticles), FindSMLSPP(t1, t2, mcparticles), FindSMLSMM(t1, t2, mcparticles)});
-    int hfee_type = IsHF(t1, t2, mcparticles);
+    int hfee_type = IsHF<true>(t1, t2, mcparticles);
     if (mother_id < 0 && hfee_type < 0) {
       return false;
     }
@@ -2803,7 +2803,7 @@ struct checkMCPairTemplate {
       return false;
     }
     int mother_id = std::max({FindSMULS(t1mc, t2mc, mcparticles), FindSMULS(t2mc, t1mc, mcparticles), FindSMLSPP(t1mc, t2mc, mcparticles), FindSMLSMM(t1mc, t2mc, mcparticles)});
-    int hfee_type = IsHF(t1mc, t2mc, mcparticles);
+    int hfee_type = IsHF<true>(t1mc, t2mc, mcparticles);
     if (mother_id < 0 && hfee_type < 0) {
       return false;
     }
