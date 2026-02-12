@@ -982,7 +982,7 @@ class MultModule
     int nTracks = 0;
 
     for (const auto& track : mfttracks) {
-      if (track.nClusters() >= minNclsMFTTrack) {
+      if (track.nClusters() >= internalOpts.minNclsMFTTrack.value) {
         nAllTracks++;
       }
     }
@@ -990,13 +990,13 @@ class MultModule
     if (retracks.size() > 0) {
       for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-        if (track.nClusters() < minNclsMFTTrack) {
+        if (track.nClusters() < internalOpts.minNclsMFTTrack.value) {
           continue; // min cluster requirement
         }
-        if (track.eta() > maxEtaMFTTrack || track.eta() < minEtaMFTTrack) {
+        if (track.eta() > internalOpts.maxEtaMFTTrack.value || track.eta() < internalOpts.minEtaMFTTrack.value) {
           continue; // too far to be of true interest
         }
-        if (std::abs(retrack.bestDCAXY()) > maxDCAxyToPVMFTTrack) {
+        if (std::abs(retrack.bestDCAXY()) > internalOpts.maxDCAxyToPVMFTTrack.value) {
           continue; // does not point to PV properly
         }
         nTracks++;
