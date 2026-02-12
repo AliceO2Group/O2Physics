@@ -40,7 +40,7 @@ struct HfUpcGapThresholds : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> nBcsMin{"nBcsMin", 2, "Minimum number of BCs to consider in BC range"};
   o2::framework::Configurable<int> nContributorsPvMin{"nContributorsPvMin", 2, "Minimum number of PV contributors"};
   o2::framework::Configurable<int> nContributorsPvMax{"nContributorsPvMax", 1000, "Maximum number of PV contributors"};
-  o2::framework::Configurable<int> timeFitMax{"timeFitMax", 34, "Maximum time in FIT"};
+  o2::framework::Configurable<float> timeFitMax{"timeFitMax", 34.0f, "Maximum time in FIT"};
   o2::framework::Configurable<float> fv0aThreshold{"fv0aThreshold", 100.0f, "FV0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0aThreshold{"ft0aThreshold", 100.0f, "FT0-A amplitude threshold for UPC gap determination (a.u.)"};
   o2::framework::Configurable<float> ft0cThreshold{"ft0cThreshold", 50.0f, "FT0-C amplitude threshold for UPC gap determination (a.u.)"};
@@ -52,7 +52,7 @@ namespace defaults
 constexpr float AmplitudeThresholdFV0A = 100.0f; ///< Amplitude threshold for FV0-A (a.u.)
 constexpr float AmplitudeThresholdFT0A = 100.0f; ///< Amplitude threshold for FT0-A (a.u.)
 constexpr float AmplitudeThresholdFT0C = 50.0f;  ///< Amplitude threshold for FT0-C (a.u.)
-constexpr int MaxFITTime = 34;                   ///< Maximum FIT time (ns)
+constexpr float MaxFITTime = 34.0f;              ///< Maximum FIT time (ns)
 constexpr int NDtColl = 1;                       ///< Time window for BC range (ns)
 constexpr int MinNBCs = 2;                       ///< Minimum number of BCs to check
 constexpr int MinNTracks = 2;                    ///< Minimum number of tracks
@@ -75,7 +75,7 @@ inline auto determineGapType(TCollision const& collision,
                              int nBcsMin = defaults::MinNBCs,
                              int nContributorsPvMin = defaults::MinNTracks,
                              int nContributorsPvMax = defaults::MaxNTracks,
-                             int timeFitMax = defaults::MaxFITTime,
+                             float timeFitMax = defaults::MaxFITTime,
                              float amplitudeThresholdFV0A = defaults::AmplitudeThresholdFV0A,
                              float amplitudeThresholdFT0A = defaults::AmplitudeThresholdFT0A,
                              float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C)
