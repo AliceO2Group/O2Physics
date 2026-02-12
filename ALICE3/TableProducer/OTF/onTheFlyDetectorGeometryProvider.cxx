@@ -29,6 +29,7 @@
 
 struct OnTheFlyDetectorGeometryProvider {
   o2::framework::HistogramRegistry histos{"Histos", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
   o2::framework::Configurable<std::vector<std::string>> detectorConfiguration{"detectorConfiguration",
                                                                               std::vector<std::string>{"$O2PHYSICS_ROOT/share/alice3/a3geometry_v3.ini"},
                                                                               "Paths of the detector geometry configuration files"};
@@ -64,7 +65,7 @@ struct OnTheFlyDetectorGeometryProvider {
         }
         detectorConfiguration.value[idx] = configFile; // Update the filename to the local file
       }
-      LOG(info) << "Adding " << configFile << "geometry container";
+      LOG(info) << "Adding " << configFile << " to geometry container";
       geometryContainer.addEntry(configFile);
       idx++;
     }
