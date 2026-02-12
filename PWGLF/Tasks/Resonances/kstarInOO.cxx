@@ -249,7 +249,7 @@ struct kstarInOO {
     if (cfgMCHistos) {
       histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{4, 0.0, 4.0}});
       histos.add("hUSS_TrueRec", "hUSS_TrueRec", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hUSS_GenKstar", "hUSS_GenKstar", kTHnSparseF, {cfgCentAxis, ptAxis});
+      histos.add("hGen_pT_GoodEv", "hGen_pT_GoodEv", kTHnSparseF, {cfgCentAxis, ptAxis});
     }
     if (cfgJetHistos) {
       histos.add("hUSS_KPi_INSIDE", "hUSS_KPi_INSIDE", kTHnSparseF, {cfgCentAxis, dRAxis, ptAxis, minvAxis});
@@ -1452,64 +1452,89 @@ struct kstarInOO {
 
   //======================================
   //|
-  //|    Efficiency: GENERATED STUFF
+  //|           GENERATED STUFF
   //|
   //======================================
-  int nEventsTrue = 0;
-  void processEffGen(EventCandidatesTrue::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, EventCandidates>> const& recocolls, aod::McParticles const& particles)
+  int nEventsGen = 0;
+  void processGen(EventCandidatesTrue::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, EventCandidates>> const& recocolls, aod::McParticles const& mcParticles)
   {
     if (cDebugLevel > 0) {
-      ++nEventsTrue;
+      ++nEventsGen;
+      if (nEventsGen % 10000 == 0) {
+        std::cout << "Processed MC (GEN) Events: " << nEventsGen << std::endl;
+      }
+    }
+    //=======================
+    //|| Event & Signal loss
+    //=======================
+    if (cfgMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 0.5);
     }
 
-    if (fabs(collision.posZ()) > cfgEventVtxCut)
-      return;
+    for (auto& particle : mcParticles) {
+      if (particle.pdgCode() != 313)
+        continue;
+      if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+        continue;
+      if (fabs(collision.posZ()) > cfgEventVtxCut)
+        break;
+
+      if (cfgMCHistos) {
+        histos.fill(HIST("hGen_pT_Raw"), particle.pt());
+      }
+    } // Unreconstructed collisions(=Raw coll) for correction
+
     if (recocolls.size() <= 0) { // not reconstructed
       if (cfgForceGenReco) {
         return;
       }
     }
-
     double centrality = -1;
     for (auto& recocoll : recocolls) {
       centrality = recocoll.centFT0C();
       auto [goodEv, code] = eventSelection(recocoll, true);
 
       if (cfgMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 0.5);
+        histos.fill(HIST("nEvents_Gen"), 1.5);
       }
       if (!goodEv)
         continue;
-    } // for
+    } // recocolls (=reconstructed collisions)
 
-    for (auto& particle : particles) {
+    //=================
+    //|| Efficiency
+    //=================
+    for (auto& particle : mcParticles) {
       if (particle.pdgCode() != 313)
         continue; // Not K*0
       if (std::fabs(particle.eta()) > cfgTrackMaxEta)
         continue;
 
       if (cfgMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 1.5);
-        histos.fill(HIST("hUSS_GenKstar"), centrality, particle.pt());
+        histos.fill(HIST("nEvents_Gen"), 2.5);
+        histos.fill(HIST("hGen_pT_GoodEv"), centrality, particle.pt());
       } // cfgMCHistos
     } // loop over particles
   } // processMCTrue
-  PROCESS_SWITCH(kstarInOO, processEffGen, "process Generated Particles", false);
+  PROCESS_SWITCH(kstarInOO, processGen, "process Generated Particles", false);
 
-  //==========================================
+  //==============================================
   //|
-  //|    Efficiency: JET GENERATED STUFF
+  //|    GENERATED STUFF (INCLUSIVE & JETS)
   //|
-  //==========================================
-  int nprocessEffEvents = 0;
-  void processJetsEffGen(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
+  //==============================================
+  int nprocessGenEvents = 0;
+  void processJetsGen(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
   {
     if (cDebugLevel > 0) {
-      ++nprocessEffEvents;
-      if (nprocessEffEvents % 10000 == 0) {
-        std::cout << "Processed MC (GEN) Events: " << nprocessEffEvents << std::endl;
+      ++nprocessGenEvents;
+      if (nprocessGenEvents % 10000 == 0) {
+        std::cout << "Processed MC (GEN) Events: " << nprocessGenEvents << std::endl;
       }
     }
+    //=======================
+    //|| Event & Signal loss
+    //=======================
     if (cfgJetMCHistos) {
       histos.fill(HIST("nEvents_Gen"), 0.5);
     }
@@ -1525,7 +1550,7 @@ struct kstarInOO {
       if (cfgJetMCHistos) {
         histos.fill(HIST("hGen_pT_Raw"), particle.pt());
       }
-    } // Unreconstructed collisions(=Raw coll) for correction
+    } // Unrecon. collision(=Raw coll) for correction
 
     if (recocolls.size() <= 0) { // not reconstructed
       return;
@@ -1606,7 +1631,7 @@ struct kstarInOO {
       } // cfgJetMCHistos
     } // loop over particles
   } // end of process
-  PROCESS_SWITCH(kstarInOO, processJetsEffGen, "Process Generated Particles MB&Jets", false);
+  PROCESS_SWITCH(kstarInOO, processJetsGen, "Process Generated Particles Inclusive&Jets", false);
 
   void processEventsDummy(EventCandidates::iterator const&, TrackCandidates const&)
   {
