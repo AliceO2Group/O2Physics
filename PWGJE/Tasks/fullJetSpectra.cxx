@@ -788,7 +788,7 @@ struct FullJetSpectra {
   PresliceUnsorted<o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>> perFoundBC = aod::evsel::foundBCId;
 
   template <typename T, typename S, typename U>
-  bool isAcceptedRecoJet(U const& jet/*, double& filteredTrackPt, double& filteredClusterPt*/)
+  bool isAcceptedRecoJet(U const& jet /*, double& filteredTrackPt, double& filteredClusterPt*/)
   {
     // Reset filtered pT accumulators (for QA if needed)
     // filteredTrackPt = 0.0;
@@ -1297,7 +1297,7 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetTrigcollisionCounter"), 2.5); // DetTrigCollWithVertexZ
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) { //applyRCTSelections doesn't work here
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) { // applyRCTSelections doesn't work here
       registry.fill(HIST("hDetTrigcollisionCounter"), 3.5); // EventsNotSatisfyingEvent+TriggerSelection
       return;
     }
