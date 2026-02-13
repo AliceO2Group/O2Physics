@@ -219,7 +219,7 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
     LOG(info) << " --- CCDB source detected for detector geometry " << path;
     std::map<std::string, std::string> metadata;
     bool status = ccdb->getCCDBAccessor().retrieveBlob(ccdbPath, downloadPath, metadata, 1);
-    if(!status) {
+    if (!status) {
       flock(lockFd, LOCK_UN);
       close(lockFd);
       LOG(fatal) << " --- Failed to retrieve geometry configuration from CCDB for path: " << ccdbPath;
