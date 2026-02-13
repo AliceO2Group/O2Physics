@@ -55,7 +55,6 @@ struct JetDerivedDataWriter {
     Configurable<float> trackEtaSelectionMax{"trackEtaSelectionMax", 0.9, "only save tracks that have an eta smaller than this eta"};
     Configurable<bool> savePartonLevelInfo{"savePartonLevelInfo", true, "save parton level info at MCP level"};
 
-    Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   } config;
 
   struct : ProducesGroup {
@@ -79,7 +78,6 @@ struct JetDerivedDataWriter {
     Produces<aod::StoredJMcParticles> storedJMcParticlesTable;
     Produces<aod::StoredJMcParticlePIs> storedJParticlesParentIndexTable;
     Produces<aod::StoredJClusters> storedJClustersTable;
-    Produces<aod::StoredJClustersCorrectedEnergies> storedJClustersCorrectedEnergiesTable;
     Produces<aod::StoredJClusterPIs> storedJClustersParentIndexTable;
     Produces<aod::StoredJClusterTracks> storedJClustersMatchedTracksTable;
     Produces<aod::StoredJMcClusterLbs> storedJMcClustersLabelTable;
@@ -530,7 +528,7 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processTracks, "write out output tables for tracks", true);
 
-  void processClusters(soa::Join<aod::JCollisions, aod::JEMCCollisionLbs, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, aod::JEMCTracks const& emcTracks, soa::Join<aod::JClusters, aod::JClustersCorrectedEnergies, aod::JClusterPIs, aod::JClusterTracks> const& clusters)
+  void processClusters(soa::Join<aod::JCollisions, aod::JEMCCollisionLbs, aod::JCollisionSelections>::iterator const& collision, aod::JTracks const&, aod::JEMCTracks const& emcTracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters)
   {
     if (collision.isCollisionSelected()) {
       products.storedJCollisionsEMCalLabelTable(collision.isAmbiguous(), collision.isEmcalReadout());
@@ -538,7 +536,6 @@ struct JetDerivedDataWriter {
         products.storedJClustersTable(collisionMapping[collision.globalIndex()], cluster.id(), cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(),
                                       cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(),
                                       cluster.nlm(), cluster.definition(), cluster.leadingCellEnergy(), cluster.subleadingCellEnergy(), cluster.leadingCellNumber(), cluster.subleadingCellNumber());
-        products.storedJClustersCorrectedEnergiesTable(cluster.energyCorrectedOneTrack1(), cluster.energyCorrectedOneTrack2(), cluster.energyCorrectedAllTracks1(), cluster.energyCorrectedAllTracks2());
         products.storedJClustersParentIndexTable(cluster.clusterId());
 
         std::vector<int32_t> clusterStoredJTrackIDs;
