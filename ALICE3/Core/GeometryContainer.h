@@ -56,7 +56,7 @@ struct GeometryEntry {
    * @param timeoutSeconds If positive, then this function will wait for these seconds after download before removing the downloaded file.
    * @return The local path to the file, either the original local path or the path to the retrieved file from ccdb
    */
-  static std::string accessFile(const std::string& path, const std::string downloadPath = "/tmp/GeometryContainer/", o2::ccdb::BasicCCDBManager* ccdb = nullptr, int timeoutSeconds = 60);
+  static std::string accessFile(const std::string& path, const std::string downloadPath = "/tmp/GeometryContainer/", o2::ccdb::BasicCCDBManager* ccdb = nullptr, int timeoutSeconds = 0);
 
   std::map<std::string, std::map<std::string, std::string>> getConfigurations() const { return mConfigurations; }
   std::map<std::string, std::string> getConfiguration(const std::string& layerName) const;

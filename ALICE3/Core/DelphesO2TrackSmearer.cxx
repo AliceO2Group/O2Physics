@@ -64,12 +64,12 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     return false;
   }
 
-  filename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager).c_str();
+  const std::string localFilename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager);
   mLUTHeader[ipdg] = new lutHeader_t;
 
-  std::ifstream lutFile(filename, std::ifstream::binary);
+  std::ifstream lutFile(localFilename, std::ifstream::binary);
   if (!lutFile.is_open()) {
-    LOG(info) << " --- cannot open covariance matrix file for PDG " << pdg << ": " << filename << std::endl;
+    LOG(info) << " --- cannot open covariance matrix file for PDG " << pdg << ": " << localFilename << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
     return false;
@@ -120,7 +120,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
           mLUTEntry[ipdg][inch][irad][ieta][ipt] = new lutEntry_t;
           lutFile.read(reinterpret_cast<char*>(mLUTEntry[ipdg][inch][irad][ieta][ipt]), sizeof(lutEntry_t));
           if (lutFile.gcount() != sizeof(lutEntry_t)) {
-            LOG(info) << " --- troubles reading covariance matrix entry for PDG " << pdg << ": " << filename << std::endl;
+            LOG(info) << " --- troubles reading covariance matrix entry for PDG " << pdg << ": " << localFilename << std::endl;
             LOG(info) << " --- expected/detected " << sizeof(lutHeader_t) << "/" << lutFile.gcount() << std::endl;
             return false;
           }
