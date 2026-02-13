@@ -374,7 +374,7 @@ struct HfCorrelatorLcScHadrons {
   } cfgV0;
 
   SliceCache cache;
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
   int8_t chargeCand = 3;
   int8_t signSoftPion = 0;
   int leadingIndex = 0;

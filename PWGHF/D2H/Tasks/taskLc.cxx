@@ -30,6 +30,7 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsUpcHf.h"
+#include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -89,7 +90,7 @@ struct HfTaskLc {
   HfEventSelection hfEvSel;         // event selection and monitoring
   HfUpcGapThresholds upcThresholds; // UPC gap determination thresholds
   SliceCache cache;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
