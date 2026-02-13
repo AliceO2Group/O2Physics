@@ -63,6 +63,7 @@ struct JetDerivedDataWriter {
     Produces<aod::StoredJBCs> storedJBCsTable;
     Produces<aod::StoredJBCPIs> storedJBCParentIndexTable;
     Produces<aod::StoredJCollisions> storedJCollisionsTable;
+    Produces<aod::StoredJCollisionUPCs> storedJCollisionUPCsTable;
     Produces<aod::StoredJCollisionMcInfos> storedJCollisionMcInfosTable;
     Produces<aod::StoredJCollisionPIs> storedJCollisionsParentIndexTable;
     Produces<aod::StoredJCollisionBCs> storedJCollisionsBunchCrossingIndexTable;
@@ -463,12 +464,27 @@ struct JetDerivedDataWriter {
     collisionMapping.clear();
     collisionMapping.resize(collisions.size(), -1);
 
+    for (auto const& collision : collisions) {
+      if (collision.isCollisionSelected()) {
+        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.alias_raw(), collision.eventSel(), collision.rct_raw(), collision.triggerSel());
+        collisionMapping[collision.globalIndex()] = products.storedJCollisionsTable.lastIndex();
+        products.storedJCollisionMcInfosTable(collision.weight(), collision.getSubGeneratorId());
+        products.storedJCollisionsParentIndexTable(collision.collisionId());
+        if (doprocessBCs) {
+          products.storedJCollisionsBunchCrossingIndexTable(bcMapping[collision.bcId()]);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetDerivedDataWriter, processColllisons, "write out output tables for collisions", true);
+
+  void processUPCCollisionInfos(soa::Join<aod::JCollisions, aod::JCollisionUPCs, aod::JCollisionSelections> const& collisions)
+  {
     std::vector<float> amplitudesFV0;
     std::vector<float> amplitudesFT0A;
     std::vector<float> amplitudesFT0C;
     std::vector<float> amplitudesFDDA;
     std::vector<float> amplitudesFDDC;
-
     for (auto const& collision : collisions) {
       if (collision.isCollisionSelected()) {
         amplitudesFV0.clear();
@@ -486,17 +502,11 @@ struct JetDerivedDataWriter {
         std::copy(amplitudesFT0CSpan.begin(), amplitudesFT0CSpan.end(), std::back_inserter(amplitudesFT0C));
         std::copy(amplitudesFDDASpan.begin(), amplitudesFDDASpan.end(), std::back_inserter(amplitudesFDDA));
         std::copy(amplitudesFDDCSpan.begin(), amplitudesFDDCSpan.end(), std::back_inserter(amplitudesFDDC));
-        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.alias_raw(), collision.eventSel(), collision.rct_raw(), collision.triggerSel());
-        collisionMapping[collision.globalIndex()] = products.storedJCollisionsTable.lastIndex();
-        products.storedJCollisionMcInfosTable(collision.weight(), collision.getSubGeneratorId());
-        products.storedJCollisionsParentIndexTable(collision.collisionId());
-        if (doprocessBCs) {
-          products.storedJCollisionsBunchCrossingIndexTable(bcMapping[collision.bcId()]);
-        }
+        products.storedJCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC);
       }
     }
   }
-  PROCESS_SWITCH(JetDerivedDataWriter, processColllisons, "write out output tables for collisions", true);
+  PROCESS_SWITCH(JetDerivedDataWriter, processUPCCollisionInfos, "write out table for upc collision info", false);
 
   void processTracks(soa::Join<aod::JCollisions, aod::JCollisionSelections> const& collisions, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks)
   {

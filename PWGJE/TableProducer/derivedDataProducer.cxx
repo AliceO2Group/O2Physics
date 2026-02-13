@@ -78,6 +78,7 @@ struct JetDerivedDataProducerTask {
     Produces<aod::JBCs> jBCsTable;
     Produces<aod::JBCPIs> jBCParentIndexTable;
     Produces<aod::JCollisions> jCollisionsTable;
+    Produces<aod::JCollisionUPCs> jCollisionUPCsTable;
     Produces<aod::JCollisionMcInfos> jCollisionMcInfosTable;
     Produces<aod::JCollisionPIs> jCollisionsParentIndexTable;
     Produces<aod::JCollisionBCs> jCollisionsBunchCrossingIndexTable;
@@ -323,9 +324,10 @@ struct JetDerivedDataProducerTask {
           amplitudesFDDC.clear();
         }
       }
+      products.jCollisionUPCsTable(amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC);
     }
 
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), -1.0, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, hadronicRate, collision.trackOccupancyInTimeRange(), collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision, upcGapResult), collision.rct_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), -1.0, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), hadronicRate, collision.trackOccupancyInTimeRange(), collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision, upcGapResult), collision.rct_raw(), triggerBit); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -339,7 +341,7 @@ struct JetDerivedDataProducerTask {
       triggerDecider.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), jetderiveddatautilities::JTriggerMasks);
       triggerBit = jetderiveddatautilities::setTriggerSelectionBit(triggerDecider.getTriggerOfInterestResults(bc.globalBC()));
     }
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, -1.0, -1, collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision), collision.rct_raw(), triggerBit);
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1, collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision), collision.rct_raw(), triggerBit);
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -347,7 +349,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentRun2V0As, aod::CentRun2V0Ms>::iterator const& collision)
   {
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, collision.centRun2V0A(), collision.centRun2V0M(), -1.0, -1.0, -1.0, -1.0, amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, 1.0, -1, collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision), collision.rct_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, collision.centRun2V0A(), collision.centRun2V0M(), -1.0, -1.0, -1.0, -1.0, 1.0, -1, collision.alias_raw(), jetderiveddatautilities::setEventSelectionBit(collision), collision.rct_raw(), 0); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -355,7 +357,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsALICE3(aod::Collision const& collision)
   {
-    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, amplitudesFV0, amplitudesFT0A, amplitudesFT0C, amplitudesFDDA, amplitudesFDDC, -1.0, -1, -1.0, 0, 0, 0);
+    products.jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1, -1.0, 0, 0, 0);
     products.jCollisionsParentIndexTable(collision.globalIndex());
     products.jCollisionsBunchCrossingIndexTable(-1);
   }
