@@ -311,13 +311,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(Ct, ct, //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 DECLARE_SOA_COLUMN(KfTopolChi2OverNdf, kfTopolChi2OverNdf, float); //! chi2overndf of the KFParticle topological constraint
-// B-hadron mother information
-DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
-DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
-DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
-// Kink topology and material interaction mc flags
-DECLARE_SOA_COLUMN(NTracksDecayed, nTracksDecayed, int8_t);                       //! number of tracks matched with kinked decay topology
-DECLARE_SOA_COLUMN(NInteractionsWithMaterial, nInteractionsWithMaterial, int8_t); //! number of tracks matched after interaction with material
 
 // method of secondary-vertex reconstruction
 enum VertexerType { DCAFitter = 0,
@@ -360,6 +353,26 @@ DECLARE_SOA_COLUMN(KfGeoMassD0, kfGeoMassD0, float);       //! mass of the D0 ca
 DECLARE_SOA_COLUMN(KfGeoMassD0bar, kfGeoMassD0bar, float); //! mass of the D0bar candidate from the KFParticle geometric fit
 
 } // namespace hf_cand_2prong
+
+// MC matching results
+namespace hf_cand_mc_flag
+{
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         // main decay channel, reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         // main decay channel, generator level
+DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); // resonant decay channel, reconstruction level
+DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); // resonant decay channel, generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
+// B-hadron mother information
+DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
+DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
+DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
+// Kink topology and material interaction mc flags
+DECLARE_SOA_COLUMN(NTracksDecayed, nTracksDecayed, int8_t);                       //! number of tracks matched with kinked decay topology
+DECLARE_SOA_COLUMN(NInteractionsWithMaterial, nInteractionsWithMaterial, int8_t); //! number of tracks matched after interaction with material
+} // namespace hf_cand_mc_flag
 
 // general columns
 #define HFCAND_COLUMNS                                                                                                                                                                             \
@@ -445,20 +458,20 @@ DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
-                  hf_cand_2prong::FlagMcMatchRec,
-                  hf_cand_2prong::OriginMcRec,
-                  hf_cand_2prong::FlagMcDecayChanRec,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed,
-                  hf_cand::NInteractionsWithMaterial);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
+                  hf_cand_mc_flag::NTracksDecayed,
+                  hf_cand_mc_flag::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcGen, "AOD", "HFCAND2PMCGEN", //!
-                  hf_cand_2prong::FlagMcMatchGen,
-                  hf_cand_2prong::OriginMcGen,
-                  hf_cand_2prong::FlagMcDecayChanGen,
-                  hf_cand::IdxBhadMotherPart);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen,
+                  hf_cand_mc_flag::IdxBhadMotherPart);
 
 // cascade decay candidate table
 
@@ -548,16 +561,16 @@ using HfCandCascade = HfCandCascExt;
 
 // table with results of reconstruction level MC matching for Cascade
 DECLARE_SOA_TABLE(HfCandCascadeMcRec, "AOD", "HFCANDCASCMCREC", //!
-                  hf_cand_casc::FlagMcMatchRec,
-                  hf_cand_casc::OriginMcRec,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandCascadeMcGen, "AOD", "HFCANDCASCMCGEN", //!
-                  hf_cand_casc::FlagMcMatchGen,
-                  hf_cand_casc::OriginMcGen,
-                  hf_cand::IdxBhadMotherPart);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::IdxBhadMotherPart);
 
 // specific BPlus candidate properties
 namespace hf_cand_bplus
@@ -634,15 +647,15 @@ using HfCandBplus = soa::Join<HfCandBplusExt, HfCandBplusProngs>;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandBplusMcRec, "AOD", "HFCANDBPMCREC",
-                  hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::FlagMcDecayChanRec,
-                  hf_cand_bplus::OriginMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::OriginMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandBplusMcGen, "AOD", "HFCANDBPMCGEN",
-                  hf_cand_bplus::FlagMcMatchGen,
-                  hf_cand_bplus::FlagMcDecayChanGen,
-                  hf_cand_bplus::OriginMcGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen,
+                  hf_cand_mc_flag::OriginMcGen);
 
 // specific 3-prong decay properties
 namespace hf_cand_3prong
@@ -839,21 +852,21 @@ DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::IsCandidateSwapped,
-                  hf_cand_3prong::FlagMcDecayChanRec,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed,
-                  hf_cand::NInteractionsWithMaterial);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::IsCandidateSwapped,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
+                  hf_cand_mc_flag::NTracksDecayed,
+                  hf_cand_mc_flag::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcGen, "AOD", "HFCAND3PMCGEN", //!
-                  hf_cand_3prong::FlagMcMatchGen,
-                  hf_cand_3prong::OriginMcGen,
-                  hf_cand_3prong::FlagMcDecayChanGen,
-                  hf_cand::IdxBhadMotherPart);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen,
+                  hf_cand_mc_flag::IdxBhadMotherPart);
 
 // declare dedicated BPlus -> J/Psi K decay candidate table
 // convention: prongs 0 and 1 should be J/Psi decay products
@@ -968,15 +981,15 @@ using HfCandX = HfCandXExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandXMcRec, "AOD", "HFCANDXMCREC", //!
-                  hf_cand_x::FlagMcMatchRec,
-                  hf_cand_x::OriginMcRec,
-                  hf_cand_x::FlagMcDecayChanRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandXMcGen, "AOD", "HFCANDXMCGEN", //!
-                  hf_cand_x::FlagMcMatchGen,
-                  hf_cand_x::OriginMcGen,
-                  hf_cand_x::FlagMcDecayChanGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen);
 
 // specific Xicc candidate properties
 namespace hf_cand_xicc
@@ -1030,14 +1043,14 @@ using HfCandXicc = HfCandXiccExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandXiccMcRec, "AOD", "HFCANDXICCMCREC", //!
-                  hf_cand_xicc::FlagMcMatchRec,
-                  hf_cand_xicc::OriginMcRec,
-                  hf_cand_xicc::DebugMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::DebugMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandXiccMcGen, "AOD", "HFCANDXICCMCGEN", //!
-                  hf_cand_xicc::FlagMcMatchGen,
-                  hf_cand_xicc::OriginMcGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen);
 
 // specific Omegac and Xic to Xi Pi candidate properties
 namespace hf_cand_xic0_omegac0
@@ -1506,51 +1519,51 @@ DECLARE_SOA_TABLE(HfCandToXiPiKfQa, "AOD", "HFCANDTOXIPIKFQA",
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCRec, "AOD", "HFXICXIPIMCREC", //!
-                  hf_cand_xic0_omegac0::FlagMcMatchRec,
-                  hf_cand_xic0_omegac0::DebugMcRec,
-                  hf_cand_xic0_omegac0::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::DebugMcRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
                   o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCRec, "AOD", "HFOMCXIPIMCREC", //!
-                  hf_cand_xic0_omegac0::FlagMcMatchRec,
-                  hf_cand_xic0_omegac0::DebugMcRec,
-                  hf_cand_xic0_omegac0::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::DebugMcRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
                   o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(HfToOmegaPiMCRec, "AOD", "HFTOOMEPIMCREC", //!
-                  hf_cand_xic0_omegac0::FlagMcMatchRec,
-                  hf_cand_xic0_omegac0::DebugMcRec,
-                  hf_cand_xic0_omegac0::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::DebugMcRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
                   o2::soa::Marker<3>);
 DECLARE_SOA_TABLE(HfToOmegaKMCRec, "AOD", "HFTOOMEKMCREC", //!
-                  hf_cand_xic0_omegac0::FlagMcMatchRec,
-                  hf_cand_xic0_omegac0::DebugMcRec,
-                  hf_cand_xic0_omegac0::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::DebugMcRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
                   o2::soa::Marker<4>);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCGen, "AOD", "HFXICXIPIMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<1>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCGen, "AOD", "HFOMECXIPIMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<2>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(HfToOmegaPiMCGen, "AOD", "HFTOOMEPIMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<3>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<3>);
 DECLARE_SOA_TABLE(HfToOmegaKMCGen, "AOD", "HFTOOMEKMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<4>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_xic0_omegac0::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<4>);
 
 // specific Xic to Xi Pi Pi candidate properties
 namespace hf_cand_xic_to_xi_pi_pi
@@ -1717,19 +1730,19 @@ DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandXicMcRec, "AOD", "HFCANDXICMCREC",
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
-                  hf_cand_xic_to_xi_pi_pi::OriginMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandXicMcGen, "AOD", "HFCANDXICMCGEN",
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
-                  hf_cand_xic_to_xi_pi_pi::OriginMcGen,
-                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
                   hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen);
 
 // table with residuals and pulls of PV
 DECLARE_SOA_TABLE(HfCandXicResid, "AOD", "HFCANDXICRESID",
-                  hf_cand_xic_to_xi_pi_pi::OriginMcGen,
+                  hf_cand_mc_flag::OriginMcGen,
                   hf_cand_xic_to_xi_pi_pi::PResidual,
                   hf_cand_xic_to_xi_pi_pi::PtResidual,
                   hf_cand_xic_to_xi_pi_pi::XPvResidual,
@@ -1803,15 +1816,15 @@ using HfCandChic = HfCandChicExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandChicMcRec, "AOD", "HFCANDCHICMCREC", //!
-                  hf_cand_chic::FlagMcMatchRec,
-                  hf_cand_chic::OriginMcRec,
-                  hf_cand_chic::FlagMcDecayChanRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandChicMcGen, "AOD", "HFCANDCHICMCGEN", //!
-                  hf_cand_chic::FlagMcMatchGen,
-                  hf_cand_chic::OriginMcGen,
-                  hf_cand_chic::FlagMcDecayChanGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen);
 
 // specific Lb candidate properties
 namespace hf_cand_lb
@@ -1876,16 +1889,16 @@ using HfCandLb = soa::Join<HfCandLbExt, HfCandLbProngs>;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandLbMcRec, "AOD", "HFCANDLBMCREC", //!
-                  hf_cand_lb::FlagMcMatchRec,
-                  hf_cand_lb::FlagMcDecayChanRec,
-                  hf_cand_lb::OriginMcRec,
-                  hf_cand_lb::DebugMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::DebugMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandLbMcGen, "AOD", "HFCANDLBMCGEN", //!
-                  hf_cand_lb::FlagMcMatchGen,
-                  hf_cand_lb::FlagMcDecayChanGen,
-                  hf_cand_lb::OriginMcGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen,
+                  hf_cand_mc_flag::OriginMcGen);
 
 // specific B0 candidate properties
 namespace hf_cand_b0
@@ -1994,16 +2007,16 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandB0DStExt, HfCandB0DStar, "HFCANDB0DSTEXT",
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandB0McRec, "AOD", "HFCANDB0MCREC",
-                  hf_cand_b0::FlagMcMatchRec,
-                  hf_cand_b0::FlagMcDecayChanRec,
-                  hf_cand_b0::OriginMcRec,
-                  hf_cand_b0::DebugMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::DebugMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
-                  hf_cand_b0::FlagMcMatchGen,
-                  hf_cand_b0::FlagMcDecayChanGen,
-                  hf_cand_b0::OriginMcGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen,
+                  hf_cand_mc_flag::OriginMcGen);
 
 // specific Bs candidate properties
 namespace hf_cand_bs
@@ -2091,13 +2104,13 @@ using HfCandBs = soa::Join<HfCandBsExt, HfCandBsProngs>;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandBsMcRec, "AOD", "HFCANDBSMCREC",
-                  hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::FlagMcDecayChanRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandBsMcGen, "AOD", "HFCANDBSMCGEN",
-                  hf_cand_bs::FlagMcMatchGen,
-                  hf_cand_bs::FlagMcDecayChanGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen);
 
 namespace hf_cand_4prong
 {
@@ -2255,17 +2268,17 @@ using HfCandSc = HfCandScExt;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandScMcRec, "AOD", "HFCANDSCMCREC", //!
-                  hf_cand_sigmac::FlagMcMatchRec,
-                  hf_cand_sigmac::OriginMcRec,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
                   hf_cand_sigmac::ParticleAntiparticle);
 
 // table with results of generation level MC matching
 DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
-                  hf_cand_sigmac::FlagMcMatchGen,
-                  hf_cand_sigmac::OriginMcGen,
-                  hf_cand::IdxBhadMotherPart,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::IdxBhadMotherPart,
                   hf_cand_sigmac::ParticleAntiparticle);
 
 // specific Σc0,++ candidate properties in cascade channel
@@ -2577,20 +2590,20 @@ using HfCandDstarsWPid = soa::Join<HfCandDstars, HfCandDstarProng0PidPi, HfCandD
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
-                  hf_cand_dstar::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_dstar::FlagMcMatchRecD0,
-                  hf_cand_dstar::OriginMcRec,
-                  hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart,
-                  hf_cand::NTracksDecayed,
-                  hf_cand::NInteractionsWithMaterial);
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::PtBhadMotherPart,
+                  hf_cand_mc_flag::PdgBhadMotherPart,
+                  hf_cand_mc_flag::NTracksDecayed,
+                  hf_cand_mc_flag::NInteractionsWithMaterial);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",
-                  hf_cand_dstar::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcMatchGen,
                   hf_cand_dstar::FlagMcMatchGenD0,
-                  hf_cand_dstar::OriginMcGen,
-                  hf_cand::IdxBhadMotherPart);
+                  hf_cand_mc_flag::OriginMcGen,
+                  hf_cand_mc_flag::IdxBhadMotherPart);
 
 #undef HFCAND_COLUMNS
 
