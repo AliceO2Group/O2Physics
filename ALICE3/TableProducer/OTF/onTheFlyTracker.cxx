@@ -318,9 +318,7 @@ struct OnTheFlyTracker {
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
       const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
       mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
-      mSmearer[icfg]->setCleanupDownloadedFile(mGeoContainer.cleanLutWhenLoaded());
       mSmearer[icfg]->setCcdbManager(ccdb.operator->());
-      mSmearer[icfg]->setDownloadPath("./.ALICE3/Tracker/");
       std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
       if (enablePrimarySmearing) {
         // load LUTs for primaries
