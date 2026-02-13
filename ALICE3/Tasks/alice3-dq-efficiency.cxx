@@ -1190,7 +1190,7 @@ struct AnalysisSameEventPairing {
 
   void runMCGenWithGrouping(MyEventsVtxCovSelected const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
   {
-    uint32_t mcDecision = 0;
+    [[maybe_unused]] uint32_t mcDecision = 0;
     int isig = 0;
 
     for (const auto& mctrack : mcTracks) {
@@ -1318,7 +1318,7 @@ struct AnalysisSameEventPairing {
   void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
   {
     // Fill Generated histograms taking into account all generated tracks
-    uint32_t mcDecision = 0;
+    [[maybe_unused]] uint32_t mcDecision = 0;
     int isig = 0;
 
     for (const auto& mctrack : mcTracks) {
@@ -1421,7 +1421,7 @@ struct AnalysisSameEventPairing {
 
   void processMCGenWithGrouping(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
   {
-    uint32_t mcDecision = 0;
+    [[maybe_unused]] uint32_t mcDecision = 0;
     int isig = 0;
 
     for (const auto& mctrack : mcTracks) {
