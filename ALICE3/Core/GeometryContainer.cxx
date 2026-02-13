@@ -218,8 +218,23 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
     // File does not exist, retrieve from CCDB
     LOG(info) << " --- CCDB source detected for detector geometry " << path;
     std::map<std::string, std::string> metadata;
-    ccdb->getCCDBAccessor().retrieveBlob(ccdbPath, localPath, metadata, 1);
+    ccdb->getCCDBAccessor().retrieveBlob(ccdbPath, downloadPath, metadata, 1);
     LOG(info) << " --- Retrieved geometry configuration from CCDB to: " << localPath;
+
+    // Verify the integrity of the downloaded file
+    if (stat(localPath.c_str(), &buffer) != 0) {
+      flock(lockFd, LOCK_UN);
+      close(lockFd);
+      LOG(fatal) << " --- Downloaded file does not exist or is not accessible: " << localPath;
+      return "";
+    }
+    if (buffer.st_size == 0) {
+      flock(lockFd, LOCK_UN);
+      close(lockFd);
+      LOG(fatal) << " --- Downloaded file is empty: " << localPath;
+      return "";
+    }
+    LOG(info) << " --- File integrity verified. Size: " << buffer.st_size << " bytes";
 
     // Create done marker file to indicate successful download
     std::ofstream doneMarker(doneFile);
