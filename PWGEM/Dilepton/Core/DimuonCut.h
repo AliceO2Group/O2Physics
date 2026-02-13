@@ -64,7 +64,6 @@ class DimuonCut : public TNamed
     kPDCA,
     kMFTHitMap,
     kDPtDEtaDPhiwrtMCHMID,
-    kDr_MatchingChi2MCHMFT_2D,
     kNCuts
   };
 
@@ -173,9 +172,6 @@ class DimuonCut : public TNamed
     if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kDPtDEtaDPhiwrtMCHMID)) {
       return false;
     }
-    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kDr_MatchingChi2MCHMFT_2D)) {
-      return false;
-    }
 
     return true;
   }
@@ -236,9 +232,6 @@ class DimuonCut : public TNamed
       case DimuonCuts::kDPtDEtaDPhiwrtMCHMID:
         return std::fabs(track.ptMatchedMCHMID() - track.pt()) / track.pt() < mMaxReldPtwrtMCHMID && std::sqrt(std::pow((track.etaMatchedMCHMID() - track.eta()) / mMaxdEtawrtMCHMID, 2) + std::pow((track.phiMatchedMCHMID() - track.phi()) / mMaxdPhiwrtMCHMID, 2)) < 1.f;
 
-      case DimuonCuts::kDr_MatchingChi2MCHMFT_2D:
-        return mSlope_dr_chi2MatchMFTMCH * track.chi2MatchMCHMFT() + mIntercept_dr_chi2MatchMFTMCH > std::sqrt(std::pow(track.etaMatchedMCHMID() - track.eta(), 2) + std::pow(track.phiMatchedMCHMID() - track.phi(), 2));
-
       default:
         return false;
     }
@@ -266,7 +259,6 @@ class DimuonCut : public TNamed
   void SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut);
   void SetMFTHitMap(bool flag, std::vector<int> hitMap);
   void SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax); // this is relevant for global muons
-  void SetSlopeAndInterceptDRvsChi2MCHMFT(float slope, float intercept);          // this is relevant for global muons
 
  private:
   // pair cuts
@@ -298,8 +290,6 @@ class DimuonCut : public TNamed
   float mMaxReldPtwrtMCHMID{1e10f}, mMaxdEtawrtMCHMID{1e10f}, mMaxdPhiwrtMCHMID{1e10f};
   bool mApplyMFTHitMap{false};
   std::vector<int> mRequiredMFTDisks{};
-  float mSlope_dr_chi2MatchMFTMCH{-0.15 / 30};
-  float mIntercept_dr_chi2MatchMFTMCH{1e+10};
 
   ClassDef(DimuonCut, 1);
 };
