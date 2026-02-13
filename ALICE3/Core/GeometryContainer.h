@@ -1,4 +1,4 @@
-// Copyright 2019 - 2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -8,6 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+///
+/// \file   GeometryContainer.h
+/// \author Nicolò Jacazio, Università del Piemonte Orientale (IT)
+/// \brief  Set of utilities for the ALICE3 geometry handling
+/// \since  February 13, 2026
+///
 
 #ifndef ALICE3_CORE_GEOMETRYCONTAINER_H_
 #define ALICE3_CORE_GEOMETRYCONTAINER_H_
@@ -17,7 +23,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <map>
 #include <string>

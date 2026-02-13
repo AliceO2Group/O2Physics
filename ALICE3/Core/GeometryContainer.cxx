@@ -8,20 +8,19 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+///
+/// \file   GeometryContainer.h
+/// \author Nicolò Jacazio, Università del Piemonte Orientale (IT)
+/// \brief  Set of utilities for the ALICE3 geometry handling
+/// \since  February 13, 2026
+///
 
 #include "GeometryContainer.h"
 
 #include "Common/Core/TableHelper.h"
 
-#include <ReconstructionDataFormats/TrackParametrization.h>
-
 #include <TEnv.h>
 #include <THashList.h>
-#include <TMath.h>
-#include <TMatrixD.h>
-#include <TMatrixDSymEigen.h>
-#include <TObject.h>
-#include <TRandom.h>
 #include <TSystem.h>
 
 #include <sys/file.h>
