@@ -45,12 +45,6 @@ struct EmcalClusterHadronicCorrectionTask {
   PresliceUnsorted<aod::JEMCTracks> perTrackMatchedTrack = aod::jemctrack::trackId;
 
   // define configurables here
-  Configurable<std::string> clusterDefinitions{"clusterDefinitions", "kV3Default", "cluster definitions to be selected, e.g. V3Default"};
-
-  Configurable<float> minTime{"minTime", -25., "Minimum cluster time for time cut"};
-  Configurable<float> maxTime{"maxTime", 20., "Maximum cluster time for time cut"};
-  Configurable<float> minM02{"minM02", 0.1, "Minimum M02 for M02 cut"};
-  Configurable<float> maxM02{"maxM02", 0.9, "Maximum M02 for M02 cut"};
   Configurable<float> minTrackPt{"minTrackPt", 0.15, "Minimum pT for tracks"};
   Configurable<double> hadCorr1{"hadCorr1", 1., "hadronic correction fraction for complete cluster energy subtraction for one matched track"};                // 100% - default
   Configurable<double> hadCorr2{"hadCorr2", 0.7, "hadronic correction fraction for systematic studies for one matched track"};                                // 70%
@@ -75,8 +69,6 @@ struct EmcalClusterHadronicCorrectionTask {
   Configurable<bool> useFraction1{"useFraction1", false, "Fractional momentum subtraction for clusterE1 and clusterEAll1"};
   Configurable<bool> useFraction2{"useFraction2", false, "Fractional momentum subtraction for clusterE2 and clusterEAll2"};
 
-  std::vector<int> clusterDefinitionsVec;
-
   void init(o2::framework::InitContext&)
   {
     // Event histograms
@@ -99,14 +91,6 @@ struct EmcalClusterHadronicCorrectionTask {
 
     // Matched-Track histograms
     registry.add("h_matchedtracks", "Total matched tracks; track status;entries", {HistType::kTH1F, {{1, 0.5, 1.5}}});
-
-    std::string clusterDefinitionsString = clusterDefinitions.value;
-    size_t start = 0;
-    size_t end;
-    while ((end = clusterDefinitionsString.find(',', start)) != std::string::npos) {
-      clusterDefinitionsVec.push_back(static_cast<int>(aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionsString.substr(start, end - start))));
-      start = end + 1;
-    }
   }
 
   // The matching of clusters and tracks is already centralised in the EMCAL framework.
@@ -121,132 +105,36 @@ struct EmcalClusterHadronicCorrectionTask {
       return;
     }
 
-    // Looping over all cluster definitions
-    for (const auto& clusterDefinition : clusterDefinitionsVec) {
-      // Looping over all clusters matched to the collision
-      for (const auto& cluster : clusters) {
-        if (cluster.definition() != clusterDefinition) {
-          continue; // Skip clusters that do not match the current cluster definition
-        }
+    // Looping over all clusters matched to the collision
+    for (const auto& cluster : clusters) {
 
-        registry.fill(HIST("h_matchedclusters"), 1);
+      registry.fill(HIST("h_matchedclusters"), 1);
 
-        double clusterE1;
-        double clusterE2;
-        double clusterEAll1;
-        double clusterEAll2;
-        clusterE1 = clusterE2 = clusterEAll1 = clusterEAll2 = cluster.energy();
+      double clusterE1;
+      double clusterE2;
+      double clusterEAll1;
+      double clusterEAll2;
+      clusterE1 = clusterE2 = clusterEAll1 = clusterEAll2 = cluster.energy();
 
-        registry.fill(HIST("h_ClsE"), cluster.energy());
-        registry.fill(HIST("h_ClsM02"), cluster.m02());
-        registry.fill(HIST("h_ClsTime"), cluster.time());
+      registry.fill(HIST("h_ClsE"), cluster.energy());
+      registry.fill(HIST("h_ClsM02"), cluster.m02());
+      registry.fill(HIST("h_ClsTime"), cluster.time());
 
-        int nMatches = 0;         // counter for closest matched track
-        double closestTrkP = 0.0; // closest track momentum
-        double totalTrkP = 0.0;   // total track momentum
+      int nMatches = 0;         // counter for closest matched track
+      double closestTrkP = 0.0; // closest track momentum
+      double totalTrkP = 0.0;   // total track momentum
 
-        // pT-dependent track-matching instead of PID based track-matching to be adapted from Run 2 - suggested by Markus Fasel
+      // pT-dependent track-matching instead of PID based track-matching to be adapted from Run 2 - suggested by Markus Fasel
 
-        TF1 funcPtDepEta("func", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
-        funcPtDepEta.SetParameters(eta0, eta1, eta2);
-        TF1 funcPtDepPhi("func", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
-        funcPtDepEta.SetParameters(phi0, phi1, phi2);
+      TF1 funcPtDepEta("func", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      funcPtDepEta.SetParameters(eta0, eta1, eta2);
+      TF1 funcPtDepPhi("func", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
+      funcPtDepPhi.SetParameters(phi0, phi1, phi2);
 
-        // No matched tracks (trackless case)
-        if (cluster.matchedTracks().size() == 0) {
-          // Use original cluster energy values, no subtraction needed.
-          registry.fill(HIST("h2_ClsEvsNmatches"), cluster.energy(), 0);
-          registry.fill(HIST("h_Ecluster1"), clusterE1);
-          registry.fill(HIST("h_Ecluster2"), clusterE2);
-          registry.fill(HIST("h_EclusterAll1"), clusterEAll1);
-          registry.fill(HIST("h_EclusterAll2"), clusterEAll2);
-          registry.fill(HIST("h2_ClsEvsEcluster1"), cluster.energy(), clusterE1);
-          registry.fill(HIST("h2_ClsEvsEcluster2"), cluster.energy(), clusterE2);
-          registry.fill(HIST("h2_ClsEvsEclusterAll1"), cluster.energy(), clusterEAll1);
-          registry.fill(HIST("h2_ClsEvsEclusterAll2"), cluster.energy(), clusterEAll2);
-          clusterEnergyCorrectedTable(clusterE1, clusterE2, clusterEAll1, clusterEAll2);
-          continue;
-        }
-
-        // Looping over all matched tracks for the cluster
-        // Total number of matched tracks = 20 (hard-coded)
-        for (const auto& matchedTrack : cluster.matchedTracks_as<aod::JetTracks>()) {
-          if (matchedTrack.pt() < minTrackPt) {
-            continue;
-          }
-          double mom = std::abs(matchedTrack.p());
-          registry.fill(HIST("h_matchedtracks"), 1);
-
-          // CASE 1: skip tracks with a very low pT
-          constexpr double kMinMom = 1e-6;
-          if (mom < kMinMom) {
-            continue;
-          } // end CASE 1
-
-          // CASE 2:
-          //  a) If one matched track -> 100% energy subtraction
-          //  b) If more than one matched track -> 100% energy subtraction
-          //  c) If you want to do systematic studies -> perform the above two checks a) and b), and then subtract 70% energy instead of 100%
-
-          // Perform dEta/dPhi matching
-          auto emcTrack = (emcTracks.sliceBy(perTrackMatchedTrack, matchedTrack.globalIndex())).iteratorAt(0);
-          double dEta = emcTrack.etaDiff();
-          double dPhi = emcTrack.phiDiff();
-
-          // Apply the eta and phi matching thresholds
-          // dEta and dPhi cut : ensures that the matched track is within the desired eta/phi window
-
-          // Do pT-dependent track matching
-          if (doMomDepMatching) {
-            auto trackEtaMax = funcPtDepEta.Eval(mom);
-            auto trackPhiHigh = +funcPtDepPhi.Eval(mom);
-            auto trackPhiLow = -funcPtDepPhi.Eval(mom);
-
-            if ((dPhi < trackPhiHigh && dPhi > trackPhiLow) && std::fabs(dEta) < trackEtaMax) {
-              if (nMatches == 0) {
-                closestTrkP = mom;
-              }
-              totalTrkP += mom;
-              nMatches++;
-            }
-          } else {
-            // Do fixed dEta/dPhi matching (non-pT dependent)
-            if (std::fabs(dEta) >= minDEta || std::fabs(dPhi) >= minDPhi) {
-              continue; // Skip this track if outside the fixed cut region
-            }
-
-            // If track passes fixed dEta/dPhi cuts, process it
-            if (nMatches == 0) {
-              closestTrkP = mom; // Closest track match
-            }
-            totalTrkP += mom; // Accumulate momentum
-            nMatches++;       // Count this match
-          }
-
-        } // End of track loop
-        registry.fill(HIST("h2_ClsEvsNmatches"), cluster.energy(), nMatches);
-
-        if (nMatches >= 1) {
-          if (useM02SubtractionScheme1) {
-            // Do M02-based correction if enabled
-            clusterE1 = subtractM02ClusterEnergy(cluster.m02(), clusterE1, nMatches, closestTrkP, hadCorr1, useFraction1);
-            clusterEAll1 = subtractM02ClusterEnergy(cluster.m02(), clusterEAll1, nMatches, totalTrkP, hadCorralltrks1, useFraction1);
-          } else {
-            // Default energy subtraction (100% and 70%)
-            clusterE1 = subtractClusterEnergy(clusterE1, closestTrkP, hadCorr1, nMatches, useFraction1);
-            clusterEAll1 = subtractClusterEnergy(clusterEAll1, totalTrkP, hadCorralltrks1, nMatches, useFraction1);
-          }
-
-          if (useM02SubtractionScheme2) {
-            // Do M02-based correction if enabled
-            clusterE2 = subtractM02ClusterEnergy(cluster.m02(), clusterE2, nMatches, closestTrkP, hadCorr2, useFraction2);
-            clusterEAll2 = subtractM02ClusterEnergy(cluster.m02(), clusterEAll2, nMatches, totalTrkP, hadCorralltrks2, useFraction2);
-          } else {
-            // Default energy subtraction (100% and 70%)
-            clusterE2 = subtractClusterEnergy(clusterE2, closestTrkP, hadCorr2, nMatches, useFraction2);
-            clusterEAll2 = subtractClusterEnergy(clusterEAll2, totalTrkP, hadCorralltrks2, nMatches, useFraction2);
-          }
-        }
+      // No matched tracks (trackless case)
+      if (cluster.matchedTracks().size() == 0) {
+        // Use original cluster energy values, no subtraction needed.
+        registry.fill(HIST("h2_ClsEvsNmatches"), cluster.energy(), 0);
         registry.fill(HIST("h_Ecluster1"), clusterE1);
         registry.fill(HIST("h_Ecluster2"), clusterE2);
         registry.fill(HIST("h_EclusterAll1"), clusterEAll1);
@@ -255,12 +143,101 @@ struct EmcalClusterHadronicCorrectionTask {
         registry.fill(HIST("h2_ClsEvsEcluster2"), cluster.energy(), clusterE2);
         registry.fill(HIST("h2_ClsEvsEclusterAll1"), cluster.energy(), clusterEAll1);
         registry.fill(HIST("h2_ClsEvsEclusterAll2"), cluster.energy(), clusterEAll2);
-
-        // Fill the table with all four corrected energies
         clusterEnergyCorrectedTable(clusterE1, clusterE2, clusterEAll1, clusterEAll2);
+        continue;
+      }
 
-      } // End of cluster loop
-    } // End of cluster definition loop
+      // Looping over all matched tracks for the cluster
+      // Total number of matched tracks = 20 (hard-coded)
+      for (const auto& matchedTrack : cluster.matchedTracks_as<aod::JetTracks>()) {
+        if (matchedTrack.pt() < minTrackPt) {
+          continue;
+        }
+        double mom = std::abs(matchedTrack.p());
+        registry.fill(HIST("h_matchedtracks"), 1);
+
+        // CASE 1: skip tracks with a very low pT
+        constexpr double kMinMom = 1e-6;
+        if (mom < kMinMom) {
+          continue;
+        } // end CASE 1
+
+        // CASE 2:
+        //  a) If one matched track -> 100% energy subtraction
+        //  b) If more than one matched track -> 100% energy subtraction
+        //  c) If you want to do systematic studies -> perform the above two checks a) and b), and then subtract 70% energy instead of 100%
+
+        // Perform dEta/dPhi matching
+        auto emcTrack = (emcTracks.sliceBy(perTrackMatchedTrack, matchedTrack.globalIndex())).iteratorAt(0);
+        double dEta = emcTrack.etaDiff();
+        double dPhi = emcTrack.phiDiff();
+
+        // Apply the eta and phi matching thresholds
+        // dEta and dPhi cut : ensures that the matched track is within the desired eta/phi window
+
+        // Do pT-dependent track matching
+        if (doMomDepMatching) {
+          auto trackEtaMax = funcPtDepEta.Eval(mom);
+          auto trackPhiHigh = +funcPtDepPhi.Eval(mom);
+          auto trackPhiLow = -funcPtDepPhi.Eval(mom);
+
+          if ((dPhi < trackPhiHigh && dPhi > trackPhiLow) && std::fabs(dEta) < trackEtaMax) {
+            if (nMatches == 0) {
+              closestTrkP = mom;
+            }
+            totalTrkP += mom;
+            nMatches++;
+          }
+        } else {
+          // Do fixed dEta/dPhi matching (non-pT dependent)
+          if (std::fabs(dEta) >= minDEta || std::fabs(dPhi) >= minDPhi) {
+            continue; // Skip this track if outside the fixed cut region
+          }
+
+          // If track passes fixed dEta/dPhi cuts, process it
+          if (nMatches == 0) {
+            closestTrkP = mom; // Closest track match
+          }
+          totalTrkP += mom; // Accumulate momentum
+          nMatches++;       // Count this match
+        }
+
+      } // End of track loop
+      registry.fill(HIST("h2_ClsEvsNmatches"), cluster.energy(), nMatches);
+
+      if (nMatches >= 1) {
+        if (useM02SubtractionScheme1) {
+          // Do M02-based correction if enabled
+          clusterE1 = subtractM02ClusterEnergy(cluster.m02(), clusterE1, nMatches, closestTrkP, hadCorr1, useFraction1);
+          clusterEAll1 = subtractM02ClusterEnergy(cluster.m02(), clusterEAll1, nMatches, totalTrkP, hadCorralltrks1, useFraction1);
+        } else {
+          // Default energy subtraction (100% and 70%)
+          clusterE1 = subtractClusterEnergy(clusterE1, closestTrkP, hadCorr1, nMatches, useFraction1);
+          clusterEAll1 = subtractClusterEnergy(clusterEAll1, totalTrkP, hadCorralltrks1, nMatches, useFraction1);
+        }
+
+        if (useM02SubtractionScheme2) {
+          // Do M02-based correction if enabled
+          clusterE2 = subtractM02ClusterEnergy(cluster.m02(), clusterE2, nMatches, closestTrkP, hadCorr2, useFraction2);
+          clusterEAll2 = subtractM02ClusterEnergy(cluster.m02(), clusterEAll2, nMatches, totalTrkP, hadCorralltrks2, useFraction2);
+        } else {
+          // Default energy subtraction (100% and 70%)
+          clusterE2 = subtractClusterEnergy(clusterE2, closestTrkP, hadCorr2, nMatches, useFraction2);
+          clusterEAll2 = subtractClusterEnergy(clusterEAll2, totalTrkP, hadCorralltrks2, nMatches, useFraction2);
+        }
+      }
+      registry.fill(HIST("h_Ecluster1"), clusterE1);
+      registry.fill(HIST("h_Ecluster2"), clusterE2);
+      registry.fill(HIST("h_EclusterAll1"), clusterEAll1);
+      registry.fill(HIST("h_EclusterAll2"), clusterEAll2);
+      registry.fill(HIST("h2_ClsEvsEcluster1"), cluster.energy(), clusterE1);
+      registry.fill(HIST("h2_ClsEvsEcluster2"), cluster.energy(), clusterE2);
+      registry.fill(HIST("h2_ClsEvsEclusterAll1"), cluster.energy(), clusterEAll1);
+      registry.fill(HIST("h2_ClsEvsEclusterAll2"), cluster.energy(), clusterEAll2);
+
+      // Fill the table with all four corrected energies
+      clusterEnergyCorrectedTable(clusterE1, clusterE2, clusterEAll1, clusterEAll2);
+    } // End of cluster loop
   } // process function ends
   PROCESS_SWITCH(EmcalClusterHadronicCorrectionTask, processMatchedCollisions, "hadronic correction", true);
 
