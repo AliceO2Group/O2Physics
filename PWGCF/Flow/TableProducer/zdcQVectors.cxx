@@ -99,6 +99,7 @@ std::vector<float> v(3, 0); // vx, vy, vz
 bool isSelected = true;
 std::vector<float> cents; // centrality estimaters
 uint64_t timestamp = 0;
+double rsTimestamp = 0;
 
 } // namespace o2::analysis::qvectortask
 
@@ -529,7 +530,7 @@ struct ZdcQVectors {
   }
 
   template <FillType ft>
-  inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<float> v, double centrality)
+  inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<float> v, double centrality, double rsTimestamp)
   {
     // loop for filling multiple histograms with different naming patterns
     //  Always fill the uncentered "raw" Q-vector histos!
@@ -580,15 +581,15 @@ struct ZdcQVectors {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vz"), v[2], qya * qxc);
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vz"), v[2], qxa * qyc);
 
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qxa);
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qya);
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXC_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qxc);
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYC_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_vs_timestamp"), rsTimestamp, qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_vs_timestamp"), rsTimestamp, qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXC_vs_timestamp"), rsTimestamp, qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYC_vs_timestamp"), rsTimestamp, qyc);
 
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qxa * qxc);
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qya * qyc);
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qya * qxc);
-    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_timestamp"), rescaleTimestamp(timestamp, runnumber), qxa * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QXC_vs_timestamp"), rsTimestamp, qxa * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_timestamp"), rsTimestamp, qya * qyc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_timestamp"), rsTimestamp, qya * qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_timestamp"), rsTimestamp, qxa * qyc);
 
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNA_Qx_vs_Centrality"), centrality, qxa);
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNA_Qy_vs_Centrality"), centrality, qya);
@@ -680,7 +681,7 @@ struct ZdcQVectors {
         bin = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       }
       if (name.Contains("timestamp")) {
-        bin = h->GetXaxis()->FindBin(rescaleTimestamp(timestamp, runnumber));
+        bin = h->GetXaxis()->FindBin(rsTimestamp);
       }
       calibConstant = h->GetBinContent(bin);
     } else if (hist->InheritsFrom("THnSparse")) {
@@ -762,6 +763,7 @@ struct ZdcQVectors {
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
 
     timestamp = foundBC.timestamp();
+    rsTimestamp = rescaleTimestamp(timestamp, runnumber);
 
     if (!foundBC.has_zdc()) {
       isSelected = false;
@@ -1027,7 +1029,7 @@ struct ZdcQVectors {
 
     if (cal.atIteration == 0) {
       if (isSelected && cfgFillHistRegistry)
-        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality, rsTimestamp);
 
       spTableZDC(runnumber, cents, v, foundBC.timestamp(), q[0], q[1], q[2], q[3], isSelected, eventSelectionFlags);
       counter++;
@@ -1035,7 +1037,7 @@ struct ZdcQVectors {
       return;
     } else {
       if (cfgFillHistRegistry)
-        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality, rsTimestamp);
 
       // vector of 4
       std::vector<double> corrQxA;
@@ -1089,15 +1091,6 @@ struct ZdcQVectors {
           registry.get<TH2>(HIST("QA/QXC_vs_iteration"))->Fill(cor, qRec[2]);
           registry.get<TH2>(HIST("QA/QYC_vs_iteration"))->Fill(cor, qRec[3]);
         }
-      }
-
-      if (isSelected && cfgFillHistRegistry && !cfgFillNothing) {
-        fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality);
-        registry.fill(HIST("QA/centrality_after"), centrality);
-        registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qRec[0]);
-        registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qRec[1]);
-        registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qRec[2]);
-        registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qRec[3]);
       }
 
       // do shift for psi.
@@ -1181,6 +1174,16 @@ struct ZdcQVectors {
       double qYaShift = std::hypot(qRec[1], qRec[0]) * std::sin(psiZDCAshift);
       double qXcShift = std::hypot(qRec[2], qRec[3]) * std::cos(psiZDCCshift);
       double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
+
+      if (isSelected && cfgFillHistRegistry && !cfgFillNothing) {
+        fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality, rsTimestamp);
+        registry.fill(HIST("QA/centrality_after"), centrality);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qRec[0]);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qRec[1]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qRec[2]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qRec[3]);
+      }
+
 
       spTableZDC(runnumber, cents, v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, isSelected, eventSelectionFlags);
       qRec.clear();
