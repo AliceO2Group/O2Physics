@@ -156,18 +156,21 @@ struct FemtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis confkstarBins{"confkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis confmTBins{"confmTBins", {225, 0., 7.5}, "binning mT"};
-  Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
-  Configurable<bool> confRectV0V0CPR{"confRectV0V0CPR", true, "Enable rectangular CPR cut for V0-V0 pairs"};
-  Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
-  Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
   Configurable<int> confPhiBins{"confPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> confEtaBins{"confEtaBins", 29, "Number of eta bins in deta dphi"};
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
+    Configurable<bool> confRectV0V0CPR{"confRectV0V0CPR", true, "Enable rectangular CPR cut for V0-V0 pairs"};
+    Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  } ConfCPR;
 
   // Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
@@ -286,10 +289,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
       qaRegistry.add("SameEvent/hPtNegDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
       qaRegistry.add("SameEvent/hDaughMomPart1", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
       qaRegistry.add("SameEvent/hDaughMomPart2", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
-      qaRegistry.add("MixedEvent/hPtPosDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
-      qaRegistry.add("MixedEvent/hPtNegDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
-      qaRegistry.add("MixedEvent/hDaughMomPart1", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
-      qaRegistry.add("MixedEvent/hDaughMomPart2", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
     }
 
     trackHistoV0Type1.init(&qaRegistry, ConfV0Selection.confV0TempFitVarpTBins, ConfV0Selection.confV0TempFitVarBins, confIsMC, ConfV0Selection.confV0PDGCodePartTwo, true, "V0Type1");
@@ -356,9 +355,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     pairCleaner.init(&qaRegistry);
     pairCleanerV0.init(&qaRegistry);
-    if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
-      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+    if (ConfCPR.confIsCPR.value) {
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
     }
 
     if (!confLocalEfficiency.value.empty()) {
@@ -524,7 +523,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         }
       }
 
-      if (confIsCPR.value) {
+      if (ConfCPR.confIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           continue;
         }
@@ -539,7 +538,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
     }
   }
-
   /// This function processes the same event for V0 - V0
   template <bool isMC, typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doSameEventV0(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
@@ -748,19 +746,12 @@ struct FemtoUniversePairTaskTrackV0Extended {
         }
       }
 
-      if (confIsCPR.value) {
-        if (confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+      if (ConfCPR.confIsCPR.value) {
+        if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
-        } else if (!confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+        } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
         }
-      }
-
-      if (confIsDebug) {
-        qaRegistry.fill(HIST("SameEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
-        qaRegistry.fill(HIST("SameEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
-        qaRegistry.fill(HIST("SameEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
-        qaRegistry.fill(HIST("SameEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
       }
 
       if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
@@ -776,8 +767,27 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
     /// Now build the combinations for V0s
     for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-      if (!pairProcessFunc(p1, p2))
-        pairProcessFunc(p2, p1);
+      if (!pairProcessFunc(p1, p2)) {
+        if (pairProcessFunc(p2, p1) && confIsDebug) {
+          const auto& posChild1 = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());
+          const auto& negChild1 = parts.iteratorAt(p2.globalIndex() - 1 - parts.begin().globalIndex());
+          const auto& posChild2 = parts.iteratorAt(p1.globalIndex() - 2 - parts.begin().globalIndex());
+          const auto& negChild2 = parts.iteratorAt(p1.globalIndex() - 1 - parts.begin().globalIndex());
+          qaRegistry.fill(HIST("SameEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
+          qaRegistry.fill(HIST("SameEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
+          qaRegistry.fill(HIST("SameEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
+          qaRegistry.fill(HIST("SameEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
+        }
+      } else if (confIsDebug) {
+        const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2 - parts.begin().globalIndex());
+        const auto& negChild1 = parts.iteratorAt(p1.globalIndex() - 1 - parts.begin().globalIndex());
+        const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());
+        const auto& negChild2 = parts.iteratorAt(p2.globalIndex() - 1 - parts.begin().globalIndex());
+        qaRegistry.fill(HIST("SameEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
+        qaRegistry.fill(HIST("SameEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
+        qaRegistry.fill(HIST("SameEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
+        qaRegistry.fill(HIST("SameEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
+      }
     }
   }
 
@@ -864,7 +874,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
       if ((ConfV0Selection.confV0Type1 == 0 && pdgCode2 != kLambda0) || (ConfV0Selection.confV0Type1 == 1 && pdgCode2 != kLambda0Bar))
         continue;
       // track cleaning
-      if (confIsCPR.value) {
+      if (ConfCPR.confIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           continue;
         }
@@ -1002,7 +1012,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
@@ -1125,19 +1135,12 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
-          if (confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+        if (ConfCPR.confIsCPR.value) {
+          if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
-          } else if (!confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
-        }
-
-        if (confIsDebug) {
-          qaRegistry.fill(HIST("MixedEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
-          qaRegistry.fill(HIST("MixedEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
-          qaRegistry.fill(HIST("MixedEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
-          qaRegistry.fill(HIST("MixedEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
         }
 
         if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
@@ -1220,7 +1223,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         int pdgCode2 = static_cast<int>(p2.pidCut());
         if ((ConfV0Selection.confV0Type1 == 0 && pdgCode2 != kLambda0) || (ConfV0Selection.confV0Type1 == 1 && pdgCode2 != kLambda0Bar))
           continue;
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
@@ -1383,7 +1386,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
@@ -1475,7 +1478,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
