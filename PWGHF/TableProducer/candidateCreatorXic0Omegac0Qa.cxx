@@ -312,7 +312,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCharmBaryon = kXiC0;
 
       trackPidOfCascade = o2::track::PID::XiMinus;
+
       massOfCharmBach = o2::constants::physics::MassPiPlus;
+      massOfV0DauPos = o2::constants::physics::MassProton;
+      massOfV0DauNeg = o2::constants::physics::MassPionCharged;
       massOfV0 = o2::constants::physics::MassLambda;
       massOfCascade = o2::constants::physics::MassXiMinus;
     } else if (omegapiEnabledDca > 0 || omegapiEnabledKf > 0) {
@@ -331,7 +334,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCharmBaryon = kOmegaC0;
 
       trackPidOfCascade = o2::track::PID::OmegaMinus;
+
       massOfCharmBach = o2::constants::physics::MassPiPlus;
+      massOfV0DauPos = o2::constants::physics::MassProton;
+      massOfV0DauNeg = o2::constants::physics::MassPionCharged;
       massOfV0 = o2::constants::physics::MassLambda;
       massOfCascade = o2::constants::physics::MassOmegaMinus;
     } else if (omegakaEnabledDca > 0 || omegakaEnabledKf > 0) {
@@ -350,7 +356,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfCharmBaryon = kOmegaC0;
 
       trackPidOfCascade = o2::track::PID::OmegaMinus;
+
       massOfCharmBach = o2::constants::physics::MassKPlus;
+      massOfV0DauPos = o2::constants::physics::MassProton;
+      massOfV0DauNeg = o2::constants::physics::MassPionCharged;
       massOfV0 = o2::constants::physics::MassLambda;
       massOfCascade = o2::constants::physics::MassOmegaMinus;
     }
@@ -677,7 +686,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // float impactParCharmBachFromCharmBayonZ = impactParameterCharmBach.getZ();
 
       // get v0 invariant mass - from LF Table
-      float mLambda = straHelper.v0.massLambda; // from LF Table
+      // float mLambda = straHelper.v0.massLambda; // from LF Table
+      float mLambda = RecoDecay::m(std::array{pVecV0DauPos, pVecV0DauNeg}, (straHelper.cascade.charge < 0) ? std::array{massOfV0DauPos, massOfV0DauNeg} : std::array{massOfV0DauNeg, massOfV0DauPos});
 
       // get Casc mass - from LF Table
       float mCasc = (decayChannel != hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) ? straHelper.cascade.massOmega : straHelper.cascade.massXi;
