@@ -24,15 +24,17 @@
 #include <TRandom.h>
 #include <TSystem.h>
 
+#include <sys/file.h>
+#include <sys/stat.h>
+
+#include <chrono>
 #include <fstream>
 #include <map>
 #include <string>
-#include <vector>
-#include <sys/file.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <chrono>
 #include <thread>
+#include <vector>
+
+#include <unistd.h>
 
 namespace o2::fastsim
 {
@@ -142,31 +144,31 @@ void GeometryEntry::replaceValue(const std::string& layerName, const std::string
 
 std::string GeometryEntry::accessFile(const std::string& path, const std::string downloadPath, o2::ccdb::BasicCCDBManager* ccdb)
 {
-  
+
   if (path.rfind("ccdb:", 0) == 0) {
     const std::string ccdbPath = path.substr(5); // remove "ccdb:" prefix
     const std::string localPath = Form("%s/%s/snapshot.root", downloadPath.c_str(), ccdbPath.c_str());
     const std::string lockFile = localPath + ".lock";
     const std::string doneFile = localPath + ".done";
-    
+
     // Create directory structure if it doesn't exist
     std::string dirPath = localPath.substr(0, localPath.find_last_of('/'));
     gSystem->mkdir(dirPath.c_str(), true);
-    
+
     // Check if file is already fully downloaded
     struct stat buffer;
     if (stat(doneFile.c_str(), &buffer) == 0) {
       LOG(info) << " --- Geometry configuration file already exists: " << localPath << ". Skipping download.";
       return localPath;
     }
-    
+
     // Acquire file lock for inter-process synchronization
     int lockFd = open(lockFile.c_str(), O_CREAT | O_RDWR, 0666);
     if (lockFd == -1) {
       LOG(error) << " --- Failed to create lock file: " << lockFile;
       return localPath;
     }
-    
+
     // Try to acquire exclusive lock (blocks until available)
     LOG(info) << " --- Acquiring lock for: " << localPath;
     if (flock(lockFd, LOCK_EX) == -1) {
@@ -174,7 +176,7 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
       close(lockFd);
       return localPath;
     }
-    
+
     // Double-check if file was downloaded while waiting for lock
     if (stat(doneFile.c_str(), &buffer) == 0) {
       LOG(info) << " --- Geometry configuration file was downloaded by another process: " << localPath;
@@ -182,21 +184,21 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
       close(lockFd);
       return localPath;
     }
-    
+
     // File does not exist, retrieve from CCDB
     LOG(info) << " --- CCDB source detected for detector geometry " << path;
     std::map<std::string, std::string> metadata;
     ccdb->getCCDBAccessor().retrieveBlob(ccdbPath, localPath, metadata, 1);
     LOG(info) << " --- Retrieved geometry configuration from CCDB to: " << localPath;
-    
+
     // Create done marker file to indicate successful download
     std::ofstream doneMarker(doneFile);
     doneMarker.close();
-    
+
     // Release lock
     flock(lockFd, LOCK_UN);
     close(lockFd);
-    
+
     return localPath;
   }
   return path;
