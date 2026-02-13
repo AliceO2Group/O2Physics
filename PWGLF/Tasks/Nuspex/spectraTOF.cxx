@@ -79,6 +79,7 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCNotHF;  // Decay Length
 std::array<std::shared_ptr<TH2>, NpCharge> hPtNumTOFMatchWithPIDSignalPrm; // Pt distribution of particles with a hit in the TOF and a compatible signal
 
 std::array<std::array<std::shared_ptr<TH3>, NpCharge>, 3> hMCpdg_nsigmaTPC; // 2D array of nsigmaTPC histograms [Selection: pi,K,p][True PDG: 18 species]
+std::array<std::array<std::shared_ptr<TH3>, NpCharge>, 3> hMCpdg_nsigmaTOF; // 2D array of nsigmaTPC histograms [Selection: pi,K,p][True PDG: 18 species]
 
 // Spectra task
 struct tofSpectra {
@@ -452,6 +453,7 @@ struct tofSpectra {
       histos.add("Data/cent/neg/pt/its_tof", "neg ITS-TOF", kTH3D, {ptAxis, multAxis, occupancyAxis});
     }
     const AxisSpec nsigmaTPCAxisOccupancy{binsOptions.binsnsigmaTPC, "nsigmaTPC"};
+    const AxisSpec nsigmaTOFAxisOccupancy{binsOptions.binsnsigmaTOF, "nsigmaTOF"};
     if (doprocessMCclosure) {
       histos.add("nsigmatpc/mc_closure/pos/pi", "mc_closure dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis});
       histos.add("nsigmatpc/mc_closure/neg/pi", "mc_closure dependent pion", kTHnSparseD, {ptAxis, nsigmaTPCAxisOccupancy, multAxis});
@@ -591,6 +593,7 @@ struct tofSpectra {
       for (int par = 2; par <= 4; par++) {
         for (int i = 0; i < NpCharge; i++) {
           hMCpdg_nsigmaTPC[par - 2][i] = histos.add<TH3>(Form("test_mclabels/nsigmatpc/%s/%s/pdg_%i", (i < Np) ? "pos" : "neg", pN[par], PDGs[i % Np]), Form("True %s (%i) in %s selection", pTCharge[i], PDGs[i], (i < Np) ? pTCharge[par] : pTCharge[par + Np]), kTH3D, {ptAxis, nsigmaTPCAxisOccupancy, multAxis});
+          hMCpdg_nsigmaTOF[par - 2][i] = histos.add<TH3>(Form("test_mclabels/nsigmatof/%s/%s/pdg_%i", (i < Np) ? "pos" : "neg", pN[par], PDGs[i % Np]), Form("True %s (%i) in %s selection", pTCharge[i], PDGs[i], (i < Np) ? pTCharge[par] : pTCharge[par + Np]), kTH3D, {ptAxis, nsigmaTOFAxisOccupancy, multAxis});
         }
       }
     }
@@ -2817,6 +2820,7 @@ struct tofSpectra {
       int pdgCode = mcParticle.pdgCode();
       static_for<2, 4>([&](auto par) {
         const auto& nsigmaTPCpar = o2::aod::pidutils::tpcNSigma<par>(track);
+        const auto& nsigmaTOFpar = o2::aod::pidutils::tofNSigma<par>(track);
         bool isTPCpar = std::abs(nsigmaTPCpar) < trkselOptions.cfgCutNsigma;
         // Precompute rapidity values to avoid redundant calculations
         double rapiditypar = std::abs(track.rapidity(PID::getMass(par)));
@@ -2825,6 +2829,7 @@ struct tofSpectra {
           static_for<0, 17>([&](auto i) {
             if (pdgCode == PDGs[i]) {
               hMCpdg_nsigmaTPC[par - 2][i]->Fill(track.pt(), nsigmaTPCpar, multiplicity);
+              hMCpdg_nsigmaTOF[par - 2][i]->Fill(track.pt(), nsigmaTOFpar, multiplicity);
             }
           });
         }
