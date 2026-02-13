@@ -212,9 +212,9 @@ struct JetCorrelationD0 {
       if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // reject events that are too hard / soft
         return;
       }
-      if (jetBase.has_matchedJetGeo()) {                                            // geometric matching
+      if (jetBase.has_matchedJetGeo()) { // geometric matching
         for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
-          if (jetTag.pt() > pTHatMaxMCP * pTHat) {                                  // cuts overly hard jets from jettag (mcp) sample
+          if (jetTag.pt() > pTHatMaxMCP * pTHat) { // cuts overly hard jets from jettag (mcp) sample
             continue;
           }
           registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
@@ -278,7 +278,7 @@ struct JetCorrelationD0 {
 
     for (const auto& d0Candidate : d0Candidates) {
       const auto scores = d0Candidate.mlScores();
-      if(d0Candidate.pt() < d0PtCutMin) {
+      if (d0Candidate.pt() < d0PtCutMin) {
         return;
       }
       fillD0Histograms(d0Candidate, scores);
@@ -291,11 +291,11 @@ struct JetCorrelationD0 {
               d0Candidate.eta(),
               d0Candidate.phi());
       for (const auto& jet : jets) {
-        if(jet.pt() < jetPtCutMin) {
+        if (jet.pt() < jetPtCutMin) {
           return;
         }
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi());
-                if (abs(dphi - M_PI) > (M_PI /2)) {
+        if (abs(dphi - M_PI) > (M_PI / 2)) {
           return;
         }
         fillJetHistograms(jet, dphi);
@@ -314,11 +314,11 @@ struct JetCorrelationD0 {
                          aod::CandidatesD0MCP const& d0MCPCandidates,
                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets)
   {
-    //applyCollisionSelections(collision, eventSelectionBits);
+    // applyCollisionSelections(collision, eventSelectionBits);
     tableCollision(collision.posZ());
 
     for (const auto& d0MCPCandidate : d0MCPCandidates) {
-      if(d0MCPCandidate.pt() < d0PtCutMin) {
+      if (d0MCPCandidate.pt() < d0PtCutMin) {
         return;
       }
       tableD0MCParticle(tableCollision.lastIndex(),
@@ -328,11 +328,11 @@ struct JetCorrelationD0 {
                         d0MCPCandidate.phi());
 
       for (const auto& jet : jets) {
-        if(jet.pt() < jetPtCutMin) {
+        if (jet.pt() < jetPtCutMin) {
           return;
         }
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0MCPCandidate.phi());
-                if (abs(dphi - M_PI) > (M_PI /2)) {
+        if (abs(dphi - M_PI) > (M_PI / 2)) {
           return;
         }
         fillJetHistograms(jet, dphi);
@@ -356,7 +356,7 @@ struct JetCorrelationD0 {
                         soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcpJets,
                         soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcdJets)
   {
-    //applyCollisionSelections(collision, eventSelectionBits);
+    // applyCollisionSelections(collision, eventSelectionBits);
 
     const auto CollIdx = collision.mcCollisionId();
 
@@ -406,7 +406,7 @@ struct JetCorrelationD0 {
         LOGF(info, "Collision ID %i, D0 pt %.2f, D0 eta %.2f, D0 phi %.2f, MCP origin %hhd, Reflection %i", CollIdx, particleMother.pt(), particleMother.eta(), particleMother.phi(), particleMother.originMcGen(), reflection);
 
         // Jet matching
-        fillMatchedHistograms(mcdJets, mcpJets); // Do I need to include pthat cuts in loop rather than this function to actually do jet matching? 
+        fillMatchedHistograms(mcdJets, mcpJets); // Do I need to include pthat cuts in loop rather than this function to actually do jet matching?
 
         for (const auto& mcpJet : mcpJets) {
           float dphi = RecoDecay::constrainAngle(mcpJet.phi() - d0MCDCandidate.phi());
