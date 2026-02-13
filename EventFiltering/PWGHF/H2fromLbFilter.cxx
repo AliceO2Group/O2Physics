@@ -111,13 +111,6 @@ struct H2fromLbFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(6, o2::aod::filtering::H2fromLb::columnLabel());
   }
 
-  // Tables
-  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
-  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra,
-                                        o2::aod::TracksDCA, o2::aod::TrackSelection,
-                                        o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe,
-                                        o2::aod::TOFSignal, o2::aod::TOFEvTime>;
-
   // Single-Track Selection
   template <typename T1>
   bool passedSingleTrackSelection(const T1& track)
@@ -154,9 +147,14 @@ struct H2fromLbFilter {
     table(keepEvent[0]);
   }
 
+  // Tables
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra,
+                                        o2::aod::TracksDCA, o2::aod::TrackSelection,
+                                        o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe,
+                                        o2::aod::TOFSignal, o2::aod::TOFEvTime>;
   o2::framework::Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
   int mCurrentRun = -1;
-
   void process(CollisionCandidates const& collisions,
                o2::aod::TrackAssoc const& trackIndices,
                TrackCandidates const& tracks,
@@ -235,8 +233,13 @@ struct H2fromLbFilter {
         }
         float recalculatedNSigmaTOFDe = 0.f;
         if (track.collisionId() != collision.globalIndex()) {
-          recalculatedNSigmaTOFDe = tofResponse->nSigma<o2::track::PID::Deuteron>(track.tofSignalInAnotherBC(track.collision_as<CollisionCandidates>().bc_as<o2::aod::BCsWithTimestamps>().globalBC(), collision.bc_as<o2::aod::BCsWithTimestamps>().globalBC()),
-                                                                                  track.tofExpMom(), track.length(), track.p(), track.eta(), tofEventTime, tofEventTimeErr);
+          if (track.has_collision()) {
+            const auto& trackCollision = collisions.iteratorAt(track.collisionId());
+            const auto& trackBC = trackCollision.bc_as<o2::aod::BCsWithTimestamps>();
+            recalculatedNSigmaTOFDe = tofResponse->nSigma<o2::track::PID::Deuteron>(track.tofSignalInAnotherBC(trackBC.globalBC(),
+                                                                                                               collision.bc_as<o2::aod::BCsWithTimestamps>().globalBC()),
+                                                                                    track.tofExpMom(), track.length(), track.p(), track.eta(), tofEventTime, tofEventTimeErr);
+          }
         }
         const bool isTOFDe = std::abs(track.tofNSigmaDe()) < cfgTOFNsigma;
         const bool isTPCDe = std::abs(track.tpcNSigmaDe()) < cfgTPCNsigma;
