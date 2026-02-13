@@ -314,7 +314,7 @@ struct JetCorrelationD0 {
                          aod::CandidatesD0MCP const& d0MCPCandidates,
                          soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets)
   {
-    applyCollisionSelections(collision, eventSelectionBits);
+    //applyCollisionSelections(collision, eventSelectionBits);
     tableCollision(collision.posZ());
 
     for (const auto& d0MCPCandidate : d0MCPCandidates) {
@@ -356,7 +356,7 @@ struct JetCorrelationD0 {
                         soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcpJets,
                         soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& mcdJets)
   {
-    applyCollisionSelections(collision, eventSelectionBits);
+    //applyCollisionSelections(collision, eventSelectionBits);
 
     const auto CollIdx = collision.mcCollisionId();
 
