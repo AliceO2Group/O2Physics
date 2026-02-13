@@ -96,6 +96,8 @@ struct H2fromLbFilter {
     QAHistos.add("hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {o2::framework::HistType::kTH2D, {pTAxis, DCAzAxis}});
     QAHistos.add("hnSigmaTPCVsPt", "n#sigma TPC vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TPC", {o2::framework::HistType::kTH2D, {pTAxis, nSigmaAxis}});
     QAHistos.add("hnSigmaTOFVsPt", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {o2::framework::HistType::kTH2D, {pTAxis, nSigmaAxis}});
+    QAHistos.add("hnSigmaTOFVsPtRecalculated", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {o2::framework::HistType::kTH2D, {pTAxis, nSigmaAxis}});
+    QAHistos.add("RecalculatedVsNot", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {o2::framework::HistType::kTH2D, {{1000, -100, 100}, {1000, -100, 100}}});
     QAHistos.add("hnSigmaITSVsPt", "n#sigma ITS vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma ITS", {o2::framework::HistType::kTH2D, {pTAxis, nSigmaAxis}});
     QAHistos.add("ptAntiDeuteron", "ptAntiDeuteron", {o2::framework::HistType::kTH1F, {ptAxis}});
     QAHistos.add("etaAntideuteron", "etaAntideuteron", {o2::framework::HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
@@ -231,7 +233,7 @@ struct H2fromLbFilter {
         if (!passedSingleTrackSelection(track)) {
           continue;
         }
-        float recalculatedNSigmaTOFDe = 0.f;
+        float recalculatedNSigmaTOFDe = 99.f;
         if (track.collisionId() != collision.globalIndex()) {
           if (track.has_collision()) {
             const auto& trackCollision = collisions.iteratorAt(track.collisionId());
@@ -259,6 +261,8 @@ struct H2fromLbFilter {
             QAHistos.fill(HIST("hDCAzVsPt"), track.pt(), dca[1]);
             QAHistos.fill(HIST("hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
             QAHistos.fill(HIST("hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            QAHistos.fill(HIST("RecalculatedVsNot"), track.tofNSigmaDe(), recalculatedNSigmaTOFDe);
+            QAHistos.fill(HIST("hnSigmaTOFVsPtRecalculated"), track.pt(), recalculatedNSigmaTOFDe);
             QAHistos.fill(HIST("hnSigmaITSVsPt"), track.pt(), track.itsNSigmaDe());
           }
         } else {
@@ -276,6 +280,8 @@ struct H2fromLbFilter {
             QAHistos.fill(HIST("hDCAzVsPt"), track.pt(), dca[1]);
             QAHistos.fill(HIST("hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
             QAHistos.fill(HIST("hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            QAHistos.fill(HIST("RecalculatedVsNot"), track.tofNSigmaDe(), recalculatedNSigmaTOFDe);
+            QAHistos.fill(HIST("hnSigmaTOFVsPtRecalculated"), track.pt(), recalculatedNSigmaTOFDe);
             QAHistos.fill(HIST("hnSigmaITSVsPt"), track.pt(), track.itsNSigmaDe());
           }
         }
