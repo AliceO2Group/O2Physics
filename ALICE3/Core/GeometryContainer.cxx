@@ -27,6 +27,7 @@
 #include <sys/file.h>
 #include <sys/stat.h>
 
+#include <cerrno>
 #include <chrono>
 #include <fstream>
 #include <map>
@@ -169,15 +170,43 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
       return localPath;
     }
 
-    // Try to acquire exclusive lock (blocks until available)
-    LOG(info) << " --- Acquiring lock for: " << localPath;
-    if (flock(lockFd, LOCK_EX) == -1) {
+    // Try to acquire exclusive lock (non-blocking)
+    LOG(info) << " --- Attempting to acquire lock for: " << localPath;
+    int lockResult = flock(lockFd, LOCK_EX | LOCK_NB);
+
+    if (lockResult == -1 && errno == EWOULDBLOCK) {
+      // Lock is held by another process - wait up to 10 minutes for download to complete
+      LOG(info) << " --- Lock is held by another process. Waiting for download to complete (up to 10 minutes)...";
+      close(lockFd);
+
+      const auto startTime = std::chrono::steady_clock::now();
+      const auto timeout = std::chrono::minutes(10);
+      const auto checkInterval = std::chrono::seconds(5);
+
+      while (true) {
+        // Check if download is complete
+        if (stat(doneFile.c_str(), &buffer) == 0) {
+          LOG(info) << " --- Geometry configuration file was downloaded by another process: " << localPath;
+          return localPath;
+        }
+
+        // Check timeout
+        auto elapsed = std::chrono::steady_clock::now() - startTime;
+        if (elapsed >= timeout) {
+          LOG(fatal) << " --- Timeout waiting for geometry file download: " << localPath << ". Waited for 10 minutes.";
+          return localPath;
+        }
+
+        // Wait before checking again
+        std::this_thread::sleep_for(checkInterval);
+      }
+    } else if (lockResult == -1) {
       LOG(error) << " --- Failed to acquire lock for: " << lockFile;
       close(lockFd);
       return localPath;
     }
 
-    // Double-check if file was downloaded while waiting for lock
+    // Lock acquired successfully - double-check if file was downloaded while we were trying
     if (stat(doneFile.c_str(), &buffer) == 0) {
       LOG(info) << " --- Geometry configuration file was downloaded by another process: " << localPath;
       flock(lockFd, LOCK_UN);
