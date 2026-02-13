@@ -15,52 +15,46 @@
 /// \brief  Task to test the performance of the KFParticle package
 ///
 
+#ifndef HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
+#endif
+
 #include "Tools/KFparticle/qaKFParticle.h"
 
-#include "TableHelper.h"
-
-#include <CCDB/BasicCCDBManager.h>
-
-#include <TDatabasePDG.h>
-#include <TPDGCode.h>
-
-#include <string>
-
-/// includes O2
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-
-/// includes O2Physics
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-/// includes KFParticle
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
-#ifndef HomogeneousField
+#include <TH1.h>
+#include <TPDGCode.h>
 
-#define HomogeneousField
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
 
-#endif
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -76,6 +70,7 @@ struct qaKFParticle {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdgdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
@@ -335,22 +330,22 @@ struct qaKFParticle {
   bool isSelectedTracks(const T& track1, const T& track2)
   {
     /// DCA XY of the daughter tracks to the primaty vertex
-    if (fabs(track1.dcaXY()) > d_dcaXYTrackPV) {
+    if (std::fabs(track1.dcaXY()) > d_dcaXYTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 6.f);
       return false;
     }
     /// DCA XY of the daughter tracks to the primaty vertex
-    if (fabs(track2.dcaXY()) > d_dcaXYTrackPV) {
+    if (std::fabs(track2.dcaXY()) > d_dcaXYTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 6.f);
       return false;
     }
     /// DCA Z of the daughter tracks to the primaty vertex
-    if (fabs(track1.dcaZ()) > d_dcaZTrackPV) {
+    if (std::fabs(track1.dcaZ()) > d_dcaZTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 7.f);
       return false;
     }
     /// DCA Z of the daughter tracks to the primaty vertex
-    if (fabs(track2.dcaZ()) > d_dcaZTrackPV) {
+    if (std::fabs(track2.dcaZ()) > d_dcaZTrackPV) {
       histos.fill(HIST("DZeroCandTopo/Selections"), 7.f);
       return false;
     }
@@ -462,15 +457,15 @@ struct qaKFParticle {
   {
     switch (particle) {
       case kPiPlus: {
-        if ((track.pt() <= ptPidTofMinPi) && track.hasTPC() && (abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
+        if ((track.pt() <= ptPidTofMinPi) && track.hasTPC() && (std::abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && !track.hasTOF() && (abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
+        } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && !track.hasTOF() && (std::abs(track.tpcNSigmaPi()) < nSigmaTpcMaxPi)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinPi) && !track.hasTPC() && track.hasTOF() && (abs(track.tofNSigmaPi()) < nSigmaTofMaxPi)) {
+        } else if ((track.pt() > ptPidTofMinPi) && !track.hasTPC() && track.hasTOF() && (std::abs(track.tofNSigmaPi()) < nSigmaTofMaxPi)) {
           return true;
         } else if ((track.pt() > ptPidTofMinPi) && track.hasTPC() && track.hasTOF()) {
-          float CombinednSigma = 1. / sqrt(2) * sqrt((track.tpcNSigmaPi() * track.tpcNSigmaPi()) + (track.tofNSigmaPi() * track.tofNSigmaPi()));
-          if (abs(CombinednSigma) < nSigmaCombMaxPi) {
+          float CombinednSigma = 1. / std::sqrt(2) * std::sqrt((track.tpcNSigmaPi() * track.tpcNSigmaPi()) + (track.tofNSigmaPi() * track.tofNSigmaPi()));
+          if (std::abs(CombinednSigma) < nSigmaCombMaxPi) {
             return true;
           } else {
             return false;
@@ -481,15 +476,15 @@ struct qaKFParticle {
         break;
       }
       case kKPlus: {
-        if ((track.pt() <= ptPidTofMinKa) && track.hasTPC() && (abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
+        if ((track.pt() <= ptPidTofMinKa) && track.hasTPC() && (std::abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && !track.hasTOF() && (abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
+        } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && !track.hasTOF() && (std::abs(track.tpcNSigmaKa()) < nSigmaTpcMaxKa)) {
           return true;
-        } else if ((track.pt() > ptPidTofMinKa) && !track.hasTPC() && track.hasTOF() && (abs(track.tofNSigmaKa()) < nSigmaTofMaxKa)) {
+        } else if ((track.pt() > ptPidTofMinKa) && !track.hasTPC() && track.hasTOF() && (std::abs(track.tofNSigmaKa()) < nSigmaTofMaxKa)) {
           return true;
         } else if ((track.pt() > ptPidTofMinKa) && track.hasTPC() && track.hasTOF()) {
-          float CombinednSigma = 1. / sqrt(2) * sqrt((track.tpcNSigmaKa() * track.tpcNSigmaKa()) + (track.tofNSigmaKa() * track.tofNSigmaKa()));
-          if (abs(CombinednSigma) < nSigmaCombMaxKa) {
+          float CombinednSigma = 1. / std::sqrt(2) * std::sqrt((track.tpcNSigmaKa() * track.tpcNSigmaKa()) + (track.tofNSigmaKa() * track.tofNSigmaKa()));
+          if (std::abs(CombinednSigma) < nSigmaCombMaxKa) {
             return true;
           } else {
             return false;
@@ -598,7 +593,7 @@ struct qaKFParticle {
     float chi2geo = KFDZero.GetChi2() / KFDZero.GetNDF();
     float normdecayLength = KFDZero_PV.GetDecayLength() / KFDZero_PV.GetErrDecayLength();
     float chi2topo = KFDZero_PV.GetChi2() / KFDZero_PV.GetNDF();
-    const double pseudoRndm = track1.pt() * 1000. - (int64_t)(track1.pt() * 1000);
+    const double pseudoRndm = track1.pt() * 1000. - static_cast<int64_t>((track1.pt() * 1000));
     if (pseudoRndm < d_DwnSmplFact) {
       if (writeTree) {
         /// Filling the D0 tree
@@ -800,7 +795,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon);
+        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon, pdgdb);
         if (!isSelectedDoGeo(KFDZero, KFPV, cosThetaStar)) {
           continue;
         }
@@ -835,7 +830,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion);
+        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion, pdgdb);
         if (!isSelectedDoGeo(KFDZeroBar, KFPV, cosThetaStar)) {
           continue;
         }
@@ -940,7 +935,7 @@ struct qaKFParticle {
       //             KFPV = KFPVNew;
       //           }
       //           if (i > 1) {
-      //             if (abs(matchedCollision.posZ() - collMC.posZ()) == min) {
+      //             if (std::abs(matchedCollision.posZ() - collMC.posZ()) == min) {
       //               kfpVertex = createKFPVertexFromCollision(matchedCollision);
       //               KFParticle KFPVNew(kfpVertex);
       //               KFPV = KFPVNew;
@@ -1107,7 +1102,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon);
+        cosThetaStar = cosThetaStarFromKF(1, 421, 211, 321, KFPosPion, KFNegKaon, pdgdb);
         if (!isSelectedDoGeo(KFDZero, KFPV, cosThetaStar)) {
           continue;
         }
@@ -1147,7 +1142,7 @@ struct qaKFParticle {
           continue;
         }
         /// Apply selection on geometrically reconstructed D0
-        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion);
+        cosThetaStar = cosThetaStarFromKF(0, 421, 321, 211, KFPosKaon, KFNegPion, pdgdb);
         if (!isSelectedDoGeo(KFDZeroBar, KFPV, cosThetaStar)) {
           continue;
         }

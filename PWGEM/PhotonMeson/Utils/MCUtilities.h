@@ -280,6 +280,26 @@ bool isGammaGammaDecay(TMCParticle const& mcParticle, TMCParticles const& mcPart
   }
   return true;
 }
+
+//_______________________________________________________________________
+// Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return true else false
+// E.g. if electron cluster is coming from a photon return true, if primary electron return false
+template <o2::soa::is_iterator T>
+bool isMotherPDG(T& mcparticle, const int motherPDG, const int Depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+{
+  if (!mcparticle.has_mothers() || Depth < 1) {
+    return false;
+  }
+
+  int motherid = mcparticle.mothersIds()[0];
+  mcparticle.setCursor(motherid);
+  if (mcparticle.pdgCode() != motherPDG) {
+    return true; // The mother has the required pdg code, so return its daughters global mc particle code.
+  } else {
+    return isMotherPDG(mcparticle, motherPDG, Depth - 1);
+  }
+}
+
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::photonmeson::utils::mcutil
 //_______________________________________________________________________

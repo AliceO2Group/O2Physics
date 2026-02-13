@@ -42,6 +42,7 @@
 #include <DetectorsBase/Propagator.h>
 #include <DetectorsVertexing/PVertexer.h>
 #include <DetectorsVertexing/PVertexerHelpers.h>
+#include <DetectorsVertexing/PVertexerParams.h>
 #include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -106,6 +107,7 @@ struct OnTheFlyTracker {
   Configurable<bool> enableSecondarySmearing{"enableSecondarySmearing", false, "Enable smearing of weak decay daughters"};
   Configurable<bool> enableNucleiSmearing{"enableNucleiSmearing", false, "Enable smearing of nuclei"};
   Configurable<bool> enablePrimaryVertexing{"enablePrimaryVertexing", true, "Enable primary vertexing"};
+  Configurable<std::string> primaryVertexOption{"primaryVertexOption", "pvertexer.maxChi2TZDebris=10;pvertexer.acceptableScale2=9;pvertexer.minScale2=2;pvertexer.timeMarginVertexTime=1.3;;pvertexer.maxChi2TZDebris=40;pvertexer.maxChi2Mean=12;pvertexer.maxMultRatDebris=1.;pvertexer.addTimeSigma2Debris=1e-2;pvertexer.meanVertexExtraErrSelection=0.03;", "Option for the primary vertexer"};
   Configurable<bool> interpolateLutEfficiencyVsNch{"interpolateLutEfficiencyVsNch", true, "interpolate LUT efficiency as f(Nch)"};
 
   Configurable<bool> populateTracksDCA{"populateTracksDCA", true, "populate TracksDCA table"};
@@ -116,11 +118,13 @@ struct OnTheFlyTracker {
   Configurable<bool> processUnreconstructedTracks{"processUnreconstructedTracks", false, "process (smear) unreco-ed tracks"};
   Configurable<bool> doExtraQA{"doExtraQA", false, "do extra 2D QA plots"};
   Configurable<bool> extraQAwithoutDecayDaughters{"extraQAwithoutDecayDaughters", false, "remove decay daughters from qa plots (yes/no)"};
-  Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
     ConfigurableAxis axisNVertices{"axisNVertices", {20, -0.5, 19.5}, "N_{vertices}"};
+    ConfigurableAxis axisDeltaVtxCoord{"axisDeltaVtxCoord", {100, -5., 5}, "Delta Vtx coord (cm)"};
+    ConfigurableAxis axisDeltaMultPVRecoGen{"axisDeltaMultPVRecoGen", {51, -25, 25}, "Delta Multiplicity_{PV} (cm)"};
+    ConfigurableAxis axisVtxMult{"axisVtxMult", {101, 0, 100}, "Vertex Multiplicity"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {100, -0.5, 99.5}, "N_{contributors}"};
     ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
     ConfigurableAxis axisDCA{"axisDCA", {400, -200, 200}, "DCA (#mum)"};
@@ -147,9 +151,6 @@ struct OnTheFlyTracker {
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
-    Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
-    Configurable<int> scaleVD{"scaleVD", 1, "scale x0 and xrho in VD layers"};
-    Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
   struct : ConfigurableGroup {
@@ -159,7 +160,6 @@ struct OnTheFlyTracker {
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
-    Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
   } fastPrimaryTrackerSettings;
 
   struct : ConfigurableGroup {
@@ -318,9 +318,7 @@ struct OnTheFlyTracker {
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
       const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
       mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
-      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
       mSmearer[icfg]->setCcdbManager(ccdb.operator->());
-      mSmearer[icfg]->setDownloadPath("./.ALICE3/Tracker/");
       std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
       if (enablePrimarySmearing) {
         // load LUTs for primaries
@@ -375,24 +373,37 @@ struct OnTheFlyTracker {
         // smear un-reco'ed tracks if asked to do so
         mSmearer[icfg]->skipUnreconstructed(!processUnreconstructedTracks.value);
 
-        insertHist(histPath + "hPtGenerated", "hPtGenerated", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPhiGenerated", "hPhiGenerated", {kTH1D, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}}});
+        insertHist(histPath + "hPtGenerated", "hPtGenerated;#it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPhiGenerated", "hPhiGenerated;#phi (rad);Counts", {kTH1D, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}}});
 
-        insertHist(histPath + "hPtGeneratedEl", "hPtGeneratedEl", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtGeneratedPi", "hPtGeneratedPi", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtGeneratedKa", "hPtGeneratedKa", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtGeneratedPr", "hPtGeneratedPr", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructed", "hPtReconstructed", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedEl", "hPtReconstructedEl", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedPi", "hPtReconstructedPi", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedKa", "hPtReconstructedKa", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedPr", "hPtReconstructedPr", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtGeneratedEl", "hPtGeneratedEl;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtGeneratedPi", "hPtGeneratedPi;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtGeneratedKa", "hPtGeneratedKa;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtGeneratedPr", "hPtGeneratedPr;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtReconstructed", "hPtReconstructed;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtReconstructedEl", "hPtReconstructedEl;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtReconstructedPi", "hPtReconstructedPi;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtReconstructedKa", "hPtReconstructedKa;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtReconstructedPr", "hPtReconstructedPr;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
       }
       // Collision QA
-      insertHist(histPath + "hPVz", "hPVz", {kTH1D, {{axes.axisVertexZ}}});
-      insertHist(histPath + "hLUTMultiplicity", "hLUTMultiplicity", {kTH1D, {{axes.axisMultiplicity}}});
-      insertHist(histPath + "hSimMultiplicity", "hSimMultiplicity", {kTH1D, {{axes.axisMultiplicity}}});
-      insertHist(histPath + "hRecoMultiplicity", "hRecoMultiplicity", {kTH1D, {{axes.axisMultiplicity}}});
+      insertHist(histPath + "hPVz", "hPVz;Primary Vertex Z (cm);Counts", {kTH1D, {{axes.axisVertexZ}}});
+      insertHist(histPath + "hLUTMultiplicity", "hLUTMultiplicity;dN/d#eta;Counts", {kTH1D, {{axes.axisMultiplicity}}});
+      insertHist(histPath + "hSimMultiplicity", "hSimMultiplicity;Gen. multiplicity;Counts", {kTH1D, {{axes.axisMultiplicity}}});
+      insertHist(histPath + "hRecoMultiplicity", "hRecoMultiplicity;Reco Multiplicity;Counts", {kTH1D, {{axes.axisMultiplicity}}});
+
+      if (enablePrimaryVertexing) {
+        insertHist(histPath + "hDeltaXPVRecoGen", "hDeltaXPVRecoGen;Delta X (reco - gen), cm", {kTH1D, {{axes.axisDeltaVtxCoord}}});
+        insertHist(histPath + "hDeltaYPVRecoGen", "hDeltaYPVRecoGen;Delta Y (reco - gen), cm", {kTH1D, {{axes.axisDeltaVtxCoord}}});
+        insertHist(histPath + "hDeltaZPVRecoGen", "hDeltaZPVRecoGen;Delta Z (reco - gen), cm", {kTH1D, {{axes.axisDeltaVtxCoord}}});
+        insertHist(histPath + "hDeltaMultPVRecoGen", "hDeltaMultPVRecoGen;Delta Multiplicity (reco - gen)", {kTH1D, {{axes.axisDeltaMultPVRecoGen}}});
+        insertHist(histPath + "hVtxMultGen", "hVtxMultGen;Generated Vertex Multiplicity", {kTH1D, {{axes.axisVtxMult}}});
+        insertHist(histPath + "hVtxMultReco", "hVtxMultReco;Reconstructed Vertex Multiplicity", {kTH1D, {{axes.axisVtxMult}}});
+        insertHist(histPath + "hVtxTrials", "hVtxTrials;Vertex Reconstruction Trials", {kTH1D, {{2, -0.5, 1.5}}});
+        // Set the bin labels
+        getHist(TH1, histPath + "hVtxTrials")->GetXaxis()->SetBinLabel(1, "Tried");
+        getHist(TH1, histPath + "hVtxTrials")->GetXaxis()->SetBinLabel(2, "Succeeded");
+      }
 
       if (enableSecondarySmearing) {
         fastTracker.emplace_back(std::make_unique<o2::fastsim::FastTracker>());
@@ -433,8 +444,8 @@ struct OnTheFlyTracker {
           insertHist(histPath + "h2dDCAzCascadeNegative", "h2dDCAzCascadeNegative", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
           insertHist(histPath + "h2dDCAzCascadePositive", "h2dDCAzCascadePositive", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
 
-          insertHist(histPath + "h2dDeltaPtVsPt", "h2dDeltaPtVsPt", {kTH2F, {axes.axisMomentum, axes.axisDeltaPt}});
-          insertHist(histPath + "h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt", {kTH2F, {axes.axisMomentum, axes.axisDeltaEta}});
+          insertHist(histPath + "h2dDeltaPtVsPt", "h2dDeltaPtVsPt;Gen p_{T};#Delta p_{T}", {kTH2F, {axes.axisMomentum, axes.axisDeltaPt}});
+          insertHist(histPath + "h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt;Gen p_{T};#Delta #eta", {kTH2F, {axes.axisMomentum, axes.axisDeltaEta}});
 
           insertHist(histPath + "hFastTrackerHits", "hFastTrackerHits", {kTH2F, {axes.axisZ, axes.axisRadius}});
           insertHist(histPath + "hFastTrackerQA", "hFastTrackerQA", {kTH1F, {{8, -0.5f, 7.5f}}});
@@ -450,9 +461,9 @@ struct OnTheFlyTracker {
       }
 
       if (doExtraQA) {
-        insertHist(histPath + "h2dPtRes", "h2dPtRes", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dDCAxy", "h2dDCAxy", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
-        insertHist(histPath + "h2dDCAz", "h2dDCAz", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
+        insertHist(histPath + "h2dPtRes", "h2dPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dDCAxy", "h2dDCAxy;p_{T};DCA_{xy}", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
+        insertHist(histPath + "h2dDCAz", "h2dDCAz;p_{T};DCA_{z}", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
       }
 
     } // end config loop
@@ -473,8 +484,9 @@ struct OnTheFlyTracker {
     hCovMatOK->GetXaxis()->SetBinLabel(2, "OK");
 
     if (doExtraQA) {
-      histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axes.axisMultiplicity, axes.axisNVertices});
-      histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axes.axisMultiplicity, axes.axisMultiplicity});
+      histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors;Multiplicity;N vertices", kTH2F, {axes.axisMultiplicity, axes.axisNVertices});
+      histos.add("h1dVerticesNotReco", "h1dVerticesNotReco;Multiplicity;Vertices Not Reco", kTH1F, {axes.axisMultiplicity});
+      histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity;Reco Mult.;Sim Mult.", kTH2F, {axes.axisMultiplicity, axes.axisMultiplicity});
 
       histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axes.axisX});
       histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axes.axisX});
@@ -554,8 +566,13 @@ struct OnTheFlyTracker {
     irSampler.init();
 
     vertexer.setValidateWithIR(kFALSE);
+    vertexer.setTrackSources(o2::dataformats::GlobalTrackID::ITS);
     vertexer.setBunchFilling(irSampler.getBunchFilling());
+    vertexer.setBz(mMagneticField);
+    o2::conf::ConfigurableParam::updateFromString("pvertexer.doBCValidation=false;" + primaryVertexOption.value);
     vertexer.init();
+
+    o2::vertexing::PVertexerParams::Instance().printKeyValues();
 
     // initialize O2 2-prong fitter
     fitter.setPropagateToPCA(true);
@@ -680,11 +697,12 @@ struct OnTheFlyTracker {
     decayDaughters.push_back(*v0Decay.GetDecay(1));
   }
 
-  float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
+  float dNdEta = 0.f;                                                      // Charged particle multiplicity to use in the efficiency evaluation
+  std::pair<float, float> vertexReconstructionEfficiencyCounters = {0, 0}; // {nVerticesWithMoreThan2Contributors, nVerticesReconstructed}
   void processWithLUTs(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, int const& icfg)
   {
-    LOG(debug) << "Processing event " << mcCollision.globalIndex() << " with LUTs for configuration " << icfg;
-    int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
+    vertexReconstructionEfficiencyCounters.first += 1;
+    const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
 
     tracksAlice3.clear();
@@ -1362,6 +1380,7 @@ struct OnTheFlyTracker {
     o2::vertexing::PVertex primaryVertex;
     if (enablePrimaryVertexing) {
       LOG(debug) << "Starting primary vertexing with " << tracksAlice3.size() << " tracks.";
+      fillHist(TH1, histPath + "hVtxMultGen", tracksAlice3.size());
       std::vector<o2::MCCompLabel> lblTracks;
       std::vector<o2::vertexing::PVertex> vertices;
       std::vector<o2::vertexing::GIndex> vertexTrackIDs;
@@ -1376,6 +1395,8 @@ struct OnTheFlyTracker {
         idxVec.emplace_back(i, o2::dataformats::GlobalTrackID::ITS); // let's say ITS
       }
 
+      getHist(TH1, histPath + "hVtxTrials")->Fill(0); // Tried vertexing
+
       // Calculate vertices
       const int n_vertices = vertexer.process(tracksAlice3, // track array
                                               idxVec,
@@ -1386,9 +1407,17 @@ struct OnTheFlyTracker {
                                               gsl::span<const o2::MCCompLabel>{lblTracks},
                                               lblVtx);
 
+      LOG(debug) << "Vertex reconstruction efficiency " << vertexReconstructionEfficiencyCounters.second << "/" << vertexReconstructionEfficiencyCounters.first << "=" << vertexReconstructionEfficiencyCounters.second / vertexReconstructionEfficiencyCounters.first;
       if (n_vertices < 1) {
+        LOG(debug) << "Vertexing completed, no vtx found.";
+        if (doExtraQA) {
+          histos.fill(HIST("h1dVerticesNotReco"), tracksAlice3.size());
+        }
         return; // primary vertex not reconstructed
       }
+      vertexReconstructionEfficiencyCounters.second += 1;
+      getHist(TH1, histPath + "hVtxTrials")->Fill(1); // Succeeded vertexing
+      LOG(debug) << "Vertexing completed with " << n_vertices << " vertices found.";
 
       // Find largest vertex
       int largestVertex = 0;
@@ -1401,6 +1430,11 @@ struct OnTheFlyTracker {
       if (doExtraQA) {
         histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);
       }
+      fillHist(TH1, histPath + "hVtxMultReco", primaryVertex.getNContributors());
+      fillHist(TH1, histPath + "hDeltaMultPVRecoGen", static_cast<int>(primaryVertex.getNContributors()) - static_cast<int>(tracksAlice3.size()));
+      fillHist(TH1, histPath + "hDeltaXPVRecoGen", primaryVertex.getX() - mcCollision.posX());
+      fillHist(TH1, histPath + "hDeltaYPVRecoGen", primaryVertex.getY() - mcCollision.posY());
+      fillHist(TH1, histPath + "hDeltaZPVRecoGen", primaryVertex.getZ() - mcCollision.posZ());
     } else {
       primaryVertex.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
     }

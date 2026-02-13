@@ -82,7 +82,7 @@ struct HfCandidateSelectorCd {
   TrackSelectorKa selectorKaon;
   TrackSelectorDe selectorDeuteron;
 
-  const float massCharmDeuteron = 3.23; // possible mass
+  static constexpr float MassCharmDeuteron{3.23f}; // possible mass
 
   using TracksSel = soa::Join<aod::TracksWExtra,
                               aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidDe, aod::PidTpcTofFullDe>;
@@ -218,7 +218,7 @@ struct HfCandidateSelectorCd {
     }
 
     // cut on Cd->deKpi, piKde mass values
-    if (std::abs(massCd - massCharmDeuteron) > cuts->get(binPt, "m")) {
+    if (std::abs(massCd - MassCharmDeuteron) > cuts->get(binPt, "m")) {
       return false;
     }
 

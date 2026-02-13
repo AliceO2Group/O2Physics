@@ -92,7 +92,7 @@ struct HfTaskDplus {
   HfUpcGapThresholds upcThresholds; // UPC gap determination thresholds
   ctpRateFetcher mRateFetcher;      // interaction rate fetcher
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandDplusDataWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;

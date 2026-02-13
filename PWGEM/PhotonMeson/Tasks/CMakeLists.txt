@@ -196,3 +196,8 @@ o2physics_add_dpl_workflow(test-task-emc
                     SOURCES testTaskEmc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::EMCALBase O2::EMCALCalib O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(photon-reso-task
+                    SOURCES photonResoTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::EMCALBase O2::EMCALCalib O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
