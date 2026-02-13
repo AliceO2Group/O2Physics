@@ -29,6 +29,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <cstdio>
 #include <fstream>
 #include <map>
 #include <string>
@@ -143,7 +144,7 @@ void GeometryEntry::replaceValue(const std::string& layerName, const std::string
   setValue(layerName, key, value);
 }
 
-std::string GeometryEntry::accessFile(const std::string& path, const std::string downloadPath, o2::ccdb::BasicCCDBManager* ccdb)
+std::string GeometryEntry::accessFile(const std::string& path, const std::string downloadPath, o2::ccdb::BasicCCDBManager* ccdb, int timeoutSeconds)
 {
 
   if (path.rfind("ccdb:", 0) == 0) {
@@ -227,6 +228,24 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
     // Release lock
     flock(lockFd, LOCK_UN);
     close(lockFd);
+
+    // If timeout is specified, schedule file deletion after timeout
+    if (timeoutSeconds > 0) {
+      std::thread deletionThread([localPath, doneFile, timeoutSeconds]() {
+        std::this_thread::sleep_for(std::chrono::seconds(timeoutSeconds));
+        LOG(info) << " --- Deleting geometry configuration file after timeout: " << localPath;
+        if (std::remove(localPath.c_str()) == 0) {
+          LOG(info) << " --- File deleted successfully: " << localPath;
+        } else {
+          LOG(warning) << " --- Failed to delete file: " << localPath;
+        }
+        // Also remove the done marker file
+        if (std::remove(doneFile.c_str()) == 0) {
+          LOG(info) << " --- Done marker deleted: " << doneFile;
+        }
+      });
+      deletionThread.detach();
+    }
 
     return localPath;
   }
