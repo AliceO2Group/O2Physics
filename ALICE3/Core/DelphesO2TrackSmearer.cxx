@@ -36,6 +36,8 @@
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
+#include "ALICE3/Core/GeometryContainer.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 
@@ -61,37 +63,8 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     LOG(info) << " --- LUT table for PDG " << pdg << " has been already loaded with index " << ipdg << std::endl;
     return false;
   }
-  if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
-    LOG(info) << " --- LUT file source identified as CCDB.";
-    std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
-    filename = Form("%s/%s/snapshot.root", mOutPath.c_str(), path.c_str());
-    LOG(info) << " --- Local LUT filename will be: " << filename;
-    std::ifstream checkFile(filename); // Check if file already exists
-    if (!checkFile.is_open()) {        // File does not exist, retrieve from CCDB
-      LOG(info) << " --- CCDB source detected for PDG " << pdg << ": " << path;
-      if (!mCcdbManager) {
-        LOG(fatal) << " --- CCDB manager not set. Please set it before loading LUT from CCDB.";
-      }
-      std::map<std::string, std::string> metadata;
-      mCcdbManager->getCCDBAccessor().retrieveBlob(path, mOutPath, metadata, 1);
-      // Add CCDB handling logic here if needed
-      LOG(info) << " --- Now retrieving LUT file from CCDB to: " << filename;
-      if (mCleanupDownloadedFile) { // Clean up the downloaded file if needed
-        bool status = loadTable(pdg, filename, forceReload);
-        if (std::remove(filename) != 0) {
-          LOG(warn) << " --- Could not remove temporary LUT file: " << filename;
-        } else {
-          LOG(info) << " --- Removed temporary LUT file: " << filename;
-        }
-        return status;
-      }
-    } else { // File exists, proceed to load
-      LOG(info) << " --- LUT file already exists: " << filename << ". Skipping download.";
-      checkFile.close();
-    }
-    return loadTable(pdg, filename, forceReload);
-  }
 
+  filename = o2::fastsim::GeometryEntry::accessFile(filename, "./ALICE3/LUTs/", mCcdbManager, 600).c_str();
   mLUTHeader[ipdg] = new lutHeader_t;
 
   std::ifstream lutFile(filename, std::ifstream::binary);
