@@ -77,6 +77,7 @@ std::map<std::string, std::map<std::string, std::string>> GeometryEntry::parseTE
   return configMap;
 }
 
+bool GeometryContainer::mCleanLutWhenLoaded = true;
 void GeometryContainer::init(o2::framework::InitContext& initContext)
 {
   std::vector<std::string> detectorConfiguration;
@@ -219,7 +220,7 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
     LOG(info) << " --- CCDB source detected for detector geometry " << path;
     std::map<std::string, std::string> metadata;
     bool status = ccdb->getCCDBAccessor().retrieveBlob(ccdbPath, downloadPath, metadata, 1);
-    if(!status) {
+    if (!status) {
       flock(lockFd, LOCK_UN);
       close(lockFd);
       LOG(fatal) << " --- Failed to retrieve geometry configuration from CCDB for path: " << ccdbPath;
@@ -251,10 +252,11 @@ std::string GeometryEntry::accessFile(const std::string& path, const std::string
     close(lockFd);
 
     // If timeout is specified, schedule file deletion after timeout
-    if (timeoutSeconds > 0) {
+    if (timeoutSeconds > 0 && GeometryContainer::cleanLutWhenLoaded()) {
+      LOG(info) << " --- Deleting geometry configuration file after timeout: " << localPath;
       std::thread deletionThread([localPath, doneFile, timeoutSeconds]() {
+        LOG(info) << " --- Operating deletion of geometry configuration file after timeout: " << localPath;
         std::this_thread::sleep_for(std::chrono::seconds(timeoutSeconds));
-        LOG(info) << " --- Deleting geometry configuration file after timeout: " << localPath;
         if (std::remove(localPath.c_str()) == 0) {
           LOG(info) << " --- File deleted successfully: " << localPath;
         } else {

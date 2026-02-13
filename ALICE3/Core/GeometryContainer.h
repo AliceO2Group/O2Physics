@@ -87,7 +87,7 @@ class GeometryContainer
 
   // Add a geometry entry from a configuration file
   void addEntry(const std::string& filename) { mEntries.emplace_back(filename, mCcdb); }
-  void setLutCleanupSetting(const bool cleanLutWhenLoaded) { mCleanLutWhenLoaded = cleanLutWhenLoaded; }
+  static void setLutCleanupSetting(const bool cleanLutWhenLoaded) { mCleanLutWhenLoaded = cleanLutWhenLoaded; }
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdb = mgr; }
 
   // Getters
@@ -95,7 +95,7 @@ class GeometryContainer
   const std::vector<GeometryEntry>& getEntries() const { return mEntries; }
   const GeometryEntry& getEntry(const int id) const { return mEntries.at(id); }
   GeometryEntry getGeometryEntry(const int id) const { return mEntries.at(id); }
-  bool cleanLutWhenLoaded() const { return mCleanLutWhenLoaded; }
+  static bool cleanLutWhenLoaded() { return mCleanLutWhenLoaded; }
 
   // Get configuration maps
   std::map<std::string, std::map<std::string, std::string>> getConfigurations(const int id) const { return mEntries.at(id).getConfigurations(); }
@@ -106,7 +106,7 @@ class GeometryContainer
   float getFloatValue(const int id, const std::string& layerName, const std::string& key) const { return mEntries.at(id).getFloatValue(layerName, key); }
 
  private:
-  bool mCleanLutWhenLoaded = true; // Whether to clean the LUT when loading a new geometry configuration
+  static bool mCleanLutWhenLoaded; // Whether to clean the LUT when loading a new geometry configuration
   std::vector<GeometryEntry> mEntries;
   o2::ccdb::BasicCCDBManager* mCcdb = nullptr;
 };
