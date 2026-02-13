@@ -160,33 +160,40 @@ struct StrangeCascTrack {
   {
     bool passedAllSels = true;
     //* inel>0 cut
-    if (!selCuts.cutDoINEL || collision.multNTracksPVeta1() > 0)
-      {if (fillHists) histos.fill(HIST("Rec-Events/EvFilter"), 0.5);}
-    else
+    if (!selCuts.cutDoINEL || collision.multNTracksPVeta1() > 0) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 0.5);
+    } else
       passedAllSels = false;
     //* pvz cut
-    if (std::abs(collision.posZ()) < selCuts.cutZVertex)
-      {if (fillHists) histos.fill(HIST("Rec-Events/EvFilter"), 1.5);}
-    else
+    if (std::abs(collision.posZ()) < selCuts.cutZVertex) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 1.5);
+    } else
       passedAllSels = false;
     //* sel8 cut
-    if (!selCuts.cutDoSel8 || collision.sel8())
-      {if (fillHists) histos.fill(HIST("Rec-Events/EvFilter"), 2.5);}
-    else
+    if (!selCuts.cutDoSel8 || collision.sel8()) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 2.5);
+    } else
       passedAllSels = false;
     //* pileup cut
-    if (!selCuts.cutDoNoPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
-      {if (fillHists) histos.fill(HIST("Rec-Events/EvFilter"), 3.5);}
-    else
+    if (!selCuts.cutDoNoPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 3.5);
+    } else
       passedAllSels = false;
     //* good ft0 z-vertex vs pv cut
-    if (!selCuts.cutDoGoodFT0 || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
-      {if (fillHists) histos.fill(HIST("Rec-Events/EvFilter"), 4.5);}
-    else
+    if (!selCuts.cutDoGoodFT0 || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 4.5);
+    } else
       passedAllSels = false;
     //* all cuts
-    if (passedAllSels)
-      {if (fillHists) histos.fill(HIST("Rec-Events/EvFilter"), 5.5);}
+    if (passedAllSels) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 5.5);
+    }
     return passedAllSels;
   }
   // checks cascade pt
@@ -1037,7 +1044,8 @@ struct StrangeCascTrack {
       auto slicedRecColls = recColls.sliceBy(perMcCollision, genColl.globalIndex());
       bool recoCounter = false;
       for (auto const& recColl : slicedRecColls) {
-        if (!isValidEvent(recColl, false)) continue; // from this point on - only gen events (and cascades from such events) that were reconstructed
+        if (!isValidEvent(recColl, false))
+          continue; // from this point on - only gen events (and cascades from such events) that were reconstructed
         int64_t genCollId = recColl.straMCCollisionId();
         if (genColl.index() != genCollId)
           continue; // safety check for correct slicing
