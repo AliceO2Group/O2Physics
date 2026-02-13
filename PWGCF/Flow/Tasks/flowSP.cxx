@@ -190,7 +190,7 @@ struct FlowSP {
     TProfile* hcorrQQy = nullptr;
     TProfile* hEvPlaneRes = nullptr;
     TH1D* hCentrality = nullptr;
-    TH2D* hMeanPt = nullptr;
+    TProfile2D* hMeanPt = nullptr;
 
     bool clQQ = false;
     bool clEvPlaneRes = false;
@@ -1378,7 +1378,7 @@ struct FlowSP {
       spm.meanPtWeight = 1.0;
       if (cfgCCDBdir_meanPt.value.empty() == false) {
         if (!cfg.clMeanPt) {
-          cfg.hMeanPt = ccdb->getForTimeStamp<TH2D>(cfgCCDBdir_meanPt.value, bc.timestamp());
+          cfg.hMeanPt = ccdb->getForTimeStamp<TProfile2D>(cfgCCDBdir_meanPt.value, bc.timestamp());
           cfg.clMeanPt = true;
         }
         int etaBin = cfg.hMeanPt->GetXaxis()->FindBin(track.eta());
