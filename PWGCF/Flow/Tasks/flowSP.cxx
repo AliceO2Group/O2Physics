@@ -196,8 +196,6 @@ struct FlowSP {
     bool clEvPlaneRes = false;
     bool clCentrality = false;
     bool clMeanPt = false;
-    
-   
 
   } cfg;
 
@@ -1079,8 +1077,8 @@ struct FlowSP {
     if (cfgFillMeanPT) {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtEtaCent"), track.eta(), spm.centrality, track.pt(), weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtCent"), spm.centrality, track.pt(), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / ( std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / ( std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
     }
   }
 
@@ -1318,8 +1316,8 @@ struct FlowSP {
         cfg.clCentrality = true;
       }
       double centW = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(spm.centrality));
-      if(centW < 0) {
-        spm.centWeight = 1./centW;
+      if (centW < 0) {
+        spm.centWeight = 1. / centW;
       } else {
         LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
         spm.centWeight = 0.;
@@ -1377,7 +1375,7 @@ struct FlowSP {
       if (!trackSelected(track, field))
         continue;
 
-      spm.meanPtWeight = 1.0; 
+      spm.meanPtWeight = 1.0;
       if (cfgCCDBdir_meanPt.value.empty() == false) {
         if (!cfg.clMeanPt) {
           cfg.hMeanPt = ccdb->getForTimeStamp<TH2D>(cfgCCDBdir_meanPt.value, bc.timestamp());
@@ -1385,9 +1383,9 @@ struct FlowSP {
         }
         int etaBin = cfg.hMeanPt->GetXaxis()->FindBin(track.eta());
         int centBin = cfg.hMeanPt->GetYaxis()->FindBin(spm.centrality);
-        double weight = cfg.hMeanPt->GetBinContent(etaBin, centBin); 
-        if(weight > 0) {
-          spm.meanPtWeight = 1.0 / weight; 
+        double weight = cfg.hMeanPt->GetBinContent(etaBin, centBin);
+        if (weight > 0) {
+          spm.meanPtWeight = 1.0 / weight;
         } else {
           LOGF(info, "MeanPt cannot be negative or 0.. (weight = 1/meanPt) -> setting to 0. for (%.2f, %.2f)", track.eta(), spm.centrality);
           spm.meanPtWeight = 0.0;
