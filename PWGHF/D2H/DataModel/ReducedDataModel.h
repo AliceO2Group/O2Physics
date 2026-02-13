@@ -846,6 +846,11 @@ DECLARE_SOA_TABLE(HfRedLbLcMls, "AOD", "HFREDLBLCML", //! Table with ML scores f
 
 using HfRedCandLb = soa::Join<HfCandLbExt, HfRedLbProngs>;
 
+namespace hf_beauty_mc
+{
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); //! reconstruction level
+}
+
 namespace hf_b0_mc
 {
 // MC Rec
