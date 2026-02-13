@@ -78,13 +78,15 @@ struct H2fromLbFilter {
   o2::framework::Configurable<float> ptThresholdPid{"ptThresholdPid", 1.0f, "pT threshold to switch between ITS and TOF PID"};
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::pid::tof::TOFResponse> tofResponse;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
     ccdb->setURL("http://alice-ccdb.cern.ch"); // Set CCDB URL to get magnetic field
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    tofResponse->initSetup(ccdb, initContext);
 
     o2::framework::AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
 
@@ -111,7 +113,10 @@ struct H2fromLbFilter {
 
   // Tables
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
-  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe>;
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra,
+                                        o2::aod::TracksDCA, o2::aod::TrackSelection,
+                                        o2::aod::pidTPCFullDe, o2::aod::pidTOFFullDe,
+                                        o2::aod::TOFSignal, o2::aod::TOFEvTime>;
 
   // Single-Track Selection
   template <typename T1>
@@ -155,9 +160,10 @@ struct H2fromLbFilter {
   void process(CollisionCandidates const& collisions,
                o2::aod::TrackAssoc const& trackIndices,
                TrackCandidates const& tracks,
-               o2::aod::BCsWithTimestamps const&)
+               o2::aod::BCsWithTimestamps const& bcs)
   {
-    for (const auto& collision : collisions) // start loop over collisions
+    tofResponse->processSetup(bcs.iteratorAt(0)); // Update the response parameters
+    for (const auto& collision : collisions)      // start loop over collisions
     {
       if (mCurrentRun != collision.bc_as<o2::aod::BCsWithTimestamps>().runNumber()) { // If the run is new then we need to initialize the propagator field
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp());
@@ -195,6 +201,22 @@ struct H2fromLbFilter {
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       auto tracksWithItsPid = o2::soa::Attach<TrackCandidates, o2::aod::pidits::ITSNSigmaDe>(tracks);
 
+      float tofEventTime = 0.f;
+      float tofEventTimeErr = 0.f;
+
+      for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
+        const auto& track = tracksWithItsPid.rawIteratorAt(trackId.trackId());
+        if (!passedSingleTrackSelection(track)) {
+          continue;
+        }
+        if (track.collisionId() != collision.globalIndex()) {
+          continue;
+        }
+        tofEventTime = track.tofEvTime();
+        tofEventTimeErr = track.tofEvTimeErr();
+        break;
+      }
+
       for (const auto& trackId : trackIdsThisCollision) { // start loop over tracks
 
         const auto& track = tracksWithItsPid.rawIteratorAt(trackId.trackId());
@@ -211,7 +233,11 @@ struct H2fromLbFilter {
         if (!passedSingleTrackSelection(track)) {
           continue;
         }
-
+        float recalculatedNSigmaTOFDe = 0.f;
+        if (track.collisionId() != collision.globalIndex()) {
+          recalculatedNSigmaTOFDe = tofResponse->nSigma<o2::track::PID::Deuteron>(track.tofSignalInAnotherBC(track.collision_as<CollisionCandidates>().bc_as<o2::aod::BCsWithTimestamps>().globalBC(), collision.bc_as<o2::aod::BCsWithTimestamps>().globalBC()),
+                                                                                  track.tofExpMom(), track.length(), track.p(), track.eta(), tofEventTime, tofEventTimeErr);
+        }
         const bool isTOFDe = std::abs(track.tofNSigmaDe()) < cfgTOFNsigma;
         const bool isTPCDe = std::abs(track.tpcNSigmaDe()) < cfgTPCNsigma;
         const bool isITSDe = track.itsNSigmaDe() > cfgITSNsigma;
@@ -262,5 +288,6 @@ struct H2fromLbFilter {
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
 {
+  o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(cfgc);
   return o2::framework::WorkflowSpec{o2::framework::adaptAnalysisTask<H2fromLbFilter>(cfgc)};
 }
