@@ -64,7 +64,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     return false;
   }
 
-  filename = o2::fastsim::GeometryEntry::accessFile(filename, "./ALICE3/LUTs/", mCcdbManager, 600).c_str();
+  filename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager).c_str();
   mLUTHeader[ipdg] = new lutHeader_t;
 
   std::ifstream lutFile(filename, std::ifstream::binary);
