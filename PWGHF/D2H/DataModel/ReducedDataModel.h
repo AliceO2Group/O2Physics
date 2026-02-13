@@ -846,7 +846,7 @@ DECLARE_SOA_TABLE(HfRedLbLcMls, "AOD", "HFREDLBLCML", //! Table with ML scores f
 
 using HfRedCandLb = soa::Join<HfCandLbExt, HfRedLbProngs>;
 
-namespace hf_beauty_mc
+namespace hf_cand_mc_flag
 {
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); //! reconstruction level
 }
@@ -878,9 +878,9 @@ DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code 
 DECLARE_SOA_TABLE(HfMcRecRedDpPis, "AOD", "HFMCRECREDDPPI", //! Table with reconstructed MC information on DPi(<-B0) pairs for reduced workflow
                   hf_cand_b0_reduced::Prong0Id,
                   hf_cand_b0_reduced::Prong1Id,
-                  hf_cand_b0::FlagMcMatchRec,
-                  hf_cand_b0::FlagWrongCollision,
-                  hf_cand_b0::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_b0_mc::PtMother);
 
 // try with extended table ?
@@ -898,17 +898,17 @@ DECLARE_SOA_TABLE(HfMcCheckDpPis, "AOD", "HFMCCHECKDPPI", //! Table with reconst
 DECLARE_SOA_TABLE(HfMcRecRedDStarPis, "AOD", "HFMCRECREDDSTPI", //! Table with reconstructed MC information on DStarPi pairs for reduced workflow
                   hf_cand_b0_reduced::ProngD0Id,
                   hf_cand_b0_reduced::ProngBachPiId,
-                  hf_cand_b0::FlagMcMatchRec,
-                  hf_cand_b0::FlagWrongCollision,
-                  hf_cand_b0::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_b0_mc::PtMother);
 
 // Table with same size as HFCANDB0
 DECLARE_SOA_TABLE(HfMcRecRedB0s, "AOD", "HFMCRECREDB0", //! Reconstruction-level MC information on B0 candidates for reduced workflow
-                  hf_cand_b0::FlagMcMatchRec,
-                  hf_cand_b0::FlagMcDecayChanRec,
-                  hf_cand_b0::FlagWrongCollision,
-                  hf_cand_b0::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_b0_mc::PtMother);
 
 DECLARE_SOA_TABLE(HfMcCheckB0s, "AOD", "HFMCCHECKB0", //! Table with reconstructed MC information on B0 candidates for MC checks in reduced workflow
@@ -921,8 +921,8 @@ DECLARE_SOA_TABLE(HfMcCheckB0s, "AOD", "HFMCCHECKB0", //! Table with reconstruct
                   o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC information on B0 candidates for reduced workflow
-                  hf_cand_b0::FlagMcMatchGen,
-                  hf_cand_b0::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_b0_mc::PtTrack,
                   hf_b0_mc::YTrack,
                   hf_b0_mc::EtaTrack,
@@ -974,19 +974,19 @@ DECLARE_SOA_COLUMN(PdgCodeProng2, pdgCodeProng2, int);             //! Pdg code 
 DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with reconstructed MC information on D0Pi(<-B+) pairs for reduced workflow
                   hf_cand_bplus_reduced::Prong0Id,
                   hf_cand_bplus_reduced::Prong1Id,
-                  hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::FlagWrongCollision,
-                  hf_cand_bplus::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfMcRecRedJPKs, "AOD", "HFMCRECREDJPK", //! Table with reconstructed MC information on J/PsiK(<-B+) pairs for reduced workflow
                   hf_cand_bplus_reduced::JpsiId,
                   hf_cand_bplus_reduced::BachKaId,
-                  hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::FlagMcDecayChanRec,
-                  hf_cand_bplus::FlagWrongCollision,
-                  hf_cand_bplus::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
 // DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
@@ -1000,10 +1000,10 @@ DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconst
 
 // Table with same size as HFCANDBPLUS
 DECLARE_SOA_TABLE(HfMcRecRedBps, "AOD", "HFMCRECREDBP", //! Reconstruction-level MC information on B+ candidates for reduced workflow
-                  hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::FlagMcDecayChanRec,
-                  hf_cand_bplus::FlagWrongCollision,
-                  hf_cand_bplus::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
 DECLARE_SOA_TABLE(HfMcCheckBps, "AOD", "HFMCCHECKBP", //! Table with reconstructed MC information on B+ candidates for MC checks in reduced workflow
@@ -1015,8 +1015,8 @@ DECLARE_SOA_TABLE(HfMcCheckBps, "AOD", "HFMCCHECKBP", //! Table with reconstruct
                   o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(HfMcGenRedBps, "AOD", "HFMCGENREDBP", //! Generation-level MC information on B+ candidates for reduced workflow
-                  hf_cand_bplus::FlagMcMatchGen,
-                  hf_cand_bplus::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_bplus_mc::PtTrack,
                   hf_bplus_mc::YTrack,
                   hf_bplus_mc::EtaTrack,
@@ -1075,9 +1075,9 @@ DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code 
 DECLARE_SOA_TABLE(HfMcRecRedDsPis, "AOD", "HFMCRECREDDSPI", //! Table with reconstructed MC information on DsPi(<-Bs) pairs for reduced workflow
                   hf_cand_bs_reduced::Prong0Id,
                   hf_cand_bs_reduced::Prong1Id,
-                  hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::FlagWrongCollision,
-                  hf_cand_bs::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_bs_mc::PtMother);
 
 // table with results of reconstruction level MC matching
@@ -1085,10 +1085,10 @@ DECLARE_SOA_TABLE(HfMcRecRedJPPhis, "AOD", "HFMCRECREDJPPHI", //! Table with rec
                   hf_cand_bs_reduced::JpsiId,
                   hf_cand_bs_reduced::Prong0PhiId,
                   hf_cand_bs_reduced::Prong1PhiId,
-                  hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::FlagMcDecayChanRec,
-                  hf_cand_bs::FlagWrongCollision,
-                  hf_cand_bs::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_bs_mc::PtMother);
 
 // try with extended table ?
@@ -1104,10 +1104,10 @@ DECLARE_SOA_TABLE(HfMcCheckDsPis, "AOD", "HFMCCHECKDSPI", //! Table with reconst
 
 // Table with same size as HFCANDBS
 DECLARE_SOA_TABLE(HfMcRecRedBss, "AOD", "HFMCRECREDBS", //! Reconstruction-level MC information on Bs candidates for reduced workflow
-                  hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::FlagMcDecayChanRec,
-                  hf_cand_bs::FlagWrongCollision,
-                  hf_cand_bs::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_bs_mc::PtMother);
 
 DECLARE_SOA_TABLE(HfMcCheckBss, "AOD", "HFMCCHECKBS", //! Table with reconstructed MC information on Bs candidates for MC checks in reduced workflow
@@ -1120,8 +1120,8 @@ DECLARE_SOA_TABLE(HfMcCheckBss, "AOD", "HFMCCHECKBS", //! Table with reconstruct
                   o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC information on Bs candidates for reduced workflow
-                  hf_cand_bs::FlagMcMatchGen,
-                  hf_cand_bs::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
                   hf_bs_mc::PtTrack,
                   hf_bs_mc::YTrack,
                   hf_bs_mc::EtaTrack,
@@ -1177,9 +1177,9 @@ DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code 
 DECLARE_SOA_TABLE(HfMcRecRedLcPis, "AOD", "HFMCRECREDLCPI", //! Table with reconstructed MC information on LcPi(<-Lb) pairs for reduced workflow
                   hf_cand_lb_reduced::Prong0Id,
                   hf_cand_lb_reduced::Prong1Id,
-                  hf_cand_lb::FlagMcMatchRec,
-                  hf_cand_lb::FlagWrongCollision,
-                  hf_cand_lb::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_lb_mc::PtMother);
 
 DECLARE_SOA_TABLE(HfMcCheckLcPis, "AOD", "HFMCCHECKLCPI", //! Table with reconstructed MC information on LcPi(<-Lb) pairs for MC checks in reduced workflow
@@ -1193,9 +1193,9 @@ DECLARE_SOA_TABLE(HfMcCheckLcPis, "AOD", "HFMCCHECKLCPI", //! Table with reconst
 
 // Table with same size as HFCANDLc
 DECLARE_SOA_TABLE(HfMcRecRedLbs, "AOD", "HFMCRECREDLB", //! Reconstruction-level MC information on Lb candidates for reduced workflow
-                  hf_cand_lb::FlagMcMatchRec,
-                  hf_cand_lb::FlagWrongCollision,
-                  hf_cand_lb::DebugMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagWrongCollision,
+                  hf_cand_mc_flag::DebugMcRec,
                   hf_lb_mc::PtMother);
 
 DECLARE_SOA_TABLE(HfMcCheckLbs, "AOD", "HFMCCHECKLB", //! Table with reconstructed MC information on Lb candidates for MC checks in reduced workflow
@@ -1208,7 +1208,7 @@ DECLARE_SOA_TABLE(HfMcCheckLbs, "AOD", "HFMCCHECKLB", //! Table with reconstruct
                   o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(HfMcGenRedLbs, "AOD", "HFMCGENREDLB", //! Generation-level MC information on Lb candidates for reduced workflow
-                  hf_cand_lb::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcMatchGen,
                   hf_lb_mc::PtTrack,
                   hf_lb_mc::YTrack,
                   hf_lb_mc::EtaTrack,
@@ -1558,7 +1558,7 @@ DECLARE_SOA_TABLE(Hf3PrV0McRec, "AOD", "HF3PRV0MCREC",
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
-                  hf_cand::NTracksDecayed,
+                  hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfDstarV0McRec, "AOD", "HFDSTARV0MCREC",
@@ -1571,7 +1571,7 @@ DECLARE_SOA_TABLE(HfDstarV0McRec, "AOD", "HFDSTARV0MCREC",
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
-                  hf_cand::NTracksDecayed,
+                  hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Hf2PrV0McRec, "AOD", "HF2PRV0MCREC",
@@ -1584,7 +1584,7 @@ DECLARE_SOA_TABLE(Hf2PrV0McRec, "AOD", "HF2PRV0MCREC",
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
-                  hf_cand::NTracksDecayed,
+                  hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Hf3PrTrkMcRec, "AOD", "HF3PRTRKMCREC",
@@ -1597,7 +1597,7 @@ DECLARE_SOA_TABLE(Hf3PrTrkMcRec, "AOD", "HF3PRTRKMCREC",
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
-                  hf_cand::NTracksDecayed,
+                  hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfDstarTrkMcRec, "AOD", "HFDSTARTRKMCREC",
@@ -1610,7 +1610,7 @@ DECLARE_SOA_TABLE(HfDstarTrkMcRec, "AOD", "HFDSTARTRKMCREC",
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
-                  hf_cand::NTracksDecayed,
+                  hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Hf2PrTrkMcRec, "AOD", "HF2PRTRKMCREC",
@@ -1623,11 +1623,11 @@ DECLARE_SOA_TABLE(Hf2PrTrkMcRec, "AOD", "HF2PRTRKMCREC",
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
-                  hf_cand::NTracksDecayed,
+                  hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level MC information on Ds-Resonances candidates for reduced workflow
-                  hf_cand_b0::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcMatchGen,
                   hf_reso_cand_reduced::Origin,
                   hf_b0_mc::PtTrack,
                   hf_b0_mc::YTrack,
@@ -1651,7 +1651,7 @@ DECLARE_SOA_TABLE(HfMcRecRedResos, "AOD", "HFMCRECREDRESO", //! Reconstruction-l
                   hf_reso_cand_reduced::Origin,
                   hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
-                  hf_cand::NTracksDecayed,
+                  hf_cand_mc_flag::NTracksDecayed,
                   o2::soa::Marker<1>);
 } // namespace aod
 
