@@ -139,11 +139,6 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
                          jcollision::CentFT0C,
                          jcollision::CentFT0M,
                          jcollision::CentFT0CVariant1,
-                         jcollision::AmplitudesFV0,
-                         jcollision::AmplitudesFT0A,
-                         jcollision::AmplitudesFT0C,
-                         jcollision::AmplitudesFDDA,
-                         jcollision::AmplitudesFDDC,
                          jcollision::HadronicRate,
                          jcollision::TrackOccupancyInTimeRange,
                          jcollision::Alias,
@@ -153,6 +148,13 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
 
 using JCollision = JCollisions::iterator;
 using StoredJCollision = StoredJCollisions::iterator;
+
+DECLARE_SOA_TABLE_STAGED(JCollisionUPCs, "JCOLLISIONUPC",
+                         jcollision::AmplitudesFV0,
+                         jcollision::AmplitudesFT0A,
+                         jcollision::AmplitudesFT0C,
+                         jcollision::AmplitudesFDDA,
+                         jcollision::AmplitudesFDDC);
 
 DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
                          jcollision::Weight,
