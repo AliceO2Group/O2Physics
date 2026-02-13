@@ -16,6 +16,7 @@
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -57,9 +58,11 @@
 #include <cstdlib>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
+using namespace o2::aod::rctsel;
 using namespace o2::aod::track;
 using namespace o2::constants::math;
 using namespace o2::framework;
@@ -91,10 +94,20 @@ enum DataType {
   Mc
 };
 
-enum EventSelectionStep {
-  AllEvents = 0,
-  AfterEventSelection,
-  NEventSelectionSteps
+enum SpecificEventSelectionStep {
+  AllEventsPrecise = 0,
+  HasMcCollision,
+  IsSel8,
+  IsNoSameBunchPileup,
+  IsGoodItsLayersAll,
+  IsGoodZvtxFT0vsPV,
+  IsNoCollInRofStandard,
+  IsNoCollInRofStrict,
+  IsNoCollInTimeRangeStandard,
+  IsNoCollInTimeRangeStrict,
+  IsNoHighMultCollInPrevRof,
+  IsRctFlagChecked,
+  NSpecificEventSelectionSteps
 };
 
 enum MonteCarloEventSelectionStep {
@@ -180,6 +193,9 @@ enum MultiplicityEstimators {
 
 static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
 static constexpr std::string_view WhatMultiplicityEstimator[] = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
+std::unordered_map<int, float> recoVtxX;
+std::unordered_map<int, float> recoVtxY;
+std::unordered_map<int, float> recoVtxZ;
 
 struct MftReassociationValidation {
 
@@ -206,7 +222,17 @@ struct MftReassociationValidation {
     Configurable<int> minMultiplicity{"minMultiplicity", 0, "minimum multiplicity selection for collision"};
     Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, ""};
+    Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, ""};
+    Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, ""};
+    Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, ""};
+    Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, ""};
     Configurable<float> zVertexMax{"zVertexMax", 10.0f, "Accepted z-vertex range"};
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
+    Configurable<bool> requireCorrelationAnalysisRCTFlagChecker{"requireCorrelationAnalysisRCTFlagChecker", false, "Check event quality in run condition table for correlation analysis"};
+    Configurable<std::string> setRCTFlagCheckerLabel{"setRCTFlagCheckerLabel", "CBT_muon_global", "Evt sel: RCT flag checker label"};
+    Configurable<bool> requireRCTFlagCheckerLimitAcceptanceAsBad{"requireRCTFlagCheckerLimitAcceptanceAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+    Configurable<bool> requireZDCCheck{"requireZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<std::string> rctFlagCheckerLabel{"rctFlagCheckerLabel", "CBT_fw", "Evt sel: RCT flag checker label"};
   } configCollision;
 
   //   configurables for MFT tracks
@@ -231,6 +257,8 @@ struct MftReassociationValidation {
   Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
+  RCTFlagsChecker rctChecker;
+  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad};
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffAmbiguousTracks;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNonAmbiguousTracks;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiff2dReassociatedTracks;
@@ -454,6 +482,8 @@ struct MftReassociationValidation {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
+    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
 
     //  =========================
     //      Event histograms
@@ -463,14 +493,24 @@ struct MftReassociationValidation {
     // registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
     registry.add(Form("Data/hMultiplicity_%s", WhatMultiplicityEstimator[configCollision.multiplicityEstimator].data()), "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
 
-    registry.add("Data/hEventCounter", "hEventCounter", {HistType::kTH1D, {{EventSelectionStep::NEventSelectionSteps, -0.5, +EventSelectionStep::NEventSelectionSteps - 0.5}}});
-    std::string labels[EventSelectionStep::NEventSelectionSteps];
-    labels[EventSelectionStep::AllEvents] = "all";
-    labels[EventSelectionStep::AfterEventSelection] = "after Physics selection";
-    registry.get<TH1>(HIST("Data/hEventCounter"))->SetMinimum(0);
+    registry.add("hPreciseEventCounter", "hPreciseEventCounter", {HistType::kTH1D, {{SpecificEventSelectionStep::NSpecificEventSelectionSteps, -0.5, +SpecificEventSelectionStep::NSpecificEventSelectionSteps - 0.5}}});
+    std::string labels[SpecificEventSelectionStep::NSpecificEventSelectionSteps];
+    labels[SpecificEventSelectionStep::AllEventsPrecise] = "all";
+    labels[SpecificEventSelectionStep::HasMcCollision] = "has MC coll?";
+    labels[SpecificEventSelectionStep::IsSel8] = "sel8";
+    labels[SpecificEventSelectionStep::IsNoSameBunchPileup] = "IsNoSameBunchPileup";
+    labels[SpecificEventSelectionStep::IsGoodItsLayersAll] = "IsGoodItsLayersAll";
+    labels[SpecificEventSelectionStep::IsGoodZvtxFT0vsPV] = "IsGoodZvtxFT0vsPV";
+    labels[SpecificEventSelectionStep::IsNoCollInRofStandard] = "IsNoCollInRofStandard";
+    labels[SpecificEventSelectionStep::IsNoCollInRofStrict] = "IsNoCollInRofStrict";
+    labels[SpecificEventSelectionStep::IsNoCollInTimeRangeStandard] = "IsNoCollInTimeRangeStandard";
+    labels[SpecificEventSelectionStep::IsNoCollInTimeRangeStrict] = "IsNoCollInTimeRangeStrict";
+    labels[SpecificEventSelectionStep::IsNoHighMultCollInPrevRof] = "IsNoHighMultCollInPrevRof";
+    labels[SpecificEventSelectionStep::IsRctFlagChecked] = "IsRctFlagChecked";
+    registry.get<TH1>(HIST("hPreciseEventCounter"))->SetMinimum(0);
 
-    for (int iBin = 0; iBin < EventSelectionStep::NEventSelectionSteps; iBin++) {
-      registry.get<TH1>(HIST("Data/hEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    for (int iBin = 0; iBin < SpecificEventSelectionStep::NSpecificEventSelectionSteps; iBin++) {
+      registry.get<TH1>(HIST("hPreciseEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
     registry.add("MC/hMonteCarloEventCounter", "hMonteCarloEventCounter", {HistType::kTH1D, {{MonteCarloEventSelectionStep::NMonteCarloEventSelectionSteps, -0.5, +MonteCarloEventSelectionStep::NMonteCarloEventSelectionSteps - 0.5}}});
@@ -573,28 +613,69 @@ struct MftReassociationValidation {
   template <typename TCollision>
   bool isAcceptedCollision(TCollision const& collision, bool fillHistograms = false)
   {
-    if (fillHistograms) {
-      registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AllEvents);
-    }
 
     if (!collision.sel8()) {
       return false;
     }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsSel8);
+    }
     if (configCollision.isApplySameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    if (configCollision.isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    if (configCollision.isApplyNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
-      return false;
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNoSameBunchPileup);
     }
     if (configCollision.isApplyGoodItsLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
-
     if (fillHistograms) {
-      registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AfterEventSelection);
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsGoodItsLayersAll);
+    }
+    if (configCollision.isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsGoodZvtxFT0vsPV);
+    }
+    if (configCollision.isApplyNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInRofStandard);
+    }
+    if (configCollision.isApplyNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInRofStrict);
+    }
+    if (configCollision.isApplyNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInTimeRangeStandard);
+    }
+    if (configCollision.isApplyNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInTimeRangeStrict);
+    }
+    if (configCollision.isApplyNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNoHighMultCollInPrevRof);
+    }
+    if (configCollision.requireRCTFlagChecker && !rctChecker(collision)) {
+      return false;
+    }
+    if (configCollision.requireCorrelationAnalysisRCTFlagChecker && !correlationAnalysisRctChecker(collision)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsRctFlagChecked);
     }
 
     registry.fill(HIST("Data/hVtxZ"), collision.posZ());
@@ -677,6 +758,7 @@ struct MftReassociationValidation {
                    soa::SmallGroups<aod::BestCollisionsFwd> const& reassociated2dMftTracks,
                    aod::BCsWithTimestamps const&)
   {
+
     if (!(isAcceptedCollision(collision, true))) {
       return;
     }
@@ -704,6 +786,20 @@ struct MftReassociationValidation {
   }
   PROCESS_SWITCH(MftReassociationValidation, processData, "Process MFT reassociation validation for DATA", false);
 
+  void processCreateLookupTable(FilteredCollisionsWSelMultMcLabels const& collisions)
+  {
+    recoVtxX.reserve(collisions.size());
+    recoVtxY.reserve(collisions.size());
+    recoVtxZ.reserve(collisions.size());
+
+    for (auto const& col : collisions) {
+      recoVtxX.emplace(col.globalIndex(), col.posX());
+      recoVtxY.emplace(col.globalIndex(), col.posY());
+      recoVtxZ.emplace(col.globalIndex(), col.posZ());
+    }
+  }
+  PROCESS_SWITCH(MftReassociationValidation, processCreateLookupTable, "Process look uptable creation", false);
+
   void processMcReassociated2d(FilteredCollisionsWSelMultMcLabels::iterator const& collision,
                                FilteredMftTracksWCollsMcLabels const& /*mftTracks*/,
                                soa::SmallGroups<MftReasso2dTracksWCollsMcLabels> const& reassociated2dMftTracks,
@@ -711,12 +807,7 @@ struct MftReassociationValidation {
                                aod::McParticles const& /*particles*/)
   {
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
-
-    if (!isAcceptedCollision(collision, false)) {
-      return;
-    }
-
-    registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::MonteCarloEventsAfterEventSelection);
+    registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::AllEventsPrecise);
 
     if (!collision.has_mcCollision()) {
       registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::HasNotMonteCarloCollision);
@@ -724,6 +815,13 @@ struct MftReassociationValidation {
     }
 
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::HasMonteCarloCollision);
+    registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::HasMcCollision);
+
+    if (!isAcceptedCollision(collision, true)) {
+      return;
+    }
+
+    registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::MonteCarloEventsAfterEventSelection);
 
     for (auto const& reassociated2dMftTrack : reassociated2dMftTracks) {
 
@@ -749,14 +847,42 @@ struct MftReassociationValidation {
         float reassociatedDeltaX = -999.f;
         float reassociatedDeltaY = -999.f;
         float reassociatedDeltaZ = -999.f;
-        auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
-        auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-        deltaX = collision.posX() - mcCollision.posX();
-        deltaY = collision.posY() - mcCollision.posY();
-        deltaZ = collision.posZ() - mcCollision.posZ();
-        reassociatedDeltaX = reassociated2dMftTrack.collision().posX() - mcCollision.posX();
-        reassociatedDeltaY = reassociated2dMftTrack.collision().posY() - mcCollision.posY();
-        reassociatedDeltaZ = reassociated2dMftTrack.collision().posZ() - mcCollision.posZ();
+        // auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
+        // auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+        // deltaZ = collision.posZ() - mcCollision.posZ();
+        auto xPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posX();
+        auto yPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posY();
+        auto zPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posZ();
+
+        const int bestRecoCol = reassociated2dMftTrack.bestCollisionId();
+        // if (bestRecoCol < 0) {
+        //   // no associated reco collision -> skip or count separately
+        //   continue;
+        // }
+
+        auto iteratorRecoVtxX = recoVtxX.find(bestRecoCol);
+        auto iteratorRecoVtxY = recoVtxY.find(bestRecoCol);
+        auto iteratorRecoVtxZ = recoVtxZ.find(bestRecoCol);
+        if (iteratorRecoVtxX == recoVtxX.end()) {
+          // bestRecoCol not found in reco collisions map -> skip or count separately
+          continue;
+        }
+        if (iteratorRecoVtxY == recoVtxY.end()) {
+          // bestRecoCol not found in reco collisions map -> skip or count separately
+          continue;
+        }
+        if (iteratorRecoVtxZ == recoVtxZ.end()) {
+          // bestRecoCol not found in reco collisions map -> skip or count separately
+          continue;
+        }
+
+        const float xReco = iteratorRecoVtxX->second;
+        const float yReco = iteratorRecoVtxY->second;
+        const float zReco = iteratorRecoVtxZ->second;
+
+        reassociatedDeltaX = xReco - xPosTrue;
+        reassociatedDeltaY = yReco - yPosTrue;
+        reassociatedDeltaZ = zReco - zPosTrue;
 
         if (reassociated2dMftTrack.ambDegree() > 1) { // AMBIGUOUS TRACKS
           registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::NumberOfAmbiguousTracks);
@@ -830,12 +956,7 @@ struct MftReassociationValidation {
                                aod::McParticles const& /*particles*/)
   {
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
-
-    if (!isAcceptedCollision(collision, false)) {
-      return;
-    }
-
-    registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::MonteCarloEventsAfterEventSelection);
+    registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::AllEventsPrecise);
 
     if (!collision.has_mcCollision()) {
       registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::HasNotMonteCarloCollision);
@@ -843,6 +964,13 @@ struct MftReassociationValidation {
     }
 
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::HasMonteCarloCollision);
+    registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::HasMcCollision);
+
+    if (!isAcceptedCollision(collision, true)) {
+      return;
+    }
+
+    registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::MonteCarloEventsAfterEventSelection);
 
     for (auto const& reassociated3dMftTrack : reassociated3dMftTracks) {
 
@@ -868,14 +996,15 @@ struct MftReassociationValidation {
         float reassociatedDeltaX = -999.f;
         float reassociatedDeltaY = -999.f;
         float reassociatedDeltaZ = -999.f;
-        auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
-        auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-        deltaX = collision.posX() - mcCollision.posX();
-        deltaY = collision.posY() - mcCollision.posY();
-        deltaZ = collision.posZ() - mcCollision.posZ();
-        reassociatedDeltaX = reassociated3dMftTrack.collision().posX() - mcCollision.posX();
-        reassociatedDeltaY = reassociated3dMftTrack.collision().posY() - mcCollision.posY();
-        reassociatedDeltaZ = reassociated3dMftTrack.collision().posZ() - mcCollision.posZ();
+        // auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
+        // auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+        // deltaZ = collision.posZ() - mcCollision.posZ();
+        auto xPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posX();
+        auto yPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posY();
+        auto zPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posZ();
+        reassociatedDeltaX = reassociated3dMftTrack.collision().posX() - xPosTrue;
+        reassociatedDeltaY = reassociated3dMftTrack.collision().posY() - yPosTrue;
+        reassociatedDeltaZ = reassociated3dMftTrack.collision().posZ() - zPosTrue;
 
         if (reassociated3dMftTrack.ambDegree() > 1) { // AMBIGUOUS TRACKS
           registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::NumberOfAmbiguousTracks);
