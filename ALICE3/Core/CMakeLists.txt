@@ -26,6 +26,7 @@ o2physics_add_library(FastTracker
                       SOURCES FastTracker.cxx
                               DetLayer.cxx
                               DelphesO2LutWriter.cxx
+                              GeometryContainer.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework
                                             O2Physics::AnalysisCore
                                             O2Physics::ALICE3Core)
@@ -34,4 +35,5 @@ o2physics_target_root_dictionary(FastTracker
                       HEADERS FastTracker.h
                               DetLayer.h
                               DelphesO2LutWriter.h
+                              GeometryContainer.h
                       LINKDEF FastTrackerLinkDef.h)
