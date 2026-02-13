@@ -59,6 +59,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 static constexpr double LongArrayDouble[4][2] = {{-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}};
+static constexpr float TrackCutArray[6][2] = {{2.5f, 2.5f}, {50.0f, 50.0f}, {70.0f, 70.0f}, {5.0f, 5.0f}, {2.0f, 2.0f}, {7.0f, 7.0f}};
 
 struct FlowTask {
 
@@ -77,11 +78,20 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEtaVnPt, float, 0.4, "eta range for pt in vn-pt correlations")
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
-  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {TrackCutArray[0], 6, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAz", "DCAxy Nsigma"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
+  enum cfgTrackCut {
+    // enum for labelledArray track selection
+    kChi2prTPCcls = 0, // max chi2 per TPC clusters
+    kTPCclu,           // minimum TPC found clusters
+    kTPCCrossedRows,   // minimum TPC crossed rows
+    kITSclu,           // minimum ITS found clusters
+    kDCAz,             // max DCA to vertex z
+    kDCAxyNSigma       // 0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track
+  };
+  enum cfgTrackCutGroup {
+    kTrCutNch = 0,
+    kTrCutObs = 1
+  };
   // Additional events selection flags
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
@@ -166,8 +176,8 @@ struct FlowTask {
     TF1* fPhiCutHigh = nullptr;
     // Functional form of pt-dependent DCAxy cut
     TF1* fPtDepDCAxy = nullptr;
-    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
-    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
+    TF1* fPtDepDCAxyForNch = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
   } cfgFuncParas;
 
   struct : ConfigurableGroup {
@@ -184,6 +194,8 @@ struct FlowTask {
     // for v02(pT)
     O2_DEFINE_CONFIGURABLE(cfgV02Enabled, bool, false, "Produce v02(pT)")
     O2_DEFINE_CONFIGURABLE(cfgV02CorrIndex, int, 8, "correlation index for n(pT)*corr")
+    O2_DEFINE_CONFIGURABLE(cfgV02FracEtaMin, float, -0.4, "minimum eta for particle fraction")
+    O2_DEFINE_CONFIGURABLE(cfgV02FracEtaMax, float, 0.4, "max eta for particle fraction")
     std::vector<float> nPt; // fraction of particles in each pT bin in one event
     std::vector<std::shared_ptr<TProfile2D>> listNptV2;
     std::vector<std::shared_ptr<TH2>> listPtX;
@@ -196,7 +208,7 @@ struct FlowTask {
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   // Filter for MCcollisions
@@ -676,10 +688,15 @@ struct FlowTask {
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
 
-    if (cfgFuncParas.cfgDCAxyNSigma) {
-      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgFuncParas.cfgDCAxyNSigma);
-      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()));
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]) {
+      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs], cfgFuncParas.cfgDCAxyFunc->c_str()));
+    }
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]) {
+      cfgFuncParas.fPtDepDCAxyForNch = new TF1("ptDepDCAxyForNch", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]);
+      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch], cfgFuncParas.cfgDCAxyFunc->c_str()));
     }
   }
 
@@ -864,7 +881,7 @@ struct FlowTask {
     correctionsLoaded = true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float& eff_nch, float phi, float eta, float pt, float vtxz)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -875,6 +892,15 @@ struct FlowTask {
       return false;
     weight_nue = 1. / eff;
 
+    if (mAcceptance)
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
+    else
+      weight_nua = 1;
+    return true;
+  }
+
+  bool setNchEffWeights(float& eff_nch, float pt)
+  {
     float effNch = 1.;
     if (mEfficiencyForNch)
       effNch = mEfficiencyForNch->GetBinContent(mEfficiencyForNch->FindBin(pt));
@@ -883,11 +909,6 @@ struct FlowTask {
     if (effNch == 0)
       return false;
     eff_nch = 1. / effNch;
-
-    if (mAcceptance)
-      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
-    else
-      weight_nua = 1;
     return true;
   }
 
@@ -1007,9 +1028,17 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgFuncParas.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
-    return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
+    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutObs]));
+  }
+
+  template <typename TTrack>
+  bool trackSelectedForNch(TTrack track)
+  {
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
+      return false;
+    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutNch]));
   }
 
   template <typename TTrack>
@@ -1168,6 +1197,7 @@ struct FlowTask {
     // track weights
     float weff = 1, wacc = 1, weffForNch = 1;
     double weffEvent = 0;
+    double weffEventFrac = 0;
     double ptSum = 0., ptSum_Gap08 = 0.;
     double weffEventWithinGap08 = 0., weffEventSquareWithinGap08 = 0.;
     double sumPtsquareWsquareWithinGap08 = 0., sumPtWsquareWithinGap08 = 0.;
@@ -1210,6 +1240,9 @@ struct FlowTask {
     }
 
     for (const auto& track : tracks) {
+      if (trackSelectedForNch(track) && setNchEffWeights(weffForNch, track.pt())) {
+        nTracksCorrected += weffForNch;
+      }
       if (!trackSelected(track))
         continue;
       if (cfgFuncParas.cfgShowTPCsectorOverlap && !rejectionTPCoverlap(track, magnetfield))
@@ -1230,7 +1263,7 @@ struct FlowTask {
             th3sPerRun[currentRunNumber]->Fill(track.phi(), track.eta(), collision.posZ());
         }
       }
-      if (!setCurrentParticleWeights(weff, wacc, weffForNch, track.phi(), track.eta(), track.pt(), vtxz))
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
       if (cfgTrackDensityCorrUse && withinPtRef) {
         double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
@@ -1245,11 +1278,12 @@ struct FlowTask {
         }
       }
       registry.fill(HIST("hPt"), track.pt());
-      if (cfgAdditionObs.cfgV02Enabled) {
+      if (cfgAdditionObs.cfgV02Enabled && track.eta() >= cfgAdditionObs.cfgV02FracEtaMin && track.eta() <= cfgAdditionObs.cfgV02FracEtaMax) {
         cfgAdditionObs.listPtX[0]->Fill(independent, track.pt(), weff);
         cfgAdditionObs.listPtX[sampleIndex + 1]->Fill(independent, track.pt(), weff);
         if ((fPtAxis->FindBin(track.pt()) - 1) < fPtAxis->GetNbins()) // sanity check to avoid out of range error
           cfgAdditionObs.nPt[fPtAxis->FindBin(track.pt()) - 1] += weff;
+        weffEventFrac += weff;
       }
       if (withinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
@@ -1265,7 +1299,6 @@ struct FlowTask {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         weffEvent += weff;
         ptSum += weff * track.pt();
-        nTracksCorrected += weffForNch;
         if (withinEtaGap08) {
           ptSum_Gap08 += weff * track.pt();
           sumPtWsquareWithinGap08 += weff * weff * track.pt();
@@ -1327,9 +1360,9 @@ struct FlowTask {
     }
 
     // v02
-    if (cfgAdditionObs.cfgV02Enabled && weffEvent > 0) {
+    if (cfgAdditionObs.cfgV02Enabled && weffEventFrac > 0) {
       for (auto ipt = 0; ipt < fPtAxis->GetNbins(); ipt++) {
-        cfgAdditionObs.nPt[ipt] /= weffEvent;
+        cfgAdditionObs.nPt[ipt] /= weffEventFrac;
       }
       fillNptV2Profile(corrconfigs.at(cfgAdditionObs.cfgV02CorrIndex), cfgAdditionObs.nPt, independent, 0);
       fillNptV2Profile(corrconfigs.at(cfgAdditionObs.cfgV02CorrIndex), cfgAdditionObs.nPt, independent, sampleIndex + 1);
