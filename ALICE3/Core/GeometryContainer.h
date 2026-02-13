@@ -53,9 +53,10 @@ struct GeometryEntry {
    * @param path The path to the file, either local or ccdb (starting with "ccdb:")
    * @param downloadPath The local path where to download the file if it's a ccdb path. Default is "/tmp/GeometryContainer/"
    * @param ccdb Pointer to the CCDB manager to use for retrieving the file if it's a ccdb path. If nullptr, the function will create a temporary CCDB manager instance. Default is nullptr.
+   * @param timeoutSeconds If positive, then this function will wait for these seconds after download before removing the downloaded file.
    * @return The local path to the file, either the original local path or the path to the retrieved file from ccdb
    */
-  static std::string accessFile(const std::string& path, const std::string downloadPath = "/tmp/GeometryContainer/", o2::ccdb::BasicCCDBManager* ccdb = nullptr);
+  static std::string accessFile(const std::string& path, const std::string downloadPath = "/tmp/GeometryContainer/", o2::ccdb::BasicCCDBManager* ccdb = nullptr, int timeoutSeconds = 60);
 
   std::map<std::string, std::map<std::string, std::string>> getConfigurations() const { return mConfigurations; }
   std::map<std::string, std::string> getConfiguration(const std::string& layerName) const;
@@ -87,7 +88,7 @@ class GeometryContainer
   // Add a geometry entry from a configuration file
   void addEntry(const std::string& filename) { mEntries.emplace_back(filename, mCcdb); }
   void setLutCleanupSetting(const bool cleanLutWhenLoaded) { mCleanLutWhenLoaded = cleanLutWhenLoaded; }
-  void setCcdbManager(o2::ccdb::BasicCCDBManager* manager) { mCcdb = manager; }
+  void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdb = mgr; }
 
   // Getters
   int getNumberOfConfigurations() const { return mEntries.size(); }
