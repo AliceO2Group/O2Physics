@@ -74,6 +74,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   Configurable<float> confmom{"confmom", 0.5, "momentum threshold for particle identification using TOF"};
   Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < confmom"};
+  Configurable<float> confNsigmaTPCDaughter{"confNsigmaTPCDaughter", 3.0, "TPC Sigma for daughter"};
+
   Configurable<float> confNsigmaTOFParticle{"confNsigmaTOFParticle", 3.0, "TOF Sigma for particle (daugh & bach) momentum > Confmom"};
   Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > confmom"};
 
@@ -145,6 +147,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   /// Correlation part
   // Configurable<int> confTrackChoicePartTwo{"confTrackChoicePartTwo", 1, "0:Proton, 1:Pion, 2:Kaon"}; //not used
   Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
+  Configurable<bool> confIsDebug{"confIsDebug", false, "Enable additional histograms (e.g. three-momentum)"};
   Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<bool> confUseCent{"confUseCent", false, "Use centrality in place of multiplicity"};
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -212,7 +215,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
   {
-    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle) {
+    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCDaughter) {
       return true;
     } else {
       return false;
@@ -277,6 +280,17 @@ struct FemtoUniversePairTaskTrackV0Extended {
     qaRegistry.add("V0Type2/hInvMassLambdaVsCent", "; Centrality; M_{#Lambda}; Entries", kTH2F, {confMultBins, {2000, 1.f, 3.f}});
     qaRegistry.add("V0Type1/hInvMassAntiLambdaVsCent", "; Centrality; M_{#Lambda}; Entries", kTH2F, {confMultBins, {2000, 1.f, 3.f}});
     qaRegistry.add("V0Type2/hInvMassAntiLambdaVsCent", "; Centrality; M_{#Lambda}; Entries", kTH2F, {confMultBins, {2000, 1.f, 3.f}});
+
+    if (confIsDebug) {
+      qaRegistry.add("SameEvent/hPtPosDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("SameEvent/hPtNegDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("SameEvent/hDaughMomPart1", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("SameEvent/hDaughMomPart2", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("MixedEvent/hPtPosDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("MixedEvent/hPtNegDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("MixedEvent/hDaughMomPart1", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("MixedEvent/hDaughMomPart2", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+    }
 
     trackHistoV0Type1.init(&qaRegistry, ConfV0Selection.confV0TempFitVarpTBins, ConfV0Selection.confV0TempFitVarBins, confIsMC, ConfV0Selection.confV0PDGCodePartTwo, true, "V0Type1");
     posChildV0Type1.init(&qaRegistry, ConfV0Selection.confChildTempFitVarpTBins, ConfV0Selection.confChildTempFitVarBins, false, 0, true, "posChildV0Type1");
@@ -742,6 +756,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
         }
       }
 
+      if (confIsDebug) {
+        qaRegistry.fill(HIST("SameEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
+        qaRegistry.fill(HIST("SameEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
+        qaRegistry.fill(HIST("SameEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
+        qaRegistry.fill(HIST("SameEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
+      }
+
       if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
         sameEventCont.setPair<true>(p1, p2, multCol, confUse3D);
       else
@@ -1110,6 +1131,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
           } else if (!confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
+        }
+
+        if (confIsDebug) {
+          qaRegistry.fill(HIST("MixedEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
+          qaRegistry.fill(HIST("MixedEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
+          qaRegistry.fill(HIST("MixedEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
+          qaRegistry.fill(HIST("MixedEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
         }
 
         if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
