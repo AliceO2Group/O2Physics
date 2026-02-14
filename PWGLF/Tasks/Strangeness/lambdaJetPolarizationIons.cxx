@@ -147,9 +147,9 @@ struct lambdajetpolarizationions {
 
     // struct : ProducesGroup {
     // } products;
-    Produces<aod::RingLambdaLikeV0s> tableV0s;
-    Produces<aod::RingJets> tableJets;
-    Produces<aod::RingCollisions> tableCollisions;
+    Produces<o2::aod::RingLaV0s> tableV0s;
+    Produces<o2::aod::RingJets> tableJets;
+    Produces<o2::aod::RingCollisions> tableCollisions;
 
     // Define histogram registries:
     HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -184,16 +184,11 @@ struct lambdajetpolarizationions {
     // Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
     // /////////////////////////////////////////////
 
-    // ////////////////////////////////////////////
-    // Manual slice by: (TODO)
-    // SliceCache cache;
-    // Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
-    // Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId;
-    // Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
-    // Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
-    // Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
-    // Preslice<UDCollisionsFull> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
-    // ///////////////////////////////////////////
+    // TODO: COMPLEMENTARY ANALYSES TO STUDY SPURIOUS POLARIZATION SOURCES!
+    // TODO: add an event plane selection procedure to get an angle between the global polarization axis and the jet axis to uncouple polarizations?
+    // TODO: (related to previous comment) if we already have event plane, also estimate v_2-caused polarization. Hydro papers indicate observable is unsensitive to this spurious polarization, but this is a perfect consistency check.
+    // TODO: add a longitudinal polarization block of code to estimate other sources of polarization (and possibly study their differential dependence on the angle wrlt the jets and their rings)?
+    // TODO: add a block of code that calculates polarization from Lambda fragmentation to estimate the contamination of this third source of polarization
     
     
     // Configurable groups:
@@ -235,7 +230,8 @@ struct lambdajetpolarizationions {
 
         // Selection criteria: acceptance
         Configurable<float> rapidityCut{"rapidityCut", 1.0f, "rapidity"};
-        Configurable<float> daughterEtaCut{"daughterEtaCut", 0.9, "max eta for daughters"}; // Default is 0.8. Changed to 0.9 to agree with jet selection. TODO: test the impact/biasing of this!
+        Configurable<float> v0EtaCut{"v0EtaCut", 0.9f, "eta cut for v0"};
+        Configurable<float> daughterEtaCut{"daughterEtaCut", 0.9f, "max eta for daughters"}; // Default is 0.8. Changed to 0.9 to agree with jet selection. TODO: test the impact/biasing of this!
 
         // Standard 5 topological criteria -- Closed a bit more for the Lambda analysis
         Configurable<float> v0cospa{"v0cospa", 0.995, "min V0 CosPA"}; // Default is 0.97
@@ -462,7 +458,6 @@ struct lambdajetpolarizationions {
         }
     }
 
-
     // Track analysis parameters -- A specific group that is different from the v0Selections. In jet analyses we need to control our PseudoJet candidates!
     // (TODO: include minimal selection criteria for electrons, muons and photons)
     // Notice you do NOT need any PID for the PseudoJet candidates! Only need is to know the 4-momentum appropriately. Thus removed nsigma checks on PID
@@ -490,34 +485,7 @@ struct lambdajetpolarizationions {
         Configurable<float> dcaxyMaxTrackPar2{"dcaxyMaxTrackPar2", 1.1f, "Exponent of pt dependence of DCA resolution"};
     } pseudoJetCandidateTrackSelections;
 
-    // struct : ConfigurableGroup {
-    //     std::string prefix = "jetQAConfigurations"; // JSON group name
-    //     Configurable
-    // } jetQAConfigurations; // (TODO)
-
-    // Instantiate utility class for jet background subtraction
     JetBkgSubUtils backgroundSub;
-
-    // // Lambda Ring Polarization axes configurable group:
-    // struct : ConfigurableGroup {
-    //     std::string prefix = "ringPolConfigurations"; // JSON group name
-        
-    // } ringPolConfigurations; // (TODO)
-
-
-    // Define per-collision preslices for V0s, MC particles, and daughter tracks:
-    Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
-    // Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
-    Preslice<DauTracks> perCollisionTrk = o2::aod::track::collisionId;
-
-    // Service<o2::framework::O2DatabasePDG> pdg;
-
-    // std::vector<uint32_t> genLambda;
-    // std::vector<uint32_t> genAntiLambda;
-    // std::vector<uint32_t> genXiMinus;
-    // std::vector<uint32_t> genXiPlus;
-    // std::vector<uint32_t> genOmegaMinus;
-    // std::vector<uint32_t> genOmegaPlus;
 
     void init(InitContext const&){ // (TODO: add all useful histograms here! Add flags for QA plots and the such too)
         // setting CCDB service
@@ -657,7 +625,7 @@ struct lambdajetpolarizationions {
             });
         };
         constexpr bool Lambda = true; // Some constexpr to make it more readable (works at compile level)
-        constexpr bool AntiLambda = false;
+        constexpr bool AntiLambda = false; // "false" is just a flag for this addHypothesis function! It just means fill "AntiLambda" labels
         addHypothesis(Lambda, analyseLambda);
         addHypothesis(AntiLambda, analyseAntiLambda);
 
@@ -1152,6 +1120,7 @@ struct lambdajetpolarizationions {
 
         // pseudorapidity cuts:
         if (std::fabs(v0.yLambda()) > v0Selections.rapidityCut) return false;
+        // if (std::fabs(v0.eta()) > v0Selections.v0EtaCut) return false;
         V0SelCounter.fill();
         // if (std::fabs(v0.eta()) > v0Selections.daughterEtaCut) return false; // (TODO: properly consider this in daughter selection!)
         
@@ -1595,6 +1564,21 @@ struct lambdajetpolarizationions {
 
             // Saving the Lambdas into a derived data column:
             auto const v0pt = v0.pt();
+            // LOG(INFO) << "Filling tableV0s";
+            // LOG(INFO) << collIdx;
+            // LOG(INFO) << v0pt;
+            // LOG(INFO) << v0.eta();
+            // LOG(INFO) << v0.phi();
+            // LOG(INFO) << isLambda;
+            // LOG(INFO) << isAntiLambda;
+            // LOG(INFO) << v0.mLambda();
+            // LOG(INFO) << v0.mAntiLambda();
+            // LOG(INFO) << v0.positivept();
+            // LOG(INFO) << v0.positiveeta();
+            // LOG(INFO) << v0.positivephi();
+            // LOG(INFO) << v0.negativept();
+            // LOG(INFO) << v0.negativeeta();
+            // LOG(INFO) << v0.negativephi();
             tableV0s(collIdx,
                     v0pt,
                     v0.eta(), // Using eta instead of rapidity
@@ -1649,6 +1633,15 @@ struct lambdajetpolarizationions {
                 // Remaking these variables outside of the passesLambdaLambdaBarHypothesis. Loses performance, but that should be OK for QA
                 const auto posTrackExtra = v0.template posTrack_as<DauTracks>();
                 const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
+                histos.fill(HIST("hPosDCAToPV"), v0.dcapostopv());
+                histos.fill(HIST("hNegDCAToPV"), v0.dcanegtopv());
+                histos.fill(HIST("hDCADaughters"), v0.dcaV0daughters());
+                histos.fill(HIST("hPointingAngle"), std::acos(v0.v0cosPA()));
+                histos.fill(HIST("hV0Radius"), v0.v0radius());
+                histos.fill(HIST("h2dPositiveITSvsTPCpts"), posTrackExtra.tpcNClsCrossedRows(), posTrackExtra.itsNCls());
+                histos.fill(HIST("h2dNegativeITSvsTPCpts"), negTrackExtra.tpcNClsCrossedRows(), negTrackExtra.itsNCls());
+                histos.fill(HIST("h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
+                histos.fill(HIST("h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
                 if (isLambda && analyseLambda) {
                     histos.fill(HIST("h3dMassLambda"), centrality, v0pt, v0.mLambda());
                     histos.fill(HIST("hMassLambda"), v0.mLambda());
@@ -1696,8 +1689,10 @@ struct lambdajetpolarizationions {
                     }
                 }
                 if (isAntiLambda && analyseAntiLambda) {
+                    // histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+                    // histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, v0pt, v0.mAntiLambda()); // (TODO: add the proper call to this fill)
                     histos.fill(HIST("h3dMassAntiLambda"), centrality, v0pt, v0.mAntiLambda());
-                histos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
+                    histos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
                     histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
                     histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
                     histos.fill(HIST("AntiLambda/hDCADaughters"), v0.dcaV0daughters());
@@ -1742,14 +1737,15 @@ struct lambdajetpolarizationions {
                     }
                 }
             } // end CompleteTopoQA
-        }
+        } // end V0s loop
+        // Only fills collision when there is a valid V0 in it: (TODO: could probably do the same for the jets table)
         if (hasValidV0){
-            tableCollisions(collIdx,
-                            centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
+            // LOG(INFO) << "Filling tableCollisions";
+            tableCollisions(collIdx, centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
         }
     }
 
-    PROCESS_SWITCH(lambdajetpolarizationions, processJetsData, "Process jets and produced derived data in Run 3 Data", true);
+    PROCESS_SWITCH(lambdajetpolarizationions, processJetsData, "Process jets and produce derived data in Run 3 Data", true);
     PROCESS_SWITCH(lambdajetpolarizationions, processV0sData, "Process V0s and produce derived data in Run 3 Data", true);
     // PROCESS_SWITCH(lambdajetpolarizationions, processJetsMC, "Process jets and produced derived data in Run 3 MC", true);
     // PROCESS_SWITCH(lambdajetpolarizationions, processV0sMC, "Process V0s and produce derived data in Run 3 MC", true);

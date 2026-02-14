@@ -28,7 +28,7 @@ namespace o2::aod
 namespace lambdajetpol
 {
 
-DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t);
+DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t); // Using a regular SOA column instead of an index column for convenience
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
@@ -63,7 +63,7 @@ DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS", // Renamed to follow convention o
                   lambdajetpol::JetPhi,
                   lambdajetpol::JetNConstituents);
 
-DECLARE_SOA_TABLE(RingLambdaLikeV0s, "AOD", "RINGLAMBDALIKEV0S",
+DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S",
                   lambdajetpol::CollIdx,
                   lambdajetpol::V0Pt,
                   lambdajetpol::V0Eta,
@@ -84,4 +84,4 @@ DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
                   lambdajetpol::Centrality);
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_lambdajetpol_H_
+#endif // PWGLF_DATAMODEL_LAMBDAJETPOL_H_
