@@ -57,13 +57,73 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using ROOT::Math::XYZVector;
 using ROOT::Math::PtEtaPhiMVector;
-using namespace ROOT::Math::VectorUtil;
 // using namespace o2::aod::lambdajetpol; // Used it explicitly along the code for clarity
 
     // Declaring constants:
 constexpr double protonMass = o2::constants::physics::MassProton; // Assumes particle identification for daughter is perfect
 constexpr double lambdaWeakDecayConstant = 0.749; // DPG 2025 update
 constexpr double antiLambdaWeakDecayConstant = -0.758; // DPG 2025 update
+
+
+// Helper macro to avoid writing the histogram fills 4 times for about 20 histograms:
+#define RING_OBSERVABLE_FILL_LIST(X, FOLDER)                                                         \
+    /* 1D observable histograms */                                                                     \
+    X(FOLDER "/hRingObservableDeltaPhi",                     deltaPhiJet,   ringObservable)           \
+    X(FOLDER "/hRingObservableDeltaTheta",                   deltaThetaJet, ringObservable)           \
+    X(FOLDER "/hRingObservableIntegrated",                   0.,            ringObservable)           \
+    /* Counters */                                                                                     \
+    X(FOLDER "/hDeltaPhi",                                   deltaPhiJet)                             \
+    X(FOLDER "/hDeltaTheta",                                 deltaThetaJet)                           \
+    X(FOLDER "/hIntegrated",                                 0.)                                      \
+    /* Lambda pT variation -- Youpeng's proposal */                                                   \
+    X(FOLDER "/hRingObservableLambdaPt",                     v0pt,           ringObservable)          \
+    X(FOLDER "/hRingObservableLambdaPt",                     v0pt)                                    \
+    /* 2D Lambda correlations */                                                                       \
+    X(FOLDER "/h2dRingObservableDeltaPhiVsLambdaPt",         deltaPhiJet,   v0pt, ringObservable)     \
+    X(FOLDER "/h2dRingObservableDeltaThetaVsLambdaPt",       deltaThetaJet, v0pt, ringObservable)     \
+    /* Counters */                                                                                     \
+    X(FOLDER "/h2dDeltaPhiVsLambdaPt",                       deltaPhiJet,   v0pt)                     \
+    X(FOLDER "/h2dDeltaThetaVsLambdaPt",                     deltaThetaJet, v0pt)                     \
+    /* 2D Jet correlations */                                                                          \
+    X(FOLDER "/h2dRingObservableDeltaPhiVsLeadJetPt",        deltaPhiJet,   leadingJetPt, ringObservable) \
+    X(FOLDER "/h2dRingObservableDeltaThetaVsLeadJetPt",      deltaThetaJet, leadingJetPt, ringObservable) \
+    /* Counters */                                                                                     \
+    X(FOLDER "/h2dDeltaPhiVsLeadJetPt",                      deltaPhiJet,   leadingJetPt)             \
+    X(FOLDER "/h2dDeltaThetaVsLeadJetPt",                    deltaThetaJet, leadingJetPt)             \
+    /* Additional plots for instant gratification - 1D Profiles */                                    \
+    X(FOLDER "/pRingObservableDeltaPhi",                     deltaPhiJet,   ringObservable)           \
+    X(FOLDER "/pRingObservableDeltaTheta",                   deltaThetaJet, ringObservable)           \
+    X(FOLDER "/pRingObservableIntegrated",                   0.,            ringObservable)           \
+    X(FOLDER "/pRingObservableLambdaPt",                     v0pt,          ringObservable)           \
+    /* 2D Profiles */                                                                                  \
+    X(FOLDER "/p2dRingObservableDeltaPhiVsLambdaPt",         deltaPhiJet,   v0pt, ringObservable)     \
+    X(FOLDER "/p2dRingObservableDeltaThetaVsLambdaPt",       deltaThetaJet, v0pt, ringObservable)     \
+    X(FOLDER "/p2dRingObservableDeltaPhiVsLeadJetPt",        deltaPhiJet,   leadingJetPt, ringObservable) \
+    X(FOLDER "/p2dRingObservableDeltaThetaVsLeadJetPt",      deltaThetaJet, leadingJetPt, ringObservable)
+  // Lambda mass correlations (1D + 1D and 2D + 1D): (TODO: signal extraction attempts)
+
+// ======================================================
+// Ring Observable SQUARED histogram fill list
+// ======================================================
+#define RING_OBSERVABLE_SQUARED_FILL_LIST(X, FOLDER)                                                \
+    /* 1D observable histograms */                                                                    \
+    X(FOLDER "/hRingObservableSquaredDeltaPhi",               deltaPhiJet,   ringObservableSquared)  \
+    X(FOLDER "/hRingObservableSquaredDeltaTheta",             deltaThetaJet, ringObservableSquared)  \
+    X(FOLDER "/hRingObservableSquaredIntegrated",             0.,            ringObservableSquared)  \
+    /* Lambda pT variation */                                                                         \
+    X(FOLDER "/hRingObservableSquaredLambdaPt",               v0pt,          ringObservableSquared)  \
+    /* 2D Lambda correlations */                                                                      \
+    X(FOLDER "/h2dRingObservableSquaredDeltaPhiVsLambdaPt",   deltaPhiJet,   v0pt,          ringObservableSquared) \
+    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsLambdaPt", deltaThetaJet, v0pt,          ringObservableSquared) \
+    /* 2D Jet correlations */                                                                         \
+    X(FOLDER "/h2dRingObservableSquaredDeltaPhiVsLeadJetPt",  deltaPhiJet,   leadingJetPt, ringObservableSquared) \
+    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt",deltaThetaJet, leadingJetPt, ringObservableSquared)
+
+// Apply the macros (notice I had to include the semicolon (";") after the function, so you don't need to 
+// write that when calling this APPLY_HISTO_FILL. The code will look weird, but without this the compiler
+// would not know to end each statement with a semicolon):
+#define APPLY_HISTO_FILL(NAME, ...) histos.fill(HIST(NAME), __VA_ARGS__);
+
 
 struct lambdajetpolarizationionsderived {
 
@@ -174,92 +234,29 @@ struct lambdajetpolarizationionsderived {
             // ===============================
             histos.add((folder + "/p2dRingObservableDeltaPhiVsLeadJetPt").c_str(), "p2dRingObservableDeltaPhiVsLeadJetPt;#Delta#varphi_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
             histos.add((folder + "/p2dRingObservableDeltaThetaVsLeadJetPt").c_str(), "p2dRingObservableDeltaThetaVsLeadJetPt;cos#theta_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisJetPt});
+            // (TODO: add mass histograms for signal extraction)
         };
         // Execute local lambda to register histogram families:
         addRingObservableFamily("Ring");
         addRingObservableFamily("RingKinematicCuts");
         addRingObservableFamily("JetKinematicCuts");
         addRingObservableFamily("JetAndLambdaKinematicCuts");
-
     }
 
-    //// Fill Ring Observable histograms:
-    // Notice that this implementation does not use the HIST() optimization for searching histograms
-    // (yes, we have a small overhead for looking up the histogram in the names table, but from
-    //  AliceO2/Framework/Core/include/Framework/HistogramSpec.h, the framework seems to support
-    //  runtime lookup of a histogram name instead of that hash lookup optimized way)
-    void fillRingObservableHists(const char* histFolderName, double deltaPhiJet, double deltaThetaJet, double v0pt, double leadingJetPt, double ringObservable){
-        // 1D observable histograms
-        histos.fill(HIST((std::string(histFolderName) + "/hRingObservableDeltaPhi").c_str()), deltaPhiJet, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/hRingObservableDeltaTheta").c_str()), deltaThetaJet, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/hRingObservableIntegrated").c_str()), 0., ringObservable);
-            // Counters
-        histos.fill(HIST((std::string(histFolderName) + "/hDeltaPhi").c_str()), deltaPhiJet);
-        histos.fill(HIST((std::string(histFolderName) + "/hDeltaTheta").c_str()), deltaThetaJet);
-        histos.fill(HIST((std::string(histFolderName) + "/hIntegrated").c_str()), 0.);
-
-        // Lambda pT variation -- Youpeng's proposal
-        histos.fill(HIST((std::string(histFolderName) + "/hRingObservableLambdaPt").c_str()), v0pt, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/hRingObservableLambdaPt").c_str()), v0pt);
-
-        // 2D Lambda correlations
-        histos.fill(HIST((std::string(histFolderName) + "/h2dRingObservableDeltaPhiVsLambdaPt").c_str()), deltaPhiJet, v0pt, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/h2dRingObservableDeltaThetaVsLambdaPt").c_str()), deltaThetaJet, v0pt, ringObservable);
-            // Counters
-        histos.fill(HIST((std::string(histFolderName) + "/h2dDeltaPhiVsLambdaPt").c_str()), deltaPhiJet, v0pt);
-        histos.fill(HIST((std::string(histFolderName) + "/h2dDeltaThetaVsLambdaPt").c_str()), deltaThetaJet, v0pt);
-
-        // 2D Jet correlations
-        histos.fill(HIST((std::string(histFolderName) + "/h2dRingObservableDeltaPhiVsLeadJetPt").c_str()), deltaPhiJet, leadingJetPt, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/h2dRingObservableDeltaThetaVsLeadJetPt").c_str()), deltaThetaJet, leadingJetPt, ringObservable);
-            // Counters
-        histos.fill(HIST((std::string(histFolderName) + "/h2dDeltaPhiVsLeadJetPt").c_str()), deltaPhiJet, leadingJetPt);
-        histos.fill(HIST((std::string(histFolderName) + "/h2dDeltaThetaVsLeadJetPt").c_str()), deltaThetaJet, leadingJetPt);
-
-        // Additional plots for instant gratification:
-        // 1D Profiles
-        histos.fill(HIST((std::string(histFolderName) + "/pRingObservableDeltaPhi").c_str()), deltaPhiJet, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/pRingObservableDeltaTheta").c_str()), deltaThetaJet, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/pRingObservableIntegrated").c_str()), 0., ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/pRingObservableLambdaPt").c_str()), v0pt, ringObservable);
-        // 2D Profiles
-        histos.fill(HIST((std::string(histFolderName) + "/p2dRingObservableDeltaPhiVsLambdaPt").c_str()), deltaPhiJet, v0pt, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/p2dRingObservableDeltaThetaVsLambdaPt").c_str()), deltaThetaJet, v0pt, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/p2dRingObservableDeltaPhiVsLeadJetPt").c_str()), deltaPhiJet, leadingJetPt, ringObservable);
-        histos.fill(HIST((std::string(histFolderName) + "/p2dRingObservableDeltaThetaVsLeadJetPt").c_str()), deltaThetaJet, leadingJetPt, ringObservable);
-
-        // Lambda mass correlations (1D + 1D and 2D + 1D): (TODO: signal extraction attempts)
-
-    }
-    
-    // Fills histograms needed for error propagation:
-    void fillRingObservableSquaredHists(const char* folder, double deltaPhiJet, double deltaThetaJet, double v0pt, double leadingJetPt, double ringObservableSquared){
-        // 1D observable histograms
-        histos.fill((std::string(folder) + "/hRingObservableSquaredDeltaPhi").c_str(), deltaPhiJet, ringObservableSquared);
-        histos.fill((std::string(folder) + "/hRingObservableSquaredDeltaTheta").c_str(), deltaThetaJet, ringObservableSquared);
-        histos.fill((std::string(folder) + "/hRingObservableSquaredIntegrated").c_str(), 0., ringObservableSquared);
-
-        // Lambda pT variation
-        histos.fill((std::string(folder) + "/hRingObservableSquaredLambdaPt").c_str(), v0pt, ringObservableSquared);
-
-        // 2D Lambda correlations
-        histos.fill((std::string(folder) + "/h2dRingObservableSquaredDeltaPhiVsLambdaPt").c_str(), deltaPhiJet, v0pt, ringObservableSquared);
-        histos.fill((std::string(folder) + "/h2dRingObservableSquaredDeltaThetaVsLambdaPt").c_str(), deltaThetaJet, v0pt, ringObservableSquared);
-
-        // 2D Jet correlations
-        histos.fill((std::string(folder) + "/h2dRingObservableSquaredDeltaPhiVsLeadJetPt").c_str(), deltaPhiJet, leadingJetPt, ringObservableSquared);
-        histos.fill((std::string(folder) + "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt").c_str(), deltaThetaJet, leadingJetPt, ringObservableSquared);
-    }
+    ////////////// Fill Ring Observable histograms:
+    ///(This block was tranformed into a bunch of #define statements at the top of the code)
+    //////////////
 
         // Preslices for correct collisions association:
-    Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::collIdx;
-    Preslice<aod::RingLambdaLikeV0s> perColV0s = o2::aod::lambdajetpol::collIdx;
-    void processPolarizationData(aod::RingCollisions const& collisions, aod::RingJets const& jets, aod::RingLambdaLikeV0s const& v0s){
+    Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::collIdx; // Slicing by the key that comes with the index column
+    Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::collIdx;
+    void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s){
         for (auto const& collision : collisions) {
             const auto collId = collision.collIdx();
             // const double centrality = collision.centrality(); // (TODO: implement centrality!)
 
             // Slice jets and V0s belonging to this collision
+                // (global collision indices repeat a lot, but they are unique to a same TimeFrame (TF) subfolder in the derived data)
             auto jetsInColl = jets.sliceBy(perColJets, collId);
             auto v0sInColl  = v0s.sliceBy(perColV0s, collId);
 
@@ -268,7 +265,7 @@ struct lambdajetpolarizationionsderived {
             //  the stored collision, but the jets table can not be filled for
             //  that collision, and a collision may not be filled when the jets
             //  table is. Be mindful of that!)
-            if (jetsInColl.empty() || v0sInColl.empty()) continue;
+            if (!jetsInColl.size() || !v0sInColl.size()) continue;
 
             // Get leading jet:
             double leadingJetPt = -1;
@@ -329,7 +326,7 @@ struct lambdajetpolarizationionsderived {
 
                 // Boosting proton into lambda frame:
                 XYZVector beta = -lambdaLike4Vec.BoostToCM(); // Boost trivector that goes from laboratory frame to the rest frame
-                auto protonLike4VecStar = boost(protonLike4Vec, beta);
+                auto protonLike4VecStar = ROOT::Math::VectorUtil::boost(protonLike4Vec, beta);
 
                 // Getting unit vectors and 3-components:
                 XYZVector lambdaLike3Vec = lambdaLike4Vec.Vect();
@@ -348,30 +345,30 @@ struct lambdajetpolarizationionsderived {
 
                 // Angular variables:
                 double deltaPhiJet = wrapToPiFast(v0phi - leadingJetPhi); // Wrapped to [-PI, pi), for convenience
-                double deltaThetaJet = Angle(leadingJetUnitVec, lambdaLike3Vec); // 3D angular separation
+                double deltaThetaJet = ROOT::Math::VectorUtil::Angle(leadingJetUnitVec, lambdaLike3Vec); // 3D angular separation
 
                 // Fill ring histograms: (1D, lambda 2D correlations and jet 2D correlations):
-                fillRingObservableHists("Ring", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservable);
-                fillRingObservableSquaredHists("Ring", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservableSquared);
+                RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "Ring") // Notice the usage of macros! If you change the variable names, this WILL break the code!
+                RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "Ring") // No, there should NOT be any ";" here! Read the macro definition for an explanation
 
                 // Extra kinematic criteria for Lambda candidates (removes polarization background):
                 const bool kinematicLambdaCheck = (v0pt > 0.5 && v0pt < 1.5) && std::abs(lambdaRapidity) < 0.5;
                 if (kinematicLambdaCheck){
-                    fillRingObservableHists("RingKinematicCuts", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservable);
-                    fillRingObservableSquaredHists("RingKinematicCuts", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservableSquared);
+                    RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+                    RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
                 }
                 
                 // Extra selection criteria on jet candidates:
                 const bool kinematicJetCheck = std::abs(leadingJetEta) < 0.5;
                 if (kinematicJetCheck){ // This is redundant for jets with R=0.4, but for jets with R<0.4 the leading jet may be farther in eta.
-                    fillRingObservableHists("JetKinematicCuts", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservable);
-                    fillRingObservableSquaredHists("JetKinematicCuts", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservableSquared);
+                    RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+                    RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
                 }
                 
                 // Extra selection criteria on both Lambda and jet candidates:
                 if (kinematicLambdaCheck && kinematicJetCheck){
-                    fillRingObservableHists("JetAndLambdaKinematicCuts", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservable);
-                    fillRingObservableSquaredHists("JetAndLambdaKinematicCuts", deltaPhiJet, deltaThetaJet, v0pt, leadingJetPt, ringObservableSquared);
+                    RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+                    RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
                 }
             } // end v0s loop
         } // end collisions
@@ -385,3 +382,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<lambdajetpolarizationionsderived>(cfgc)};
 }
+
+// Avoid macro leakage!
+#undef APPLY_HISTO_FILL

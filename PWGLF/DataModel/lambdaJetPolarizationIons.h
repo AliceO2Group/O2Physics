@@ -63,7 +63,7 @@ DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS", // Renamed to follow convention o
                   lambdajetpol::JetPhi,
                   lambdajetpol::JetNConstituents);
 
-DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S",
+DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a shorter form because the derived data did not accept long names
                   lambdajetpol::CollIdx,
                   lambdajetpol::V0Pt,
                   lambdajetpol::V0Eta,

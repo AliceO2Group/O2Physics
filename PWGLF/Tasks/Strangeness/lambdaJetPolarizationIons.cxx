@@ -1536,7 +1536,7 @@ struct lambdajetpolarizationions {
         const uint64_t collIdx = collision.globalIndex();
         if (v0Selections.rejectTPCsectorBoundary) initCCDB(bc); // Substituted call from collision to bc for raw data
 
-        bool hasValidV0 = false; // Bool to know if event information can be saved.
+        // bool hasValidV0 = false; // Bool to know if event information can be saved.
         for (auto const& v0 : fullV0s){
             V0SelCounter.resetForNewV0();
             V0SelCounter.fill(); // Fill for all v0 candidates
@@ -1552,7 +1552,7 @@ struct lambdajetpolarizationions {
             if (analyseAntiLambda) isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
 
             if (!isLambda && !isAntiLambda) continue; // Candidate is not considered to be a Lambda (TODO: expand this to a full if block with QA about rejections)
-            hasValidV0 = true;
+            // hasValidV0 = true;
             
             if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
             if (isLambda && isAntiLambda) histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
@@ -1739,10 +1739,11 @@ struct lambdajetpolarizationions {
             } // end CompleteTopoQA
         } // end V0s loop
         // Only fills collision when there is a valid V0 in it: (TODO: could probably do the same for the jets table)
-        if (hasValidV0){
+        // if (hasValidV0){
             // LOG(INFO) << "Filling tableCollisions";
-            tableCollisions(collIdx, centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
-        }
+        // Current logic now fills tables independently of collision having V0s, for the Jets table to match correctly
+        tableCollisions(collIdx, centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
+        // }
     }
 
     PROCESS_SWITCH(lambdajetpolarizationions, processJetsData, "Process jets and produce derived data in Run 3 Data", true);
