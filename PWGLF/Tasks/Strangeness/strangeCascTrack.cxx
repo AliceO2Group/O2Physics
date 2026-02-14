@@ -163,32 +163,37 @@ struct StrangeCascTrack {
     if (!selCuts.cutDoINEL || collision.multNTracksPVeta1() > 0) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 0.5);
-    } else
+    } else {
       passedAllSels = false;
+    }
     //* pvz cut
     if (std::abs(collision.posZ()) < selCuts.cutZVertex) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 1.5);
-    } else
+    } else {
       passedAllSels = false;
+    }
     //* sel8 cut
     if (!selCuts.cutDoSel8 || collision.sel8()) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 2.5);
-    } else
+    } else {
       passedAllSels = false;
+    }
     //* pileup cut
     if (!selCuts.cutDoNoPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 3.5);
-    } else
+    } else {
       passedAllSels = false;
+    }
     //* good ft0 z-vertex vs pv cut
     if (!selCuts.cutDoGoodFT0 || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 4.5);
-    } else
+    } else {
       passedAllSels = false;
+    }
     //* all cuts
     if (passedAllSels) {
       if (fillHists)
