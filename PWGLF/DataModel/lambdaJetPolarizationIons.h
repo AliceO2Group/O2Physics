@@ -28,7 +28,8 @@ namespace o2::aod
 namespace lambdajetpol
 {
 
-DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t); // Using a regular SOA column instead of an index column for convenience
+// DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t); // Using a regular SOA column instead of an index column for convenience
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
@@ -57,14 +58,14 @@ DECLARE_SOA_COLUMN(NegPhi, negPhi, float);
 } // namespace lambdajetpol
 
 DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS", // Renamed to follow convention on "s" at the end of table name.
-                  lambdajetpol::CollIdx,
+                  lambdajetpol::CollisionId, // Changed to an internal O2 index, slightly different from usual o2::soa::Index<> though
                   lambdajetpol::JetPt,
                   lambdajetpol::JetEta,
                   lambdajetpol::JetPhi,
                   lambdajetpol::JetNConstituents);
 
 DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a shorter form because the derived data did not accept long names
-                  lambdajetpol::CollIdx,
+                  lambdajetpol::CollisionId,
                   lambdajetpol::V0Pt,
                   lambdajetpol::V0Eta,
                   lambdajetpol::V0Phi,
@@ -80,7 +81,7 @@ DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a short
                   lambdajetpol::NegPhi);
 
 DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
-                  lambdajetpol::CollIdx,
+                  lambdajetpol::CollisionId,
                   lambdajetpol::Centrality);
 } // namespace o2::aod
 

@@ -248,11 +248,11 @@ struct lambdajetpolarizationionsderived {
     //////////////
 
         // Preslices for correct collisions association:
-    Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::collIdx; // Slicing by the key that comes with the index column
-    Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::collIdx;
+    Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::collisionId;
+    Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::collisionId;
     void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s){
         for (auto const& collision : collisions) {
-            const auto collId = collision.collIdx();
+            const auto collId = collision.collisionId();
             // const double centrality = collision.centrality(); // (TODO: implement centrality!)
 
             // Slice jets and V0s belonging to this collision
