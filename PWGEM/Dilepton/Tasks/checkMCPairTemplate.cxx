@@ -2146,6 +2146,12 @@ struct checkMCPairTemplate {
           case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB):
             fillRecHistograms<19>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // b2c2l_b2l_diffb
             break;
+          case static_cast<int>(EM_HFeeType::kBCCe_BCe):
+            fillRecHistograms<20>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // b2cc2l_b2c2l
+            break;
+          case static_cast<int>(EM_HFeeType::kBCCe_BCCe):
+            fillRecHistograms<21>(t1.sign(), t2.sign(), mp1.pdgCode(), mp2.pdgCode(), v12.M(), v12.Pt(), pair_dca, weight); // b2cc2l_b2cc2l
+            break;
           default:
             break;
         }
