@@ -22,6 +22,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -190,8 +191,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
   std::set<int> v0Duplicates;
 
   std::unique_ptr<TFile> plocalEffFile;
-  std::unique_ptr<TH1> plocalEffp1;
-  std::unique_ptr<TH1> plocalEffp2;
+  std::unique_ptr<TH1> pEffHistp1;
+  std::unique_ptr<TH1> pEffHistp2;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
@@ -351,14 +353,30 @@ struct FemtoUniversePairTaskTrackV0Extended {
       plocalEffFile = std::unique_ptr<TFile>(TFile::Open(confLocalEfficiency.value.c_str(), "read"));
       if (!plocalEffFile || plocalEffFile.get()->IsZombie())
         LOGF(fatal, "Could not load efficiency histogram from %s", confLocalEfficiency.value.c_str());
-      if (doprocessSameEvent || doprocessMixedEvent) {
-        plocalEffp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
-        plocalEffp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
+      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
+        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for track-V0.");
-      } else if (doprocessSameEventV0 || doprocessMixedEventV0) {
-        plocalEffp1 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
-        plocalEffp2 = (ConfV0Selection.confV0Type2 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
+      } else if (doprocessSameEventV0 || doprocessSameEventV0Bitmask || doprocessMixedEventV0 || doprocessMixedEventV0Bitmask) {
+        pEffHistp1 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
+        pEffHistp2 = (ConfV0Selection.confV0Type2 == 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Lambda")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiLambda"));
         LOGF(info, "Loaded efficiency histograms for V0-V0.");
+      }
+    } else if (!effCorConfGroup.confEffCorCCDBPath.value.empty()) {
+      ccdb->setURL("http://alice-ccdb.cern.ch");
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+
+      auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+      ccdb->setCreatedNotAfter(now);
+      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
+        pEffHistp1 = (ConfTrkSelection.confChargePart1 > 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrPlus", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/PrMinus", now)); // note: works only for protons for now
+        pEffHistp2 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
+        LOGF(info, "Loaded efficiency histograms for track-V0 from CCDB.");
+      } else if (doprocessSameEventV0 || doprocessSameEventV0Bitmask || doprocessMixedEventV0 || doprocessMixedEventV0Bitmask) {
+        pEffHistp1 = (ConfV0Selection.confV0Type1 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
+        pEffHistp2 = (ConfV0Selection.confV0Type2 == 0) ? std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/Lambda", now)) : std::unique_ptr<TH1>(ccdb->getForTimeStamp<TH1>(effCorConfGroup.confEffCorCCDBPath.value + "/AntiLambda", now));
+        LOGF(info, "Loaded efficiency histograms for V0-V0 from CCDB.");
       }
     }
 
@@ -517,8 +535,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
       }
 
       float weight = 1.0f;
-      if (plocalEffp1)
-        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+      if (pEffHistp1)
+        weight = pEffHistp1.get()->GetBinContent(pEffHistp1->FindBin(p1.pt(), p1.eta())) * pEffHistp2.get()->GetBinContent(pEffHistp2->FindBin(p2.pt(), p2.eta()));
       if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
         sameEventCont.setPair<true>(p1, p2, multCol, confUse3D, weight);
       else
@@ -987,8 +1005,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
           }
         }
         float weight = 1.0f;
-        if (plocalEffp1)
-          weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+        if (pEffHistp1)
+          weight = pEffHistp1.get()->GetBinContent(pEffHistp1->FindBin(p1.pt(), p1.eta())) * pEffHistp2.get()->GetBinContent(pEffHistp2->FindBin(p2.pt(), p2.eta()));
 
         if constexpr (std::is_same<PartType, FemtoRecoParticles>::value)
           mixedEventCont.setPair<true>(p1, p2, multCol, confUse3D, weight);

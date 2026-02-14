@@ -39,6 +39,7 @@
 #include <TDatabasePDG.h>
 #include <TLine.h>
 #include <TPaveText.h>
+#include <TString.h>
 #include <TStyle.h>
 #include <TVirtualPad.h>
 
@@ -791,15 +792,17 @@ void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
 // Calculate fit to data ratio
 void HFInvMassFitter::calculateFitToDataRatio() const
 {
-  if (!mInvMassFrame)
+  if (!mInvMassFrame) {
     return;
+  }
 
   // Get the data and fit curves from the frame
   auto* dataHist = dynamic_cast<RooHist*>(mInvMassFrame->findObject("data_c"));
   auto* fitCurve = dynamic_cast<RooCurve*>(mInvMassFrame->findObject("Tot_c")); // or the relevant fit curve
 
-  if (!dataHist || !fitCurve)
+  if (!dataHist || !fitCurve) {
     return;
+  }
 
   RooHist* ratioHist = new RooHist();
 

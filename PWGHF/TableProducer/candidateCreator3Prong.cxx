@@ -133,7 +133,7 @@ struct HfCandidateCreator3Prong {
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   int runNumber{0};
   double bz{0.};

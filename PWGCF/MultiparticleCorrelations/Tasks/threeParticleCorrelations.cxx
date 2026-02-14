@@ -257,6 +257,12 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
     rQARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
     rQARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
+    rQARegistry.add("hTPCPion_MC", "hTPCPion_MC", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
+    rQARegistry.add("hTPCKaon_MC", "hTPCKaon_MC", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
+    rQARegistry.add("hTPCProton_MC", "hTPCProton_MC", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
+    rQARegistry.add("hTOFPion_MC", "hTOFPion_MC", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
+    rQARegistry.add("hTOFKaon_MC", "hTOFKaon_MC", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
+    rQARegistry.add("hTOFProton_MC", "hTOFProton_MC", {HistType::kTH3D, {{trackPtAxis}, {1001, -50.05, 50.05}, {2, -2, 2}}});
 
     rQARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
     rQARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
@@ -777,16 +783,28 @@ struct ThreeParticleCorrelations {
       rMCRegistry.fill(HIST("hReconstructed"), track.pt(), track.eta(), collision.centFT0C());
       if (particle.pdgCode() == kPiPlus) { // Pos pions
         rMCRegistry.fill(HIST("hRecPionP"), track.pt(), track.eta(), collision.centFT0C());
+        rQARegistry.fill(HIST("hTPCPion_MC"), track.pt(), track.tpcNSigmaPi(), track.sign());
+        rQARegistry.fill(HIST("hTOFPion_MC"), track.pt(), track.tofNSigmaPi(), track.sign());
       } else if (particle.pdgCode() == kPiMinus) { // Neg pions
         rMCRegistry.fill(HIST("hRecPionN"), track.pt(), track.eta(), collision.centFT0C());
+        rQARegistry.fill(HIST("hTPCPion_MC"), track.pt(), track.tpcNSigmaPi(), track.sign());
+        rQARegistry.fill(HIST("hTOFPion_MC"), track.pt(), track.tofNSigmaPi(), track.sign());
       } else if (particle.pdgCode() == kKPlus) { // Pos kaons
         rMCRegistry.fill(HIST("hRecKaonP"), track.pt(), track.eta(), collision.centFT0C());
+        rQARegistry.fill(HIST("hTPCKaon_MC"), track.pt(), track.tpcNSigmaKa(), track.sign());
+        rQARegistry.fill(HIST("hTOFKaon_MC"), track.pt(), track.tofNSigmaKa(), track.sign());
       } else if (particle.pdgCode() == kKMinus) { // Neg kaons
         rMCRegistry.fill(HIST("hRecKaonN"), track.pt(), track.eta(), collision.centFT0C());
+        rQARegistry.fill(HIST("hTPCKaon_MC"), track.pt(), track.tpcNSigmaKa(), track.sign());
+        rQARegistry.fill(HIST("hTOFKaon_MC"), track.pt(), track.tofNSigmaKa(), track.sign());
       } else if (particle.pdgCode() == kProton) { // Pos protons
         rMCRegistry.fill(HIST("hRecProtonP"), track.pt(), track.eta(), collision.centFT0C());
+        rQARegistry.fill(HIST("hTPCProton_MC"), track.pt(), track.tpcNSigmaPr(), track.sign());
+        rQARegistry.fill(HIST("hTOFProton_MC"), track.pt(), track.tofNSigmaPr(), track.sign());
       } else if (particle.pdgCode() == kProtonBar) { // Neg protons
         rMCRegistry.fill(HIST("hRecProtonN"), track.pt(), track.eta(), collision.centFT0C());
+        rQARegistry.fill(HIST("hTPCProton_MC"), track.pt(), track.tpcNSigmaPr(), track.sign());
+        rQARegistry.fill(HIST("hTOFProton_MC"), track.pt(), track.tofNSigmaPr(), track.sign());
       }
 
       if (trackFilters(track)) {

@@ -156,10 +156,13 @@ void analyseTracksMultipleCandidates(std::vector<fastjet::PseudoJet>& inputParti
  * @param clusters track table to be added
  */
 template <typename T>
-void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& clusters, int hadronicCorrectionType = 0)
+void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& clusters, int clusterDefinition, int hadronicCorrectionType)
 {
-  for (auto& cluster : *clusters) {
+  for (auto const& cluster : clusters) {
     // add cluster selections
+    if (cluster.definition() != clusterDefinition) {
+      continue;
+    }
     fastjetutilities::fillClusters(cluster, inputParticles, cluster.globalIndex(), hadronicCorrectionType);
   }
 }

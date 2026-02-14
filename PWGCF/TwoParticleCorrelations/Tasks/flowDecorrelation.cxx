@@ -101,6 +101,10 @@ struct FlowDecorrelation {
   O2_DEFINE_CONFIGURABLE(nClustersMftTrack, int, 5, "Minimum number of clusters for MFT track")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2Mft, float, -1.0f, "max chi2 of MFT track")
   O2_DEFINE_CONFIGURABLE(cfgCutTrackTimeMft, float, -1.0f, "max deviation of MFT track wrt. bc in ns")
+  O2_DEFINE_CONFIGURABLE(cfgRejectFT0AInside, bool, false, "Rejection of inner ring channels of the FT0A detector")
+  O2_DEFINE_CONFIGURABLE(cfgRejectFT0AOutside, bool, false, "Rejection of outer ring channels of the FT0A detector")
+  O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
+  O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -213,6 +217,16 @@ struct FlowDecorrelation {
     kTPC = 0,
     kTOF,
     kITS
+  };
+  enum DetectorChannels {
+    kFT0AInnerRingMin = 0,
+    kFT0AInnerRingMax = 31,
+    kFT0AOuterRingMin = 32,
+    kFT0AOuterRingMax = 95,
+    kFT0CInnerRingMin = 96,
+    kFT0CInnerRingMax = 143,
+    kFT0COuterRingMin = 144,
+    kFT0COuterRingMax = 207
   };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
@@ -614,6 +628,15 @@ struct FlowDecorrelation {
         int chanelid = 0;
         float ampl = 0.;
         getChannel(ft0, iCh, chanelid, ampl, corType);
+        if (corType == kFT0C) {
+          if ((cfgRejectFT0CInside && (chanelid >= kFT0CInnerRingMin && chanelid <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (chanelid >= kFT0COuterRingMin && chanelid <= kFT0COuterRingMax))) {
+            continue;
+          }
+        } else if (corType == kFT0A) {
+          if ((cfgRejectFT0AInside && (chanelid >= kFT0AInnerRingMin && chanelid <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (chanelid >= kFT0AOuterRingMin && chanelid <= kFT0AOuterRingMax))) {
+            continue;
+          }
+        }
         auto phi = getPhiFT0(chanelid, corType);
         auto eta = getEtaFT0(chanelid, corType);
         if (cfgDrawEtaPhiDis && system == SameEvent) {

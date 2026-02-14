@@ -32,6 +32,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -130,7 +131,7 @@ struct HfTaskFlowCharmHadrons {
 
   EventPlaneHelper epHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;

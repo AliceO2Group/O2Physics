@@ -1117,11 +1117,11 @@ void defaultConfiguration()
   }
   // 2D:
   for (int AFO_2D = 0; AFO_2D < eAsFunctionOf2D_N; AFO_2D++) {
-    tc.fCalculate2DAsFunctionOf[AFO_2D] = mupa.fCalculateCorrelationsAsFunctionOf[AFO_2D] || t0.fCalculateTest0AsFunctionOf[AFO_2D] || es.fCalculateEtaSeparationsAsFunctionOf[AFO_2D];
+    tc.fCalculate2DAsFunctionOf[AFO_2D] = t0.fCalculate2DTest0AsFunctionOf[AFO_2D]; // TBI 20260212 for the time being, I support 2D only for Test0
   }
   // 3D:
   for (int AFO_3D = 0; AFO_3D < eAsFunctionOf3D_N; AFO_3D++) {
-    tc.fCalculate3DAsFunctionOf[AFO_3D] = mupa.fCalculateCorrelationsAsFunctionOf[AFO_3D] || t0.fCalculateTest0AsFunctionOf[AFO_3D] || es.fCalculateEtaSeparationsAsFunctionOf[AFO_3D];
+    tc.fCalculate3DAsFunctionOf[AFO_3D] = t0.fCalculate3DTest0AsFunctionOf[AFO_3D]; // TBI 20260212 for the time being, I support 3D only for Test0
   }
 
   if (tc.fVerbose) {
@@ -17765,6 +17765,22 @@ void ExitFunction(const char* functionName)
 
 //============================================================
 
+void printEnvironment()
+{
+  // Print the content of selected environment variables.
+
+  LOGF(info, "");
+  LOGF(info, "Environment variables:");
+  LOGF(info, " O2_ROOT = %s", std::getenv("O2_ROOT"));
+  LOGF(info, " O2PHYSICS_ROOT = %s", std::getenv("O2PHYSICS_ROOT"));
+  LOGF(info, " ROOT_RELEASE = %s", std::getenv("ROOT_RELEASE"));
+  LOGF(info, " ROOTSYS = %s", std::getenv("ROOTSYS"));
+  LOGF(info, "");
+
+} // void printEnvironment()
+
+//============================================================
+
 void BailOut(bool finalBailout = false)
 {
   // Use only locally - bail out if maximum number of events was reached, and dump all results by that point in a local ROOT file.
@@ -19264,6 +19280,11 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
 
   // memStatus: ~50K (without differential q-vectors and eta separations)
 
+  // *) Print environment:
+  if (tc.fVerbose) {
+    printEnvironment();
+  }
+
   // *) Dry run:
   if (tc.fDryRun) {
     EventCounterForDryRun(eFill);
@@ -19399,6 +19420,11 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
   if (tc.fUseStopwatch) {
     LOGF(info, "\033[1;32m=> Global timer: Steer ends ... %.6f\033[0m\n", tc.fTimer[eGlobal]->RealTime());
     tc.fTimer[eGlobal]->Continue(); // yes
+  }
+
+  // *) Print environment:
+  if (tc.fVerbose) {
+    printEnvironment();
   }
 
   if (tc.fVerbose) {
