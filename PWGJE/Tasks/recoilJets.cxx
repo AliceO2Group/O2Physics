@@ -51,28 +51,44 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Shorthand notations
-using FilteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
-using FilteredCollPartLevel = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>;
-using FilteredCollPartLevelMB = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator;
-using FilteredCollDetLevelGetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::JCollisionOutliers>>;
 
-using FilteredEventMultiplicity = soa::Filtered<soa::Join<aod::JetCollisions, aod::ZDCMults>>::iterator;
-using FilteredEventMultiplicityDetLevelGetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers, aod::ZDCMults>>::iterator;
-using FilteredEventMultiplicityPartLevel = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::JMcCollisionOutliers>>::iterator;
-using FilteredEventMultiplicityPartLevelMB = soa::Filtered<aod::JetMcCollisions>::iterator;
+// --- Collisions (+ rho)
+using CollDataIt = soa::Filtered<aod::JetCollisions>::iterator;
+using CollRhoDataIt = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
+using CollRhoOutlierDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::JCollisionOutliers>>::iterator;
+using CollRhoDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator;
 
-using FilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
-using FilteredJetsDetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
-using FilteredJetsPartLevel = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>;
+using CollPartIt = soa::Filtered<aod::JetMcCollisions>::iterator;
+using CollRhoPartTbl = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>;
+using CollRhoPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator;
+using CollRhoOutlierPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>::iterator;
+using CollRhoOutlierPartTbl = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>;
 
-using FilteredMatchedJetsDetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
-using FilteredMatchedJetsPartLevel = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
 
-using FilteredTracks = soa::Filtered<aod::JetTracks>;
-using FilteredParticles = soa::Filtered<aod::JetParticles>;
+// --- Event multiplicity (+ ZDC etc.)
+using EvMultZDCDataIt = soa::Filtered<soa::Join<aod::JetCollisions, aod::ZDCMults>>::iterator;
+using EvMultOutlierZDCDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers, aod::ZDCMults>>::iterator;
+using EvMultOutlierPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::JMcCollisionOutliers>>::iterator;
 
-using ColEvSelEA = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FT0MultZeqs, aod::MultsExtra, aod::PVMults>>::iterator;
-using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>; // aod::Run3MatchedToBCExclusive
+
+// --- Tracks / Particles
+using TrackTbl  = soa::Filtered<aod::JetTracks>;
+using PartTbl = soa::Filtered<aod::JetParticles>;
+
+
+// --- Jets (with constituents)
+using JetsDataTbl = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
+using JetsDetTbl  = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
+using JetsPartTbl = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>;
+
+// --- Matched jets (det <-> part)
+using MatchedJetsDetToPartTbl = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
+using MatchedJetsPartToDetTbl = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
+
+
+// --- O2 collisions event selection (not JCollisions)
+using CollEvSelExtendedIt = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FT0MultZeqs, aod::MultsExtra, aod::PVMults>>::iterator;
+using BCsRun3Tbl = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>; // aod::Run3MatchedToBCExclusive
 
 struct RecoilJets {
 
@@ -158,7 +174,7 @@ struct RecoilJets {
   std::vector<int> triggerMaskBits;
 
   Service<o2::framework::O2DatabasePDG> pdg;
-  Preslice<FilteredMatchedJetsPartLevel> partJetsPerMcCollision = aod::jet::mcCollisionId;
+  Preslice<MatchedJetsPartToDetTbl> partJetsPerMcCollision = aod::jet::mcCollisionId;
 
   template <typename AxisObject>
   struct AxisDesc {
@@ -1934,9 +1950,9 @@ struct RecoilJets {
   //=============================================================================
   //  Recoil jet analysis
   //=============================================================================
-  void processData(FilteredColl const& collision,
-                   FilteredTracks const& tracks,
-                   FilteredJets const& jets)
+  void processData(CollRhoDataIt const& collision,
+                   TrackTbl const& tracksPerColl,
+                   JetsDataTbl const& jetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
 
@@ -1945,14 +1961,14 @@ struct RecoilJets {
 
     spectra.fill(HIST("hEventSelectionCount"), 1.5); // number of events selected for analysis
 
-    fillHistograms(collision, jets, tracks);
+    fillHistograms(collision, jetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processData, "process raw data", true);
 
   //____________________
-  void processMCDetLevel(FilteredColl const& collision,
-                         FilteredTracks const& tracks,
-                         FilteredJetsDetLevel const& jets)
+  void processMCDetLevel(CollRhoDataIt const& collision,
+                         TrackTbl const& tracksPerColl,
+                         JetsDetTbl const& jetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
     if (skipEvent(collision))
@@ -1961,15 +1977,15 @@ struct RecoilJets {
     spectra.fill(HIST("hEventSelectionCount"), 1.5);
 
     spectra.fill(HIST("hEventSelectionCount"), 4.5); // number of events selected for analysis
-    fillHistograms(collision, jets, tracks);
+    fillHistograms(collision, jetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processMCDetLevel, "process MC det. level data (no weight; MB events)", false);
 
   //____________________________
-  void processMCDetLevelWeighted(FilteredCollDetLevelGetWeight::iterator const& collision,
+  void processMCDetLevelWeighted(CollRhoOutlierDetIt const& collision,
                                  aod::JetMcCollisions const&,
-                                 FilteredTracks const& tracks,
-                                 FilteredJetsDetLevel const& jets)
+                                 TrackTbl const& tracksPerColl,
+                                 JetsDetTbl const& jetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
     if (skipEvent(collision))
@@ -1989,14 +2005,14 @@ struct RecoilJets {
 
     spectra.fill(HIST("hEventSelectionCount"), 4.5); // number of events selected for analysis
     auto weight = collision.mcCollision().weight();
-    fillHistograms(collision, jets, tracks, weight);
+    fillHistograms(collision, jetsPerColl, tracksPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted, "process MC det. level data (weighted JJ)", false);
 
   //_____________________
-  void processMCPartLevel(FilteredCollPartLevelMB const& collision,
-                          FilteredParticles const& particles,
-                          FilteredJetsPartLevel const& jets)
+  void processMCPartLevel(CollRhoPartIt const& collision,
+                          PartTbl const& particlesPerColl,
+                          JetsPartTbl const& jetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
 
@@ -2006,14 +2022,14 @@ struct RecoilJets {
     }
 
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 3.5); // number of events selected for analysis
-    fillHistogramsMCPartLevel(collision, jets, particles);
+    fillHistogramsMCPartLevel(collision, jetsPerColl, particlesPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC part. level data (no weight; MB events)", false);
 
   //_____________________________
-  void processMCPartLevelWeighted(FilteredCollPartLevel::iterator const& collision,
-                                  FilteredParticles const& particles,
-                                  FilteredJetsPartLevel const& jets)
+  void processMCPartLevelWeighted(CollRhoOutlierPartIt const& collision,
+                                  PartTbl const& particlesPerColl,
+                                  JetsPartTbl const& jetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
 
@@ -2031,18 +2047,18 @@ struct RecoilJets {
 
     auto weight = collision.weight();
     spectra.fill(HIST("ptHat"), collision.ptHard(), weight);
-    fillHistogramsMCPartLevel(collision, jets, particles, weight);
+    fillHistogramsMCPartLevel(collision, jetsPerColl, particlesPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processMCPartLevelWeighted, "process MC part. level data (weighted JJ)", false);
 
   //=============================================================================
   // Construction of response matrix
   //=============================================================================
-  void processJetsGeoMatching(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
-                              soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>> const& mcCollisions,
-                              FilteredTracks const& tracksPerColl,
-                              FilteredMatchedJetsDetLevel const& mcDetJetsPerColl,
-                              FilteredMatchedJetsPartLevel const& mcPartJets)
+  void processJetsGeoMatching(CollRhoDetIt const& collision,
+                              CollRhoPartTbl const& mcCollisions,
+                              TrackTbl const& tracksPerColl,
+                              MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
+                              MatchedJetsPartToDetTbl const& mcPartJets)
   {
     // Skip detector level collisions
     if (skipEvent(collision) || !collision.has_mcCollision())
@@ -2060,11 +2076,11 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processJetsGeoMatching, "process matching of MC jets using Geo criterion (no weight; MB events)", false);
 
   //_________________________________
-  void processJetsGeoMatchingWeighted(FilteredCollDetLevelGetWeight::iterator const& collision,
-                                      soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>> const& mcCollisions,
-                                      FilteredTracks const& tracksPerColl,
-                                      FilteredMatchedJetsDetLevel const& mcDetJetsPerColl,
-                                      FilteredMatchedJetsPartLevel const& mcPartJets)
+  void processJetsGeoMatchingWeighted(CollRhoOutlierDetIt const& collision,
+                                      CollRhoOutlierPartTbl const& mcCollisions,
+                                      TrackTbl const& tracksPerColl,
+                                      MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
+                                      MatchedJetsPartToDetTbl const& mcPartJets)
   {
     // Skip detector level collisions
     if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
@@ -2085,7 +2101,7 @@ struct RecoilJets {
   //=============================================================================
   // Event Activity analysis in OO collisions (raw and MC detector level (no weight; MB events))
   //=============================================================================
-  void processEventActivityOO(FilteredEventMultiplicity const& collision)
+  void processEventActivityOO(EvMultZDCDataIt const& collision)
   {
     if (skipEvent(collision))
       return;
@@ -2095,7 +2111,7 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processEventActivityOO, "process event activity in OO collisions and MC det. level (no weight; MB events)", false);
 
   //___________________________________________
-  void processEventActivityMCDetLevelWeightedOO(FilteredEventMultiplicityDetLevelGetWeight const& collision,
+  void processEventActivityMCDetLevelWeightedOO(EvMultOutlierZDCDetIt const& collision,
                                                 aod::JetMcCollisions const&)
   {
     if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
@@ -2109,7 +2125,7 @@ struct RecoilJets {
   //=============================================================================
   // Event Activity analysis in OO and pp collisions at Particle level
   //=============================================================================
-  void processEventActivityMCPartLevel(FilteredEventMultiplicityPartLevelMB const& collision)
+  void processEventActivityMCPartLevel(CollPartIt const& collision)
   {
     if (skipMCEvent(collision))
       return;
@@ -2119,7 +2135,7 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processEventActivityMCPartLevel, "process event activity in MC part. level events (no weight; MB events)", false);
 
   //__________________________________________
-  void processEventActivityMCPartLevelWeighted(FilteredEventMultiplicityPartLevel const& collision)
+  void processEventActivityMCPartLevelWeighted(EvMultOutlierPartIt const& collision)
   {
     if (skipMCEvent(collision) || collision.isOutlier())
       return;
@@ -2132,8 +2148,8 @@ struct RecoilJets {
   //=============================================================================
   // Event Activity QA analysis in OO collisions (raw and MC detector level (no weight; MB events))
   //=============================================================================
-  void processEventActivityQA(ColEvSelEA const& collision,
-                              BCsRun3 const& BCs,
+  void processEventActivityQA(CollEvSelExtendedIt const& collision,
+                              BCsRun3Tbl const& BCs,
                               aod::Zdcs const& ZDCs)
   {
     // Base flag for event selection
@@ -2147,77 +2163,77 @@ struct RecoilJets {
   //=============================================================================
   // Di-hadron azimuthal correlation in raw and MC det. level (no weight; MB events) data
   //=============================================================================
-  void processLeadingAndAssociatedTracksTask(soa::Filtered<aod::JetCollisions>::iterator const& collision,
-                                             FilteredTracks const& tracks)
+  void processLeadingAndAssociatedTracksTask(CollDataIt const& collision,
+                                             TrackTbl const& tracksPerColl)
   {
     if (skipEvent(collision))
       return;
-    fillLeadingAndAssociatedTracksTask(collision, tracks);
+    fillLeadingAndAssociatedTracksTask(collision, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processLeadingAndAssociatedTracksTask, "process di-hadron azimuthal correlation in raw and MC det. level (no weight; MB events) data", false);
 
   //=============================================================================
   // Estimation of bkgd fluctuations
   //=============================================================================
-  void processBkgdFluctuations(FilteredColl const& collision,
-                               FilteredTracks const& tracks,
-                               FilteredJets const& jets)
+  void processBkgdFluctuations(CollRhoDataIt const& collision,
+                               TrackTbl const& tracksPerColl,
+                               JetsDataTbl const& jetsPerColl)
   {
     if (skipEvent(collision))
       return;
 
-    fillBkgdFluctuations(collision, jets, tracks);
+    fillBkgdFluctuations(collision, jetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuations, "process raw data to estimate bkgd fluctuations", false);
 
   //____________________________________
-  void processBkgdFluctuationsMCDetLevel(FilteredColl const& collision,
-                                         FilteredTracks const& tracks,
-                                         FilteredJetsDetLevel const& jets)
+  void processBkgdFluctuationsMCDetLevel(CollRhoDataIt const& collision,
+                                         TrackTbl const& tracksPerColl,
+                                         JetsDetTbl const& jetsPerColl)
   {
     if (skipEvent(collision))
       return;
 
-    fillBkgdFluctuations(collision, jets, tracks);
+    fillBkgdFluctuations(collision, jetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCDetLevel, "process MC det. level (no weight; MB events) data to estimate bkgd fluctuations", false);
 
   //____________________________________________
-  void processBkgdFluctuationsMCDetLevelWeighted(FilteredCollDetLevelGetWeight::iterator const& collision,
+  void processBkgdFluctuationsMCDetLevelWeighted(CollRhoOutlierDetIt const& collision,
                                                  aod::JetMcCollisions const&,
-                                                 FilteredTracks const& tracks,
-                                                 FilteredJetsDetLevel const& jets)
+                                                 TrackTbl const& tracksPerColl,
+                                                 JetsDetTbl const& jetsPerColl)
   {
     if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
       return;
 
     auto weight = collision.mcCollision().weight();
-    fillBkgdFluctuations(collision, jets, tracks, weight);
+    fillBkgdFluctuations(collision, jetsPerColl, tracksPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCDetLevelWeighted, "process MC det. level (weighted JJ) data to estimate bkgd fluctuations", false);
 
   //_____________________________________
-  void processBkgdFluctuationsMCPartLevel(FilteredCollPartLevelMB const& collision,
-                                          FilteredParticles const& particles,
-                                          FilteredJetsPartLevel const& jets)
+  void processBkgdFluctuationsMCPartLevel(CollRhoPartIt const& collision,
+                                          PartTbl const& particlesPerColl,
+                                          JetsPartTbl const& jetsPerColl)
   {
     if (skipMCEvent(collision))
       return;
 
-    fillBkgdFluctuationsMCPartLevel(collision, jets, particles);
+    fillBkgdFluctuationsMCPartLevel(collision, jetsPerColl, particlesPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCPartLevel, "process MC part. level (no weight; MB events) data to estimate bkgd fluctuations", false);
 
   //_____________________________________________
-  void processBkgdFluctuationsMCPartLevelWeighted(FilteredCollPartLevel::iterator const& collision,
-                                                  FilteredParticles const& particles,
-                                                  FilteredJetsPartLevel const& jets)
+  void processBkgdFluctuationsMCPartLevelWeighted(CollRhoOutlierPartIt const& collision,
+                                                  PartTbl const& particlesPerColl,
+                                                  JetsPartTbl const& jetsPerColl)
   {
     if (skipMCEvent(collision) || collision.isOutlier())
       return;
 
     auto weight = collision.weight();
-    fillBkgdFluctuationsMCPartLevel(collision, jets, particles, weight);
+    fillBkgdFluctuationsMCPartLevel(collision, jetsPerColl, particlesPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCPartLevelWeighted, "process MC part. level (weighted JJ) data to estimate bkgd fluctuations", false);
 
