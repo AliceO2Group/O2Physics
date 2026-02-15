@@ -503,7 +503,7 @@ constexpr char PrefixCascadeBachelorQa[] = "CascadeBachelorQa/";
 constexpr char PrefixKinkChaDaughter[] = "KinkChaDau/";
 constexpr char PrefixKinkChaDaughterQa[] = "KinkChaDauQa/";
 
-constexpr std::string_view AnalysisDir = "Kinematics/";
+constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view PidDir = "PID/";
 constexpr std::string_view McDir = "MC/";

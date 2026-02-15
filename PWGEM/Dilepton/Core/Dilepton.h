@@ -892,8 +892,8 @@ struct Dilepton {
       if (cfgApplyWeightTTCA) {
         weight = map_weight[std::make_pair(t1.globalIndex(), t2.globalIndex())];
       }
+      // LOGF(info, "ev_id = %d, t1.sign() = %d, t2.sign() = %d, map_weight[std::make_pair(%d, %d)] = %f", ev_id, t1.sign(), t2.sign(), t1.globalIndex(), t2.globalIndex(), weight);
     }
-    // LOGF(info, "ev_id = %d, t1.sign() = %d, t2.sign() = %d, map_weight[std::make_pair(%d, %d)] = %f", ev_id, t1.sign(), t2.sign(), t1.globalIndex(), t2.globalIndex(), weight);
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
@@ -1524,7 +1524,6 @@ struct Dilepton {
       for (const auto& pairId : passed_pairIds) {
         auto t1 = tracks.rawIteratorAt(std::get<0>(pairId));
         auto t2 = tracks.rawIteratorAt(std::get<1>(pairId));
-        // LOGF(info, "std::get<0>(pairId) = %d, std::get<1>(pairId) = %d, t1.globalIndex() = %d, t2.globalIndex() = %d", std::get<0>(pairId), std::get<1>(pairId), t1.globalIndex(), t2.globalIndex());
 
         float n = 1.f; // include myself.
         for (const auto& ambId1 : t1.ambiguousElectronsIds()) {

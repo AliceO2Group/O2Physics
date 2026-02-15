@@ -23,35 +23,7 @@
 
 #include <KFParticle.h>
 
-#include <cmath>
-
 struct V0PhotonCandidate {
-
- private:
-  float px;
-  float py;
-  float pz;
-  float posPx;
-  float posPy;
-  float posPz;
-  float elePx;
-  float elePy;
-  float elePz;
-  float pT;
-  float posPT;
-  float elePT;
-  float dcaXYV0ToPV;
-  float dcaZV0ToPV;
-  float alpha;
-  float qt;
-  float phiv;
-  float psipair;
-  float cospa;
-  float chi2ndf;
-  float centFT0A;
-  float centFT0C;
-  float centFT0M;
-  float pca;
 
  public:
   // Constructor for photonconversionbuilder
@@ -76,13 +48,12 @@ struct V0PhotonCandidate {
 
     float v0mom = RecoDecay::sqrtSumOfSquares(v0.GetPx(), v0.GetPy(), v0.GetPz());
     float length = RecoDecay::sqrtSumOfSquares(v0.GetX() - collision.posX(), v0.GetY() - collision.posY(), v0.GetZ() - collision.posZ());
-    float dca_x_v0_to_pv = (v0.GetX() - v0.GetPx() * cospa * length / v0mom) - collision.posX();
-    float dca_y_v0_to_pv = (v0.GetY() - v0.GetPy() * cospa * length / v0mom) - collision.posY();
-    float dca_z_v0_to_pv = (v0.GetZ() - v0.GetPz() * cospa * length / v0mom) - collision.posZ();
+    float dcaXV0ToPV = (v0.GetX() - v0.GetPx() * cospa * length / v0mom) - collision.posX();
+    float dcaYV0ToPV = (v0.GetY() - v0.GetPy() * cospa * length / v0mom) - collision.posY();
+    float tmpSign = (dcaXV0ToPV * dcaYV0ToPV > 0.f) ? +1.f : -1.f;
 
-    float sign_tmp = (dca_x_v0_to_pv * dca_y_v0_to_pv > 0.f) ? +1.f : -1.f;
-    dcaXYV0ToPV = RecoDecay::sqrtSumOfSquares(dca_x_v0_to_pv, dca_y_v0_to_pv) * sign_tmp;
-    dcaZV0ToPV = dca_z_v0_to_pv;
+    dcaXYV0ToPV = RecoDecay::sqrtSumOfSquares(dcaXV0ToPV, dcaYV0ToPV) * tmpSign;
+    dcaZV0ToPV = (v0.GetZ() - v0.GetPz() * cospa * length / v0mom) - collision.posZ();
 
     alpha = v0_alpha(posPx, posPy, posPz, elePx, elePy, elePz);
     qt = v0_qt(posPx, posPy, posPz, elePx, elePy, elePz);
@@ -128,30 +99,56 @@ struct V0PhotonCandidate {
   }
 
   // Getter functions
-  float GetPosPt() const { return posPT; }
-  float GetElePt() const { return elePT; }
-  float GetChi2NDF() const { return chi2ndf; }
-  float GetDcaXYToPV() const { return dcaXYV0ToPV; }
-  float GetDcaZToPV() const { return dcaZV0ToPV; }
-  float GetAlpha() const { return alpha; }
-  float GetQt() const { return qt; }
-  float GetPhiV() const { return phiv; }
-  float GetPsiPair() const { return psipair; }
-  float GetCosPA() const { return cospa; }
-  float GetPx() const { return px; }
-  float GetPy() const { return py; }
-  float GetPz() const { return pz; }
-  float GetPt() const { return pT; }
-  float GetPosPx() const { return posPx; }
-  float GetPosPy() const { return posPy; }
-  float GetPosPz() const { return posPz; }
-  float GetElePx() const { return elePx; }
-  float GetElePy() const { return elePy; }
-  float GetElePz() const { return elePz; }
-  float GetCentFT0M() const { return centFT0M; }
-  float GetCentFT0C() const { return centFT0C; }
-  float GetCentFT0A() const { return centFT0A; }
-  float GetPCA() const { return pca; }
+  float getPosPt() const { return posPT; }
+  float getElePt() const { return elePT; }
+  float getChi2NDF() const { return chi2ndf; }
+  float getDcaXYToPV() const { return dcaXYV0ToPV; }
+  float getDcaZToPV() const { return dcaZV0ToPV; }
+  float getAlpha() const { return alpha; }
+  float getQt() const { return qt; }
+  float getPhiV() const { return phiv; }
+  float getPsiPair() const { return psipair; }
+  float getCosPA() const { return cospa; }
+  float getPx() const { return px; }
+  float getPy() const { return py; }
+  float getPz() const { return pz; }
+  float getPt() const { return pT; }
+  float getPosPx() const { return posPx; }
+  float getPosPy() const { return posPy; }
+  float getPosPz() const { return posPz; }
+  float getElePx() const { return elePx; }
+  float getElePy() const { return elePy; }
+  float getElePz() const { return elePz; }
+  float getCentFT0M() const { return centFT0M; }
+  float getCentFT0C() const { return centFT0C; }
+  float getCentFT0A() const { return centFT0A; }
+  float getPCA() const { return pca; }
+
+ private:
+  float px;
+  float py;
+  float pz;
+  float posPx;
+  float posPy;
+  float posPz;
+  float elePx;
+  float elePy;
+  float elePz;
+  float pT;
+  float posPT;
+  float elePT;
+  float dcaXYV0ToPV;
+  float dcaZV0ToPV;
+  float alpha;
+  float qt;
+  float phiv;
+  float psipair;
+  float cospa;
+  float chi2ndf;
+  float centFT0A;
+  float centFT0C;
+  float centFT0M;
+  float pca;
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_V0PHOTONCANDIDATE_H_

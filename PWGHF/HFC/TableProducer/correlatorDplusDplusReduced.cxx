@@ -297,9 +297,11 @@ struct HfCorrelatorDplusDplusReduced {
 
       const auto colId = collision.globalIndex();
       auto candidatesInThisCollision = candidates.sliceBy(tracksPerCollision, colId);
-      if (skipSingleD)
-        if (candidatesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
+      if (skipSingleD) {
+        if (candidatesInThisCollision.size() < 2) { // o2-linter: disable=magic-number (number of candidate must be larger than 1)
           continue;
+        }
+      }
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
         fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex());
@@ -322,9 +324,11 @@ struct HfCorrelatorDplusDplusReduced {
     for (const auto& collision : collisions) { // No skimming for MC data. No Zorro !
       const auto colId = collision.globalIndex();
       auto candidatesInThisCollision = candidates.sliceBy(tracksPerCollision, colId);
-      if (skipSingleD)
-        if (candidatesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
+      if (skipSingleD) {
+        if (candidatesInThisCollision.size() < 2) { // o2-linter: disable=magic-number (number of candidate must be larger than 1)
           continue;
+        }
+      }
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
         fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex());
@@ -342,9 +346,11 @@ struct HfCorrelatorDplusDplusReduced {
     for (const auto& mccollision : mccollisions) { // No skimming for MC data. No Zorro !
       const auto colId = mccollision.globalIndex();
       const auto particlesInThisCollision = mcparticles.sliceBy(mcParticlesPerMcCollision, colId);
-      if (skipSingleD)
-        if (particlesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
+      if (skipSingleD) {
+        if (particlesInThisCollision.size() < 2) { // o2-linter: disable=magic-number (number of candidate must be larger than 1)
           continue;
+        }
+      }
       rowCandidateMcCollisions(
         mccollision.posX(),
         mccollision.posY(),
