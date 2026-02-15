@@ -953,7 +953,7 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TCollisions, typename TBCs, typename TV0s, typename TCascades, typename TTracks>
-  void calculateTOFNSigmasForV0sAndCascades(TCollisions const& collisions, TBCs const& bcs, TV0s const& v0s, TCascades const& cascades, TTracks const& tracks)
+  void calculateTOFNSigmasForV0sAndCascades(TCollisions const& collisions, TBCs const&, TV0s const& v0s, TCascades const& cascades, TTracks const& tracks)
   {
     for (const auto& track : tracks) {
       if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
