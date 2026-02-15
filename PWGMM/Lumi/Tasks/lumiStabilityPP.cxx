@@ -112,7 +112,6 @@ struct LumiStabilityPP {
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE, bcPatternL;
   const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
-  const double secToMin = ;
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   parameters::GRPLHCIFData* mLHCIFdata = nullptr;
