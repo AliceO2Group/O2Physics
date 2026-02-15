@@ -112,6 +112,7 @@ struct LumiStabilityPP {
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE, bcPatternL;
   const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
+  const double secToMin = ;
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   parameters::GRPLHCIFData* mLHCIFdata = nullptr;
@@ -190,7 +191,7 @@ struct LumiStabilityPP {
           histBcVsTime[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsVsTimeHistNames[iTrigger][iBCCategory]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
           histBcVsBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
           if (iBCCategory != BCSL) { // we do not do it for superleading because it is not easy to define the number of inspected BCs
-            histMu[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers;#mu;counts", HistType::kTH1D, {{500, 0., 0.1}});
+            histMu[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers;#mu;counts", HistType::kTH1D, {{1000, 0., 0.2}});
           }
         }
       }
@@ -430,7 +431,7 @@ struct LumiStabilityPP {
       histNBcsVsBcId[runNumber]->Fill(localBC);
     }
     // fill histogram for mu
-    float deltaTime = timeStopSinceSOF - timeStartSinceSOF;
+    float deltaTime = (timeStopSinceSOF - timeStartSinceSOF) * 60.; // convert back to seconds
     for (int iTrigger{0}; iTrigger < NTriggerAliases; ++iTrigger) {
       for (int iBCCategory{0}; iBCCategory < NBCCategories; ++iBCCategory) {
         if (iBCCategory == BCSL) { // we do not do it for superleading because it is not easy to define the number of inspected BCs
