@@ -46,8 +46,10 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <array>
+#include <map>
 #include <random>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
