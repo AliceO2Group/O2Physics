@@ -333,7 +333,7 @@ struct LumiStabilityPP {
         int runVdM23Start{542757};
         int runVdM23Stop{542768};
         if (runNumber < runVdM23Start && runNumber > runVdM23Stop) {
-          rate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), std::string("T0VTX"), true) * 1.e-3;  // kHz
+          rate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), std::string("T0VTX"), true) * 1.e-3; // kHz
         }
         histInteractionRate[runNumber]->Fill(rate);
       }
