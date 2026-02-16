@@ -104,8 +104,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // ...Modified according to the configurable in core wagon
     // ---------------------------------------------------------------------
     Configurable<int> minCrossedRowsFromLF{"minCrossedRowsFromLF", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
-    Configurable<float> dcanegtopvFromLF{"dcanegtopvFromLF", .05, "DCV Neg to PV"};
-    Configurable<float> dcapostopvFromLF{"dcapostopvFromLF", .05, "DCV Pos To PV"};
+    Configurable<float> dcanegtopvFromLF{"dcanegtopvFromLF", .1, "DCV Neg to PV"};
+    Configurable<float> dcapostopvFromLF{"dcapostopvFromLF", .1, "DCV Pos To PV"};
     Configurable<double> v0cospaFromLF{"v0cospaFromLF", 0.95, "V0 CosPA"};
     Configurable<float> dcav0dauFromLF{"dcav0dauFromLF", 1.0, "DCA V0 Daughters"};
     Configurable<float> v0radiusFromLF{"v0radiusFromLF", 0.9, "v0radius"};
@@ -126,10 +126,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // --------------------------------------------------------------------
     Configurable<bool> kfTuneForOmegaFromLF{"kfTuneForOmegaFromLF", false, "if enabled, take main cascade properties from omega fit instread of Xi fit(=default)"};
     Configurable<int> kfConstructMethodFromLF{"kfConstructMethodFromLF", 2, "2 : Daughter particle masses stay fixed in construction process"};
-    Configurable<bool> kfUseV0MassConstraintFromLF{"kfUseV0MassConstraintFromLF", false, "KF : Use Lambda mass constraint"};
+    Configurable<bool> kfUseV0MassConstraintFromLF{"kfUseV0MassConstraintFromLF", true, "KF : Use Lambda mass constraint"};
     Configurable<bool> kfUseCascadeMassConstraintFromLF{"kfUseCascadeMassConstraintFromLF", false, "KF : Use Cascade mass constraint - WARNING : Not adequate for inv mass analysis of Xi"};
     Configurable<bool> kfDoDCAFitterPreMinimV0FromLF{"kfDoDCAFitterPreMinimV0FromLF", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for V0"};
-    Configurable<bool> kfDoDCAFitterPreMinimCascFromLF{"kfDoDCAFitterPreMinimCascFromLF", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
+    Configurable<bool> kfDoDCAFitterPreMinimCascFromLF{"kfDoDCAFitterPreMinimCascFromLF", false, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
   } LFConfigs;
 
   // For cascade building using LF strangeness builder
@@ -686,7 +686,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // float impactParCharmBachFromCharmBayonZ = impactParameterCharmBach.getZ();
 
       // get v0 invariant mass - from LF Table
-      // float mLambda = straHelper.v0.massLambda; // from LF Table
       float mLambda = RecoDecay::m(std::array{pVecV0DauPos, pVecV0DauNeg}, (straHelper.cascade.charge < 0) ? std::array{massOfV0DauPos, massOfV0DauNeg} : std::array{massOfV0DauNeg, massOfV0DauPos});
 
       // get Casc mass - from LF Table
