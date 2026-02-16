@@ -76,6 +76,8 @@ struct Alice3strangenessFinder {
   Configurable<double> maxVtxChi2{"maxVtxChi2", 2, "reject (if>0) vtx. chi2 above this value"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> acceptedLambdaMassWindow{"acceptedLambdaMassWindow", 0.2f, "accepted Lambda mass window around PDG mass"};
+
   // Operation and minimisation criteria
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
   Configurable<bool> doDCAplotsD{"doDCAplotsD", true, "do daughter prong DCA plots for D mesons"};
@@ -290,6 +292,14 @@ struct Alice3strangenessFinder {
                          v0cand.cosPA, v0cand.dcaToPV);
 
         o2::track::TrackParCov v0(v0cand.posSV, v0cand.p, v0cand.parentTrackCovMatrix, 0);
+        const float lambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2]},
+                                                                   std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
+                                                        std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+
+        if (std::abs(lambdaMassHypothesis - o2::constants::physics::MassLambda0) > acceptedLambdaMassWindow) {
+          continue; // Likely not a lambda, should not be considered for cascade building
+        }
+
         for (const auto& bachTrack : bachelorTracksGrouped) {
           if (bachTrack.globalIndex() == posTrack.globalIndex() || bachTrack.globalIndex() == negTrack.globalIndex()) {
             continue; // avoid using any track that was already used
