@@ -1151,15 +1151,21 @@ struct OnTheFlyTracker {
             }
 
             int nCand = 0;
-            bool kinkFitter = true;
+            bool kinkFitterOK = true;
             try {
               nCand = fitter.process(trackedCasc, trackedBach);
             } catch (...) {
-              kinkFitter = false;
+              kinkFitterOK = false;
             }
 
             if (nCand == 0) {
-              kinkFitter = false;
+              kinkFitterOK = false;
+            }
+
+            if (kinkFitterOK) {
+              if (cascadeDecaySettings.doXiQA) {
+                getHist(TH1, histPath + "hXiBuilding")->Fill(6.0f);
+              }
             }
 
             std::array<float, 3> kinkVtx = {-999, -999, -999};
