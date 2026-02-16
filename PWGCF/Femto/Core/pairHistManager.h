@@ -338,11 +338,11 @@ class PairHistManager
   {
     // pt in track table is calculated from 1/signedPt from the original track table
     // in case of He with Z=2, we have to rescale the pt with the absolute charge
-    
+
     // Use recalculated pT if provided (for recalculated kink pT), otherwise use particle pT
     float pt1 = (pt1Recalc > 0.0f) ? pt1Recalc : particle1.pt();
     float pt2 = (pt2Recalc > 0.0f) ? pt2Recalc : particle2.pt();
-    
+
     mParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * pt1, particle1.eta(), particle1.phi(), mPdgMass1);
     mParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * pt2, particle2.eta(), particle2.phi(), mPdgMass2);
 
