@@ -99,8 +99,30 @@ constexpr double antiLambdaWeakDecayConstant = -0.758; // DPG 2025 update
     X(FOLDER "/p2dRingObservableDeltaPhiVsLambdaPt",         deltaPhiJet,   v0pt, ringObservable)     \
     X(FOLDER "/p2dRingObservableDeltaThetaVsLambdaPt",       deltaThetaJet, v0pt, ringObservable)     \
     X(FOLDER "/p2dRingObservableDeltaPhiVsLeadJetPt",        deltaPhiJet,   leadingJetPt, ringObservable) \
-    X(FOLDER "/p2dRingObservableDeltaThetaVsLeadJetPt",      deltaThetaJet, leadingJetPt, ringObservable)
-  // Lambda mass correlations (1D + 1D and 2D + 1D): (TODO: signal extraction attempts)
+    X(FOLDER "/p2dRingObservableDeltaThetaVsLeadJetPt",      deltaThetaJet, leadingJetPt, ringObservable) \
+    /* 1D Mass */ \
+    X(FOLDER "/hMass", v0LambdaLikeMass) \
+    X(FOLDER "/hRingObservableMass", v0LambdaLikeMass, ringObservable) \
+    X(FOLDER "/hMassSigExtract", v0LambdaLikeMass) \
+    /* 2D: Observable vs Mass */ \
+    X(FOLDER "/h2dRingObservableDeltaPhiVsMass",      deltaPhiJet,   v0LambdaLikeMass, ringObservable) \
+    X(FOLDER "/h2dRingObservableDeltaThetaVsMass",    deltaThetaJet, v0LambdaLikeMass, ringObservable) \
+    /* Counters */ \
+    X(FOLDER "/h2dDeltaPhiVsMass",                    deltaPhiJet,   v0LambdaLikeMass) \
+    X(FOLDER "/h2dDeltaThetaVsMass",                  deltaThetaJet, v0LambdaLikeMass) \
+    /* 3D: Observable vs Mass vs Lambda pT */ \
+    X(FOLDER "/h3dRingObservableDeltaPhiVsMassVsLambdaPt",   deltaPhiJet,   v0LambdaLikeMass, v0pt, ringObservable) \
+    X(FOLDER "/h3dRingObservableDeltaThetaVsMassVsLambdaPt", deltaThetaJet, v0LambdaLikeMass, v0pt, ringObservable) \
+    /* Counters */ \
+    X(FOLDER "/h3dDeltaPhiVsMassVsLambdaPt",          deltaPhiJet,   v0LambdaLikeMass, v0pt) \
+    X(FOLDER "/h3dDeltaThetaVsMassVsLambdaPt",        deltaThetaJet, v0LambdaLikeMass, v0pt) \
+    /* 3D: Observable vs Mass vs Lead Jet pT */ \
+    X(FOLDER "/h3dRingObservableDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservable) \
+    X(FOLDER "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservable) \
+    /* Counters */ \
+    X(FOLDER "/h3dDeltaPhiVsMassVsLeadJetPt",                 deltaPhiJet,   v0LambdaLikeMass, leadingJetPt) \
+    X(FOLDER "/h3dDeltaThetaVsMassVsLeadJetPt",               deltaThetaJet, v0LambdaLikeMass, leadingJetPt)
+
 
 // ======================================================
 // Ring Observable SQUARED histogram fill list
@@ -117,7 +139,17 @@ constexpr double antiLambdaWeakDecayConstant = -0.758; // DPG 2025 update
     X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsLambdaPt", deltaThetaJet, v0pt,          ringObservableSquared) \
     /* 2D Jet correlations */                                                                         \
     X(FOLDER "/h2dRingObservableSquaredDeltaPhiVsLeadJetPt",  deltaPhiJet,   leadingJetPt, ringObservableSquared) \
-    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt",deltaThetaJet, leadingJetPt, ringObservableSquared)
+    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt",deltaThetaJet, leadingJetPt, ringObservableSquared) \
+    /* 2D - Mass correlations */ \
+    X(FOLDER "/h2dRingObservableSquaredDeltaPhiVsMass",      deltaPhiJet,   v0LambdaLikeMass, ringObservableSquared) \
+    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsMass",    deltaThetaJet, v0LambdaLikeMass, ringObservableSquared) \
+    /* 3D - LambdaPt */ \
+    X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt",   deltaPhiJet,   v0LambdaLikeMass, v0pt, ringObservableSquared) \
+    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt", deltaThetaJet, v0LambdaLikeMass, v0pt, ringObservableSquared) \
+    /* 3D - LeadJetPt*/ \
+    X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservableSquared) \
+    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservableSquared)
+
 
 // Apply the macros (notice I had to include the semicolon (";") after the function, so you don't need to 
 // write that when calling this APPLY_HISTO_FILL. The code will look weird, but without this the compiler
@@ -141,7 +173,7 @@ struct lambdajetpolarizationionsderived {
     struct : ConfigurableGroup {
         std::string prefix = "axisConfigurations"; // JSON group name
         ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
-        ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
+        ConfigurableAxis axisPtCoarseQA{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
         ConfigurableAxis axisLambdaMass{"axisLambdaMass", {450, 1.08f, 1.15f}, "Lambda mass in GeV/c"}; // Default is {200, 1.101f, 1.131f}
 
         // Jet axes:
@@ -149,6 +181,12 @@ struct lambdajetpolarizationionsderived {
         ConfigurableAxis axisJetPt{"axisJetPt",{100, 0.f, 200.f},"Jet p_{t} (GeV)"};
         ConfigurableAxis axisCosTheta{"axisDeltaTheta", {100, 0, constants::math::PI}, "#Delta #theta_{jet}"};
         ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {100, -constants::math::PI, constants::math::PI}, "#Delta #phi_{jet}"};
+
+        // Coarser axes for signal extraction:
+        ConfigurableAxis axisPtSigExtract{"axisPtSigExtract", {VARIABLE_WIDTH, 0.0f, 0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 0.9f, 1.05f, 1.2f, 1.35f, 1.5f, 1.65f, 1.8f, 1.95f, 2.1f, 2.25f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for signal extraction"};
+        ConfigurableAxis axisLambdaMassSigExtract{"axisLambdaMassSigExtract", {175, 1.08f, 1.15f}, "Lambda mass in GeV/c"}; // With a sigma of 0.002 GeV/c, this has about 5 bins per sigma, so that the window is properly grasped.
+        ConfigurableAxis axisLeadingParticlePtSigExtract{"axisLeadingParticlePtSigExtract", {VARIABLE_WIDTH, 0, 4, 8, 12, 16, 20, 25, 30, 35, 40, 60, 100, 200}, "Leading particle p_{T} (GeV/c)"}; // Simpler version!
+        ConfigurableAxis axisJetPtSigExtract{"axisJetPtSigExtract", {VARIABLE_WIDTH, 0, 4, 8, 12, 16, 20, 25, 30, 35, 40, 60, 100, 200},"Jet p_{t} (GeV)"};
     } axisConfigurations;
 
 
@@ -221,20 +259,58 @@ struct lambdajetpolarizationionsderived {
             // 1D TProfiles
             // ===============================
             histos.add((folder + "/pRingObservableDeltaPhi").c_str(), "pRingObservableDeltaPhi;#Delta#varphi_{jet};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/pRingObservableDeltaTheta").c_str(), "pRingObservableDeltaTheta;cos#theta_{jet};<#it{R}>", kTProfile, {axisConfigurations.axisCosTheta});
+            histos.add((folder + "/pRingObservableDeltaTheta").c_str(), "pRingObservableDeltaTheta;#Delta#theta_{jet};<#it{R}>", kTProfile, {axisConfigurations.axisCosTheta});
             histos.add((folder + "/pRingObservableIntegrated").c_str(), "pRingObservableIntegrated; ;<#it{R}>", kTProfile, {{1, -0.5, 0.5}});
             histos.add((folder + "/pRingObservableLambdaPt").c_str(), "pRingObservableLambdaPt;#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile, {axisConfigurations.axisPt});
             // ===============================
             // 2D TProfiles (Lambda correlations)
             // ===============================
             histos.add((folder + "/p2dRingObservableDeltaPhiVsLambdaPt").c_str(), "p2dRingObservableDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPt});
-            histos.add((folder + "/p2dRingObservableDeltaThetaVsLambdaPt").c_str(), "p2dRingObservableDeltaThetaVsLambdaPt;cos#theta_{jet};#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisPt});
+            histos.add((folder + "/p2dRingObservableDeltaThetaVsLambdaPt").c_str(), "p2dRingObservableDeltaThetaVsLambdaPt;#Delta#theta_{jet};#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisPt});
             // ===============================
             // 2D TProfiles (Jet correlations)
             // ===============================
             histos.add((folder + "/p2dRingObservableDeltaPhiVsLeadJetPt").c_str(), "p2dRingObservableDeltaPhiVsLeadJetPt;#Delta#varphi_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
-            histos.add((folder + "/p2dRingObservableDeltaThetaVsLeadJetPt").c_str(), "p2dRingObservableDeltaThetaVsLeadJetPt;cos#theta_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisJetPt});
-            // (TODO: add mass histograms for signal extraction)
+            histos.add((folder + "/p2dRingObservableDeltaThetaVsLeadJetPt").c_str(), "p2dRingObservableDeltaThetaVsLeadJetPt;#Delta#theta_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisJetPt});
+            
+            // ===============================
+            // Multi-dimensional histograms for signal extraction
+            // (Mass-dependent polarization extraction)
+            // ===============================
+            // Simple invariant mass plot for QA:
+            histos.add((folder + "/hMass").c_str(), "hMass", kTH1D, {axisConfigurations.axisLambdaMass});
+            histos.add((folder + "/hMassSigExtract").c_str(), "hMassSigExtract", kTH1D, {axisConfigurations.axisLambdaMassSigExtract});
+            // 1D Observable vs Mass:
+                // Important to know if the signal varies with mass, or if the sideband signal subtraction will probably work well enough!
+            histos.add((folder + "/hRingObservableMass").c_str(), "hRingObservableMass", kTH1D, {axisConfigurations.axisLambdaMass});
+            // --- 2D: Observable vs Invariant Mass ---
+            // Ring observable weighted with R
+            histos.add((folder + "/h2dRingObservableDeltaPhiVsMass").c_str(), "h2dRingObservableDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/h2dRingObservableDeltaThetaVsMass").c_str(), "h2dRingObservableDeltaThetaVsMass", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract});
+            // Squared observable (for variance propagation)
+            histos.add((folder + "/h2dRingObservableSquaredDeltaPhiVsMass").c_str(), "h2dRingObservableSquaredDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsMass").c_str(), "h2dRingObservableSquaredDeltaThetaVsMass", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract});
+            // --- Counters (denominators) ---
+            histos.add((folder + "/h2dDeltaPhiVsMass").c_str(), "h2dDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/h2dDeltaThetaVsMass").c_str(), "h2dDeltaThetaVsMass", kTH2D,{axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract});
+            // --- 3D: Observable vs Mass vs Lambda pT ---
+            histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLambdaPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisCosTheta,axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            // Squared version
+            histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            // Counters
+            histos.add((folder + "/h3dDeltaPhiVsMassVsLambdaPt").c_str(), "h3dDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/h3dDeltaThetaVsMassVsLambdaPt").c_str(), "h3dDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            // --- 3D: Observable vs Mass vs Lead Jet pT ---
+            histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
+            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
+            // --- Squared version ---
+            histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
+            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
+            // --- Counters ---
+            histos.add((folder + "/h3dDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
+            histos.add((folder + "/h3dDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt});
         };
         // Execute local lambda to register histogram families:
         addRingObservableFamily("Ring");
