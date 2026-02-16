@@ -28,9 +28,9 @@
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
-#include "Framework/runDataProcessing.h"
 
 #include <limits>
 #include <map>
@@ -49,11 +49,11 @@ enum TriggerAliases { AllBCs = 0,
                       FT0CE = 2,
                       FDD = 3,
                       NTriggerAliases };
-enum BCCategories { BCA = 0,  // A side BCs (bunch-crossings that had beam only from A side)
-                    BCB = 1,  // B type BCs (bunch-crossings that had beam from both sides)
-                    BCC = 2,  // C side BCs (bunch-crossings that had beam only from C side)
-                    BCE = 3,  // empty BCs (bunch-crossings that did not have beam from either side)
-                    BCL = 4,  // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
+enum BCCategories { BCA = 0,     // A side BCs (bunch-crossings that had beam only from A side)
+                    BCB = 1,     // B type BCs (bunch-crossings that had beam from both sides)
+                    BCC = 2,     // C side BCs (bunch-crossings that had beam only from C side)
+                    BCE = 3,     // empty BCs (bunch-crossings that did not have beam from either side)
+                    BCL = 4,     // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
                     BCSLFDD = 5, // super-leading BCs for FDD (bunch-crossings that had beam from both sides but did not have FDD activity for a configurable number of preceding BCs)
                     BCSLFT0 = 6, // super-leading BCs for FT0 (bunch-crossings that had beam from both sides but did not have FT0 activity for a configurable number of preceding BCs)
                     NBCCategories };
@@ -222,7 +222,7 @@ struct LumiStabilityPP {
 
     std::string_view injectionScheme = mLHCIFdata->getInjectionScheme();
     size_t underScorePos = injectionScheme.find('_');
-    size_t bPos = injectionScheme.find('b', underScorePos); 
+    size_t bPos = injectionScheme.find('b', underScorePos);
     if (underScorePos != std::string_view::npos && bPos != std::string_view::npos && bPos > underScorePos) {
       std::string_view nBunchesFillingSchemeStr = injectionScheme.substr(underScorePos + 1, bPos - (underScorePos + 1));
       nBunchesFillingScheme = std::stoi(std::string(nBunchesFillingSchemeStr));
@@ -360,7 +360,7 @@ struct LumiStabilityPP {
       if (globalBC - globalBCStart > maxBcDiff) { // we changed fill, we should not count all BCs between the current and the previous one
         globalBCStart = globalBC;
       }
-      for (int64_t iGlobalBC{globalBCStart}; iGlobalBC<=globalBC; ++iGlobalBC) { // we count all BCs in between one and another stored in the AO2Ds
+      for (int64_t iGlobalBC{globalBCStart}; iGlobalBC <= globalBC; ++iGlobalBC) { // we count all BCs in between one and another stored in the AO2Ds
         int iLocalBC = iGlobalBC % nBCsPerOrbit;
         if (bcPatternA[iLocalBC]) {
           nBCs[BCA]++;
