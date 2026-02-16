@@ -303,14 +303,14 @@ struct lambdajetpolarizationionsderived {
             histos.add((folder + "/h3dDeltaPhiVsMassVsLambdaPt").c_str(), "h3dDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             histos.add((folder + "/h3dDeltaThetaVsMassVsLambdaPt").c_str(), "h3dDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             // --- 3D: Observable vs Mass vs Lead Jet pT ---
-            histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
-            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
+            histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
+            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             // --- Squared version ---
-            histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
-            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
+            histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
+            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             // --- Counters ---
-            histos.add((folder + "/h3dDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt}); 
-            histos.add((folder + "/h3dDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPt});
+            histos.add((folder + "/h3dDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
+            histos.add((folder + "/h3dDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract});
         };
         // Execute local lambda to register histogram families:
         addRingObservableFamily("Ring");
