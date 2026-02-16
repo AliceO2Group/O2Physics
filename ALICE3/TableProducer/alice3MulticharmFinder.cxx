@@ -825,7 +825,6 @@ struct Alice3MulticharmFinder {
                 picc.hasSigPi(), picc.nSigmaPionRich(),
                 getPdgCodeForTrack(picc));
 
-
               ProngInfo bachelor, positive, negative;
               if (xiCand.has_bachTrack()) {
                 auto bach = xiCand.bachTrack_as<Alice3Tracks>(); // de-reference bach track
@@ -834,17 +833,17 @@ struct Alice3MulticharmFinder {
                 bachelor.dcaXY = bach.dcaXY();
                 bachelor.dcaZ = bach.dcaZ();
               }
-              
+
               if (xiCand.has_negTrack()) {
-                auto neg = xiCand.negTrack_as<Alice3Tracks>();   // de-reference neg track
+                auto neg = xiCand.negTrack_as<Alice3Tracks>(); // de-reference neg track
                 negative.pt = neg.pt();
                 negative.eta = neg.eta();
                 negative.dcaXY = neg.dcaXY();
                 negative.dcaZ = neg.dcaZ();
               }
-              
+
               if (xiCand.has_posTrack()) {
-                auto pos = xiCand.posTrack_as<Alice3Tracks>();   // de-reference pos track
+                auto pos = xiCand.posTrack_as<Alice3Tracks>(); // de-reference pos track
                 positive.pt = pos.pt();
                 positive.eta = pos.eta();
                 positive.dcaXY = pos.dcaXY();
