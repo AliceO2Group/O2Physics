@@ -254,7 +254,7 @@ struct TableMaker {
     Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fConfigGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
-    Configurable<bool> fUseRemoteZShift{"cfgUseRemoteZShift", true, "Enable getting Zshift from ccdb"};
+    Configurable<bool> fUseRemoteZShift{"cfgUseRemoteZShift", false, "Enable getting Zshift from ccdb"};
     Configurable<float> fManualZShift{"cfgManualZShift", 0.f, "Manual value for the Zshift for muons."};
     Configurable<std::string> fConfigGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
   } fConfigCCDB;
@@ -1584,7 +1584,9 @@ struct TableMaker {
           auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
           if (fZShift != nullptr && !fZShift->empty()) {
             VarManager::SetZShift((*fZShift)[0]);
-          }
+          } else {
+            LOG(fatal) << "Could not retrieve Z-shift value from CCDB";
+	  }
         } else {
           VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
         }
