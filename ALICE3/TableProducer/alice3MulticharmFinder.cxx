@@ -200,6 +200,13 @@ struct Alice3MulticharmFinder {
     int nTPCHitsPiCC;
   } thisXiCCcandidate;
 
+  struct ProngInfo {
+    float pt = 1e+10;
+    float eta = 1e+10;
+    float dcaXY = 1e+10;
+    float dcaZ = 1e+10;
+  };
+
   template <typename TTrackType>
   bool buildDecayCandidateTwoBody(TTrackType const& t0, TTrackType const& t1, float mass0, float mass1)
   {
@@ -557,10 +564,6 @@ struct Alice3MulticharmFinder {
       }
 
       uint32_t nCombinationsC = 0;
-      auto bach = xiCand.bachTrack_as<Alice3Tracks>(); // de-reference bach track
-      auto neg = xiCand.negTrack_as<Alice3Tracks>();   // de-reference neg track
-      auto pos = xiCand.posTrack_as<Alice3Tracks>();   // de-reference pos track
-
       if (!BIT_CHECK(xi.decayMap(), kTrueXiFromXiC)) {
         continue;
       }
@@ -822,13 +825,39 @@ struct Alice3MulticharmFinder {
                 picc.hasSigPi(), picc.nSigmaPionRich(),
                 getPdgCodeForTrack(picc));
 
+
+              ProngInfo bachelor, positive, negative;
+              if (xiCand.has_bachTrack()) {
+                auto bach = xiCand.bachTrack_as<Alice3Tracks>(); // de-reference bach track
+                bachelor.pt = bach.pt();
+                bachelor.eta = bach.eta();
+                bachelor.dcaXY = bach.dcaXY();
+                bachelor.dcaZ = bach.dcaZ();
+              }
+              
+              if (xiCand.has_negTrack()) {
+                auto neg = xiCand.negTrack_as<Alice3Tracks>();   // de-reference neg track
+                negative.pt = neg.pt();
+                negative.eta = neg.eta();
+                negative.dcaXY = neg.dcaXY();
+                negative.dcaZ = neg.dcaZ();
+              }
+              
+              if (xiCand.has_posTrack()) {
+                auto pos = xiCand.posTrack_as<Alice3Tracks>();   // de-reference pos track
+                positive.pt = pos.pt();
+                positive.eta = pos.eta();
+                positive.dcaXY = pos.dcaXY();
+                positive.dcaZ = pos.dcaZ();
+              }
+
               multiCharmExtra(
-                bach.pt(), bach.eta(),
-                bach.dcaXY(), bach.dcaZ(),
-                pos.pt(), pos.eta(),
-                pos.dcaXY(), pos.dcaZ(),
-                neg.pt(), neg.eta(),
-                neg.dcaXY(), neg.dcaZ(),
+                bachelor.pt, bachelor.eta,
+                bachelor.dcaXY, bachelor.dcaZ,
+                positive.pt, positive.eta,
+                positive.dcaXY, positive.dcaZ,
+                negative.pt, negative.eta,
+                negative.dcaXY, negative.dcaZ,
                 pi1c.eta(), pi2c.eta(), picc.eta());
             }
           }

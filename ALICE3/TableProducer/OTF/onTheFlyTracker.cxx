@@ -919,7 +919,7 @@ struct OnTheFlyTracker {
           }
         }
 
-        if (nHits[1] < fastTrackerSettings.minSiliconHits || nHits[2] < fastTrackerSettings.minSiliconHits) {
+        if (!isReco[1] || !isReco[2]) {
           tryKinkReco = true; // Lambda outside acceptance, set flag for kink reco to be used if mode 1
         }
 
@@ -1150,12 +1150,27 @@ struct OnTheFlyTracker {
               thisCascade.negativeId = -1;
             }
 
+            int nCand = 0;
+            bool kinkFitter = true;
+            try {
+              nCand = fitter.process(trackedCasc, trackedBach);
+            } catch (...) {
+              kinkFitter = false;
+            }
+
+            if (nCand == 0) {
+              kinkFitter = false;
+            }
+
+            std::array<float, 3> kinkVtx = {-999, -999, -999};
+            kinkVtx = fitter.getPCACandidatePos();
+
             thisCascade.bachelorId = lastTrackIndex + tracksAlice3.size() - isReco.size();
             thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this should be ok
-            thisCascade.dcaV0dau = -1.f;
-            thisCascade.v0radius = -1.f;
-            thisCascade.dcacascdau = -1.f;            // Fix me
-            thisCascade.cascradius = xiDecayRadius2D; // Fix me
+            thisCascade.dcaV0dau = -1.f;                                       // unknown
+            thisCascade.v0radius = -1.f;                                       // unknown
+            thisCascade.dcacascdau = std::sqrt(fitter.getChi2AtPCACandidate());
+            thisCascade.cascradius = std::hypot(kinkVtx[0], kinkVtx[1]);
             thisCascade.cascradiusMC = xiDecayRadius2D;
             thisCascade.mLambda = o2::constants::physics::MassLambda;
             thisCascade.findableClusters = nCascHits;
@@ -1164,7 +1179,7 @@ struct OnTheFlyTracker {
                                                       std::array{pV0[0], pV0[1], pV0[2]}},
                                            std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
 
-            tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), time, timeResolutionUs, false, false, 1, thisCascade.foundClusters});
+            tracksAlice3.push_back(TrackAlice3{trackedCasc, mcParticle.globalIndex(), time, timeResolutionUs, false, false, 1, thisCascade.foundClusters});
 
             // add this cascade to vector (will fill cursor later with collision ID)
             cascadesAlice3.push_back(thisCascade);
