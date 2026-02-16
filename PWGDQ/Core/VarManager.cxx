@@ -359,113 +359,115 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
 }
 
 //__________________________________________________________________
-std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficientUnbinned(const std::vector<double>& data) {
-    // Bimodality coefficient = (skewness^2 + 1) / kurtosis
-    // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
-    size_t n = data.size();
-    if (n < 3) {
-      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
-    }
-    double mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
+std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficientUnbinned(const std::vector<double>& data)
+{
+  // Bimodality coefficient = (skewness^2 + 1) / kurtosis
+  // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
+  size_t n = data.size();
+  if (n < 3) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+  }
+  double mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
 
-    double m2 = 0.0, m3 = 0.0, m4 = 0.0;
-    for (double x : data) {
-        double diff = x - mean;
-        double diff2 = diff * diff;
-        double diff3 = diff2 * diff;
-        double diff4 = diff3 * diff;
-        m2 += diff2;
-        m3 += diff3;
-        m4 += diff4;
-    }
+  double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+  for (double x : data) {
+    double diff = x - mean;
+    double diff2 = diff * diff;
+    double diff3 = diff2 * diff;
+    double diff4 = diff3 * diff;
+    m2 += diff2;
+    m3 += diff3;
+    m4 += diff4;
+  }
 
-    m2 /= n;
-    m3 /= n;
-    m4 /= n;
+  m2 /= n;
+  m3 /= n;
+  m4 /= n;
 
-    if (m2 == 0.0) {
-      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
-    }
+  if (m2 == 0.0) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+  }
 
-    double stddev = std::sqrt(m2);
-    double skewness = m3 / (stddev * stddev * stddev);
-    double kurtosis = m4 / (m2 * m2);
+  double stddev = std::sqrt(m2);
+  double skewness = m3 / (stddev * stddev * stddev);
+  double kurtosis = m4 / (m2 * m2);
 
-    return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
+  return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
 }
 
-std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficient(const std::vector<double>& data, float binWidth, int trim, float min, float max) {
-    // Bimodality coefficient = (skewness^2 + 1) / kurtosis
-    // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
+std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficient(const std::vector<double>& data, float binWidth, int trim, float min, float max)
+{
+  // Bimodality coefficient = (skewness^2 + 1) / kurtosis
+  // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
 
-    // if the binWidth is < 0, use the unbinned calculation
-    if (binWidth < 0) {
-      return BimodalityCoefficientUnbinned(data);
-    }
+  // if the binWidth is < 0, use the unbinned calculation
+  if (binWidth < 0) {
+    return BimodalityCoefficientUnbinned(data);
+  }
 
-    // bin the data and put it in a vector
-    int nBins = static_cast<int>((max - min) / binWidth);
-    std::vector<int> counts(nBins, 0.0);
-    
-    for (float x : data) {
-      if (x < min || x >= max) {
-        continue; // skip out-of-range values
-      }
-      int bin = static_cast<int>((x - min) / binWidth);
-      if (bin >= 0 && bin < nBins) {
-        counts[bin]++;
-      }
-    }
+  // bin the data and put it in a vector
+  int nBins = static_cast<int>((max - min) / binWidth);
+  std::vector<int> counts(nBins, 0.0);
 
-    // trim the distribution if requested, by requiring a minimum of "trim" counts in each bin
-    if (trim > 0) {
-      for (int i = 0; i < nBins; ++i) {
-        if (counts[i] < trim) {
-          counts[i] = 0;
-        }
-      }
+  for (float x : data) {
+    if (x < min || x >= max) {
+      continue; // skip out-of-range values
     }
-    
-    // first compute the mean
-    double mean = 0.0;
-    double totalCounts = 0.0;
+    int bin = static_cast<int>((x - min) / binWidth);
+    if (bin >= 0 && bin < nBins) {
+      counts[bin]++;
+    }
+  }
+
+  // trim the distribution if requested, by requiring a minimum of "trim" counts in each bin
+  if (trim > 0) {
     for (int i = 0; i < nBins; ++i) {
-      double binCenter = min + (i + 0.5) * binWidth;
-      mean += counts[i] * binCenter;
-      totalCounts += counts[i];
+      if (counts[i] < trim) {
+        counts[i] = 0;
+      }
     }
+  }
 
-    if (totalCounts == 0) {
-      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
-    }
-    mean /= totalCounts;
-    
-    // then compute the second, third, and fourth central moments
-    double m2 = 0.0, m3 = 0.0, m4 = 0.0;
-    for (int i = 0; i < nBins; ++i) {
-      double binCenter = min + (i + 0.5) * binWidth;
-      double diff = binCenter - mean;
-      double diff2 = diff * diff;
-      double diff3 = diff2 * diff;
-      double diff4 = diff3 * diff;
-      m2 += counts[i] * diff2;
-      m3 += counts[i] * diff3;
-      m4 += counts[i] * diff4;
-    }
+  // first compute the mean
+  double mean = 0.0;
+  double totalCounts = 0.0;
+  for (int i = 0; i < nBins; ++i) {
+    double binCenter = min + (i + 0.5) * binWidth;
+    mean += counts[i] * binCenter;
+    totalCounts += counts[i];
+  }
 
-    m2 /= totalCounts;
-    m3 /= totalCounts;
-    m4 /= totalCounts;
+  if (totalCounts == 0) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+  }
+  mean /= totalCounts;
 
-    if (m2 == 0.0) {
-      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
-    }
+  // then compute the second, third, and fourth central moments
+  double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+  for (int i = 0; i < nBins; ++i) {
+    double binCenter = min + (i + 0.5) * binWidth;
+    double diff = binCenter - mean;
+    double diff2 = diff * diff;
+    double diff3 = diff2 * diff;
+    double diff4 = diff3 * diff;
+    m2 += counts[i] * diff2;
+    m3 += counts[i] * diff3;
+    m4 += counts[i] * diff4;
+  }
 
-    double stddev = std::sqrt(m2);
-    double skewness = m3 / (stddev * stddev * stddev);
-    double kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
+  m2 /= totalCounts;
+  m3 /= totalCounts;
+  m4 /= totalCounts;
 
-    return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
+  if (m2 == 0.0) {
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+  }
+
+  double stddev = std::sqrt(m2);
+  double skewness = m3 / (stddev * stddev * stddev);
+  double kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
+
+  return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
 }
 
 //__________________________________________________________________

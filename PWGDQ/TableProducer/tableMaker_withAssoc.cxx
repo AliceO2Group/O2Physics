@@ -376,8 +376,8 @@ struct TableMaker {
 
   // variables to store quantities needed for tagging collision merging candidates
   struct {
-    std::map<int32_t, float> bimodalityCoeffDCAz; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision
-    std::map<int32_t, float> bimodalityCoeffDCAzBinned; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned
+    std::map<int32_t, float> bimodalityCoeffDCAz;               // Bimodality coefficient of the DCAz distribution of tracks associated to a collision
+    std::map<int32_t, float> bimodalityCoeffDCAzBinned;         // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned
     std::map<int32_t, float> bimodalityCoeffDCAzBinnedTrimmed1; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned and trimmed 1
     std::map<int32_t, float> bimodalityCoeffDCAzBinnedTrimmed2; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned and trimmed 2
     std::map<int32_t, float> bimodalityCoeffDCAzBinnedTrimmed3; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned and trimmed 3
@@ -1204,7 +1204,7 @@ struct TableMaker {
                 fOccup.oMeanTimeShortA[collision.globalIndex()], fOccup.oMeanTimeShortC[collision.globalIndex()],
                 fOccup.oMedianTimeShortA[collision.globalIndex()], fOccup.oMedianTimeShortC[collision.globalIndex()]);
       }
-      mergingTable(fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinned[collision.globalIndex()], 
+      mergingTable(fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinned[collision.globalIndex()],
                    fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3[collision.globalIndex()],
                    fCollMergingTag.meanDCAz[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed3[collision.globalIndex()],
                    fCollMergingTag.rmsDCAz[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed3[collision.globalIndex()],

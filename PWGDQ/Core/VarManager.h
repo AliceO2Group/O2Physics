@@ -1276,8 +1276,8 @@ class VarManager : public TObject
     return deltaPsi;
   }
   template <typename T, typename T1>
-  static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);  
-  
+  static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
+
   static std::tuple<double, double, double, double, double> BimodalityCoefficientUnbinned(const std::vector<double>& data);
   static std::tuple<double, double, double, double, double> BimodalityCoefficient(const std::vector<double>& data, float binWidth, int trim = 0, float min = -15.0, float max = 15.0);
 
@@ -2436,7 +2436,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
     values[kDCAzMeanBinnedTrimmed3] = -9999.0;
     values[kDCAzRMSBinnedTrimmed3] = -9999.0;
   }
-  
+
   // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
   // make a loop over the DCAz values and count how many are above each threshold
   int counter100um = 0;
