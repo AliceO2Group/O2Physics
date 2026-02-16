@@ -334,12 +334,17 @@ class PairHistManager
   }
 
   template <typename T1, typename T2>
-  void setPair(const T1& particle1, const T2& particle2)
+  void setPair(const T1& particle1, const T2& particle2, float pt1Recalc = -1.0f, float pt2Recalc = -1.0f)
   {
     // pt in track table is calculated from 1/signedPt from the original track table
     // in case of He with Z=2, we have to rescale the pt with the absolute charge
-    mParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * particle1.pt(), particle1.eta(), particle1.phi(), mPdgMass1);
-    mParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * particle2.pt(), particle2.eta(), particle2.phi(), mPdgMass2);
+    
+    // Use recalculated pT if provided (for recalculated kink pT), otherwise use particle pT
+    float pt1 = (pt1Recalc > 0.0f) ? pt1Recalc : particle1.pt();
+    float pt2 = (pt2Recalc > 0.0f) ? pt2Recalc : particle2.pt();
+    
+    mParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * pt1, particle1.eta(), particle1.phi(), mPdgMass1);
+    mParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * pt2, particle2.eta(), particle2.phi(), mPdgMass2);
 
     // set kT
     mKt = getKt(mParticle1, mParticle2);
@@ -363,17 +368,17 @@ class PairHistManager
   }
 
   template <typename T1, typename T2, typename T3>
-  void setPair(const T1& particle1, const T2& particle2, const T3& col)
+  void setPair(const T1& particle1, const T2& particle2, const T3& col, float pt1Recalc = -1.0f, float pt2Recalc = -1.0f)
   {
-    setPair(particle1, particle2);
+    setPair(particle1, particle2, pt1Recalc, pt2Recalc);
     mMult = col.mult();
     mCent = col.cent();
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
-  void setPair(const T1& particle1, const T2& particle2, const T3& col1, const T4& col2)
+  void setPair(const T1& particle1, const T2& particle2, const T3& col1, const T4& col2, float pt1Recalc = -1.0f, float pt2Recalc = -1.0f)
   {
-    setPair(particle1, particle2);
+    setPair(particle1, particle2, pt1Recalc, pt2Recalc);
     mMult = 0.5f * (col1.mult() + col2.mult()); // if mixing with multiplicity, should be in the same mixing bin
     mCent = 0.5f * (col1.cent() + col2.cent()); // if mixing with centrality, should be in the same mixing bin
   }

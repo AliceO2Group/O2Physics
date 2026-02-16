@@ -18,6 +18,7 @@
 
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
+#include "PWGCF/Femto/Core/femtoUtils.h"
 
 #include "Framework/ASoAHelpers.h"
 
@@ -62,16 +63,19 @@ void processSameEvent(T1 const& SliceParticle,
     if (CprManager.isClosePair()) {
       continue;
     }
+    // Calculate recalculated pT for kinks (if applicable)
+    float pt1Recalc = o2::analysis::femto::utils::getRecalculatedPtForKink(p1, TrackTable);
+    float pt2Recalc = o2::analysis::femto::utils::getRecalculatedPtForKink(p2, TrackTable);
     // Randomize pair order if enabled
     switch (pairOrder) {
       case kOrder12:
-        PairHistManager.setPair(p1, p2, Collision);
+        PairHistManager.setPair(p1, p2, Collision, pt1Recalc, pt2Recalc);
         break;
       case kOrder21:
-        PairHistManager.setPair(p2, p1, Collision);
+        PairHistManager.setPair(p2, p1, Collision, pt2Recalc, pt1Recalc);
         break;
       default:
-        PairHistManager.setPair(p1, p2, Collision);
+        PairHistManager.setPair(p1, p2, Collision, pt1Recalc, pt2Recalc);
     }
     // fill deta-dphi histograms with kstar cutoff
     CprManager.fill(PairHistManager.getKstar());
@@ -189,7 +193,10 @@ void processSameEvent(T1 const& SliceParticle1,
     if (CprManager.isClosePair()) {
       continue;
     }
-    PairHistManager.setPair(p1, p2, Collision);
+    // Calculate recalculated pT for kinks (if applicable)
+    float pt1Recalc = o2::analysis::femto::utils::getRecalculatedPtForKink(p1, TrackTable);
+    float pt2Recalc = o2::analysis::femto::utils::getRecalculatedPtForKink(p2, TrackTable);
+    PairHistManager.setPair(p1, p2, Collision, pt1Recalc, pt2Recalc);
     CprManager.fill(PairHistManager.getKstar());
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
@@ -309,7 +316,10 @@ void processMixedEvent(T1 const& Collisions,
       if (CprManager.isClosePair()) {
         continue;
       }
-      PairHistManager.setPair(p1, p2, collision1, collision2);
+      // Calculate recalculated pT for kinks (if applicable)
+      float pt1Recalc = o2::analysis::femto::utils::getRecalculatedPtForKink(p1, TrackTable);
+      float pt2Recalc = o2::analysis::femto::utils::getRecalculatedPtForKink(p2, TrackTable);
+      PairHistManager.setPair(p1, p2, collision1, collision2, pt1Recalc, pt2Recalc);
       CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
         PairHistManager.template fill<mode>();
