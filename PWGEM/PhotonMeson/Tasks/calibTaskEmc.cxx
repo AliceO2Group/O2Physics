@@ -813,6 +813,11 @@ struct CalibTaskEmc {
   // Pi0 from EMCal
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
+
     EMBitFlags flags(clusters.size());
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds, &registry);
 
@@ -836,6 +841,10 @@ struct CalibTaskEmc {
   // Pi0 from EMCal
   void processEMCalMixed(FilteredCollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags flags(clusters.size());
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
 
@@ -921,11 +930,19 @@ struct CalibTaskEmc {
   // PCM-EMCal same event
   void processEMCalPCMC(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0 && photons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+    if (clusters.size() > 0) {
+      fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+    }
 
     EMBitFlags v0flags(photons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
+    if (photons.size() > 0) {
+      fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
+    }
 
     for (const auto& collision : collisions) {
 
@@ -989,6 +1006,10 @@ struct CalibTaskEmc {
   // PCM-EMCal mixed event
   void processEMCalPCMMixed(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& pcmPhotons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0 && pcmPhotons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
     BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
 
@@ -997,10 +1018,14 @@ struct CalibTaskEmc {
     Pair<CollsWithQvecs, EMCalPhotons, PCMPhotons, BinningTypeMixed> pairPCMEMC{binningOnPositions, mixingConfig.cfgMixingDepth, -1, collisions, associatedTables, &cache}; // indicates that mixingConfig.cfgMixingDepth events should be mixed and under/overflow (-1) to be ignored
 
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    if (clusters.size() > 0) {
+      fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    }
 
     EMBitFlags v0flags(pcmPhotons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(pcmPhotons), aod::V0Legs>(v0flags, pcmPhotons);
+    if (pcmPhotons.size() > 0) {
+      fV0PhotonCut.AreSelectedRunning<decltype(pcmPhotons), aod::V0Legs>(v0flags, pcmPhotons);
+    }
 
     for (const auto& [c1, photonEMC, c2, photonPCM] : pairPCMEMC) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
@@ -1067,6 +1092,10 @@ struct CalibTaskEmc {
   // Pi0 from EMCal
   void processPCM(CollsWithQvecs const& collisions, PCMPhotons const& photons, aod::V0Legs const&)
   {
+    if (photons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags v0flags(photons.size());
     fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
     for (const auto& collision : collisions) {
@@ -1120,7 +1149,10 @@ struct CalibTaskEmc {
   // PCM-EMCal mixed event
   void processPCMMixed(FilteredCollsWithQvecs const& collisions, PCMPhotons const& pcmPhotons, aod::V0Legs const&)
   {
-
+    if (pcmPhotons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
     BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
 

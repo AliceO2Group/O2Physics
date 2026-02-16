@@ -345,6 +345,9 @@ class V0PhotonCut : public TNamed
   template <o2::soa::is_table TV0, typename TLeg>
   void AreSelectedRunning(EMBitFlags& flags, TV0 const& v0s, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
+    if (v0s.size() <= 0) {
+      return;
+    }
     // auto legIter = legs.begin();
     // auto legEnd = legs.end();
     size_t iV0 = 0;

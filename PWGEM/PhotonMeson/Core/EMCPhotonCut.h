@@ -269,6 +269,9 @@ class EMCPhotonCut : public TNamed
   /// \param fRegistry HistogramRegistry pointer of the main task
   void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
+    if (clusters.size() <= 0) {
+      return;
+    }
     auto emcmatchedtrackIter = emcmatchedtracks.begin();
     auto emcmatchedtrackEnd = emcmatchedtracks.end();
     auto secondaryIter = secondaries.begin();
