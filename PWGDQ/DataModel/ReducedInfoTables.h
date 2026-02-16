@@ -666,7 +666,7 @@ DECLARE_SOA_COLUMN(Vt2, vt2, float); //! Production vertex time
 DECLARE_SOA_COLUMN(IsAmbig1, isAmbig1, int); //!
 DECLARE_SOA_COLUMN(IsAmbig2, isAmbig2, int); //!
 DECLARE_SOA_COLUMN(IsCorrectAssoc1, isCorrectAssoc1, bool); //!
-DECLARE_SOA_COLUMN(IsCorrectAssoc2, IsCorrectAssoc2, bool); //!
+DECLARE_SOA_COLUMN(IsCorrectAssoc2, isCorrectAssoc2, bool); //!
 
 DECLARE_SOA_COLUMN(FwdDcaX1, fwdDcaX1, float);               //! X component of forward DCA
 DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float);               //! Y component of forward DCA
