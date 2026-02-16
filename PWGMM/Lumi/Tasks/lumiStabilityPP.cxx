@@ -298,7 +298,6 @@ struct LumiStabilityPP {
     int64_t globalBCIdOfLastBCWithActivityFDD{0}, globalBCIdOfLastBCWithActivityFT0{0}, globalBCLastInspectedBC{-1};
     int nBCs[NBCCategories];
     std::fill(&nBCs[0], &nBCs[0] + static_cast<int>(NBCCategories), 0); // Initialize to 0
-    float timeStartSinceSOF{-1.f}, timeStopSinceSOF{-1.f};
     int nTriggersPerDf[NTriggerAliases][NBCCategories];
     std::fill(&nTriggersPerDf[0][0], &nTriggersPerDf[0][0] + (static_cast<int>(NTriggerAliases) * static_cast<int>(NBCCategories)), 0); // Initialize to 0
     double rate{-1.};
@@ -321,15 +320,8 @@ struct LumiStabilityPP {
       }
 
       float timeSinceSOF = getTimeSinceSOF(bc);
-      if (timeStartSinceSOF < 0.) {
-        timeStartSinceSOF = timeSinceSOF;
-      }
-      if (timeStopSinceSOF < timeSinceSOF) {
-        timeStopSinceSOF = timeSinceSOF;
-      }
 
       bool isTriggerTVX = (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex) : false);
-
       if (isTriggerTVX) {
         histNBcsVsTime[runNumber]->Fill(timeSinceSOF);
         int runVdM23Start{542757};
@@ -484,7 +476,6 @@ struct LumiStabilityPP {
       }
     }
     // fill histogram for mu
-    // float deltaTime = (timeStopSinceSOF - timeStartSinceSOF) * 60.; // convert back to seconds
     for (int iTrigger{0}; iTrigger < NTriggerAliases; ++iTrigger) {
       for (int iBCCategory{0}; iBCCategory < NBCCategories; ++iBCCategory) {
         if (doTypeBC->get(0u, iBCCategory)) {
