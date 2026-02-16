@@ -1586,7 +1586,7 @@ struct TableMaker {
             VarManager::SetZShift((*fZShift)[0]);
           } else {
             LOG(fatal) << "Could not retrieve Z-shift value from CCDB";
-	  }
+          }
         } else {
           VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
         }
