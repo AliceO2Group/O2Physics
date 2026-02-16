@@ -186,6 +186,8 @@ struct StrangenessInJets {
   Configurable<bool> doLamRej{"doLamRej", false, "Lambda mass rejection for K0s candidates"};
   Configurable<double> lamRejWindow{"lamRejWindow", 0.01f, "Mass window for Lam rejection"};
   Configurable<double> k0sRejWindow{"k0sRejWindow", 0.01f, "Mass window for K0 rejection"};
+  Configurable<double> lamMassWindow{"lamMassWindow", 0.01f, "Mass window for Lambda selection"};
+  Configurable<double> k0sMassWindow{"k0sMassWindow", 0.03f, "Mass window for K0s selection"};
 
   // V0 analysis parameters
   Configurable<double> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
@@ -647,6 +649,9 @@ struct StrangenessInJets {
     if (doK0sRej && std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < k0sRejWindow)
       return false;
 
+    if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda) > lamMassWindow)
+      return false;
+
     // PID selections (TOF): positive track = proton, negative track = pion
     if (requireTOF) {
       if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
@@ -685,6 +690,12 @@ struct StrangenessInJets {
     if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
     if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+
+    if (doK0sRej && std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < k0sRejWindow)
+      return false;
+
+    if (std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda) > lamMassWindow)
       return false;
 
     // PID selections (TPC): negative track = proton, positive track = pion
@@ -741,7 +752,9 @@ struct StrangenessInJets {
 
     if (doLamRej && std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < lamRejWindow)
       return false;
-    ;
+
+    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > k0sMassWindow)
+      return false;
 
     // PID selections (TOF)
     if (requireTOF) {
