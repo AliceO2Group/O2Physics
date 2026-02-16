@@ -21,6 +21,7 @@
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -57,6 +58,7 @@ using namespace o2::constants::math;
 
 using Alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
 using FullV0Candidates = soa::Join<aod::V0CandidateIndices, aod::V0CandidateCores>;
+using FullCascadeCandidates = soa::Join<aod::StoredCascCores, aod::CascIndices>;
 using FullCollisions = soa::Join<aod::OTFLUTConfigId, aod::Collisions>;
 
 struct Alice3Strangeness {
@@ -67,6 +69,8 @@ struct Alice3Strangeness {
     ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
     ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.08f, 1.2f}, ""};
+    ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, ""};
+    ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.57f, 1.77f}, ""};
     ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -20, 20}, "vertex Z (cm)"};
     ConfigurableAxis axisDCA{"axisDCA", {200, 0, 5}, "DCA (cm)"};
     ConfigurableAxis axisV0Radius{"axisV0Radius", {50, 0.0, 100}, "V0 radius (cm)"};
@@ -107,6 +111,8 @@ struct Alice3Strangeness {
     Configurable<float> etaDaughterSelection{"etaDaughterSelection", 0.8f, "eta daughter selection"};
     Configurable<float> acceptedLambdaMassWindow{"acceptedLambdaMassWindow", 0.2f, "accepted Lambda mass window around PDG mass"};
     Configurable<float> acceptedK0MassWindow{"acceptedK0MassWindow", 0.3f, "accepted K0 mass window around PDG mass"};
+    Configurable<float> acceptedXiMassWindow{"acceptedXiMassWindow", 0.5f, "accepted Xi mass window around PDG mass"};
+    Configurable<float> acceptedOmegaMassWindow{"acceptedOmegaMassWindow", 0.5f, "accepted Omega mass window around PDG mass"};
   } selectionValues;
 
   uint16_t appliedSelectionCheckMask;
@@ -131,6 +137,17 @@ struct Alice3Strangeness {
     histos.add("reconstructedCandidates/Lambda/hMass1D", "hMass1D", kTH1D, {histAxes.axisLambdaMass});
     histos.add("reconstructedCandidates/hArmeterosBeforeAllSelections", "hArmeterosBeforeAllSelections", kTH2D, {{100, -1.0f, 1.0f}, {200, 0.0f, 0.5f}});
     histos.add("reconstructedCandidates/hArmeterosAfterAllSelections", "hArmeterosAfterAllSelections", kTH2D, {{100, -1.0f, 1.0f}, {200, 0.0f, 0.5f}});
+
+    if (doprocessFoundCascadeCandidates) {
+      histos.add("Xi/hMassAllCandidates", "hMassAllCandidates", kTH1D, {histAxes.axisXiMass});
+      histos.add("Xi/hMassSelected", "hMassSelected", kTH1D, {histAxes.axisXiMass});
+      histos.add("Omega/hMassAllCandidates", "hMassAllCandidates", kTH1D, {histAxes.axisOmegaMass});
+      histos.add("Omega/hMassSelected", "hMassSelected", kTH1D, {histAxes.axisOmegaMass});
+
+      histos.addClone("Xi/", "AntiXi/");
+      histos.addClone("Omega/", "AntiOmega/");
+    }
+
     if (selectionFlags.doQAforSelectionVariables) {
       if (!selectionFlags.applyDCADaughtersToPVSelection) {
         histos.add("reconstructedCandidates/K0/hDCAtoPVNegDaughter", "hDCAtoPVNegDaughter", kTH3D, {histAxes.axisK0Mass, histAxes.axisPt, histAxes.axisDCA});
@@ -326,8 +343,53 @@ struct Alice3Strangeness {
       }
     }
   }
+
+  void processFoundCascadeCandidates(aod::Collision const&, FullCascadeCandidates const& cascadeCandidates, Alice3tracks const&, aod::McParticles const&)
+  {
+    for (const auto& casc : cascadeCandidates) {
+      const bool isXi = (std::abs(casc.mXi() - o2::constants::physics::MassXiMinus) < selectionValues.acceptedXiMassWindow) && casc.sign() > 0;
+      const bool isOm = (std::abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < selectionValues.acceptedOmegaMassWindow) && casc.sign() > 0;
+      const bool isAntiXi = (std::abs(casc.mXi() - o2::constants::physics::MassXiMinus) < selectionValues.acceptedXiMassWindow) && casc.sign() < 0;
+      const bool isAntiOm = (std::abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < selectionValues.acceptedOmegaMassWindow) && casc.sign() < 0;
+
+      if (isXi) {
+        histos.fill(HIST("Xi/hMassAllCandidates"), casc.mXi());
+      }
+      
+      if (isOm) {
+        histos.fill(HIST("Omega/hMassAllCandidates"), casc.mOmega());
+      }
+
+      if (isAntiXi) {
+        histos.fill(HIST("AntiXi/hMassAllCandidates"), casc.mXi());
+      }
+      
+      if (isAntiOm) {
+        histos.fill(HIST("AntiOmega/hMassAllCandidates"), casc.mOmega());
+      }
+      
+      // TODO Add selections
+      if (isXi) {
+        histos.fill(HIST("Xi/hMassSelected"), casc.mXi());
+      }
+      
+      if (isOm) {
+        histos.fill(HIST("Omega/hMassSelected"), casc.mOmega());
+      }
+
+      if (isAntiXi) {
+        histos.fill(HIST("AntiXi/hMassSelected"), casc.mXi());
+      }
+      
+      if (isAntiOm) {
+        histos.fill(HIST("AntiOmega/hMassSelected"), casc.mOmega());
+      }
+    }
+  }
+
   PROCESS_SWITCH(Alice3Strangeness, processAllFindableCandidates, "", false);
   PROCESS_SWITCH(Alice3Strangeness, processFoundV0Candidates, "", true);
+  PROCESS_SWITCH(Alice3Strangeness, processFoundCascadeCandidates, "", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
