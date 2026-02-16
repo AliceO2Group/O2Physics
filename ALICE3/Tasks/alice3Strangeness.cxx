@@ -230,9 +230,9 @@ struct Alice3Strangeness {
     }
 
     for (const auto& cascCand : cascRecos) {
-      auto bach = cascCand.bachTrack_as<Alice3Tracks>(); // de-reference bach track
-      auto neg = cascCand.negTrack_as<Alice3Tracks>();   // de-reference neg track
-      auto pos = cascCand.posTrack_as<Alice3Tracks>();   // de-reference pos track
+      // auto bach = cascCand.bachTrack_as<Alice3Tracks>(); // de-reference bach track
+      // auto neg = cascCand.negTrack_as<Alice3Tracks>();   // de-reference neg track
+      // auto pos = cascCand.posTrack_as<Alice3Tracks>();   // de-reference pos track
 
       // Only XiMinus in the tracker for now
       histos.fill(HIST("Xi/hMassAllCandidates"), cascCand.mXi());
