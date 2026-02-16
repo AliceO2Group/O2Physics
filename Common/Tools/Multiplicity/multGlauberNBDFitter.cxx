@@ -421,13 +421,13 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
     Double_t lNAncestors1 = TMath::Floor(fNpart[ibin] * ff + fNcoll[ibin] * (1.0 - ff) + 0.5);
     Double_t lNAncestors2 = (fNpart[ibin] * ff + fNcoll[ibin] * (1.0 - ff));
 
-    TH1D *hEccentricity = 0x0;
+    TH1D* hEccentricity = 0x0;
 
-    if(lNpNcEcc){ 
+    if (lNpNcEcc) {
       // locate the histogram that corresponds to the eccentricity distribution in this NpNc pair
       lNpNcEcc->GetXaxis()->SetRange(lNpNcEcc->GetXaxis()->FindBin(fNpart[ibin]), lNpNcEcc->GetXaxis()->FindBin(fNpart[ibin]));
       lNpNcEcc->GetYaxis()->SetRange(lNpNcEcc->GetYaxis()->FindBin(fNcoll[ibin]), lNpNcEcc->GetYaxis()->FindBin(fNcoll[ibin]));
-      hEccentricity = (TH1D*) lNpNcEcc->Project3D("z"); 
+      hEccentricity = (TH1D*)lNpNcEcc->Project3D("z");
       hEccentricity->SetName(Form("hEccentricity_%i", ibin));
     }
 
@@ -456,10 +456,10 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
         lNPart2DPlot->Fill(lMultValueToFill, fNpart[ibin], lProbability);
       if (lNColl2DPlot)
         lNColl2DPlot->Fill(lMultValueToFill, fNcoll[ibin], lProbability);
-      if(lNpNcEcc){ 
-        // collapse the entire eccentricity distribution for this combo 
-        for(int ib = 1; ib < hEccentricity->GetNbinsX()+1; ib++){ 
-          lEcc2DPlot->Fill(lMultValueToFill, hEccentricity->GetBinCenter(ib), lProbability*hEccentricity->GetBinContent(ib));
+      if (lNpNcEcc) {
+        // collapse the entire eccentricity distribution for this combo
+        for (int ib = 1; ib < hEccentricity->GetNbinsX() + 1; ib++) {
+          lEcc2DPlot->Fill(lMultValueToFill, hEccentricity->GetBinCenter(ib), lProbability * hEccentricity->GetBinContent(ib));
         }
       }
     }
