@@ -296,13 +296,27 @@ struct Alice3strangenessFinder {
                                                                    std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
                                                         std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
 
-        if (std::abs(lambdaMassHypothesis - o2::constants::physics::MassLambda0) > acceptedLambdaMassWindow) {
+        const float antiLambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2]},
+                                                                       std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
+                                                            std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+
+        const bool inLambdaMassWindow = std::abs(lambdaMassHypothesis - o2::constants::physics::MassLambda0) > acceptedLambdaMassWindow;
+        const bool inAntiLambdaMassWindow = std::abs(antiLambdaMassHypothesis - o2::constants::physics::MassLambda0) > acceptedLambdaMassWindow;
+        if (inLambdaMassWindow || inAntiLambdaMassWindow) {
           continue; // Likely not a lambda, should not be considered for cascade building
         }
 
         for (const auto& bachTrack : bachelorTracksGrouped) {
           if (bachTrack.globalIndex() == posTrack.globalIndex() || bachTrack.globalIndex() == negTrack.globalIndex()) {
             continue; // avoid using any track that was already used
+          }
+
+          if (inLambdaMassWindow && bachTrack.sign() > 0) {
+            continue; // only consider lambda and neg bach track
+          }
+
+          if (inAntiLambdaMassWindow && bachTrack.sign() < 0) {
+            continue; // only consider anti-lambda and pos bach track
           }
 
           // TODO mc same mother check
