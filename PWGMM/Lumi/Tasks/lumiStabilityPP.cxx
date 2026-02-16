@@ -13,6 +13,7 @@
 /// \brief Analysis over BCs to study the luminosity stability along time for pp collisions
 ///
 /// \author Fabrizio Grosa (fabrizio.grosa@cern.ch), CERN
+/// \author Fabrizio Chinu (fabrizio.chinu@cern.ch), INFN and University of Turin
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/MetadataHelper.h"
@@ -299,6 +300,7 @@ struct LumiStabilityPP {
     int nBCs[2] = {0, 0};
     float timeStartSinceSOF{-1.f}, timeStopSinceSOF{-1.f};
     int nTriggersPerDf[NTriggerAliases][NBCCategories];
+    std::fill(&nTriggersPerDf[0][0], &nTriggersPerDf[0][0] + (NTriggerAliases * NBCCategories), 0); // Initialize to 0
     for (const auto& bc : bcs) {
 
       if (bc.timestamp() == 0) {
@@ -309,7 +311,7 @@ struct LumiStabilityPP {
       BCsWithTimeStamps::iterator bcFDD;
       auto idxBc = bc.globalIndex();
       if (isData23) {
-        if (idxBc < bcShiftFDDForData2023) { // we need to skip the first 15 because of the FDD-FT0 shift
+        if ((bcShiftFDDForData2023 < 0 && idxBc < -bcShiftFDDForData2023) || (bcShiftFDDForData2023 > 0 && idxBc > bcs.size() - bcShiftFDDForData2023)) { // we need to skip the first/last bcs because of the FDD-FT0 shift
           continue;
         }
         bcFDD = bcs.rawIteratorAt(idxBc + bcShiftFDDForData2023);
@@ -332,7 +334,7 @@ struct LumiStabilityPP {
         double rate{-1.};
         int runVdM23Start{542757};
         int runVdM23Stop{542768};
-        if (runNumber < runVdM23Start && runNumber > runVdM23Stop) {
+        if (runNumber < runVdM23Start || runNumber > runVdM23Stop) {
           rate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), std::string("T0VTX"), true) * 1.e-3; // kHz
         }
         histInteractionRate[runNumber]->Fill(rate);
@@ -443,7 +445,7 @@ struct LumiStabilityPP {
           continue;
         }
         float mu{0.};
-        if (iBCCategory != BCSL) {
+        if (iBCCategory != BCL) {
           mu = getMu(nTriggersPerDf[iTrigger][iBCCategory] / deltaTime, nBCs[0]);
         } else {
           mu = getMu(nTriggersPerDf[iTrigger][iBCCategory] / deltaTime, nBCs[1]);
