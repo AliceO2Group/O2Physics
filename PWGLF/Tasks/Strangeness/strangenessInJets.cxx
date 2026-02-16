@@ -182,6 +182,10 @@ struct StrangenessInJets {
   Configurable<double> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
   Configurable<bool> requireITS{"requireITS", false, "Require ITS hit"};
   Configurable<bool> requireTOF{"requireTOF", false, "Require TOF hit"};
+  Configurable<bool> doK0sRej{"doK0sRej", false, "K0 mass rejection for Lambda candidates"};
+  Configurable<bool> doLamRej{"doLamRej", false, "Lambda mass rejection for K0s candidates"};
+  Configurable<double> lamRejWindow{"lamRejWindow", 0.01f, "Mass window for Lam rejection"};
+  Configurable<double> k0sRejWindow{"k0sRejWindow", 0.01f, "Mass window for K0 rejection"};
 
   // V0 analysis parameters
   Configurable<double> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
@@ -286,6 +290,7 @@ struct StrangenessInJets {
       // Event counters
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
       registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryData.add("number_of_jets_vsmultiplicity", "number of jets in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis of strange hadrons
       if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
@@ -323,6 +328,7 @@ struct StrangenessInJets {
       // Event counter
       registryMC.add("number_of_events_mc_gen", "number of gen events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+      registryMC.add("number_of_jets_vsmultiplicity", "number of jets in mc gen vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
 
       // Histograms for analysis
       if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
@@ -638,6 +644,9 @@ struct StrangenessInJets {
     if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
       return false;
 
+    if (doK0sRej && std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < k0sRejWindow)
+      return false;
+
     // PID selections (TOF): positive track = proton, negative track = pion
     if (requireTOF) {
       if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
@@ -729,6 +738,10 @@ struct StrangenessInJets {
       return false;
     if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
       return false;
+
+    if (doLamRej && std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < lamRejWindow)
+      return false;
+    ;
 
     // PID selections (TOF)
     if (requireTOF) {
@@ -1075,7 +1088,10 @@ struct StrangenessInJets {
       selectedJet.emplace_back(jetAxis);
       ue1.emplace_back(ueAxis1);
       ue2.emplace_back(ueAxis2);
+
+      registryData.fill(HIST("number_of_jets_vsmultiplicity"), collision.centFT0M());
     }
+
     if (!isAtLeastOneJetSelected)
       return;
 
@@ -1414,6 +1430,8 @@ struct StrangenessInJets {
         if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) {
           continue;
         }
+
+        registryMC.fill(HIST("number_of_jets_vsmultiplicity"), genMultiplicity);
 
         // Loop over strange hadrons
         for (const auto& hadron : hadronMomentum) {
@@ -2003,45 +2021,10 @@ struct StrangenessInJets {
         continue;
       if (std::fabs(v0.v0dcanegtopv()) < dcanegtoPVmin)
         continue;
-      // PID selections (TPC) -- K0s
-      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
+      if (doK0sRej && std::abs(v0.massk0short() - o2::constants::physics::MassK0Short) < k0sRejWindow)
         continue;
-      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
+      if (doLamRej && std::abs(v0.masslambda() - o2::constants::physics::MassLambda) < lamRejWindow)
         continue;
-
-      // PID selections (TOF) -- K0s
-      if (requireTOF) {
-        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
-          continue;
-        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
-          continue;
-      }
-      // PID selections (TPC): positive track = proton, negative track = pion -- Lam
-      if (v0.ntpcsigmapospr() < nsigmaTPCmin || v0.ntpcsigmapospr() > nsigmaTPCmax)
-        continue;
-      if (v0.ntpcsigmanegpi() < nsigmaTPCmin || v0.ntpcsigmanegpi() > nsigmaTPCmax)
-        continue;
-
-      // PID selections (TOF): positive track = proton, negative track = pion -- Lam
-      if (requireTOF) {
-        if (v0.ntofsigmapospr() < nsigmaTOFmin || v0.ntofsigmapospr() > nsigmaTOFmax)
-          continue;
-        if (v0.ntofsigmanegpi() < nsigmaTOFmin || v0.ntofsigmanegpi() > nsigmaTOFmax)
-          continue;
-      }
-      // PID selections (TPC): negative track = proton, positive track = pion --- ALam
-      if (v0.ntpcsigmapospi() < nsigmaTPCmin || v0.ntpcsigmapospi() > nsigmaTPCmax)
-        continue;
-      if (v0.ntpcsigmanegpr() < nsigmaTPCmin || v0.ntpcsigmanegpr() > nsigmaTPCmax)
-        continue;
-
-      // PID selections (TOF): negative track = proton, positive track = pion --- ALam
-      if (requireTOF) {
-        if (v0.ntofsigmapospi() < nsigmaTOFmin || v0.ntofsigmapospi() > nsigmaTOFmax)
-          continue;
-        if (v0.ntofsigmanegpr() < nsigmaTOFmin || v0.ntofsigmanegpr() > nsigmaTOFmax)
-          continue;
-      }
 
       // PID selections
       bool isPIDK0s = false, isPIDLam = false, isPIDALam = false;
