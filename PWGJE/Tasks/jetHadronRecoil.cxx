@@ -673,7 +673,7 @@ struct JetHadronRecoil {
           continue;
         }
       }
-      
+
       double dR = getWTAaxisDifference(jetBase, tracks);
       if (jetBase.has_matchedJetGeo()) {
         for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
