@@ -298,6 +298,16 @@ class VarManager : public TObject
     kDCAzRMS,
     kDCAzSkewness,
     kDCAzKurtosis,
+    kDCAzBimodalityCoefficientBinned,
+    kDCAzBimodalityCoefficientBinnedTrimmed1,
+    kDCAzBimodalityCoefficientBinnedTrimmed2,
+    kDCAzBimodalityCoefficientBinnedTrimmed3,
+    kDCAzMeanBinnedTrimmed1,
+    kDCAzMeanBinnedTrimmed2,
+    kDCAzMeanBinnedTrimmed3,
+    kDCAzRMSBinnedTrimmed1,
+    kDCAzRMSBinnedTrimmed2,
+    kDCAzRMSBinnedTrimmed3,
     kDCAzFracAbove100um,
     kDCAzFracAbove200um,
     kDCAzFracAbove500um,
@@ -1268,7 +1278,8 @@ class VarManager : public TObject
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);  
   
-  static std::tuple<double, double, double, double, double> BimodalityCoefficient(const std::vector<double>& data);
+  static std::tuple<double, double, double, double, double> BimodalityCoefficientUnbinned(const std::vector<double>& data);
+  static std::tuple<double, double, double, double, double> BimodalityCoefficient(const std::vector<double>& data, float binWidth, int trim = 0, float min = -15.0, float max = 15.0);
 
   template <typename T, typename C>
   static o2::track::TrackParCovFwd FwdToTrackPar(const T& track, const C& cov);
@@ -1284,8 +1295,8 @@ class VarManager : public TObject
   static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
-  template <typename E, typename T>
-  static void FillEventTracks(E const& event, T const& tracks, float* values = nullptr);
+  template <typename T>
+  static void FillEventTracks(T const& tracks, float* values = nullptr);
   template <typename T>
   static void FillTimeFrame(T const& tfTable, float* values = nullptr);
   template <typename T>
@@ -2346,43 +2357,8 @@ void VarManager::FillEvent(T const& event, float* values)
   // FillEventDerived(values);
 }
 
-std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficient(const std::vector<double>& data) {
-    // Bimodality coefficient = (skewness^2 + 1) / kurtosis
-    // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
-    size_t n = data.size();
-    if (n < 3) {
-      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
-    }
-    double mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
-
-    double m2 = 0.0, m3 = 0.0, m4 = 0.0;
-    for (double x : data) {
-        double diff = x - mean;
-        double diff2 = diff * diff;
-        double diff3 = diff2 * diff;
-        double diff4 = diff3 * diff;
-        m2 += diff2;
-        m3 += diff3;
-        m4 += diff4;
-    }
-
-    m2 /= n;
-    m3 /= n;
-    m4 /= n;
-
-    if (m2 == 0.0) {
-      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
-    }
-
-    double stddev = std::sqrt(m2);
-    double skewness = m3 / (stddev * stddev * stddev);
-    double kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
-
-    return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
-}
-
-template <typename E, typename T>
-void VarManager::FillEventTracks(E const& event, T const& tracks, float* values = nullptr)
+template <typename T>
+void VarManager::FillEventTracks(T const& tracks, float* values)
 {
   if (!values) {
     values = fgValues;
@@ -2391,42 +2367,101 @@ void VarManager::FillEventTracks(E const& event, T const& tracks, float* values 
   // compute event properties based on DCAz of the tracks
   std::vector<double> dcazValues;
   for (const auto& track : tracks) {
+    if (!track.hasITS()) {
+      continue; // skip tracks without ITS information
+    }
+    if (!track.hasTPC()) {
+      continue; // skip tracks without TPC information
+    }
+    if (track.dcaZ() > 998) {
+      continue; // skip tracks without valid DCAz
+    }
     dcazValues.push_back(track.dcaZ());
   }
 
-  if (!dcazValues.empty()) {
-    auto [bimodality, mean, stddev, skewness, kurtosis] = BimodalityCoefficient(dcazValues);
+  if (dcazValues.empty()) {
+    return;
+  }
+
+  // compute the unbinned bimodality coefficient and related statistics
+  auto [bimodality, mean, stddev, skewness, kurtosis] = BimodalityCoefficient(dcazValues, -1.0);
+  if (stddev > -1.0) {
     values[kDCAzBimodalityCoefficient] = bimodality;
     values[kDCAzMean] = mean;
     values[kDCAzRMS] = stddev;
     values[kDCAzSkewness] = skewness;
     values[kDCAzKurtosis] = kurtosis;
-    // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
-    // make a loop over the DCAz values and count how many are above each threshold
-    int counter100um = 0;
-    int counter200um = 0;
-    int counter500um = 0;
-    int counter1mm = 0;
-    int counter2mm = 0;
-    int counter5mm = 0;
-    int counter10mm = 0;
-    for (auto& d : dcazValues) {
-      double absD = std::abs(d);
-      if (absD > 0.01) {
-        counter100um++;
-        if (absD > 0.02) {
-          counter200um++;
-          if (absD > 0.05) {
-            counter500um++;
-            if (absD > 0.1) {
-              counter1mm++;
-              if (absD > 0.2) {
-                counter2mm++;
-                if (absD > 0.5) {
-                  counter5mm++;
-                  if (absD > 1.0) {
-                    counter10mm++;
-                  }
+  } else {
+    values[kDCAzBimodalityCoefficient] = -9999.0;
+    values[kDCAzMean] = -9999.0;
+    values[kDCAzRMS] = -9999.0;
+    values[kDCAzSkewness] = -9999.0;
+    values[kDCAzKurtosis] = -9999.0;
+  }
+  // compute the binned bimodality coefficient and related statistics with a bin width of 50um
+  auto [bimodalityBin, meanBin, stddevBin, skewnessBin, kurtosisBin] = BimodalityCoefficient(dcazValues, 0.005);
+  if (stddevBin > -1.0) {
+    values[kDCAzBimodalityCoefficientBinned] = bimodalityBin;
+  } else {
+    values[kDCAzBimodalityCoefficientBinned] = -9999.0;
+  }
+  // compute the binned bimodality coefficient and related statistics with a bin width of 50um and trimming of 1, 2, 3 entries per bin
+  auto [bimodalityBinTrimm1, meanBinTrimm1, stddevBinTrimm1, skewnessBinTrimm1, kurtosisBinTrimm1] = BimodalityCoefficient(dcazValues, 0.005, 2);
+  if (stddevBinTrimm1 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed1] = bimodalityBinTrimm1;
+    values[kDCAzMeanBinnedTrimmed1] = meanBinTrimm1;
+    values[kDCAzRMSBinnedTrimmed1] = stddevBinTrimm1;
+  } else {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed1] = -9999.0;
+    values[kDCAzMeanBinnedTrimmed1] = -9999.0;
+    values[kDCAzRMSBinnedTrimmed1] = -9999.0;
+  }
+  auto [bimodalityBinTrimm2, meanBinTrimm2, stddevBinTrimm2, skewnessBinTrimm2, kurtosisBinTrimm2] = BimodalityCoefficient(dcazValues, 0.005, 3);
+  if (stddevBinTrimm2 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed2] = bimodalityBinTrimm2;
+    values[kDCAzMeanBinnedTrimmed2] = meanBinTrimm2;
+    values[kDCAzRMSBinnedTrimmed2] = stddevBinTrimm2;
+  } else {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed2] = -9999.0;
+    values[kDCAzMeanBinnedTrimmed2] = -9999.0;
+    values[kDCAzRMSBinnedTrimmed2] = -9999.0;
+  }
+  auto [bimodalityBinTrimm3, meanBinTrimm3, stddevBinTrimm3, skewnessBinTrimm3, kurtosisBinTrimm3] = BimodalityCoefficient(dcazValues, 0.005, 4);
+  if (stddevBinTrimm3 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed3] = bimodalityBinTrimm3;
+    values[kDCAzMeanBinnedTrimmed3] = meanBinTrimm3;
+    values[kDCAzRMSBinnedTrimmed3] = stddevBinTrimm3;
+  } else {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed3] = -9999.0;
+    values[kDCAzMeanBinnedTrimmed3] = -9999.0;
+    values[kDCAzRMSBinnedTrimmed3] = -9999.0;
+  }
+  
+  // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
+  // make a loop over the DCAz values and count how many are above each threshold
+  int counter100um = 0;
+  int counter200um = 0;
+  int counter500um = 0;
+  int counter1mm = 0;
+  int counter2mm = 0;
+  int counter5mm = 0;
+  int counter10mm = 0;
+  for (auto& d : dcazValues) {
+    double absD = std::abs(d);
+    if (absD > 0.01) {
+      counter100um++;
+      if (absD > 0.02) {
+        counter200um++;
+        if (absD > 0.05) {
+          counter500um++;
+          if (absD > 0.1) {
+            counter1mm++;
+            if (absD > 0.2) {
+              counter2mm++;
+              if (absD > 0.5) {
+                counter5mm++;
+                if (absD > 1.0) {
+                  counter10mm++;
                 }
               }
             }
@@ -2434,15 +2469,15 @@ void VarManager::FillEventTracks(E const& event, T const& tracks, float* values 
         }
       }
     }
-    int totalTracks = static_cast<int>(dcazValues.size());
-    values[kDCAzFracAbove100um] = static_cast<float>(counter100um) / totalTracks;
-    values[kDCAzFracAbove200um] = static_cast<float>(counter200um) / totalTracks;
-    values[kDCAzFracAbove500um] = static_cast<float>(counter500um) / totalTracks;
-    values[kDCAzFracAbove1mm] = static_cast<float>(counter1mm) / totalTracks;
-    values[kDCAzFracAbove2mm] = static_cast<float>(counter2mm) / totalTracks;
-    values[kDCAzFracAbove5mm] = static_cast<float>(counter5mm) / totalTracks;
-    values[kDCAzFracAbove10mm] = static_cast<float>(counter10mm) / totalTracks;
   }
+  int totalTracks = static_cast<int>(dcazValues.size());
+  values[kDCAzFracAbove100um] = static_cast<float>(counter100um) / totalTracks;
+  values[kDCAzFracAbove200um] = static_cast<float>(counter200um) / totalTracks;
+  values[kDCAzFracAbove500um] = static_cast<float>(counter500um) / totalTracks;
+  values[kDCAzFracAbove1mm] = static_cast<float>(counter1mm) / totalTracks;
+  values[kDCAzFracAbove2mm] = static_cast<float>(counter2mm) / totalTracks;
+  values[kDCAzFracAbove5mm] = static_cast<float>(counter5mm) / totalTracks;
+  values[kDCAzFracAbove10mm] = static_cast<float>(counter10mm) / totalTracks;
 }
 
 template <typename T>

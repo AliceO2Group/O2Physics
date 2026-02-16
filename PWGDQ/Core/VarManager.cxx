@@ -359,6 +359,116 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
 }
 
 //__________________________________________________________________
+std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficientUnbinned(const std::vector<double>& data) {
+    // Bimodality coefficient = (skewness^2 + 1) / kurtosis
+    // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
+    size_t n = data.size();
+    if (n < 3) {
+      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    }
+    double mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
+
+    double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+    for (double x : data) {
+        double diff = x - mean;
+        double diff2 = diff * diff;
+        double diff3 = diff2 * diff;
+        double diff4 = diff3 * diff;
+        m2 += diff2;
+        m3 += diff3;
+        m4 += diff4;
+    }
+
+    m2 /= n;
+    m3 /= n;
+    m4 /= n;
+
+    if (m2 == 0.0) {
+      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    }
+
+    double stddev = std::sqrt(m2);
+    double skewness = m3 / (stddev * stddev * stddev);
+    double kurtosis = m4 / (m2 * m2);
+
+    return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
+}
+
+std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficient(const std::vector<double>& data, float binWidth, int trim, float min, float max) {
+    // Bimodality coefficient = (skewness^2 + 1) / kurtosis
+    // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
+
+    // if the binWidth is < 0, use the unbinned calculation
+    if (binWidth < 0) {
+      return BimodalityCoefficientUnbinned(data);
+    }
+
+    // bin the data and put it in a vector
+    int nBins = static_cast<int>((max - min) / binWidth);
+    std::vector<int> counts(nBins, 0.0);
+    
+    for (float x : data) {
+      if (x < min || x >= max) {
+        continue; // skip out-of-range values
+      }
+      int bin = static_cast<int>((x - min) / binWidth);
+      if (bin >= 0 && bin < nBins) {
+        counts[bin]++;
+      }
+    }
+
+    // trim the distribution if requested, by requiring a minimum of "trim" counts in each bin
+    if (trim > 0) {
+      for (int i = 0; i < nBins; ++i) {
+        if (counts[i] < trim) {
+          counts[i] = 0;
+        }
+      }
+    }
+    
+    // first compute the mean
+    double mean = 0.0;
+    double totalCounts = 0.0;
+    for (int i = 0; i < nBins; ++i) {
+      double binCenter = min + (i + 0.5) * binWidth;
+      mean += counts[i] * binCenter;
+      totalCounts += counts[i];
+    }
+
+    if (totalCounts == 0) {
+      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    }
+    mean /= totalCounts;
+    
+    // then compute the second, third, and fourth central moments
+    double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+    for (int i = 0; i < nBins; ++i) {
+      double binCenter = min + (i + 0.5) * binWidth;
+      double diff = binCenter - mean;
+      double diff2 = diff * diff;
+      double diff3 = diff2 * diff;
+      double diff4 = diff3 * diff;
+      m2 += counts[i] * diff2;
+      m3 += counts[i] * diff3;
+      m4 += counts[i] * diff4;
+    }
+
+    m2 /= totalCounts;
+    m3 /= totalCounts;
+    m4 /= totalCounts;
+
+    if (m2 == 0.0) {
+      return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    }
+
+    double stddev = std::sqrt(m2);
+    double skewness = m3 / (stddev * stddev * stddev);
+    double kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
+
+    return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
+}
+
+//__________________________________________________________________
 void VarManager::SetDefaultVarNames()
 {
   //
@@ -577,12 +687,32 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kNTPCmedianTimeShortA] = "#mu s";
   fgVariableNames[kNTPCmedianTimeShortC] = "# TPC-C pileup median time, short time range";
   fgVariableUnits[kNTPCmedianTimeShortC] = "#mu s";
-  fgVariableNames[kDCAzBimodalityCoefficient] = "Bimodality Coeff of DCAz distribution";
+  fgVariableNames[kDCAzBimodalityCoefficient] = "Unbinned Bimodality Coeff of DCAz distribution";
   fgVariableUnits[kDCAzBimodalityCoefficient] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinned] = "Binned Bimodality Coeff of DCAz distribution";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinned] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinnedTrimmed1] = "Binned Bimodality Coeff of DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinnedTrimmed1] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinnedTrimmed2] = "Binned Bimodality Coeff of DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinnedTrimmed2] = "";
+  fgVariableNames[kDCAzBimodalityCoefficientBinnedTrimmed3] = "Binned Bimodality Coeff of DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzBimodalityCoefficientBinnedTrimmed3] = "";
   fgVariableNames[kDCAzMean] = "Mean of DCAz distribution";
   fgVariableUnits[kDCAzMean] = "cm";
+  fgVariableNames[kDCAzMeanBinnedTrimmed1] = "Mean of DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzMeanBinnedTrimmed1] = "cm";
+  fgVariableNames[kDCAzMeanBinnedTrimmed2] = "Mean of DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzMeanBinnedTrimmed2] = "cm";
+  fgVariableNames[kDCAzMeanBinnedTrimmed3] = "Mean of DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzMeanBinnedTrimmed3] = "cm";
   fgVariableNames[kDCAzRMS] = "RMS of DCAz distribution";
   fgVariableUnits[kDCAzRMS] = "cm";
+  fgVariableNames[kDCAzRMSBinnedTrimmed1] = "RMS of DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzRMSBinnedTrimmed1] = "cm";
+  fgVariableNames[kDCAzRMSBinnedTrimmed2] = "RMS of DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzRMSBinnedTrimmed2] = "cm";
+  fgVariableNames[kDCAzRMSBinnedTrimmed3] = "RMS of DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzRMSBinnedTrimmed3] = "cm";
   fgVariableNames[kDCAzSkewness] = "Skewness of DCAz distribution";
   fgVariableUnits[kDCAzSkewness] = "";
   fgVariableNames[kDCAzKurtosis] = "Kurtosis of DCAz distribution";
@@ -601,7 +731,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAzFracAbove5mm] = "";
   fgVariableNames[kDCAzFracAbove10mm] = "Fraction of tracks with |DCAz| > 10 mm";
   fgVariableUnits[kDCAzFracAbove10mm] = "";
-  fgVariableNames[]
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kPt1] = "p_{T1}";
@@ -1664,8 +1793,18 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kNTPCmedianTimeShortA"] = kNTPCmedianTimeShortA;
   fgVarNamesMap["kNTPCmedianTimeShortC"] = kNTPCmedianTimeShortC;
   fgVarNamesMap["kDCAzBimodalityCoefficient"] = kDCAzBimodalityCoefficient;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinned"] = kDCAzBimodalityCoefficientBinned;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinnedTrimmed1"] = kDCAzBimodalityCoefficientBinnedTrimmed1;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinnedTrimmed2"] = kDCAzBimodalityCoefficientBinnedTrimmed2;
+  fgVarNamesMap["kDCAzBimodalityCoefficientBinnedTrimmed3"] = kDCAzBimodalityCoefficientBinnedTrimmed3;
   fgVarNamesMap["kDCAzMean"] = kDCAzMean;
+  fgVarNamesMap["kDCAzMeanBinnedTrimmed1"] = kDCAzMeanBinnedTrimmed1;
+  fgVarNamesMap["kDCAzMeanBinnedTrimmed2"] = kDCAzMeanBinnedTrimmed2;
+  fgVarNamesMap["kDCAzMeanBinnedTrimmed3"] = kDCAzMeanBinnedTrimmed3;
   fgVarNamesMap["kDCAzRMS"] = kDCAzRMS;
+  fgVarNamesMap["kDCAzRMSBinnedTrimmed1"] = kDCAzRMSBinnedTrimmed1;
+  fgVarNamesMap["kDCAzRMSBinnedTrimmed2"] = kDCAzRMSBinnedTrimmed2;
+  fgVarNamesMap["kDCAzRMSBinnedTrimmed3"] = kDCAzRMSBinnedTrimmed3;
   fgVarNamesMap["kDCAzSkewness"] = kDCAzSkewness;
   fgVarNamesMap["kDCAzKurtosis"] = kDCAzKurtosis;
   fgVarNamesMap["kDCAzFracAbove100um"] = kDCAzFracAbove100um;
