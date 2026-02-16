@@ -19,6 +19,8 @@
 /// \author Lucia Anna Tarasovičová, Pavol Jozef Šafárik University (SK)
 ///
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
@@ -34,7 +36,6 @@
 #include "ReconstructionDataFormats/Track.h"
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include <cstdlib>
 
@@ -103,16 +104,6 @@ struct Alice3strangenessFinder {
   // Partition<Alice3TracksWPid> secondaryProtons = nabs(aod::upgrade_tof::nSigmaProtonInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaProtonOuterTOF) < nSigmaTOF && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
   // Partition<Alice3TracksWPid> secondaryAntiProtons = nabs(aod::upgrade_tof::nSigmaProtonInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaProtonOuterTOF) < nSigmaTOF && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
 
-  // struct {
-  //   float dcaDau;
-  //   std::array<float, 3> posSV;
-  //   std::array<float, 3> p;
-  //   std::array<float, 3> pDau0; // positive track
-  //   std::array<float, 3> pDau1; // negative track
-  //   float cosPA;
-  //   float dcaToPV;
-  // } v0cand;
-
   struct Candidate {
     // decay properties
     float dcaDau{};
@@ -148,7 +139,7 @@ struct Alice3strangenessFinder {
     hV0Counter->GetXaxis()->SetBinLabel(2, "Lambda");
     hV0Counter->GetXaxis()->SetBinLabel(3, "AntiLambda");
     hV0Counter->GetXaxis()->SetBinLabel(4, "Misidentified");
-    
+
     auto hCascadeCounter = histos.add<TH1>("hCascadeCounter", "hCascadeCounter", kTH1D, {{5, 0, 5}});
     hCascadeCounter->GetXaxis()->SetBinLabel(1, "Xi");
     hCascadeCounter->GetXaxis()->SetBinLabel(2, "AntiXi");
@@ -244,7 +235,7 @@ struct Alice3strangenessFinder {
     thisCandidate.dcaToPV = calculateDCAStraightToPV(thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2],
                                                      thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2],
                                                      vtx[0], vtx[1], vtx[2]);
-    
+
     return true;
   }
 
@@ -314,11 +305,11 @@ struct Alice3strangenessFinder {
 
           const float massXi = RecoDecay::m(std::array{std::array{cascCand.pDau0[0], cascCand.pDau0[1], cascCand.pDau0[2]},
                                                        std::array{cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2]}},
-                                                       std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
+                                            std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
 
           const float massOm = RecoDecay::m(std::array{std::array{cascCand.pDau0[0], cascCand.pDau0[1], cascCand.pDau0[2]},
                                                        std::array{cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2]}},
-                                                       std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
+                                            std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
 
           tableCascadeIndices(0, // cascade index, dummy value
                               posTrack.globalIndex(),
@@ -333,7 +324,7 @@ struct Alice3strangenessFinder {
           const float dcaNegToPV = calculateDCAStraightToPV(negTrack.x(), negTrack.y(), negTrack.z(),
                                                             negTrack.px(), negTrack.py(), negTrack.pz(),
                                                             vtx[0], vtx[1], vtx[2]);
-                                                      
+
           const float dcaBachToPV = calculateDCAStraightToPV(bachTrack.x(), bachTrack.y(), bachTrack.z(),
                                                              bachTrack.px(), bachTrack.py(), bachTrack.pz(),
                                                              vtx[0], vtx[1], vtx[2]);
