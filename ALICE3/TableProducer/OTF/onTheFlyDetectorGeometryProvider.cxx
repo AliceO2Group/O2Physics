@@ -66,7 +66,7 @@ struct OnTheFlyDetectorGeometryProvider {
 
   void process(o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles)
   {
-    LOG(info) << "On-the-fly detector geometry provider processing " << mcCollisions.size() << " collisions and " << mcParticles.size() << " particles.";
+    LOG(debug) << "On-the-fly detector geometry provider processing " << mcCollisions.size() << " collisions and " << mcParticles.size() << " particles.";
   }
 };
 
