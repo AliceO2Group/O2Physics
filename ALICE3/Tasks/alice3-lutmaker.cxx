@@ -325,7 +325,7 @@ struct Alice3LutMaker {
   void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& collision,
                const o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::McTrackLabels>& tracks,
                const o2::aod::McParticles& mcParticles,
-               const o2::aod::McCollisions& mcCollisions)
+               const o2::aod::McCollisions&)
   {
     const auto& mcCollision = collision.mcCollision_as<o2::aod::McCollisions>();
     const auto& particlesInCollision = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId,
