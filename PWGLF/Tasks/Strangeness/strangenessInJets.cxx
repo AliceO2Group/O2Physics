@@ -353,7 +353,7 @@ struct StrangenessInJets {
         registryMC.add("K0s_generated_recojet_ue", "K0s_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("Lambda_generated_recojet_ue", "Lambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_generated_recojet_ue", "AntiLambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
-        }
+      }
       if (enabledSignals.value[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_generated_jet", "XiPos_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("XiPos_generated_ue", "XiPos_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
@@ -1733,7 +1733,7 @@ struct StrangenessInJets {
             continue;
           }
 
-          if(std::abs(mcParticle.eta()) > 0.8) {
+          if (std::abs(mcParticle.eta()) > 0.8) {
             continue;
           }
 
@@ -1865,38 +1865,38 @@ struct StrangenessInJets {
 
           if (particle.isPhysicalPrimary()) {
             switch (particle.pdgCode()) {
-            case kK0Short:
-              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
-                if (positionMC.isInJet()) {
-                  registryMC.fill(HIST("K0s_generated_recojet_jet"), multiplicity, particle.pt());
+              case kK0Short:
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                  if (positionMC.isInJet()) {
+                    registryMC.fill(HIST("K0s_generated_recojet_jet"), multiplicity, particle.pt());
+                  }
+                  if (positionMC.isInUE1() || positionMC.isInUE2()) {
+                    registryMC.fill(HIST("K0s_generated_recojet_ue"), multiplicity, particle.pt());
+                  }
                 }
-                if (positionMC.isInUE1() || positionMC.isInUE2()) {
-                  registryMC.fill(HIST("K0s_generated_recojet_ue"), multiplicity, particle.pt());
+                break;
+              case kLambda0:
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                  if (positionMC.isInJet()) {
+                    registryMC.fill(HIST("Lambda_generated_recojet_jet"), multiplicity, particle.pt());
+                  }
+                  if (positionMC.isInUE1() || positionMC.isInUE2()) {
+                    registryMC.fill(HIST("Lambda_generated_recojet_ue"), multiplicity, particle.pt());
+                  }
                 }
-              }
-              break;
-            case kLambda0:
-              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
-                if (positionMC.isInJet()) {
-                  registryMC.fill(HIST("Lambda_generated_recojet_jet"), multiplicity, particle.pt());
+                break;
+              case kLambda0Bar:
+                if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                  if (positionMC.isInJet()) {
+                    registryMC.fill(HIST("AntiLambda_generated_recojet_jet"), multiplicity, particle.pt());
+                  }
+                  if (positionMC.isInUE1() || positionMC.isInUE2()) {
+                    registryMC.fill(HIST("AntiLambda_generated_recojet_ue"), multiplicity, particle.pt());
+                  }
                 }
-                if (positionMC.isInUE1() || positionMC.isInUE2()) {
-                  registryMC.fill(HIST("Lambda_generated_recojet_ue"), multiplicity, particle.pt());
-                }
-              }
-              break;
-            case kLambda0Bar:
-              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
-                if (positionMC.isInJet()) {
-                  registryMC.fill(HIST("AntiLambda_generated_recojet_jet"), multiplicity, particle.pt());
-                }
-                if (positionMC.isInUE1() || positionMC.isInUE2()) {
-                  registryMC.fill(HIST("AntiLambda_generated_recojet_ue"), multiplicity, particle.pt());
-                }
-              }
-              break;
-            default:
-              break;
+                break;
+              default:
+                break;
             }
           }
         }
@@ -2145,15 +2145,21 @@ struct StrangenessInJets {
       bool acceptAsALam = isPIDALam && (!doK0sRej || !isK0Comp);
 
       if (v0.isUE()) {
-          if (acceptAsK0s)  registryData.fill(HIST("K0s_in_ue"), v0.multft0m(), v0.pt(), v0.massk0short());
-          if (acceptAsLam)  registryData.fill(HIST("Lambda_in_ue"), v0.multft0m(), v0.pt(), v0.masslambda());
-          if (acceptAsALam) registryData.fill(HIST("AntiLambda_in_ue"), v0.multft0m(), v0.pt(), v0.massantilambda());
+        if (acceptAsK0s)
+          registryData.fill(HIST("K0s_in_ue"), v0.multft0m(), v0.pt(), v0.massk0short());
+        if (acceptAsLam)
+          registryData.fill(HIST("Lambda_in_ue"), v0.multft0m(), v0.pt(), v0.masslambda());
+        if (acceptAsALam)
+          registryData.fill(HIST("AntiLambda_in_ue"), v0.multft0m(), v0.pt(), v0.massantilambda());
       }
 
       if (v0.isJC()) {
-          if (acceptAsK0s)  registryData.fill(HIST("K0s_in_jet"), v0.multft0m(), v0.pt(), v0.massk0short());
-          if (acceptAsLam)  registryData.fill(HIST("Lambda_in_jet"), v0.multft0m(), v0.pt(), v0.masslambda());
-          if (acceptAsALam) registryData.fill(HIST("AntiLambda_in_jet"), v0.multft0m(), v0.pt(), v0.massantilambda());
+        if (acceptAsK0s)
+          registryData.fill(HIST("K0s_in_jet"), v0.multft0m(), v0.pt(), v0.massk0short());
+        if (acceptAsLam)
+          registryData.fill(HIST("Lambda_in_jet"), v0.multft0m(), v0.pt(), v0.masslambda());
+        if (acceptAsALam)
+          registryData.fill(HIST("AntiLambda_in_jet"), v0.multft0m(), v0.pt(), v0.massantilambda());
       }
     }
 
