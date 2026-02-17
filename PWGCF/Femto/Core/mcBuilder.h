@@ -408,14 +408,16 @@ class McBuilder
   int64_t findLastPartonicMother(const T1& mcParticle, const T2& mcParticles)
   {
     int64_t lastPartonIndex = -1;
-    const T1* current = &mcParticle;
-    while (current->has_mothers()) {
-      auto motherIds = current->mothersIds();
+    int64_t currentIndex = mcParticle.globalIndex();
+    while (currentIndex >= 0 && currentIndex < mcParticles.size()) {
+      const auto& current = mcParticles.iteratorAt(currentIndex);
+      if (!current.has_mothers())
+        break;
+      auto motherIds = current.mothersIds();
       int nextIndex = -1;
-      // Handle Pythia-style range without allocation
       const int defaultMotherSize = 2;
       if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
-        nextIndex = motherIds[0]; // take first in range
+        nextIndex = motherIds[0];
       } else {
         for (const int& id : motherIds) {
           if (id >= 0 && id < mcParticles.size()) {
@@ -433,13 +435,12 @@ class McBuilder
       const int isBeamParticleLowerLimit = 11;
       const int isBeamParticleUpperLimit = 19;
       bool isBeam = (status >= isBeamParticleLowerLimit && status <= isBeamParticleUpperLimit);
-      if (isBeam) {
+      if (isBeam)
         return lastPartonIndex;
-      }
-      if (isParton) {
+      if (isParton)
         lastPartonIndex = nextIndex;
-      }
-      current = &mother;
+
+      currentIndex = nextIndex;
     }
     return -1;
   }
