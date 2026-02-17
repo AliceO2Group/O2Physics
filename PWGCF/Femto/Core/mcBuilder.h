@@ -40,6 +40,7 @@ namespace mcbuilder
 struct ConfMc : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("MonteCarlo");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "Passthrough all MC collisions and particles"};
+  o2::framework::Configurable<bool> findLastPartonicMother{"findLastPartonicMother", true, "If true, the partonic mother will be the first parton directly after the initial collision. If false, the partonic mother will be the last parton before hadronization"};
 };
 
 struct McBuilderProducts : o2::framework::ProducesGroup {
@@ -113,6 +114,7 @@ class McBuilder
       return;
     }
     mPassThrough = config.passThrough.value;
+    mFindLastPartonicMother = config.findLastPartonicMother.value;
     LOG(info) << "Initialization done...";
   }
 
@@ -340,7 +342,12 @@ class McBuilder
 
     // Partonic mother
     int64_t mcPartonicMotherRow = -1;
-    auto mcPartonicMotherIndex = this->findFirstPartonicMother(mcParticle, mcParticles);
+    int64_t mcPartonicMotherIndex = -1;
+    if (mFindLastPartonicMother) {
+      mcPartonicMotherIndex = this->findLastPartonicMother(mcParticle, mcParticles);
+    } else {
+      mcPartonicMotherIndex = this->findFirstPartonicMother(mcParticle, mcParticles);
+    }
     if (mcPartonicMotherIndex >= 0) {
       auto itPM = mMcPartonicMotherMap.find(mcPartonicMotherIndex);
       if (itPM != mMcPartonicMotherMap.end()) {
@@ -357,14 +364,12 @@ class McBuilder
   }
 
   template <typename T1, typename T2>
-  int findFirstPartonicMother(const T1& mcParticle, const T2& mcParticles)
+  int64_t findFirstPartonicMother(const T1& mcParticle, const T2& mcParticles)
   {
     if (!mcParticle.has_mothers()) {
       return -1;
     }
-
     auto motherIds = mcParticle.mothersIds();
-
     // adapted these checks from MCUtils in PWGEM
     const int defaultMotherSize = 2;
     std::vector<int> allMotherIds;
@@ -379,32 +384,68 @@ class McBuilder
       for (const int& id : motherIds)
         allMotherIds.push_back(id);
     }
-
     // Loop over all mothers
     for (const int& i : allMotherIds) {
 
       if (i < 0 || i >= mcParticles.size())
         continue;
-
       const auto& mother = mcParticles.iteratorAt(i);
       int pdgAbs = std::abs(mother.pdgCode());
-
       // Is it a parton? (quark or gluon)
       if (pdgAbs <= PDG_t::kTop || pdgAbs == PDG_t::kGluon) {
         return i; // Found a parton → return index
       }
-
       // Recurse upward
-      int found = this->findFirstPartonicMother(mother, mcParticles);
+      int64_t found = this->findFirstPartonicMother(mother, mcParticles);
       if (found != -1)
         return found;
     }
-
     // No partonic ancestor found
     return -1;
   }
 
+  template <typename T1, typename T2>
+  int64_t findLastPartonicMother(const T1& mcParticle, const T2& mcParticles)
+  {
+    int64_t lastPartonIndex = -1;
+    const T1* current = &mcParticle;
+    while (current->has_mothers()) {
+      auto motherIds = current->mothersIds();
+      int nextIndex = -1;
+      // Handle Pythia-style range without allocation
+      const int defaultMotherSize = 2;
+      if (motherIds.size() == defaultMotherSize && motherIds[1] > motherIds[0]) {
+        nextIndex = motherIds[0]; // take first in range
+      } else {
+        for (const int& id : motherIds) {
+          if (id >= 0 && id < mcParticles.size()) {
+            nextIndex = id;
+            break;
+          }
+        }
+      }
+      if (nextIndex < 0 || nextIndex >= mcParticles.size())
+        break;
+      const auto& mother = mcParticles.iteratorAt(nextIndex);
+      int pdgAbs = std::abs(mother.pdgCode());
+      int status = std::abs(o2::mcgenstatus::getGenStatusCode(mother.statusCode()));
+      bool isParton = (pdgAbs <= PDG_t::kTop || pdgAbs == PDG_t::kGluon);
+      const int isBeamParticleLowerLimit = 11;
+      const int isBeamParticleUpperLimit = 19;
+      bool isBeam = (status >= isBeamParticleLowerLimit && status <= isBeamParticleUpperLimit);
+      if (isBeam) {
+        return lastPartonIndex;
+      }
+      if (isParton) {
+        lastPartonIndex = nextIndex;
+      }
+      current = &mother;
+    }
+    return -1;
+  }
+
   bool mPassThrough = false;
+  bool mFindLastPartonicMother = false;
   bool mFillAnyTable = false;
   bool mProduceMcCollisions = false;
   bool mProduceMcParticles = false;
