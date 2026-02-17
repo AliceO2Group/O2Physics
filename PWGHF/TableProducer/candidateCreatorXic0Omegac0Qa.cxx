@@ -104,8 +104,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // ...Modified according to the configurable in core wagon
     // ---------------------------------------------------------------------
     Configurable<int> minCrossedRowsFromLF{"minCrossedRowsFromLF", 50, "minimun TPC crossed rows for daughter tracks. Used for internal V0 Building"};
-    Configurable<float> dcanegtopvFromLF{"dcanegtopvFromLF", .05, "DCV Neg to PV"};
-    Configurable<float> dcapostopvFromLF{"dcapostopvFromLF", .05, "DCV Pos To PV"};
+    Configurable<float> dcanegtopvFromLF{"dcanegtopvFromLF", .1, "DCV Neg to PV"};
+    Configurable<float> dcapostopvFromLF{"dcapostopvFromLF", .1, "DCV Pos To PV"};
     Configurable<double> v0cospaFromLF{"v0cospaFromLF", 0.95, "V0 CosPA"};
     Configurable<float> dcav0dauFromLF{"dcav0dauFromLF", 1.0, "DCA V0 Daughters"};
     Configurable<float> v0radiusFromLF{"v0radiusFromLF", 0.9, "v0radius"};
@@ -126,10 +126,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     // --------------------------------------------------------------------
     Configurable<bool> kfTuneForOmegaFromLF{"kfTuneForOmegaFromLF", false, "if enabled, take main cascade properties from omega fit instread of Xi fit(=default)"};
     Configurable<int> kfConstructMethodFromLF{"kfConstructMethodFromLF", 2, "2 : Daughter particle masses stay fixed in construction process"};
-    Configurable<bool> kfUseV0MassConstraintFromLF{"kfUseV0MassConstraintFromLF", false, "KF : Use Lambda mass constraint"};
+    Configurable<bool> kfUseV0MassConstraintFromLF{"kfUseV0MassConstraintFromLF", true, "KF : Use Lambda mass constraint"};
     Configurable<bool> kfUseCascadeMassConstraintFromLF{"kfUseCascadeMassConstraintFromLF", false, "KF : Use Cascade mass constraint - WARNING : Not adequate for inv mass analysis of Xi"};
     Configurable<bool> kfDoDCAFitterPreMinimV0FromLF{"kfDoDCAFitterPreMinimV0FromLF", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for V0"};
-    Configurable<bool> kfDoDCAFitterPreMinimCascFromLF{"kfDoDCAFitterPreMinimCascFromLF", true, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
+    Configurable<bool> kfDoDCAFitterPreMinimCascFromLF{"kfDoDCAFitterPreMinimCascFromLF", false, "KF : do DCAFitter pre-optimization before KF fit to include material correction for Xi"};
   } LFConfigs;
 
   // For cascade building using LF strangeness builder
@@ -553,6 +553,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         initCCDB(bc, runNumber, ccdb, configs.isRun2 ? configs.ccdbPathGrp : configs.ccdbPathGrpMag, lut, configs.isRun2);
         magneticField = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>> Magnetic field: " << magneticField;
+        runNumber = bc.runNumber();
       }
       straHelper.fitter.setBz(magneticField); // -> Magnetic field setting for internal cascade building
       df.setBz(magneticField);                // -> Magnetic field setting for charm baryon building
@@ -588,9 +589,9 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       //------------------------------Info of V0 and cascade------------------------------
       // V0 quantities from LF strangeness builder
       std::array<float, 3> vertexV0 = {straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2]};
-      std::array<float, 3> pVecV0 = {straHelper.cascade.v0Momentum[0], straHelper.cascade.v0Momentum[1], straHelper.cascade.v0Momentum[2]};
       std::array<float, 3> pVecV0DauPos = {straHelper.cascade.positiveMomentum[0], straHelper.cascade.positiveMomentum[1], straHelper.cascade.positiveMomentum[2]};
       std::array<float, 3> pVecV0DauNeg = {straHelper.cascade.negativeMomentum[0], straHelper.cascade.negativeMomentum[1], straHelper.cascade.negativeMomentum[2]};
+      std::array<float, 3> pVecV0 = {pVecV0DauPos[0] + pVecV0DauNeg[0], pVecV0DauPos[1] + pVecV0DauNeg[1], pVecV0DauPos[2] + pVecV0DauNeg[2]};
 
       // pseudo rapidity - V0 daughters
       // float pseudorapV0Dau0 = RecoDecay::eta(pVecV0DauPos);
@@ -686,7 +687,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // float impactParCharmBachFromCharmBayonZ = impactParameterCharmBach.getZ();
 
       // get v0 invariant mass - from LF Table
-      // float mLambda = straHelper.v0.massLambda; // from LF Table
       float mLambda = RecoDecay::m(std::array{pVecV0DauPos, pVecV0DauNeg}, (straHelper.cascade.charge < 0) ? std::array{massOfV0DauPos, massOfV0DauNeg} : std::array{massOfV0DauNeg, massOfV0DauPos});
 
       // get Casc mass - from LF Table
@@ -878,6 +878,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         initCCDB(bc, runNumber, ccdb, configs.isRun2 ? configs.ccdbPathGrp : configs.ccdbPathGrpMag, lut, configs.isRun2);
         magneticField = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>> Magnetic field: " << magneticField;
+        runNumber = bc.runNumber();
       }
       // magnetic field setting for KFParticle
       straHelper.fitter.setBz(magneticField); // -> Manetic field setting for internal cascade building
