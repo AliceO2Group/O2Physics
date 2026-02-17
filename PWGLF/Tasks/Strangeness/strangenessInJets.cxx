@@ -1505,7 +1505,7 @@ struct StrangenessInJets {
               case kProtonBar:
                 float particleId, chargeId;
                 if (pdgToLongLivedIndex(hadron.second, particleId, chargeId)) {
-                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, particleId, chargeId, hadron.first.Pt(), genMultiplicity);
+                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, particleId, chargeId, hadron.first.Pt(), genMultiplicity);
                 }
                 break;
               default:
@@ -1559,7 +1559,7 @@ struct StrangenessInJets {
               case kProtonBar:
                 float particleId, chargeId;
                 if (pdgToLongLivedIndex(hadron.second, particleId, chargeId)) {
-                  registryMC.fill(HIST("LongLivedGenerated"), 1.f, particleId, chargeId, hadron.first.Pt(), genMultiplicity);
+                  registryMC.fill(HIST("LongLivedGenerated"), -1.f, particleId, chargeId, hadron.first.Pt(), genMultiplicity);
                 }
                 break;
               default:
@@ -1997,10 +1997,10 @@ struct StrangenessInJets {
             float particleId, chargeId;
             if (pdgToLongLivedIndex(mcParticle.pdgCode(), particleId, chargeId)) {
               if (position.isInJet()) {
-                registryMC.fill(HIST("LongLivedReconstructed"), -1.f, particleId, chargeId, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
+                registryMC.fill(HIST("LongLivedReconstructed"), 1.f, particleId, chargeId, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
               }
               if (position.isInUE1() || position.isInUE2()) {
-                registryMC.fill(HIST("LongLivedReconstructed"), 1.f, particleId, chargeId, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
+                registryMC.fill(HIST("LongLivedReconstructed"), -1.f, particleId, chargeId, trk.pt(), multiplicity, (trk.hasTOF() ? 1 : 0));
               }
             }
           }
