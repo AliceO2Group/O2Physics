@@ -29,15 +29,21 @@ struct FemtoProducerKinkPtConverter {
   o2::framework::Produces<o2::aod::FSigmas> producedSigmas;
 
   o2::framework::Configurable<bool> confUseRecalculatedPt{"confUseRecalculatedPt", true, "Use recalculated pT from kinematic constraints"};
+  o2::framework::Configurable<bool> confFill1DHistos{"confFill1DHistos", true, "Fill 1D histograms"};
+  o2::framework::Configurable<bool> confFill2DHistos{"confFill2DHistos", true, "Fill 2D histograms"};
 
   o2::framework::HistogramRegistry mHistogramRegistry{"FemtoSigmaConverter", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
-    mHistogramRegistry.add("hPtOriginal", "Original pT;p_{T} (GeV/c);Counts", o2::framework::kTH1F, {{100, 0, 10}});
-    mHistogramRegistry.add("hPtRecalculated", "Recalculated pT;p_{T} (GeV/c);Counts", o2::framework::kTH1F, {{100, 0, 10}});
-    mHistogramRegistry.add("hPtRatio", "pT Ratio (recalc/orig);p_{T,recalc} / p_{T,orig};Counts", o2::framework::kTH1F, {{200, 0, 2}});
-    mHistogramRegistry.add("hRecalcSuccess", "Recalculation Success;Success (0=fail, 1=success);Counts", o2::framework::kTH1I, {{2, -0.5, 1.5}});
+    if (confFill1DHistos) {
+      mHistogramRegistry.add("hPtOriginal", "Original pT;p_{T} (GeV/c);Counts", o2::framework::kTH1F, {{100, 0, 10}});
+      mHistogramRegistry.add("hPtRecalculated", "Recalculated pT;p_{T} (GeV/c);Counts", o2::framework::kTH1F, {{100, 0, 10}});
+      mHistogramRegistry.add("hRecalcSuccess", "Recalculation Success;Success (0=fail, 1=success);Counts", o2::framework::kTH1I, {{2, -0.5, 1.5}});
+    }
+    if (confFill2DHistos) {
+      mHistogramRegistry.add("hPtOriginalVsRecalculated", "Original vs Recalculated pT;p_{T,orig} (GeV/c);p_{T,recalc} (GeV/c)", o2::framework::kTH2F, {{100, 0, 10}, {100, 0, 10}});
+    }
   }
 
   void process(o2::aod::FSigmas_001 const& sigmasV1,
@@ -60,15 +66,24 @@ struct FemtoProducerKinkPtConverter {
 
         float ptRecalc = utils::calcPtnew(pxMoth, pyMoth, pzMoth, pxDaug, pyDaug, pzDaug);
 
-        if (ptRecalc > 0) {
-          signedPtToUse = ptRecalc * utils::signum(sigma.signedPt());
+        ROOT::Math::PtEtaPhiMVector recalcVec(ptRecalc, sigma.eta(), sigma.phi(), sigma.mass());
+        float ptFrom4Vec = recalcVec.Pt();
 
-          mHistogramRegistry.fill(HIST("hPtOriginal"), sigma.pt());
-          mHistogramRegistry.fill(HIST("hPtRecalculated"), ptRecalc);
-          mHistogramRegistry.fill(HIST("hPtRatio"), ptRecalc / sigma.pt());
-          mHistogramRegistry.fill(HIST("hRecalcSuccess"), 1);
+        if (ptFrom4Vec > 0) {
+          signedPtToUse = ptFrom4Vec * utils::signum(sigma.signedPt());
+
+          if (confFill1DHistos) {
+            mHistogramRegistry.fill(HIST("hPtOriginal"), sigma.pt());
+            mHistogramRegistry.fill(HIST("hPtRecalculated"), ptFrom4Vec);
+            mHistogramRegistry.fill(HIST("hRecalcSuccess"), 1);
+          }
+          if (confFill2DHistos) {
+            mHistogramRegistry.fill(HIST("hPtOriginalVsRecalculated"), sigma.pt(), ptFrom4Vec);
+          }
         } else {
-          mHistogramRegistry.fill(HIST("hRecalcSuccess"), 0);
+          if (confFill1DHistos) {
+            mHistogramRegistry.fill(HIST("hRecalcSuccess"), 0);
+          }
         }
       }
 
