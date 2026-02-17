@@ -73,7 +73,6 @@ struct LumiStabilityLightIons {
   Configurable<bool> cfgRequireTVXTriggerForZDCQA{"cfgRequireTVXTriggerForZDCQA", false, "Require FT0 vertex trigger (MTVX) for filling ZDC QA histograms"};
   Configurable<bool> cfgRequireZEDTriggerForZDCQA{"cfgRequireZEDTriggerForZDCQA", false, "Require ZED trigger (1ZNC||1ZNA) for filling QA histograms"};
 
-
   Configurable<bool> cfgRequireNoT0ForSLBC{"cfgRequireNoT0ForSLBC", false, "Require no T0 signal for definition of super leading BC (otherwise only no FDD)"};
 
   Configurable<int> cfgEmptyBCsBeforeLeadingBC{"cfgEmptyBCsBeforeLeadingBC", 5, "Minimum number of empty BCs before a leading BC to identify it as such"};
