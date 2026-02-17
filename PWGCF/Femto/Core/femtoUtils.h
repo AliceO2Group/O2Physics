@@ -190,39 +190,6 @@ inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxD
   return std::sqrt(pxS * pxS + pyS * pyS);
 }
 
-/// Helper function to calculate recalculated pT for kink particles (Sigma/SigmaPlus)
-template <typename TParticle, typename TTrackTable>
-float getRecalculatedPtForKink(const TParticle& particle, const TTrackTable& trackTable)
-{
-  // Check if particle has chaDau index
-  if constexpr (requires { particle.has_chaDau(); }) {
-    if (particle.has_chaDau()) {
-      try {
-        auto chaDaughter = trackTable.rawIteratorAt(particle.chaDauId() - trackTable.offset());
-
-        // Extract momentum components directly from dynamic columns
-        float pxDaug = chaDaughter.px();
-        float pyDaug = chaDaughter.py();
-        float pzDaug = chaDaughter.pz();
-
-        // Get momentum components from dynamic columns
-        float pxMoth = particle.px();
-        float pyMoth = particle.py();
-        float pzMoth = particle.pz();
-
-        // Recalculate pT using kinematic constraints
-        float ptRecalc = calcPtnew(pxMoth, pyMoth, pzMoth, pxDaug, pyDaug, pzDaug);
-        if (ptRecalc > 0) {
-          return ptRecalc;
-        }
-      } catch (const std::exception& e) {
-        return -1.0f;
-      }
-    }
-  }
-  return -1.0f;
-}
-
 inline bool enableTable(const char* tableName, int userSetting, o2::framework::InitContext& initContext)
 {
   if (userSetting == 1) {
