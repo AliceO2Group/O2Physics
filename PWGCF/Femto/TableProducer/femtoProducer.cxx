@@ -154,6 +154,7 @@ struct FemtoProducer {
     }
 
     // init ccdb
+    LOG(info) << "Setting up connection to CCDB with URL: " << confCcdb.ccdbUrl.value;
     ccdb->setURL(confCcdb.ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
