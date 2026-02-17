@@ -277,7 +277,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setCutsBtoJPsi(cutsBtoHadrons.cutsBtoJPsiX);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u), nSigmaPidCuts->get(3u, 3u)});
     helper.setNsigmaDeuteronCutsForFemto(std::array{nSigmaPidCuts->get(0u, 6u), nSigmaPidCuts->get(1u, 6u), nSigmaPidCuts->get(2u, 6u), nSigmaPidCuts->get(3u, 6u)});
-    helper.setNsigmaProtonCutsForSigmaCPr(std::array{nSigmaPidCuts->get(0u, 6u), nSigmaPidCuts->get(1u, 6u), nSigmaPidCuts->get(2u, 6u), nSigmaPidCuts->get(3u, 6u)});
+    helper.setNsigmaProtonCutsForSigmaCPr(std::array{nSigmaPidCuts->get(0u, 8u), nSigmaPidCuts->get(1u, 8u), nSigmaPidCuts->get(2u, 6u), nSigmaPidCuts->get(3u, 8u)});
     helper.setDeuteronTrackSelectionForFemto(trackQaulityCuts->get(1u, 0u), trackQaulityCuts->get(1u, 1u), trackQaulityCuts->get(1u, 2u), trackQaulityCuts->get(1u, 3u), trackQaulityCuts->get(1u, 4u), trackQaulityCuts->get(1u, 5u), trackQaulityCuts->get(1u, 6u));
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
     helper.setNsigmaPionKaonCutsForDzero(nSigmaPidCuts->get(0u, 1u), nSigmaPidCuts->get(1u, 1u));
@@ -302,7 +302,7 @@ struct HfFilter { // Main struct for HF triggers
       cutsPtDeltaMassCharmReso->get(2u, 13u), // min pT SigmaC
       cutsSigmaCPr->get(0u, 0u),              // min pT proton
       cutsSigmaCPr->get(1u, 0u),              // max pT proton
-      cutsSigmaCPr->get(2u, 2u),              // TOF pT threshold
+      cutsSigmaCPr->get(2u, 0u),              // TOF pT threshold
       forceTofProtonForSigmaCPr);             // set True for force TOF on proton candidate after threshold
     dfStrangeness.setMatCorrType(matCorr);
     dfStrangeness3.setMatCorrType(matCorr);
