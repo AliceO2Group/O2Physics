@@ -356,7 +356,7 @@ struct LumiStabilityPP {
       }
 
       int64_t globalBCStart = (globalBCLastInspectedBC >= 0 && globalBCLastInspectedBC < globalBC) ? globalBCLastInspectedBC + 1 : globalBC;
-      int64_t maxBcDiff = (rate > 0) ? 10 * static_cast<int>(nBunchesFillingScheme * constants::lhc::LHCRevFreq / rate) : 500;
+      int64_t maxBcDiff = (rate > 0) ? 10 * static_cast<int>(nBunchesFillingScheme * constants::lhc::LHCRevFreq / rate / 1.e3) : 500;
       if (globalBC - globalBCStart > maxBcDiff) { // we changed fill, we should not count all BCs between the current and the previous one
         globalBCStart = globalBC;
       }
