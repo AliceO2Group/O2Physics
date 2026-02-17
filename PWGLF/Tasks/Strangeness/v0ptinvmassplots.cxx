@@ -697,7 +697,7 @@ struct V0PtInvMassPlots {
 
   void genMCProcess(
     soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
-    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::CentFT0Ms>> const& collisions,
+    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::McCentFT0Ms>> const& collisions,
     aod::McParticles const& mcParticles)
   {
     // Event Efficiency, Event Split and V0 Signal Loss Corrections
@@ -788,8 +788,7 @@ struct V0PtInvMassPlots {
     // End of Signal Loss Numenator Loop
   }
   // This is the Process for the MC reconstructed Data
-  void recMCProcess(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::CentFT0Ms>::iterator const& collision,
-                    // soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& /*mcCollisions*/,
+  void recMCProcess(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::McCentFT0Ms>::iterator const& collision,
                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
                     aod::McParticles const& /*mcParticles*/)
