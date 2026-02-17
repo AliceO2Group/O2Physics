@@ -427,7 +427,7 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       // locate the histogram that corresponds to the eccentricity distribution in this NpNc pair
       lNpNcEcc->GetXaxis()->SetRange(lNpNcEcc->GetXaxis()->FindBin(fNpart[ibin]), lNpNcEcc->GetXaxis()->FindBin(fNpart[ibin]));
       lNpNcEcc->GetYaxis()->SetRange(lNpNcEcc->GetYaxis()->FindBin(fNcoll[ibin]), lNpNcEcc->GetYaxis()->FindBin(fNcoll[ibin]));
-      hEccentricity = (TH1D*)lNpNcEcc->Project3D("z");
+      hEccentricity = reinterpret_cast<TH1D*>(lNpNcEcc->Project3D("z"));
       hEccentricity->SetName(Form("hEccentricity_%i", ibin));
     }
 
