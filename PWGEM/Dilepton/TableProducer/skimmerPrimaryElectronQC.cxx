@@ -36,7 +36,6 @@
 #include "Math/Vector4D.h"
 
 #include <string>
-// #include <utility>
 #include <vector>
 
 using namespace o2;
@@ -113,8 +112,10 @@ struct skimmerPrimaryElectronQC {
   } tighttrackcut;
 
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
-  Configurable<float> maxMee{"maxMee", 0.005, "max mee for pi0 -> ee"};
-  Configurable<float> maxPhiV{"maxPhiV", M_PI / 2, "max phiv for pi0 -> ee"};
+  Configurable<float> minMee{"minMee", 0.000, "min mee for pi0 -> ee or gamma -> ee"};
+  Configurable<float> maxMee{"maxMee", 0.005, "max mee for pi0 -> ee or gamma -> ee"};
+  Configurable<float> minPhiV{"minPhiV", 0.f, "min phiv for pi0 -> ee or gamma -> ee"};
+  Configurable<float> maxPhiV{"maxPhiV", M_PI / 2, "max phiv for pi0 -> ee or gamma -> ee"};
 
   // configuration for PID ML
   Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
@@ -622,7 +623,7 @@ struct skimmerPrimaryElectronQC {
     if (fillQAHistogram) {
       fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
     }
-    if (mee < maxMee && phiv < maxPhiV) {
+    if ((minMee < mee && mee < maxMee) && (minPhiV < phiv && phiv < maxPhiV)) {
       return true;
     } else {
       return false;
