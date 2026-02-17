@@ -18,11 +18,12 @@
 using namespace o2;
 using namespace o2::framework;
 
-// converts DauTrackTOFPIDs_001 to _002
+// converts DauTrackTOFPIDs_002 to _003
 struct stradautrackstofpidconverter3 {
   Produces<aod::DauTrackTOFPIDs_002> dautracktofpids;
+  Produces<aod::StraEvTimes_001> straEvTimes;
 
-  void process(aod::DauTrackTOFPIDs_001 const& dauTracks)
+  void process(aod::DauTrackTOFPIDs_001 const& dauTracks, aod::StraEvTimes_000 const& straEvTimes_000)
   {
     // create new TOFPIDs
     for (const auto& dauTrack : dauTracks) {
@@ -34,6 +35,9 @@ struct stradautrackstofpidconverter3 {
         999.0f, /*dummy event time error for TOF*/
         dauTrack.length(), 
         0.0f);
+    }
+    for (const auto& value : straEvTimes_000) {
+      straEvTimes(value.eventTime(), 1e+6f /*dummy event time error for TOF*/);
     }
   }
 };
