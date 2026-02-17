@@ -15,6 +15,7 @@
 /// \author Your Name (your.email@cern.ch)
 /// \since April 2025
 
+#include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFhe3HadronTables.h"
 #include "PWGLF/Utils/nucleiUtils.h"
@@ -92,6 +93,29 @@ constexpr int H3LPDG = o2::constants::physics::Pdg::kHyperTriton;
 constexpr int ProtonPDG = PDG_t::kProton;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr float CommonInite = 0.0f;
+
+float getkstar(const float pt1, const float eta1, const float phi1, const float mass1, const float z1,
+               const float pt2, const float eta2, const float phi2, const float mass2, const float z2)
+{
+  const ROOT::Math::PtEtaPhiMVector vecpart1(pt1 * z1, eta1, phi1, mass1);
+  const ROOT::Math::PtEtaPhiMVector vecpart2(pt2 * z2, eta2, phi2, mass2);
+  const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
+
+  const float beta = trackSum.Beta();
+  const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+  const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+  const float betaz = beta * std::cos(trackSum.Theta());
+
+  ROOT::Math::PxPyPzMVector PartOneCMS(vecpart1);
+  ROOT::Math::PxPyPzMVector PartTwoCMS(vecpart2);
+
+  const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+  PartOneCMS = boostPRF(PartOneCMS);
+  PartTwoCMS = boostPRF(PartTwoCMS);
+
+  const ROOT::Math::PxPyPzMVector trackRelK = PartOneCMS - PartTwoCMS;
+  return 0.5 * trackRelK.P();
+}
 
 enum Selections {
   kNoCuts = 0,
@@ -307,6 +331,7 @@ struct he3HadronFemto {
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
+      {"hKstarRecVsKstarGen", "; #it{k}*_{gen} (GeV/#it{c}); #it{k}*_{rec} (GeV/#it{c})", {HistType::kTH2F, {{400, 0.f, 0.8f}, {400, 0.f, 0.8f}}}},
 
       {"He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
       {"He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
@@ -480,10 +505,18 @@ struct he3HadronFemto {
   template <typename Ttrack>
   float correctPtHe3TrackedAsTriton(const Ttrack& candidate)
   {
-    if (candidate.pt() < 2.5 && candidate.pidForTracking() == o2::track::PID::Triton)
+    if (candidate.pt() * 2. < 2.5 && candidate.pidForTracking() == o2::track::PID::Triton)
       return candidate.pt() * 2. * (1. - kHePidTrkParams[0] - kHePidTrkParams[1] * candidate.pt() * 2.);
 
     return candidate.pt() * 2.;
+  }
+
+  float correctPtHe3TrackedAsTriton(const float pt, const uint32_t pidForTracking)
+  {
+    if (pt < 2.5 && pidForTracking == o2::track::PID::Triton)
+      return pt * 2. * (1. - kHePidTrkParams[0] - kHePidTrkParams[1] * pt * 2.);
+
+    return pt * 2.;
   }
 
   float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char* dcaType = "xy")
@@ -920,7 +953,7 @@ struct he3HadronFemto {
     }
   }
 
-  void fillHistograms(const He3HadCandidate& he3Hadcand)
+  void fillHistograms(const He3HadCandidate& he3Hadcand, bool isMc = false)
   {
     mQaRegistry.fill(HIST("He3/hHe3Pt"), he3Hadcand.recoPtHe3());
     mQaRegistry.fill(HIST("Had/hHadronPt"), he3Hadcand.recoPtHad());
@@ -931,6 +964,15 @@ struct he3HadronFemto {
     mQaRegistry.fill(HIST("Had/hNClsHadITS"), he3Hadcand.nclsITSHad);
     mQaRegistry.fill(HIST("He3/hChi2NClHe3ITS"), he3Hadcand.chi2nclITSHe3);
     mQaRegistry.fill(HIST("Had/hChi2NClHadITS"), he3Hadcand.chi2nclITSHad);
+
+    if (isMc) {
+      const float correctedPtHe3 = correctPtHe3TrackedAsTriton(he3Hadcand.recoPtHe3(), he3Hadcand.pidtrkHe3);
+      const float kstarGen = getkstar(he3Hadcand.momHe3MC, he3Hadcand.etaHe3MC, he3Hadcand.phiHe3MC, o2::constants::physics::MassHelium3, 1.,
+                                      he3Hadcand.momHadMC, he3Hadcand.etaHadMC, he3Hadcand.phiHadMC, settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
+      const float kstarRec = getkstar(correctedPtHe3, he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(), o2::constants::physics::MassHelium3, 1.,
+                                      he3Hadcand.recoPtHad(), he3Hadcand.recoEtaHad(), he3Hadcand.recoPhiHad(), settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
+      mQaRegistry.fill(HIST("hKstarRecVsKstarGen"), kstarGen, kstarRec);
+    }
   }
 
   // ==================================================================================================================
@@ -1186,7 +1228,7 @@ struct he3HadronFemto {
           filledMothers.push_back(motherParticle.globalIndex());
         }
 
-        fillHistograms(he3Hadcand);
+        fillHistograms(he3Hadcand, /*isMc*/ true);
         auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
         fillTable(he3Hadcand, collision, /*isMC*/ true);
       }

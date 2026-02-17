@@ -183,10 +183,10 @@ struct FemtoPairTrackKink {
       pairTrackKinkHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
       if (processSigma) {
         sigmaHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaBinning);
-        pairTrackSigmaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelection, confTrackCleaner, confSigmaSelection, confSigmaCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+        pairTrackSigmaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaSelection, confSigmaCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
       } else {
         sigmaPlusHistSpec = kinkhistmanager::makeKinkHistSpecMap(confSigmaPlusBinning);
-        pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelection, confTrackCleaner, confSigmaPlusSelection, confSigmaPlusCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+        pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusSelection, confSigmaPlusCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
@@ -195,10 +195,10 @@ struct FemtoPairTrackKink {
       pairTrackKinkHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
       if (processSigma) {
         sigmaHistSpec = kinkhistmanager::makeKinkMcHistSpecMap(confSigmaBinning);
-        pairTrackSigmaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelection, confTrackCleaner, confSigmaSelection, confSigmaCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+        pairTrackSigmaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaSelection, confSigmaCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
       } else {
         sigmaPlusHistSpec = kinkhistmanager::makeKinkMcHistSpecMap(confSigmaPlusBinning);
-        pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelection, confTrackCleaner, confSigmaPlusSelection, confSigmaPlusCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
+        pairTrackSigmaPlusBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confSigmaPlusSelection, confSigmaPlusCleaner, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, sigmaPlusHistSpec, chaDauSpec, pairTrackKinkHistSpec, cprHistSpec);
       }
     }
     hRegistry.print();

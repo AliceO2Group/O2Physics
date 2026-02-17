@@ -38,6 +38,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(InMassRegion, inMassRegion,
 } // namespace lf_selection_phi_candidate
 
 DECLARE_SOA_TABLE(PhimesonCandidatesData, "AOD", "PHICANDDATA",
+                  soa::Index<>,
                   lf_selection_phi_candidate::CollisionId,
                   lf_selection_phi_candidate::M,
                   lf_selection_phi_candidate::Pt,
@@ -46,6 +47,7 @@ DECLARE_SOA_TABLE(PhimesonCandidatesData, "AOD", "PHICANDDATA",
                   lf_selection_phi_candidate::InMassRegion<lf_selection_phi_candidate::M>);
 
 DECLARE_SOA_TABLE(PhimesonCandidatesMcReco, "AOD", "PHICANDMCRECO",
+                  soa::Index<>,
                   lf_selection_phi_candidate::CollisionId,
                   lf_selection_phi_candidate::M,
                   lf_selection_phi_candidate::Pt,
@@ -54,6 +56,7 @@ DECLARE_SOA_TABLE(PhimesonCandidatesMcReco, "AOD", "PHICANDMCRECO",
                   lf_selection_phi_candidate::InMassRegion<lf_selection_phi_candidate::M>);
 
 DECLARE_SOA_TABLE(PhimesonCandidatesMcGen, "AOD", "PHICANDMCGEN",
+                  soa::Index<>,
                   lf_selection_phi_candidate::CollisionId,
                   lf_selection_phi_candidate::M,
                   lf_selection_phi_candidate::Pt,

@@ -261,7 +261,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
   SliceCache cache;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::vertexing::DCAFitterN<2> df2;
 
   static constexpr int ItsNClsMin{4};

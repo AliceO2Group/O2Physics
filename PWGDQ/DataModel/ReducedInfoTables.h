@@ -830,6 +830,17 @@ DECLARE_SOA_TABLE(Dimuons, "AOD", "RTDIMUON", //!
                   reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
                   reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
 
+DECLARE_SOA_TABLE(ElectronMuons, "AOD", "RTELECTRONMUON", //!
+                  o2::soa::Index<>, reducedpair::ReducedEventId,
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap, reducedpair::McDecision,
+                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
+
 DECLARE_SOA_TABLE(DielectronsExtra, "AOD", "RTDIELEEXTRA", //!
                   reducedpair::Index0Id, reducedpair::Index1Id,
                   reducedpair::Tauz,

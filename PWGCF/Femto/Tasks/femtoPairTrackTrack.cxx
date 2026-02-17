@@ -135,13 +135,13 @@ struct FemtoPairTrackTrack {
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
       pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     }
     hRegistry.print();
   };

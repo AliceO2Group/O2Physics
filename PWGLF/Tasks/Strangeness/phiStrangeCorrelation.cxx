@@ -40,6 +40,8 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
+#include <Framework/BinningPolicy.h>
+#include <Framework/SliceCache.h>
 #include <Framework/StaticFor.h>
 
 #include <Math/Vector4D.h>
@@ -279,16 +281,15 @@ struct PhiStrangenessCorrelation {
   // using FilteredTracks = soa::Filtered<FullTracks>;
   // using FilteredMCTracks = soa::Filtered<FullMCTracks>;
 
-  // Preslice for manual slicing
+  // Slice cache and Preslices for table slicing
+  SliceCache cache;
+
   struct : PresliceGroup {
-    // Preslice<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
     Preslice<FullMCV0s> v0PerCollision = aod::v0::collisionId;
     Preslice<FullMCTracks> trackPerCollision = aod::track::collisionId;
-    // Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    // PresliceUnsorted<SimCollisions> collPerMCCollision = aod::mccollisionlabel::mcCollisionId;
+    Preslice<aod::McParticles> mcPartPerMcCollision = aod::mcparticle::mcCollisionId;
+    Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
     PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandPerCollision = aod::lf_selection_phi_candidate::collisionId;
-
-    // Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
   } preslices;
 
   // Necessary service to retrieve efficiency maps from CCDB
@@ -301,6 +302,13 @@ struct PhiStrangenessCorrelation {
   std::shared_ptr<TH3> effMapPionTPCTOF = nullptr;*/
 
   std::array<std::shared_ptr<TH3>, ParticleOfInterestSize> effMaps{};
+
+  // Binning policy and axes for mixed event
+  ConfigurableAxis axisVertexMixing{"axisVertexMixing", {20, -10, 10}, "Z vertex axis binning for mixing"};
+  ConfigurableAxis axisCentralityMixing{"axisCentralityMixing", {20, 0, 100}, "Multiplicity percentil binning for mixing"};
+
+  using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
 
   void init(InitContext&)
   {
@@ -545,7 +553,6 @@ struct PhiStrangenessCorrelation {
 
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
-    // Loop over all positive tracks
     for (const auto& phiCand : phiCandidates) {
       float weightPhi = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()));
 
@@ -598,165 +605,199 @@ struct PhiStrangenessCorrelation {
 
   PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionData, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data", true);
 
-  /*
-  void processPhiK0SPionDataME(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidates, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiK0SDataME(SelCollisions const& collisions, aod::PhimesonCandidatesData const& phiCandidates, FullV0s const& V0s, V0DauTracks const&)
   {
-    Pair<SelCollisions, FullTracks, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache};
-    Triple<aod::Collisions, aod::Tracks, aod::V0s, aod::Tracks, BinningType> triple{binningOnPositions, 5, -1, &cache};
-    float multiplicity = collision.centFT0M();
-
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
-    // Loop over all positive tracks
-    for (const auto& phiCand : phiCandidates) {
-      static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int i = i_idx.value;
+    auto tuplePhiV0 = std::make_tuple(phiCandidates, V0s);
+    Pair<SelCollisions, aod::PhimesonCandidatesData, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiV0, &cache};
 
-        const auto& [minMass, maxMass] = phiMassRegions[i];
-        if (!phiCand.inMassRegion(minMass, maxMass))
-          return;
+    for (const auto& [c1, phiCands, c2, v0s] : pairPhiK0S) {
 
-        // V0 already reconstructed by the builder
-        for (const auto& v0 : V0s) {
-          // Cut on V0 dynamic columns
-          if (!selectionV0<false>(v0, collision))
-            continue;
+      float multiplicity = c1.centFT0M();
+
+      for (const auto& [phiCand, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, v0s))) {
+        static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int i = i_idx.value;
+
+          const auto& [minMass, maxMass] = phiMassRegions[i];
+          if (!phiCand.inMassRegion(minMass, maxMass))
+            return;
+
+          if (!selectionV0<false>(v0, c2))
+            return;
 
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, v0.pt(), v0.yK0Short()));
 
           histos.fill(HIST("phiK0S/h5PhiK0SDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), v0.pt(), phiCand.y() - v0.yK0Short(), getDeltaPhi(phiCand.phi(), v0.phi()), weightPhiK0S);
-        }
+        });
+      }
+    }
+  }
 
-        // Loop over all primary pion candidates
-        for (const auto& track : fullTracks) {
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SDataME, "Process function for Phi-K0S and Deltay and Deltaphi 2D Correlations in Data ME", false);
+
+  void processPhiPionDataME(SelCollisions const& collisions, aod::PhimesonCandidatesData const& phiCandidates, FullTracks const& fullTracks)
+  {
+    const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
+
+    auto tuplePhiPion = std::make_tuple(phiCandidates, fullTracks);
+    Pair<SelCollisions, aod::PhimesonCandidatesData, FullTracks, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiPion, &cache};
+
+    for (const auto& [c1, phiCands, c2, tracks] : pairPhiPion) {
+
+      float multiplicity = c1.centFT0M();
+
+      for (const auto& [phiCand, track] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, tracks))) {
+        static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int i = i_idx.value;
+
+          const auto& [minMass, maxMass] = phiMassRegions[i];
+          if (!phiCand.inMassRegion(minMass, maxMass))
+            return;
+
           if (!selectionPion(track))
-            continue;
+            return;
 
           float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                               BoundEfficiencyMap(effMaps[Pion], multiplicity, track.pt(), track.rapidity(massPi)));
 
           histos.fill(HIST("phiPi/h5PhiPiDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), track.pt(), phiCand.y() - track.rapidity(massPi), getDeltaPhi(phiCand.phi(), track.phi()), weightPhiPion);
-        }
-      });
+        });
+      }
     }
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SPionDataME, "Process function for Phi-K0S and Phi-Pion Deltay and Deltaphi 2D Correlations in Data ME", true);
-  */
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiPionDataME, "Process function for Phi-Pion Deltay and Deltaphi 2D Correlations in Data ME", false);
 
-  void processParticleEfficiency(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcReco const& phiCandidatesMcReco)
+  void processParticleEfficiency(MCCollisions const& mcCollisions, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcReco const& phiCandidatesMcReco)
   {
-    uint16_t numberAssocColls{0};
-    std::vector<float> zVtxs;
-
-    // const auto collsThisMCColl = collisions.sliceBy(preslices.collPerMCCollision, mcCollision.globalIndex());
+    std::vector<std::vector<int>> collsGrouped(mcCollisions.size());
 
     for (const auto& collision : collisions) {
-      histos.fill(HIST("event/hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
-      histos.fill(HIST("event/h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
-
-      zVtxs.push_back(collision.posZ());
-
-      if (selectionType == 0) {
-        const auto phiCandidatesThisColl = phiCandidatesMcReco.sliceBy(preslices.phiCandPerCollision, collision.globalIndex());
-        for (const auto& phiCand : phiCandidatesThisColl) {
-          histos.fill(HIST("phi/h4PhiMCReco"), collision.posZ(), mcCollision.centFT0M(), phiCand.pt(), phiCand.y());
-        }
-      }
-
-      const auto v0sThisColl = V0s.sliceBy(preslices.v0PerCollision, collision.globalIndex());
-      const auto fullMCTracksThisColl = fullMCTracks.sliceBy(preslices.trackPerCollision, collision.globalIndex());
-
-      for (const auto& v0 : v0sThisColl) {
-        if (!selectionV0<true>(v0, collision))
-          continue;
-
-        if (!v0.has_mcParticle())
-          continue;
-
-        const auto& v0McParticle = mcParticles.rawIteratorAt(v0.mcParticleId());
-        if (std::abs(v0McParticle.pdgCode()) != PDG_t::kK0Short || !v0McParticle.isPhysicalPrimary())
-          continue;
-
-        histos.fill(HIST("k0s/h4K0SMCReco"), collision.posZ(), mcCollision.centFT0M(), v0McParticle.pt(), v0McParticle.y());
-      }
-
-      for (const auto& track : fullMCTracksThisColl) {
-        if (!selectionPion(track))
-          continue;
-
-        if (!track.has_mcParticle())
-          continue;
-
-        const auto& trackMcParticle = mcParticles.rawIteratorAt(track.mcParticleId());
-        if (std::abs(trackMcParticle.pdgCode()) != PDG_t::kPiPlus)
-          continue;
-
-        if (trackMcParticle.isPhysicalPrimary()) {
-          histos.fill(HIST("pi/h2RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
-        } else {
-          if (trackMcParticle.getProcess() == TMCProcess::kPDecay) { // Selection of secondary pions from weak decay
-            histos.fill(HIST("pi/h2RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
-          } else { // Selection of secondary pions from material interactions
-            histos.fill(HIST("pi/h2RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
-          }
-          continue;
-        }
-
-        histos.fill(HIST("pi/h4PiMCReco"), collision.posZ(), mcCollision.centFT0M(), trackMcParticle.pt(), trackMcParticle.y());
-      }
-
-      numberAssocColls++;
-    }
-
-    histos.fill(HIST("event/hGenMCMultiplicityPercent"), mcCollision.centFT0M());
-
-    const bool hasAssoc = (numberAssocColls > 0);
-    const float zVtxRef = hasAssoc ? zVtxs[0] : 0.0f;
-
-    //////TOBECHANGED//////
-    if (hasAssoc) {
-      if (zVtxs.size() > 1) {
-        for (size_t i = 1; i < zVtxs.size(); ++i) {
-          histos.fill(HIST("event/hSplitVertexZ"), zVtxs[i] - zVtxRef);
-        }
-      }
-
-      histos.fill(HIST("event/hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
-      histos.fill(HIST("event/h2GenMCAssocRecoVertexZvsMult"), zVtxRef, mcCollision.centFT0M());
-    }
-    ///////////////////////
-
-    auto inYAcceptance = [&](const auto& mcParticle) {
-      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
-    };
-
-    auto fillGenHistos = [&](auto h3Key, auto h4Key, const auto& mcParticle) {
-      histos.fill(h3Key, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
-      if (hasAssoc)
-        histos.fill(h4Key, zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
-    };
-
-    for (const auto& mcParticle : mcParticles /*| std::views::filter(inYAcceptance)*/) {
-      if (!inYAcceptance(mcParticle))
+      if (!collision.has_mcCollision())
         continue;
+      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+      collsGrouped[mcCollision.globalIndex()].push_back(collision.globalIndex());
+    }
 
-      switch (std::abs(mcParticle.pdgCode())) {
-        case o2::constants::physics::Pdg::kPhi:
-          if (selectionType == 0 && mcParticle.pt() >= phiConfigs.minPhiPt)
-            fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"), mcParticle);
-          break;
-        case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
-            fillGenHistos(HIST("k0s/h3K0SMCGen"), HIST("k0s/h4K0SMCGenAssocReco"), mcParticle);
-          break;
-        case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
-            fillGenHistos(HIST("pi/h3PiMCGen"), HIST("pi/h4PiMCGenAssocReco"), mcParticle);
-          break;
-        default:
-          break;
+    for (const auto& mcCollision : mcCollisions) {
+      uint16_t numberAssocColls{0};
+      std::vector<float> zVtxs;
+
+      const auto& collIndexesThisMcColl = collsGrouped[mcCollision.globalIndex()];
+
+      for (const auto& collIndex : collIndexesThisMcColl) {
+        const auto& collision = collisions.rawIteratorAt(collIndex);
+
+        histos.fill(HIST("event/hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
+        histos.fill(HIST("event/h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
+
+        zVtxs.push_back(collision.posZ());
+
+        if (selectionType == 0) {
+          const auto phiCandidatesThisColl = phiCandidatesMcReco.sliceBy(preslices.phiCandPerCollision, collision.globalIndex());
+          for (const auto& phiCand : phiCandidatesThisColl) {
+            histos.fill(HIST("phi/h4PhiMCReco"), collision.posZ(), mcCollision.centFT0M(), phiCand.pt(), phiCand.y());
+          }
+        }
+
+        const auto v0sThisColl = V0s.sliceBy(preslices.v0PerCollision, collision.globalIndex());
+        const auto fullMCTracksThisColl = fullMCTracks.sliceBy(preslices.trackPerCollision, collision.globalIndex());
+
+        for (const auto& v0 : v0sThisColl) {
+          if (!selectionV0<true>(v0, collision))
+            continue;
+
+          if (!v0.has_mcParticle())
+            continue;
+
+          const auto& v0McParticle = mcParticles.rawIteratorAt(v0.mcParticleId());
+          if (std::abs(v0McParticle.pdgCode()) != PDG_t::kK0Short || !v0McParticle.isPhysicalPrimary())
+            continue;
+
+          histos.fill(HIST("k0s/h4K0SMCReco"), collision.posZ(), mcCollision.centFT0M(), v0McParticle.pt(), v0McParticle.y());
+        }
+
+        for (const auto& track : fullMCTracksThisColl) {
+          if (!selectionPion(track))
+            continue;
+
+          if (!track.has_mcParticle())
+            continue;
+
+          const auto& trackMcParticle = mcParticles.rawIteratorAt(track.mcParticleId());
+          if (std::abs(trackMcParticle.pdgCode()) != PDG_t::kPiPlus)
+            continue;
+
+          if (trackMcParticle.isPhysicalPrimary()) {
+            histos.fill(HIST("pi/h2RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
+          } else {
+            if (trackMcParticle.getProcess() == TMCProcess::kPDecay) { // Selection of secondary pions from weak decay
+              histos.fill(HIST("pi/h2RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
+            } else { // Selection of secondary pions from material interactions
+              histos.fill(HIST("pi/h2RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
+            }
+            continue;
+          }
+
+          histos.fill(HIST("pi/h4PiMCReco"), collision.posZ(), mcCollision.centFT0M(), trackMcParticle.pt(), trackMcParticle.y());
+        }
+
+        numberAssocColls++;
+      }
+
+      histos.fill(HIST("event/hGenMCMultiplicityPercent"), mcCollision.centFT0M());
+
+      const bool hasAssoc = (numberAssocColls > 0);
+      const float zVtxRef = hasAssoc ? zVtxs[0] : 0.0f;
+
+      //////TOBECHANGED//////
+      if (hasAssoc) {
+        if (zVtxs.size() > 1) {
+          for (size_t i = 1; i < zVtxs.size(); ++i) {
+            histos.fill(HIST("event/hSplitVertexZ"), zVtxs[i] - zVtxRef);
+          }
+        }
+
+        histos.fill(HIST("event/hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
+        histos.fill(HIST("event/h2GenMCAssocRecoVertexZvsMult"), zVtxRef, mcCollision.centFT0M());
+      }
+      ///////////////////////
+
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.mcPartPerMcCollision, mcCollision.globalIndex());
+
+      auto inYAcceptance = [&](const auto& mcParticle) {
+        return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
+      };
+
+      auto fillGenHistos = [&](auto h3Key, auto h4Key, const auto& mcParticle) {
+        histos.fill(h3Key, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+        if (hasAssoc)
+          histos.fill(h4Key, zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+      };
+
+      for (const auto& mcParticle : mcParticlesThisMcColl /*| std::views::filter(inYAcceptance)*/) {
+        if (!inYAcceptance(mcParticle))
+          continue;
+
+        switch (std::abs(mcParticle.pdgCode())) {
+          case o2::constants::physics::Pdg::kPhi:
+            if (selectionType == 0 && mcParticle.pt() >= phiConfigs.minPhiPt)
+              fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"), mcParticle);
+            break;
+          case PDG_t::kK0Short:
+            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
+              fillGenHistos(HIST("k0s/h3K0SMCGen"), HIST("k0s/h4K0SMCGenAssocReco"), mcParticle);
+            break;
+          case PDG_t::kPiPlus:
+            if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
+              fillGenHistos(HIST("pi/h3PiMCGen"), HIST("pi/h4PiMCGenAssocReco"), mcParticle);
+            break;
+          default:
+            break;
+        }
       }
     }
   }

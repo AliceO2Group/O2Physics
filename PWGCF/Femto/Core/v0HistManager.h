@@ -276,7 +276,7 @@ constexpr char PrefixK0short2[] = "K0short2/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 
-constexpr std::string_view AnalysisDir = "Kinematics/";
+constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
 
