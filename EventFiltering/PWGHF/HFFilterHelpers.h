@@ -403,7 +403,7 @@ static constexpr double cutsTrackDummy[o2::analysis::hf_cuts_single_track::NBins
 o2::framework::LabeledArray<double> cutsSingleTrackDummy{cutsTrackDummy[0], o2::analysis::hf_cuts_single_track::NBinsPtTrack, o2::analysis::hf_cuts_single_track::NCutVarsTrack, o2::analysis::hf_cuts_single_track::labelsPtTrack, o2::analysis::hf_cuts_single_track::labelsCutVarTrack};
 
 // manual downscale factors for tests
-constexpr double defDownscaleFactors[kNtriggersHF][1] = {{1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}}; // one for each trigger
+constexpr double defDownscaleFactors[kNtriggersHF][1] = {{1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}, {1.1}}; // one for each trigger
 static const std::vector<std::string> labelsDownscaleFactor = {"Downscale factor"};
 
 // Main helper class
