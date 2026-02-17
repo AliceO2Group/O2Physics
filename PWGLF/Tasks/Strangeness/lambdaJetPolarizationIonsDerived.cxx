@@ -63,7 +63,8 @@ using ROOT::Math::PtEtaPhiMVector;
 constexpr double protonMass = o2::constants::physics::MassProton; // Assumes particle identification for daughter is perfect
 constexpr double lambdaWeakDecayConstant = 0.749; // DPG 2025 update
 constexpr double antiLambdaWeakDecayConstant = -0.758; // DPG 2025 update
-
+constexpr double polPrefactorLambda = 3.0/lambdaWeakDecayConstant;
+constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
 
 // Helper macro to avoid writing the histogram fills 4 times for about 20 histograms:
 #define RING_OBSERVABLE_FILL_LIST(X, FOLDER)                                                         \
@@ -150,6 +151,25 @@ constexpr double antiLambdaWeakDecayConstant = -0.758; // DPG 2025 update
     X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservableSquared) \
     X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservableSquared)
 
+#define POLARIZATION_PROFILE_FILL_LIST(X, FOLDER) \
+    /* =============================== */ \
+    /* 1D TProfiles vs v0phi */ \
+    /* =============================== */ \
+    X(FOLDER "/pPxStarPhi",             v0phi,           PolStarX) \
+    X(FOLDER "/pPyStarPhi",             v0phi,           PolStarY) \
+    X(FOLDER "/pPzStarPhi",             v0phi,           PolStarZ) \
+    /* =============================== */ \
+    /* 1D TProfiles vs DeltaPhi_jet */ \
+    /* =============================== */ \
+    X(FOLDER "/pPxStarDeltaPhi",        deltaPhiJet,   PolStarX) \
+    X(FOLDER "/pPyStarDeltaPhi",        deltaPhiJet,   PolStarY) \
+    X(FOLDER "/pPzStarDeltaPhi",        deltaPhiJet,   PolStarZ) \
+    /* =============================== */ \
+    /* 2D TProfiles vs DeltaPhi_jet and Lambda pT */ \
+    /* =============================== */ \
+    X(FOLDER "/p2dPxStarDeltaPhiVsLambdaPt",  deltaPhiJet, v0pt, PolStarX) \
+    X(FOLDER "/p2dPyStarDeltaPhiVsLambdaPt",  deltaPhiJet, v0pt, PolStarY) \
+    X(FOLDER "/p2dPzStarDeltaPhiVsLambdaPt",  deltaPhiJet, v0pt, PolStarZ)
 
 // Apply the macros (notice I had to include the semicolon (";") after the function, so you don't need to 
 // write that when calling this APPLY_HISTO_FILL. The code will look weird, but without this the compiler
@@ -183,10 +203,12 @@ struct lambdajetpolarizationionsderived {
         ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {100, -constants::math::PI, constants::math::PI}, "#Delta #phi_{jet}"};
 
         // Coarser axes for signal extraction:
-        ConfigurableAxis axisPtSigExtract{"axisPtSigExtract", {VARIABLE_WIDTH, 0.0f, 0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 0.9f, 1.05f, 1.2f, 1.35f, 1.5f, 1.65f, 1.8f, 1.95f, 2.1f, 2.25f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for signal extraction"};
+        ConfigurableAxis axisPtSigExtract{"axisPtSigExtract", {VARIABLE_WIDTH, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 6.0f, 8.0f, 10.0f, 15.0f, 20.0f, 30.0f, 50.0f}, "pt axis for signal extraction"};
         ConfigurableAxis axisLambdaMassSigExtract{"axisLambdaMassSigExtract", {175, 1.08f, 1.15f}, "Lambda mass in GeV/c"}; // With a sigma of 0.002 GeV/c, this has about 5 bins per sigma, so that the window is properly grasped.
         ConfigurableAxis axisLeadingParticlePtSigExtract{"axisLeadingParticlePtSigExtract", {VARIABLE_WIDTH, 0, 4, 8, 12, 16, 20, 25, 30, 35, 40, 60, 100, 200}, "Leading particle p_{T} (GeV/c)"}; // Simpler version!
-        ConfigurableAxis axisJetPtSigExtract{"axisJetPtSigExtract", {VARIABLE_WIDTH, 0, 4, 8, 12, 16, 20, 25, 30, 35, 40, 60, 100, 200},"Jet p_{t} (GeV)"};
+        ConfigurableAxis axisJetPtSigExtract{"axisJetPtSigExtract", {VARIABLE_WIDTH, 0, 5, 10, 12, 16, 20, 25, 30, 35, 40, 60, 100, 200},"Jet p_{t} (GeV)"};
+
+        // (TODO: add a lambdaPt axis that is pre-selected only on the 0.5 to 1.5 Pt region)
     } axisConfigurations;
 
 
@@ -311,6 +333,27 @@ struct lambdajetpolarizationionsderived {
             // --- Counters ---
             histos.add((folder + "/h3dDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             histos.add((folder + "/h3dDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract});
+
+            // ===============================
+            //   Polarization observable QAs 
+            // (not Ring: actual polarization!)
+            // ===============================
+                // Will implement these as TProfiles, as polarization is also a measure like P_\Lambda = (3/\alpha_\Lambda) * <p_{proton}>, so the error is similar
+            // ===============================
+            // 1D TProfiles
+            // ===============================
+            histos.add((folder + "/pPxStarPhi").c_str(), "pPxStarPhi;#varphi_#Lambda;<P_#Lambda>_x", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPyStarPhi").c_str(), "pPyStarPhi;#varphi_#Lambda;<P_#Lambda>_y", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPzStarPhi").c_str(), "pPzStarPhi;#varphi_#Lambda;<P_#Lambda>_z", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPxStarDeltaPhi").c_str(), "pPxStarDeltaPhi;#Delta#varphi_{jet};<P_#Lambda>_x", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPyStarDeltaPhi").c_str(), "pPyStarDeltaPhi;#Delta#varphi_{jet};<P_#Lambda>_y", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPzStarDeltaPhi").c_str(), "pPzStarDeltaPhi;#Delta#varphi_{jet};<P_#Lambda>_z", kTProfile, {axisConfigurations.axisDeltaPhi});
+            // ===============================
+            // 2D TProfiles (Lambda correlations)
+            // ===============================
+            histos.add((folder + "/p2dPxStarDeltaPhiVsLambdaPt").c_str(), "p2dPxStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_#Lambda>_x", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/p2dPyStarDeltaPhiVsLambdaPt").c_str(), "p2dPyStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_#Lambda>_y", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/p2dPzStarDeltaPhiVsLambdaPt").c_str(), "p2dPzStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_#Lambda>_z", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
         };
         // Execute local lambda to register histogram families:
         addRingObservableFamily("Ring");
@@ -414,7 +457,7 @@ struct lambdajetpolarizationionsderived {
 
                 double ringObservable = protonLikeStarUnit3Vec.Dot(cross) / crossProductNorm;
                     // Adding the prefactor related to the CP-violating decay (decay constants have different signs)
-                ringObservable *= (isLambda) ? 3./lambdaWeakDecayConstant : 3./antiLambdaWeakDecayConstant;
+                ringObservable *= (isLambda) ? polPrefactorLambda : polPrefactorAntiLambda;
 
                 // Calculating error bars:
                 double ringObservableSquared = ringObservable*ringObservable;
@@ -423,15 +466,31 @@ struct lambdajetpolarizationionsderived {
                 double deltaPhiJet = wrapToPiFast(v0phi - leadingJetPhi); // Wrapped to [-PI, pi), for convenience
                 double deltaThetaJet = ROOT::Math::VectorUtil::Angle(leadingJetUnitVec, lambdaLike3Vec); // 3D angular separation
 
+                // Calculating polarization observables (in the Lambda frame, because that is easier -- does not require boosts):
+                    // To be precise, not actually the polarization, but a part of the summand in P^*_\Lambda = (3/\alpha_\Lambda) * <p^*_{proton}>
+                double PolStarX, PolStarY, PolStarZ;
+                if (isLambda){ // Notice there is no need to check analyseLambda again due to previous checks.
+                    PolStarX = polPrefactorLambda * protonLikeStarUnit3Vec.X();
+                    PolStarY = polPrefactorLambda * protonLikeStarUnit3Vec.Y();
+                    PolStarZ = polPrefactorLambda * protonLikeStarUnit3Vec.Z();
+                }
+                else if (isAntiLambda){
+                    PolStarX = polPrefactorAntiLambda * protonLikeStarUnit3Vec.X();
+                    PolStarY = polPrefactorAntiLambda * protonLikeStarUnit3Vec.Y();
+                    PolStarZ = polPrefactorAntiLambda * protonLikeStarUnit3Vec.Z();
+                }
+
                 // Fill ring histograms: (1D, lambda 2D correlations and jet 2D correlations):
                 RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "Ring") // Notice the usage of macros! If you change the variable names, this WILL break the code!
                 RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "Ring") // No, there should NOT be any ";" here! Read the macro definition for an explanation
+                POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "Ring")
 
                 // Extra kinematic criteria for Lambda candidates (removes polarization background):
                 const bool kinematicLambdaCheck = (v0pt > 0.5 && v0pt < 1.5) && std::abs(lambdaRapidity) < 0.5;
                 if (kinematicLambdaCheck){
                     RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
                     RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+                    POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
                 }
                 
                 // Extra selection criteria on jet candidates:
@@ -439,12 +498,14 @@ struct lambdajetpolarizationionsderived {
                 if (kinematicJetCheck){ // This is redundant for jets with R=0.4, but for jets with R<0.4 the leading jet may be farther in eta.
                     RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
                     RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+                    POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
                 }
                 
                 // Extra selection criteria on both Lambda and jet candidates:
                 if (kinematicLambdaCheck && kinematicJetCheck){
                     RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
                     RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+                    POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
                 }
             } // end v0s loop
         } // end collisions
