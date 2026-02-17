@@ -176,7 +176,8 @@ struct ResonanceMergeDF {
     vecOfVecOfTuples.push_back(innerVector);
     innerVector.clear();
     df++;
-    if (isLoggingEnabled) LOGF(info, "collisions: df = %i", df);
+    if (isLoggingEnabled) 
+      LOGF(info, "collisions: df = %i", df);
     if (df < nCollisions)
       return;
     df = 0;
