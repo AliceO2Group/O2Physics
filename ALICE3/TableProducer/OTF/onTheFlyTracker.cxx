@@ -146,6 +146,7 @@ struct OnTheFlyTracker {
   struct : ConfigurableGroup {
     std::string prefix = "fastTrackerSettings"; // JSON group name
     Configurable<int> minSiliconHits{"minSiliconHits", 6, "minimum number of silicon hits to accept track"};
+    Configurable<int> minSiliconHitsForKinkReco{"minSiliconHitsForKinkReco", 4, "minimum number of silicon hits to accept track"};
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
@@ -168,6 +169,7 @@ struct OnTheFlyTracker {
     Configurable<bool> findXi{"findXi", false, "if decayXi on, find Xi and fill Tracks table also with Xi"};
     Configurable<bool> trackXi{"trackXi", false, "if findXi on, attempt to track Xi"};
     Configurable<bool> doXiQA{"doXiQA", false, "QA plots for when treating Xi"};
+    Configurable<int> doKinkReco{"doKinkReco", 0, "Flag for kink reco setting: 0 - disabled, 1 - complementary, 2 - only"};
   } cascadeDecaySettings;
 
   struct : ConfigurableGroup {
@@ -866,7 +868,10 @@ struct OnTheFlyTracker {
       std::vector<int> nHits(kCascProngs);        // total
       std::vector<int> nSiliconHits(kCascProngs); // silicon type
       std::vector<int> nTPCHits(kCascProngs);     // TPC type
+
+      bool tryKinkReco = false;
       if (cascadeDecaySettings.decayXi && mcParticle.pdgCode() == kXiMinus) {
+        bool reconstructedCascade = false;
         if (cascadeDecaySettings.doXiQA) {
           getHist(TH1, histPath + "hXiBuilding")->Fill(0.0f);
         }
@@ -914,23 +919,18 @@ struct OnTheFlyTracker {
           }
         }
 
-        if (cascadeDecaySettings.doXiQA && mcParticle.pdgCode() == kXiMinus) {
-          if (isReco[0] && isReco[1] && isReco[2]) {
-            getHist(TH1, histPath + "hXiBuilding")->Fill(2.0f);
-            getHist(TH2, histPath + "hRecoXi")->Fill(xiDecayRadius2D, mcParticle.pt());
-          }
-          if (isReco[0])
-            getHist(TH2, histPath + "hRecoPiFromXi")->Fill(xiDecayRadius2D, cascadeDecayProducts[0].Pt());
-          if (isReco[1])
-            getHist(TH2, histPath + "hRecoPiFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[1].Pt());
-          if (isReco[2])
-            getHist(TH2, histPath + "hRecoPrFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[2].Pt());
+        if (!isReco[1] || !isReco[2]) {
+          tryKinkReco = true; // Lambda outside acceptance, set flag for kink reco to be used if mode 1
+        }
+
+        if (isReco[0] && isReco[1] && isReco[2]) {
+          reconstructedCascade = true;
         }
 
         // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
         // combine particles into actual Xi candidate
         // cascade building starts here
-        if (cascadeDecaySettings.findXi && mcParticle.pdgCode() == kXiMinus && isReco[0] && isReco[1] && isReco[2]) {
+        if (cascadeDecaySettings.findXi && isReco[0] && isReco[1] && isReco[2] && cascadeDecaySettings.doKinkReco != 2) {
           if (cascadeDecaySettings.doXiQA) {
             getHist(TH1, histPath + "hXiBuilding")->Fill(3.0f);
           }
@@ -1111,24 +1111,111 @@ struct OnTheFlyTracker {
               thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this is the next index to be filled -> should be it
               tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), time, timeResolutionUs, false, false, 1, thisCascade.foundClusters});
 
-              if (cascadeDecaySettings.doXiQA) {
-                getHist(TH1, histPath + "hXiBuilding")->Fill(6.0f);
-                getHist(TH2, histPath + "h2dDeltaPtVsPt")->Fill(trackParCov.getPt(), cascadeTrack.getPt() - trackParCov.getPt());
-                getHist(TH2, histPath + "h2dDeltaEtaVsPt")->Fill(trackParCov.getPt(), cascadeTrack.getEta() - trackParCov.getEta());
-
-                getHist(TH1, histPath + "hMassLambda")->Fill(thisCascade.mLambda);
-                getHist(TH1, histPath + "hMassXi")->Fill(thisCascade.mXi);
-                getHist(TH2, histPath + "hFoundVsFindable")->Fill(thisCascade.findableClusters, thisCascade.foundClusters);
-              }
-
               // add this cascade to vector (will fill cursor later with collision ID)
               cascadesAlice3.push_back(thisCascade);
             }
           }
         } // end cascade building
+
+        if (isReco[0] && ((cascadeDecaySettings.doKinkReco == 1 && tryKinkReco) || cascadeDecaySettings.doKinkReco == 2)) { // mode 1 or 2
+          o2::track::TrackParCov prefectCascadeTrack, trackedCasc;
+          const o2::track::TrackParCov& trackedBach = xiDaughterTrackParCovsTracked[0];
+          o2::upgrade::convertMCParticleToO2Track(mcParticle, prefectCascadeTrack, pdgDB);
+
+          // back track is already smeared
+          int nCascHits = fastTracker[icfg]->FastTrack(prefectCascadeTrack, trackedCasc, dNdEta);
+          reconstructedCascade = (fastTrackerSettings.minSiliconHitsForKinkReco < nCascHits) ? false : true;
+
+          if (reconstructedCascade) {
+            std::array<float, 3> pCasc;
+            std::array<float, 3> pBach;
+            std::array<float, 3> pV0;
+            trackedCasc.getPxPyPzGlo(pCasc);
+            trackedBach.getPxPyPzGlo(pBach);
+            for (size_t i = 0; i < pCasc.size(); ++i) {
+              pV0[i] = pCasc[i] - pBach[i];
+            }
+
+            if (isReco[1] && !isReco[2]) {
+              thisCascade.negativeId = lastTrackIndex + tracksAlice3.size() - 1;
+              thisCascade.positiveId = -1;
+            } else if (!isReco[1] && isReco[2]) {
+              thisCascade.negativeId = -1;
+              thisCascade.positiveId = lastTrackIndex + tracksAlice3.size() - 1;
+            } else if (isReco[1] && isReco[2]) {
+              thisCascade.positiveId = lastTrackIndex + tracksAlice3.size() - 1;
+              thisCascade.negativeId = lastTrackIndex + tracksAlice3.size() - 2;
+            } else {
+              thisCascade.positiveId = -1;
+              thisCascade.negativeId = -1;
+            }
+
+            int nCand = 0;
+            bool kinkFitterOK = true;
+            try {
+              nCand = fitter.process(trackedCasc, trackedBach);
+            } catch (...) {
+              kinkFitterOK = false;
+            }
+
+            if (nCand == 0) {
+              kinkFitterOK = false;
+            }
+
+            if (kinkFitterOK) {
+              if (cascadeDecaySettings.doXiQA) {
+                getHist(TH1, histPath + "hXiBuilding")->Fill(6.0f);
+              }
+            }
+
+            std::array<float, 3> kinkVtx = {-999, -999, -999};
+            kinkVtx = fitter.getPCACandidatePos();
+
+            thisCascade.bachelorId = lastTrackIndex + tracksAlice3.size() - isReco.size();
+            thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this should be ok
+            thisCascade.dcaV0dau = -1.f;                                       // unknown
+            thisCascade.v0radius = -1.f;                                       // unknown
+            thisCascade.dcacascdau = std::sqrt(fitter.getChi2AtPCACandidate());
+            thisCascade.cascradius = std::hypot(kinkVtx[0], kinkVtx[1]);
+            thisCascade.cascradiusMC = xiDecayRadius2D;
+            thisCascade.mLambda = o2::constants::physics::MassLambda;
+            thisCascade.findableClusters = nCascHits;
+            thisCascade.foundClusters = nCascHits;
+            thisCascade.mXi = RecoDecay::m(std::array{std::array{pBach[0], pBach[1], pBach[2]},
+                                                      std::array{pV0[0], pV0[1], pV0[2]}},
+                                           std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
+
+            tracksAlice3.push_back(TrackAlice3{trackedCasc, mcParticle.globalIndex(), time, timeResolutionUs, false, false, 1, thisCascade.foundClusters});
+
+            // add this cascade to vector (will fill cursor later with collision ID)
+            cascadesAlice3.push_back(thisCascade);
+          }
+        } // end cascade kink building
+
         // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+        if (cascadeDecaySettings.doXiQA) {
+          if (reconstructedCascade) {
+            getHist(TH2, histPath + "hRecoXi")->Fill(xiDecayRadius2D, mcParticle.pt());
+            getHist(TH1, histPath + "hMassLambda")->Fill(thisCascade.mLambda);
+            getHist(TH1, histPath + "hMassXi")->Fill(thisCascade.mXi);
+            // getHist(TH2, histPath + "h2dDeltaPtVsPt")->Fill(trackParCov.getPt(), cascadeTrack.getPt() - trackParCov.getPt());
+            // getHist(TH2, histPath + "h2dDeltaEtaVsPt")->Fill(trackParCov.getPt(), cascadeTrack.getEta() - trackParCov.getEta());
+            getHist(TH2, histPath + "hFoundVsFindable")->Fill(thisCascade.findableClusters, thisCascade.foundClusters);
+          }
+          if (isReco[0]) {
+            getHist(TH2, histPath + "hRecoPiFromXi")->Fill(xiDecayRadius2D, cascadeDecayProducts[0].Pt());
+          }
+          if (isReco[1]) {
+            getHist(TH2, histPath + "hRecoPiFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[1].Pt());
+          }
+          if (isReco[2]) {
+            getHist(TH2, histPath + "hRecoPrFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[2].Pt());
+          }
+        }
+
         continue; // Cascade handling done, should not be considered anymore
       }
+
       // V0 handling
       std::vector<o2::track::TrackParCov> v0DaughterTrackParCovsPerfect(2);
       std::vector<o2::track::TrackParCov> v0DaughterTrackParCovsTracked(2);
