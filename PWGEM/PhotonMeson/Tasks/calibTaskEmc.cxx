@@ -22,7 +22,6 @@
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 
-#include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -111,17 +110,11 @@ struct CalibTaskEmc {
   static constexpr float MinEnergy = 0.7f;
 
   // configurable for flow
-  Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
-  Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5, FV0A: 6)"};
-  Configurable<int> qvecSubADetector{"qvecSubADetector", 3, "Sub A Detector for Q vector estimation for resolution (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5, FV0A: 6)"};
-  Configurable<int> qvecSubBDetector{"qvecSubBDetector", 4, "Sub B Detector for Q vector estimation for resolution (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5, FV0A: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3)"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int> cfgEMCalMapLevelBackground{"cfgEMCalMapLevelBackground", 4, "Different levels of correction for the background, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};
   Configurable<int> cfgEMCalMapLevelSameEvent{"cfgEMCalMapLevelSameEvent", 4, "Different levels of correction for the same event, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};
-  Configurable<float> cfgRotAngle{"cfgRotAngle", std::move(const_cast<float&>(o2::constants::math::PIHalf)), "Angle used for the rotation method"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
-  Configurable<float> cfgMaxQVector{"cfgMaxQVector", 20.f, "Maximum allowed absolute QVector value."};
   Configurable<float> cfgMaxAsymmetry{"cfgMaxAsymmetry", 0.1f, "Maximum allowed asymmetry for photon pairs used in calibration."};
 
   // configurable axis
@@ -220,31 +213,24 @@ struct CalibTaskEmc {
     std::string prefix = "mixingConfig";
     ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgCentBins{"cfgCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Mixing bins - centrality"};
-    ConfigurableAxis cfgEPBins{"cfgEPBins", {8, o2::constants::math::PIHalf, o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
-    ConfigurableAxis cfgOccupancyBins{"cfgOccupancyBins", {VARIABLE_WIDTH, 0, 100, 500, 1000, 2000}, "Mixing bins - occupancy"};
     Configurable<int> cfgMixingDepth{"cfgMixingDepth", 2, "Mixing depth"};
   } mixingConfig;
 
   struct : ConfigurableGroup {
     std::string prefix = "correctionConfig";
-    Configurable<std::string> cfgSpresoPath{"cfgSpresoPath", "Users/m/mhemmer/EM/Flow/Resolution", "Path to SP resolution file"};
-    Configurable<int> cfgApplySPresolution{"cfgApplySPresolution", 0, "Apply resolution correction"};
     Configurable<bool> cfgEnableNonLin{"cfgEnableNonLin", false, "flag to turn extra non linear energy calibration on/off"};
   } correctionConfig;
 
   SliceCache cache;
-  EventPlaneHelper epHelper;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   int runNow = 0;
   int runBefore = -1;
 
-  // Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && aod::skimmedcluster::e >= emccuts.cfgEMCminE;
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
-  // using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::MinClusters>>;
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
   using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
-  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>>;
-  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>>;
+  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
   using Colls = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
 
   static constexpr std::size_t NQVecEntries = 6;
@@ -258,7 +244,6 @@ struct CalibTaskEmc {
 
   o2::emcal::Geometry* emcalGeom;
   o2::emcal::BadChannelMap* mBadChannels;
-  TH1D* h1SPResolution = nullptr;
   // Constants for eta and phi ranges for the look up table
   static constexpr double EtaMin = -0.75, etaMax = 0.75;
   static constexpr int NBinsEta = 150; // 150 bins for eta
@@ -367,9 +352,6 @@ struct CalibTaskEmc {
 
   void init(InitContext&)
   {
-    if (harmonic != kElliptic && harmonic != kTriangluar) {
-      LOG(info) << "Harmonic was set to " << harmonic << " but can only be 2 or 3!";
-    }
 
     defineEMEventCut();
     defineEMCCut();
@@ -390,26 +372,21 @@ struct CalibTaskEmc {
 
     const AxisSpec thnAxisMixingVtx{mixingConfig.cfgVtxBins, "#it{z} (cm)"};
     const AxisSpec thnAxisMixingCent{mixingConfig.cfgCentBins, "Centrality (%)"};
-    const AxisSpec thnAxisMixingEP{mixingConfig.cfgEPBins, Form("cos(%d#varphi)", harmonic.value)};
 
     if (doprocessEMCal || doprocessEMCalPCMC) {
-      registry.add("hSparsePi0Flow", "<v_n> vs m_{inv} vs p_T vs cent for same event", HistType::kTProfile3D, {thnAxisInvMass, thAxisEnergyCalib, thnAxisCent});
       registry.add("hSparsePi0", "m_{inv} vs p_T vs cent for same event", HistType::kTH3D, {thnAxisInvMass, thAxisEnergyCalib, thnAxisCent});
     } else if (doprocessPCM) {
-      registry.add("hSparsePi0Flow", "<v_n> vs m_{inv} vs p_T vs cent for same event", HistType::kTProfile3D, {thnAxisInvMass, thnAxisPtCalib, thnAxisCent});
       registry.add("hSparsePi0", "m_{inv} vs p_T vs cent for same event", HistType::kTH3D, {thnAxisInvMass, thnAxisPtCalib, thnAxisCent});
     }
 
     if (doprocessEMCalMixed || doprocessEMCalPCMMixed) {
-      registry.add("hSparseBkgMixFlow", "<v_n> vs m_{inv} vs p_T vs cent for mixed event", HistType::kTProfile3D, {thnAxisInvMass, thAxisEnergyCalib, thnAxisCent});
       registry.add("hSparseBkgMix", "m_{inv} vs p_T vs cent for mixed event", HistType::kTH3D, {thnAxisInvMass, thAxisEnergyCalib, thnAxisCent});
     } else if (doprocessPCMMixed) {
-      registry.add("hSparseBkgMixFlow", "<v_n> vs m_{inv} vs p_T vs cent for mixed event", HistType::kTProfile3D, {thnAxisInvMass, thnAxisPtCalib, thnAxisCent});
       registry.add("hSparseBkgMix", "m_{inv} vs p_T vs cent for mixed event", HistType::kTH3D, {thnAxisInvMass, thnAxisPtCalib, thnAxisCent});
     }
 
     if (doprocessEMCalMixed || doprocessEMCalPCMMixed || doprocessPCMMixed) {
-      registry.add("h3DMixingCount", "THn Event Mixing QA", HistType::kTH3D, {thnAxisMixingVtx, thnAxisMixingCent, thnAxisMixingEP});
+      registry.add("hMixingCount", "THn Event Mixing QA", HistType::kTH2D, {thnAxisMixingVtx, thnAxisMixingCent});
     }
 
     auto hMesonCuts = registry.add<TH1>("hMesonCuts", "hMesonCuts;;Counts", kTH1D, {{6, 0.5, 6.5}}, false);
@@ -452,26 +429,15 @@ struct CalibTaskEmc {
     return angle * o2::constants::math::Rad2Deg;
   }
 
-  /// Compute the delta psi in the range [0, pi/harmonic]
-  /// \param psi1 is the first angle
-  /// \param psi2 is the second angle
-  float getDeltaPsiInRange(float psi1, float psi2)
-  {
-    float deltaPsi = psi1 - psi2;
-    return RecoDecay::constrainAngle(deltaPsi, 0.f, harmonic);
-  }
-
   /// Fill THnSparse
   /// \param mass is the invariant mass of the candidate
   /// \param pt is the transverse momentum of the candidate
   /// \param cent is the centrality of the collision
   /// \param sp is the scalar product
   template <const int histType>
-  void fillThn(const float mass, const float pt, const float cent, const float sp)
+  void fillThn(const float mass, const float pt, const float cent)
   {
-    static constexpr std::string_view FlowHistTypes[3] = {"hSparsePi0Flow", "hSparseBkgRotFlow", "hSparseBkgMixFlow"};
     static constexpr std::string_view HistTypes[3] = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
-    registry.fill(HIST(FlowHistTypes[histType]), mass, pt, cent, sp);
     registry.fill(HIST(HistTypes[histType]), mass, pt, cent);
   }
 
@@ -497,119 +463,6 @@ struct CalibTaskEmc {
         break;
     }
     return cent;
-  }
-
-  /// Get all used Q vector
-  /// \param collision is the collision with the Q vector information
-  template <o2::soa::is_iterator TCollision>
-  std::array<float, NQVecEntries> getAllQvec(TCollision const& collision)
-  {
-    // Retrieve the Q vectors using the helper function for each detector
-    auto [xQVecMain, yQVecMain] = getQvec(collision, qvecDetector);
-    auto [xQVecSubA, yQVecSubA] = getQvec(collision, qvecSubADetector);
-    auto [xQVecSubB, yQVecSubB] = getQvec(collision, qvecSubBDetector);
-
-    return {xQVecMain, yQVecMain, xQVecSubA, yQVecSubA, xQVecSubB, yQVecSubB};
-  }
-
-  /// Get the Q vector
-  /// \param collision is the collision with the Q vector information
-  template <o2::soa::is_iterator TCollision>
-  std::pair<float, float> getQvec(TCollision const& collision, int detector)
-  {
-    float xQVec = -999.f;
-    float yQVec = -999.f;
-
-    switch (detector) {
-      case QvecEstimator::FT0M:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0m();
-          yQVec = collision.q2yft0m();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0m();
-          yQVec = collision.q3yft0m();
-        }
-        break;
-      case QvecEstimator::FT0A:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0a();
-          yQVec = collision.q2yft0a();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0a();
-          yQVec = collision.q3yft0a();
-        }
-        break;
-      case QvecEstimator::FT0C:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0c();
-          yQVec = collision.q2yft0c();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0c();
-          yQVec = collision.q3yft0c();
-        }
-        break;
-      case QvecEstimator::TPCPos:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xbpos();
-          yQVec = collision.q2ybpos();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xbpos();
-          yQVec = collision.q3ybpos();
-        }
-        break;
-      case QvecEstimator::TPCNeg:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xbneg();
-          yQVec = collision.q2ybneg();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xbneg();
-          yQVec = collision.q3ybneg();
-        }
-        break;
-      case QvecEstimator::TPCTot:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xbtot();
-          yQVec = collision.q2ybtot();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xbtot();
-          yQVec = collision.q3ybtot();
-        }
-        break;
-      case QvecEstimator::FV0A:
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xfv0a();
-          yQVec = collision.q2yfv0a();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xfv0a();
-          yQVec = collision.q3yfv0a();
-        }
-        break;
-      default:
-        LOG(warning) << "Q vector estimator not valid. Falling back to FT0M";
-        if (harmonic == kElliptic) {
-          xQVec = collision.q2xft0m();
-          yQVec = collision.q2yft0m();
-        } else if (harmonic == kTriangluar) {
-          xQVec = collision.q3xft0m();
-          yQVec = collision.q3yft0m();
-        }
-        break;
-    }
-    return {xQVec, yQVec};
-  }
-
-  /// Check if the QVector values are within reasonable range
-  /// \param collision is the collision with the Q vector information
-  bool isQvecGood(std::array<float, NQVecEntries> const& QVecs)
-  {
-    bool isgood = true;
-    for (const auto& QVec : QVecs) {
-      if (std::fabs(QVec) > cfgMaxQVector) {
-        isgood = false;
-        break;
-      }
-    }
-    return isgood;
   }
 
   bool isTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
@@ -694,9 +547,6 @@ struct CalibTaskEmc {
         }
       }
     }
-    if (correctionConfig.cfgApplySPresolution.value) {
-      h1SPResolution = ccdb->getForTimeStamp<TH1D>(correctionConfig.cfgSpresoPath.value, collision.timestamp());
-    }
   }
 
   /// Compute the scalar product
@@ -705,21 +555,10 @@ struct CalibTaskEmc {
   template <const int histType, o2::soa::is_iterator TCollision>
   void runFlowAnalysis(TCollision const& collision, ROOT::Math::PtEtaPhiMVector const& meson, float photonCalibValue = 0.f)
   {
-    auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
     float cent = getCentrality(collision);
-
     float massCand = meson.M();
-    float phiCand = meson.Phi();
 
-    float cosNPhi = std::cos(harmonic * phiCand);
-    float sinNPhi = std::sin(harmonic * phiCand);
-    float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
-
-    if (correctionConfig.cfgApplySPresolution.value) {
-      scalprodCand = scalprodCand / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
-    }
-
-    fillThn<histType>(massCand, photonCalibValue, cent, scalprodCand);
+    fillThn<histType>(massCand, photonCalibValue, cent);
     return;
   }
 
@@ -743,10 +582,6 @@ struct CalibTaskEmc {
     float cent = getCentrality(collision);
     if (cent < eventcuts.cfgMinCent || cent > eventcuts.cfgMaxCent) {
       // event selection
-      return false;
-    }
-    if (!isQvecGood(getAllQvec(collision))) {
-      // selection based on QVector
       return false;
     }
     if (fillHisto) {
@@ -848,8 +683,8 @@ struct CalibTaskEmc {
     EMBitFlags flags(clusters.size());
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
 
-    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
+    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
 
     auto clustersTuple = std::make_tuple(clusters);
     SameKindPair<FilteredCollsWithQvecs, EMCalPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -867,16 +702,12 @@ struct CalibTaskEmc {
         // event selection
         continue;
       }
-      if (!isQvecGood(getAllQvec(c1)) || !isQvecGood(getAllQvec(c2))) {
-        // selection based on QVector
-        continue;
-      }
       runNow = c1.runNumber();
       if (runNow != runBefore) {
         initCCDB(c1);
         runBefore = runNow;
       }
-      registry.fill(HIST("h3DMixingCount"), c1.posZ(), getCentrality(c1), c1.ep2ft0m());
+      registry.fill(HIST("hMixingCount"), c1.posZ(), getCentrality(c1));
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(clusters1, clusters2))) {
         if (!(flags.test(g1.globalIndex())) || !(flags.test(g2.globalIndex()))) {
           continue;
@@ -1010,8 +841,8 @@ struct CalibTaskEmc {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
     }
-    using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
-    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
+    using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+    BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
 
     auto associatedTables = std::make_tuple(clusters, pcmPhotons);
 
@@ -1045,7 +876,7 @@ struct CalibTaskEmc {
         initCCDB(c1);
         runBefore = runNow;
       }
-      registry.fill(HIST("h3DMixingCount"), c1.posZ(), getCentrality(c1), c1.ep2ft0m());
+      registry.fill(HIST("hMixingCount"), c1.posZ(), getCentrality(c1));
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photonEMC, photonPCM))) {
         if (!(emcFlags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
           continue;
@@ -1153,8 +984,8 @@ struct CalibTaskEmc {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
     }
-    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
-    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
+    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+    BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins}, true};
 
     auto pcmPhotonTuple = std::make_tuple(pcmPhotons);
     SameKindPair<FilteredCollsWithQvecs, PCMPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, pcmPhotonTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
@@ -1180,7 +1011,7 @@ struct CalibTaskEmc {
         initCCDB(c1);
         runBefore = runNow;
       }
-      registry.fill(HIST("h3DMixingCount"), c1.posZ(), getCentrality(c1), c1.ep2ft0m());
+      registry.fill(HIST("hMixingCount"), c1.posZ(), getCentrality(c1));
       for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photon1, photon2))) {
         if (!(v0flags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
           continue;
