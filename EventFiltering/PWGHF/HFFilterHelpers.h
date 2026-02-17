@@ -415,6 +415,10 @@ class HfFilterHelper
     mForceTofProtonForFemto = forceTofProtons;
     mForceTofDeuteronForFemto = forceTofDeuterons;
   }
+  void setForceTofForLcResonances(bool forceTofProtons)
+  {
+    mForceTofProtonForLcResonances = forceTofProtons;
+  }
   void setPtBinsSingleTracks(const std::vector<double>& ptBins) { mPtBinsTracks = ptBins; }
   void setPtBinsBeautyHadrons(const std::vector<double>& ptBins) { mPtBinsBeautyHadrons = ptBins; }
   void setCutsSingleTrackBeauty(const o2::framework::LabeledArray<double>& cutsSingleTrack3P, const o2::framework::LabeledArray<double>& cutsSingleTrack4P, const o2::framework::LabeledArray<double>& cutsSingleToJPsi)
@@ -792,6 +796,7 @@ class HfFilterHelper
   float mNSigmaTofKaonFromXicResoToSigmaC{3.};                                    // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
   bool mForceTofProtonForFemto = true;                                            // flag to force TOF PID for protons
   bool mForceTofDeuteronForFemto = false;                                         // flag to force TOF PID for deuterons
+  bool mForceTofProtonForLcResonances = false;                                    // flag to force TOF PID for protons in Lc resonances
   std::array<float, 3> mPtMinXiBach{5., 5., 5.};                                  // minimum pT for XiBachelor candidates
   std::array<float, 3> mMassMinXiBach{2.35, 2.6, 2.35};                           // minimum invariant-mass for XiBachelor candidates
   std::array<float, 3> mMassMaxXiBach{3.0, 3.0, 2.7};                             // maximum invariant-mass for XiBachelor candidates
@@ -2040,7 +2045,8 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
 template <bool is4ThetaC, typename T>
 inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
 {
-
+  bool forceTOF = mForceTofProtonForLcResonances;
+  float NSigmaTOF = track.tofNSigmaPr();
   // pt selections
   float pt = track.pt();
   if constexpr (is4ThetaC) {
@@ -2051,6 +2057,11 @@ inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
     if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
       return false;
     }
+  }
+  if (track.hasTOF()) {
+    if (std::fabs(NSigmaTOF) > mNSigmaTofPrCutForCharmBaryons) return false;
+  } else if (forceTOF) {
+    return false;
   }
 
   return true;
