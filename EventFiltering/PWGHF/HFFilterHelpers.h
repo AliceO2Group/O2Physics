@@ -2059,7 +2059,8 @@ inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
     }
   }
   if (track.hasTOF()) {
-    if (std::fabs(NSigmaTOF) > mNSigmaTofPrCutForCharmBaryons) return false;
+    if (std::fabs(NSigmaTOF) > mNSigmaTofPrCutForCharmBaryons)
+      return false;
   } else if (forceTOF) {
     return false;
   }
