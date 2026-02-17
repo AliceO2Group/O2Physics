@@ -313,11 +313,14 @@ DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! informat
                             bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
 DECLARE_SOA_TABLE(StraEvTimes, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
                   stracollision::EventTime);
+DECLARE_SOA_TABLE_VERSIONED(StraEvTimes_001, "AOD", "STRAEVTIMES", 1, //! event time (FT0, TOF)
+                            stracollision::EventTime, stracollision::EventTimeErr);
 
 using StraRawCents = StraRawCents_004;
 using StraCents = StraCents_001;
 using StraEvSels = StraEvSels_005;
 using StraStamps = StraStamps_001;
+using StraEvTimes = StraEvTimes_001;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents_001::iterator;
 
