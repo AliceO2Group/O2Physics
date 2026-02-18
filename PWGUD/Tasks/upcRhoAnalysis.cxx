@@ -139,18 +139,28 @@ DECLARE_SOA_COLUMN(RecoPosX, recoPosX, float);
 DECLARE_SOA_COLUMN(RecoPosY, recoPosY, float);
 DECLARE_SOA_COLUMN(RecoPosZ, recoPosZ, float);
 // track info
-DECLARE_SOA_COLUMN(GenPt, genPt, float);
-DECLARE_SOA_COLUMN(GenEta, genEta, float);
-DECLARE_SOA_COLUMN(GenPhi, genPhi, float);
-DECLARE_SOA_COLUMN(RecoPt, recoPt, float);
-DECLARE_SOA_COLUMN(RecoEta, recoEta, float);
-DECLARE_SOA_COLUMN(RecoPhi, recoPhi, float);
+DECLARE_SOA_COLUMN(LeadingSign, leadingSign, int);
+DECLARE_SOA_COLUMN(LeadingGenPt, leadingGenPt, float);
+DECLARE_SOA_COLUMN(LeadingGenEta, leadingGenEta, float);
+DECLARE_SOA_COLUMN(LeadingGenPhi, leadingGenPhi, float);
+DECLARE_SOA_COLUMN(LeadingRecoPt, leadingRecoPt, float);
+DECLARE_SOA_COLUMN(LeadingRecoEta, leadingRecoEta, float);
+DECLARE_SOA_COLUMN(LeadingRecoPhi, leadingRecoPhi, float);
+DECLARE_SOA_COLUMN(SubleadingSign, subleadingSign, int);
+DECLARE_SOA_COLUMN(SubleadingGenPt, subleadingGenPt, float);
+DECLARE_SOA_COLUMN(SubleadingGenEta, subleadingGenEta, float);
+DECLARE_SOA_COLUMN(SubleadingGenPhi, subleadingGenPhi, float);
+DECLARE_SOA_COLUMN(SubleadingRecoPt, subleadingRecoPt, float);
+DECLARE_SOA_COLUMN(SubleadingRecoEta, subleadingRecoEta, float);
+DECLARE_SOA_COLUMN(SubleadingRecoPhi, subleadingRecoPhi, float);
 } // namespace resolution_tree
 DECLARE_SOA_TABLE(ResolutionTree, "AOD", "RESOLUTIONTREE",
                   resolution_tree::GenPosX, resolution_tree::GenPosY, resolution_tree::GenPosZ,
                   resolution_tree::RecoPosX, resolution_tree::RecoPosY, resolution_tree::RecoPosZ,
-                  resolution_tree::GenPt, resolution_tree::GenEta, resolution_tree::GenPhi,
-                  resolution_tree::RecoPt, resolution_tree::RecoEta, resolution_tree::RecoPhi);
+                  resolution_tree::LeadingSign, resolution_tree::LeadingGenPt, resolution_tree::LeadingGenEta, resolution_tree::LeadingGenPhi, 
+                  resolution_tree::LeadingRecoPt, resolution_tree::LeadingRecoEta, resolution_tree::LeadingRecoPhi,
+                  resolution_tree::SubleadingSign, resolution_tree::SubleadingGenPt, resolution_tree::SubleadingGenEta, resolution_tree::SubleadingGenPhi, 
+                  resolution_tree::SubleadingRecoPt, resolution_tree::SubleadingRecoEta, resolution_tree::SubleadingRecoPhi);
 } // namespace o2::aod
 
 struct UpcRhoAnalysis {
@@ -1133,11 +1143,11 @@ struct UpcRhoAnalysis {
         continue;
       rResolution.fill(HIST("MC/resolution/tracks/hMatch"), 1);
       auto mcParticle = track.udMcParticle();
+      if (std::abs(mcParticle.pdgCode()) != kPiPlus && !mcParticle.isPhysicalPrimary())
+      continue;
       rResolution.fill(HIST("MC/resolution/tracks/hPt"), pt(track.px(), track.py()) - pt(mcParticle.px(), mcParticle.py()));
       rResolution.fill(HIST("MC/resolution/tracks/hEta"), eta(track.px(), track.py(), track.pz()) - eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
       rResolution.fill(HIST("MC/resolution/tracks/hPhi"), phi(track.px(), track.py()) - phi(mcParticle.px(), mcParticle.py()));
-      if (std::abs(mcParticle.pdgCode()) != kPiPlus && !mcParticle.isPhysicalPrimary())
-        continue;
       truePionLVs.push_back(ROOT::Math::PxPyPzMVector(mcParticle.px(), mcParticle.py(), mcParticle.pz(), o2::constants::physics::MassPionCharged));
       trueTracks.push_back(mcParticle);
       recoPionLVs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged));
@@ -1160,6 +1170,18 @@ struct UpcRhoAnalysis {
     rResolution.fill(HIST("MC/resolution/system/2D/hYVsY"), trueSystem.Rapidity(), recoSystem.Rapidity());
     rResolution.fill(HIST("MC/resolution/system/1D/hDeltaPhi"), recoDeltaPhi - trueDeltaPhi);
     rResolution.fill(HIST("MC/resolution/system/2D/hDeltaPhiVsDeltaPhi"), trueDeltaPhi, recoDeltaPhi);
+
+    auto leadingTruePion = momentum(trueTracks[0].px(), trueTracks[0].py(), trueTracks[0].pz()) > momentum(trueTracks[1].px(), trueTracks[1].py(), trueTracks[1].pz()) ? trueTracks[0] : trueTracks[1];
+    auto subleadingTruePion = (leadingTruePion == trueTracks[0]) ? trueTracks[1] : trueTracks[0];
+    auto leadingRecoPion = momentum(recoTracks[0].px(), recoTracks[0].py(), recoTracks[0].pz()) > momentum(recoTracks[1].px(), recoTracks[1].py(), recoTracks[1].pz()) ? recoTracks[0] : recoTracks[1];
+    auto subleadingRecoPion = (leadingRecoPion == recoTracks[0]) ? recoTracks[1] : recoTracks[0];
+    
+    resolutionTree(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+                   collision.posX(), collision.posY(), collision.posZ(),
+                   leadingTruePion.pdgCode() /  std::abs(leadingTruePion.pdgCode()), pt(leadingTruePion.px(), leadingTruePion.py()), eta(leadingTruePion.px(), leadingTruePion.py(), leadingTruePion.pz()), phi(leadingTruePion.px(), leadingTruePion.py()),
+                   pt(leadingRecoPion.px(), leadingRecoPion.py()), eta(leadingRecoPion.px(), leadingRecoPion.py(), leadingRecoPion.pz()), phi(leadingRecoPion.px(), leadingRecoPion.py()),
+                   subleadingTruePion.pdgCode() /  std::abs(subleadingTruePion.pdgCode()), pt(subleadingTruePion.px(), subleadingTruePion.py()), eta(subleadingTruePion.px(), subleadingTruePion.py(), subleadingTruePion.pz()), phi(subleadingTruePion.px(), subleadingTruePion.py()),
+                   pt(subleadingRecoPion.px(), subleadingRecoPion.py()), eta(subleadingRecoPion.px(), subleadingRecoPion.py(), subleadingRecoPion.pz()), phi(subleadingRecoPion.px(), subleadingRecoPion.py()));
   }
   PROCESS_SWITCH(UpcRhoAnalysis, processResolution, "check resolution of kinematic variables", false);
 
