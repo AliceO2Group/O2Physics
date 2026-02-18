@@ -329,7 +329,7 @@ struct MftReassociationValidation {
   template <DataType DataType>
   void addMftHistograms()
   {
-    registry.add(Form("%s/hAmbiguityOfMftTracks", WhatDataType[DataType].data()), "hAmbiguityOfMftTracks", {HistType::kTH1D, {{MftTrackAmbiguityStep::NMftAmbiguitySteps, -0.5, +MftTrackAmbiguityStep::NMftAmbiguitySteps - 0.5}}});
+    registry.add(Form("%shAmbiguityOfMftTracks", WhatDataType[DataType].data()), "hAmbiguityOfMftTracks", {HistType::kTH1D, {{MftTrackAmbiguityStep::NMftAmbiguitySteps, -0.5, +MftTrackAmbiguityStep::NMftAmbiguitySteps - 0.5}}});
     std::string labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::NMftAmbiguitySteps];
     labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::AllMftTracks] = "all MFT tracks";
     labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::AfterTrackSelection] = "MFT tracks after selection";
@@ -341,7 +341,7 @@ struct MftReassociationValidation {
       registry.get<TH1>(HIST(WhatDataType[DataType]) + HIST("hAmbiguityOfMftTracks"))->GetXaxis()->SetBinLabel(iBin + 1, labelsAmbiguityOfMftTracks[iBin].data());
     }
 
-    registry.add(Form("%s/hMftTracksSelection", WhatDataType[DataType].data()), "hMftTracksSelection", {HistType::kTH1D, {{MftTrackSelectionStep::NMftTrackSelectionSteps, -0.5, +MftTrackSelectionStep::NMftTrackSelectionSteps - 0.5}}});
+    registry.add(Form("%shMftTracksSelection", WhatDataType[DataType].data()), "hMftTracksSelection", {HistType::kTH1D, {{MftTrackSelectionStep::NMftTrackSelectionSteps, -0.5, +MftTrackSelectionStep::NMftTrackSelectionSteps - 0.5}}});
     std::string labelsMftTracksSelection[MftTrackSelectionStep::NMftTrackSelectionSteps];
     labelsMftTracksSelection[MftTrackSelectionStep::NoSelection] = "all MFT tracks";
     labelsMftTracksSelection[MftTrackSelectionStep::Eta] = "MFT tracks after eta selection";
@@ -353,7 +353,7 @@ struct MftReassociationValidation {
       registry.get<TH1>(HIST(WhatDataType[DataType]) + HIST("hMftTracksSelection"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftTracksSelection[iBin].data());
     }
 
-    registry.add(Form("%s/hReassociation2dMftTracks", WhatDataType[DataType].data()), "hReassociation2dMftTracks", {HistType::kTH1D, {{Reassociation2dMftTracks::NReassociation2dMftTracksSteps, -0.5, +Reassociation2dMftTracks::NReassociation2dMftTracksSteps - 0.5}}});
+    registry.add(Form("%shReassociation2dMftTracks", WhatDataType[DataType].data()), "hReassociation2dMftTracks", {HistType::kTH1D, {{Reassociation2dMftTracks::NReassociation2dMftTracksSteps, -0.5, +Reassociation2dMftTracks::NReassociation2dMftTracksSteps - 0.5}}});
     std::string labelsReassociation2dMftTracks[Reassociation2dMftTracks::NReassociation2dMftTracksSteps];
     labelsReassociation2dMftTracks[Reassociation2dMftTracks::AllAmbiguousTracksAfterTrackSelectionsFor2d] = "Ambiguous MFT tracks after track selection";
     labelsReassociation2dMftTracks[Reassociation2dMftTracks::NotReassociated2dMftTracks] = "Not reassociated MFT tracks by DCAxy method";
@@ -364,7 +364,7 @@ struct MftReassociationValidation {
       registry.get<TH1>(HIST(WhatDataType[DataType]) + HIST("hReassociation2dMftTracks"))->GetXaxis()->SetBinLabel(iBin + 1, labelsReassociation2dMftTracks[iBin].data());
     }
 
-    registry.add(Form("%s/hReassociation3dMftTracks", WhatDataType[DataType].data()), "hReassociation3dMftTracks", {HistType::kTH1D, {{Reassociation3dMftTracks::NReassociation3dMftTracksSteps, -0.5, +Reassociation3dMftTracks::NReassociation3dMftTracksSteps - 0.5}}});
+    registry.add(Form("%shReassociation3dMftTracks", WhatDataType[DataType].data()), "hReassociation3dMftTracks", {HistType::kTH1D, {{Reassociation3dMftTracks::NReassociation3dMftTracksSteps, -0.5, +Reassociation3dMftTracks::NReassociation3dMftTracksSteps - 0.5}}});
     std::string labelsReassociation3dMftTracks[Reassociation3dMftTracks::NReassociation3dMftTracksSteps];
     labelsReassociation3dMftTracks[Reassociation3dMftTracks::AllAmbiguousTracksAfterTrackSelectionsFor3d] = "Ambiguous MFT tracks after track selection";
     labelsReassociation3dMftTracks[Reassociation3dMftTracks::NotReassociated3dMftTracks] = "Not reassociated MFT tracks by DCAxyz method";
