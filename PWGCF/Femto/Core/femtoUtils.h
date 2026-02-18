@@ -133,6 +133,63 @@ float qn(T const& col)
   return qn;
 }
 
+/// Recalculate pT for Kinks (Sigmas) using kinematic constraints
+inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
+{
+  // Particle masses in GeV/c^2
+  const float massPion = 0.13957f;
+  const float massNeutron = 0.93957f;
+  const float massSigmaMinus = 1.19745f;
+
+  // Calculate mother momentum and direction versor
+  float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
+  if (pMother < 1e-6f)
+    return -999.f;
+
+  float versorX = pxMother / pMother;
+  float versorY = pyMother / pMother;
+  float versorZ = pzMother / pMother;
+
+  // Calculate daughter energy
+  float ePi = std::sqrt(massPion * massPion + pxDaughter * pxDaughter + pyDaughter * pyDaughter + pzDaughter * pzDaughter);
+
+  // Scalar product of versor with daughter momentum
+  float a = versorX * pxDaughter + versorY * pyDaughter + versorZ * pzDaughter;
+
+  // Solve quadratic equation for momentum magnitude
+  float K = massSigmaMinus * massSigmaMinus + massPion * massPion - massNeutron * massNeutron;
+  float A = 4.f * (ePi * ePi - a * a);
+  float B = -4.f * a * K;
+  float C = 4.f * ePi * ePi * massSigmaMinus * massSigmaMinus - K * K;
+
+  if (std::abs(A) < 1e-6f)
+    return -999.f;
+
+  float D = B * B - 4.f * A * C;
+  if (D < 0.f)
+    return -999.f;
+
+  float sqrtD = std::sqrt(D);
+  float P1 = (-B + sqrtD) / (2.f * A);
+  float P2 = (-B - sqrtD) / (2.f * A);
+
+  // Pick physical solution: prefer P2 if positive, otherwise P1
+  if (P2 < 0.f && P1 < 0.f)
+    return -999.f;
+  if (P2 < 0.f)
+    return P1;
+
+  // Choose solution closest to original momentum
+  float p1Diff = std::abs(P1 - pMother);
+  float p2Diff = std::abs(P2 - pMother);
+  float P = (p1Diff < p2Diff) ? P1 : P2;
+
+  // Calculate pT from recalibrated momentum
+  float pxS = versorX * P;
+  float pyS = versorY * P;
+  return std::sqrt(pxS * pxS + pyS * pyS);
+}
+
 inline bool enableTable(const char* tableName, int userSetting, o2::framework::InitContext& initContext)
 {
   if (userSetting == 1) {
