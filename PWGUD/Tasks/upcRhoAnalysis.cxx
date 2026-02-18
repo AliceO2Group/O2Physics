@@ -360,6 +360,9 @@ struct UpcRhoAnalysis {
     if (context.mOptions.get<bool>("processResolution")) {
       // collision matching
       rResolution.add("MC/resolution/collisions/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
+      rResolution.add("MC/resolution/collisions/hPosX", ";vertex #it{x}_{reco} - vertex #it{x}_{true} (cm);counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/collisions/hPosY", ";vertex #it{y}_{reco} - vertex #it{y}_{true} (cm);counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/collisions/hPosZ", ";vertex #it{z}_{reco} - vertex #it{z}_{true} (cm);counts", kTH1D, {{200, -1.0, 1.0}});
       // track matching and resolutions
       rResolution.add("MC/resolution/tracks/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
       rResolution.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
@@ -1090,6 +1093,10 @@ struct UpcRhoAnalysis {
     if (!collision.has_udMcCollision())
       return;
     rResolution.fill(HIST("MC/resolution/collisions/hMatch"), 1);
+    auto mcCollision = collision.udMcCollision();
+    rResolution.fill(HIST("MC/resolution/collisions/hPosX"), collision.posX() - mcCollision.posX());
+    rResolution.fill(HIST("MC/resolution/collisions/hPosY"), collision.posY() - mcCollision.posY());
+    rResolution.fill(HIST("MC/resolution/collisions/hPosZ"), collision.posZ() - mcCollision.posZ());
 
     std::vector<decltype(tracks.begin().udMcParticle())> trueTracks;
     std::vector<decltype(tracks.begin())> recoTracks;
