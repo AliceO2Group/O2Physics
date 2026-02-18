@@ -239,7 +239,7 @@ class FlowJHistManager
 
     if (mode == 1) { // 'Weight' distributions are defined only for After/.
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histPtCorrected"),
-                            track.pt(), 1. / weightNUE);
+                            track.pt(), weightNUE); //extractEfficiency() from processMCEfficiency of correlations.cxx gives 1/eff
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histPhiCorrected"),
                             track.phi(), 1. / weightNUA);
 
