@@ -1655,6 +1655,9 @@ struct StrangenessInJets {
           if (!motherPos.isPhysicalPrimary())
             continue;
 
+          if (std::abs(motherPos.eta()) > 0.8)
+            continue;
+
           // K0s
           if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short) {
             registryMC.fill(HIST("K0s_reconstructed_fullevent"), multiplicity, v0.pt());
@@ -1776,7 +1779,7 @@ struct StrangenessInJets {
 
       for (auto& particle : mcParticlesPerColl) {
 
-        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) < 0.8) {
+        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= 0.8) {
           switch (particle.pdgCode()) {
             case kK0Short:
               if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
