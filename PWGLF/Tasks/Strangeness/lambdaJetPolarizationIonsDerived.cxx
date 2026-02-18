@@ -155,9 +155,9 @@ constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
     /* =============================== */ \
     /* 1D TProfiles vs v0phi */ \
     /* =============================== */ \
-    X(FOLDER "/pPxStarPhi",             v0phi,           PolStarX) \
-    X(FOLDER "/pPyStarPhi",             v0phi,           PolStarY) \
-    X(FOLDER "/pPzStarPhi",             v0phi,           PolStarZ) \
+    X(FOLDER "/pPxStarPhi",             v0phiToFillHists,           PolStarX) \
+    X(FOLDER "/pPyStarPhi",             v0phiToFillHists,           PolStarY) \
+    X(FOLDER "/pPzStarPhi",             v0phiToFillHists,           PolStarZ) \
     /* =============================== */ \
     /* 1D TProfiles vs DeltaPhi_jet */ \
     /* =============================== */ \
@@ -342,18 +342,18 @@ struct lambdajetpolarizationionsderived {
             // ===============================
             // 1D TProfiles
             // ===============================
-            histos.add((folder + "/pPxStarPhi").c_str(), "pPxStarPhi;#varphi_#Lambda;<P_#Lambda>_x", kTProfile, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/pPyStarPhi").c_str(), "pPyStarPhi;#varphi_#Lambda;<P_#Lambda>_y", kTProfile, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/pPzStarPhi").c_str(), "pPzStarPhi;#varphi_#Lambda;<P_#Lambda>_z", kTProfile, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/pPxStarDeltaPhi").c_str(), "pPxStarDeltaPhi;#Delta#varphi_{jet};<P_#Lambda>_x", kTProfile, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/pPyStarDeltaPhi").c_str(), "pPyStarDeltaPhi;#Delta#varphi_{jet};<P_#Lambda>_y", kTProfile, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/pPzStarDeltaPhi").c_str(), "pPzStarDeltaPhi;#Delta#varphi_{jet};<P_#Lambda>_z", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPxStarPhi").c_str(), "pPxStarPhi;#varphi_{#Lambda};<P_{#Lambda}>_{x}", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPyStarPhi").c_str(), "pPyStarPhi;#varphi_{#Lambda};<P_{#Lambda}>_{y}", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPzStarPhi").c_str(), "pPzStarPhi;#varphi_{#Lambda};<P_{#Lambda}>_{z}", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPxStarDeltaPhi").c_str(), "pPxStarDeltaPhi;#Delta#varphi_{jet};<P_{#Lambda}>_{x}", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPyStarDeltaPhi").c_str(), "pPyStarDeltaPhi;#Delta#varphi_{jet};<P_{#Lambda}>_{y}", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pPzStarDeltaPhi").c_str(), "pPzStarDeltaPhi;#Delta#varphi_{jet};<P_{#Lambda}>_{z}", kTProfile, {axisConfigurations.axisDeltaPhi});
             // ===============================
             // 2D TProfiles (Lambda correlations)
             // ===============================
-            histos.add((folder + "/p2dPxStarDeltaPhiVsLambdaPt").c_str(), "p2dPxStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_#Lambda>_x", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
-            histos.add((folder + "/p2dPyStarDeltaPhiVsLambdaPt").c_str(), "p2dPyStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_#Lambda>_y", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
-            histos.add((folder + "/p2dPzStarDeltaPhiVsLambdaPt").c_str(), "p2dPzStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_#Lambda>_z", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/p2dPxStarDeltaPhiVsLambdaPt").c_str(), "p2dPxStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_{#Lambda}>_{x}", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/p2dPyStarDeltaPhiVsLambdaPt").c_str(), "p2dPyStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_{#Lambda}>_{y}", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/p2dPzStarDeltaPhiVsLambdaPt").c_str(), "p2dPzStarDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<P_{#Lambda}>_{z}", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
         };
         // Execute local lambda to register histogram families:
         addRingObservableFamily("Ring");
@@ -479,6 +479,8 @@ struct lambdajetpolarizationionsderived {
                     PolStarY = polPrefactorAntiLambda * protonLikeStarUnit3Vec.Y();
                     PolStarZ = polPrefactorAntiLambda * protonLikeStarUnit3Vec.Z();
                 }
+
+                double v0phiToFillHists = wrapToPiFast(v0phi); // A short wrap to reuse some predefined axes
 
                 // Fill ring histograms: (1D, lambda 2D correlations and jet 2D correlations):
                 RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "Ring") // Notice the usage of macros! If you change the variable names, this WILL break the code!
