@@ -555,6 +555,10 @@ class V0BuilderDerivedToDerived
   {
     mLimitLambda = config.limitLambda.value;
     mLimitK0short = config.limitK0short.value;
+
+    if (mLimitLambda == 0 && mLimitK0short == 0) {
+      LOG(fatal) << "Both lambda limit and k0short limit are 0. Breaking...";
+    }
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
