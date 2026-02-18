@@ -128,11 +128,35 @@ DECLARE_SOA_TABLE(McTree, "AOD", "MCTREE",
                   mc_tree::LeadingTrackPt, mc_tree::SubleadingTrackPt,
                   mc_tree::LeadingTrackEta, mc_tree::SubleadingTrackEta,
                   mc_tree::LeadingTrackPhi, mc_tree::SubleadingTrackPhi);
+
+namespace resolution_tree
+{
+// vertex info
+DECLARE_SOA_COLUMN(GenPosX, genPosX, float);
+DECLARE_SOA_COLUMN(GenPosY, genPosY, float);
+DECLARE_SOA_COLUMN(GenPosZ, genPosZ, float);
+DECLARE_SOA_COLUMN(RecoPosX, recoPosX, float);
+DECLARE_SOA_COLUMN(RecoPosY, recoPosY, float);
+DECLARE_SOA_COLUMN(RecoPosZ, recoPosZ, float);
+// track info
+DECLARE_SOA_COLUMN(GenPt, genPt, float);
+DECLARE_SOA_COLUMN(GenEta, genEta, float);
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);
+DECLARE_SOA_COLUMN(RecoPt, recoPt, float);
+DECLARE_SOA_COLUMN(RecoEta, recoEta, float);
+DECLARE_SOA_COLUMN(RecoPhi, recoPhi, float);
+} // namespace resolution_tree
+DECLARE_SOA_TABLE(ResolutionTree, "AOD", "RESOLUTIONTREE",
+                  resolution_tree::GenPosX, resolution_tree::GenPosY, resolution_tree::GenPosZ,
+                  resolution_tree::RecoPosX, resolution_tree::RecoPosY, resolution_tree::RecoPosZ,
+                  resolution_tree::GenPt, resolution_tree::GenEta, resolution_tree::GenPhi,
+                  resolution_tree::RecoPt, resolution_tree::RecoEta, resolution_tree::RecoPhi);
 } // namespace o2::aod
 
 struct UpcRhoAnalysis {
   Produces<o2::aod::RecoTree> recoTree;
   Produces<o2::aod::McTree> mcTree;
+  Produces<o2::aod::ResolutionTree> resolutionTree;
 
   SGSelector sgSelector;
 
