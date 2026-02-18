@@ -249,6 +249,11 @@ struct jEPFlowAnalysis {
         return;
     }
 
+    if (cfgEffCor) {
+      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+      effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+    }
+
     float cent = coll.cent();
     epFlowHistograms.fill(HIST("hCentrality"), cent);
     epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
