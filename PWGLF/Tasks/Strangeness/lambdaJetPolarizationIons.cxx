@@ -271,7 +271,6 @@ struct lambdajetpolarizationions {
         Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 3, "tpcPidNsigmaCut"}; // Default is 5. Reduced to agree with strangenessInJetsIons
         Configurable<float> tofPidNsigmaCutLaPr{"tofPidNsigmaCutLaPr", 1e+6, "tofPidNsigmaCutLaPr"};
         Configurable<float> tofPidNsigmaCutLaPi{"tofPidNsigmaCutLaPi", 1e+6, "tofPidNsigmaCutLaPi"};
-        Configurable<float> tofPidNsigmaCutK0Pi{"tofPidNsigmaCutK0Pi", 1e+6, "tofPidNsigmaCutK0Pi"};
 
         // PID (TOF)
         Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
