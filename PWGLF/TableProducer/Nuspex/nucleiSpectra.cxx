@@ -41,7 +41,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -49,6 +48,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include <Math/Vector4D.h>
@@ -442,8 +442,8 @@ struct nucleiSpectra {
     if (cfgEventSelections->get(nuclei::evSel::kINELgt0) && !collision.selection_bit(aod::kINELgtZERO)) {
       return false;
     }
-      spectra.fill(HIST("hEventSelections"), nuclei::evSel::kINELgt0 + 1);
-    
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kINELgt0 + 1);
+
     return true;
   }
 
