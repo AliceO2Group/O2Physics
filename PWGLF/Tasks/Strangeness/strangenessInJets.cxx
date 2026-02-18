@@ -391,6 +391,10 @@ struct StrangenessInJets {
       }
     }
 
+    if (doprocessMCRecK0inJet) {
+      registryMC.add("K0s_reconstructed_jet_withK0", "K0s_reconstructed_jet_withK0", HistType::kTH2F, {multAxis, ptAxis});
+    }
+
     // Histograms for MC K0 short in jets
     if (doprocessMCK0shortInJets) {
       registryMC.add("ptSpectrumK0DaughtersAll", "ptSpectrumK0DaughtersAll", HistType::kTH1D, {{1000, 0, 100, "p_{T}"}});
@@ -2437,6 +2441,134 @@ struct StrangenessInJets {
     } // end loop on collisions
   }
   PROCESS_SWITCH(StrangenessInJets, processMCK0shortInJets, "process reconstructed events", false);
+
+  // Reconstructed jets including K0s
+  void processMCRecK0inJet(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                           DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
+  {
+    // Define per-event containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<TVector3> selectedJet;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over reconstructed collisions
+    for (const auto& collision : collisions) {
+
+      // Select reconstructed collisions with corresponding MC generated collision
+      if (!collision.has_mcCollision())
+        continue;
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      selectedJet.clear();
+
+      // Apply event selection
+      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Event multiplicity
+      const float multiplicity = mcCollision.centFT0M();
+
+      // Number of V0 and tracks per collision
+      const auto& v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      const auto& tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+
+      // Loop over reconstructed tracks
+      for (auto const& trk : tracksPerColl) {
+        if (!passedTrackSelectionForJetReconstruction(trk))
+          continue;
+
+        // 4-momentum representation of a particle
+        fastjet::PseudoJet fourMomentum(trk.px(), trk.py(), trk.pz(), trk.energy(o2::constants::physics::MassPionCharged));
+        fjParticles.emplace_back(fourMomentum);
+      }
+
+      // Add K0s daughters to particle container
+      for (const auto& v0 : v0sPerColl) {
+        const auto& pos = v0.posTrack_as<DaughterTracksMC>();
+        const auto& neg = v0.negTrack_as<DaughterTracksMC>();
+        if (passedK0ShortSelection(v0, pos, neg)) {
+          double energy = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz() + o2::constants::physics::MassK0Short * o2::constants::physics::MassK0Short);
+          fastjet::PseudoJet fourMomentum(v0.px(), v0.py(), v0.pz(), energy);
+          fjParticles.emplace_back(fourMomentum);
+        }
+      }
+
+      // Reject empty events
+      if (fjParticles.size() < 1)
+        continue;
+
+      // Cluster particles using the anti-kt algorithm
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+      if (jets.empty())
+        continue;
+      auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
+
+      // Jet selection
+      bool isAtLeastOneJetSelected = false;
+
+      // Loop over clustered jets
+      for (const auto& jet : jets) {
+
+        // jet must be fully contained in the acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
+          continue;
+
+        // jet pt must be larger than threshold
+        auto jetForSub = jet;
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
+        if (jetMinusBkg.pt() < minJetPt)
+          continue;
+        isAtLeastOneJetSelected = true;
+
+        // Store selected jet axis
+        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+        selectedJet.emplace_back(jetAxis);
+      }
+      if (!isAtLeastOneJetSelected)
+        continue;
+
+      // Loop over selected jets
+      for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+        for (const auto& v0 : v0sPerColl) {
+          const auto& pos = v0.posTrack_as<DaughterTracksMC>();
+          const auto& neg = v0.negTrack_as<DaughterTracksMC>();
+
+          // Get MC particles
+          if (!pos.has_mcParticle() || !neg.has_mcParticle())
+            continue;
+          const auto& posParticle = pos.mcParticle_as<aod::McParticles>();
+          const auto& negParticle = neg.mcParticle_as<aod::McParticles>();
+          if (!posParticle.has_mothers() || !negParticle.has_mothers())
+            continue;
+
+          // Select particles originating from the same parent
+          const auto& motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+          const auto& motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+          if (motherPos != motherNeg)
+            continue;
+          const bool isPhysPrim = motherPos.isPhysicalPrimary();
+
+          // Distance of K0s from jet axis
+          TVector3 v0dir(v0.px(), v0.py(), v0.pz());
+          const double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
+          const double deltaPhiJet = ParticlePositionWithRespectToJet::getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
+          const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+
+          // Fill histogram
+          if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short && isPhysPrim && deltaRJet < rJet) {
+            registryMC.fill(HIST("K0s_reconstructed_jet_withK0"), multiplicity, v0.pt());
+          }
+        } // end loop on V0s
+      } // end loop on jets
+    }
+  }
+  PROCESS_SWITCH(StrangenessInJets, processMCRecK0inJet, "process reconstructed K0s in jets", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
