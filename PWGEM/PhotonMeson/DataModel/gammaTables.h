@@ -682,6 +682,20 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Cell, cell, int, Calos, "");                 //! r
 DECLARE_SOA_TABLE(SkimEMCCells, "AOD", "SKIMEMCCELLS",                        //! table of link between skimmed EMCal clusters and their cells
                   o2::soa::Index<>, caloextra::ClusterId, caloextra::CellId); //!
 using SkimEMCCell = SkimEMCCells::iterator;
+
+namespace nonlin
+{
+DECLARE_SOA_COLUMN(CorrE, corrE, float);   //! non lin corrected energy
+DECLARE_SOA_COLUMN(CorrP, corrP, float);   //! non lin corrected momentum
+DECLARE_SOA_COLUMN(CorrPt, corrPt, float); //! non lin corrected transverse momentum
+} // namespace nonlin
+
+DECLARE_SOA_TABLE(NonLinV0s, "AOD", "NONLINV0", //! table of non lin corrected values for V0 Photons (so far only pt)
+                  nonlin::CorrPt);              //!
+
+DECLARE_SOA_TABLE(NonLinEmcClusters, "AOD", "NONLINEMCCLUSTER", //! table of non lin corrected values for EMCal Photons (so far only E and pT)
+                  nonlin::CorrE, nonlin::CorrPt);               //!
+
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
