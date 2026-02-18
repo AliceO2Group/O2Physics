@@ -79,7 +79,7 @@ struct FlowTask {
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
   Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {TrackCutArray[0], 6, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAz", "DCAxy Nsigma"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
-  enum cfgTrackCut {
+  enum TrackCut {
     // enum for labelledArray track selection
     kChi2prTPCcls = 0, // max chi2 per TPC clusters
     kTPCclu,           // minimum TPC found clusters
@@ -88,7 +88,7 @@ struct FlowTask {
     kDCAz,             // max DCA to vertex z
     kDCAxyNSigma       // 0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track
   };
-  enum cfgTrackCutGroup {
+  enum TrackCutGroup {
     kTrCutNch = 0,
     kTrCutObs = 1
   };
@@ -129,8 +129,16 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgEfficiencyForNch, std::string, "", "CCDB path to efficiency object, only for Nch correction")
     O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
     O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
+    O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable")
+    Configurable<std::vector<float>> cfgConsistentEventVector{"cfgConsistentEventVector", std::vector<float>{-0.8, -0.5, -0.4, 0.4, 0.5, 0.8}, "eta regions: left(min,max), mid(min,max), right(min,max)"};
     Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
   } cfgUserIO;
+  struct AcceptedTracks {
+    int nNeg;
+    int nMid;
+    int nPos;
+    int nFull;
+  };
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, false, "V0A T0A 5 sigma cut")
@@ -1210,6 +1218,10 @@ struct FlowTask {
       // magnet field dependence cut
       magnetfield = getMagneticField(bc.timestamp());
     }
+    AcceptedTracks acceptedTracks{0, 0, 0, 0};
+    std::vector<float> consistentEventVector = cfgUserIO.cfgConsistentEventVector;
+    if (cfgUserIO.cfgConsistentEventFlag)
+      LOGF(info, "consistentEventVector.size = %u", consistentEventVector.size());
 
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
@@ -1307,6 +1319,15 @@ struct FlowTask {
           weffEventSquareWithinGap08 += weff * weff;
         }
       }
+      if (cfgUserIO.cfgConsistentEventFlag && consistentEventVector.size() == 6) { // o2-linter: disable=magic-number (size match)
+        acceptedTracks.nFull += 1;
+        if (track.eta() > consistentEventVector[0] && track.eta() < consistentEventVector[1])
+          acceptedTracks.nNeg += 1;
+        if (track.eta() > consistentEventVector[2] && track.eta() < consistentEventVector[3])
+          acceptedTracks.nMid += 1;
+        if (track.eta() > consistentEventVector[4] && track.eta() < consistentEventVector[5])
+          acceptedTracks.nPos += 1;
+      }
       if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
       if (withinPtPOI)
@@ -1321,6 +1342,23 @@ struct FlowTask {
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
     if (cfgUseNch && cfgUseNchCorrected) {
       independent = nTracksCorrected;
+    }
+
+    if (cfgUserIO.cfgConsistentEventFlag) {
+      if (cfgUserIO.cfgConsistentEventFlag & 1) {
+        if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
+          return;
+      } else if (cfgUserIO.cfgConsistentEventFlag & 2) {
+        if (acceptedTracks.nFull < 4) // o2-linter: disable=magic-number (at least four tracks in full acceptance)
+          return;
+      } else if (cfgUserIO.cfgConsistentEventFlag & 4) {
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in each subevent)
+          return;
+      }
+      if (cfgUserIO.cfgConsistentEventFlag & 8) {
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
+          return;
+      }
     }
 
     if (cfgAdditionObs.cfgDptDisEnable) {

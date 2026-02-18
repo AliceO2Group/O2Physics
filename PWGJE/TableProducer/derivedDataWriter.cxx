@@ -65,7 +65,6 @@ struct JetDerivedDataWriter {
     Produces<aod::StoredJCollisionUPCs> storedJCollisionUPCsTable;
     Produces<aod::StoredJCollisionMcInfos> storedJCollisionMcInfosTable;
     Produces<aod::StoredJCollisionPIs> storedJCollisionsParentIndexTable;
-    Produces<aod::StoredJCollisionBCs> storedJCollisionsBunchCrossingIndexTable;
     Produces<aod::StoredJEMCCollisionLbs> storedJCollisionsEMCalLabelTable;
     Produces<aod::StoredJMcCollisionLbs> storedJMcCollisionsLabelTable;
     Produces<aod::StoredJMcCollisions> storedJMcCollisionsTable;
@@ -437,7 +436,7 @@ struct JetDerivedDataWriter {
   std::vector<int32_t> xicToXiPiPiMcCollisionMapping;
   // std::vector<int32_t> dielectronMcCollisionMapping;
 
-  void processBCs(soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionSelections> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs)
+  void processBCs(soa::Join<aod::JCollisions, aod::JCollisionSelections> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs)
   {
     std::vector<int32_t> bcIndicies;
     bcMapping.clear();
@@ -447,7 +446,7 @@ struct JetDerivedDataWriter {
       if (collision.isCollisionSelected()) {
         auto bc = collision.bc_as<soa::Join<aod::JBCs, aod::JBCPIs>>();
         if (std::find(bcIndicies.begin(), bcIndicies.end(), bc.globalIndex()) == bcIndicies.end()) {
-          products.storedJBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp(), bc.alias_raw(), bc.selection_raw(), bc.rct_raw());
+          products.storedJBCsTable(bc.runNumber(), bc.globalBC(), bc.triggerMask(), bc.timestamp(), bc.alias_raw(), bc.selection_raw(), bc.rct_raw());
           products.storedJBCParentIndexTable(bc.bcId());
           bcIndicies.push_back(bc.globalIndex());
           bcMapping[bc.globalIndex()] = products.storedJBCsTable.lastIndex();
@@ -457,20 +456,36 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processBCs, "write out output tables for Bunch crossings", true);
 
-  void processColllisons(soa::Join<aod::JCollisions, aod::JCollisionMcInfos, aod::JCollisionPIs, aod::JCollisionBCs, aod::JCollisionSelections> const& collisions)
+  void processBCsForMcGenOnly(soa::Join<aod::JMcCollisions, aod::JMcCollisionSelections> const& mcCollisions, aod::JBCs const& bcs)
+  {
+    std::vector<int32_t> bcIndicies;
+    bcMapping.clear();
+    bcMapping.resize(bcs.size(), -1);
+
+    for (auto const& mcCollision : mcCollisions) {
+      if (mcCollision.isMcCollisionSelected()) {
+        auto bc = mcCollision.bc_as<aod::JBCs>();
+        if (std::find(bcIndicies.begin(), bcIndicies.end(), bc.globalIndex()) == bcIndicies.end()) {
+          products.storedJBCsTable(bc.runNumber(), bc.globalBC(), bc.triggerMask(), bc.timestamp(), bc.alias_raw(), bc.selection_raw(), bc.rct_raw());
+          bcIndicies.push_back(bc.globalIndex());
+          bcMapping[bc.globalIndex()] = products.storedJBCsTable.lastIndex();
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(JetDerivedDataWriter, processBCsForMcGenOnly, "write out output tables for Bunch crossings for mc gen only configurations", false);
+
+  void processColllisons(soa::Join<aod::JCollisions, aod::JCollisionMcInfos, aod::JCollisionPIs, aod::JCollisionSelections> const& collisions)
   {
     collisionMapping.clear();
     collisionMapping.resize(collisions.size(), -1);
 
     for (auto const& collision : collisions) {
       if (collision.isCollisionSelected()) {
-        products.storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.alias_raw(), collision.eventSel(), collision.rct_raw(), collision.triggerSel());
+        products.storedJCollisionsTable(bcMapping[collision.bcId()], collision.posX(), collision.posY(), collision.posZ(), collision.collisionTime(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.centFV0A(), collision.centFV0M(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFT0CVariant1(), collision.hadronicRate(), collision.trackOccupancyInTimeRange(), collision.alias_raw(), collision.eventSel(), collision.rct_raw(), collision.triggerSel());
         collisionMapping[collision.globalIndex()] = products.storedJCollisionsTable.lastIndex();
         products.storedJCollisionMcInfosTable(collision.weight(), collision.getSubGeneratorId());
         products.storedJCollisionsParentIndexTable(collision.collisionId());
-        if (doprocessBCs) {
-          products.storedJCollisionsBunchCrossingIndexTable(bcMapping[collision.bcId()]);
-        }
       }
     }
   }
@@ -670,7 +685,7 @@ struct JetDerivedDataWriter {
     mcCollisionMapping.resize(mcCollisions.size(), -1);
     for (auto const& mcCollision : mcCollisions) {
       if (mcCollision.isMcCollisionSelected()) {
-        products.storedJMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), mcCollision.rct_raw(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+        products.storedJMcCollisionsTable(bcMapping[mcCollision.bcId()], mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), mcCollision.rct_raw(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         products.storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
         mcCollisionMapping[mcCollision.globalIndex()] = products.storedJMcCollisionsTable.lastIndex();
       }
