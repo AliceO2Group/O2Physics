@@ -217,6 +217,7 @@ struct UpcRhoAnalysis {
   ConfigurableAxis znCommonEnergyAxis{"znCommonEnergyAxis", {250, -5.0, 20.0}, "ZN common energy (TeV)"};
   ConfigurableAxis znTimeAxis{"znTimeAxis", {200, -10.0, 10.0}, "ZN time (ns)"};
   ConfigurableAxis nSigmaAxis{"nSigmaAxis", {600, -30.0, 30.0}, "TPC #it{n#sigma}"};
+  ConfigurableAxis resolutionAxis{"resolutionAxis", {2000, -1.0, 1.0}, "resolution"};
 
   HistogramRegistry rQC{"rQC", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry rTracks{"rTracks", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -384,22 +385,22 @@ struct UpcRhoAnalysis {
     if (context.mOptions.get<bool>("processResolution")) {
       // collision matching
       rResolution.add("MC/resolution/collisions/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
-      rResolution.add("MC/resolution/collisions/hPosX", ";vertex #it{x}_{reco} - vertex #it{x}_{true} (cm);counts", kTH1D, {{200, -1.0, 1.0}});
-      rResolution.add("MC/resolution/collisions/hPosY", ";vertex #it{y}_{reco} - vertex #it{y}_{true} (cm);counts", kTH1D, {{200, -1.0, 1.0}});
-      rResolution.add("MC/resolution/collisions/hPosZ", ";vertex #it{z}_{reco} - vertex #it{z}_{true} (cm);counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/collisions/hPosX", ";vertex #it{x}_{reco} - vertex #it{x}_{true} (cm);counts", kTH1D, {resolutionAxis});
+      rResolution.add("MC/resolution/collisions/hPosY", ";vertex #it{y}_{reco} - vertex #it{y}_{true} (cm);counts", kTH1D, {resolutionAxis});
+      rResolution.add("MC/resolution/collisions/hPosZ", ";vertex #it{z}_{reco} - vertex #it{z}_{true} (cm);counts", kTH1D, {resolutionAxis});
       // track matching and resolutions
       rResolution.add("MC/resolution/tracks/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
-      rResolution.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
-      rResolution.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
-      rResolution.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {{200, -0.2, 0.2}});
+      rResolution.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {resolutionAxis});
+      rResolution.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {resolutionAxis});
+      rResolution.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {resolutionAxis});
       // dipion system resolutions (1D and 2D)
-      rResolution.add("MC/resolution/system/1D/hM", ";#it{m}_{reco} - #it{m}_{true} (GeV/#it{c}^{2});counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/system/1D/hM", ";#it{m}_{reco} - #it{m}_{true} (GeV/#it{c}^{2});counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hMVsM", ";#it{m}_{true} (GeV/#it{c}^{2});#it{m}_{reco} (GeV/#it{c}^{2});counts", kTH2D, {mAxis, mAxis});
-      rResolution.add("MC/resolution/system/1D/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
+      rResolution.add("MC/resolution/system/1D/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hPtVsPt", ";#it{p}_{T, true} (GeV/#it{c});#it{p}_{T, reco} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-      rResolution.add("MC/resolution/system/1D/hY", ";#it{y}_{reco} - #it{y}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
+      rResolution.add("MC/resolution/system/1D/hY", ";#it{y}_{reco} - #it{y}_{true};counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hYVsY", ";#it{y}_{true};#it{y}_{reco};counts", kTH2D, {yAxis, yAxis});
-      rResolution.add("MC/resolution/system/1D/hDeltaPhi", ";#Delta#it{#phi}_{reco} - #Delta#it{#phi}_{true} (rad);counts", kTH1D, {{2000, -1.0, 1.0}});
+      rResolution.add("MC/resolution/system/1D/hDeltaPhi", ";#Delta#it{#phi}_{reco} - #Delta#it{#phi}_{true} (rad);counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hDeltaPhiVsDeltaPhi", ";#Delta#it{#phi}_{true} (rad);#Delta#it{#phi}_{reco} (rad);counts", kTH2D, {deltaPhiAxis, deltaPhiAxis});
     }
   }
