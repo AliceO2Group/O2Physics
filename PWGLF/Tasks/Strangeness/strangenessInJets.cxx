@@ -2444,7 +2444,7 @@ struct StrangenessInJets {
 
   // Reconstructed jets including K0s
   void processMCRecK0inJet(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
-                             DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
+                           DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles)
   {
     // Define per-event containers
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -2555,7 +2555,7 @@ struct StrangenessInJets {
           const bool isPhysPrim = motherPos.isPhysicalPrimary();
 
           // Distance of K0s from jet axis
-          TVector3 v0dir (v0.px(), v0.py(), v0.pz());
+          TVector3 v0dir(v0.px(), v0.py(), v0.pz());
           const double deltaEtaJet = v0dir.Eta() - selectedJet[i].Eta();
           const double deltaPhiJet = ParticlePositionWithRespectToJet::getDeltaPhi(v0dir.Phi(), selectedJet[i].Phi());
           const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
@@ -2564,8 +2564,8 @@ struct StrangenessInJets {
           if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short && isPhysPrim && deltaRJet < rJet) {
             registryMC.fill(HIST("K0s_reconstructed_jet_withK0"), multiplicity, v0.pt());
           }
-        }// end loop on V0s
-      }// end loop on jets
+        } // end loop on V0s
+      } // end loop on jets
     }
   }
   PROCESS_SWITCH(StrangenessInJets, processMCRecK0inJet, "process reconstructed K0s in jets", false);
