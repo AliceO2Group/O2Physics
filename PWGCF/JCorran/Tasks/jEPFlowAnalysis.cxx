@@ -292,6 +292,13 @@ struct jEPFlowAnalysis {
 
       float weight = 1.0;
 
+      qx_shifted[0] = coll.qvecRe()[4 * detId + harmInd];
+      qy_shifted[0] = coll.qvecIm()[4 * detId + harmInd];
+      qx_shifted[1] = coll.qvecRe()[4 * refAId + harmInd];
+      qy_shifted[1] = coll.qvecIm()[4 * refAId + harmInd];
+      qx_shifted[2] = coll.qvecRe()[4 * refBId + harmInd];
+      qy_shifted[2] = coll.qvecIm()[4 * refBId + harmInd];
+
       if (cfgManShiftCorr) {
         constexpr int kShiftBins = 10;
         for (int ishift = 1; ishift <= kShiftBins; ishift++) {
