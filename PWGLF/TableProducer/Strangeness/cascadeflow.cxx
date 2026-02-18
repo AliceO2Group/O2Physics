@@ -832,6 +832,7 @@ struct cascadeFlow {
     TString hNEventsLabels[10] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kNoCollInROF", "kTVXinTRD", "kIsGoodEventEP"};
     TString hNEventsLabelsMC[6] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco", "EvSelected"};
     TString hNCascLabelsMC[8] = {"All Xi", "all Omega", "Xi: has MC coll", "Om: has MC coll", "Xi: isPrimary", "Om: is Primary", "Xi: |eta|<0.8", "Om: |eta| < 0.8"};
+    TString hNLambdaLabelsMC[5] = {"All Lambdas", "has MC coll", "isPrimary", "|eta|<0.8", "|y| < 0.5"};
 
     resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
@@ -1028,8 +1029,14 @@ struct cascadeFlow {
     histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenXiY05", "h2DGenXiY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenOmegaY05", "h2DGenOmegaY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenLambdaEta08", "h2DGenLambdaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenLambdaY05", "h2DGenLambdaY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenAntiLambdaEta08", "h2DGenAntiLambdaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenAntiLambdaY05", "h2DGenAntiLambdaY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("hGenXiY", "hGenXiY", HistType::kTH1F, {{100, -1, 1}});
     histosMCGen.add("hGenOmegaY", "hGenOmegaY", HistType::kTH1F, {{100, -1, 1}});
+    histosMCGen.add("hGenLambdaY", "hGenLambdaY", HistType::kTH1F, {{100, -2, 2}});
+    histosMCGen.add("hGenLambdaEta", "hGenLambdaEta", HistType::kTH1F, {{100, -2, 2}});
     histosMCGen.add("hZvertexGen", "hZvertexGen", HistType::kTH1F, {{100, -20, 20}});
     histosMCGen.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.f, 6.f}}});
     for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
@@ -1038,6 +1045,10 @@ struct cascadeFlow {
     histosMCGen.add("hNCascGen", "hNCascGen", {HistType::kTH1F, {{8, 0.f, 8.f}}});
     for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNCascGen"))->GetNbinsX(); n++) {
       histosMCGen.get<TH1>(HIST("hNCascGen"))->GetXaxis()->SetBinLabel(n, hNCascLabelsMC[n - 1]);
+    }
+    histosMCGen.add("hNLambdaGen", "hNLambdaGen", {HistType::kTH1F, {{5, 0.f, 5.f}}});
+    for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNLambdaGen"))->GetNbinsX(); n++) {
+      histosMCGen.get<TH1>(HIST("hNLambdaGen"))->GetXaxis()->SetBinLabel(n, hNLambdaLabelsMC[n - 1]);
     }
 
     for (int iS{0}; iS < nParticles; ++iS) {
@@ -2438,7 +2449,7 @@ struct cascadeFlow {
     }
   }
 
-  void processMCGen(MCCollisionsStra::iterator const& mcCollision, const soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>>& collisions, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMC)
+  void processMCGen(MCCollisionsStra::iterator const& mcCollision, const soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>>& collisions, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MC, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMC)
   {
 
     histosMCGen.fill(HIST("hZvertexGen"), mcCollision.posZ());
@@ -2475,6 +2486,38 @@ struct cascadeFlow {
     }
 
     histosMCGen.fill(HIST("hNEventsMC"), 5.5);
+
+    for (auto const& v0mc : v0MC) {
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0)
+        histosMCGen.fill(HIST("hNLambdaGen"), 0.5);
+      if (!v0mc.has_straMCCollision())
+        continue;
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0)
+        histosMCGen.fill(HIST("hNLambdaGen"), 1.5);
+      if (!v0mc.isPhysicalPrimary())
+        continue;
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0)
+        histosMCGen.fill(HIST("hNLambdaGen"), 2.5);
+
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0mc.pxMC(), v0mc.pyMC());
+      float lambdaMCeta = RecoDecay::eta(std::array{v0mc.pxMC(), v0mc.pyMC(), v0mc.pzMC()});
+      float lambdaMCy = 0;
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0) {
+        lambdaMCy = RecoDecay::y(std::array{v0mc.pxMC(), v0mc.pyMC(), v0mc.pzMC()}, constants::physics::MassLambda);
+        if (std::abs(lambdaMCeta) < etaCascMCGen) {
+          if (v0mc.pdgCode() == PDG_t::kLambda0) histosMCGen.fill(HIST("h2DGenLambdaEta08"), centrality, ptmc);
+          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar) histosMCGen.fill(HIST("h2DGenAntiLambdaEta08"), centrality, ptmc);
+          histosMCGen.fill(HIST("hNLambdaGen"), 3.5);
+        }
+        if (std::abs(lambdaMCy) < yCascMCGen) {
+          if (v0mc.pdgCode() == PDG_t::kLambda0) histosMCGen.fill(HIST("h2DGenLambdaY05"), centrality, ptmc);
+          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar) histosMCGen.fill(HIST("h2DGenAntiLambdaY05"), centrality, ptmc);
+          histosMCGen.fill(HIST("hNLambdaGen"), 4.5);
+        }
+        histosMCGen.fill(HIST("hGenLambdaY"), lambdaMCy);
+        histosMCGen.fill(HIST("hGenLambdaEta"), lambdaMCeta);
+      }
+    }
 
     for (auto const& cascmc : cascMC) {
       if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus)
