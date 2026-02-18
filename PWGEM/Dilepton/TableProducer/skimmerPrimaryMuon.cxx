@@ -595,11 +595,16 @@ struct skimmerPrimaryMuon {
 
         // LOGF(info, "muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, muon_tmp.chi2MatchMCHMFT() = %f", muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId(), muon_tmp.chi2MatchMCHMFT());
 
-        if (cfgApplyPreselectionInBestMatch && !isSelected(pt, eta, muon_tmp.rAtAbsorberEnd(), pDCA, muon_tmp.chi2() / ndf, muon_tmp.trackType(), dcaXY)) {
-          continue;
-        }
-        if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
-          continue;
+        if (cfgApplyPreselectionInBestMatch) {
+          if (!isSelected(pt, eta, muon_tmp.rAtAbsorberEnd(), pDCA, muon_tmp.chi2() / ndf, muon_tmp.trackType(), dcaXY)) {
+            continue;
+          }
+          if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f) {
+            continue;
+          }
+          if (muon_tmp.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
+            continue;
+          }
         }
 
         if (0.f < muon_tmp.chi2MatchMCHMFT() && muon_tmp.chi2MatchMCHMFT() < min_chi2MatchMCHMFT) {
@@ -762,11 +767,14 @@ struct skimmerPrimaryMuon {
       }
 
       const auto& fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      // LOGF(info, "collision.globalIndex() = %d, fwdtrackIdsThisCollision.size() = %d", collision.globalIndex(), fwdtrackIdsThisCollision.size());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         const auto& fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
+        // LOGF(info, "fwdtrack.globalIndex() = %d, fwdtrack.matchMCHTrackId() = %d, fwdtrack.matchMFTTrackId() = %d, fwdtrack.trackType() = %d", fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId(), fwdtrack.trackType());
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
+
         if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && std::find(vec_min_chi2MatchMCHMFT.begin(), vec_min_chi2MatchMCHMFT.end(), std::make_tuple(fwdtrack.globalIndex(), fwdtrack.matchMCHTrackId(), fwdtrack.matchMFTTrackId())) == vec_min_chi2MatchMCHMFT.end()) {
           continue;
         }
@@ -1476,6 +1484,7 @@ struct associateSameMFT {
   PresliceUnsorted<aod::EMPrimaryMuons> perMFTTrack = o2::aod::emprimarymuon::mfttrackId;
   std::vector<int> self_Ids;
 
+  // Multiple MCH-MID tracks can match with the same MFTsa. This function is to reject such global muons.
   void process(aod::EMPrimaryMuons const& muons)
   {
     for (const auto& muon : muons) {
@@ -1486,17 +1495,19 @@ struct associateSameMFT {
           if (global_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
             continue;
           }
-          self_Ids.emplace_back(global_muon.globalIndex());
+          // self_Ids.emplace_back(global_muon.globalIndex());
 
-          // if (global_muon.collisionId() == muon.collisionId()) {
-          //   self_Ids.emplace_back(global_muon.globalIndex());
-          // }
+          if (global_muon.collisionId() == muon.collisionId()) { // the same global muon is repeatedly stored and associated to different collisions if FTTCA is used.
+            self_Ids.emplace_back(global_muon.globalIndex());
+          }
         }
         em_same_mft_ids(self_Ids);
         self_Ids.clear();
         self_Ids.shrink_to_fit();
       } else {
         em_same_mft_ids(std::vector<int>{}); // empty for standalone muons
+        self_Ids.clear();
+        self_Ids.shrink_to_fit();
       }
     } // end of muon loop
   }
