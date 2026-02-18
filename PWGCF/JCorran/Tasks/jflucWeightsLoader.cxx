@@ -24,13 +24,13 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/V0.h"
-#include "CommonConstants/MathConstants.h"
 
 #include <TFile.h>
 #include <THn.h>
@@ -56,7 +56,7 @@ struct JflucWeightsLoader {
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 1.0f, "Maximum eta used for track selection.");
   O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, int, 5, "Minimum number of particles required for the event to have.");
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "Track selection bitmask to use as defined in the filterCorrelations.cxx task");
-  
+
   ConfigurableAxis cfgAxisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 2.0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100.1}, "multiplicity / centrality axis for histograms"};
   ConfigurableAxis cfgAxisPhi{"axisPhi", {50, 0.0, o2::constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis cfgAxisEta{"axisEta", {40, -2.0, 2.0}, "eta axis for histograms"};
@@ -179,7 +179,7 @@ struct JflucWeightsLoader {
       const AxisSpec axisPhi{cfgAxisPhi, "#varphi"};
       const AxisSpec axisEta{cfgAxisEta, "#eta"};
       const AxisSpec axisZVertex{cfgAxisZVertex, "z_{vtx} [cm]"};
-      
+
       qaHistRegistry.add("NUACreation/h_phietaz", "(NUA) mult, type, phi, eta, z", HistType::kTHnF, {axisMult, axisType, axisPhi, axisEta, axisZVertex});
     }
   }
@@ -282,13 +282,14 @@ struct JflucWeightsLoader {
   PROCESS_SWITCH(JflucWeightsLoader, processLoadWeightsCF2Prong, "Load weights histograms for CF derived 2-prong tracks data table", false);
 
   // Create NUA histograms from CF derived data to be used in this loader
-  void processJNUACreatorCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks) {
+  void processJNUACreatorCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
 
     if (tracks.size() < cfgMinMultiplicity) {
-      return; //reject if not enough tracks
+      return; // reject if not enough tracks
     }
 
-    const auto multiplicity = collision.multiplicity(); //this comes from the filterCorrelations.cxx task
+    const auto multiplicity = collision.multiplicity(); // this comes from the filterCorrelations.cxx task
     const float multAxisUpper = AxisSpec(cfgAxisMultiplicity, "").binEdges.back();
     if (multiplicity < 0. || multiplicity > multAxisUpper) {
       return;
