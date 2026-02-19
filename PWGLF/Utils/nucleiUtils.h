@@ -102,6 +102,8 @@ struct SlimCandidate {
   float phiGenerated = -999.f;
   float centrality = -1.f;
   uint64_t mcProcess = TMCProcess::kPNoProcess;
+  float nsigmaTpc = -999.f;
+  float nsigmaTof = -999.f;
 };
 
 enum Species {
