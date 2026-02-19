@@ -411,7 +411,7 @@ class KinkBuilder
   {
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       LOG(info) << "Initialize femto Sigma builder...";
-      mProduceSigmas = utils::enableTable("FSigmas_001", table.produceSigmas.value, initContext);
+      mProduceSigmas = utils::enableTable("FSigmas_002", table.produceSigmas.value, initContext);
       mProduceSigmaMasks = utils::enableTable("FSigmaMasks_001", table.produceSigmaMasks.value, initContext);
       mProduceSigmaExtras = utils::enableTable("FSigmaExtras_001", table.produceSigmaExtras.value, initContext);
     }
