@@ -609,6 +609,7 @@ struct cascadeFlow {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry histosMCReco{"histosMCReco", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Tables to produce
@@ -1051,6 +1052,9 @@ struct cascadeFlow {
       histosMCGen.get<TH1>(HIST("hNLambdaGen"))->GetXaxis()->SetBinLabel(n, hNLambdaLabelsMC[n - 1]);
     }
 
+    histosMCReco.add("h2DRecoTrueLambda", "h2DRecoTrueLambda", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCReco.add("h2DRecoTrueAntiLambda", "h2DRecoTrueAntiLambda", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    
     for (int iS{0}; iS < nParticles; ++iS) {
       cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxisCasc});
       cascadev2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxisCasc});
@@ -2505,13 +2509,17 @@ struct cascadeFlow {
       if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0) {
         lambdaMCy = RecoDecay::y(std::array{v0mc.pxMC(), v0mc.pyMC(), v0mc.pzMC()}, constants::physics::MassLambda);
         if (std::abs(lambdaMCeta) < etaCascMCGen) {
-          if (v0mc.pdgCode() == PDG_t::kLambda0) histosMCGen.fill(HIST("h2DGenLambdaEta08"), centrality, ptmc);
-          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar) histosMCGen.fill(HIST("h2DGenAntiLambdaEta08"), centrality, ptmc);
+          if (v0mc.pdgCode() == PDG_t::kLambda0)
+            histosMCGen.fill(HIST("h2DGenLambdaEta08"), centrality, ptmc);
+          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar)
+            histosMCGen.fill(HIST("h2DGenAntiLambdaEta08"), centrality, ptmc);
           histosMCGen.fill(HIST("hNLambdaGen"), 3.5);
         }
         if (std::abs(lambdaMCy) < yCascMCGen) {
-          if (v0mc.pdgCode() == PDG_t::kLambda0) histosMCGen.fill(HIST("h2DGenLambdaY05"), centrality, ptmc);
-          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar) histosMCGen.fill(HIST("h2DGenAntiLambdaY05"), centrality, ptmc);
+          if (v0mc.pdgCode() == PDG_t::kLambda0)
+            histosMCGen.fill(HIST("h2DGenLambdaY05"), centrality, ptmc);
+          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar)
+            histosMCGen.fill(HIST("h2DGenAntiLambdaY05"), centrality, ptmc);
           histosMCGen.fill(HIST("hNLambdaGen"), 4.5);
         }
         histosMCGen.fill(HIST("hGenLambdaY"), lambdaMCy);
@@ -2655,6 +2663,7 @@ struct cascadeFlow {
       //--------------------------------------------------------------
 
       auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxMC(), v0MC.pyMC());
       int pdgCode{v0MC.pdgCode()};
       // select true lambdas
       bool isTrueLambda = 0;
@@ -2677,6 +2686,7 @@ struct cascadeFlow {
         if (isPrimary) {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 0);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 0);
+          histosMCReco.fill(HIST("h2DRecoTrueLambda"), collisionCentrality, ptmc);
         } else {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 1);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 1);
@@ -2685,6 +2695,7 @@ struct cascadeFlow {
         if (isPrimary) {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 2);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 2);
+          histosMCReco.fill(HIST("h2DRecoTrueAntiLambda"), collisionCentrality, ptmc);
         } else {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 3);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 3);
