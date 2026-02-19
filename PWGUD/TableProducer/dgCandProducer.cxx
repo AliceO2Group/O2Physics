@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 
 #define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
-struct DGCandProducer {
+struct DgCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
@@ -465,10 +465,10 @@ struct DGCandProducer {
       processReco(std::string("MCreco"), collision, bcs, tracks, fwdtracks, fv0as, ft0s, fdds);
     }
   }
-  PROCESS_SWITCH(DGCandProducer, processMcData, "Produce UD tables with MC data", false);
+  PROCESS_SWITCH(DgCandProducer, processMcData, "Produce UD tables with MC data", false);
 };
 
-struct McDGCandProducer {
+struct McDgCandProducer {
   // MC tables
   Produces<aod::UDMcCollisions> outputMcCollisions;
   Produces<aod::UDMcParticles> outputMcParticles;
@@ -899,8 +899,8 @@ struct McDGCandProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<DGCandProducer>(cfgc, TaskName{"dgcandproducer"}),
-    adaptAnalysisTask<McDGCandProducer>(cfgc, TaskName{"mcdgcandproducer"})};
+    adaptAnalysisTask<DgCandProducer>(cfgc),
+    adaptAnalysisTask<McDgCandProducer>(cfgc)};
 
   return workflow;
 }
