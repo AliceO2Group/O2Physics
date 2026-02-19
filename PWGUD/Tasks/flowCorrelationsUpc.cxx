@@ -229,24 +229,24 @@ struct FlowCorrelationsUpc {
     if (!track.isPVContributor()) {
       return false;
     }
-    registry.fill(HIST("hTrackCount"), 1.5);
+    // registry.fill(HIST("hTrackCount"), 1.5);
     if (cfgDcaz && !(std::fabs(track.dcaZ()) < cfgDcazCut)) {
       return false;
     }
-    registry.fill(HIST("hTrackCount"), 2.5);
+    // registry.fill(HIST("hTrackCount"), 2.5);
     double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
     if (cfgDcaxy && !(std::fabs(track.dcaXY()) < dcaLimit)) {
       return false;
     }
-    registry.fill(HIST("hTrackCount"), 3.5);
+    // registry.fill(HIST("hTrackCount"), 3.5);
     if (track.itsClusterSizes() <= cfgItsClusterSize) {
       return false;
     }
-    registry.fill(HIST("hTrackCount"), 4.5);
+    // registry.fill(HIST("hTrackCount"), 4.5);
     if (track.tpcChi2NCl() >= cfgMaxTPCChi2NCl) {
       return false;
     }
-    registry.fill(HIST("hTrackCount"), 5.5);
+    // registry.fill(HIST("hTrackCount"), 5.5);
     return true;
   }
 
