@@ -950,7 +950,7 @@ struct F0980pbpbanalysis {
   }
 
   void processData(EventCandidates::iterator const& collision,
-                   TrackCandidates const& tracks)
+                   TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     if (EventConfig.cfgEventCentEst == CentEstList::FT0C) {
       centrality = collision.centFT0C();
