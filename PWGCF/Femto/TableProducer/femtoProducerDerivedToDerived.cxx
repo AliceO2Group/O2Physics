@@ -79,7 +79,7 @@ struct FemtoProducerDerivedToDerived {
     trackBuilder.init(confTrackBuilder);
     v0Builder.init(confV0Builder);
 
-    if ((doprocessTracks + doprocessLambdas + doprocessK0shorts) > 1) {
+    if ((doprocessTracks + doprocessTracksLambdas + doprocessTracksK0shorts) > 1) {
       LOG(fatal) << "Only one proccess function can be activated";
     }
   }
@@ -95,31 +95,27 @@ struct FemtoProducerDerivedToDerived {
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracks, "Process tracks", true);
 
-  void processLambdas(FilteredCollision const& col, Tracks const& tracks, Lambdas const& lambdas)
+  void processTracksLambdas(FilteredCollision const& col, Tracks const& tracks, Lambdas const& lambdas)
   {
-    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) && v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
       return;
     }
-    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
-      collisionBuilder.processCollision(col, collisionBuilderProducts);
-      trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-      v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
-    }
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdas, "Process lambdas and tracks", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksLambdas, "Process lambdas and tracks", false);
 
-  void processK0shorts(FilteredCollision const& col, Tracks const& tracks, K0shorts const& k0shorts)
+  void processTracksK0shorts(FilteredCollision const& col, Tracks const& tracks, K0shorts const& k0shorts)
   {
-    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) && v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
       return;
     }
-    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
-      collisionBuilder.processCollision(col, collisionBuilderProducts);
-      trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
-      v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
-    }
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processK0shorts, "Process k0short and tracks", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksK0shorts, "Process k0short and tracks", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)

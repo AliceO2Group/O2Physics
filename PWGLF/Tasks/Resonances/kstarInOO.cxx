@@ -138,9 +138,7 @@ struct kstarInOO {
 
   Configurable<bool> cfgMCHistos{"cfgMCHistos", false, "Enable MC Hists"};
   Configurable<bool> cfgMixedHistos{"cfgMixedHistos", false, "Enable Mixed Histos"};
-
   Configurable<bool> cfgJetHistos{"cfgJetHistos", false, "Enable Jet Histos"};
-
   Configurable<bool> cfgJetMCHistos{"cfgJetMCHistos", false, "Enable Jet MC Histos"};
   Configurable<bool> cfgCutonTrig{"cfgCutonTrig", false, "Enable Jet Cut on Trig"};
 
@@ -251,7 +249,8 @@ struct kstarInOO {
     if (cfgMCHistos) {
       histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{4, 0.0, 4.0}});
       histos.add("hUSS_TrueRec", "hUSS_TrueRec", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hUSS_GenKstar", "hUSS_GenKstar", kTHnSparseF, {cfgCentAxis, ptAxis});
+      histos.add("hGen_pT_Raw", "Gen_pT_Raw (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hGen_pT_GoodEv", "hGen_pT_GoodEv", kTHnSparseF, {cfgCentAxis, ptAxis});
     }
     if (cfgJetHistos) {
       histos.add("hUSS_KPi_INSIDE", "hUSS_KPi_INSIDE", kTHnSparseF, {cfgCentAxis, dRAxis, ptAxis, minvAxis});
@@ -263,6 +262,11 @@ struct kstarInOO {
       histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{7, -.0, 7.0}});
       histos.add("hUSS_TrueRec", "hUSS_TrueRec", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hUSS_TrueRec_INSIDE", "hUSS_TrueRec_INSIDE", kTHnSparseF, {cfgCentAxis, dRAxis, ptAxis, minvAxis});
+
+      histos.add("hGen_pT_Raw", "Gen_pT_Raw (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hGen_pT_GoodEv", "Gen_pT_GoodTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hGen_pT_GoodTrig", "Gen_pT_GoodTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hGen_pT_GoodEvTrig", "Gen_pT_GoodEvTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
 
       histos.add("hEffRec_pT", "EffRec_pT (GeV/c)", kTH1F, {{1600, 0., 80.}});
       histos.add("hEffRecTest1_pT", "EffRecTest1_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
@@ -1449,70 +1453,140 @@ struct kstarInOO {
 
   //======================================
   //|
-  //|    Efficiency: GENERATED STUFF
+  //|           GENERATED STUFF
   //|
   //======================================
-  int nEventsTrue = 0;
-  void processEffGen(EventCandidatesTrue::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, EventCandidates>> const& recocolls, aod::McParticles const& particles)
+  int nEventsGen = 0;
+  void processGen(EventCandidatesTrue::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, EventCandidates>> const& recocolls, aod::McParticles const& mcParticles)
   {
     if (cDebugLevel > 0) {
-      ++nEventsTrue;
+      ++nEventsGen;
+      if (nEventsGen % 10000 == 0) {
+        std::cout << "Processed MC (GEN) Events: " << nEventsGen << std::endl;
+      }
+    }
+    //=======================
+    //|| Event & Signal loss
+    //=======================
+    if (cfgMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 0.5);
     }
 
-    if (fabs(collision.posZ()) > cfgEventVtxCut)
-      return;
+    for (auto& particle : mcParticles) {
+      if (particle.pdgCode() != 313)
+        continue;
+      if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+        continue;
+      if (fabs(collision.posZ()) > cfgEventVtxCut)
+        break;
+
+      if (cfgMCHistos) {
+        histos.fill(HIST("hGen_pT_Raw"), particle.pt());
+      }
+    } // Unreconstructed collisions(=Raw coll) for correction
+
     if (recocolls.size() <= 0) { // not reconstructed
       if (cfgForceGenReco) {
         return;
       }
     }
-
     double centrality = -1;
     for (auto& recocoll : recocolls) {
       centrality = recocoll.centFT0C();
       auto [goodEv, code] = eventSelection(recocoll, true);
 
       if (cfgMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 0.5);
+        histos.fill(HIST("nEvents_Gen"), 1.5);
       }
       if (!goodEv)
         continue;
-    } // for
+    } // recocolls (=reconstructed collisions)
 
-    for (auto& particle : particles) {
+    //=================
+    //|| Efficiency
+    //=================
+    for (auto& particle : mcParticles) {
       if (particle.pdgCode() != 313)
         continue; // Not K*0
       if (std::fabs(particle.eta()) > cfgTrackMaxEta)
         continue;
 
       if (cfgMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 1.5);
-        histos.fill(HIST("hUSS_GenKstar"), centrality, particle.pt());
+        histos.fill(HIST("nEvents_Gen"), 2.5);
+        histos.fill(HIST("hGen_pT_GoodEv"), centrality, particle.pt());
       } // cfgMCHistos
     } // loop over particles
   } // processMCTrue
-  PROCESS_SWITCH(kstarInOO, processEffGen, "process Generated Particles", false);
+  PROCESS_SWITCH(kstarInOO, processGen, "process Generated Particles", false);
 
-  //==========================================
+  //==============================================
   //|
-  //|    Efficiency: JET GENERATED STUFF
+  //|    GENERATED STUFF (INCLUSIVE & JETS)
   //|
-  //==========================================
-  int nprocessEffEvents = 0;
-  void processJetsEffGen(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
+  //==============================================
+  int nprocessGenEvents = 0;
+  void processJetsGen(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
   {
     if (cDebugLevel > 0) {
-      ++nprocessEffEvents;
-      if (nprocessEffEvents % 10000 == 0) {
-        std::cout << "Processed MC (GEN) Events: " << nprocessEffEvents << std::endl;
+      ++nprocessGenEvents;
+      if (nprocessGenEvents % 10000 == 0) {
+        std::cout << "Processed MC (GEN) Events: " << nprocessGenEvents << std::endl;
       }
     }
+    //=======================
+    //|| Event & Signal loss
+    //=======================
+    if (cfgJetMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 0.5);
+    }
 
-    if (fabs(collision.posZ()) > cfgEventVtxCut)
-      return;
+    for (auto& particle : mcParticles) {
+      if (particle.pdgCode() != 313)
+        continue;
+      if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+        continue;
+      if (fabs(collision.posZ()) > cfgEventVtxCut)
+        break;
+
+      if (cfgJetMCHistos) {
+        histos.fill(HIST("hGen_pT_Raw"), particle.pt());
+      }
+    } // Unrecon. collision(=Raw coll) for correction
+
     if (recocolls.size() <= 0) { // not reconstructed
       return;
     }
+
+    for (auto& recocoll : recocolls) { // poorly reconstructed
+      if (recocoll.posZ() > cfgEventVtxCut)
+        continue;
+      auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
+      auto goodTrig = jetderiveddatautilities::selectTrigger(recocoll, RealTriggerMaskBits);
+      for (auto& particle : mcParticles) {
+        if (particle.pdgCode() != 313)
+          continue;
+        if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+          continue;
+        if (cfgJetMCHistos) {
+          // check K* PID
+          if (goodEv) {
+            histos.fill(HIST("hGen_pT_GoodEv"), particle.pt());
+          }
+          if (goodTrig) {
+            histos.fill(HIST("hGen_pT_GoodTrig"), particle.pt());
+          }
+          if (goodEv && goodTrig) {
+            histos.fill(HIST("hGen_pT_GoodEvTrig"), particle.pt());
+          }
+        } // cfgJetMCHistos
+      } // mcParticles
+    } // recocolls (=reconstructed collisions)
+
+    //=================
+    //|| Efficiency
+    //=================
+    if (fabs(collision.posZ()) > cfgEventVtxCut)
+      return;
 
     for (auto& recocoll : recocolls) { // poorly reconstructed
       auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
@@ -1520,10 +1594,13 @@ struct kstarInOO {
         goodEv = jetderiveddatautilities::selectTrigger(recocoll, RealTriggerMaskBits);
       }
       if (cfgJetMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 0.5);
+        histos.fill(HIST("nEvents_Gen"), 1.5);
       }
       if (!goodEv)
         return;
+    }
+    if (cfgJetMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 2.5);
     }
 
     for (auto& particle : mcParticles) {
@@ -1556,12 +1633,12 @@ struct kstarInOO {
       */
 
       if (cfgJetMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 1.5);
+        histos.fill(HIST("nEvents_Gen"), 3.5);
         histos.fill(HIST("hEffGen_pT"), particle.pt());
       } // cfgJetMCHistos
     } // loop over particles
   } // end of process
-  PROCESS_SWITCH(kstarInOO, processJetsEffGen, "Process Generated Particles MB&Jets", false);
+  PROCESS_SWITCH(kstarInOO, processJetsGen, "Process Generated Particles Inclusive&Jets", false);
 
   void processEventsDummy(EventCandidates::iterator const&, TrackCandidates const&)
   {

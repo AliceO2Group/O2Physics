@@ -92,15 +92,11 @@ struct HfCandidateCreatorCascade {
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber{0};
-  double massP{0.};
-  double massK0s{0.};
-  double massPi{0.};
-  double massLc{0.};
   double mass2K0sP{0.};
   double bz = 0.;
 
@@ -142,11 +138,6 @@ struct HfCandidateCreatorCascade {
 
     // init HF event selection helper
     hfEvSel.init(registry, &zorroSummary);
-
-    massP = MassProton;
-    massK0s = MassK0Short;
-    massPi = MassPiPlus;
-    massLc = MassLambdaCPlus;
 
     // df.setBz(bz);
     df.setPropagateToPCA(propagateToPCA);
@@ -196,10 +187,10 @@ struct HfCandidateCreatorCascade {
       }
 
       int posGlobalIndex = -1, negGlobalIndex = -1;
-      float v0X, v0Y, v0Z, v0px, v0py, v0pz;
-      float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
-      float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
-      std::array<float, 21> covV = {0.};
+      float v0X{}, v0Y{}, v0Z{}, v0px{}, v0py{}, v0pz{};
+      float v0PosPx{}, v0PosPy{}, v0PosPz{}, v0NegPx{}, v0NegPy{}, v0NegPz{};
+      float dcaV0dau{}, dcaPosToPV{}, dcaNegToPV{}, v0cosPA{};
+      std::array<float, 21> covV{};
 
       auto v0index = casc.template v0_as<o2::aod::V0sLinked>();
       if (v0index.has_v0Data()) {
@@ -297,7 +288,7 @@ struct HfCandidateCreatorCascade {
       trackParVarBach.propagateToDCA(primaryVertex, bz, &impactParameterBach);
 
       // get uncertainty of the decay length
-      double phi, theta;
+      double phi{}, theta{};
       getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
@@ -325,7 +316,7 @@ struct HfCandidateCreatorCascade {
       // fill histograms
       if (fillHistograms) {
         // calculate invariant masses
-        mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
+        mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassProton, MassK0Short});
         registry.fill(HIST("hMass2"), mass2K0sP);
       }
     }

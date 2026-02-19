@@ -17,6 +17,7 @@
 #ifndef PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
+#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGUD/Core/SGSelector.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -706,6 +707,25 @@ template <typename T>
 bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
 {
   return std::abs(track.dcaZ()) < dcaZmax;
+}
+
+std::vector<int> initialiseClusterDefinitions(const std::string clusterDefinitions)
+{
+  std::vector<int> clusterDefinitionsVec;
+  if (clusterDefinitions.empty()) {
+    return clusterDefinitionsVec;
+  }
+  size_t start = 0;
+  size_t end;
+  while ((end = clusterDefinitions.find(',', start)) != std::string::npos) {
+    clusterDefinitionsVec.push_back(static_cast<int>(o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitions.substr(start, end - start))));
+    start = end + 1;
+  }
+  // Process the last element (after the final comma or if no comma exists)
+  if (start < clusterDefinitions.length()) {
+    clusterDefinitionsVec.push_back(static_cast<int>(o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitions.substr(start))));
+  }
+  return clusterDefinitionsVec;
 }
 
 } // namespace jetderiveddatautilities

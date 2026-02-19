@@ -128,7 +128,6 @@ struct OnTheFlyTofPid {
     Configurable<int> nBinsMult{"nBinsMult", 200, "number of bins in multiplicity"};
     Configurable<float> maxMultRange{"maxMultRange", 1000.f, "upper limit in multiplicity plots"};
   } plotsConfig;
-  Configurable<bool> cleanLutWhenLoaded{"cleanLutWhenLoaded", true, "clean LUTs after being loaded to save disk space"};
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -154,56 +153,55 @@ struct OnTheFlyTofPid {
     mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
 
     pRandomNumberGenerator.SetSeed(0); // fully randomize
+    if (simConfig.flagTOFLoadDelphesLUTs) {
+      for (int icfg = 0; icfg < nGeometries; ++icfg) {
+        const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
+        mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
+        mSmearer[icfg]->setCcdbManager(ccdb.operator->());
+        std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
+        for (const auto& entry : globalConfiguration) {
+          int pdg = 0;
+          if (entry.first.find("lut") != 0) {
+            continue;
+          }
+          if (entry.first.find("lutEl") != std::string::npos) {
+            pdg = kElectron;
+          } else if (entry.first.find("lutMu") != std::string::npos) {
+            pdg = kMuonMinus;
+          } else if (entry.first.find("lutPi") != std::string::npos) {
+            pdg = kPiPlus;
+          } else if (entry.first.find("lutKa") != std::string::npos) {
+            pdg = kKPlus;
+          } else if (entry.first.find("lutPr") != std::string::npos) {
+            pdg = kProton;
+          } else if (entry.first.find("lutDe") != std::string::npos) {
+            pdg = o2::constants::physics::kDeuteron;
+          } else if (entry.first.find("lutTr") != std::string::npos) {
+            pdg = o2::constants::physics::kTriton;
+          } else if (entry.first.find("lutHe3") != std::string::npos) {
+            pdg = o2::constants::physics::kHelium3;
+          } else if (entry.first.find("lutAl") != std::string::npos) {
+            pdg = o2::constants::physics::kAlpha;
+          }
 
-    for (int icfg = 0; icfg < nGeometries; ++icfg) {
-      const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
-      mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
-      mSmearer[icfg]->setCleanupDownloadedFile(cleanLutWhenLoaded.value);
-      mSmearer[icfg]->setCcdbManager(ccdb.operator->());
-      mSmearer[icfg]->setDownloadPath("./.ALICE3/TOFPID/");
-      std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
-      for (const auto& entry : globalConfiguration) {
-        int pdg = 0;
-        if (entry.first.find("lut") != 0) {
-          continue;
-        }
-        if (entry.first.find("lutEl") != std::string::npos) {
-          pdg = kElectron;
-        } else if (entry.first.find("lutMu") != std::string::npos) {
-          pdg = kMuonMinus;
-        } else if (entry.first.find("lutPi") != std::string::npos) {
-          pdg = kPiPlus;
-        } else if (entry.first.find("lutKa") != std::string::npos) {
-          pdg = kKPlus;
-        } else if (entry.first.find("lutPr") != std::string::npos) {
-          pdg = kProton;
-        } else if (entry.first.find("lutDe") != std::string::npos) {
-          pdg = o2::constants::physics::kDeuteron;
-        } else if (entry.first.find("lutTr") != std::string::npos) {
-          pdg = o2::constants::physics::kTriton;
-        } else if (entry.first.find("lutHe3") != std::string::npos) {
-          pdg = o2::constants::physics::kHelium3;
-        } else if (entry.first.find("lutAl") != std::string::npos) {
-          pdg = o2::constants::physics::kAlpha;
-        }
-
-        std::string filename = entry.second;
-        if (pdg == 0) {
-          LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
-        }
-        LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
-        if (filename.empty()) {
-          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
-        }
-        // strip from leading/trailing spaces
-        filename.erase(0, filename.find_first_not_of(" "));
-        filename.erase(filename.find_last_not_of(" ") + 1);
-        if (filename.empty()) {
-          LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
-        }
-        bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
-        if (!success) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
+          std::string filename = entry.second;
+          if (pdg == 0) {
+            LOG(fatal) << "Unknown LUT entry " << entry.first << " for global configuration";
+          }
+          LOG(info) << "Loading LUT for pdg " << pdg << " for config " << icfg << " from provided file '" << filename << "'";
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          // strip from leading/trailing spaces
+          filename.erase(0, filename.find_first_not_of(" "));
+          filename.erase(filename.find_last_not_of(" ") + 1);
+          if (filename.empty()) {
+            LOG(warning) << "No LUT file passed for pdg " << pdg << ", skipping.";
+          }
+          bool success = mSmearer[icfg]->loadTable(pdg, filename.c_str());
+          if (!success) {
+            LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << filename;
+          }
         }
       }
     }

@@ -38,7 +38,6 @@ using namespace o2::framework::expressions;
 using namespace std;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
-using MyCollisionsWithSC = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorsShifteds>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
 struct jEPFlowAnalysis {
@@ -84,7 +83,7 @@ struct jEPFlowAnalysis {
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "Total number of detectors in qVectorsTable"};
   Configurable<int> cfgnMode{"cfgnMode", 1, "the number of modulations"};
 
-  Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
+  Configurable<bool> cfgManShiftCorr{"cfgManShiftCorr", false, "additional shift correction"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
   Configurable<float> cfgVertexZ{"cfgVertexZ", 10.0, "Maximum vertex Z selection"};
 
@@ -219,7 +218,7 @@ struct jEPFlowAnalysis {
     epFlowHistograms.add("hVertex", "", {HistType::kTH1F, {axisVertex}});
   }
 
-  void processWithSC(MyCollisionsWithSC::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
+  void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
     if (cfgAddEvtSel) {
       if (std::abs(coll.posZ()) > cfgVertexZ)
@@ -259,96 +258,10 @@ struct jEPFlowAnalysis {
     epFlowHistograms.fill(HIST("hCentrality"), cent);
     epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
     float eps[3] = {0.};
-
-    if (coll.qvecAmp()[detId] < 1e-5 || coll.qvecAmp()[refAId] < 1e-5 || coll.qvecAmp()[refBId] < 1e-5)
-      return;
-
-    for (int i = 0; i < cfgnMode; i++) { // loop over different harmonic orders
-      harmInd = cfgnTotalSystem * i;     // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
-      eps[0] = helperEP.GetEventPlane(coll.qvecShiftedRe()[detId + harmInd], coll.qvecShiftedIm()[detId + harmInd], i + 2);
-      eps[1] = helperEP.GetEventPlane(coll.qvecShiftedRe()[refAId + harmInd], coll.qvecShiftedIm()[refAId + harmInd], i + 2);
-      eps[2] = helperEP.GetEventPlane(coll.qvecShiftedRe()[refBId + harmInd], coll.qvecShiftedIm()[refBId + harmInd], i + 2);
-
-      float resNumA = helperEP.GetResolution(eps[0], eps[1], i + 2);
-      float resNumB = helperEP.GetResolution(eps[0], eps[2], i + 2);
-      float resDenom = helperEP.GetResolution(eps[1], eps[2], i + 2);
-
-      epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
-      epFlowHistograms.fill(HIST("EpRefA"), i + 2, cent, eps[1]);
-      epFlowHistograms.fill(HIST("EpRefB"), i + 2, cent, eps[2]);
-
-      epFlowHistograms.fill(HIST("EpResDetRefA"), i + 2, cent, resNumA);
-      epFlowHistograms.fill(HIST("EpResDetRefB"), i + 2, cent, resNumB);
-      epFlowHistograms.fill(HIST("EpResRefARefB"), i + 2, cent, resDenom);
-
-      epFlowHistograms.fill(HIST("EpResQvecDetRefAxx"), i + 2, cent, coll.qvecShiftedRe()[detId + harmInd] * coll.qvecShiftedRe()[refAId + harmInd] + coll.qvecShiftedIm()[detId + harmInd] * coll.qvecShiftedIm()[refAId + harmInd]);
-      epFlowHistograms.fill(HIST("EpResQvecDetRefAxy"), i + 2, cent, coll.qvecShiftedRe()[refAId + harmInd] * coll.qvecShiftedIm()[detId + harmInd] - coll.qvecShiftedRe()[detId + harmInd] * coll.qvecShiftedIm()[refAId + harmInd]);
-      epFlowHistograms.fill(HIST("EpResQvecDetRefBxx"), i + 2, cent, coll.qvecShiftedRe()[detId + harmInd] * coll.qvecShiftedRe()[refBId + harmInd] + coll.qvecShiftedIm()[detId + harmInd] * coll.qvecShiftedIm()[refBId + harmInd]);
-      epFlowHistograms.fill(HIST("EpResQvecDetRefBxy"), i + 2, cent, coll.qvecShiftedRe()[refBId + harmInd] * coll.qvecShiftedIm()[detId + harmInd] - coll.qvecShiftedRe()[detId + harmInd] * coll.qvecShiftedIm()[refBId + harmInd]);
-      epFlowHistograms.fill(HIST("EpResQvecRefARefBxx"), i + 2, cent, coll.qvecShiftedRe()[refAId + harmInd] * coll.qvecShiftedRe()[refBId + harmInd] + coll.qvecShiftedIm()[refAId + harmInd] * coll.qvecShiftedIm()[refBId + harmInd]);
-      epFlowHistograms.fill(HIST("EpResQvecRefARefBxy"), i + 2, cent, coll.qvecShiftedRe()[refBId + harmInd] * coll.qvecShiftedIm()[refAId + harmInd] - coll.qvecShiftedRe()[refAId + harmInd] * coll.qvecShiftedIm()[refBId + harmInd]);
-
-      float weight = 1.0;
-
-      for (const auto& track : tracks) {
-        if (trackSel(track))
-          continue;
-        if (cfgEffCor) {
-          weight /= getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
-        }
-
-        float vn = std::cos((i + 2) * (track.phi() - eps[0]));
-        float vnSin = std::sin((i + 2) * (track.phi() - eps[0]));
-
-        epFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn * weight);
-        epFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vnSin * weight);
-
-        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (std::cos(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedRe()[detId + harmInd] + std::sin(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedIm()[detId + harmInd]) * weight);
-        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (std::sin(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedRe()[detId + harmInd] - std::cos(track.phi() * static_cast<float>(i + 2)) * coll.qvecShiftedIm()[detId + harmInd]) * weight);
-      }
-    }
-  }
-  PROCESS_SWITCH(jEPFlowAnalysis, processWithSC, "process with shift-corrected qvectors", false);
-
-  void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
-  {
-    if (cfgAddEvtSel) {
-      if (std::abs(coll.posZ()) > cfgVertexZ)
-        return;
-      switch (cfgEvtSel) {
-        case 0: // Sel8
-          if (!coll.sel8())
-            return;
-          break;
-        case 1: // PbPb standard
-          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 2: // PbPb with pileup
-          if (!coll.sel8() || !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
-              !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 3: // Small systems (OO, NeNe, pp)
-          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        default:
-          LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
-      }
-      // Check occupancy
-      if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
-        return;
-    }
-
-    float cent = coll.cent();
-    epFlowHistograms.fill(HIST("hCentrality"), cent);
-    epFlowHistograms.fill(HIST("hVertex"), coll.posZ());
-    float eps[3] = {0.};
     float qx_shifted[3] = {0.};
     float qy_shifted[3] = {0.};
 
-    if (cfgShiftCorr) {
+    if (cfgManShiftCorr) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
@@ -379,7 +292,14 @@ struct jEPFlowAnalysis {
 
       float weight = 1.0;
 
-      if (cfgShiftCorr) {
+      qx_shifted[0] = coll.qvecRe()[4 * detId + harmInd];
+      qy_shifted[0] = coll.qvecIm()[4 * detId + harmInd];
+      qx_shifted[1] = coll.qvecRe()[4 * refAId + harmInd];
+      qy_shifted[1] = coll.qvecIm()[4 * refAId + harmInd];
+      qx_shifted[2] = coll.qvecRe()[4 * refBId + harmInd];
+      qy_shifted[2] = coll.qvecIm()[4 * refBId + harmInd];
+
+      if (cfgManShiftCorr) {
         constexpr int kShiftBins = 10;
         for (int ishift = 1; ishift <= kShiftBins; ishift++) {
           auto coeffshiftxDet = shiftprofile.at(i)->GetBinContent(shiftprofile.at(i)->FindBin(cent, 2.0 * detId + 0.5, ishift - 0.5));
@@ -426,14 +346,21 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxy"), i + 2, cent, qx_shifted[2] * qy_shifted[1] - qx_shifted[1] * qy_shifted[2]);
 
       for (const auto& track : tracks) {
+        if (trackSel(track))
+          continue;
+
+        if (cfgEffCor) {
+          weight /= getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
+        }
+
         float vn = std::cos((i + 2) * (track.phi() - eps[0]));
         float vnSin = std::sin((i + 2) * (track.phi() - eps[0]));
 
-        epFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn * weight);
-        epFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vnSin * weight);
+        epFlowHistograms.fill(HIST("vncos"), i + 2, cent, track.pt(), vn, weight);
+        epFlowHistograms.fill(HIST("vnsin"), i + 2, cent, track.pt(), vnSin, weight);
 
-        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]) * weight);
-        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]) * weight);
+        epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
+        epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
       }
     }
   }
