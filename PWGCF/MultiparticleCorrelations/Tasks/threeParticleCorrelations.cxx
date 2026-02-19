@@ -43,7 +43,6 @@ struct ThreeParticleCorrelations {
 
   // Analysis parameters
   float centMin = 0.0, centMax = 90.0;
-  float v0PtMin = 0.6, v0PtMax = 12.0;
   float v0EtaMax = 0.72;
   float trackPtMin = 0.2, trackPtMax = 3.0;
   float trackEtaMax = 0.8;
@@ -64,6 +63,8 @@ struct ThreeParticleCorrelations {
   // V0 filter parameters
   struct : ConfigurableGroup {
     std::string prefix = "V0Selection";
+    Configurable<float> v0PtMin{"v0PtMin", 0.6, "Minimum V0 transverse momentum"};
+    Configurable<float> v0PtMax{"v0PtMax", 12.0, "Maximum V0 transverse momentum"};
     Configurable<float> tpcNCrossedRows{"tpcNCrossedRows", 70.0, "Minimum number of TPC crossed rows"};
     Configurable<float> decayR{"decayR", 1.2, "Minimum V0 decay radius (cm)"};
     Configurable<float> ctau{"ctau", 30.0, "Maximum V0 proper lifetime (cm)"};
@@ -135,9 +136,9 @@ struct ThreeParticleCorrelations {
 
   // Partitions
   Partition<MyFilteredMCParticles> mcTracks = aod::mcparticle::pt > trackPtMin&& aod::mcparticle::pt < trackPtMax;
-  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0PtMin&& aod::mcparticle::pt < v0PtMax&& nabs(aod::mcparticle::eta) < v0EtaMax;
+  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0SelGroup.v0PtMin&& aod::mcparticle::pt < v0SelGroup.v0PtMax&& nabs(aod::mcparticle::eta) < v0EtaMax;
   Partition<MyFilteredMCParticles> mcTriggers = ((aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) &&
-                                                 aod::mcparticle::pt > v0PtMin && aod::mcparticle::pt < v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax);
+                                                 aod::mcparticle::pt > v0SelGroup.v0PtMin && aod::mcparticle::pt < v0SelGroup.v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax);
   Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > pionPtMin && aod::mcparticle::pt < pionPtMax) ||
                                                    ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > kaonPtMin && aod::mcparticle::pt < kaonPtMax) ||
                                                    ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > protonPtMin));
@@ -1056,7 +1057,7 @@ struct ThreeParticleCorrelations {
   {
 
     // Kinematic cuts
-    if (v0.pt() <= v0PtMin || v0.pt() >= v0PtMax || std::abs(v0.eta()) >= v0EtaMax) {
+    if (v0.pt() <= v0SelGroup.v0PtMin || v0.pt() >= v0SelGroup.v0PtMax || std::abs(v0.eta()) >= v0EtaMax) {
       return false;
     }
 

@@ -144,11 +144,9 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
     map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
     for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
       const auto& candidate = tracks.rawIteratorAt(glmuonId);
-      if (track.mchtrackId() != candidate.mchtrackId() && track.mfttrackId() == candidate.mfttrackId()) {
-        if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-          if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
-            map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
-          }
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId()) {
+        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
     } // end of glmuonId

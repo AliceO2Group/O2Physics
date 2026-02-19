@@ -15,6 +15,7 @@
 
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/EMNonLin.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
@@ -68,6 +69,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
+using namespace o2::pwgem::nonlin;
 
 enum QvecEstimator {
   FT0M = 0,
@@ -218,10 +220,12 @@ struct CalibTaskEmc {
 
   struct : ConfigurableGroup {
     std::string prefix = "correctionConfig";
-    Configurable<bool> cfgEnableNonLin{"cfgEnableNonLin", false, "flag to turn extra non linear energy calibration on/off"};
+    Configurable<bool> cfgEnableNonLinEMC{"cfgEnableNonLinEMC", false, "flag to turn extra non linear energy calibration for EMCal on/off"};
+    Configurable<bool> cfgEnableNonLinPCM{"cfgEnableNonLinPCM", false, "flag to turn extra non linear energy calibration for PCM on/off"};
   } correctionConfig;
 
   SliceCache cache;
+  EMNonLin emNonLin;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   int runNow = 0;
   int runBefore = -1;
@@ -761,6 +765,9 @@ struct CalibTaskEmc {
   // PCM-EMCal same event
   void processEMCalPCMC(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    float corrNonLin1 = 1.f;
+    float corrNonLin2 = 1.f;
+
     if (clusters.size() <= 0 && photons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
@@ -801,10 +808,21 @@ struct CalibTaskEmc {
           }
         }
 
+        if (correctionConfig.cfgEnableNonLinEMC) {
+          corrNonLin1 = emNonLin.getCorrectionFactor(g1.e(), o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, getCentrality(collision));
+        }
+
+        if (correctionConfig.cfgEnableNonLinPCM) {
+          corrNonLin2 = emNonLin.getCorrectionFactor(g2.pt(), o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, getCentrality(collision));
+        }
+
+        float photon1Pt = corrNonLin1 * g1.pt();
+        float photon2Pt = corrNonLin2 * g2.pt();
+
         // EMCal photon v1
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(photon1Pt, g1.eta(), g1.phi(), 0.);
         // PCM photon v2s
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(photon2Pt, g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();
@@ -828,7 +846,7 @@ struct CalibTaskEmc {
           registry.fill(HIST("hMesonCuts"), 5);
           continue;
         }
-        runFlowAnalysis<0>(collision, vMeson, g1.pt());
+        runFlowAnalysis<0>(collision, vMeson, corrNonLin1 * g1.e());
       }
     }
   }
@@ -837,6 +855,9 @@ struct CalibTaskEmc {
   // PCM-EMCal mixed event
   void processEMCalPCMMixed(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& pcmPhotons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    float corrNonLin1 = 1.f;
+    float corrNonLin2 = 1.f;
+
     if (clusters.size() <= 0 && pcmPhotons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
@@ -887,8 +908,20 @@ struct CalibTaskEmc {
             continue;
           }
         }
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+
+        if (correctionConfig.cfgEnableNonLinEMC) {
+          corrNonLin1 = emNonLin.getCorrectionFactor(g1.e(), o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, getCentrality(c1));
+        }
+
+        if (correctionConfig.cfgEnableNonLinPCM) {
+          corrNonLin2 = emNonLin.getCorrectionFactor(g2.pt(), o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, getCentrality(c2));
+        }
+
+        float photon1Pt = corrNonLin1 * g1.pt();
+        float photon2Pt = corrNonLin2 * g2.pt();
+
+        ROOT::Math::PtEtaPhiMVector v1(photon1Pt, g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(photon2Pt, g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();
@@ -914,7 +947,7 @@ struct CalibTaskEmc {
           continue;
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
-        runFlowAnalysis<2>(c1, vMeson, g1.pt());
+        runFlowAnalysis<2>(c1, vMeson, corrNonLin1 * g1.e());
       }
     }
   }
@@ -923,6 +956,9 @@ struct CalibTaskEmc {
   // Pi0 from EMCal
   void processPCM(CollsWithQvecs const& collisions, PCMPhotons const& photons, aod::V0Legs const&)
   {
+    float corrNonLin1 = 1.f;
+    float corrNonLin2 = 1.f;
+
     if (photons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
@@ -946,13 +982,21 @@ struct CalibTaskEmc {
           continue;
         }
 
-        float asymmetry = (g1.pt() - g2.pt()) / (g1.pt() + g2.pt());
+        if (correctionConfig.cfgEnableNonLinPCM) {
+          corrNonLin1 = emNonLin.getCorrectionFactor(g1.pt(), o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, getCentrality(collision));
+          corrNonLin2 = emNonLin.getCorrectionFactor(g2.pt(), o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, getCentrality(collision));
+        }
+
+        float photon1Pt = corrNonLin1 * g1.pt();
+        float photon2Pt = corrNonLin2 * g2.pt();
+
+        float asymmetry = (photon1Pt - photon2Pt) / (photon1Pt + photon2Pt);
         if (std::fabs(asymmetry) > cfgMaxAsymmetry) { // only use symmetric decays
           continue;
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(photon1Pt, g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(photon2Pt, g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
@@ -971,7 +1015,7 @@ struct CalibTaskEmc {
           registry.fill(HIST("mesonQA/hAlphaPt"), asymmetry, vMeson.Pt());
         }
         registry.fill(HIST("hMesonCuts"), 6);
-        runFlowAnalysis<0>(collision, vMeson, g1.pt());
+        runFlowAnalysis<0>(collision, vMeson, photon1Pt);
       }
     } // end of loop over collisions
   }
@@ -980,6 +1024,8 @@ struct CalibTaskEmc {
   // PCM-EMCal mixed event
   void processPCMMixed(FilteredCollsWithQvecs const& collisions, PCMPhotons const& pcmPhotons, aod::V0Legs const&)
   {
+    float corrNonLin1 = 1.f;
+    float corrNonLin2 = 1.f;
     if (pcmPhotons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
@@ -1017,13 +1063,21 @@ struct CalibTaskEmc {
           continue;
         }
 
-        float asymmetry = (g1.pt() - g2.pt()) / (g1.pt() + g2.pt());
+        if (correctionConfig.cfgEnableNonLinPCM) {
+          corrNonLin1 = emNonLin.getCorrectionFactor(g1.pt(), o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, getCentrality(c1));
+          corrNonLin2 = emNonLin.getCorrectionFactor(g2.pt(), o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, getCentrality(c2));
+        }
+
+        float photon1Pt = corrNonLin1 * g1.pt();
+        float photon2Pt = corrNonLin2 * g2.pt();
+
+        float asymmetry = (photon1Pt - photon2Pt) / (photon1Pt + photon2Pt);
         if (std::fabs(asymmetry) > cfgMaxAsymmetry) { // only use symmetric decays
           continue;
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(photon1Pt, g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(photon2Pt, g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
@@ -1042,7 +1096,7 @@ struct CalibTaskEmc {
           registry.fill(HIST("mesonQA/hAlphaPtMixed"), asymmetry, vMeson.Pt());
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
-        runFlowAnalysis<2>(c1, vMeson, g1.pt());
+        runFlowAnalysis<2>(c1, vMeson, photon1Pt);
       }
     }
   }
