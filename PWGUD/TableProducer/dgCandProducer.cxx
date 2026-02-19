@@ -449,7 +449,7 @@ struct DgCandProducer {
   {
     processReco(std::string("reco"), collision, bcs, tracks, fwdtracks, fv0as, ft0s, fdds);
   }
-  PROCESS_SWITCH(DGCandProducer, processData, "Produce UD table with data", true);
+  PROCESS_SWITCH(DgCandProducer, processData, "Produce UD table with data", true);
 
   // process function for reconstructed MC data
   void processMcData(MCCC const& collision, aod::McCollisions const& /*mccollisions*/, BCs const& bcs,
@@ -886,14 +886,14 @@ struct McDgCandProducer {
       }
     }
   }
-  PROCESS_SWITCH(McDGCandProducer, processMCTruth, "Produce MC tables", false);
+  PROCESS_SWITCH(McDgCandProducer, processMCTruth, "Produce MC tables", false);
 
   void processDummy(aod::Collisions const& /*collisions*/)
   {
     // do nothing
     LOGF(info, "Running dummy process function!");
   }
-  PROCESS_SWITCH(McDGCandProducer, processDummy, "Dummy function", true);
+  PROCESS_SWITCH(McDgCandProducer, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
