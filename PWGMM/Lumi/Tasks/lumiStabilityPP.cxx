@@ -375,10 +375,10 @@ struct LumiStabilityPP {
         }
         if (bcPatternB[iLocalBC]) {
           nBCsPerBcId[iLocalBC][BCB]++;
-          if (iGlobalBC - globalBCIdOfLastBCWithActivityFDD < numEmptyBCsBeforeLeadingBC) {
+          if (iGlobalBC - globalBCIdOfLastBCWithActivityFDD > numEmptyBCsBeforeLeadingBC) {
             nBCsPerBcId[iLocalBC][BCSLFDD]++;
           }
-          if (iGlobalBC - globalBCIdOfLastBCWithActivityFT0 < numEmptyBCsBeforeLeadingBC) {
+          if (iGlobalBC - globalBCIdOfLastBCWithActivityFT0 > numEmptyBCsBeforeLeadingBC) {
             nBCsPerBcId[iLocalBC][BCSLFT0]++;
           }
         }
