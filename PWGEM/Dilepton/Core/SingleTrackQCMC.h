@@ -361,7 +361,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hChi2_Pt", "chi2;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
         fRegistry.add("Track/PromptLF/positive/hChi2MFT_Pt", "chi2MFT;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
         fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMID_Pt", "chi2 match MCH-MID;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {200, 0.0f, 20}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {500, 0.0f, 50}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 50}}, false);
         fRegistry.add("Track/PromptLF/positive/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPtOverPtGen", "muon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaEta", "muon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
