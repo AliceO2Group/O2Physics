@@ -287,7 +287,7 @@ struct TrHeAnalysis {
     Configurable<float> cfgMaxDCAXY{"cfgMaxDCAXY", 10000.f, "Maximum DCA to PV in Z"};
     Configurable<float> cfgMinDCAZ{"cfgMinDCAZ", 0.f, "Minimum DCA to PV in XY"};
     Configurable<float> cfgMaxDCAZ{"cfgMaxDCAZ", 10000.f, "Maximum DCA to PV in Z"};
-    Configurable<int> cfgTrackSign{"cfgTrackSign", 0, "1: positive only, -1: negative only, 0: all tracks"};  
+    Configurable<int> cfgTrackSign{"cfgTrackSign", 0, "1: positive only, -1: negative only, 0: all tracks"};
   } trackCuts;
 
   Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams",
