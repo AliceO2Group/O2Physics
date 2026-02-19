@@ -166,11 +166,6 @@ o2physics_add_dpl_workflow(lambdajetpolarization
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdajetpolarizationions
-SOURCES lambdaJetPolarizationIons.cxx
-PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils O2Physics::AnalysisCCDB
-COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(lambdajetpolarizationionsderived
 SOURCES lambdaJetPolarizationIonsDerived.cxx
 PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
