@@ -315,8 +315,8 @@ static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
 constexpr float cutsNsigma[4][9] = {
-  {3., 3., 3., 5., 3., 3., 5., 3., 3.},                 // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
-  {3., 3., 3., 2.5, 3., 3., 5., 3., 3.},                // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
+  {3., 3., 3., 5., 3., 3., 5., 3., 3.},                 // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correlation
+  {3., 3., 3., 2.5, 3., 3., 5., 3., 3.},                // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correlation
   {999., 999., 999., 2.5, 999., 999., 5., 999., 3.},    // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
   {999., 999., 999., 999., 999., 999., -4., 999., 999.} // ITS used only for femto selected deuteron for less than pt threshold
 };
@@ -781,7 +781,7 @@ class HfFilterHelper
   float mPtMinSigmaC2520PlusPlus{0.f};                                            // pt min SigmaC(2520)++ candidate
   std::array<float, 4> mNSigmaPrCutsForFemto{3., 3., 3., -4.};                    // cut values for Nsigma TPC, TOF, combined, ITS for femto protons
   std::array<float, 4> mNSigmaDeCutsForFemto{3., 3., 3., -4.};                    // cut values for Nsigma TPC, TOF, combined, ITS for femto deuterons
-  std::array<float, 4> mNSigmaPrCutsForSigmaCPr{3., 3., 3., -4.};                 // cut values for Nsigma TPC, TOF, combined, ITS for proton in Sc-p correaltion
+  std::array<float, 4> mNSigmaPrCutsForSigmaCPr{3., 3., 3., -4.};                 // cut values for Nsigma TPC, TOF, combined, ITS for proton in Sc-p correlation
   float mNSigmaTpcPrCutForCharmBaryons{3.};                                       // maximum Nsigma TPC for protons in Lc and Xic decays
   float mNSigmaTofPrCutForCharmBaryons{3.};                                       // maximum Nsigma TOF for protons in Lc and Xic decays
   float mNSigmaTpcKaCutFor3Prongs{3.};                                            // maximum Nsigma TPC for kaons in 3-prong decays
