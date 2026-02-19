@@ -489,7 +489,7 @@ struct LumiStabilityPP {
         if (doTypeBC->get(0u, iBCCategory)) {
           int nTotBCs{0};
           int nTotTriggers{0};
-          for (int iBcId{0}; iBcId<nBCsPerOrbit; ++iBcId) {
+          for (int iBcId{0}; iBcId < nBCsPerOrbit; ++iBcId) {
             float muPerBcId = getMu(nTriggersPerBcId[iBcId][iTrigger][iBCCategory], nBCsPerBcId[iBcId][iBCCategory]);
             histMuPerBcId[iTrigger][iBCCategory][runNumber]->Fill(iBcId, muPerBcId);
             nTotBCs += nBCsPerBcId[iBcId][iBCCategory];
