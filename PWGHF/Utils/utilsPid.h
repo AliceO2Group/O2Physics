@@ -56,7 +56,7 @@ enum PidMethod {
 /// \param bbParams is Bethe–Bloch  parameters
 /// \return             TPC nσ for the chosen nucleus hypothesis (or -999 if not applicable).
 template <typename TrackType>
-float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
+float getNSigmaTpcLightNucleiBetheBloch(const TrackType& track,
                                         HfProngSpecies species,
                                         const o2::framework::Configurable<o2::framework::LabeledArray<float>>& bbParams)
 {
@@ -133,7 +133,7 @@ void fillProngPidLightNuclei(TTrack const& track,
   if constexpr (SpecPid == HfProngSpecies::Deuteron) {
     // deuteron PID
     if (track.hasTPC()) {
-      nSigTpc = getTPCNSigmaLightNucleiBetheBloch(track, SpecPid, bbParams);
+      nSigTpc = getNSigmaTpcLightNucleiBetheBloch(track, SpecPid, bbParams);
     }
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaDe();
@@ -141,7 +141,7 @@ void fillProngPidLightNuclei(TTrack const& track,
   } else if constexpr (SpecPid == HfProngSpecies::Triton) {
     // triton PID
     if (track.hasTPC()) {
-      nSigTpc = getTPCNSigmaLightNucleiBetheBloch(track, SpecPid, bbParams);
+      nSigTpc = getNSigmaTpcLightNucleiBetheBloch(track, SpecPid, bbParams);
     }
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaTr();
@@ -149,7 +149,7 @@ void fillProngPidLightNuclei(TTrack const& track,
   } else if constexpr (SpecPid == HfProngSpecies::Helium3) {
     // helium3 PID
     if (track.hasTPC()) {
-      nSigTpc = getTPCNSigmaLightNucleiBetheBloch(track, SpecPid, bbParams);
+      nSigTpc = getNSigmaTpcLightNucleiBetheBloch(track, SpecPid, bbParams);
     }
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaHe();
@@ -157,7 +157,7 @@ void fillProngPidLightNuclei(TTrack const& track,
   } else if constexpr (SpecPid == HfProngSpecies::Alpha) {
     // helium4 PID
     if (track.hasTPC()) {
-      nSigTpc = getTPCNSigmaLightNucleiBetheBloch(track, SpecPid, bbParams);
+      nSigTpc = getNSigmaTpcLightNucleiBetheBloch(track, SpecPid, bbParams);
     }
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaAl();
