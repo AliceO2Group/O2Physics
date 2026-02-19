@@ -705,7 +705,7 @@ struct OnTheFlyTracker {
 
   float dNdEta = 0.f;                                                      // Charged particle multiplicity to use in the efficiency evaluation
   std::pair<float, float> vertexReconstructionEfficiencyCounters = {0, 0}; // {nVerticesWithMoreThan2Contributors, nVerticesReconstructed}
-  void processWithLUTs(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, int const& icfg)
+  void processWithLUTs(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const int icfg)
   {
     vertexReconstructionEfficiencyCounters.first += 1;
     const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
@@ -1736,7 +1736,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McParticlesWithDau const& mcParticles, int const& icfg)
+  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles, const int icfg)
   {
     // const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
@@ -1991,7 +1991,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, aod::McParticlesWithDau const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));

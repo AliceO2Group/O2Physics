@@ -60,11 +60,11 @@ struct Alice3DecayerQA {
   Partition<aod::McParticles> trueKa = aod::mcparticle::pdgCode == static_cast<int>(kKMinus);
   Partition<aod::McParticles> truePr = aod::mcparticle::pdgCode == static_cast<int>(kProton);
 
-  Partition<aod::McParticlesWithDau> trueElWithDau = aod::mcparticle::pdgCode == static_cast<int>(kElectron);
-  Partition<aod::McParticlesWithDau> trueMuWithDau = aod::mcparticle::pdgCode == static_cast<int>(kMuonMinus);
-  Partition<aod::McParticlesWithDau> truePiWithDau = aod::mcparticle::pdgCode == static_cast<int>(kPiPlus);
-  Partition<aod::McParticlesWithDau> trueKaWithDau = aod::mcparticle::pdgCode == static_cast<int>(kKMinus);
-  Partition<aod::McParticlesWithDau> truePrWithDau = aod::mcparticle::pdgCode == static_cast<int>(kProton);
+  Partition<aod::McPartsWithDau> trueElWithDau = aod::mcparticle::pdgCode == static_cast<int>(kElectron);
+  Partition<aod::McPartsWithDau> trueMuWithDau = aod::mcparticle::pdgCode == static_cast<int>(kMuonMinus);
+  Partition<aod::McPartsWithDau> truePiWithDau = aod::mcparticle::pdgCode == static_cast<int>(kPiPlus);
+  Partition<aod::McPartsWithDau> trueKaWithDau = aod::mcparticle::pdgCode == static_cast<int>(kKMinus);
+  Partition<aod::McPartsWithDau> truePrWithDau = aod::mcparticle::pdgCode == static_cast<int>(kProton);
 
   void init(o2::framework::InitContext&)
   {
@@ -123,7 +123,7 @@ struct Alice3DecayerQA {
     }
   }
 
-  void processMCWithDau(const aod::McCollision&, const aod::McParticlesWithDau& particles)
+  void processMCWithDau(const aod::McCollision&, const aod::McPartsWithDau& particles)
   {
     for (const auto& particle : trueElWithDau) {
       histos.fill(HIST("MCWithDau/hElPt"), particle.pt());
@@ -155,7 +155,7 @@ struct Alice3DecayerQA {
       histos.fill(HIST("MCWithDau/hEta"), particle.eta());
       histos.fill(HIST("MCWithDau/hRapidity"), particle.y());
       histos.fill(HIST("MCWithDau/hIsAlive"), particle.isAlive());
-      histos.fill(HIST("MCWithDau/hIsPrimary"), particle.isPrimary());
+      histos.fill(HIST("MCWithDau/hIsPrimary"), particle.isPhysicalPrimary());
       histos.fill(HIST("MCWithDau/hPx"), particle.px());
       histos.fill(HIST("MCWithDau/hPy"), particle.py());
       histos.fill(HIST("MCWithDau/hPz"), particle.pz());

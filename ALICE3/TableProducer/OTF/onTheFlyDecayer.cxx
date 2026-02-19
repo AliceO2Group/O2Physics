@@ -18,24 +18,13 @@
 #include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFMCParticle.h"
-
-#include <CCDB/BasicCCDBManager.h>
+#include <Framework/runDataProcessing.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/Propagator.h>
-#include <DetectorsVertexing/PVertexer.h>
-#include <DetectorsVertexing/PVertexerHelpers.h>
-#include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/StaticFor.h>
-#include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <SimulationDataFormat/InteractionSampler.h>
 
 #include <TPDGCode.h>
 
@@ -69,7 +58,7 @@ static const std::vector<int> pdgCodes{kK0Short,
                                        kOmegaPlusBar};
 
 struct OnTheFlyDecayer {
-  Produces<aod::McParticlesWithDau> tableMcParticlesWithDau;
+  Produces<aod::McPartsWithDau> tableMcParticlesWithDau;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -77,6 +66,7 @@ struct OnTheFlyDecayer {
 
   Configurable<int> seed{"seed", 0, "Set seed for particle decayer"};
   Configurable<float> magneticField{"magneticField", 20., "Magnetic field (kG)"};
+  Configurable<float> maxEta{"maxEta", 2.5, "Only decay particles that appear within selected eta range"};
   Configurable<LabeledArray<int>> enabledDecays{"enabledDecays",
                                                 {DefaultParameters[0], NumDecays, NumParameters, particleNames, parameterNames},
                                                 "Enable option for particle to be decayed: 0 - no, 1 - yes"};
@@ -122,6 +112,15 @@ struct OnTheFlyDecayer {
                                                      y(y),
                                                      isAlive(isAlive),
                                                      isPrimary(isPrimary) {}
+
+    bool hasNaN() const
+    {
+      return std::isnan(px) || std::isnan(py) || std::isnan(pz) || std::isnan(e) ||
+            std::isnan(vx) || std::isnan(vy) || std::isnan(vz) || std::isnan(vt) ||
+            std::isnan(phi) || std::isnan(eta) || std::isnan(pt) || std::isnan(p) ||
+            std::isnan(y) || std::isnan(weight);
+    }
+
     int collisionId;
     int pdgCode;
     int statusCode;
@@ -147,6 +146,10 @@ struct OnTheFlyDecayer {
         mEnabledDecays.push_back(pdgCodes[i]);
       }
     }
+
+    auto hNaNBookkeeping = histos.add<TH1>("hNaNBookkeeping", "hNaNBookkeeping", kTH1D, {{2, -0.5, 1.5}});
+    hNaNBookkeeping->GetXaxis()->SetBinLabel(1, "OK");
+    hNaNBookkeeping->GetXaxis()->SetBinLabel(2, "NaN");
 
     histos.add("K0S/hGenK0S", "hGenK0S", kTH1D, {axisPt});
     histos.add("Lambda/hGenLambda", "hGenLambda", kTH1D, {axisPt});
@@ -175,30 +178,29 @@ struct OnTheFlyDecayer {
     mcParticlesAlice3.clear();
     u_int64_t nStoredDaughters = 0;
     for (int index{0}; index < static_cast<int>(mcParticles.size()); ++index) {
-      const auto& particle = mcParticles.iteratorAt(index);
-      std::vector<o2::upgrade::OTFParticle> decayDaughters;
-      static constexpr int MaxNestedDecays = 10;
-      int nDecays = 0;
-      if (canDecay(particle.pdgCode())) {
+      const auto& particle = mcParticles.rawIteratorAt(index);
+      std::vector<o2::upgrade::OTFParticle> decayDaughters, decayStack;
+      if (canDecay(particle.pdgCode()) && std::abs(particle.eta()) < maxEta) {
         o2::track::TrackParCov o2track;
         o2::upgrade::convertMCParticleToO2Track(particle, o2track, pdgDB);
-        decayDaughters = decayer.decayParticle(pdgDB, o2track, particle.pdgCode());
-        for (size_t idau{0}; idau < decayDaughters.size(); ++idau) {
-          o2::upgrade::OTFParticle dau = decayDaughters[idau];
+        decayStack = decayer.decayParticle(pdgDB, o2track, particle.pdgCode());
+        while (!decayStack.empty()) {
+          o2::upgrade::OTFParticle otfParticle = decayStack.back();
+          decayStack.pop_back();
+
+          const bool stable = !canDecay(otfParticle.pdgCode());
+          otfParticle.setIsAlive(stable);
+          decayDaughters.push_back(otfParticle);
+
+          if (stable) {
+            continue;
+          }
+
           o2::track::TrackParCov dauTrack;
-          o2::upgrade::convertOTFParticleToO2Track(dau, dauTrack, pdgDB);
-          if (canDecay(dau.pdgCode())) {
-            dau.setIsAlive(false);
-            std::vector<o2::upgrade::OTFParticle> cascadingDaughers = decayer.decayParticle(pdgDB, dauTrack, dau.pdgCode());
-            for (size_t idaudau{0}; idaudau < cascadingDaughers.size(); ++idaudau) {
-              o2::upgrade::OTFParticle daudau = cascadingDaughers[idaudau];
-              decayDaughters.push_back(daudau);
-              if (MaxNestedDecays < ++nDecays) {
-                LOG(error) << "Seemingly stuck trying to perpetually decay products from pdg: " << particle.pdgCode();
-              }
-            }
-          } else {
-            dau.setIsAlive(true);
+          o2::upgrade::convertOTFParticleToO2Track(otfParticle, dauTrack, pdgDB);
+          std::vector<o2::upgrade::OTFParticle> daughters = decayer.decayParticle(pdgDB, dauTrack, otfParticle.pdgCode());
+          for (o2::upgrade::OTFParticle dau : daughters) {
+            decayStack.push_back(dau);
           }
         }
 
@@ -338,7 +340,7 @@ struct OnTheFlyDecayer {
         // TODO: Particle status code
         // TODO: Expression columns
         // TODO: vt
-        auto mother = mcParticles.iteratorAt(index);
+        auto mother = mcParticles.rawIteratorAt(index);
         mcParticlesAlice3.push_back(McParticleAlice3{mother.mcCollisionId(), dau.pdgCode(), 1,
                                                      -1, index, index, daughtersIdSlice[0], daughtersIdSlice[1], mother.weight(),
                                                      dau.px(), dau.py(), dau.pz(), dau.e(),
@@ -348,8 +350,13 @@ struct OnTheFlyDecayer {
     }
 
     for (const auto& particle : mcParticlesAlice3) {
-      std::span<const int> motherSpan(particle.mothersIds, 2);
+      if (particle.hasNaN()) {
+        histos.fill(HIST("hNaNBookkeeping"), 1);
+        continue;
+      }
 
+      histos.fill(HIST("hNaNBookkeeping"), 0);
+      std::span<const int> motherSpan(particle.mothersIds, 2);
       tableMcParticlesWithDau(particle.collisionId, particle.pdgCode, particle.statusCode,
                               particle.flags, motherSpan, particle.daughtersIdSlice, particle.weight,
                               particle.px, particle.py, particle.pz, particle.e,
