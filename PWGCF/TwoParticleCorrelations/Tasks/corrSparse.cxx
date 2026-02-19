@@ -239,7 +239,7 @@ struct CorrSparse {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaCut) && (cfgTrackCuts.cfgPtCutMin < aod::track::pt) && (cfgTrackCuts.cfgPtCutMax > aod::track::pt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgCutChi2prTPCcls) && (aod::track::dcaZ < cfgTrackCuts.cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaCut) && (cfgTrackCuts.cfgPtCutMin < aod::track::pt) && (cfgTrackCuts.cfgPtCutMax > aod::track::pt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgCutChi2prTPCcls) && (aod::track::dcaZ < cfgTrackCuts.cfgCutDCAz);
 
   Filter mftTrackEtaFilter = ((aod::fwdtrack::eta < cfgMftConfig.etaMftTrackMaxFilter) && (aod::fwdtrack::eta > cfgMftConfig.etaMftTrackMinFilter));
 
