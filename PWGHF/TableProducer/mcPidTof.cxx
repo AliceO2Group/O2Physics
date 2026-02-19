@@ -1128,7 +1128,7 @@ struct McPidTof {
             break;
           }
           case IdxAl: {
-            nSigma = ResponseHe.GetSeparation(mRespParamsV3, trk);
+            nSigma = ResponseAl.GetSeparation(mRespParamsV3, trk);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kAlpha) { // we rescale only true signal
                 nSigma = applyMcRecalib(IdxPr, trk.pt(), nSigma);                           // FIXME: currently postcalibrations for protons applied to alpha, to be checked
@@ -1215,8 +1215,8 @@ struct McPidTof {
             break;
           }
           case IdxAl: {
-            resolution = ResponseHe.GetExpectedSigma(mRespParamsV3, trk);
-            nSigma = ResponseHe.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = ResponseAl.GetExpectedSigma(mRespParamsV3, trk);
+            nSigma = ResponseAl.GetSeparation(mRespParamsV3, trk, resolution);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kAlpha) { // we rescale only true signal
                 nSigma = applyMcRecalib(IdxPr, trk.pt(), nSigma);                           // FIXME: currently postcalibrations for protons applied to alpha, to be checked
