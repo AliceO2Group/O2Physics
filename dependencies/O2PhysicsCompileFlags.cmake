@@ -65,7 +65,7 @@ endif()
 
 if(APPLE)
 else()
-set(SPLIT_DWARF "-gsplit-dwarf=single")
+set(SPLIT_DWARF "-gsplit-dwarf")
 endif()
 
 set(CMAKE_CXX_FLAGS_COVERAGE "${SPLIT_DWARF} -O2 -fprofile-arcs -ftest-coverage")
