@@ -49,14 +49,14 @@ enum TriggerAliases { AllBCs = 0,
                       FT0CE = 2,
                       FDD = 3,
                       NTriggerAliases };
-enum BCCategories { BCA = 0,     // A side BCs (bunch-crossings that had beam only from A side)
-                    BCB = 1,     // B type BCs (bunch-crossings that had beam from both sides)
-                    BCC = 2,     // C side BCs (bunch-crossings that had beam only from C side)
-                    BCE = 3,     // empty BCs (bunch-crossings that did not have beam from either side)
-                    BCL = 4,     // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
-                    BCSLFDD = 5, // super-leading BCs for FDD (bunch-crossings that had beam from both sides but did not have FDD activity for a configurable number of preceding BCs)
-                    BCSLFT0 = 6, // super-leading BCs for FT0 (bunch-crossings that had beam from both sides but did not have FT0 activity for a configurable number of preceding BCs)
-                    BCNL = 7,    // non-leading BCs of type B (bunch-crossings that come after a BCL and are of type B)
+enum BCCategories { BCA = 0,      // A side BCs (bunch-crossings that had beam only from A side)
+                    BCB = 1,      // B type BCs (bunch-crossings that had beam from both sides)
+                    BCC = 2,      // C side BCs (bunch-crossings that had beam only from C side)
+                    BCE = 3,      // empty BCs (bunch-crossings that did not have beam from either side)
+                    BCL = 4,      // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
+                    BCSLFDD = 5,  // super-leading BCs for FDD (bunch-crossings that had beam from both sides but did not have FDD activity for a configurable number of preceding BCs)
+                    BCSLFT0 = 6,  // super-leading BCs for FT0 (bunch-crossings that had beam from both sides but did not have FT0 activity for a configurable number of preceding BCs)
+                    BCNL = 7,     // non-leading BCs of type B (bunch-crossings that come after a BCL and are of type B)
                     BCNSLFDD = 8, // non-super-leading BCs for FDD of type B (bunch-crossings that had beam from both sides but are not SL for FDD activity for a configurable number of preceding BCs)
                     BCNSLFT0 = 9, // non-super-leading BCs for FT0 of type B (bunch-crossings that had beam from both sides but are not SL for FT0 activity for a configurable number of preceding BCs)
                     NBCCategories };
