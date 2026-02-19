@@ -47,7 +47,7 @@
 #include <map>
 #include <string>
 #include <vector>
-
+#include <set>
 // KFParticle
 #ifndef HomogeneousField
 #define HomogeneousField // o2-linter: disable=name/macro (Name is defined in KFParticle package)
@@ -232,7 +232,7 @@ struct HyperNucleus {
       v0DaughterVec.push_back(dv0 - 1);
   }
   int getNdaughters() { return static_cast<int>(daughters.size()); }
-  std::vector<int> getV0daughters() { return v0DaughterVec; };
+  std::vector<int> getV0daughters() { return v0DaughterVec; }
   std::vector<int> getNonV0daughters()
   {
     std::vector<int> vec;
