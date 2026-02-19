@@ -12,7 +12,7 @@
 /// \file   flowGfwTask.cxx
 /// \author Iris Likmeta (iris.likmeta@cern.ch)
 /// \since  Mar 28, 2024
-/// \brief  Multiparticle flow measurements with FT0 and ZDC
+/// \brief  Multiparticle flow measurements with FT0
 
 #include "FlowContainer.h"
 #include "GFW.h"
@@ -71,7 +71,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgTrackSel, bool, false, "ITS and TPC cluster selection")
@@ -80,12 +80,12 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "Custom DCA Z cut")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 1.0f, "Custom DCA XY cut")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0c, bool, false, "Centrality estimator based on FT0C signal")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0a, bool, false, "Centrality estimator based on FT0A signal")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0m, bool, false, " A centrality estimator based on FT0A+FT0C signals.")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFv0a, bool, false, "Centrality estimator based on FV0A signal")
-  O2_DEFINE_CONFIGURABLE(cfgCentEstFt0cVariant1, bool, false, "A variant of FT0C")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPt, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyNch, std::string, "", "CCDB path to Nch efficiency object")
@@ -130,14 +130,6 @@ struct FlowGfwTask {
   ConfigurableAxis axisDCAz{"axisDCAz", {200, -2, 2}, "DCA_{z} (cm)"};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
-  // Configurables for ZDC
-  Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
-  Configurable<float> maxZN{"maxZN", 4099.5, "Max ZN signal"};
-  Configurable<float> maxZP{"maxZP", 3099.5, "Max ZP signal"};
-  Configurable<float> maxZEM{"maxZEM", 3099.5, "Max ZEM signal"};
-  Configurable<int> nBinsFit{"nBinsFit", 1000, "nbinsFit"};
-  Configurable<float> maxMultFT0{"maxMultFT0", 5000, "Max FT0 signal"};
-
   // Corrections
   TH1D* mEfficiency = nullptr;
   TH1D* mEfficiencyNch = nullptr;
@@ -169,34 +161,58 @@ struct FlowGfwTask {
     kc26,
     kc28,
     kc22etagap,
+    kc22etagap02,
+    kc22etagap04,
     kc32,
     kc32etagap,
+    kc32etagap02,
+    kc32etagap04,
     kc34,
     kc34etagap,
+    kc34etagap02,
+    kc34etagap04,
     kc22Nch,
     kc24Nch,
     kc26Nch,
     kc28Nch,
     kc22Nchetagap,
+    kc22Nchetagap02,
+    kc22Nchetagap04,
     kc32Nch,
     kc32Nchetagap,
+    kc32Nchetagap02,
+    kc32Nchetagap04,
     kc34Nch,
     kc34Nchetagap,
+    kc34Nchetagap02,
+    kc34Nchetagap04,
     kc22Nch05,
     kc24Nch05,
     kc26Nch05,
     kc28Nch05,
     kc22Nch05etagap,
+    kc22Nch05etagap02,
+    kc22Nch05etagap04,
     kc32Nch05,
     kc32Nch05etagap,
+    kc32Nch05etagap02,
+    kc32Nch05etagap04,
     kc34Nch05,
     kc34Nch05etagap,
+    kc34Nch05etagap02,
+    kc34Nch05etagap04,
     kc22ft0c,
     kc22etagapft0c,
+    kc22etagap02ft0c,
+    kc22etagap04ft0c,
     kc32ft0c,
     kc32etagapft0c,
+    kc32etagap02ft0c,
+    kc32etagap04ft0c,
     kc34ft0c,
     kc34etagapft0c,
+    kc34etagap02ft0c,
+    kc34etagap04ft0c,
 
     // Count the total number of enum
     kCount_ExtraProfile
@@ -223,7 +239,6 @@ struct FlowGfwTask {
     kCentFT0A,
     kCentFT0M,
     kCentFV0A,
-    kCentFT0CVariant1,
     kNoCentEstimators
   };
 
@@ -305,12 +320,10 @@ struct FlowGfwTask {
       registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0A + 1, "FT0A");
       registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0M + 1, "FT0M");
       registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFV0A + 1, "FV0A");
-      registry.get<TH1>(HIST("hCentEstimators"))->GetXaxis()->SetBinLabel(kCentFT0CVariant1 + 1, "FT0CVar1");
       registry.add("hCentFT0C", "Uncorrected FT0C;Centrality FT0C ;Events", kTH1F, {axisCentrality});
       registry.add("hCentFT0A", "Uncorrected FT0A;Centrality FT0A ;Events", kTH1F, {axisCentrality});
       registry.add("hCentFT0M", "Uncorrected FT0M;Centrality FT0M ;Events", kTH1F, {axisCentrality});
       registry.add("hCentFV0A", "Uncorrected FV0A;Centrality FV0A ;Events", kTH1F, {axisCentrality});
-      registry.add("hCentFT0CVariant1", "Uncorrected FT0CVariant1;Centrality FT0CVariant1 ;Events", kTH1F, {axisCentrality});
 
       // Before cuts
       registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -339,24 +352,6 @@ struct FlowGfwTask {
       registry.add("FT0AAmp", ";FT0A amplitude;Events", kTH1F, {axisFT0AAmp});
       registry.add("FT0MAmp", ";FT0M amplitude;Events", kTH1F, {axisFT0MAmp});
 
-      // ZDC plots
-      const AxisSpec axisEvent{3, 0., +3.0, ""};
-      registry.add("hEventCounterForZDC", "Event counter", kTH1F, {axisEvent});
-      registry.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
-      registry.add("ZPAcoll", "ZPAcoll; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-      registry.add("ZNCcoll", "ZNCcoll; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
-      registry.add("ZPCcoll", "ZPCcoll; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-      registry.add("ZNvsFT0correl", "ZNvsFT0correl; FT0 amplitude; ZN", {HistType::kTH2F, {{{nBinsFit, 0., maxMultFT0}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-      registry.add("ZDCAmp", "ZDC Amplitude; ZDC Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-      registry.add("ZNAmp", "ZNA+ZNC Amplitude; ZN Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZN}}});
-      registry.add("ZPAmp", "ZPA+ZPC Amplitude; ZP Amplitude; Events", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZP}}});
-      registry.add("ZNvsZEMcoll", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-      registry.add("ZNvsZEMcoll05", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-      registry.add("ZNvsZEMcoll510", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-      registry.add("ZNvsZEMcoll1020", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-      registry.add("ZNvsZEMcoll2030", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-      registry.add("ZNvsZEMcollrest", "ZNvsZEMcoll; ZEM; ZDC energy (GeV)", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZEM}, {nBinsAmp, -0.5, 2. * maxZN}}}});
-
       // Track plots
       registry.add("Nch", "N_{ch} vs #Events;N_{ch};No. of Events", {HistType::kTH1D, {axisNch}});
       registry.add("Nch05", "N_{ch 0-5%} vs #Events;N_{ch 0-5%};No. of Events", {HistType::kTH1D, {axisNch}});
@@ -381,7 +376,7 @@ struct FlowGfwTask {
       registry.add("hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
       registry.add("hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
       registry.add("hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
-      registry.add("hDCAz", "DCAz after cuts", {HistType::kTH1D, {{100, -3, 3}}});
+      registry.add("hDCAz", "DCAz after cuts; Pt", {HistType::kTH2D, {{100, -3, 3}, {50, 0, 10}}});
       registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50, -1, 1}, {50, 0, 10}}});
 
       // Additional Output histograms
@@ -390,37 +385,61 @@ struct FlowGfwTask {
       registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
       registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
       registry.add("c22etagap", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+        registry.add("c22etagap02", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+        registry.add("c22etagap04", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
       registry.add("c32", ";Centrality  (%) ; C_{3}{2} ", {HistType::kTProfile, {axisCentrality}});
       registry.add("c32etagap", ";Centrality  (%) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+        registry.add("c32etagap02", ";Centrality  (%) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+        registry.add("c32etagap04", ";Centrality  (%) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
       registry.add("c34", ";Centrality  (%) ; C_{3}{4} ", {HistType::kTProfile, {axisCentrality}});
       registry.add("c34etagap", ";Centrality  (%) ; C_{3}{4} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+        registry.add("c34etagap02", ";Centrality  (%) ; C_{3}{4} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+        registry.add("c34etagap04", ";Centrality  (%) ; C_{3}{4} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
 
       registry.add("c22Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{2} ", {HistType::kTProfile, {axisNch}});
       registry.add("c24Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
       registry.add("c26Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
       registry.add("c28Nch", ";N_{ch}(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
       registry.add("c22Nchetagap", ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+        registry.add("c22Nchetagap02", ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+        registry.add("c22Nchetagap04", ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
       registry.add("c32Nch", ";N_{ch}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
       registry.add("c32Nchetagap", ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+        registry.add("c32Nchetagap02", ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+        registry.add("c32Nchetagap04", ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
       registry.add("c34Nch", ";N_{ch}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
       registry.add("c34Nchetagap", ";N_{ch}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+        registry.add("c34Nchetagap02", ";N_{ch}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+        registry.add("c34Nchetagap04", ";N_{ch}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
 
-      registry.add("c22Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} ", {HistType::kTProfile, {axisNch}});
-      registry.add("c24Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
-      registry.add("c26Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
-      registry.add("c28Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
-      registry.add("c22Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
-      registry.add("c32Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
-      registry.add("c32Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
-      registry.add("c34Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
-      registry.add("c34Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+//      registry.add("c22Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} ", {HistType::kTProfile, {axisNch}});
+//      registry.add("c24Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
+//      registry.add("c26Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
+//      registry.add("c28Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
+//      registry.add("c22Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+//        registry.add("c22Nch05etagap02", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+//        registry.add("c22Nch05etagap04", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+//      registry.add("c32Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} ", {HistType::kTProfile, {axisNch}});
+//      registry.add("c32Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+//        registry.add("c32Nch05etagap02", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+//        registry.add("c32Nch05etagap04", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisNch}});
+//      registry.add("c34Nch05", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+//      registry.add("c34Nch05etagap", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+//        registry.add("c34Nch05etagap02", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
+//        registry.add("c34Nch05etagap04", ";N_{ch 0-5%}(|#eta| < 0.8) ; C_{3}{4} ", {HistType::kTProfile, {axisNch}});
 
       registry.add("c22ft0c", ";FT0C Amplitude ; C_{2}{2} ", {HistType::kTProfile, {axisFT0CAmp}});
       registry.add("c22etagapft0c", ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
+//        registry.add("c22etagap02ft0c", ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
+//        registry.add("c22etagap04ft0c", ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
       registry.add("c32ft0c", ";FT0C Amplitude ; C_{2}{2} ", {HistType::kTProfile, {axisFT0CAmp}});
       registry.add("c32etagapft0c", ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
+//        registry.add("c32etagap02ft0c", ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
+//        registry.add("c32etagap04ft0c", ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
       registry.add("c34ft0c", ";FT0C Amplitude ; C_{3}{4} ", {HistType::kTProfile, {axisFT0CAmp}});
       registry.add("c34etagapft0c", ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
+//        registry.add("c34etagap02ft0c", ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
+//        registry.add("c34etagap04ft0c", ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8) ", {HistType::kTProfile, {axisFT0CAmp}});
     } // End doprocessData
 
     const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
@@ -480,37 +499,61 @@ struct FlowGfwTask {
       bootstrapArray[i][kc26] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26", i), ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
       bootstrapArray[i][kc28] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28", i), ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
       bootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+        bootstrapArray[i][kc22etagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap02", i), ";Centrality (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+        bootstrapArray[i][kc22etagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap04", i), ";Centrality (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
       bootstrapArray[i][kc32] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32", i), ";Centrality  (%) ; C_{3}{2}", {HistType::kTProfile, {axisCentrality}});
       bootstrapArray[i][kc32etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagap", i), ";Centrality (%) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+        bootstrapArray[i][kc32etagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagap02", i), ";Centrality (%) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+        bootstrapArray[i][kc32etagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagap04", i), ";Centrality (%) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
       bootstrapArray[i][kc34] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34", i), ";Centrality (%) ; C_{3}{4}", {HistType::kTProfile, {axisCentrality}});
       bootstrapArray[i][kc34etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34etagap", i), ";Centrality (%) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+        bootstrapArray[i][kc34etagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34etagap02", i), ";Centrality (%) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+        bootstrapArray[i][kc34etagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34etagap04", i), ";Centrality (%) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
 
       bootstrapArray[i][kc22Nch] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nch", i), ";N_ch(|#eta| < 0.8) ; C_{2}{2}", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc24Nch] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24Nch", i), ";N_ch(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc26Nch] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26Nch", i), ";N_ch(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc28Nch] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28Nch", i), ";N_ch(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc22Nchetagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nchetagap", i), ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+        bootstrapArray[i][kc22Nchetagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nchetagap02", i), ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+        bootstrapArray[i][kc22Nchetagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nchetagap04", i), ";N_ch(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc32Nch] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nch", i), ";N_ch(|#eta| < 0.8) ; C_{3}{2}", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc32Nchetagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nchetagap", i), ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+        bootstrapArray[i][kc32Nchetagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nchetagap02", i), ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+        bootstrapArray[i][kc32Nchetagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nchetagap04", i), ";N_ch(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc34Nch] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nch", i), ";N_ch(|#eta| < 0.8) ; C_{3}{4}", {HistType::kTProfile, {axisNch}});
       bootstrapArray[i][kc34Nchetagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nchetagap", i), ";N_ch(|#eta| < 0.8) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+        bootstrapArray[i][kc34Nchetagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nchetagap02", i), ";N_ch(|#eta| < 0.8) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+        bootstrapArray[i][kc34Nchetagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nchetagap04", i), ";N_ch(|#eta| < 0.8) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
 
-      bootstrapArray[i][kc22Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{2}", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc24Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc26Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc28Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc22Nch05etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nch05etagap", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc32Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{2}", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc32Nch05etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nch05etagap", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc34Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{4}", {HistType::kTProfile, {axisNch}});
-      bootstrapArray[i][kc34Nch05etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nch05etagap", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc22Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{2}", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc24Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{4}", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc26Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{6}", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc28Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{8}", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc22Nch05etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nch05etagap", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//        bootstrapArray[i][kc22Nch05etagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nch05etagap02", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//        bootstrapArray[i][kc22Nch05etagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22Nch05etagap04", i), ";N_ch05(|#eta| < 0.8) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc32Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{2}", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc32Nch05etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nch05etagap", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//        bootstrapArray[i][kc32Nch05etagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nch05etagap02", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//        bootstrapArray[i][kc32Nch05etagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32Nch05etagap04", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc34Nch05] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nch05", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{4}", {HistType::kTProfile, {axisNch}});
+//      bootstrapArray[i][kc34Nch05etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nch05etagap", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//        bootstrapArray[i][kc34Nch05etagap02] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nch05etagap02", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
+//        bootstrapArray[i][kc34Nch05etagap04] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34Nch05etagap04", i), ";N_ch05(|#eta| < 0.8) ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisNch}});
 
       bootstrapArray[i][kc22ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22ftoc", i), ";FT0C Amplitude ; C_{2}{2}", {HistType::kTProfile, {axisFT0CAmp}});
       bootstrapArray[i][kc22etagapft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagapftoc", i), ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
+//        bootstrapArray[i][kc22etagap02ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagapftoc02", i), ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
+//        bootstrapArray[i][kc22etagap04ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagapftoc04", i), ";FT0C Amplitude ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
       bootstrapArray[i][kc32ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32ftoc", i), ";FT0C Amplitude ; C_{3}{2}", {HistType::kTProfile, {axisFT0CAmp}});
       bootstrapArray[i][kc32etagapft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagapftoc", i), ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
+//        bootstrapArray[i][kc32etagap02ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagapftoc02", i), ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
+//        bootstrapArray[i][kc32etagap04ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagapftoc04", i), ";FT0C Amplitude ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
       bootstrapArray[i][kc34ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34ftoc", i), ";FT0C Amplitude ; C_{3}{4}", {HistType::kTProfile, {axisFT0CAmp}});
       bootstrapArray[i][kc34etagapft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34ftocetagap", i), ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
+//        bootstrapArray[i][kc34etagap02ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34ftocetagap02", i), ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
+//        bootstrapArray[i][kc34etagap04ft0c] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34ftocetagap04", i), ";FT0C Amplitude ; C_{3}{4} (|#eta| < 0.8)", {HistType::kTProfile, {axisFT0CAmp}});
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -531,8 +574,16 @@ struct FlowGfwTask {
     delete oba;
 
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1); // eta region -0.8 to 0.8
-    fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
+
+    fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1); // delta eta 1
     fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
+
+    fGFW->AddRegion("refN02", -0.8, -0.1, 1, 1); // delta eta 0.2
+    fGFW->AddRegion("refP02", 0.1, 0.8, 1, 1);
+
+    fGFW->AddRegion("refN04", -0.8, -0.2, 1, 1); // delta eta 0.4
+    fGFW->AddRegion("refP04", 0.2, 0.8, 1, 1);
+
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
@@ -543,6 +594,16 @@ struct FlowGfwTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {3} refP10 {-3}", "Ch10Gap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 3 -3 -3}", "ChFull34", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {3 3} refP10 {-3 -3}", "Ch10Gap34", kFALSE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN02 {2} refP02 {-2}", "Ch02Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN02 {3} refP02 {-3}", "Ch02Gap32", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN02 {3 3} refP02 {-3 -3}", "Ch02Gap34", kFALSE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN04 {2} refP04 {-2}", "Ch04Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN04 {3} refP04 {-3}", "Ch04Gap32", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN04 {3 3} refP04 {-3 -3}", "Ch04Gap34", kFALSE));
+
+
     fGFW->CreateRegions(); // finalize the initialization
 
     if (cfgUseAdditionalEventCut) {
@@ -824,16 +885,12 @@ struct FlowGfwTask {
     if (cfgDCAzPt && (std::fabs(track.dcaZ()) > (0.004f + 0.013f / track.pt())))
       return false;
 
-    if (cfgTrackSel) {
+    if (cfgTrackSel) { // is set to zero and choose type of tracks on configuration
       return myTrackSel.IsSelected(track);
     } else if (cfgGlobalplusITS) {
-      return ((track.tpcNClsFound() >= cfgCutTPCclu) || (track.itsNCls() >= cfgCutITSclu));
-    } else if (cfgGlobalonly) {
-      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
-    } else if (cfgITSonly) {
-      return ((track.itsNCls() >= cfgCutITSclu));
+        return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.tpcChi2NCl() < cfgCutChi2prTPCcls) && (track.itsNCls() >= cfgCutITSclu));
     } else if (cfgGlobalTracks) {
-      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
+      return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.tpcChi2NCl() < cfgCutChi2prTPCcls) && (track.itsNCls() >= cfgCutITSclu));
     } else {
       return false;
     }
@@ -841,15 +898,9 @@ struct FlowGfwTask {
 
   // Apply process filters GlobalTracks
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::cent::centFT0C > cfgMinCentFT0C) && (aod::cent::centFT0C < cfgMaxCentFT0C);
-  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                       ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
-                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                              ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
-                       ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
-                              ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
-                       (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
 
-  void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::FT0s const&, aod::Zdcs const&, BCsRun3 const&)
+  void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::FT0s const&, BCsRun3 const&)
   {
     registry.fill(HIST("hEventCount"), kFILTERED);
     if (!collision.sel8())
@@ -882,11 +933,6 @@ struct FlowGfwTask {
       registry.fill(HIST("hCentEstimators"), kCentFV0A);
       registry.fill(HIST("hCentFV0A"), centrality);
     }
-    if (cfgCentEstFt0cVariant1) {
-      centrality = collision.centFT0CVariant1();
-      registry.fill(HIST("hCentEstimators"), kCentFT0CVariant1);
-      registry.fill(HIST("hCentFT0CVariant1"), centrality);
-    }
 
     // fill event QA before cuts
     registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
@@ -899,6 +945,7 @@ struct FlowGfwTask {
     registry.fill(HIST("BeforeCut_multT0A_centT0A"), collision.centFT0A(), collision.multFT0A());
     registry.fill(HIST("BeforeCut_multFT0M_centFT0M"), collision.centFT0M(), collision.multFT0M());
 
+
     if (cfgOccupancy) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)
@@ -910,15 +957,11 @@ struct FlowGfwTask {
       return;
     }
 
-    const auto& foundBC = collision.foundBC_as<BCsRun3>();
-    if (foundBC.has_zdc()) {
-      registry.fill(HIST("hEventCounterForZDC"), 1);
-
-      // FT0 amplitude to use in fine binning
+    // Use for c22 vs ft0 amplitude
       double ft0aAmp = 0;
       double ft0cAmp = 0;
       double ft0mAmp = 0;
-
+    const auto& foundBC = collision.foundBC_as<BCsRun3>();
       if (foundBC.has_ft0()) {
         for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
           ft0aAmp += amplitude;
@@ -935,52 +978,6 @@ struct FlowGfwTask {
 
       ft0mAmp = ft0aAmp + ft0cAmp;
       registry.fill(HIST("FT0MAmp"), ft0mAmp);
-
-      // ZDC amplitude to use in fine binning
-      const auto& zdcread = foundBC.zdc();
-      auto aZNA = zdcread.amplitudeZNA();
-      auto aZNC = zdcread.amplitudeZNC();
-      auto aZPA = zdcread.amplitudeZPA();
-      auto aZPC = zdcread.amplitudeZPC();
-      auto aZEM1 = zdcread.amplitudeZEM1();
-      auto aZEM2 = zdcread.amplitudeZEM2();
-
-      registry.fill(HIST("ZNAcoll"), aZNA);
-      registry.fill(HIST("ZNCcoll"), aZNC);
-      registry.fill(HIST("ZPAcoll"), aZPA);
-      registry.fill(HIST("ZPCcoll"), aZPC);
-
-      registry.fill(HIST("ZNvsFT0correl"), (ft0aAmp + ft0cAmp) / 100., aZNC + aZNA);
-
-      double aZDC = aZNC + aZNA + aZPA + aZPC;
-      registry.fill(HIST("ZDCAmp"), aZDC);
-      registry.fill(HIST("ZNAmp"), aZNC + aZNA);
-      registry.fill(HIST("ZPAmp"), aZPA + aZPC);
-
-      registry.fill(HIST("ZNvsZEMcoll"), aZEM1 + aZEM2, aZNA + aZNC);
-
-      // Draft notation for centrality limits
-      float zero = 0, five = 5, ten = 10, twenty = 20, thirty = 30;
-      if (centrality >= zero && centrality <= five) {
-        registry.fill(HIST("ZNvsZEMcoll05"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > five && centrality <= ten) {
-        registry.fill(HIST("ZNvsZEMcoll510"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > ten && centrality <= twenty) {
-        registry.fill(HIST("ZNvsZEMcoll1020"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > twenty && centrality <= thirty) {
-        registry.fill(HIST("ZNvsZEMcoll2030"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else {
-        registry.fill(HIST("ZNvsZEMcollrest"), aZEM1 + aZEM2, aZNA + aZNC);
-      }
-    } // End of ZDC
-
-    // Use for c22 vs ft0 amplitude
-    double ft0cAmp = 0;
-    if (foundBC.has_ft0()) {
-      for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
-        ft0cAmp += amplitude;
-      }
-    }
 
     float vtxz = collision.posZ();
     float lRandom = fRndm->Rndm();
@@ -1050,7 +1047,7 @@ struct FlowGfwTask {
         registry.fill(HIST("hChi2prTPCcls"), track.tpcChi2NCl());
         registry.fill(HIST("hnTPCClu"), track.tpcNClsFound());
         registry.fill(HIST("hnTPCCrossedRow"), track.tpcNClsCrossedRows());
-        registry.fill(HIST("hDCAz"), track.dcaZ());
+        registry.fill(HIST("hDCAz"), track.dcaZ(), track.pt());
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
       }
 
@@ -1105,6 +1102,13 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(7), HIST("c34"), centrality);
     fillProfile(corrconfigs.at(8), HIST("c34etagap"), centrality);
 
+      fillProfile(corrconfigs.at(9), HIST("c22etagap02"), centrality);
+      fillProfile(corrconfigs.at(10), HIST("c32etagap02"), centrality);
+      fillProfile(corrconfigs.at(11), HIST("c34etagap02"), centrality);
+      fillProfile(corrconfigs.at(12), HIST("c22etagap04"), centrality);
+      fillProfile(corrconfigs.at(13), HIST("c32etagap04"), centrality);
+      fillProfile(corrconfigs.at(14), HIST("c34etagap04"), centrality);
+
     fillProfile(corrconfigs.at(0), HIST("c22Nch"), nch);
     fillProfile(corrconfigs.at(1), HIST("c24Nch"), nch);
     fillProfile(corrconfigs.at(2), HIST("c26Nch"), nch);
@@ -1115,18 +1119,32 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(7), HIST("c34Nch"), nch);
     fillProfile(corrconfigs.at(8), HIST("c34Nchetagap"), nch);
 
+      fillProfile(corrconfigs.at(9), HIST("c22Nchetagap02"), nch);
+      fillProfile(corrconfigs.at(10), HIST("c32Nchetagap02"), nch);
+      fillProfile(corrconfigs.at(11), HIST("c34Nchetagap02"), nch);
+      fillProfile(corrconfigs.at(12), HIST("c22Nchetagap04"), nch);
+      fillProfile(corrconfigs.at(13), HIST("c32Nchetagap04"), nch);
+      fillProfile(corrconfigs.at(14), HIST("c34Nchetagap04"), nch);
+
     // 0-5% centrality Nch
     float zero = 0, five = 5;
     if (centrality >= zero && centrality <= five) {
-      fillProfile(corrconfigs.at(0), HIST("c22Nch05"), nch);
-      fillProfile(corrconfigs.at(1), HIST("c24Nch05"), nch);
-      fillProfile(corrconfigs.at(2), HIST("c26Nch05"), nch);
-      fillProfile(corrconfigs.at(3), HIST("c28Nch05"), nch);
-      fillProfile(corrconfigs.at(4), HIST("c22Nch05etagap"), nch);
-      fillProfile(corrconfigs.at(5), HIST("c32Nch05"), nch);
-      fillProfile(corrconfigs.at(6), HIST("c32Nch05etagap"), nch);
-      fillProfile(corrconfigs.at(7), HIST("c34Nch05"), nch);
-      fillProfile(corrconfigs.at(8), HIST("c34Nch05etagap"), nch);
+//      fillProfile(corrconfigs.at(0), HIST("c22Nch05"), nch);
+//      fillProfile(corrconfigs.at(1), HIST("c24Nch05"), nch);
+//      fillProfile(corrconfigs.at(2), HIST("c26Nch05"), nch);
+//      fillProfile(corrconfigs.at(3), HIST("c28Nch05"), nch);
+//      fillProfile(corrconfigs.at(4), HIST("c22Nch05etagap"), nch);
+//      fillProfile(corrconfigs.at(5), HIST("c32Nch05"), nch);
+//      fillProfile(corrconfigs.at(6), HIST("c32Nch05etagap"), nch);
+//      fillProfile(corrconfigs.at(7), HIST("c34Nch05"), nch);
+//      fillProfile(corrconfigs.at(8), HIST("c34Nch05etagap"), nch);
+
+//        fillProfile(corrconfigs.at(9), HIST("c22Nch05etagap02"), nch);
+//        fillProfile(corrconfigs.at(10), HIST("c32Nch05etagap02"), nch);
+//        fillProfile(corrconfigs.at(11), HIST("c34Nch05etagap02"), nch);
+//        fillProfile(corrconfigs.at(12), HIST("c22Nch05etagap04"), nch);
+//        fillProfile(corrconfigs.at(13), HIST("c32Nch05etagap04"), nch);
+//        fillProfile(corrconfigs.at(14), HIST("c34Nch05etagap04"), nch);
     }
 
     // C22, C32 and C34 vs FT0C amplitude
@@ -1136,6 +1154,13 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(6), HIST("c32etagapft0c"), ft0cAmp);
     fillProfile(corrconfigs.at(7), HIST("c34ft0c"), ft0cAmp);
     fillProfile(corrconfigs.at(8), HIST("c34etagapft0c"), ft0cAmp);
+
+//      fillProfile(corrconfigs.at(9), HIST("c22etagap02ft0c"), ft0cAmp);
+//      fillProfile(corrconfigs.at(10), HIST("c32etagap02ft0c"), ft0cAmp);
+//      fillProfile(corrconfigs.at(11), HIST("c34etagap02ft0c"), ft0cAmp);
+//      fillProfile(corrconfigs.at(12), HIST("c22etagap04ft0c"), ft0cAmp);
+//      fillProfile(corrconfigs.at(13), HIST("c32etagap04ft0c"), ft0cAmp);
+//      fillProfile(corrconfigs.at(14), HIST("c34etagap04ft0c"), ft0cAmp);
 
     // Filling Bootstrap Samples
     int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
@@ -1149,6 +1174,13 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34], centrality);
     fillProfile(corrconfigs.at(8), bootstrapArray[sampleIndex][kc34etagap], centrality);
 
+//      fillProfile(corrconfigs.at(9), bootstrapArray[sampleIndex][kc22etagap02], centrality);
+//      fillProfile(corrconfigs.at(10), bootstrapArray[sampleIndex][kc32etagap02], centrality);
+//      fillProfile(corrconfigs.at(11), bootstrapArray[sampleIndex][kc34etagap02], centrality);
+//      fillProfile(corrconfigs.at(12), bootstrapArray[sampleIndex][kc22etagap04], centrality);
+//      fillProfile(corrconfigs.at(13), bootstrapArray[sampleIndex][kc32etagap04], centrality);
+//      fillProfile(corrconfigs.at(14), bootstrapArray[sampleIndex][kc34etagap04], centrality);
+
     fillProfile(corrconfigs.at(0), bootstrapArray[sampleIndex][kc22Nch], nch);
     fillProfile(corrconfigs.at(1), bootstrapArray[sampleIndex][kc24Nch], nch);
     fillProfile(corrconfigs.at(2), bootstrapArray[sampleIndex][kc26Nch], nch);
@@ -1159,16 +1191,30 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34Nch], nch);
     fillProfile(corrconfigs.at(8), bootstrapArray[sampleIndex][kc34Nchetagap], nch);
 
+      fillProfile(corrconfigs.at(9), bootstrapArray[sampleIndex][kc22Nchetagap02], nch);
+      fillProfile(corrconfigs.at(10), bootstrapArray[sampleIndex][kc32Nchetagap02], nch);
+      fillProfile(corrconfigs.at(11), bootstrapArray[sampleIndex][kc34Nchetagap02], nch);
+      fillProfile(corrconfigs.at(12), bootstrapArray[sampleIndex][kc22Nchetagap04], nch);
+      fillProfile(corrconfigs.at(13), bootstrapArray[sampleIndex][kc32Nchetagap04], nch);
+      fillProfile(corrconfigs.at(14), bootstrapArray[sampleIndex][kc34Nchetagap04], nch);
+
     if (centrality >= zero && centrality <= five) {
-      fillProfile(corrconfigs.at(0), bootstrapArray[sampleIndex][kc22Nch05], nch);
-      fillProfile(corrconfigs.at(1), bootstrapArray[sampleIndex][kc24Nch05], nch);
-      fillProfile(corrconfigs.at(2), bootstrapArray[sampleIndex][kc26Nch05], nch);
-      fillProfile(corrconfigs.at(3), bootstrapArray[sampleIndex][kc28Nch05], nch);
-      fillProfile(corrconfigs.at(4), bootstrapArray[sampleIndex][kc22Nch05etagap], nch);
-      fillProfile(corrconfigs.at(5), bootstrapArray[sampleIndex][kc32Nch05], nch);
-      fillProfile(corrconfigs.at(6), bootstrapArray[sampleIndex][kc32Nch05etagap], nch);
-      fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34Nch05], nch);
-      fillProfile(corrconfigs.at(8), bootstrapArray[sampleIndex][kc34Nch05etagap], nch);
+//      fillProfile(corrconfigs.at(0), bootstrapArray[sampleIndex][kc22Nch05], nch);
+//      fillProfile(corrconfigs.at(1), bootstrapArray[sampleIndex][kc24Nch05], nch);
+//      fillProfile(corrconfigs.at(2), bootstrapArray[sampleIndex][kc26Nch05], nch);
+//      fillProfile(corrconfigs.at(3), bootstrapArray[sampleIndex][kc28Nch05], nch);
+//      fillProfile(corrconfigs.at(4), bootstrapArray[sampleIndex][kc22Nch05etagap], nch);
+//      fillProfile(corrconfigs.at(5), bootstrapArray[sampleIndex][kc32Nch05], nch);
+//      fillProfile(corrconfigs.at(6), bootstrapArray[sampleIndex][kc32Nch05etagap], nch);
+//      fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34Nch05], nch);
+//      fillProfile(corrconfigs.at(8), bootstrapArray[sampleIndex][kc34Nch05etagap], nch);
+
+//        fillProfile(corrconfigs.at(9), bootstrapArray[sampleIndex][kc22Nch05etagap02], nch);
+//        fillProfile(corrconfigs.at(10), bootstrapArray[sampleIndex][kc32Nch05etagap02], nch);
+//        fillProfile(corrconfigs.at(11), bootstrapArray[sampleIndex][kc34Nch05etagap02], nch);
+//        fillProfile(corrconfigs.at(12), bootstrapArray[sampleIndex][kc22Nch05etagap04], nch);
+//        fillProfile(corrconfigs.at(13), bootstrapArray[sampleIndex][kc32Nch05etagap04], nch);
+//        fillProfile(corrconfigs.at(14), bootstrapArray[sampleIndex][kc34Nch05etagap04], nch);
 
       registry.fill(HIST("Nch05"), nch);
     }
@@ -1182,6 +1228,13 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(6), bootstrapArray[sampleIndex][kc32etagapft0c], ft0cAmp);
     fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34ft0c], ft0cAmp);
     fillProfile(corrconfigs.at(8), bootstrapArray[sampleIndex][kc34etagapft0c], ft0cAmp);
+
+//      fillProfile(corrconfigs.at(9), bootstrapArray[sampleIndex][kc22etagap02ft0c], ft0cAmp);
+//      fillProfile(corrconfigs.at(10), bootstrapArray[sampleIndex][kc32etagap02ft0c], ft0cAmp);
+//      fillProfile(corrconfigs.at(11), bootstrapArray[sampleIndex][kc34etagap02ft0c], ft0cAmp);
+//      fillProfile(corrconfigs.at(12), bootstrapArray[sampleIndex][kc22etagap04ft0c], ft0cAmp);
+//      fillProfile(corrconfigs.at(13), bootstrapArray[sampleIndex][kc32etagap04ft0c], ft0cAmp);
+//      fillProfile(corrconfigs.at(14), bootstrapArray[sampleIndex][kc34etagap04ft0c], ft0cAmp);
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
