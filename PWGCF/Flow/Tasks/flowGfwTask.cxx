@@ -966,9 +966,9 @@ struct FlowGfwTask {
       for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
         ft0cAmp += amplitude;
       }
-      } else {
-        ft0aAmp = ft0cAmp = -999;
-      }
+    } else {
+      ft0aAmp = ft0cAmp = -999;
+    }
 
       registry.fill(HIST("FT0AAmp"), ft0aAmp);
       registry.fill(HIST("FT0CAmp"), ft0cAmp);
