@@ -881,7 +881,6 @@ struct HfDataCreatorJpsiHadReduced {
           pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
           trackParCovBPlus = df3.createParentTrackParCov();
           trackParCovBPlus.setAbsCharge(0); // to be sure
-          registry.fill(HIST("hMassJpsiKaon"), std::sqrt(invMass2JpsiHad));
 
           if (!isBSelected(pVecBPlus, secondaryVertexBPlus, collision)) {
             continue;
@@ -891,6 +890,7 @@ struct HfDataCreatorJpsiHadReduced {
           if ((invMass2JpsiHad < invMass2JpsiHadMin) || (invMass2JpsiHad > invMass2JpsiHadMax)) {
             continue;
           }
+          registry.fill(HIST("hMassJpsiKaon"), std::sqrt(invMass2JpsiHad));
 
           // fill Kaon tracks table
           // if information on track already stored, go to next track
