@@ -10,9 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file   upcCandProducerGlobalMuon.cxx
-/// \brief  UPC candidate producer for forward muons with optional MFT support
+/// \brief  UPC candidate producer for forward muons with MFT support - UNDER DEVELOPMENT
 /// \author Roman Lavicka, roman.lavicka@cern.ch
-/// \author Modification of upcCandProducerMuon.cxx to support MFT/global tracks
 /// \since  11.02.2026
 
 #include "PWGUD/Core/UPCCutparHolder.h"
