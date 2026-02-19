@@ -52,18 +52,18 @@ enum PidMethod {
 ///
 /// \tparam TrackType   Track/ASoA row type providing TPC accessors.
 /// \param track        Track to be tested.
-/// \param lightnuclei  Species selector: 3=Deuteron, 4=Triton, 5=Helium3, 6=Alpha.
+/// \param species  Species selector: 3=Deuteron, 4=Triton, 5=Helium3, 6=Alpha.
 /// \param bbParams is Bethe–Bloch  parameters
 /// \return             TPC nσ for the chosen nucleus hypothesis (or -999 if not applicable).
 template <typename TrackType>
 float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
-                                        HfProngSpecies lightnuclei,
+                                        HfProngSpecies species,
                                         const o2::framework::Configurable<o2::framework::LabeledArray<float>>& bbParams)
 {
   if (!track.hasTPC()) {
     return -999.f;
   }
-  const int row = static_cast<int>(lightnuclei) - static_cast<int>(HfProngSpecies::Deuteron);
+  const int row = static_cast<int>(species) - static_cast<int>(HfProngSpecies::Deuteron);
 
   if (row < 0 || row >= HfProngSpecies::NHfProngSpecies) {
     return -999.f;
@@ -82,7 +82,7 @@ float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
   }
 
   double mass = 0.;
-  switch (lightnuclei) {
+  switch (species) {
     case HfProngSpecies::Deuteron:
       mass = o2::constants::physics::MassDeuteron;
       break;
@@ -96,10 +96,10 @@ float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
       mass = o2::constants::physics::MassAlpha;
       break;
     default:
-      LOG(fatal) << "Unhandled HfProngSpecies " << static_cast<int>(lightnuclei);
+      LOG(fatal) << "Unhandled HfProngSpecies " << static_cast<int>(species);
   }
 
-  const int charge = (lightnuclei == HfProngSpecies::Helium3 || lightnuclei == HfProngSpecies::Alpha) ? 2 : 1;
+  const int charge = (species == HfProngSpecies::Helium3 || species == HfProngSpecies::Alpha) ? 2 : 1;
   const float rigidity = track.tpcInnerParam(); // p/|q|
 
   const double x = static_cast<double>(charge) * static_cast<double>(rigidity) / mass;
