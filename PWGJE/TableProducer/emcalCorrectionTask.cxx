@@ -410,7 +410,6 @@ struct EmcalCorrectionTask {
 
       initZorroCCDB(bc);
 
-
       // get run number
       runNumber = bc.runNumber();
 
@@ -557,7 +556,6 @@ struct EmcalCorrectionTask {
       LOG(debug) << "Next BC";
 
       initZorroCCDB(bc);
-
 
       // get run number
       runNumber = bc.runNumber();
