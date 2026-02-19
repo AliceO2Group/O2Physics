@@ -20,8 +20,8 @@
 #endif
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
@@ -142,7 +142,7 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> applyTopoConstraint{"applyTopoConstraint", false, "apply origin from PV hypothesis for created candidate, works only in KF mode"};
   Configurable<bool> applyInvMassConstraint{"applyInvMassConstraint", false, "apply particle type hypothesis to recalculate created candidate's momentum, works only in KF mode"};
 
- Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams}, "TPC PID Bethe–Bloch parameter configurations for light nuclei (deuteron, triton, helium-3)"};
+  Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams}, "TPC PID Bethe–Bloch parameter configurations for light nuclei (deuteron, triton, helium-3)"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
@@ -160,7 +160,7 @@ struct HfCandidateCreator3Prong {
 
   // filter candidates
   Filter filterSelected3Prongs = (createDplus && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0)) || (createDs && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::DsToKKPi))) != static_cast<uint8_t>(0)) || (createLc && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::LcToPKPi))) != static_cast<uint8_t>(0)) || (createXic && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::XicToPKPi))) != static_cast<uint8_t>(0)) || (createCharmNuclei && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::CdToDeKPi))) != static_cast<uint8_t>(0)) || (createCharmNuclei && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::CtToTrKPi))) != static_cast<uint8_t>(0)) || (createCharmNuclei && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::ChToHeKPi))) != static_cast<uint8_t>(0)) || (createCharmNuclei && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(DecayType::CaToAlKPi))) != static_cast<uint8_t>(0));
-    
+
   std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -272,18 +272,18 @@ struct HfCandidateCreator3Prong {
       fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);
     }
     if (createCharmNuclei) {
-        fillProngPidLightNuclei<HfProngSpecies::Deuteron>(track0, rowProng0PidDe, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Deuteron>(track1, rowProng1PidDe, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Deuteron>(track2, rowProng2PidDe, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Helium3>(track0, rowProng0PidHe, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Helium3>(track1, rowProng1PidHe, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Helium3>(track2, rowProng2PidHe, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Triton>(track0, rowProng0PidTr, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Triton>(track1, rowProng1PidTr, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Triton>(track2, rowProng2PidTr, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Alpha>(track0, rowProng0PidAl, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Alpha>(track1, rowProng1PidAl, tpcPidBBParamsLightNuclei);
-        fillProngPidLightNuclei<HfProngSpecies::Alpha>(track2, rowProng2PidAl, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Deuteron>(track0, rowProng0PidDe, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Deuteron>(track1, rowProng1PidDe, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Deuteron>(track2, rowProng2PidDe, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Helium3>(track0, rowProng0PidHe, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Helium3>(track1, rowProng1PidHe, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Helium3>(track2, rowProng2PidHe, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Triton>(track0, rowProng0PidTr, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Triton>(track1, rowProng1PidTr, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Triton>(track2, rowProng2PidTr, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Alpha>(track0, rowProng0PidAl, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Alpha>(track1, rowProng1PidAl, tpcPidBBParamsLightNuclei);
+      fillProngPidLightNuclei<HfProngSpecies::Alpha>(track2, rowProng2PidAl, tpcPidBBParamsLightNuclei);
     }
   }
 

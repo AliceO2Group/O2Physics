@@ -854,7 +854,6 @@ using HfCand3ProngWPidPiKaTr = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCan
 using HfCand3ProngWPidPiKaHe = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidHe, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidHe, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidHe, HfCand3Prong2PidKa>;
 using HfCand3ProngWPidPiKaAl = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidAl, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidAl, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidAl, HfCand3Prong2PidKa>;
 
-
 DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
                   hf_cand_3prong::KfXError, hf_cand_3prong::KfYError, hf_cand_3prong::KfZError,
                   hf_cand_3prong::KfXPVError, hf_cand_3prong::KfYPVError, hf_cand_3prong::KfZPVError,

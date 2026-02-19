@@ -59,7 +59,8 @@ enum PidMethod {
 /// \param bbParams is Bethe–Bloch  parameters
 /// \return             TPC nσ for the chosen nucleus hypothesis (or -999 if not applicable).
 template <typename TrackType>
-float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track, HfProngSpecies lightnuclei,
+float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
+                                        HfProngSpecies lightnuclei,
                                         const Configurable<LabeledArray<float>>& bbParams)
 {
   if (!track.hasTPC()) {
@@ -123,7 +124,8 @@ float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track, HfProngSpecies l
 /// \param bbParams is Bethe–Bloch  parameters (only for light nuclei)
 /// \param rowPid cursor of the prong PID table to fill
 template <HfProngSpecies SpecPid, typename TTrack, typename TCursor>
-void fillProngPidLightNuclei(TTrack const& track, TCursor& rowPid,
+void fillProngPidLightNuclei(TTrack const& track,
+                             TCursor& rowPid,
                              const Configurable<LabeledArray<float>>& bbParams)
 {
 
