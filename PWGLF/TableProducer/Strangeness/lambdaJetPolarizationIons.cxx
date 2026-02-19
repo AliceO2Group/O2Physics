@@ -122,7 +122,7 @@ using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::
 // using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 // using V0CandidatesSimple = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>; // No TOF
 
-using PseudoJetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA>; // Simpler tracks access. (TODO: Should I include TracksIU and TracksCovIU? I don't use any getters from them!)
+using PseudoJetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA>; // Simpler tracks access. (Not using TracksIU and TracksCovIU. Did not use their info for now)
                                 // , aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>; // Not using TOF right now due to some possible mismatches
 // using SimCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>;
 // using DauTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
@@ -167,7 +167,7 @@ struct lambdajetpolarizationions {
 
     /////////////////////////////////////////////
     Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
-    Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
+    // Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
     Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variables QA histograms"}; // Includes doPlainTopoQA from derivedlambdakzeroanalysis
     Configurable<bool> doV0KinematicQA{"doV0KinematicQA", false, "do kinematic variables QA histograms"};
     Configurable<bool> doArmenterosQA{"doArmenterosQA", false, "do Armenteros QA histograms"};
@@ -524,8 +524,8 @@ struct lambdajetpolarizationions {
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max IR");
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "RCT flags");
 
-        histos.add("hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
-        histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+        histos.add("Centrality/hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
+        histos.add("Centrality/hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
         if (doEventQA) {
             histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{21, -0.5f, +20.5f}, {101, 0.0f, 101.0f}});
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -555,16 +555,16 @@ struct lambdajetpolarizationions {
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Above max IR");
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "RCT flags");
 
-            histos.add("hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
-            histos.add("hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
-            histos.add("hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
-            histos.add("hEventCentVsMultNGlobal", "hEventCentVsMultNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
-            histos.add("hEventCentVsMultFV0A", "hEventCentVsMultFV0A", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFV0A});
-            histos.add("hEventMultFT0MvsMultNGlobal", "hEventMultFT0MvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0M, axisConfigurations.axisNch});
-            histos.add("hEventMultFT0CvsMultNGlobal", "hEventMultFT0CvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisNch});
-            histos.add("hEventMultFV0AvsMultNGlobal", "hEventMultFV0AvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFV0A, axisConfigurations.axisNch});
-            histos.add("hEventMultPVvsMultNGlobal", "hEventMultPVvsMultNGlobal", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisNch});
-            histos.add("hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
+            histos.add("Centrality/hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+            histos.add("Centrality/hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
+            histos.add("Centrality/hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
+            histos.add("Centrality/hEventCentVsMultNGlobal", "hEventCentVsMultNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+            histos.add("Centrality/hEventCentVsMultFV0A", "hEventCentVsMultFV0A", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFV0A});
+            histos.add("Centrality/hEventMultFT0MvsMultNGlobal", "hEventMultFT0MvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0M, axisConfigurations.axisNch});
+            histos.add("Centrality/hEventMultFT0CvsMultNGlobal", "hEventMultFT0CvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisNch});
+            histos.add("Centrality/hEventMultFV0AvsMultNGlobal", "hEventMultFV0AvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFV0A, axisConfigurations.axisNch});
+            histos.add("Centrality/hEventMultPVvsMultNGlobal", "hEventMultPVvsMultNGlobal", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisNch});
+            histos.add("Centrality/hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
         }
 
         histos.add("hEventPVz", "hEventPVz", kTH1D, {{100, -20.0f, +20.0f}});
@@ -579,12 +579,12 @@ struct lambdajetpolarizationions {
         histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2D, {axisConfigurations.axisIRBinning, axisConfigurations.axisOccupancy});
 
         // for QA and test purposes
-        auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1D, {axisConfigurations.axisRawCentrality});
+        // auto hRawCentrality = histos.add<TH1>("Centrality/hRawCentrality", "hRawCentrality", kTH1D, {axisConfigurations.axisRawCentrality});
 
-        for (int ii = 1; ii < 101; ii++) {
-            float value = 100.5f - static_cast<float>(ii);
-            hRawCentrality->SetBinContent(ii, value);
-        }
+        // for (int ii = 1; ii < 101; ii++) {
+        //     float value = 100.5f - static_cast<float>(ii);
+        //     hRawCentrality->SetBinContent(ii, value);
+        // }
 
         //////////////////////////////////////////////////////////////
         /// Lambda / AntiLambda V0 selection QA
@@ -616,10 +616,10 @@ struct lambdajetpolarizationions {
                 {p + "DCA_{#pi} to PV", true},
                 {p + "TPC PID p", v0Selections.tpcPidNsigmaCut > 0},
                 {p + "TPC PID #pi", v0Selections.tpcPidNsigmaCut > 0},
-                {p + "TOF #Delta t p", v0Selections.maxDeltaTimeProton < 1e8},
-                {p + "TOF #Delta t #pi", v0Selections.maxDeltaTimePion < 1e8},
-                {p + "TOF PID p", v0Selections.tofPidNsigmaCutLaPr < 1e8},
-                {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e8},
+                {p + "TOF #Delta t p", v0Selections.maxDeltaTimeProton < 1e+9},
+                {p + "TOF #Delta t #pi", v0Selections.maxDeltaTimePion < 1e+9},
+                {p + "TOF PID p", v0Selections.tofPidNsigmaCutLaPr < 1e+6},
+                {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e+6},
                 {p + "c#tau", v0Selections.lambdaLifetimeCut > 0}
             });
         };
@@ -914,10 +914,12 @@ struct lambdajetpolarizationions {
     // Minimal helper to fill the hSelectionV0s histogram without having to deal with bins by myself
     // (CAUTION! If you change selection order, change this too!)
     struct V0SelectionFlowCounter{ // Using struct to keep internal bin counter over different functions
-        int binValue = 0; // Starts at x=0, which is bin 1 in the definition of hSelectionV0s
+        int binValue = -1; // Starts at x=-1, which will go to bin 0 (underflow) in the definition of hSelectionV0s
+                           // Made it like this because we use ++binValue when filling, so the first filled
+                           // bin will always be x=0 due to operator precedence.
         HistogramRegistry* histos = nullptr; // Had to pass the histos group to this struct, as it was not visible to the members of this struct
 
-        void resetForNewV0(){binValue = 0;}
+        void resetForNewV0(){binValue = -1;}
         void fill(){histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue);} // Hardcoded hSelectionV0s histogram, as it will not change. Increments before filling, by default
     };
     V0SelectionFlowCounter V0SelCounter{0, &histos};
@@ -933,23 +935,23 @@ struct lambdajetpolarizationions {
     template <typename TCollision>
     void fillCentralityProperties(TCollision const& collision, float centrality) 
     {
-        if (qaCentrality) {
-            auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
-            centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
-        }
-        histos.fill(HIST("hEventCentrality"), centrality);
-        histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
+        // if (qaCentrality) {
+        //     auto hRawCentrality = histos.get<TH1>(HIST("Centrality/hRawCentrality"));
+        //     centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
+        // }
+        histos.fill(HIST("Centrality/hEventCentrality"), centrality);
+        histos.fill(HIST("Centrality/hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
         if (doEventQA) {
-            histos.fill(HIST("hCentralityVsNGlobal"), centrality, collision.multNTracksGlobal());
-            histos.fill(HIST("hEventCentVsMultFT0M"), collision.centFT0M(), collision.multFT0A() + collision.multFT0C());
-            histos.fill(HIST("hEventCentVsMultFT0C"), collision.centFT0C(), collision.multFT0C());
-            histos.fill(HIST("hEventCentVsMultNGlobal"), collision.centNGlobal(), collision.multNTracksGlobal());
-            histos.fill(HIST("hEventCentVsMultFV0A"), collision.centFV0A(), collision.multFV0A());
-            histos.fill(HIST("hEventMultFT0MvsMultNGlobal"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksGlobal());
-            histos.fill(HIST("hEventMultFT0CvsMultNGlobal"), collision.multFT0C(), collision.multNTracksGlobal());
-            histos.fill(HIST("hEventMultFV0AvsMultNGlobal"), collision.multFV0A(), collision.multNTracksGlobal());
-            histos.fill(HIST("hEventMultPVvsMultNGlobal"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
-            histos.fill(HIST("hEventMultFT0CvsMultFV0A"), collision.multFT0C(), collision.multFV0A());
+            histos.fill(HIST("Centrality/hCentralityVsNGlobal"), centrality, collision.multNTracksGlobal());
+            histos.fill(HIST("Centrality/hEventCentVsMultFT0M"), collision.centFT0M(), collision.multFT0A() + collision.multFT0C());
+            histos.fill(HIST("Centrality/hEventCentVsMultFT0C"), collision.centFT0C(), collision.multFT0C());
+            histos.fill(HIST("Centrality/hEventCentVsMultNGlobal"), collision.centNGlobal(), collision.multNTracksGlobal());
+            histos.fill(HIST("Centrality/hEventCentVsMultFV0A"), collision.centFV0A(), collision.multFV0A());
+            histos.fill(HIST("Centrality/hEventMultFT0MvsMultNGlobal"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksGlobal());
+            histos.fill(HIST("Centrality/hEventMultFT0CvsMultNGlobal"), collision.multFT0C(), collision.multNTracksGlobal());
+            histos.fill(HIST("Centrality/hEventMultFV0AvsMultNGlobal"), collision.multFV0A(), collision.multNTracksGlobal());
+            histos.fill(HIST("Centrality/hEventMultPVvsMultNGlobal"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+            histos.fill(HIST("Centrality/hEventMultFT0CvsMultFV0A"), collision.multFT0C(), collision.multFV0A());
         }
         return;
     }
@@ -1524,7 +1526,7 @@ struct lambdajetpolarizationions {
 
     // Had to include DauTracks in subscription, even though I don't loop in it, for the indices to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
     void processV0sData(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& fullV0s, aod::BCsWithTimestamps const& bcs, DauTracks const& V0DauTracks){
-        const float centrality = getCentrality(collision);
+        float centrality = getCentrality(collision);
         histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
         histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
 
