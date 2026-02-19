@@ -83,12 +83,12 @@ struct skimmerPrimaryMuon {
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> midRabs{"midRabs", 26.5, "middle R at absorber end for pDCA cut"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
-  Configurable<float> maxDCAxy{"maxDCAxy", 1, "max. DCAxy for global muons"};
+  Configurable<float> maxDCAxy{"maxDCAxy", 0.2, "max. DCAxy for global muons"};
   Configurable<float> maxPDCAforLargeR{"maxPDCAforLargeR", 324.f, "max. pDCA for large R at absorber end"};
   Configurable<float> maxPDCAforSmallR{"maxPDCAforSmallR", 594.f, "max. pDCA for small R at absorber end"};
   Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 50.f, "max. chi2 for MCH-MFT matching"};
   Configurable<float> maxChi2SA{"maxChi2SA", 1e+10, "max. chi2 for standalone muon"};
-  Configurable<float> maxChi2GL{"maxChi2GL", 10, "max. chi2 for global muon"};
+  Configurable<float> maxChi2GL{"maxChi2GL", 12, "max. chi2 for global muon"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   Configurable<int> minNmuon{"minNmuon", 0, "min number of muon candidates per collision"};
@@ -172,8 +172,8 @@ struct skimmerPrimaryMuon {
     hMuonType->GetXaxis()->SetBinLabel(5, "MCH standalone");
 
     fRegistry.add("MFTMCHMID/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{100, 0.0f, 10}}, false);
-    fRegistry.add("MFTMCHMID/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {60, -5.f, -2.f}}, false);
-    fRegistry.add("MFTMCHMID/hEtaPhi_MatchedMCHMID", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {60, -5.f, -2.f}}, false);
+    fRegistry.add("MFTMCHMID/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -4.f, -2.f}}, false);
+    fRegistry.add("MFTMCHMID/hEtaPhi_MatchedMCHMID", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -4.f, -2.f}}, false);
     fRegistry.add("MFTMCHMID/hDeltaPt_Pt", "#Deltap_{T}/p_{T} vs. p_{T};p_{T}^{gl} (GeV/c);(p_{T}^{sa} - p_{T}^{gl})/p_{T}^{gl}", kTH2F, {{100, 0, 10}, {200, -0.5, +0.5}}, false);
     fRegistry.add("MFTMCHMID/hDeltaEta_Pt", "#Delta#eta vs. p_{T};p_{T}^{gl} (GeV/c);#Delta#eta", kTH2F, {{100, 0, 10}, {200, -0.5, +0.5}}, false);
     fRegistry.add("MFTMCHMID/hDeltaPhi_Pt", "#Delta#varphi vs. p_{T};p_{T}^{gl} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{100, 0, 10}, {200, -0.5, +0.5}}, false);
@@ -184,10 +184,10 @@ struct skimmerPrimaryMuon {
     fRegistry.add("MFTMCHMID/hNclustersMFT", "NclustersMFT;Nclusters MFT", kTH1F, {{11, -0.5f, 10.5}}, false);
     fRegistry.add("MFTMCHMID/hRatAbsorberEnd", "R at absorber end;R at absorber end (cm)", kTH1F, {{100, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/hPDCA_Rabs", "pDCA vs. Rabs;R at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
-    fRegistry.add("MFTMCHMID/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-    fRegistry.add("MFTMCHMID/hChi2MFT", "chi2 MFT;chi2 MFT/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-    fRegistry.add("MFTMCHMID/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-    fRegistry.add("MFTMCHMID/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+    fRegistry.add("MFTMCHMID/hChi2", "chi2;chi2/ndf", kTH1F, {{200, 0.0f, 20}}, false);
+    fRegistry.add("MFTMCHMID/hChi2MFT", "chi2 MFT;chi2 MFT/ndf", kTH1F, {{200, 0.0f, 20}}, false);
+    fRegistry.add("MFTMCHMID/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{200, 0.0f, 20}}, false);
+    fRegistry.add("MFTMCHMID/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{200, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -1, 1}, {200, -1, +1}}, false);
     fRegistry.add("MFTMCHMID/hDCAxy2DinSigma", "DCA x vs. y in sigma;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
     fRegistry.add("MFTMCHMID/hDCAxy", "DCAxy;DCA_{xy} (cm);", kTH1F, {{100, 0, 1}}, false);
@@ -217,6 +217,9 @@ struct skimmerPrimaryMuon {
       return false;
     }
     if (rAtAbsorberEnd < midRabs ? pDCA > maxPDCAforSmallR : pDCA > maxPDCAforLargeR) {
+      return false;
+    }
+    if (chi2_per_ndf < 0.f) {
       return false;
     }
 
@@ -250,10 +253,6 @@ struct skimmerPrimaryMuon {
   template <bool isMC, bool withMFTCov, typename TFwdTracks, typename TMFTTracks, bool fillTable, typename TCollision, typename TFwdTrack, typename TMFTTracksCov>
   bool fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, TMFTTracksCov const& mftCovs, const bool isAmbiguous)
   {
-    if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
-      return false;
-    } // Users have to decide the best match between MFT and MCH-MID at analysis level. The same global muon is repeatedly stored.
-
     if (fwdtrack.chi2MatchMCHMID() < 0.f) { // this should never happen. only for protection.
       return false;
     }
@@ -311,6 +310,10 @@ struct skimmerPrimaryMuon {
     bool isCorrectMatchMFTMCH = true; // by default, it is true. it is evaluated for global muons in MC.
 
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+      if (fwdtrack.chi2MatchMCHMFT() < 0.f || maxMatchingChi2MCHMFT < fwdtrack.chi2MatchMCHMFT()) {
+        return false;
+      } // Users have to decide the best match between MFT and MCH-MID at analysis level. The same global muon is repeatedly stored.
+
       // apply r-absorber cut here to minimize the number of calling propagateMuon.
       if (fwdtrack.rAtAbsorberEnd() < minRabsGL || maxRabs < fwdtrack.rAtAbsorberEnd()) {
         return false;
@@ -323,6 +326,9 @@ struct skimmerPrimaryMuon {
 
       auto mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
       auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
+      if (mfttrack.chi2() < 0.f) {
+        return false;
+      }
 
       if constexpr (isMC) {
         if (!mfttrack.has_mcParticle() || !mchtrack.has_mcParticle() || !fwdtrack.has_mcParticle()) {
@@ -574,6 +580,11 @@ struct skimmerPrimaryMuon {
         auto mchtrack = muon_tmp.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
         auto mfttrack = muon_tmp.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
 
+        if (muon_tmp.chi2() < 0.f || muon_tmp.chi2MatchMCHMFT() < 0.f || muon_tmp.chi2MatchMCHMID() < 0.f || mfttrack.chi2() < 0.f) { // reject negative chi2, i.e. wrong.
+          // LOGF(info, "reject: muon_tmp.globalIndex() = %d, muon_tmp.chi2MatchMCHMFT() = %f, muon_tmp.chi2MatchMCHMID() = %f, muon_tmp.chi2() = %f, mfttrack.chi2() = %f", muon_tmp.globalIndex(), muon_tmp.chi2MatchMCHMFT(), muon_tmp.chi2MatchMCHMID(), muon_tmp.chi2(), mfttrack.chi2());
+          continue;
+        }
+
         o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(muon_tmp, muon_tmp, collision, propagationPoint::kToVertex, matchingZ, mBz, mZShift);
         float pt = propmuonAtPV.getPt();
         float eta = propmuonAtPV.getEta();
@@ -593,8 +604,6 @@ struct skimmerPrimaryMuon {
         float dcaY = propmuonAtPV.getY() - collision.posY();
         float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
 
-        // LOGF(info, "muon_tmp.globalIndex() = %d, muon_tmp.matchMCHTrackId() = %d, muon_tmp.matchMFTTrackId() = %d, muon_tmp.chi2MatchMCHMFT() = %f", muon_tmp.globalIndex(), muon_tmp.matchMCHTrackId(), muon_tmp.matchMFTTrackId(), muon_tmp.chi2MatchMCHMFT());
-
         if (cfgApplyPreselectionInBestMatch) {
           if (!isSelected(pt, eta, muon_tmp.rAtAbsorberEnd(), pDCA, muon_tmp.chi2() / ndf, muon_tmp.trackType(), dcaXY)) {
             continue;
@@ -608,7 +617,7 @@ struct skimmerPrimaryMuon {
         }
 
         if (0.f < muon_tmp.chi2MatchMCHMFT() && muon_tmp.chi2MatchMCHMFT() < min_chi2MatchMCHMFT) {
-          min_chi2MatchMCHMFT = std::sqrt(muon_tmp.chi2MatchMCHMFT());
+          min_chi2MatchMCHMFT = muon_tmp.chi2MatchMCHMFT();
           tupleIds_at_min_chi2mftmch = tupleId;
         }
       }
