@@ -103,7 +103,7 @@ float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
   const float rigidity = track.tpcInnerParam(); // p/|q|
 
   const double x = static_cast<double>(charge) * static_cast<double>(rigidity) / mass;
-  const double expBethe = common::BetheBlochAleph(x, bb0, bb1, bb2, bb3, bb4);
+  const double expBethe = o2::common::BetheBlochAleph(x, bb0, bb1, bb2, bb3, bb4);
   const double expSigma = expBethe * relRes;
 
   if (expSigma <= 0.) {
