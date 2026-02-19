@@ -26,9 +26,6 @@
 
 #include <cstdint>
 
-using namespace o2::constants::physics;
-using namespace o2::framework;
-
 namespace o2::aod::pid_tpc_tof_utils
 {
 /// @brief Species of HF-candidate daughter tracks
@@ -61,7 +58,7 @@ enum PidMethod {
 template <typename TrackType>
 float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
                                         HfProngSpecies lightnuclei,
-                                        const Configurable<LabeledArray<float>>& bbParams)
+                                        const o2::framework::Configurable<o2::framework::LabeledArray<float>>& bbParams)
 {
   if (!track.hasTPC()) {
     return -999.f;
@@ -87,16 +84,16 @@ float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
   double mass = 0.;
   switch (lightnuclei) {
     case HfProngSpecies::Deuteron:
-      mass = MassDeuteron;
+      mass = o2::constants::physics::MassDeuteron;
       break;
     case HfProngSpecies::Triton:
-      mass = MassTriton;
+      mass = o2::constants::physics::MassTriton;
       break;
     case HfProngSpecies::Helium3:
-      mass = MassHelium3;
+      mass = o2::constants::physics::MassHelium3;
       break;
     case HfProngSpecies::Alpha:
-      mass = MassAlpha;
+      mass = o2::constants::physics::MassAlpha;
       break;
     default:
       LOG(fatal) << "Unhandled HfProngSpecies " << static_cast<int>(lightnuclei);
@@ -126,7 +123,7 @@ float getTPCNSigmaLightNucleiBetheBloch(const TrackType& track,
 template <HfProngSpecies SpecPid, typename TTrack, typename TCursor>
 void fillProngPidLightNuclei(TTrack const& track,
                              TCursor& rowPid,
-                             const Configurable<LabeledArray<float>>& bbParams)
+                             const o2::framework::Configurable<o2::framework::LabeledArray<float>>& bbParams)
 {
 
   // get PID information for the daughter tracks
