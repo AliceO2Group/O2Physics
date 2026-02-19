@@ -78,7 +78,7 @@ constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
     X(FOLDER "/hIntegrated",                                 0.)                                      \
     /* Lambda pT variation -- Youpeng's proposal */                                                   \
     X(FOLDER "/hRingObservableLambdaPt",                     v0pt,           ringObservable)          \
-    X(FOLDER "/hRingObservableLambdaPt",                     v0pt)                                    \
+    X(FOLDER "/hLambdaPt",                                   v0pt)                                    \
     /* 2D Lambda correlations */                                                                       \
     X(FOLDER "/h2dRingObservableDeltaPhiVsLambdaPt",         deltaPhiJet,   v0pt, ringObservable)     \
     X(FOLDER "/h2dRingObservableDeltaThetaVsLambdaPt",       deltaThetaJet, v0pt, ringObservable)     \
@@ -122,7 +122,32 @@ constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
     X(FOLDER "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservable) \
     /* Counters */ \
     X(FOLDER "/h3dDeltaPhiVsMassVsLeadJetPt",                 deltaPhiJet,   v0LambdaLikeMass, leadingJetPt) \
-    X(FOLDER "/h3dDeltaThetaVsMassVsLeadJetPt",               deltaThetaJet, v0LambdaLikeMass, leadingJetPt)
+    X(FOLDER "/h3dDeltaThetaVsMassVsLeadJetPt",               deltaThetaJet, v0LambdaLikeMass, leadingJetPt) \
+    /* 2D: Observable vs Mass vs Centrality (projected as 2D Mass vs Cent for integrated observable) */ \
+    X(FOLDER "/h2dRingObservableMassVsCent", v0LambdaLikeMass, centrality, ringObservable) \
+    /* 3D: Observable vs Mass vs Centrality */ \
+    X(FOLDER "/h3dRingObservableDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality, ringObservable) \
+    X(FOLDER "/h3dRingObservableDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality, ringObservable) \
+    /* Counters */ \
+    X(FOLDER "/h3dDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality) \
+    X(FOLDER "/h3dDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality) \
+    /* TProfile of Ring vs Mass */ \
+    X(FOLDER "/pRingObservableMass", v0LambdaLikeMass, ringObservable) \
+    /* 2D Profiles: Angle vs Mass */ \
+    X(FOLDER "/p2dRingObservableDeltaPhiVsMass",   deltaPhiJet,   v0LambdaLikeMass, ringObservable) \
+    X(FOLDER "/p2dRingObservableDeltaThetaVsMass", deltaThetaJet, v0LambdaLikeMass, ringObservable) \
+    /* 3D Profiles: Angle vs Mass vs Lambda pT */ \
+    X(FOLDER "/p3dRingObservableDeltaPhiVsMassVsLambdaPt",   deltaPhiJet,   v0LambdaLikeMass, v0pt, ringObservable) \
+    X(FOLDER "/p3dRingObservableDeltaThetaVsMassVsLambdaPt", deltaThetaJet, v0LambdaLikeMass, v0pt, ringObservable) \
+    /* 3D Profiles: Angle vs Mass vs Lead Jet pT */ \
+    X(FOLDER "/p3dRingObservableDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservable) \
+    X(FOLDER "/p3dRingObservableDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservable) \
+    /* 2D Profile: Mass vs Centrality */ \
+    X(FOLDER "/p2dRingObservableMassVsCent", v0LambdaLikeMass, centrality, ringObservable) \
+    /* 3D Profiles: Angle vs Mass vs Centrality */ \
+    X(FOLDER "/p3dRingObservableDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality, ringObservable) \
+    X(FOLDER "/p3dRingObservableDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality, ringObservable)
+    // (TODO: add counters for regular TH2Ds about centrality)
 
 
 // ======================================================
@@ -149,7 +174,10 @@ constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
     X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt", deltaThetaJet, v0LambdaLikeMass, v0pt, ringObservableSquared) \
     /* 3D - LeadJetPt*/ \
     X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservableSquared) \
-    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservableSquared)
+    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservableSquared) \
+    /* 3D: Squared observable vs Mass vs Centrality */ \
+    X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality, ringObservableSquared) \
+    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality, ringObservableSquared)
 
 #define POLARIZATION_PROFILE_FILL_LIST(X, FOLDER) \
     /* =============================== */ \
@@ -199,16 +227,21 @@ struct lambdajetpolarizationionsderived {
         // Jet axes:
         ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt",{100, 0.f, 200.f},"Leading particle p_{T} (GeV/c)"}; // Simpler version!
         ConfigurableAxis axisJetPt{"axisJetPt",{100, 0.f, 200.f},"Jet p_{t} (GeV)"};
-        ConfigurableAxis axisCosTheta{"axisDeltaTheta", {100, 0, constants::math::PI}, "#Delta #theta_{jet}"};
+        ConfigurableAxis axisDeltaTheta{"axisDeltaTheta", {100, 0, constants::math::PI}, "#Delta #theta_{jet}"};
         ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {100, -constants::math::PI, constants::math::PI}, "#Delta #phi_{jet}"};
 
         // Coarser axes for signal extraction:
         ConfigurableAxis axisPtSigExtract{"axisPtSigExtract", {VARIABLE_WIDTH, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 6.0f, 8.0f, 10.0f, 15.0f, 20.0f, 30.0f, 50.0f}, "pt axis for signal extraction"};
-        ConfigurableAxis axisLambdaMassSigExtract{"axisLambdaMassSigExtract", {175, 1.08f, 1.15f}, "Lambda mass in GeV/c"}; // With a sigma of 0.002 GeV/c, this has about 5 bins per sigma, so that the window is properly grasped.
+        // ConfigurableAxis axisLambdaMassSigExtract{"axisLambdaMassSigExtract", {175, 1.08f, 1.15f}, "Lambda mass in GeV/c"}; // With a sigma of 0.002 GeV/c, this has about 5 bins per sigma, so that the window is properly grasped.
+            // Rewrote the axisLambdaMassSigextract to have 5x coarser bins outside the peak region, and 2x coarser bins in the peak region
+            // (this allows for better fits and smaller fluctuations)
+        ConfigurableAxis axisLambdaMassSigExtract{"axisLambdaMassSigExtract", {VARIABLE_WIDTH, 1.080000, 1.082000, 1.084000, 1.086000, 1.088000, 1.090000, 1.092000, 1.094000, 1.096000, 1.098000, 1.100000, 1.102000, 1.104000, 1.106000, 1.108000, 1.109683, 1.110483, 1.111283, 1.112083, 1.112883, 1.113683, 1.114483, 1.115283, 1.116083, 1.116883, 1.117683, 1.118483, 1.119283, 1.120083, 1.120883, 1.121683, 1.123683, 1.125683, 1.127683, 1.129683, 1.131683, 1.133683, 1.135683, 1.137683, 1.139683, 1.141683, 1.143683, 1.145683, 1.147683, 1.149683, 1.150000}, "Lambda mass in GeV/c"};
         ConfigurableAxis axisLeadingParticlePtSigExtract{"axisLeadingParticlePtSigExtract", {VARIABLE_WIDTH, 0, 4, 8, 12, 16, 20, 25, 30, 35, 40, 60, 100, 200}, "Leading particle p_{T} (GeV/c)"}; // Simpler version!
         ConfigurableAxis axisJetPtSigExtract{"axisJetPtSigExtract", {VARIABLE_WIDTH, 0, 5, 10, 12, 16, 20, 25, 30, 35, 40, 60, 100, 200},"Jet p_{t} (GeV)"};
 
         // (TODO: add a lambdaPt axis that is pre-selected only on the 0.5 to 1.5 Pt region)
+
+        ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Centrality"};
     } axisConfigurations;
 
 
@@ -230,44 +263,45 @@ struct lambdajetpolarizationionsderived {
             // ===============================
             // 1D observable histograms
             // ===============================
-            histos.add((folder + "/hRingObservableDeltaPhi").c_str(), "hRingObservableDeltaPhi", kTH1D, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/hRingObservableDeltaTheta").c_str(), "hRingObservableDeltaTheta", kTH1D, {axisConfigurations.axisCosTheta});
+            histos.add((folder + "/hRingObservableDeltaPhi").c_str(), "hRingObservableDeltaPhi", kTH1D, {axisConfigurations.axisDeltaPhi}); // Not quite the ring observable itself: this is just the numerator of <R> = \sum R_i / N_\Lambda (error bars WILL be wrong without TProfile)
+            histos.add((folder + "/hRingObservableDeltaTheta").c_str(), "hRingObservableDeltaTheta", kTH1D, {axisConfigurations.axisDeltaTheta});
             histos.add((folder + "/hRingObservableIntegrated").c_str(), "hRingObservableIntegrated", kTH1D, {{1, -0.5, 0.5}});
             // Counters (denominators)
             histos.add((folder + "/hDeltaPhi").c_str(), "hDeltaPhi", kTH1D, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/hDeltaTheta").c_str(), "hDeltaTheta", kTH1D, {axisConfigurations.axisCosTheta});
+            histos.add((folder + "/hDeltaTheta").c_str(), "hDeltaTheta", kTH1D, {axisConfigurations.axisDeltaTheta});
             histos.add((folder + "/hIntegrated").c_str(), "hIntegrated", kTH1D, {{1, -0.5, 0.5}});
             // ===============================
             // Lambda pT dependence
             // ===============================
             histos.add((folder + "/hRingObservableLambdaPt").c_str(), "hRingObservableLambdaPt", kTH1D, {axisConfigurations.axisPt});
+            histos.add((folder + "/hLambdaPt").c_str(), "hLambdaPt", kTH1D, {axisConfigurations.axisPt});
             // ===============================
             // 2D Lambda correlations
             // ===============================
             histos.add((folder + "/h2dRingObservableDeltaPhiVsLambdaPt").c_str(), "h2dRingObservableDeltaPhiVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPt});
-            histos.add((folder + "/h2dRingObservableDeltaThetaVsLambdaPt").c_str(), "h2dRingObservableDeltaThetaVsLambdaPt", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisPt});
+            histos.add((folder + "/h2dRingObservableDeltaThetaVsLambdaPt").c_str(), "h2dRingObservableDeltaThetaVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisPt});
             // Counters
             histos.add((folder + "/h2dDeltaPhiVsLambdaPt").c_str(), "h2dDeltaPhiVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPt});
-            histos.add((folder + "/h2dDeltaThetaVsLambdaPt").c_str(), "h2dDeltaThetaVsLambdaPt", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisPt});
+            histos.add((folder + "/h2dDeltaThetaVsLambdaPt").c_str(), "h2dDeltaThetaVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisPt});
             // ===============================
             // 2D Jet correlations
             // ===============================
             histos.add((folder + "/h2dRingObservableDeltaPhiVsLeadJetPt").c_str(), "h2dRingObservableDeltaPhiVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
-            histos.add((folder + "/h2dRingObservableDeltaThetaVsLeadJetPt").c_str(), "h2dRingObservableDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisJetPt});
+            histos.add((folder + "/h2dRingObservableDeltaThetaVsLeadJetPt").c_str(), "h2dRingObservableDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisJetPt});
             // Counters
             histos.add((folder + "/h2dDeltaPhiVsLeadJetPt").c_str(), "h2dDeltaPhiVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
-            histos.add((folder + "/h2dDeltaThetaVsLeadJetPt").c_str(), "h2dDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisJetPt});
+            histos.add((folder + "/h2dDeltaThetaVsLeadJetPt").c_str(), "h2dDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisJetPt});
             // ===============================
             // Squared observable (error propagation)
             // ===============================
             histos.add((folder + "/hRingObservableSquaredDeltaPhi").c_str(), "hRingObservableSquaredDeltaPhi", kTH1D, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/hRingObservableSquaredDeltaTheta").c_str(), "hRingObservableSquaredDeltaTheta", kTH1D, {axisConfigurations.axisCosTheta});
+            histos.add((folder + "/hRingObservableSquaredDeltaTheta").c_str(), "hRingObservableSquaredDeltaTheta", kTH1D, {axisConfigurations.axisDeltaTheta});
             histos.add((folder + "/hRingObservableSquaredIntegrated").c_str(), "hRingObservableSquaredIntegrated", kTH1D, {{1, -0.5, 0.5}});
             histos.add((folder + "/hRingObservableSquaredLambdaPt").c_str(), "hRingObservableSquaredLambdaPt", kTH1D, {axisConfigurations.axisPt});
             histos.add((folder + "/h2dRingObservableSquaredDeltaPhiVsLambdaPt").c_str(), "h2dRingObservableSquaredDeltaPhiVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPt});
-            histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsLambdaPt").c_str(), "h2dRingObservableSquaredDeltaThetaVsLambdaPt", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisPt});
+            histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsLambdaPt").c_str(), "h2dRingObservableSquaredDeltaThetaVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisPt});
             histos.add((folder + "/h2dRingObservableSquaredDeltaPhiVsLeadJetPt").c_str(), "h2dRingObservableSquaredDeltaPhiVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
-            histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt").c_str(), "h2dRingObservableSquaredDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisJetPt});
+            histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt").c_str(), "h2dRingObservableSquaredDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisJetPt});
 
             // Additional plots for instant gratification:
             // -- TProfiles will handle the error estimate of the Ring Observable via the variance, even though
@@ -281,58 +315,102 @@ struct lambdajetpolarizationionsderived {
             // 1D TProfiles
             // ===============================
             histos.add((folder + "/pRingObservableDeltaPhi").c_str(), "pRingObservableDeltaPhi;#Delta#varphi_{jet};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaPhi});
-            histos.add((folder + "/pRingObservableDeltaTheta").c_str(), "pRingObservableDeltaTheta;#Delta#theta_{jet};<#it{R}>", kTProfile, {axisConfigurations.axisCosTheta});
+            histos.add((folder + "/pRingObservableDeltaTheta").c_str(), "pRingObservableDeltaTheta;#Delta#theta_{jet};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaTheta});
             histos.add((folder + "/pRingObservableIntegrated").c_str(), "pRingObservableIntegrated; ;<#it{R}>", kTProfile, {{1, -0.5, 0.5}});
             histos.add((folder + "/pRingObservableLambdaPt").c_str(), "pRingObservableLambdaPt;#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile, {axisConfigurations.axisPt});
             // ===============================
             // 2D TProfiles (Lambda correlations)
             // ===============================
             histos.add((folder + "/p2dRingObservableDeltaPhiVsLambdaPt").c_str(), "p2dRingObservableDeltaPhiVsLambdaPt;#Delta#varphi_{jet};#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPt});
-            histos.add((folder + "/p2dRingObservableDeltaThetaVsLambdaPt").c_str(), "p2dRingObservableDeltaThetaVsLambdaPt;#Delta#theta_{jet};#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisPt});
+            histos.add((folder + "/p2dRingObservableDeltaThetaVsLambdaPt").c_str(), "p2dRingObservableDeltaThetaVsLambdaPt;#Delta#theta_{jet};#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisPt});
             // ===============================
             // 2D TProfiles (Jet correlations)
             // ===============================
             histos.add((folder + "/p2dRingObservableDeltaPhiVsLeadJetPt").c_str(), "p2dRingObservableDeltaPhiVsLeadJetPt;#Delta#varphi_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
-            histos.add((folder + "/p2dRingObservableDeltaThetaVsLeadJetPt").c_str(), "p2dRingObservableDeltaThetaVsLeadJetPt;#Delta#theta_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisJetPt});
+            histos.add((folder + "/p2dRingObservableDeltaThetaVsLeadJetPt").c_str(), "p2dRingObservableDeltaThetaVsLeadJetPt;#Delta#theta_{jet};#it{p}_{T}^{lead jet};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisJetPt});
             
             // ===============================
             // Multi-dimensional histograms for signal extraction
             // (Mass-dependent polarization extraction)
             // ===============================
+            // (TODO: possibly remove all TH2Ds that are not counter histograms and deal only with TProfiles!)
             // Simple invariant mass plot for QA:
             histos.add((folder + "/hMass").c_str(), "hMass", kTH1D, {axisConfigurations.axisLambdaMass});
             histos.add((folder + "/hMassSigExtract").c_str(), "hMassSigExtract", kTH1D, {axisConfigurations.axisLambdaMassSigExtract});
-            // 1D Observable vs Mass:
+            // 1D Mass dependence of observable:
                 // Important to know if the signal varies with mass, or if the sideband signal subtraction will probably work well enough!
-            histos.add((folder + "/hRingObservableMass").c_str(), "hRingObservableMass", kTH1D, {axisConfigurations.axisLambdaMass});
-            // --- 2D: Observable vs Invariant Mass ---
+            histos.add((folder + "/hRingObservableMass").c_str(), "hRingObservableMass", kTH1D, {axisConfigurations.axisLambdaMassSigExtract});
+            // --- 2D: Angular observable vs Invariant Mass ---
             // Ring observable weighted with R
             histos.add((folder + "/h2dRingObservableDeltaPhiVsMass").c_str(), "h2dRingObservableDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
-            histos.add((folder + "/h2dRingObservableDeltaThetaVsMass").c_str(), "h2dRingObservableDeltaThetaVsMass", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/h2dRingObservableDeltaThetaVsMass").c_str(), "h2dRingObservableDeltaThetaVsMass", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract});
             // Squared observable (for variance propagation)
             histos.add((folder + "/h2dRingObservableSquaredDeltaPhiVsMass").c_str(), "h2dRingObservableSquaredDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
-            histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsMass").c_str(), "h2dRingObservableSquaredDeltaThetaVsMass", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsMass").c_str(), "h2dRingObservableSquaredDeltaThetaVsMass", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract});
             // --- Counters (denominators) ---
             histos.add((folder + "/h2dDeltaPhiVsMass").c_str(), "h2dDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
-            histos.add((folder + "/h2dDeltaThetaVsMass").c_str(), "h2dDeltaThetaVsMass", kTH2D,{axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract});
-            // --- 3D: Observable vs Mass vs Lambda pT ---
+            histos.add((folder + "/h2dDeltaThetaVsMass").c_str(), "h2dDeltaThetaVsMass", kTH2D,{axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract});
+            // --- 3D: Angular observable vs Mass vs Lambda pT ---
             histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLambdaPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
-            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisCosTheta,axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaTheta,axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             // Squared version
             histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
-            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             // Counters
             histos.add((folder + "/h3dDeltaPhiVsMassVsLambdaPt").c_str(), "h3dDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
-            histos.add((folder + "/h3dDeltaThetaVsMassVsLambdaPt").c_str(), "h3dDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
-            // --- 3D: Observable vs Mass vs Lead Jet pT ---
+            histos.add((folder + "/h3dDeltaThetaVsMassVsLambdaPt").c_str(), "h3dDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+            // --- 3D: Angular observable vs Mass vs Lead Jet pT ---
             histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
-            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
+            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             // --- Squared version ---
             histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
-            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
+            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             // --- Counters ---
             histos.add((folder + "/h3dDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
-            histos.add((folder + "/h3dDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisCosTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract});
+            histos.add((folder + "/h3dDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract});
+
+            /////////////////////////////////////
+            /// TProfiles with the proper errors for quick glancing
+            /////////////////////////////////////
+            // TProfile of ring vs mass (integrated in all phi, and properly normalized by N_\Lambda):
+            histos.add((folder + "/pRingObservableMass").c_str(), "pRingObservableMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
+                // TProfile2D: <R> vs Mass (DeltaPhi)
+            histos.add((folder + "/p2dRingObservableDeltaPhiVsMass").c_str(), "p2dRingObservableDeltaPhiVsMass;#Delta#varphi;m_{p#pi};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
+                // TProfile2D: <R> vs Mass (DeltaTheta)
+            histos.add((folder + "/p2dRingObservableDeltaThetaVsMass").c_str(), "p2dRingObservableDeltaThetaVsMass;#Delta#theta;m_{p#pi};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract});
+
+                // --- TProfile3D: <R> vs DeltaPhi vs Mass vs LambdaPt ---
+            histos.add((folder + "/p3dRingObservableDeltaPhiVsMassVsLambdaPt").c_str(), "p3dRingObservableDeltaPhiVsMassVsLambdaPt;#Delta#varphi;m_{p#pi};p_{T}^{#Lambda};<#it{R}>", kTProfile3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+                // --- TProfile3D: <R> vs DeltaTheta vs Mass vs LambdaPt ---
+            histos.add((folder + "/p3dRingObservableDeltaThetaVsMassVsLambdaPt").c_str(), "p3dRingObservableDeltaThetaVsMassVsLambdaPt;#Delta#theta;m_{p#pi};p_{T}^{#Lambda};<#it{R}>", kTProfile3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
+                // --- TProfile3D: <R> vs DeltaPhi vs Mass vs LeadJetPt ---
+            histos.add((folder + "/p3dRingObservableDeltaPhiVsMassVsLeadJetPt").c_str(), "p3dRingObservableDeltaPhiVsMassVsLeadJetPt;#Delta#varphi;m_{p#pi};p_{T}^{jet};<#it{R}>", kTProfile3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract});
+            // --- TProfile3D: <R> vs DeltaTheta vs Mass vs LeadJetPt ---
+            histos.add((folder + "/p3dRingObservableDeltaThetaVsMassVsLeadJetPt").c_str(), "p3dRingObservableDeltaThetaVsMassVsLeadJetPt;#Delta#theta;m_{p#pi};p_{T}^{jet};<#it{R}>", kTProfile3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract});
+
+            // ===============================
+            // Mass histograms with centrality
+            // ===============================
+            // 2D Mass dependence of observable vs Centrality:
+                // Important to know if the signal varies with mass, or if the sideband signal subtraction will probably work well enough!
+            histos.add((folder + "/h2dRingObservableMassVsCent").c_str(), "h2dRingObservableMassVsCent", kTH2D, {axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+            // --- 3D: Angular observable vs Invariant Mass ---
+            histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsCent").c_str(), "h3dRingObservableDeltaPhiVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+            histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsCent").c_str(), "h3dRingObservableDeltaThetaVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+            // Squared observable (for variance propagation)
+            histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsCent").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+            histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsCent").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+            // --- Counters (denominators) ---
+            histos.add((folder + "/h3dDeltaPhiVsMassVsCent").c_str(), "h3dDeltaPhiVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+            histos.add((folder + "/h3dDeltaThetaVsMassVsCent").c_str(), "h3dDeltaThetaVsMassVsCent", kTH3D,{axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+
+            // Useful TProfiles:
+                // --- TProfile2D: <R> vs Mass vs Centrality ---
+            histos.add((folder + "/p2dRingObservableMassVsCent").c_str(), "p2dRingObservableMassVsCent;m_{p#pi};Centrality;<#it{R}>", kTProfile2D, {axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+                // --- TProfile3D: <R> vs DeltaPhi vs Mass vs Centrality ---
+            histos.add((folder + "/p3dRingObservableDeltaPhiVsMassVsCent").c_str(), "p3dRingObservableDeltaPhiVsMassVsCent;#Delta#varphi;m_{p#pi};Centrality;<#it{R}>", kTProfile3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
+                // --- TProfile3D: <R> vs DeltaTheta vs Mass vs Centrality ---
+            histos.add((folder + "/p3dRingObservableDeltaThetaVsMassVsCent").c_str(), "p3dRingObservableDeltaThetaVsMassVsCent;#Delta#theta;m_{p#pi};Centrality;<#it{R}>", kTProfile3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
 
             // ===============================
             //   Polarization observable QAs 
@@ -372,7 +450,7 @@ struct lambdajetpolarizationionsderived {
     void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s){
         for (auto const& collision : collisions) {
             const auto collId = collision.collisionId();
-            // const double centrality = collision.centrality(); // (TODO: implement centrality!)
+            const double centrality = collision.centrality();
 
             // Slice jets and V0s belonging to this collision
                 // (global collision indices repeat a lot, but they are unique to a same TimeFrame (TF) subfolder in the derived data)
