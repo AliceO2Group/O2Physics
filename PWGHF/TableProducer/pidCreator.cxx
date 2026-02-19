@@ -53,6 +53,7 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofTinyHe> trackPidTinyHe;
   Produces<aod::PidTpcTofFullAl> trackPidFullAl;
   Produces<aod::PidTpcTofTinyAl> trackPidTinyAl;
+
   /// Function to check whether the process function flag matches the need for filling the table
   /// \param initContext  workflow context (argument of the init function)
   /// \param table  name of the table
