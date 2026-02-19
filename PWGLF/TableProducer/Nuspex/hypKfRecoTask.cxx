@@ -45,9 +45,10 @@
 
 #include <limits>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
+
 // KFParticle
 #ifndef HomogeneousField
 #define HomogeneousField // o2-linter: disable=name/macro (Name is defined in KFParticle package)
