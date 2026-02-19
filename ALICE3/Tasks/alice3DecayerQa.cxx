@@ -155,7 +155,7 @@ struct Alice3DecayerQA {
       histos.fill(HIST("MCWithDau/hEta"), particle.eta());
       histos.fill(HIST("MCWithDau/hRapidity"), particle.y());
       histos.fill(HIST("MCWithDau/hIsAlive"), particle.isAlive());
-      histos.fill(HIST("MCWithDau/hIsPrimary"), particle.isPhysicalPrimary());
+      histos.fill(HIST("MCWithDau/hIsPrimary"), particle.isPrimary());
       histos.fill(HIST("MCWithDau/hPx"), particle.px());
       histos.fill(HIST("MCWithDau/hPy"), particle.py());
       histos.fill(HIST("MCWithDau/hPz"), particle.pz());

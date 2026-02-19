@@ -18,13 +18,14 @@
 #include "ALICE3/Core/Decayer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFMCParticle.h"
-#include <Framework/runDataProcessing.h>
+
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
 
@@ -116,9 +117,9 @@ struct OnTheFlyDecayer {
     bool hasNaN() const
     {
       return std::isnan(px) || std::isnan(py) || std::isnan(pz) || std::isnan(e) ||
-            std::isnan(vx) || std::isnan(vy) || std::isnan(vz) || std::isnan(vt) ||
-            std::isnan(phi) || std::isnan(eta) || std::isnan(pt) || std::isnan(p) ||
-            std::isnan(y) || std::isnan(weight);
+             std::isnan(vx) || std::isnan(vy) || std::isnan(vz) || std::isnan(vt) ||
+             std::isnan(phi) || std::isnan(eta) || std::isnan(pt) || std::isnan(p) ||
+             std::isnan(y) || std::isnan(weight);
     }
 
     int collisionId;
