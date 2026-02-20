@@ -60,26 +60,29 @@ float getNSigmaTpcLightNucleiBetheBloch(const TrackType& track,
                                         HfProngSpecies species,
                                         const o2::framework::Configurable<o2::framework::LabeledArray<float>>& bbParams)
 {
+  constexpr float RetValNotApplicable = -999.f;
+
   if (!track.hasTPC()) {
-    return -999.f;
+    return RetValNotApplicable;
   }
   const int row = static_cast<int>(species) - static_cast<int>(HfProngSpecies::Deuteron);
 
   if (row < 0 || row >= HfProngSpecies::NHfProngSpecies) {
-    return -999.f;
+    return RetValNotApplicable;
   }
 
   // Columns: [0..4] BB params, [5] relative resolution (sigma/mean)
+
+  const double relRes = bbParams->get(row, 5u);
+  if (relRes <= 0.) {
+    return RetValNotApplicable;
+  }
+
   const double bb0 = bbParams->get(row, 0u);
   const double bb1 = bbParams->get(row, 1u);
   const double bb2 = bbParams->get(row, 2u);
   const double bb3 = bbParams->get(row, 3u);
   const double bb4 = bbParams->get(row, 4u);
-  const double relRes = bbParams->get(row, 5u);
-
-  if (relRes <= 0.) {
-    return -999.f;
-  }
 
   double mass = 0.;
   switch (species) {
@@ -107,7 +110,7 @@ float getNSigmaTpcLightNucleiBetheBloch(const TrackType& track,
   const double expSigma = expBethe * relRes;
 
   if (expSigma <= 0.) {
-    return -999.f;
+    return RetValNotApplicable;
   }
 
   return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
