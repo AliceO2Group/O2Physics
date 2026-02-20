@@ -593,21 +593,26 @@ struct strangederivedbuilder {
   void populateEventTimes(coll const& collisions, TTracks const& tracks)
   {
     std::vector<double> collisionEventTime(collisions.size(), 0.0);
+    std::vector<double> collisionEventTimeErr(collisions.size(), 0.0);
     std::vector<int> collisionNtracks(collisions.size(), 0);
     for (const auto& track : tracks) {
       if (track.hasTOF() && track.collisionId() >= 0) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
+        // Take the average of the error instead of propagating the error as all event time error from tracks are fully correlated
+        collisionEventTimeErr[track.collisionId()] += track.tofEvTimeErr();
         collisionNtracks[track.collisionId()]++;
       }
     }
     for (const auto& collision : collisions) {
       if (collisionNtracks[collision.globalIndex()] > 0) {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
+        collisionEventTimeErr[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
       } else {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+        collisionEventTimeErr[collision.globalIndex()] = -1e+6; // undefined
       }
       histos.fill(HIST("h2dCollisionTimesVsNTracks"), collisionNtracks[collision.globalIndex()], collisionEventTime[collision.globalIndex()]);
-      products.straEvTimes(collisionEventTime[collision.globalIndex()]);
+      products.straEvTimes(collisionEventTime[collision.globalIndex()], collisionEventTimeErr[collision.globalIndex()]);
     }
   }
 
@@ -837,7 +842,7 @@ struct strangederivedbuilder {
                                    aod::dautrack::packing::packInInt8(tr.tpcNSigmaPr()));
           // populate daughter-level TOF information
           if (tr.hasTOF()) {
-            products.dauTrackTOFPIDs(tr.collisionId(), products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.length(), tr.tofExpMom());
+            products.dauTrackTOFPIDs(tr.collisionId(), products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.tofEvTimeErr(), tr.length(), tr.tofExpMom());
           }
         } else {
           // populate with empty fully-compatible Nsigmas if no corresponding table available
