@@ -14,162 +14,179 @@
 /// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
 
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
-#include "MathUtils/BetheBlochAleph.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
+#include <TMCProcess.h>
 #include <TParameter.h>
-
 #include <cmath>
 #include <string>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
+
 using CollisionWithEvSel = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 using TotalTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTOFDe>;
+using CollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
+using TracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTOFDe, aod::McTrackLabels>;
 
 namespace
 {
-static const std::vector<std::string> particleName{"d"};
+static const int kPdgCodeHe3 = 1000020030;
+static const float kMaxEta = 0.8f;
+static const float kMaxGenRapidity = 0.5f;
+static const float kMaxVertexZ = 10.f;
+static const int kMinTpcCrossedRows = 70;
 static const double kBetheBlochDefault[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
-static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-static const float maxEtaCut = 0.8f;
-static const int minTpcCrossedRowsCut = 70;
-static const float maxVertexZCut = 10.f;
-} // namespace
+static const std::vector<std::string> kParamNamesBB{"p0", "p1", "p2", "p3", "p4", "resolution"};
+static const std::vector<std::string> kParticleNamesBB{"He3"};
+}
 
 struct AntiNucleiTask {
-  // Histogram registry: for holding histograms
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histo{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Configurable track cuts
-  Configurable<float> trackNclusTPCcut{"trackNclusTPCcut", 70.0f, "min number of TPC clusters"};
-  Configurable<float> trackNclusITScut{"trackNclusITScut", 4.0f, "min number of ITS clusters"};
-  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
-  Configurable<float> minChi2TPC{"minChi2TPC", 0.0f, "min chi2 per cluster TPC"};
-  Configurable<float> chi2ITS{"chi2ITS", 36.0f, "max chi2 per cluster ITS"};
-  Configurable<float> trackDCAz{"trackDCAz", 0.1f, "maxDCAz"};
-  Configurable<float> trackDCAxy{"trackDCAxy", 0.1f, "maxDCAxy"};
-  Configurable<float> tpcNSigmaCut{"tpcNSigmaCut", 3.0f, "tpcNSigmaCut"};
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault, 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
+  Configurable<float> mMinClsTPC{"minClsTPC", 70.0f, ""};
+  Configurable<float> mMinClsITS{"minClsITS", 4.0f, ""};
+  Configurable<float> mMaxChi2TPC{"maxChi2TPC", 4.0f, ""};
+  Configurable<float> mMinChi2TPC{"minChi2TPC", 0.0f, ""};
+  Configurable<float> mMaxChi2ITS{"maxChi2ITS", 36.0f, ""};
+  Configurable<float> mMaxDCAZ{"maxDCAZ", 0.02f, ""};
+  Configurable<float> mMaxDCAXY{"maxDCAXY", 0.02f, ""};
+  Configurable<float> mMaxNsigmaTPC{"maxNsigmaTPC", 3.0f, ""};
+  Configurable<LabeledArray<double>> mBetheBlochParams{"betheBlochParams", {kBetheBlochDefault, 1, 6, kParticleNamesBB, kParamNamesBB}, ""};
 
   void init(InitContext const&)
-  { // Defining the Histogram Axes
-    ConfigurableAxis etaAxis{"etaAxis", {16, -0.8, +0.8}, "#eta"};
-    ConfigurableAxis phiAxis{"phiAxis", {70, 0.f, 7.f}, "#phi"};
-    ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Primary Vertex z (cm)"};
-    ConfigurableAxis nSigmaAxis{"nSigmaAxis", {50, -5.f, 5.f}, "N_{#sigma}"};
-    ConfigurableAxis ptAxis{"ptAxis", {200, -10.0f, 10.0f}, "p_{T} (GeV/c)"};
-    ConfigurableAxis centAxis{"centAxis", {100, 0, 100.0f}, "Centrality"};
-    ConfigurableAxis momAxis{"momAxis", {5.e2, 0.f, 5.f}, "momentum axis binning"};
-    ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
+  {
+    ConfigurableAxis axisEta{"eta", {16, -0.8, +0.8}, "#eta"};
+    ConfigurableAxis axisPhi{"phi", {70, 0.f, 7.f}, "#phi (rad)"};
+    ConfigurableAxis axisZVtx{"zVtx", {100, -20.f, 20.f}, "Vertex z (cm)"};
+    ConfigurableAxis axisNSigma{"nSigma", {50, -5.f, 5.f}, "n#sigma"};
+    ConfigurableAxis axisPt{"pt", {200, -10.0f, 10.0f}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis axisMomTPC{"momTPC", {5.e2, 0.f, 5.f}, "#it{p}_{TPC} (GeV/#it{c})"};
+    ConfigurableAxis axisSignalTPC{"signalTPC", {4.e2, 0.f, 4.e3f}, "d#it{E}/d#it{x}_{TPC} (a.u.)"};
+    ConfigurableAxis axisCent{"centAxis", {100, 0, 100.0f}, "Centrality"};
 
-    // Creating histograms
-    histos.add("RawzVtx", "RawzVtx", kTH1F, {{zVtxAxis, "Primary Vertex z (cm)"}});
-    histos.add("zVtx", "zVtx", kTH1F, {{zVtxAxis, "Primary Vertex z (cm)"}});
-    histos.add("RawEta", "RawEta", kTH1F, {{etaAxis, "#eta"}});
-    histos.add("Eta", "Eta", kTH1F, {{etaAxis, "#eta"}});
-    histos.add("RawPhi", "RawPhi", kTH1F, {{phiAxis, "#phi (rad)"}});
-    histos.add("Phi", "Phi", kTH1F, {{phiAxis, "#phi (rad)"}});
-    histos.add("RawPt", "RawPt", kTH1F, {{ptAxis, "#it{p}_{T} (GeV/#it{c})"}});
-    histos.add("Pt", "Pt", kTH1F, {{ptAxis, "#it{p}_{T} (GeV/#it{c})"}});
-    histos.add("TpcSignal", "TpcSignal", kTH2F, {{momAxis, "#it{p}_{TPC} (GeV/#it{c})"}, {tpcAxis, "d#it{E}/d#it{x}_{TPC}"}});
-    histos.add("RawtpcNSigma", "RawtpcNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
-    histos.add("tpcNSigma", "tpcNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
-    histos.add("RawtofNSigma", "RawtofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
-    histos.add("tofNSigma", "tofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
+    histo.add("ZVtx_Raw", "Raw Z-vertex", kTH1F, {{axisZVtx}});
+    histo.add("ZVtx", "Z-vertex", kTH1F, {{axisZVtx}});
+    histo.add("Eta_Raw", "Raw Eta", kTH1F, {{axisEta}});
+    histo.add("Eta", "Eta", kTH1F, {{axisEta}});
+    histo.add("Phi_Raw", "Raw Phi", kTH1F, {{axisPhi}});
+    histo.add("Phi", "Phi", kTH1F, {{axisPhi}});
+    histo.add("Pt_Raw", "Raw Pt", kTH1F, {{axisPt}});
+    histo.add("Pt", "Pt", kTH1F, {{axisPt}});
+    histo.add("TPCSignal", "TPC dEdx vs Momentum", kTH2F, {{axisMomTPC}, {axisSignalTPC}});
+    histo.add("NSigmaTPC_Raw", "Raw TPC nSigma", kTH3F, {{axisCent}, {axisPt}, {axisNSigma}});
+    histo.add("NSigmaTOF_Raw", "Raw TOF nSigma", kTH3F, {{axisCent}, {axisPt}, {axisNSigma}});
+    histo.add("NSigmaTPC", "TPC nSigma", kTH3F, {{axisCent}, {axisPt}, {axisNSigma}});
+    histo.add("NSigmaTOF", "TOF nSigma", kTH3F, {{axisCent}, {axisPt}, {axisNSigma}});
+    histo.add("GenPt", "Generated He3 (|y|<0.5)", kTH1F, {{axisPt}});
+    histo.add("RecPt", "Reconstructed He3 (|#eta|<0.8)", kTH1F, {{axisPt}});
   }
 
-  // Function to apply track cuts
   template <typename T>
-  bool isGoodTrack(const T& track)
+  bool passTrackSelection(const T& track)
   {
-    if (track.eta() > maxEtaCut)
-      return false;
-    if (track.tpcNClsFound() < trackNclusTPCcut)
-      return false;
-    if (track.tpcNClsCrossedRows() < minTpcCrossedRowsCut)
-      return false;
-    if (track.itsNCls() < trackNclusITScut)
-      return false;
-    if (track.tpcChi2NCl() > maxChi2TPC)
-      return false;
-    if (track.tpcChi2NCl() < minChi2TPC)
-      return false;
-    if (track.itsChi2NCl() > chi2ITS)
-      return false;
-    if (std::abs(track.dcaXY()) > trackDCAxy)
-      return false;
-    if (std::abs(track.dcaZ()) > trackDCAz)
-      return false;
-
+    if (std::abs(track.eta()) > kMaxEta) return false;
+    if (track.tpcNClsFound() < mMinClsTPC) return false;
+    if (track.tpcNClsCrossedRows() < kMinTpcCrossedRows) return false;
+    if (track.itsNCls() < mMinClsITS) return false;
+    if (track.tpcChi2NCl() > mMaxChi2TPC || track.tpcChi2NCl() < mMinChi2TPC) return false;
+    if (track.itsChi2NCl() > mMaxChi2ITS) return false;
+    if (std::abs(track.dcaXY()) > mMaxDCAXY || std::abs(track.dcaZ()) > mMaxDCAZ) return false;
     return true;
   }
 
-  // The process function
+  static float getSignedPtMC(auto const& particle)
+  {
+    return (particle.pdgCode() > 0) ? particle.pt() : -particle.pt();
+  }
+
+  static bool isPrimaryHe3(auto const& particle)
+  {
+    return std::abs(particle.pdgCode()) == kPdgCodeHe3 && particle.isPhysicalPrimary();
+  }
+
   void process(CollisionWithEvSel::iterator const& collision, TotalTracks const& tracks)
   {
-    // Event Selection
-    if (std::abs(collision.posZ()) > maxVertexZCut) {
-      return;
-    }
+    if (std::abs(collision.posZ()) > kMaxVertexZ) return;
+    histo.fill(HIST("ZVtx_Raw"), collision.posZ());
 
-    // Filling the z-vertex histogram before the event selection cuts.
-    histos.fill(HIST("RawzVtx"), collision.posZ());
+    if (!collision.sel8()) return;
+    histo.fill(HIST("ZVtx"), collision.posZ());
 
-    // Applying the built-in O2 event selection (sel8).
-    if (!collision.sel8()) {
-      return;
-    }
-
-    // Filling the z-vertex histogram after the event selection cuts.
-    histos.fill(HIST("zVtx"), collision.posZ());
-
-    // Track Selection
     for (const auto& track : tracks) {
+      double expectedSignal = tpc::BetheBlochAleph(
+        static_cast<double>(track.tpcInnerParam()),
+        mBetheBlochParams->get("p0"), mBetheBlochParams->get("p1"),
+        mBetheBlochParams->get("p2"), mBetheBlochParams->get("p3"),
+        mBetheBlochParams->get("p4"));
 
-      double expBethe{common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam()), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
-      double expSigma{expBethe * cfgBetheBlochParams->get("resolution")};
-      float tpcNSigma = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+      float nSigmaTPC = static_cast<float>((track.tpcSignal() - expectedSignal) / (expectedSignal * mBetheBlochParams->get("resolution")));
+      float signedPt = (track.sign() > 0) ? 2 * track.pt() : -2 * track.pt();
 
-      float pt = track.sign() > 0 ? 2 * track.pt() : -2 * track.pt();
-      // Filling histograms with track data before applying any cuts.
-      histos.fill(HIST("RawEta"), track.eta());
-      histos.fill(HIST("RawPhi"), track.phi());
-      histos.fill(HIST("RawPt"), pt);
-      histos.fill(HIST("RawtpcNSigma"), collision.centFT0C(), pt, tpcNSigma);
-      histos.fill(HIST("RawtofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
+      histo.fill(HIST("Eta_Raw"), track.eta());
+      histo.fill(HIST("Phi_Raw"), track.phi());
+      histo.fill(HIST("Pt_Raw"), signedPt);
+      histo.fill(HIST("NSigmaTPC_Raw"), collision.centFT0C(), signedPt, nSigmaTPC);
+      histo.fill(HIST("NSigmaTOF_Raw"), collision.centFT0C(), signedPt, track.tofNSigmaDe());
 
-      // If the track is good, fill the "after cuts" histograms.
-      if (isGoodTrack(track)) {
-        histos.fill(HIST("Eta"), track.eta());
-        histos.fill(HIST("Phi"), track.phi());
-        histos.fill(HIST("Pt"), pt);
-        histos.fill(HIST("tpcNSigma"), collision.centFT0C(), pt, tpcNSigma);
-        histos.fill(HIST("TpcSignal"), track.tpcInnerParam(), track.tpcSignal());
+      if (passTrackSelection(track)) {
+        histo.fill(HIST("Eta"), track.eta());
+        histo.fill(HIST("Phi"), track.phi());
+        histo.fill(HIST("Pt"), signedPt);
+        histo.fill(HIST("NSigmaTPC"), collision.centFT0C(), signedPt, nSigmaTPC);
+        histo.fill(HIST("TPCSignal"), track.tpcInnerParam(), track.tpcSignal());
 
-        if (std::abs(tpcNSigma) < tpcNSigmaCut) {
-          histos.fill(HIST("tofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
+        if (std::abs(nSigmaTPC) < mMaxNsigmaTPC) {
+          histo.fill(HIST("NSigmaTOF"), collision.centFT0C(), signedPt, track.tofNSigmaDe());
         }
       }
     }
   }
 
+  void processMC(CollisionMC const& collisions, aod::McCollisions const&, TracksMC const& tracks, aod::McParticles const& particlesMC)
+  {
+    for (const auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > kMaxVertexZ || !collision.sel8()) continue;
+
+      for (const auto& particle : particlesMC) {
+        if (particle.mcCollisionId() == collision.mcCollisionId() && isPrimaryHe3(particle)) {
+          if (std::abs(particle.y()) < kMaxGenRapidity) {
+            histo.fill(HIST("GenPt"), getSignedPtMC(particle));
+          }
+        }
+      }
+
+      for (const auto& track : tracks) {
+        if (track.collisionId() != collision.index() || !passTrackSelection(track) || track.mcParticleId() == -1) continue;
+
+        auto particle = particlesMC.iteratorAt(track.mcParticleId());
+        if (isPrimaryHe3(particle)) {
+          if (std::abs(track.rapidity(MassHelium3)) < kMaxGenRapidity) {
+            histo.fill(HIST("RecPt"), getSignedPtMC(particle));
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(AntiNucleiTask, processMC, "processMC", true);
   PROCESS_SWITCH(AntiNucleiTask, process, "process", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<AntiNucleiTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<AntiNucleiTask>(cfgc)};
 }
