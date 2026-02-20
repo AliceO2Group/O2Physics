@@ -40,6 +40,7 @@ using namespace std;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
+
 struct jEPFlowAnalysis {
 
   HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -169,6 +170,8 @@ struct jEPFlowAnalysis {
     effVars[1] = eff->GetAxis(1)->FindBin(pt);
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
+    LOGF(info, "etabin: %d, ptbin: %d, centbin: %d, poszbin: %d", effVars[0], effVars[1], effVars[2], effVars[3]);
+
     return eff->GetBinContent(effVars);
   }
 
@@ -251,7 +254,12 @@ struct jEPFlowAnalysis {
 
     if (cfgEffCor) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
-      effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+      currentRunNumber = bc.runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        effMap.clear();
+        effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+        lastRunNumber = currentRunNumber;
+      }
     }
 
     float cent = coll.cent();
@@ -350,7 +358,7 @@ struct jEPFlowAnalysis {
           continue;
 
         if (cfgEffCor) {
-          weight /= getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
+          weight = getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
         }
 
         float vn = std::cos((i + 2) * (track.phi() - eps[0]));
@@ -365,6 +373,8 @@ struct jEPFlowAnalysis {
     }
   }
   PROCESS_SWITCH(jEPFlowAnalysis, processDefault, "default process", true);
+
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
