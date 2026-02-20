@@ -246,10 +246,12 @@ struct Alice3Strangeness {
   {
     // if(collision.lutConfigId()!=idGeometry)
     // return;
+    float collisionZ = collision.posZ();
+    histos.fill(HIST("hPVz"), collisionZ);
     for (auto const& v0 : v0Candidates) {
-      bool isK0 = (v0.mK0Short() - o2::constants::physics::MassK0Short) < selectionValues.acceptedK0MassWindow;
-      bool isLambda = (v0.mLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
-      bool isAntiLambda = (v0.mAntiLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
+      bool isK0 = std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < selectionValues.acceptedK0MassWindow;
+      bool isLambda = std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
+      bool isAntiLambda = std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
 
       histos.fill(HIST("reconstructedCandidates/hArmeterosBeforeAllSelections"), v0.alpha(), v0.qtArm());
       histos.fill(HIST("hV0CandidateCounter"), 0.5);
