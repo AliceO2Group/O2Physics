@@ -206,7 +206,7 @@ class VarManager : public TObject
     kCollisionTimeRes,
     kBC,
     kBCOrbit,
-    kCollisionRandom,            // random number generated per collision (if required, can be used to perform random selections at the collision level)
+    kCollisionRandom, // random number generated per collision (if required, can be used to perform random selections at the collision level)
     kIsPhysicsSelection,
     kIsTVXTriggered,             // Is trigger TVX
     kIsNoTFBorder,               // No time frame border
@@ -2368,7 +2368,8 @@ void VarManager::FillEvent(T const& event, float* values)
 }
 
 template <typename T>
-void VarManager::FillEventTracks(T const& tracks, float* values) {
+void VarManager::FillEventTracks(T const& tracks, float* values)
+{
   if (!values) {
     values = fgValues;
   }
