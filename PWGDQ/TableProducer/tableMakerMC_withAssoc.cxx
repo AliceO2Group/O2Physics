@@ -294,14 +294,14 @@ struct TableMakerMC {
     std::map<int32_t, float> fraction100umDCAz; // fraction of tracks with |DCAz|>100um
     std::map<int32_t, float> fraction200umDCAz; // fraction of tracks with |DCAz|>200um
     std::map<int32_t, float> fraction500umDCAz; // fraction of tracks with |DCAz|>500um
-    std::map<int32_t, float> fraction1mmDCAz; // fraction of tracks with |DCAz|>1mm
-    std::map<int32_t, float> fraction2mmDCAz; // fraction of tracks with |DCAz|>2mm
-    std::map<int32_t, float> fraction5mmDCAz; // fraction of tracks with |DCAz|>5mm
-    std::map<int32_t, float> fraction10mmDCAz; // fraction of tracks with |DCAz|>10mm
-    std::map<int32_t, int> nPeaksDCAz; // number of peaks in the DCAz distribution of tracks associated to a collision
-    std::map<int32_t, int> nPeaksDCAzTrimmed1; // number of peaks in the binned DCAz distribution (trimmed 1)
-    std::map<int32_t, int> nPeaksDCAzTrimmed2; // number of peaks in the binned DCAz distribution (trimmed 2)
-    std::map<int32_t, int> nPeaksDCAzTrimmed3; // number of peaks in the binned DCAz distribution (trimmed 3)
+    std::map<int32_t, float> fraction1mmDCAz;   // fraction of tracks with |DCAz|>1mm
+    std::map<int32_t, float> fraction2mmDCAz;   // fraction of tracks with |DCAz|>2mm
+    std::map<int32_t, float> fraction5mmDCAz;   // fraction of tracks with |DCAz|>5mm
+    std::map<int32_t, float> fraction10mmDCAz;  // fraction of tracks with |DCAz|>10mm
+    std::map<int32_t, int> nPeaksDCAz;          // number of peaks in the DCAz distribution of tracks associated to a collision
+    std::map<int32_t, int> nPeaksDCAzTrimmed1;  // number of peaks in the binned DCAz distribution (trimmed 1)
+    std::map<int32_t, int> nPeaksDCAzTrimmed2;  // number of peaks in the binned DCAz distribution (trimmed 2)
+    std::map<int32_t, int> nPeaksDCAzTrimmed3;  // number of peaks in the binned DCAz distribution (trimmed 3)
   } fCollMergingTag;
 
   void init(o2::framework::InitContext& context)
