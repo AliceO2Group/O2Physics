@@ -255,7 +255,6 @@ struct jEPFlowAnalysis {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
-        effMap->clear();
         effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
         lastRunNumber = currentRunNumber;
       }
