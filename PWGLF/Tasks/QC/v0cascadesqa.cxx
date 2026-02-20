@@ -347,19 +347,19 @@ struct v0cascadesQA {
 
       if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < V0_rapidity) {
         if (mcparticle.pdgCode() == PDG_t::kK0Short)
-          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), R_Decay); 
+          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), R_Decay);
         if (mcparticle.pdgCode() == PDG_t::kLambda0)
-          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), R_Decay); 
+          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), R_Decay);
         if (mcparticle.pdgCode() == PDG_t::kLambda0Bar)
-          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), R_Decay); 
+          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), R_Decay);
       }
       if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < Casc_rapidity) {
         if (mcparticle.pdgCode() == PDG_t::kXiMinus)
-          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), R_Decay); 
+          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), R_Decay);
         if (mcparticle.pdgCode() == PDG_t::kXiPlusBar)
-          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), R_Decay); 
+          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), R_Decay);
         if (mcparticle.pdgCode() == PDG_t::kOmegaMinus)
-          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), R_Decay); 
+          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), R_Decay);
         if (mcparticle.pdgCode() == PDG_t::kOmegaPlusBar)
           histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), R_Decay);
       }
