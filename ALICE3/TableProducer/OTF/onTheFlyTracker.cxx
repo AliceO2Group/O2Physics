@@ -51,6 +51,7 @@
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <SimulationDataFormat/InteractionSampler.h>
 
 #include <TGenPhaseSpace.h>
@@ -597,6 +598,31 @@ struct OnTheFlyTracker {
     gRandom->SetSeed(seed);
   }
 
+  /// Function to get the internal PID for a given pdgCode
+  /// \param pdgCode pdg code for a common particle (particle handled by the tracker)
+  int pdgCodeToPID(int pdgCode) const
+  {
+    if (std::abs(pdgCode) == PDG_t::kElectron) {
+      return o2::track::PID::Electron;
+    } else if (std::abs(pdgCode) == PDG_t::kMuonMinus) {
+      return o2::track::PID::Muon;
+    } else if (std::abs(pdgCode) == PDG_t::kPiPlus) {
+      return o2::track::PID::Pion;
+    } else if (std::abs(pdgCode) == PDG_t::kKPlus) {
+      return o2::track::PID::Kaon;
+    } else if (std::abs(pdgCode) == PDG_t::kProton) {
+      return o2::track::PID::Proton;
+    } else if (std::abs(pdgCode) == PDG_t::kLambda0) {
+      return o2::track::PID::Lambda;
+    } else if (std::abs(pdgCode) == PDG_t::kXiMinus) {
+      return o2::track::PID::XiMinus;
+    } else if (std::abs(pdgCode) == PDG_t::kOmegaMinus) {
+      return o2::track::PID::OmegaMinus;
+    } else {
+      return o2::track::PID::Pion; // Default trackParCov assumption
+    }
+  }
+
   /// Function to decay the xi
   /// \param particle the particle to decay
   /// \param track track of particle to decay
@@ -878,9 +904,12 @@ struct OnTheFlyTracker {
           getHist(TH1, histPath + "hXiBuilding")->Fill(0.0f);
         }
 
-        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, cascadeDecayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0], pdgDB);
-        o2::upgrade::convertTLorentzVectorToO2Track(kPiMinus, cascadeDecayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1], pdgDB);
-        o2::upgrade::convertTLorentzVectorToO2Track(kProton, cascadeDecayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(PDG_t::kPiMinus, cascadeDecayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0], pdgDB);
+        xiDaughterTrackParCovsPerfect[0].setPID(pdgCodeToPID(PDG_t::kPiMinus));
+        o2::upgrade::convertTLorentzVectorToO2Track(PDG_t::kPiMinus, cascadeDecayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1], pdgDB);
+        xiDaughterTrackParCovsPerfect[1].setPID(pdgCodeToPID(PDG_t::kPiMinus));
+        o2::upgrade::convertTLorentzVectorToO2Track(PDG_t::kProton, cascadeDecayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2], pdgDB);
+        xiDaughterTrackParCovsPerfect[2].setPID(pdgCodeToPID(PDG_t::kProton));
 
         for (int i = 0; i < kCascProngs; i++) {
           isReco[i] = false;
@@ -1001,7 +1030,7 @@ struct OnTheFlyTracker {
               {posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]},
               covV, 0, true);
             v0Track.setAbsCharge(0);
-            v0Track.setPID(o2::track::PID::Lambda);
+            v0Track.setPID(pdgCodeToPID(PDG_t::kLambda0));
 
             // dca fitter step
             nCand = 0;
@@ -1040,8 +1069,8 @@ struct OnTheFlyTracker {
 
               // initialize cascade track
               o2::track::TrackParCov cascadeTrack = fitter.createParentTrackParCov();
-              cascadeTrack.setAbsCharge(-1);                // may require more adjustments
-              cascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
+              cascadeTrack.setAbsCharge(-1);                      // may require more adjustments
+              cascadeTrack.setPID(pdgCodeToPID(PDG_t::kXiMinus)); // FIXME: not OK for omegas
 
               thisCascade.cascradiusMC = xiDecayRadius2D;
               thisCascade.pt = cascadeTrack.getPt();
@@ -1131,6 +1160,7 @@ struct OnTheFlyTracker {
           o2::upgrade::convertMCParticleToO2Track(mcParticle, prefectCascadeTrack, pdgDB);
 
           // back track is already smeared
+          prefectCascadeTrack.setPID(pdgCodeToPID(PDG_t::kXiMinus)); // FIXME: not OK for omegas
           int nCascHits = fastTracker[icfg]->FastTrack(prefectCascadeTrack, trackedCasc, dNdEta);
           reconstructedCascade = (fastTrackerSettings.minSiliconHitsForKinkReco < nCascHits) ? false : true;
 
@@ -1201,6 +1231,7 @@ struct OnTheFlyTracker {
                                                       std::array{pV0[0], pV0[1], pV0[2]}},
                                            std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
 
+            newCascadeTrack.setPID(pdgCodeToPID(PDG_t::kXiMinus)); // FIXME: not OK for omegas
             tracksAlice3.push_back(TrackAlice3{newCascadeTrack, mcParticle.globalIndex(), time, timeResolutionUs, false, false, 1, thisCascade.foundClusters});
 
             // add this cascade to vector (will fill cursor later with collision ID)
@@ -1436,6 +1467,7 @@ struct OnTheFlyTracker {
       } else if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
         o2::track::TrackParCov o2Track;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, o2Track, pdgDB);
+        o2Track.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         const int nHits = fastTracker[icfg]->FastTrack(o2Track, trackParCov, dNdEta);
         if (nHits < fastPrimaryTrackerSettings.minSiliconHits) {
           reconstructed = false;
@@ -1838,6 +1870,7 @@ struct OnTheFlyTracker {
       } else if (enableSecondarySmearing) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
         const int nHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
         if (nHits < fastTrackerSettings.minSiliconHits) {
           reconstructed = false;
