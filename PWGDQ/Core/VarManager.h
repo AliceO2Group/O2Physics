@@ -206,6 +206,7 @@ class VarManager : public TObject
     kCollisionTimeRes,
     kBC,
     kBCOrbit,
+    kCollisionRandom,            // random number generated per collision (if required, can be used to perform random selections at the collision level)
     kIsPhysicsSelection,
     kIsTVXTriggered,             // Is trigger TVX
     kIsNoTFBorder,               // No time frame border
@@ -315,6 +316,10 @@ class VarManager : public TObject
     kDCAzFracAbove2mm,
     kDCAzFracAbove5mm,
     kDCAzFracAbove10mm,
+    kDCAzNPeaks,
+    kDCAzNPeaksTrimmed1,
+    kDCAzNPeaksTrimmed2,
+    kDCAzNPeaksTrimmed3,
     kMCEventGeneratorId,
     kMCEventSubGeneratorId,
     kMCVtxX,
@@ -1278,8 +1283,8 @@ class VarManager : public TObject
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
 
-  static std::tuple<double, double, double, double, double> BimodalityCoefficientUnbinned(const std::vector<double>& data);
-  static std::tuple<double, double, double, double, double> BimodalityCoefficient(const std::vector<double>& data, float binWidth, int trim = 0, float min = -15.0, float max = 15.0);
+  static std::tuple<float, float, float, float, float> BimodalityCoefficientUnbinned(const std::vector<float>& data);
+  static std::tuple<float, float, float, float, float, int> BimodalityCoefficientAndNPeaks(const std::vector<float>& data, float binWidth, int trim = 0, float min = -15.0, float max = 15.0);
 
   template <typename T, typename C>
   static o2::track::TrackParCovFwd FwdToTrackPar(const T& track, const C& cov);
@@ -1646,6 +1651,7 @@ o2::dataformats::VertexBase VarManager::RecalculatePrimaryVertex(T const& track0
   o2::dataformats::VertexBase primaryVertexRec = {std::move(vtxXYZ), std::move(vtxCov)};
   return primaryVertexRec;
 }
+
 template <typename T, typename C>
 o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
@@ -1865,6 +1871,10 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & CollisionTimestamp) > 0) {
     values[kTimestamp] = event.timestamp();
+  }
+
+  if (fgUsedVars[kCollisionRandom]) {
+    values[kCollisionRandom] = gRandom->Rndm();
   }
 
   if constexpr ((fillMap & Collision) > 0) {
@@ -2358,14 +2368,13 @@ void VarManager::FillEvent(T const& event, float* values)
 }
 
 template <typename T>
-void VarManager::FillEventTracks(T const& tracks, float* values)
-{
+void VarManager::FillEventTracks(T const& tracks, float* values) {
   if (!values) {
     values = fgValues;
   }
 
   // compute event properties based on DCAz of the tracks
-  std::vector<double> dcazValues;
+  std::vector<float> dcazValues;
   for (const auto& track : tracks) {
     if (!track.hasITS()) {
       continue; // skip tracks without ITS information
@@ -2384,58 +2393,72 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   }
 
   // compute the unbinned bimodality coefficient and related statistics
-  auto [bimodality, mean, stddev, skewness, kurtosis] = BimodalityCoefficient(dcazValues, -1.0);
+  auto [bimodalityCoefficient, mean, stddev, skewness, kurtosis, nPeaks] = BimodalityCoefficientAndNPeaks(dcazValues, -1.0);
   if (stddev > -1.0) {
-    values[kDCAzBimodalityCoefficient] = bimodality;
+    values[kDCAzBimodalityCoefficient] = bimodalityCoefficient;
     values[kDCAzMean] = mean;
     values[kDCAzRMS] = stddev;
     values[kDCAzSkewness] = skewness;
     values[kDCAzKurtosis] = kurtosis;
+    values[kDCAzNPeaks] = nPeaks;
   } else {
     values[kDCAzBimodalityCoefficient] = -9999.0;
     values[kDCAzMean] = -9999.0;
     values[kDCAzRMS] = -9999.0;
     values[kDCAzSkewness] = -9999.0;
     values[kDCAzKurtosis] = -9999.0;
+    values[kDCAzNPeaks] = -9999.0;
   }
   // compute the binned bimodality coefficient and related statistics with a bin width of 50um
-  auto [bimodalityBin, meanBin, stddevBin, skewnessBin, kurtosisBin] = BimodalityCoefficient(dcazValues, 0.005);
+  auto [bimodalityCoefficientBin, meanBin, stddevBin, skewnessBin, kurtosisBin, nPeaksBin] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005);
   if (stddevBin > -1.0) {
-    values[kDCAzBimodalityCoefficientBinned] = bimodalityBin;
+    values[kDCAzBimodalityCoefficientBinned] = bimodalityCoefficientBin;
+    values[kDCAzNPeaks] = nPeaksBin;
   } else {
     values[kDCAzBimodalityCoefficientBinned] = -9999.0;
+    values[kDCAzNPeaks] = -9999.0;
   }
+  cout << "Bimodality coefficient binned: " << bimodalityCoefficientBin << ", mean: " << mean << ", stddev: " << stddev << ", skewness: " << skewness << ", kurtosis: " << kurtosis << ", nPeaks: " << nPeaksBin << endl;
   // compute the binned bimodality coefficient and related statistics with a bin width of 50um and trimming of 1, 2, 3 entries per bin
-  auto [bimodalityBinTrimm1, meanBinTrimm1, stddevBinTrimm1, skewnessBinTrimm1, kurtosisBinTrimm1] = BimodalityCoefficient(dcazValues, 0.005, 2);
-  if (stddevBinTrimm1 > -1.0) {
-    values[kDCAzBimodalityCoefficientBinnedTrimmed1] = bimodalityBinTrimm1;
-    values[kDCAzMeanBinnedTrimmed1] = meanBinTrimm1;
-    values[kDCAzRMSBinnedTrimmed1] = stddevBinTrimm1;
+  auto [bimodalityCoefficientBinTrimmed1, meanBinTrimmed1, stddevBinTrimmed1, skewnessBinTrimmed1, kurtosisBinTrimmed1, nPeaksBinTrimmed1] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, 2);
+  if (stddevBinTrimmed1 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed1] = bimodalityCoefficientBinTrimmed1;
+    values[kDCAzMeanBinnedTrimmed1] = meanBinTrimmed1;
+    values[kDCAzRMSBinnedTrimmed1] = stddevBinTrimmed1;
+    values[kDCAzNPeaksTrimmed1] = nPeaksBinTrimmed1;
   } else {
     values[kDCAzBimodalityCoefficientBinnedTrimmed1] = -9999.0;
     values[kDCAzMeanBinnedTrimmed1] = -9999.0;
     values[kDCAzRMSBinnedTrimmed1] = -9999.0;
+    values[kDCAzNPeaksTrimmed1] = -9999.0;
   }
-  auto [bimodalityBinTrimm2, meanBinTrimm2, stddevBinTrimm2, skewnessBinTrimm2, kurtosisBinTrimm2] = BimodalityCoefficient(dcazValues, 0.005, 3);
-  if (stddevBinTrimm2 > -1.0) {
-    values[kDCAzBimodalityCoefficientBinnedTrimmed2] = bimodalityBinTrimm2;
-    values[kDCAzMeanBinnedTrimmed2] = meanBinTrimm2;
-    values[kDCAzRMSBinnedTrimmed2] = stddevBinTrimm2;
+  cout << "Bimodality coefficient (trimmed 1): " << bimodalityCoefficientBinTrimmed1 << ", mean: " << meanBinTrimmed1 << ", stddev: " << stddevBinTrimmed1 << ", skewness: " << skewnessBinTrimmed1 << ", kurtosis: " << kurtosisBinTrimmed1 << ", nPeaks: " << nPeaksBinTrimmed1 << endl;
+  auto [bimodalityCoefficientBinTrimmed2, meanBinTrimmed2, stddevBinTrimmed2, skewnessBinTrimmed2, kurtosisBinTrimmed2, nPeaksBinTrimmed2] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, 3);
+  if (stddevBinTrimmed2 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed2] = bimodalityCoefficientBinTrimmed2;
+    values[kDCAzMeanBinnedTrimmed2] = meanBinTrimmed2;
+    values[kDCAzRMSBinnedTrimmed2] = stddevBinTrimmed2;
+    values[kDCAzNPeaksTrimmed2] = nPeaksBinTrimmed2;
   } else {
     values[kDCAzBimodalityCoefficientBinnedTrimmed2] = -9999.0;
     values[kDCAzMeanBinnedTrimmed2] = -9999.0;
     values[kDCAzRMSBinnedTrimmed2] = -9999.0;
+    values[kDCAzNPeaksTrimmed2] = -9999.0;
   }
-  auto [bimodalityBinTrimm3, meanBinTrimm3, stddevBinTrimm3, skewnessBinTrimm3, kurtosisBinTrimm3] = BimodalityCoefficient(dcazValues, 0.005, 4);
-  if (stddevBinTrimm3 > -1.0) {
-    values[kDCAzBimodalityCoefficientBinnedTrimmed3] = bimodalityBinTrimm3;
-    values[kDCAzMeanBinnedTrimmed3] = meanBinTrimm3;
-    values[kDCAzRMSBinnedTrimmed3] = stddevBinTrimm3;
+  cout << "Bimodality coefficient (trimmed 2): " << bimodalityCoefficientBinTrimmed2 << ", mean: " << meanBinTrimmed2 << ", stddev: " << stddevBinTrimmed2 << ", skewness: " << skewnessBinTrimmed2 << ", kurtosis: " << kurtosisBinTrimmed2 << ", nPeaks: " << nPeaksBinTrimmed2 << endl;
+  auto [bimodalityCoefficientBinTrimmed3, meanBinTrimmed3, stddevBinTrimmed3, skewnessBinTrimmed3, kurtosisBinTrimmed3, nPeaksBinTrimmed3] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, 4);
+  if (stddevBinTrimmed3 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed3] = bimodalityCoefficientBinTrimmed3;
+    values[kDCAzMeanBinnedTrimmed3] = meanBinTrimmed3;
+    values[kDCAzRMSBinnedTrimmed3] = stddevBinTrimmed3;
+    values[kDCAzNPeaksTrimmed3] = nPeaksBinTrimmed3;
   } else {
     values[kDCAzBimodalityCoefficientBinnedTrimmed3] = -9999.0;
     values[kDCAzMeanBinnedTrimmed3] = -9999.0;
     values[kDCAzRMSBinnedTrimmed3] = -9999.0;
+    values[kDCAzNPeaksTrimmed3] = -9999.0;
   }
+  cout << "Bimodality coefficient (trimmed 3): " << bimodalityCoefficientBinTrimmed3 << ", mean: " << meanBinTrimmed3 << ", stddev: " << stddevBinTrimmed3 << ", skewness: " << skewnessBinTrimmed3 << ", kurtosis: " << kurtosisBinTrimmed3 << ", nPeaks: " << nPeaksBinTrimmed3 << endl;
 
   // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
   // make a loop over the DCAz values and count how many are above each threshold

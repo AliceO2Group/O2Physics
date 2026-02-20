@@ -359,7 +359,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
 }
 
 //__________________________________________________________________
-std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficientUnbinned(const std::vector<double>& data)
+std::tuple<float, float, float, float, float> VarManager::BimodalityCoefficientUnbinned(const std::vector<float>& data)
 {
   // Bimodality coefficient = (skewness^2 + 1) / kurtosis
   // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
@@ -367,17 +367,16 @@ std::tuple<double, double, double, double, double> VarManager::BimodalityCoeffic
   if (n < 3) {
     return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
   }
-  double mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
+  float mean = std::accumulate(data.begin(), data.end(), 0.0) / n;
 
-  double m2 = 0.0, m3 = 0.0, m4 = 0.0;
-  for (double x : data) {
-    double diff = x - mean;
-    double diff2 = diff * diff;
-    double diff3 = diff2 * diff;
-    double diff4 = diff3 * diff;
+  float m2 = 0.0, m3 = 0.0, m4 = 0.0;
+  float diff, diff2;
+  for (float x : data) {
+    diff = x - mean;
+    diff2 = diff * diff;
     m2 += diff2;
-    m3 += diff3;
-    m4 += diff4;
+    m3 += diff2 * diff;
+    m4 += diff2 * diff2;
   }
 
   m2 /= n;
@@ -388,21 +387,23 @@ std::tuple<double, double, double, double, double> VarManager::BimodalityCoeffic
     return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
   }
 
-  double stddev = std::sqrt(m2);
-  double skewness = m3 / (stddev * stddev * stddev);
-  double kurtosis = m4 / (m2 * m2);
+  float stddev = std::sqrt(m2);
+  float skewness = m3 / (stddev * stddev * stddev);
+  float kurtosis = m4 / (m2 * m2);
 
   return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
 }
 
-std::tuple<double, double, double, double, double> VarManager::BimodalityCoefficient(const std::vector<double>& data, float binWidth, int trim, float min, float max)
+std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoefficientAndNPeaks(const std::vector<float>& data, float binWidth, int trim, float min, float max)
 {
   // Bimodality coefficient = (skewness^2 + 1) / kurtosis
   // return a tuple including the coefficient, mean, RMS, skewness, and kurtosis
 
   // if the binWidth is < 0, use the unbinned calculation
   if (binWidth < 0) {
-    return BimodalityCoefficientUnbinned(data);
+    // get the tuple from the unbinned calculation
+    auto result = BimodalityCoefficientUnbinned(data);
+    return std::make_tuple(std::get<0>(result), std::get<1>(result), std::get<2>(result), std::get<3>(result), std::get<4>(result), -1);
   }
 
   // bin the data and put it in a vector
@@ -428,31 +429,47 @@ std::tuple<double, double, double, double, double> VarManager::BimodalityCoeffic
     }
   }
 
-  // first compute the mean
-  double mean = 0.0;
-  double totalCounts = 0.0;
+  // count the number of peaks
+  int nPeaks = 0;
+  bool inPeak = false;
   for (int i = 0; i < nBins; ++i) {
-    double binCenter = min + (i + 0.5) * binWidth;
+    if (counts[i] > 0) {
+      if (!inPeak) {
+        inPeak = true;
+        nPeaks++;
+      }
+    } else {
+      inPeak = false;
+    }
+  }
+
+  // first compute the mean
+  float mean = 0.0;
+  float totalCounts = 0.0;
+  for (int i = 0; i < nBins; ++i) {
+    float binCenter = min + (i + 0.5) * binWidth;
     mean += counts[i] * binCenter;
     totalCounts += counts[i];
   }
 
   if (totalCounts == 0) {
-    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, -1);
   }
   mean /= totalCounts;
 
   // then compute the second, third, and fourth central moments
-  double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+  float m2 = 0.0, m3 = 0.0, m4 = 0.0;
+  float diff, diff2, binCenter;
   for (int i = 0; i < nBins; ++i) {
-    double binCenter = min + (i + 0.5) * binWidth;
-    double diff = binCenter - mean;
-    double diff2 = diff * diff;
-    double diff3 = diff2 * diff;
-    double diff4 = diff3 * diff;
+    if (counts[i] == 0) {
+      continue; // skip empty bins
+    }
+    binCenter = min + (i + 0.5) * binWidth;
+    diff = binCenter - mean;
+    diff2 = diff * diff;
     m2 += counts[i] * diff2;
-    m3 += counts[i] * diff3;
-    m4 += counts[i] * diff4;
+    m3 += counts[i] * diff2 * diff;
+    m4 += counts[i] * diff2 * diff2;
   }
 
   m2 /= totalCounts;
@@ -460,14 +477,14 @@ std::tuple<double, double, double, double, double> VarManager::BimodalityCoeffic
   m4 /= totalCounts;
 
   if (m2 == 0.0) {
-    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0);
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, -1);
   }
 
-  double stddev = std::sqrt(m2);
-  double skewness = m3 / (stddev * stddev * stddev);
-  double kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
+  float stddev = std::sqrt(m2);
+  float skewness = m3 / (stddev * stddev * stddev);
+  float kurtosis = m4 / (m2 * m2); // Pearson's kurtosis, not excess
 
-  return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis);
+  return std::make_tuple((skewness * skewness + 1.0) / kurtosis, mean, stddev, skewness, kurtosis, nPeaks);
 }
 
 //__________________________________________________________________
@@ -501,6 +518,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTimeFromSOR] = "min.";
   fgVariableNames[kBCOrbit] = "Bunch crossing";
   fgVariableUnits[kBCOrbit] = "";
+  fgVariableNames[kCollisionRandom] = "Random number (collision-level)";
+  fgVariableUnits[kCollisionRandom] = "";
   fgVariableNames[kIsPhysicsSelection] = "Physics selection";
   fgVariableUnits[kIsPhysicsSelection] = "";
   fgVariableNames[kVtxX] = "Vtx X ";
@@ -733,6 +752,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAzFracAbove5mm] = "";
   fgVariableNames[kDCAzFracAbove10mm] = "Fraction of tracks with |DCAz| > 10 mm";
   fgVariableUnits[kDCAzFracAbove10mm] = "";
+  fgVariableNames[kDCAzNPeaks] = "Number of peaks in DCAz distribution";
+  fgVariableUnits[kDCAzNPeaks] = "";
+  fgVariableNames[kDCAzNPeaksTrimmed1] = "Number of peaks in binned DCAz distribution (trimmed 1)";
+  fgVariableUnits[kDCAzNPeaksTrimmed1] = "";
+  fgVariableNames[kDCAzNPeaksTrimmed2] = "Number of peaks in binned DCAz distribution (trimmed 2)";
+  fgVariableUnits[kDCAzNPeaksTrimmed2] = "";
+  fgVariableNames[kDCAzNPeaksTrimmed3] = "Number of peaks in binned DCAz distribution (trimmed 3)";
+  fgVariableUnits[kDCAzNPeaksTrimmed3] = "";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kPt1] = "p_{T1}";
@@ -1709,6 +1736,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCollisionTimeRes"] = kCollisionTimeRes;
   fgVarNamesMap["kBC"] = kBC;
   fgVarNamesMap["kBCOrbit"] = kBCOrbit;
+  fgVarNamesMap["kCollisionRandom"] = kCollisionRandom;
   fgVarNamesMap["kIsPhysicsSelection"] = kIsPhysicsSelection;
   fgVarNamesMap["kIsTVXTriggered"] = kIsTVXTriggered;
   fgVarNamesMap["kIsNoTFBorder"] = kIsNoTFBorder;
@@ -1816,6 +1844,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDCAzFracAbove2mm"] = kDCAzFracAbove2mm;
   fgVarNamesMap["kDCAzFracAbove5mm"] = kDCAzFracAbove5mm;
   fgVarNamesMap["kDCAzFracAbove10mm"] = kDCAzFracAbove10mm;
+  fgVarNamesMap["kDCAzNPeaks"] = kDCAzNPeaks;
+  fgVarNamesMap["kDCAzNPeaksTrimmed1"] = kDCAzNPeaksTrimmed1;
+  fgVarNamesMap["kDCAzNPeaksTrimmed2"] = kDCAzNPeaksTrimmed2;
+  fgVarNamesMap["kDCAzNPeaksTrimmed3"] = kDCAzNPeaksTrimmed3;
   fgVarNamesMap["kMCEventGeneratorId"] = kMCEventGeneratorId;
   fgVarNamesMap["kMCEventSubGeneratorId"] = kMCEventSubGeneratorId;
   fgVarNamesMap["kMCVtxX"] = kMCVtxX;

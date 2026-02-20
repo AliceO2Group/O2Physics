@@ -398,6 +398,10 @@ struct TableMaker {
     std::map<int32_t, float> fraction2mmDCAz; // fraction of tracks with |DCAz|>2mm
     std::map<int32_t, float> fraction5mmDCAz; // fraction of tracks with |DCAz|>5mm
     std::map<int32_t, float> fraction10mmDCAz; // fraction of tracks with |DCAz|>10mm
+    std::map<int32_t, int> nPeaksDCAz; // number of peaks in the DCAz distribution of tracks associated to a collision
+    std::map<int32_t, int> nPeaksDCAzTrimmed1; // number of peaks in the binned DCAz distribution (trimmed 1)
+    std::map<int32_t, int> nPeaksDCAzTrimmed2; // number of peaks in the binned DCAz distribution (trimmed 2)
+    std::map<int32_t, int> nPeaksDCAzTrimmed3; // number of peaks in the binned DCAz distribution (trimmed 3)
   } fCollMergingTag;
 
 
@@ -882,6 +886,7 @@ struct TableMaker {
   template <typename TEvents, typename TTracks>
   void computeCollMergingTag(TEvents const& collisions, TTracks const& tracks, Preslice<TTracks>& preslice)
   {
+    // This function uses the standard track-collision association to compute quantities related to collision merging
     // clear the maps for this time frame
     fCollMergingTag.bimodalityCoeffDCAz.clear();
     fCollMergingTag.bimodalityCoeffDCAzBinned.clear();
@@ -905,6 +910,10 @@ struct TableMaker {
     fCollMergingTag.fraction2mmDCAz.clear();
     fCollMergingTag.fraction5mmDCAz.clear();
     fCollMergingTag.fraction10mmDCAz.clear();
+    fCollMergingTag.nPeaksDCAz.clear();
+    fCollMergingTag.nPeaksDCAzTrimmed1.clear();
+    fCollMergingTag.nPeaksDCAzTrimmed2.clear();
+    fCollMergingTag.nPeaksDCAzTrimmed3.clear();
 
     for (const auto& collision : collisions) {
       // make a slice for this collision and compute the DCAz based event quantities
@@ -933,6 +942,10 @@ struct TableMaker {
       fCollMergingTag.fraction2mmDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove2mm];
       fCollMergingTag.fraction5mmDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove5mm];
       fCollMergingTag.fraction10mmDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove10mm];
+      fCollMergingTag.nPeaksDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzNPeaks];
+      fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzNPeaksTrimmed1];
+      fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzNPeaksTrimmed2];
+      fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzNPeaksTrimmed3];
     }
   }
 
@@ -1212,8 +1225,11 @@ struct TableMaker {
                    fCollMergingTag.fraction100umDCAz[collision.globalIndex()], fCollMergingTag.fraction200umDCAz[collision.globalIndex()],
                    fCollMergingTag.fraction500umDCAz[collision.globalIndex()], fCollMergingTag.fraction1mmDCAz[collision.globalIndex()],
                    fCollMergingTag.fraction2mmDCAz[collision.globalIndex()], fCollMergingTag.fraction5mmDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction10mmDCAz[collision.globalIndex()]);
+                   fCollMergingTag.fraction10mmDCAz[collision.globalIndex()], 
+                   fCollMergingTag.nPeaksDCAz[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()], 
+                   fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()]);
 
+      //
       fCollIndexMap[collision.globalIndex()] = event.lastIndex();
     }
   }

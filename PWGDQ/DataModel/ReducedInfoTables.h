@@ -88,6 +88,10 @@ DECLARE_SOA_COLUMN(DCAzFracAbove1mm, dcazFracAbove1mm, float);                  
 DECLARE_SOA_COLUMN(DCAzFracAbove2mm, dcazFracAbove2mm, float);                   //!  Fraction of tracks in the event with |DCAz| > 2mm
 DECLARE_SOA_COLUMN(DCAzFracAbove5mm, dcazFracAbove5mm, float);                   //!  Fraction of tracks in the event with |DCAz| > 5mm
 DECLARE_SOA_COLUMN(DCAzFracAbove10mm, dcazFracAbove10mm, float);                 //!  Fraction of tracks in the event with |DCAz| > 10mm
+DECLARE_SOA_COLUMN(DCAzNPeaks, dcazNPeaks, int);                                 //!  Number of peaks in the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzNPeaksTrimmed1, dcazNPeaksTrimmed1, int);                 //!  Number of peaks in the binned DCAz distribution (trimmed 1)
+DECLARE_SOA_COLUMN(DCAzNPeaksTrimmed2, dcazNPeaksTrimmed2, int);                 //!  Number of peaks in the binned DCAz distribution (trimmed 2)
+DECLARE_SOA_COLUMN(DCAzNPeaksTrimmed3, dcazNPeaksTrimmed3, int);                 //!  Number of peaks in the binned DCAz distribution (trimmed 3)
 
 // Columns declared to guarantee the backward compatibility of the tables
 DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float);
@@ -226,7 +230,8 @@ DECLARE_SOA_TABLE(ReducedEventsMergingTable, "AOD", "REMERGE", //!   Collision m
                   reducedevent::DCAzRMS, reducedevent::DCAzRMSBinnedTrimmed1, reducedevent::DCAzRMSBinnedTrimmed2, reducedevent::DCAzRMSBinnedTrimmed3,
                   reducedevent::DCAzSkewness, reducedevent::DCAzKurtosis,
                   reducedevent::DCAzFracAbove100um, reducedevent::DCAzFracAbove200um, reducedevent::DCAzFracAbove500um,
-                  reducedevent::DCAzFracAbove1mm, reducedevent::DCAzFracAbove2mm, reducedevent::DCAzFracAbove5mm, reducedevent::DCAzFracAbove10mm);
+                  reducedevent::DCAzFracAbove1mm, reducedevent::DCAzFracAbove2mm, reducedevent::DCAzFracAbove5mm, reducedevent::DCAzFracAbove10mm,
+                  reducedevent::DCAzNPeaks, reducedevent::DCAzNPeaksTrimmed1, reducedevent::DCAzNPeaksTrimmed2, reducedevent::DCAzNPeaksTrimmed3);
 
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!
