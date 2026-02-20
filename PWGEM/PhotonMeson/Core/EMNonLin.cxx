@@ -15,43 +15,52 @@
 
 #include "EMNonLin.h"
 
-#include <cmath>
+#include <algorithm>
 
 using namespace o2::pwgem::nonlin;
 
-float EMNonLin::getCorrectionFactor(float inputCalibValue, PhotonType photonType, float cent)
+float EMNonLin::getCorrectionFactor(float x, const Context& ctx)
 {
-  float param0 = 0, param1 = 0, param2 = 0, val = 1.f;
-  switch (photonType) {
-    case PhotonType::kEMC:
-      if (cent >= 30 && cent <= 40) {
-        param0 = -5.33426e-01f;
-        param1 = 1.40144e-02f;
-        param2 = -5.24434e-01f;
-      } else {
-        param0 = 0.f;
-        param1 = 0.f;
-        param2 = 0.f;
-      }
-      break;
-    case PhotonType::kPCM:
-      if (cent >= 0 && cent <= 100) {
-        param0 = 10.7203f;
-        param1 = 0.0383968f;
-        param2 = 10.6025f;
-      } else {
-        param0 = 0.f;
-        param1 = 0.f;
-        param2 = 0.f;
-      }
-      break;
-    case PhotonType::kPHOS:
-      param0 = 0.f;
-      param1 = 0.f;
-      param2 = 0.f;
-      break;
+  if (!ctx.params || x == 0.f) [[unlikely]] {
+    return x;
   }
 
-  val = (1.f + param0 / inputCalibValue + param1 / std::pow(inputCalibValue, 2.f)) / (1.f + param2 / inputCalibValue);
+  float val = x;
+  // safety measure
+  int maxIter = std::min(ctx.nIter, MaxIter - 1);
+
+  for (int i = 0; i <= maxIter; ++i) {
+    if (val == 0.f) {
+      break;
+    }
+
+    float inv = 1.f / val;
+    val *= (1.f + ctx.params[i].par0 * inv +
+            ctx.params[i].par1 * inv * inv) /
+           (1.f + ctx.params[i].par2 * inv);
+  }
+
   return val;
+}
+
+const EMNonLin::NonLinParams* EMNonLin::resolveParams(PhotonType type, float cent)
+{
+  int centBin = static_cast<int>(cent / 10.f);
+  if (centBin < 0)
+    centBin = 0;
+  if (centBin >= CentBins)
+    centBin = CentBins - 1;
+
+  return &kNonLinTable[static_cast<int>(type)][centBin][0];
+}
+
+const EMNonLin::NonLinParams* EMNonLin::resolveParamsMC(PhotonType type, float cent)
+{
+  int centBin = static_cast<int>(cent / 10.f);
+  if (centBin < 0)
+    centBin = 0;
+  if (centBin >= CentBins)
+    centBin = CentBins - 1;
+
+  return &kNonLinTableMC[static_cast<int>(type)][centBin][0];
 }

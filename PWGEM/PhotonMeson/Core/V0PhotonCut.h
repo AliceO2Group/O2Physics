@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <functional>
 #include <set>
@@ -148,6 +149,16 @@ static const std::vector<std::string> labelsCutScore = {"score primary photons",
 } // namespace em_cuts_ml
 
 } // namespace o2::analysis
+
+namespace o2::analysis::em::v0
+{
+
+template <typename T>
+concept IsNonLinIterator = o2::soa::is_iterator<T> && requires(T t) {
+  // Check that the *elements* of the container have the required methods:
+  { t.corrPt() } -> std::same_as<float>;
+};
+} // namespace o2::analysis::em::v0
 
 class V0PhotonCut : public TNamed
 {
@@ -688,7 +699,11 @@ class V0PhotonCut : public TNamed
   {
     switch (cut) {
       case V0PhotonCuts::kV0PtRange:
-        return v0.pt() >= mMinV0Pt && v0.pt() <= mMaxV0Pt;
+        if constexpr (o2::analysis::em::v0::IsNonLinIterator<T>) {
+          return v0.corrPt() >= mMinV0Pt && v0.corrPt() <= mMaxV0Pt;
+        } else {
+          return v0.pt() >= mMinV0Pt && v0.pt() <= mMaxV0Pt;
+        }
 
       case V0PhotonCuts::kV0EtaRange:
         return v0.eta() >= mMinV0Eta && v0.eta() <= mMaxV0Eta;
