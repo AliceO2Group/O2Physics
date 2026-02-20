@@ -199,6 +199,8 @@ struct UpcRhoAnalysis {
   Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 2, "max number of contributors cut on collisions"};
   Configurable<float> znCommonEnergyCut{"znCommonEnergyCut", 0.0, "ZN common energy cut"};
   Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut"};
+  Configurable<bool> cutOccupancy{"cutOccupancy", true, "cut on collision occupancy?"};
+  Configurable<float> occupancyCut{"occupancyCut", 1000.0, "occupancy cut"};
 
   Configurable<float> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
   Configurable<bool> rejectLowerProbPairs{"rejectLowerProbPairs", true, "reject track pairs with lower El or Ka PID radii"};
@@ -261,7 +263,7 @@ struct UpcRhoAnalysis {
       rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
       rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
 
-      std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "rapidity gap", "ITS-TPC vertex", "same bunch pile-up", "ITS ROF border", "TF border", "#it{z} position", "number of contributors", "RCT selections", "reco flag selection"};
+      std::vector<std::string> collisionSelectionCounterLabels = {"all collisions", "rapidity gap", "ITS-TPC vertex", "same bunch pile-up", "ITS ROF border", "TF border", "#it{z} position", "number of contributors", "RCT selections", "reco flag selection", "occupancy selection"};
       rQC.add("QC/collisions/hSelectionCounter", ";;collisions passing selections", kTH1D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}});
       rQC.add("QC/collisions/hSelectionCounterPerRun", ";;run number;collisions passing selections", kTH2D, {{static_cast<int>(collisionSelectionCounterLabels.size()), -0.5, static_cast<float>(collisionSelectionCounterLabels.size()) - 0.5}, runNumberAxis});
       for (int i = 0; i < static_cast<int>(collisionSelectionCounterLabels.size()); ++i) {
@@ -583,6 +585,13 @@ struct UpcRhoAnalysis {
         return false;
       rQC.fill(HIST("QC/collisions/hSelectionCounter"), 9);
       rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 9, runIndex);
+    }
+
+    if (cutOccupancy) {
+      if (collision.occupancyInTime() > occupancyCut)
+        return false;
+      rQC.fill(HIST("QC/collisions/hSelectionCounter"), 10);
+      rQC.fill(HIST("QC/collisions/hSelectionCounterPerRun"), 10, runIndex);
     }
 
     // if all selections passed
