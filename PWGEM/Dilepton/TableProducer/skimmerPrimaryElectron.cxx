@@ -682,6 +682,7 @@ struct skimmerPrimaryElectron {
   {
     stored_trackIds.reserve(tracks.size());
 
+    initCCDB(bcs.iteratorAt(0));
     mTOFResponse->processSetup(bcs.iteratorAt(0));
 
     calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
@@ -738,10 +739,7 @@ struct skimmerPrimaryElectron {
   {
     stored_trackIds.reserve(tracks.size() * 2);
 
-    // for (const auto& collision : collisions) {
-    //   auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-    //   initCCDB(bc);
-    // }
+    initCCDB(bcs.iteratorAt(0));
     mTOFResponse->processSetup(bcs.iteratorAt(0));
 
     for (const auto& track : tracks) {
@@ -805,6 +803,7 @@ struct skimmerPrimaryElectron {
   void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const& bcs, MyFilteredTracks const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
+    initCCDB(bcs.iteratorAt(0));
     mTOFResponse->processSetup(bcs.iteratorAt(0));
     calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
 
@@ -863,6 +862,7 @@ struct skimmerPrimaryElectron {
   void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
   {
     stored_trackIds.reserve(tracks.size() * 2);
+    initCCDB(bcs.iteratorAt(0));
     mTOFResponse->processSetup(bcs.iteratorAt(0));
     for (const auto& track : tracks) {
       if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
@@ -933,6 +933,7 @@ struct skimmerPrimaryElectron {
   void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const& bcs, MyFilteredTracksMC const& tracks, aod::McParticles const&)
   {
     stored_trackIds.reserve(tracks.size());
+    initCCDB(bcs.iteratorAt(0));
     mTOFResponse->processSetup(bcs.iteratorAt(0));
     calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
 
@@ -989,6 +990,7 @@ struct skimmerPrimaryElectron {
   void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const& bcs, MyTracksMC const& tracks, aod::TrackAssoc const& trackIndices, aod::McParticles const&)
   {
     stored_trackIds.reserve(tracks.size() * 2);
+    initCCDB(bcs.iteratorAt(0));
     mTOFResponse->processSetup(bcs.iteratorAt(0));
     for (const auto& track : tracks) {
       if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {

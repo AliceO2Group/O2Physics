@@ -41,6 +41,9 @@ using namespace o2::framework::expressions;
 TH1D* tmpFqErr[6][5][52];
 
 struct FactorialMomentsTask {
+  Configurable<bool> useITS{"useITS", false, "Select tracks with ITS"};
+  Configurable<bool> useTPC{"useTPC", false, "Select tracks with TPC"};
+  Configurable<bool> useGlobal{"useGlobal", true, "Select global tracks"};
   Configurable<bool> applyCheckPtForRec{"applyCheckPtForRec", false, "Apply checkpT for reconstructed tracks"};
   Configurable<bool> applyCheckPtForMC{"applyCheckPtForMC", true, "Apply checkpT for MC-generated tracks"};
   Configurable<float> centralEta{"centralEta", 0.9, "eta limit for tracks"};
@@ -402,9 +405,12 @@ struct FactorialMomentsTask {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : colltracks) {
-      // if (track.hasITS())
-      // if (track.hasTPC())
-      // if (track.isGlobalTrack()) {
+      if (useITS && !track.hasITS())
+        continue;
+      if (useTPC && !track.hasTPC())
+        continue;
+      if (useGlobal && !track.isGlobalTrack())
+        continue;
       histos.fill(HIST("mCollID"), track.collisionId());
       histos.fill(HIST("mEta"), track.eta());
       histos.fill(HIST("mPt"), track.pt());
