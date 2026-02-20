@@ -400,14 +400,14 @@ struct UpcRhoAnalysis {
       rResolution.add("MC/resolution/collisions/hPosZ", ";vertex #it{z}_{reco} - vertex #it{z}_{true} (cm);counts", kTH1D, {resolutionAxis});
       // track matching and resolutions
       rResolution.add("MC/resolution/tracks/hMatch", ";matched;counts", kTH1D, {{2, -0.5, 1.5}});
-      rResolution.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {resolutionAxis});
+      rResolution.add("MC/resolution/tracks/hPt", ";1/#it{p}_{T, reco} - 1/#it{p}_{T, true} (1/(GeV/#it{c}));counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {resolutionAxis});
       // dipion system resolutions (1D and 2D)
       rResolution.add("MC/resolution/system/1D/hM", ";#it{m}_{reco} - #it{m}_{true} (GeV/#it{c}^{2});counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hMVsM", ";#it{m}_{true} (GeV/#it{c}^{2});#it{m}_{reco} (GeV/#it{c}^{2});counts", kTH2D, {mAxis, mAxis});
-      rResolution.add("MC/resolution/system/1D/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {resolutionAxis});
-      rResolution.add("MC/resolution/system/2D/hPtVsPt", ";#it{p}_{T, true} (GeV/#it{c});#it{p}_{T, reco} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+      rResolution.add("MC/resolution/system/1D/hPt", ";1/#it{p}_{T, reco} - 1/#it{p}_{T, true} (1/(GeV/#it{c}));counts", kTH1D, {resolutionAxis});
+      rResolution.add("MC/resolution/system/2D/hPtVsPt", ";1/#it{p}_{T, true} (GeV/#it{c});#it{p}_{T, reco} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
       rResolution.add("MC/resolution/system/1D/hY", ";#it{y}_{reco} - #it{y}_{true};counts", kTH1D, {resolutionAxis});
       rResolution.add("MC/resolution/system/2D/hYVsY", ";#it{y}_{true};#it{y}_{reco};counts", kTH2D, {yAxis, yAxis});
       rResolution.add("MC/resolution/system/1D/hDeltaPhi", ";#Delta#it{#phi}_{reco} - #Delta#it{#phi}_{true} (rad);counts", kTH1D, {resolutionAxis});
@@ -1145,7 +1145,7 @@ struct UpcRhoAnalysis {
       auto mcParticle = track.udMcParticle();
       if (std::abs(mcParticle.pdgCode()) != kPiPlus && !mcParticle.isPhysicalPrimary())
         continue;
-      rResolution.fill(HIST("MC/resolution/tracks/hPt"), pt(track.px(), track.py()) - pt(mcParticle.px(), mcParticle.py()));
+      rResolution.fill(HIST("MC/resolution/tracks/hPt"), 1.0 / pt(track.px(), track.py()) - 1.0 / pt(mcParticle.px(), mcParticle.py()));
       rResolution.fill(HIST("MC/resolution/tracks/hEta"), eta(track.px(), track.py(), track.pz()) - eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
       rResolution.fill(HIST("MC/resolution/tracks/hPhi"), phi(track.px(), track.py()) - phi(mcParticle.px(), mcParticle.py()));
       truePionLVs.push_back(ROOT::Math::PxPyPzMVector(mcParticle.px(), mcParticle.py(), mcParticle.pz(), o2::constants::physics::MassPionCharged));
@@ -1164,7 +1164,7 @@ struct UpcRhoAnalysis {
 
     rResolution.fill(HIST("MC/resolution/system/1D/hM"), recoSystem.M() - trueSystem.M());
     rResolution.fill(HIST("MC/resolution/system/2D/hMVsM"), trueSystem.M(), recoSystem.M());
-    rResolution.fill(HIST("MC/resolution/system/1D/hPt"), recoSystem.Pt() - trueSystem.Pt());
+    rResolution.fill(HIST("MC/resolution/system/1D/hPt"), 1.0 / recoSystem.Pt() - 1.0 / trueSystem.Pt());
     rResolution.fill(HIST("MC/resolution/system/2D/hPtVsPt"), trueSystem.Pt(), recoSystem.Pt());
     rResolution.fill(HIST("MC/resolution/system/1D/hY"), recoSystem.Rapidity() - trueSystem.Rapidity());
     rResolution.fill(HIST("MC/resolution/system/2D/hYVsY"), trueSystem.Rapidity(), recoSystem.Rapidity());
