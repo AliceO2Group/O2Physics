@@ -21,13 +21,16 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
 #include <TMCProcess.h>
 #include <TParameter.h>
+
 #include <cmath>
 #include <string>
 #include <vector>
@@ -52,7 +55,7 @@ static const int kMinTpcCrossedRows = 70;
 static const double kBetheBlochDefault[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 static const std::vector<std::string> kParamNamesBB{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> kParticleNamesBB{"He3"};
-}
+} // namespace
 
 struct AntiNucleiTask {
   HistogramRegistry histo{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -98,13 +101,20 @@ struct AntiNucleiTask {
   template <typename T>
   bool passTrackSelection(const T& track)
   {
-    if (std::abs(track.eta()) > kMaxEta) return false;
-    if (track.tpcNClsFound() < mMinClsTPC) return false;
-    if (track.tpcNClsCrossedRows() < kMinTpcCrossedRows) return false;
-    if (track.itsNCls() < mMinClsITS) return false;
-    if (track.tpcChi2NCl() > mMaxChi2TPC || track.tpcChi2NCl() < mMinChi2TPC) return false;
-    if (track.itsChi2NCl() > mMaxChi2ITS) return false;
-    if (std::abs(track.dcaXY()) > mMaxDCAXY || std::abs(track.dcaZ()) > mMaxDCAZ) return false;
+    if (std::abs(track.eta()) > kMaxEta)
+      return false;
+    if (track.tpcNClsFound() < mMinClsTPC)
+      return false;
+    if (track.tpcNClsCrossedRows() < kMinTpcCrossedRows)
+      return false;
+    if (track.itsNCls() < mMinClsITS)
+      return false;
+    if (track.tpcChi2NCl() > mMaxChi2TPC || track.tpcChi2NCl() < mMinChi2TPC)
+      return false;
+    if (track.itsChi2NCl() > mMaxChi2ITS)
+      return false;
+    if (std::abs(track.dcaXY()) > mMaxDCAXY || std::abs(track.dcaZ()) > mMaxDCAZ)
+      return false;
     return true;
   }
 
@@ -120,10 +130,12 @@ struct AntiNucleiTask {
 
   void process(CollisionWithEvSel::iterator const& collision, TotalTracks const& tracks)
   {
-    if (std::abs(collision.posZ()) > kMaxVertexZ) return;
+    if (std::abs(collision.posZ()) > kMaxVertexZ)
+      return;
     histo.fill(HIST("ZVtx_Raw"), collision.posZ());
 
-    if (!collision.sel8()) return;
+    if (!collision.sel8())
+      return;
     histo.fill(HIST("ZVtx"), collision.posZ());
 
     for (const auto& track : tracks) {
@@ -159,7 +171,8 @@ struct AntiNucleiTask {
   void processMC(CollisionMC const& collisions, aod::McCollisions const&, TracksMC const& tracks, aod::McParticles const& particlesMC)
   {
     for (const auto& collision : collisions) {
-      if (std::abs(collision.posZ()) > kMaxVertexZ || !collision.sel8()) continue;
+      if (std::abs(collision.posZ()) > kMaxVertexZ || !collision.sel8())
+        continue;
 
       for (const auto& particle : particlesMC) {
         if (particle.mcCollisionId() == collision.mcCollisionId() && isPrimaryHe3(particle)) {
@@ -170,7 +183,8 @@ struct AntiNucleiTask {
       }
 
       for (const auto& track : tracks) {
-        if (track.collisionId() != collision.index() || !passTrackSelection(track) || track.mcParticleId() == -1) continue;
+        if (track.collisionId() != collision.index() || !passTrackSelection(track) || track.mcParticleId() == -1)
+          continue;
 
         auto particle = particlesMC.iteratorAt(track.mcParticleId());
         if (isPrimaryHe3(particle)) {
