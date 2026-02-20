@@ -739,7 +739,7 @@ struct sigmaanalysis {
     // Fill centrality histogram after event selection
     if (fillHists)
       histos.fill(HIST("hEventCentrality"), centrality);
-      histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
+    histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     return true;
   }
@@ -812,7 +812,7 @@ struct sigmaanalysis {
         }
 
         if (biggestNContribs < collision.multPVTotalContributors()) {
-          biggestNContribs = collision.multPVTotalContributors();          
+          biggestNContribs = collision.multPVTotalContributors();
           centrality = getCentralityRun3(collision);
         }
 
