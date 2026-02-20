@@ -170,7 +170,6 @@ struct jEPFlowAnalysis {
     effVars[1] = eff->GetAxis(1)->FindBin(pt);
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
-    LOGF(info, "etabin: %d, ptbin: %d, centbin: %d, poszbin: %d", effVars[0], effVars[1], effVars[2], effVars[3]);
 
     return eff->GetBinContent(effVars);
   }
@@ -256,7 +255,7 @@ struct jEPFlowAnalysis {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
-        effMap.clear();
+        effMap->clear();
         effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
         lastRunNumber = currentRunNumber;
       }
