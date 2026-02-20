@@ -40,7 +40,6 @@ using namespace std;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
-
 struct jEPFlowAnalysis {
 
   HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -371,8 +370,6 @@ struct jEPFlowAnalysis {
     }
   }
   PROCESS_SWITCH(jEPFlowAnalysis, processDefault, "default process", true);
-
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
