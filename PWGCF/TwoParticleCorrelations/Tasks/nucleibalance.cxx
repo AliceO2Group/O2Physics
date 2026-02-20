@@ -20,6 +20,8 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -34,8 +36,6 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 
 #include <TDirectory.h>
 #include <TFile.h>
@@ -43,8 +43,8 @@
 #include <TH1F.h>
 #include <THn.h>
 #include <THnSparse.h>
-#include <TVector2.h>
 #include <TPDGCode.h>
+#include <TVector2.h>
 
 #include <cmath>
 #include <cstring>
@@ -244,7 +244,7 @@ struct Nucleibalance {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
 
   // MC filters
@@ -588,10 +588,10 @@ struct Nucleibalance {
       }
 
       const int pairSign = q1 * q2;
-      if (cfgPairCharge.value == 1) {        // like-sign pairs only
+      if (cfgPairCharge.value == 1) { // like-sign pairs only
         return pairSign > 0;
       }
-      if (cfgPairCharge.value == -1) {       // unlike-sign pairs only
+      if (cfgPairCharge.value == -1) { // unlike-sign pairs only
         return pairSign < 0;
       }
 
@@ -1450,8 +1450,8 @@ struct Nucleibalance {
         return 2;
     }
     if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end())
-      return 4; 
-    else        
+      return 4;
+    else
       return 3;
   }
 
@@ -1720,7 +1720,7 @@ struct Lambdastarproxy {
     int tid;
   };
 
-    // Helpers for invariant-mass kinematics
+  // Helpers for invariant-mass kinematics
   static float phiFromPxPy(float px, float py)
   {
     return std::atan2(py, px);
@@ -1966,7 +1966,7 @@ struct Lambdastarproxy {
                  {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
                   AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
                   AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"},centAxis});
+                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
 
       histos.add("hLambdaStarPKLikeSparse",
                  "#Lambda^{*}(1520) pK like-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
@@ -1974,7 +1974,7 @@ struct Lambdastarproxy {
                  {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
                   AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
                   AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"},centAxis});
+                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
 
       histos.add("hLambdaStarPKMixedSparse",
                  "#Lambda^{*}(1520) pK mixed-event candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
@@ -1982,7 +1982,7 @@ struct Lambdastarproxy {
                  {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
                   AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
                   AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"},centAxis});
+                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
 
       // THnSparse for deuteron-proxy invariant-mass analysis (mass, pT, y, phi)
       histos.add("hLambdaStarProxySparse",
@@ -1991,7 +1991,7 @@ struct Lambdastarproxy {
                  {AxisSpec{400, 1.3, 1.9, "M_{p_{proxy}K} (GeV/c^{2})"},
                   AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"},
                   AxisSpec{60, -1.5, 1.5, "y_{p_{proxy}K}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"},centAxis});
+                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"}, centAxis});
 
       histos.add("hLambdaStarProxyMixedSparse",
                  "#Lambda^{*}(1520) deuteron-proxy mixed-event candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);y_{p_{proxy}K};#varphi_{p_{proxy}K}",
@@ -1999,7 +1999,7 @@ struct Lambdastarproxy {
                  {AxisSpec{400, 1.3, 1.9, "M_{p_{proxy}K} (GeV/c^{2})"},
                   AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"},
                   AxisSpec{60, -1.5, 1.5, "y_{p_{proxy}K}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"},centAxis});
+                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"}, centAxis});
     }
 
     // Deuteron-proxy invariant mass (p_{proxy} from d/2 combined with K)
@@ -2403,7 +2403,6 @@ struct Lambdastarproxy {
       }
     }
 
-
     std::vector<KaonCand> kaonCands;
     std::vector<ProxyCand> proxyCands;
     kaonCands.reserve(128);
@@ -2599,7 +2598,8 @@ struct Lambdastarproxy {
     // --- SAME-EVENT: proxy (d/2) + K ---
     for (auto const& pr : proxyCands) {
       for (auto const& k : kaonCands) {
-        if (pr.tid == k.tid) continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+        if (pr.tid == k.tid)
+          continue; // sanity check: should never match, but just in case of bug in candidate-building logic
         const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
 
         const float pxTot = pr.px + k.px;
@@ -2650,7 +2650,8 @@ struct Lambdastarproxy {
           if ((pr.charge * k.charge) >= 0) {
             continue;
           }
-          if (pr.tid == k.tid) continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+          if (pr.tid == k.tid)
+            continue; // sanity check: should never match, but just in case of bug in candidate-building logic
 
           const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
 
