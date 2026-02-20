@@ -111,8 +111,8 @@ struct V0PhotonCandidate {
     alpha = v0.alpha();
     qt = v0.qtarm();
     psipair = 999.f; // default if V0PhotonPhiVPsi table is not included
-    phiv = 999.f; // default if V0PhotonPhiVPsi table is not included
-    if constexpr( requires{ v0.psipair(); v0.phiv(); } ) {
+    phiv = 999.f;    // default if V0PhotonPhiVPsi table is not included
+    if constexpr (requires { v0.psipair(); v0.phiv(); }) {
       psipair = v0.psipair();
       phiv = v0.phiv();
     }

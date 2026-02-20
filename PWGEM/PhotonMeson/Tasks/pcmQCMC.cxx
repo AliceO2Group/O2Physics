@@ -517,7 +517,7 @@ struct PCMQCMC {
       const std::span<const float>& bdtValue = fV0PhotonCut.getBDTValue();
       float psipair = 999.f;
       float phiv = 999.f;
-      if constexpr( requires{ v0.psipair(); v0.phiv(); } ) {
+      if constexpr (requires { v0.psipair(); v0.phiv(); }) {
         psipair = v0.psipair();
         phiv = v0.phiv();
       }
@@ -573,7 +573,7 @@ struct PCMQCMC {
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
-  
+
   template <typename TV0Photons>
   void processMC(FilteredMyCollisions const& collisions, TV0Photons const& v0photons, aod::EMMCParticles const& mcparticles, MyMCV0Legs const&, aod::EMMCEvents const&)
   {
@@ -686,7 +686,7 @@ struct PCMQCMC {
     processMC(collisions, v0photons, mcparticles, mcv0legs, mcevents);
   } // end of QC process
 
-  void processQCMCML(FilteredMyCollisions const& collisions, MyV0PhotonsML const& v0photonsML,  aod::EMMCParticles const& mcparticles, MyMCV0Legs const& mcv0legs, aod::EMMCEvents const& mcevents)
+  void processQCMCML(FilteredMyCollisions const& collisions, MyV0PhotonsML const& v0photonsML, aod::EMMCParticles const& mcparticles, MyMCV0Legs const& mcv0legs, aod::EMMCEvents const& mcevents)
   {
     processMC(collisions, v0photonsML, mcparticles, mcv0legs, mcevents);
   } // end of QC process with ML cuts

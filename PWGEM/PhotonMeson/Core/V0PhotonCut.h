@@ -39,10 +39,10 @@
 #include <cstdint>
 #include <functional>
 #include <set>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
-#include <span>
 
 namespace o2::analysis
 {

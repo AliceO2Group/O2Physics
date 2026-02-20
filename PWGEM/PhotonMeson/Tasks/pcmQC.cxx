@@ -242,7 +242,7 @@ struct PCMQC {
     fRegistry.add("V0/hKFChi2vsZ", "KF chi2 vs. conversion point in Z;Z (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, o2::constants::math::TwoPI}, {80, -2, +2}}, false);
     fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
-    
+
     if (pcmcuts.cfg_apply_ml_cuts) {
       if (pcmcuts.cfg_nclasses_ml == 2) {
         fRegistry.add("V0/hBDTBackgroundScoreVsPt", "BDT background score vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
@@ -281,7 +281,7 @@ struct PCMQC {
       fRegistry.add("V0Leg/hPvsConvPointvsTPCNsigmaElvsEta_Pos", "momentum of pos leg vs. conversion point of V0 vs. TPC n sigma pos vs. eta of pos leg; p (GeV/c); r_{xy} (cm); n #sigma_{e}^{TPC}; #eta", kTHnSparseF, {{200, 0, 20}, {100, 0, 100}, {500, -5, 5}, {200, -1, +1}}, false);
       fRegistry.add("V0Leg/hPvsConvPointvsTPCNsigmaElvsEta_Ele", "momentum of neg leg vs. conversion point of V0 vs. TPC n sigma el vs. eta of neg leg; p (GeV/c); r_{xy} (cm); n #sigma_{e}^{TPC}; #eta", kTHnSparseF, {{200, 0, 20}, {100, 0, 100}, {500, -5, 5}, {200, -1, +1}}, false);
     }
-     // fRegistry.add("V0Leg/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {80, -20, 20}}, false);
+    // fRegistry.add("V0Leg/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {80, -20, 20}}, false);
     // fRegistry.add("V0Leg/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
     // fRegistry.add("V0Leg/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {80, -20, 20}}, false);
   }
@@ -429,9 +429,9 @@ struct PCMQC {
     // BDT response histogram can be filled here when apply BDT is true
     if (pcmcuts.cfg_apply_ml_cuts) {
       const std::span<const float>& bdtValue = fV0PhotonCut.getBDTValue();
-      float psipair = 999.f; 
+      float psipair = 999.f;
       float phiv = 999.f;
-      if constexpr( requires{ v0.psipair(); v0.phiv(); } ) {
+      if constexpr (requires { v0.psipair(); v0.phiv(); }) {
         psipair = v0.psipair();
         phiv = v0.phiv();
       }
@@ -483,7 +483,7 @@ struct PCMQC {
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   template <typename TV0Photon>
-  void process(FilteredMyCollisions const& collisions,  TV0Photon const& v0photons, aod::V0Legs const& v0legs)
+  void process(FilteredMyCollisions const& collisions, TV0Photon const& v0photons, aod::V0Legs const& v0legs)
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
@@ -530,7 +530,7 @@ struct PCMQC {
 
   void processQCML(FilteredMyCollisions const& collisions, MyV0PhotonsML const& v0photonsML, aod::V0Legs const& v0legs)
   {
-   process(collisions, v0photonsML, v0legs);
+    process(collisions, v0photonsML, v0legs);
   } // end of ML process
 
   void processDummy(MyCollisions const&) {}

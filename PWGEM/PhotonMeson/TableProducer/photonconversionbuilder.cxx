@@ -485,7 +485,7 @@ struct PhotonConversionBuilder {
     return cospaRZ;
   }
 
-  template <bool isMC, typename TTrack,  typename TShiftedTrack>
+  template <bool isMC, typename TTrack, typename TShiftedTrack>
   void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, const float dcaXY, const float dcaZ)
   {
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
@@ -609,9 +609,9 @@ struct PhotonConversionBuilder {
       }
     }
     if (phiv == 999.f || psipair == 999.f) {
-      LOG(debug) << "Propagation failed for all radii ("<< propV0LegsRadius << ", 30, 10 cm). Using default values for phiv and psipair (999.f).";
+      LOG(debug) << "Propagation failed for all radii (" << propV0LegsRadius << ", 30, 10 cm). Using default values for phiv and psipair (999.f).";
     }
-    
+
     KFPTrack kfp_track_pos = createKFPTrackFromTrackParCov(pTrack, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
     KFPTrack kfp_track_ele = createKFPTrackFromTrackParCov(nTrack, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
     KFParticle kfp_pos(kfp_track_pos, kPositron);
