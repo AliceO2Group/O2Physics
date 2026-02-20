@@ -23,11 +23,19 @@
 
 #include <KFParticle.h>
 
+enum CentType : uint8_t {
+  CentFT0M = 0,
+  CentFT0A = 1,
+  CentFT0C = 2
+};
+
 struct V0PhotonCandidate {
 
  public:
-  // Constructor for photonconversionbuilder
-  V0PhotonCandidate(const KFParticle& v0, const KFParticle& pos, const KFParticle& ele, const auto& collision, float cospa, float d_bz) : cospa(cospa)
+  // Empty Constructor
+  V0PhotonCandidate() = default;
+  // Set method for photonconversionbuilder
+  void setPhotonCandidate(const KFParticle& v0, const KFParticle& pos, const KFParticle& ele, const auto& collision, float cospa, float psipair, float phiv, CentType centType)
   {
     px = v0.GetPx();
     py = v0.GetPy();
@@ -57,18 +65,27 @@ struct V0PhotonCandidate {
 
     alpha = v0_alpha(posPx, posPy, posPz, elePx, elePy, elePz);
     qt = v0_qt(posPx, posPy, posPz, elePx, elePy, elePz);
-    int posSign = (pos.GetQ() > 0) - (pos.GetQ() < 0);
-    int eleSign = (ele.GetQ() > 0) - (ele.GetQ() < 0);
-    phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(posPx, posPy, posPz, elePx, elePy, elePz, posSign, eleSign, d_bz);
-    psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(posPx, posPy, posPz, elePx, elePy, elePz);
 
-    centFT0M = collision.centFT0M();
-    centFT0C = collision.centFT0C();
-    centFT0A = collision.centFT0A();
+    this->cospa = cospa;
+    this->psipair = psipair;
+    this->phiv = phiv;
+    this->centType = centType;
+
+    switch (centType) {
+      case CentType::CentFT0A:
+        cent = collision.centFT0A();
+        break;
+      case CentType::CentFT0C:
+        cent = collision.centFT0C();
+        break;
+      case CentType::CentFT0M:
+        cent = collision.centFT0M();
+        break;
+    }
   }
 
-  // Constructor for V0PhotonCut
-  V0PhotonCandidate(const auto& v0, const auto& pos, const auto& ele, float centFT0A, float centFT0C, float centFT0M, float d_bz) : centFT0A(centFT0A), centFT0C(centFT0C), centFT0M(centFT0M)
+  // Set-Method for V0PhotonCut
+  void setPhoton(const auto& v0, const auto& pos, const auto& ele, float cent, CentType centType)
   {
     px = v0.px();
     py = v0.py();
@@ -93,9 +110,14 @@ struct V0PhotonCandidate {
     cospa = v0.cospa();
     alpha = v0.alpha();
     qt = v0.qtarm();
-
-    phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(posPx, posPy, posPz, elePx, elePy, elePz, pos.sign(), ele.sign(), d_bz);
-    psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(posPx, posPy, posPz, elePx, elePy, elePz);
+    psipair = 999.f; // default if V0PhotonPhiVPsi table is not included
+    phiv = 999.f; // default if V0PhotonPhiVPsi table is not included
+    if constexpr( requires{ v0.psipair(); v0.phiv(); } ) {
+      psipair = v0.psipair();
+      phiv = v0.phiv();
+    }
+    this->cent = cent;
+    this->centType = centType;
   }
 
   // Getter functions
@@ -119,10 +141,9 @@ struct V0PhotonCandidate {
   float getElePx() const { return elePx; }
   float getElePy() const { return elePy; }
   float getElePz() const { return elePz; }
-  float getCentFT0M() const { return centFT0M; }
-  float getCentFT0C() const { return centFT0C; }
-  float getCentFT0A() const { return centFT0A; }
+  float getCent() const { return cent; }
   float getPCA() const { return pca; }
+  CentType getCentType() const { return centType; }
 
  private:
   float px;
@@ -145,10 +166,9 @@ struct V0PhotonCandidate {
   float psipair;
   float cospa;
   float chi2ndf;
-  float centFT0A;
-  float centFT0C;
-  float centFT0M;
+  float cent;
   float pca;
+  CentType centType;
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_V0PHOTONCANDIDATE_H_
