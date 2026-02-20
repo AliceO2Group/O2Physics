@@ -144,6 +144,21 @@ enum MultiplicityEstimators {
   MultFT0M
 };
 
+enum SpecificEventSelectionStep {
+  AllEventsPrecise = 0,
+  IsSel8,
+  IsNoSameBunchPileup,
+  IsGoodItsLayersAll,
+  IsGoodZvtxFT0vsPV,
+  IsNoCollInRofStandard,
+  IsNoCollInRofStrict,
+  IsNoCollInTimeRangeStandard,
+  IsNoCollInTimeRangeStrict,
+  IsNoHighMultCollInPrevRof,
+  IsRctFlagChecked,
+  NSpecificEventSelectionSteps
+};
+
 enum TrackSelection {
   TrackSelectionNoCut = 0,
   TrackSelectionGlobalTrack
@@ -199,11 +214,13 @@ struct HfTaskFlow {
     Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, ""};
     Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", false, ""};
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, ""};
+    Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, ""};
     Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
     Configurable<int> maxMultiplicity{"maxMultiplicity", 300, "maximum multiplicity selection for collision"};
     Configurable<int> minMultiplicity{"minMultiplicity", 0, "minimum multiplicity selection for collision"};
     Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
+    Configurable<bool> requireCorrelationAnalysisRCTFlagChecker{"requireCorrelationAnalysisRCTFlagChecker", false, "Check event quality in run condition table for correlation analysis"};
     Configurable<std::string> setRCTFlagCheckerLabel{"setRCTFlagCheckerLabel", "CBT_muon_global", "Evt sel: RCT flag checker label"};
     Configurable<bool> requireRCTFlagCheckerLimitAcceptanceAsBad{"requireRCTFlagCheckerLimitAcceptanceAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
     Configurable<bool> requireZDCCheck{"requireZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
@@ -281,6 +298,7 @@ struct HfTaskFlow {
   o2::fv0::Geometry* fv0Det{};
   std::vector<float> cstFT0RelGain{};
   RCTFlagsChecker rctChecker;
+  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad};
 
   // =========================
   //      using declarations : DATA
@@ -460,6 +478,7 @@ struct HfTaskFlow {
     //  =========================
 
     rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
+    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
 
     registry.add("Data/hVtxZ", "v_{z} (cm)", {HistType::kTH1D, {configAxis.axisVertex}});
     registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
@@ -473,6 +492,25 @@ struct HfTaskFlow {
 
     for (int iBin = 0; iBin < EventSelectionStep::NEventSelectionSteps; iBin++) {
       registry.get<TH1>(HIST("Data/hEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
+
+    registry.add("Data/hPreciseEventCounter", "hPreciseEventCounter", {HistType::kTH1D, {{SpecificEventSelectionStep::NSpecificEventSelectionSteps, -0.5, +SpecificEventSelectionStep::NSpecificEventSelectionSteps - 0.5}}});
+    std::string labelsPreciseEventSelection[SpecificEventSelectionStep::NSpecificEventSelectionSteps];
+    labelsPreciseEventSelection[SpecificEventSelectionStep::AllEventsPrecise] = "all";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsSel8] = "sel8";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoSameBunchPileup] = "IsNoSameBunchPileup";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsGoodItsLayersAll] = "IsGoodItsLayersAll";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsGoodZvtxFT0vsPV] = "IsGoodZvtxFT0vsPV";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoCollInRofStandard] = "IsNoCollInRofStandard";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoCollInRofStrict] = "IsNoCollInRofStrict";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoCollInTimeRangeStandard] = "IsNoCollInTimeRangeStandard";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoCollInTimeRangeStrict] = "IsNoCollInTimeRangeStrict";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsNoHighMultCollInPrevRof] = "IsNoHighMultCollInPrevRof";
+    labelsPreciseEventSelection[SpecificEventSelectionStep::IsRctFlagChecked] = "IsRctFlagChecked";
+    registry.get<TH1>(HIST("Data/hPreciseEventCounter"))->SetMinimum(0);
+
+    for (int iBin = 0; iBin < SpecificEventSelectionStep::NSpecificEventSelectionSteps; iBin++) {
+      registry.get<TH1>(HIST("Data/hPreciseEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labelsPreciseEventSelection[iBin].data());
     }
 
     mPairCuts.SetHistogramRegistry(&registry);
@@ -923,34 +961,71 @@ struct HfTaskFlow {
   {
     if (fillHistograms) {
       registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AllEvents);
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::AllEventsPrecise);
     }
 
     if (!collision.sel8()) {
       return false;
     }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsSel8);
+    }
     if (configCollision.isApplySameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    if (configCollision.isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    if (configCollision.isApplyNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-      return false;
-    }
-    if (configCollision.isApplyNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
-      return false;
-    }
-    if (configCollision.isApplyNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return false;
-    }
-    if (configCollision.isApplyNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
-      return false;
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsNoSameBunchPileup);
     }
     if (configCollision.isApplyGoodItsLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsGoodItsLayersAll);
+    }
+    if (configCollision.isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsGoodZvtxFT0vsPV);
+    }
+    if (configCollision.isApplyNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInRofStandard);
+    }
+    if (configCollision.isApplyNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInRofStrict);
+    }
+    if (configCollision.isApplyNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInTimeRangeStandard);
+    }
+    if (configCollision.isApplyNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsNoCollInTimeRangeStrict);
+    }
+    if (configCollision.isApplyNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsNoHighMultCollInPrevRof);
+    }
     if (configCollision.requireRCTFlagChecker && !rctChecker(collision)) {
       return false;
+    }
+    if (configCollision.requireCorrelationAnalysisRCTFlagChecker && !correlationAnalysisRctChecker(collision)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsRctFlagChecked);
     }
 
     if (fillHistograms) {
