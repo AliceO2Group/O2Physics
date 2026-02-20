@@ -90,6 +90,11 @@ o2physics_add_dpl_workflow(candidate-creator-xic0-omegac0
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-xic0-omegac0-qa
+                    SOURCES candidateCreatorXic0Omegac0Qa.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-creator-xic-to-xi-pi-pi
                     SOURCES candidateCreatorXicToXiPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
@@ -182,6 +187,11 @@ o2physics_add_dpl_workflow(candidate-selector-to-xi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-selector-to-xi-pi-qa
+                    SOURCES candidateSelectorToXiPiQa.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-selector-xic-to-p-k-pi
                     SOURCES candidateSelectorXicToPKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
@@ -271,6 +281,11 @@ o2physics_add_dpl_workflow(tree-creator-omegac0-to-omega-pi
 
 o2physics_add_dpl_workflow(tree-creator-to-xi-pi
                     SOURCES treeCreatorToXiPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-to-xi-pi-qa
+                    SOURCES treeCreatorToXiPiQa.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
