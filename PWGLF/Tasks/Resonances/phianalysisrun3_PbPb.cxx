@@ -1977,8 +1977,6 @@ struct phianalysisrun3_PbPb {
       const int kCentFT0M = 2;
       const int kCentFV0A = 3;
 
-      auto centrality = -1.0;
-
       if (centestimator == kCentFT0C) {
         centrality = RecCollision.centFT0C();
 
