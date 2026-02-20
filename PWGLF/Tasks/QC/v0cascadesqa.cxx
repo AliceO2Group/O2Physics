@@ -508,7 +508,7 @@ struct v0cascadesQA {
       }
       auto v0mcparticle = v0.mcParticle();
       Int_t lPDG = 0;
-      if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == PDG_t::kLambda0) {
+      if (TMath::Abs(v0mcparticle.pdgCode()) == PDG_t::kK0Short || TMath::Abs(v0mcparticle.pdgCode()) == PDG_t::kLambda0) {
         lPDG = v0mcparticle.pdgCode();
       }
 
@@ -522,7 +522,7 @@ struct v0cascadesQA {
           TMath::Abs(v0.dcanegtopv()) > V0_dcanegtopv) {
 
         // K0Short
-        if (lPDG == 310) {
+        if (lPDG == PDG_t::kK0Short) {
           if (TMath::Abs(v0.yK0Short()) < V0_rapidity && CtauK0s < lifetimecut->get("lifetimecutK0S")) {
             histos_V0.fill(HIST("InvMassK0STrue"), v0.pt(), v0.v0radius(), v0.mK0Short());
           }
