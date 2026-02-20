@@ -157,6 +157,13 @@ struct v0cascadesQA {
     histos_eve.add("GeneratedParticles", "GeneratedParticles", {HistType::kTH3F, {{14, 0.0f, 14.0f}, {100, 0, 10}, {100, 0.f, 50.f}}});
     histos_eve.add("hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}});
     histos_eve.add("hEventCounterMC", "hEventCounterMC", {HistType::kTH1F, {{2, 0.0f, 2.0f}}});
+    histos_eve.add("GenK0sPtVsEta", "GenK0sPtVsEta", {HistType::kTH2F, {axisPt, axisEta}});
+    histos_eve.add("GenLambdaPtVsEta", "GenLambdaPtVsEta", {HistType::kTH2F, {axisPt, axisEta}});
+    histos_eve.add("GenAntiLambdaPtVsEta", "GenAntiLambdaPtVsEta", {HistType::kTH2F, {axisPt, axisEta}});
+    histos_eve.add("GenXiMinusPtVsEta", "GenXiMinusPtVsEta", {HistType::kTH2F, {axisPt, axisEta}});
+    histos_eve.add("GenXiPlusPtVsEta", "GenXiPlusPtVsEta", {HistType::kTH2F, {axisPt, axisEta}});
+    histos_eve.add("GenOmegaMinusPtVsEta", "GenOmegaMinusPtVsEta", {HistType::kTH2F, {axisPt, axisEta}});
+    histos_eve.add("GenOmegaPlusPtVsEta", "GenOmegaPlusPtVsEta", {HistType::kTH2F, {axisPt, axisEta}});
 
     histos_V0.add("CosPA", "CosPA", HistType::kTH1F, {axisV0CosPA});
     histos_V0.add("V0Radius", "V0Radius", HistType::kTH1F, {axisV0Radius});
@@ -323,23 +330,38 @@ struct v0cascadesQA {
       }
       double R_Decay = TMath::Sqrt(vx * vx + vy * vy);
 
+      if (mcparticle.pdgCode() == PDG_t::kK0Short)
+        histos_eve.fill(HIST("GenK0sPtVsEta"), mcparticle.pt(), mcparticle.eta());
+      if (mcparticle.pdgCode() == PDG_t::kLambda0)
+        histos_eve.fill(HIST("GenLambdaPtVsEta"), mcparticle.pt(), mcparticle.eta());
+      if (mcparticle.pdgCode() == PDG_t::kLambda0Bar)
+        histos_eve.fill(HIST("GenAntiLambdaPtVsEta"), mcparticle.pt(), mcparticle.eta());
+      if (mcparticle.pdgCode() == PDG_t::kXiMinus)
+        histos_eve.fill(HIST("GenXiMinusPtVsEta"), mcparticle.pt(), mcparticle.eta());
+      if (mcparticle.pdgCode() == PDG_t::kXiPlusBar)
+        histos_eve.fill(HIST("GenXiPlusPtVsEta"), mcparticle.pt(), mcparticle.eta());
+      if (mcparticle.pdgCode() == PDG_t::kOmegaMinus)
+        histos_eve.fill(HIST("GenOmegaMinusPtVsEta"), mcparticle.pt(), mcparticle.eta());
+      if (mcparticle.pdgCode() == PDG_t::kOmegaPlusBar)
+        histos_eve.fill(HIST("GenOmegaPlusPtVsEta"), mcparticle.pt(), mcparticle.eta());
+
       if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < V0_rapidity) {
-        if (mcparticle.pdgCode() == 310)
-          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), R_Decay); // K0s
-        if (mcparticle.pdgCode() == 3122)
-          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), R_Decay); // Lambda
-        if (mcparticle.pdgCode() == -3122)
-          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), R_Decay); // AntiLambda
+        if (mcparticle.pdgCode() == PDG_t::kK0Short)
+          histos_eve.fill(HIST("GeneratedParticles"), 0.5, mcparticle.pt(), R_Decay); 
+        if (mcparticle.pdgCode() == PDG_t::kLambda0)
+          histos_eve.fill(HIST("GeneratedParticles"), 2.5, mcparticle.pt(), R_Decay); 
+        if (mcparticle.pdgCode() == PDG_t::kLambda0Bar)
+          histos_eve.fill(HIST("GeneratedParticles"), 4.5, mcparticle.pt(), R_Decay); 
       }
       if (mcparticle.isPhysicalPrimary() && TMath::Abs(mcparticle.y()) < Casc_rapidity) {
-        if (mcparticle.pdgCode() == 3312)
-          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), R_Decay); // Xi-
-        if (mcparticle.pdgCode() == -3312)
-          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), R_Decay); // Xi+
-        if (mcparticle.pdgCode() == 3334)
-          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), R_Decay); // Omega-
-        if (mcparticle.pdgCode() == -3334)
-          histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), R_Decay); // Omega+
+        if (mcparticle.pdgCode() == PDG_t::kXiMinus)
+          histos_eve.fill(HIST("GeneratedParticles"), 6.5, mcparticle.pt(), R_Decay); 
+        if (mcparticle.pdgCode() == PDG_t::kXiPlusBar)
+          histos_eve.fill(HIST("GeneratedParticles"), 8.5, mcparticle.pt(), R_Decay); 
+        if (mcparticle.pdgCode() == PDG_t::kOmegaMinus)
+          histos_eve.fill(HIST("GeneratedParticles"), 10.5, mcparticle.pt(), R_Decay); 
+        if (mcparticle.pdgCode() == PDG_t::kOmegaPlusBar)
+          histos_eve.fill(HIST("GeneratedParticles"), 12.5, mcparticle.pt(), R_Decay);
       }
     }
   }
@@ -486,7 +508,7 @@ struct v0cascadesQA {
       }
       auto v0mcparticle = v0.mcParticle();
       Int_t lPDG = 0;
-      if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == 3122) {
+      if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == PDG_t::kLambda0) {
         lPDG = v0mcparticle.pdgCode();
       }
 
@@ -505,12 +527,12 @@ struct v0cascadesQA {
             histos_V0.fill(HIST("InvMassK0STrue"), v0.pt(), v0.v0radius(), v0.mK0Short());
           }
         }
-        if (lPDG == 3122) {
+        if (lPDG == PDG_t::kLambda0) {
           if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
             histos_V0.fill(HIST("InvMassLambdaTrue"), v0.pt(), v0.v0radius(), v0.mLambda());
           }
         }
-        if (lPDG == -3122) {
+        if (lPDG == PDG_t::kLambda0Bar) {
           if (TMath::Abs(v0.yLambda()) < V0_rapidity && CtauLambda < lifetimecut->get("lifetimecutLambda")) {
             histos_V0.fill(HIST("InvMassAntiLambdaTrue"), v0.pt(), v0.v0radius(), v0.mAntiLambda());
           }
@@ -530,31 +552,19 @@ struct v0cascadesQA {
       return;
     }
 
-    int dauEtaFlag = 0;
     for (auto& casc : Cascades) {
       auto bachelor = casc.bachelor_as<DaughterTracks>();
       auto posdau = casc.posTrack_as<DaughterTracks>();
       auto negdau = casc.negTrack_as<DaughterTracks>();
-
-      if (posdau.eta() < 0. && negdau.eta() < 0. && bachelor.eta() < 0.) {
-        dauEtaFlag = -1;
-      } else if (posdau.eta() >= 0. && negdau.eta() >= 0. && bachelor.eta() >= 0.) {
-        dauEtaFlag = 1;
-      } else {
-        dauEtaFlag = 0;
-      }
 
       // check TPC
       if (checkDauTPC && (!posdau.hasTPC() || !negdau.hasTPC() || !bachelor.hasTPC())) {
         continue;
       }
 
-      // histos_Casc.fill(HIST("XiProgSelections"), );
-      // histos_Casc.fill(HIST("OmegaProgSelections"), );
       histos_Casc.fill(HIST("CascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.sign());
       histos_Casc.fill(HIST("V0CosPA"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), casc.sign());
 
-      // double v0cospatoxi = RecoDecay::CPA(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{v0.px(), v0.py(), v0.pz()});
       double v0cospatoxi = RecoDecay::cpa(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg()});
 
       histos_Casc.fill(HIST("V0CosPAToXi"), v0cospatoxi, casc.sign());
@@ -673,38 +683,38 @@ struct v0cascadesQA {
                 bool isXiMinusCascade = MomOfBachIsPrimary && !(MomOfNegIsPrimary) && !(MomOfPosIsPrimary) &&
                                         particleMotherOfNeg == particleMotherOfPos &&
                                         particleMotherOfV0 == particleMotherOfBach &&
-                                        particleMotherOfBach.pdgCode() == 3312 &&
-                                        bachelor.pdgCode() == -211 &&
-                                        particleMotherOfNeg.pdgCode() == 3122 &&
-                                        mcnegtrack.pdgCode() == -211 &&
-                                        mcpostrack.pdgCode() == 2212;
+                                        particleMotherOfBach.pdgCode() == PDG_t::kXiMinus &&
+                                        bachelor.pdgCode() == PDG_t::kPiMinus &&
+                                        particleMotherOfNeg.pdgCode() == PDG_t::kLambda0 &&
+                                        mcnegtrack.pdgCode() == PDG_t::kPiMinus &&
+                                        mcpostrack.pdgCode() == PDG_t::kProton;
 
                 bool isOmegaMinusCascade = MomOfBachIsPrimary && !(MomOfNegIsPrimary) && !(MomOfPosIsPrimary) &&
                                            particleMotherOfNeg == particleMotherOfPos &&
                                            particleMotherOfV0 == particleMotherOfBach &&
-                                           particleMotherOfBach.pdgCode() == 3334 &&
-                                           bachelor.pdgCode() == -321 &&
-                                           particleMotherOfNeg.pdgCode() == 3122 &&
-                                           mcnegtrack.pdgCode() == -211 &&
-                                           mcpostrack.pdgCode() == 2212;
+                                           particleMotherOfBach.pdgCode() == PDG_t::kOmegaMinus &&
+                                           bachelor.pdgCode() == PDG_t::kKMinus &&
+                                           particleMotherOfNeg.pdgCode() == PDG_t::kLambda0 &&
+                                           mcnegtrack.pdgCode() == PDG_t::kPiMinus &&
+                                           mcpostrack.pdgCode() == PDG_t::kProton;
 
                 bool isXiPlusCascade = MomOfBachIsPrimary && !(MomOfNegIsPrimary) && !(MomOfPosIsPrimary) &&
                                        particleMotherOfNeg == particleMotherOfPos &&
                                        particleMotherOfV0 == particleMotherOfBach &&
-                                       particleMotherOfBach.pdgCode() == -3312 &&
-                                       bachelor.pdgCode() == 211 &&
-                                       particleMotherOfNeg.pdgCode() == -3122 &&
-                                       mcnegtrack.pdgCode() == -2212 &&
-                                       mcpostrack.pdgCode() == 211;
+                                       particleMotherOfBach.pdgCode() == PDG_t::kXiPlusBar &&
+                                       bachelor.pdgCode() == PDG_t::kPiPlus &&
+                                       particleMotherOfNeg.pdgCode() == PDG_t::kLambda0Bar &&
+                                       mcnegtrack.pdgCode() == PDG_t::kProtonBar &&
+                                       mcpostrack.pdgCode() == PDG_t::kPiPlus;
 
                 bool isOmegaPlusCascade = MomOfBachIsPrimary && !(MomOfNegIsPrimary) && !(MomOfPosIsPrimary) &&
                                           particleMotherOfNeg == particleMotherOfPos &&
                                           particleMotherOfV0 == particleMotherOfBach &&
-                                          particleMotherOfBach.pdgCode() == -3334 &&
-                                          bachelor.pdgCode() == 321 &&
-                                          particleMotherOfNeg.pdgCode() == -3122 &&
-                                          mcnegtrack.pdgCode() == -2212 &&
-                                          mcpostrack.pdgCode() == 211;
+                                          particleMotherOfBach.pdgCode() == PDG_t::kOmegaPlusBar &&
+                                          bachelor.pdgCode() == PDG_t::kKPlus &&
+                                          particleMotherOfNeg.pdgCode() == PDG_t::kLambda0Bar &&
+                                          mcnegtrack.pdgCode() == PDG_t::kProtonBar &&
+                                          mcpostrack.pdgCode() == PDG_t::kPiPlus;
 
                 if (isXiMinusCascade) {
                   histos_Casc.fill(HIST("QA_XiMinusCandidates"), 8.5);
@@ -741,11 +751,11 @@ struct v0cascadesQA {
                 if ((particleMotherOfV0 == particleMotherOfBach)) {
                   histos_Casc.fill(HIST("QA_XiMinusCandidates"), 6.5);
                 }
-                if (particleMotherOfBach.pdgCode() == 3312 &&
-                    bachelor.pdgCode() == -211 &&
-                    particleMotherOfNeg.pdgCode() == 3122 &&
-                    mcnegtrack.pdgCode() == -211 &&
-                    mcpostrack.pdgCode() == 2212) {
+                if (particleMotherOfBach.pdgCode() == PDG_t::kXiMinus &&
+                    bachelor.pdgCode() == PDG_t::kPiMinus &&
+                    particleMotherOfNeg.pdgCode() == PDG_t::kLambda0 &&
+                    mcnegtrack.pdgCode() == PDG_t::kPiMinus &&
+                    mcpostrack.pdgCode() == PDG_t::kProton) {
                   histos_Casc.fill(HIST("QA_XiMinusCandidates"), 7.5);
                 }
               }
