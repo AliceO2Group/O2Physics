@@ -201,6 +201,7 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplySplitRecCol{"isApplySplitRecCol", false, "Split MC reco collisions"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
+  Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
 
   void init(InitContext const&)
   {
@@ -378,6 +379,10 @@ struct HeavyionMultiplicity {
     }
     histos.fill(HIST("EventHist"), 2);
 
+    if (isApplyTVX && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    
     if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
@@ -961,6 +966,11 @@ struct HeavyionMultiplicity {
     if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
       return;
     }
+
+    if (isApplyTVX && !(mcCollision.multMCFT0C()>0 && mcCollision.multMCFT0A()>0)) {
+      return;
+    }
+    
     if (std::abs(mcCollision.posZ()) >= vtxRange) {
       return;
     }
