@@ -52,6 +52,7 @@ using namespace o2::hf_centrality;
 struct HfCorrelatorDplusDplusReduced {
   Produces<o2::aod::HfCandDpFulls> rowCandidateFull;
   Produces<o2::aod::HfCandDpLites> rowCandidateLite;
+  Produces<o2::aod::HfCandDpTinys> rowCandidateTiny;
   Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandDpMls> rowCandidateMl;
 
@@ -60,6 +61,7 @@ struct HfCorrelatorDplusDplusReduced {
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
+  Configurable<bool> fillCandidateTinyTable{"fillCandidateTinyTable", false, "Switch to fill tiny table with candidate properties"};
   // parameters for production of training samples
   Configurable<bool> fillCorrBkgs{"fillCorrBkgs", false, "Flag to fill derived tables with correlated background candidates"};
   Configurable<std::vector<int>> classMlIndexes{"classMlIndexes", {0, 2}, "Indexes of ML bkg and non-prompt scores."};
@@ -113,11 +115,12 @@ struct HfCorrelatorDplusDplusReduced {
   }
 
   template <typename Coll, bool doMc = false, bool doMl = false, typename T>
-  void fillCandidateTable(const T& candidate, int localEvIdx = -1)
+  void fillCandidateTable(const T& candidate, int localEvIdx = -1, int sign = 1)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
+
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
@@ -140,7 +143,18 @@ struct HfCorrelatorDplusDplusReduced {
       cent = getCentralityColl(coll, centEstimator);
     }
 
-    if (fillCandidateLiteTable) {
+    if (fillCandidateTinyTable) {
+      rowCandidateTiny(
+        candidate.isSelDplusToPiKPi(),
+        hfHelper.invMassDplusToPiKPi(candidate),
+        sign * candidate.pt(),
+        candidate.eta(),
+        candidate.phi(),
+        localEvIdx,
+        flagMc,
+        originMc,
+        channelMc);
+    } else if (fillCandidateLiteTable) {
       rowCandidateLite(
         candidate.chi2PCA(),
         candidate.decayLength(),
@@ -176,7 +190,7 @@ struct HfCorrelatorDplusDplusReduced {
         candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
         hfHelper.invMassDplusToPiKPi(candidate),
-        candidate.pt(),
+        sign * candidate.pt(),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
@@ -184,7 +198,6 @@ struct HfCorrelatorDplusDplusReduced {
         candidate.phi(),
         hfHelper.yDplus(candidate),
         cent,
-        coll.numContrib(),
         localEvIdx,
         flagMc,
         originMc,
@@ -252,7 +265,7 @@ struct HfCorrelatorDplusDplusReduced {
         candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
         hfHelper.invMassDplusToPiKPi(candidate),
-        candidate.pt(),
+        sign * candidate.pt(),
         candidate.p(),
         candidate.cpa(),
         candidate.cpaXY(),
@@ -270,7 +283,7 @@ struct HfCorrelatorDplusDplusReduced {
     }
   }
 
-  void processData(aod::Collisions const& collisions, SelectedCandidates const& candidates)
+  void processData(aod::Collisions const& collisions, SelectedCandidates const& candidates, aod::Tracks const&)
   {
     static int lastRunNumber = -1;
     // reserve memory
@@ -297,14 +310,14 @@ struct HfCorrelatorDplusDplusReduced {
 
       const auto colId = collision.globalIndex();
       auto candidatesInThisCollision = candidates.sliceBy(tracksPerCollision, colId);
-      if (skipSingleD) {
-        if (candidatesInThisCollision.size() < 2) { // o2-linter: disable=magic-number (number of candidate must be larger than 1)
+      if (skipSingleD)
+        if (candidatesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
           continue;
-        }
-      }
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
-        fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex());
+        auto prong_candidate = candidate.prong1_as<aod::Tracks>();
+        auto candidate_sign = prong_candidate.sign();
+        fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex(), candidate_sign);
       }
     }
   }
@@ -324,14 +337,14 @@ struct HfCorrelatorDplusDplusReduced {
     for (const auto& collision : collisions) { // No skimming for MC data. No Zorro !
       const auto colId = collision.globalIndex();
       auto candidatesInThisCollision = candidates.sliceBy(tracksPerCollision, colId);
-      if (skipSingleD) {
-        if (candidatesInThisCollision.size() < 2) { // o2-linter: disable=magic-number (number of candidate must be larger than 1)
+      if (skipSingleD)
+        if (candidatesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
           continue;
-        }
-      }
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
-        fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex());
+        auto prong_candidate = candidate.prong1_as<aod::Tracks>();
+        auto candidate_sign = prong_candidate.sign();
+        fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex(), candidate_sign);
       }
     }
   }
@@ -346,11 +359,9 @@ struct HfCorrelatorDplusDplusReduced {
     for (const auto& mccollision : mccollisions) { // No skimming for MC data. No Zorro !
       const auto colId = mccollision.globalIndex();
       const auto particlesInThisCollision = mcparticles.sliceBy(mcParticlesPerMcCollision, colId);
-      if (skipSingleD) {
-        if (particlesInThisCollision.size() < 2) { // o2-linter: disable=magic-number (number of candidate must be larger than 1)
+      if (skipSingleD)
+        if (particlesInThisCollision.size() < 2) // o2-linter: disable=magic-number (number of candidate must be larger than 1)
           continue;
-        }
-      }
       rowCandidateMcCollisions(
         mccollision.posX(),
         mccollision.posY(),
