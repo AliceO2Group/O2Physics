@@ -57,6 +57,8 @@ using namespace o2::framework::expressions;
 using CollDataIt = soa::Filtered<aod::JetCollisions>::iterator;
 using CollRhoDataIt = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
 using CollRhoOutlierDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::JCollisionOutliers>>::iterator;
+using CollOutlierDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>>::iterator;
+using CollDetIt = soa::Filtered<aod::JetCollisionsMCD>::iterator;
 using CollRhoDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator;
 
 using CollPartIt = soa::Filtered<aod::JetMcCollisions>::iterator;
@@ -72,6 +74,7 @@ using EvMultOutlierPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::J
 
 // --- Tracks / Particles
 using TrackTbl = soa::Filtered<aod::JetTracks>;
+using TrackMCLbsTbl = soa::Filtered<aod::JetTracksMCD>;
 using PartTbl = soa::Filtered<aod::JetParticles>;
 
 // --- Jets (with constituents)
@@ -98,10 +101,11 @@ struct RecoilJets {
       triggerMasks{"triggerMasks", "", "Relevant trigger masks: fTrackLowPt,fTrackHighPt"};
 
     Configurable<float> vertexZCut{"vertexZCut", 10., "Accepted z-vertex range"};
-    Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false,
-                                       "Flag to choose to reject min. bias gap events; jet-level rejection "
-                                       "applied at the jet finder level, here rejection is applied for "
-                                       "collision and track process functions"};
+    Configurable<bool> isMCJJProd{"isMCJJProd", false, "Flag to select MC production: MB (false) or JJ(true)"},
+      skipMBGapEvents{"skipMBGapEvents", false,
+                      "Flag to choose to reject min. bias gap events; jet-level rejection "
+                      "applied at the jet finder level, here rejection is applied for "
+                      "collision and track process functions"};
   } ev;
 
   // ---------- RCT / flag-based selections ----------
@@ -882,8 +886,56 @@ struct RecoilJets {
                     kTH2F, {{eaAxis.axis}, {400, -40., 60., "#delta#it{p}_{T} (GeV/#it{c})"}}, hist.sumw2);
       }
     }
-    spectra.add("hResponseLoopDet", "", kTH2F, {{100, 0., 100., "det. level"}, {100, 0., 100., "part. level"}});
-    spectra.add("hResponseLoopPart", "", kTH2F, {{100, 0., 100., "det. level"}, {100, 0., 100., "part. level"}});
+
+    if (doprocessTTSmearingPtPhi || doprocessTTSmearingPtPhiWeighted) {
+      AxisSpec relPtSmearTT{120, -5., 1., "(#it{p}_{T, part} - #it{p}_{T, det}) / #it{p}_{T, part}"};
+      AxisSpec smearPhi{80, -0.2, 0.2, "#it{#varphi}_{part} - #it{#varphi}_{det}"};
+      AxisSpec smearEta{80, -0.2, 0.2, "#it{#eta}_{part} - #it{#eta}_{det}"};
+
+      int nBinsPtTTSig = static_cast<int>(tt.sigPtRange->at(1) - tt.sigPtRange->at(0)) * 5;
+      int nBinsPtTTRef = static_cast<int>(tt.refPtRange->at(1) - tt.refPtRange->at(0)) * 5;
+      AxisSpec partPtTTSig{nBinsPtTTSig, tt.sigPtRange->at(0), tt.sigPtRange->at(1), "#it{p}_{T, part}^{TT_{Sig}}"};
+      AxisSpec partPtTTRef{nBinsPtTTRef, tt.refPtRange->at(0), tt.refPtRange->at(1), "#it{p}_{T, part}^{TT_{Ref}}"};
+
+      //====================================================================================
+      // Signal TT
+      for (const auto& eaAxis : arrAxisSpecScaledEA) {
+        spectra.add(Form("hScaleMult%s_PtSmearingTTSig", eaAxis.label),
+                    Form("#it{p}_{T} smearing of TT_{Sig} vs %s", eaAxis.label),
+                    kTH3F, {{eaAxis.axis}, {relPtSmearTT}, {partPtTTSig}}, hist.sumw2);
+
+        spectra.add(Form("hScaleMult%s_PhiSmearingTTSig", eaAxis.label),
+                    Form("#it{#varphi} smearing of TT_{Sig} vs %s", eaAxis.label),
+                    kTH3F, {{eaAxis.axis}, {smearPhi}, {partPtTTSig}}, hist.sumw2);
+
+        spectra.add(Form("hScaleMult%s_EtaSmearingTTSig", eaAxis.label),
+                    Form("#it{#eta} smearing of TT_{Sig} vs %s", eaAxis.label),
+                    kTH3F, {{eaAxis.axis}, {smearEta}, {partPtTTSig}}, hist.sumw2);
+
+        auto tmpHistPointer = spectra.add<TH3>(Form("hScaled%s_FractionOfPartTTSigSatisfCond", eaAxis.label),
+                                               "Check associat. part. level also satisf. TT_{Sig} conditions",
+                                               kTH3F, {{eaAxis.axis}, {2, 0.0, 2.0}, {2, 0.0, 2.0}});
+        tmpHistPointer->GetYaxis()->SetBinLabel(1, "#in |#it{#eta}| < 0.9");
+        tmpHistPointer->GetYaxis()->SetBinLabel(2, "#notin |#it{#eta}| < 0.9");
+        tmpHistPointer->GetZaxis()->SetBinLabel(1, "#it{p}_{T} #in TT_{Sig}");
+        tmpHistPointer->GetZaxis()->SetBinLabel(2, "#it{p}_{T} #notin TT_{Sig}");
+      }
+
+      // Reference TT
+      for (const auto& eaAxis : arrAxisSpecScaledEA) {
+        spectra.add(Form("hScaleMult%s_PtSmearingTTRef", eaAxis.label),
+                    Form("#it{p}_{T} smearing of TT_{Ref} vs %s", eaAxis.label),
+                    kTH3F, {{eaAxis.axis}, {relPtSmearTT}, {partPtTTRef}}, hist.sumw2);
+
+        spectra.add(Form("hScaleMult%s_PhiSmearingTTRef", eaAxis.label),
+                    Form("#it{#varphi} smearing of TT_{Ref} vs %s", eaAxis.label),
+                    kTH3F, {{eaAxis.axis}, {smearPhi}, {partPtTTRef}}, hist.sumw2);
+
+        spectra.add(Form("hScaleMult%s_EtaSmearingTTRef", eaAxis.label),
+                    Form("#it{#eta} smearing of TT_{Ref} vs %s", eaAxis.label),
+                    kTH3F, {{eaAxis.axis}, {smearEta}, {partPtTTRef}}, hist.sumw2);
+      }
+    }
   }
 
   //=============================================================================
@@ -2083,6 +2135,128 @@ struct RecoilJets {
     }
   }
 
+  //=============================================================================
+  // Pt and Phi smearing of TT
+  //=============================================================================
+
+  template <typename JColl, typename JTracks, typename JParticles>
+  void fillTTSmearingPtPhi(JColl const& collision,
+                           JTracks const& tracks,
+                           JParticles const&,
+                           float weight = 1.)
+  {
+    float scaledFT0C = getScaledFT0(collision.multFT0C(), ft0c.mean);
+    float scaledFT0M = getScaledFT0M(getScaledFT0(collision.multFT0A(), ft0a.mean), scaledFT0C);
+
+    bool bSigEv = false;
+    auto dice = randGen->Rndm();
+    if (dice < tt.fracSig)
+      bSigEv = true;
+
+    float ptTTMin = 0.0, ptTTMax = 0.0;
+    if (bSigEv) {
+      ptTTMin = tt.sigPtRange->at(0);
+      ptTTMax = tt.sigPtRange->at(1);
+    } else {
+      ptTTMin = tt.refPtRange->at(0);
+      ptTTMax = tt.refPtRange->at(1);
+    }
+
+    //=============================================================================
+    // Search for TT
+    int nCand = 0;
+    int32_t index = 0;
+    int32_t chosenTTPos = -1;
+
+    for (const auto& track : tracks) {
+      if (skipTrack(track)) {
+        ++index;
+        continue;
+      }
+
+      // Search for TT candidate
+      float trackPt = track.pt();
+      if (trackPt > ptTTMin && trackPt < ptTTMax) {
+
+        ++nCand;
+        // Random selection of TT
+        if (randGen->Integer(nCand) == 0) {
+          chosenTTPos = index;
+        }
+      }
+      ++index;
+    }
+
+    // Skip if no TT
+    if (chosenTTPos < 0)
+      return;
+
+    bool bHasAssocMcPart = tracks.iteratorAt(chosenTTPos).has_mcParticle();
+    if (!bHasAssocMcPart)
+      return;
+
+    // No filter on Particles, it can be outside of |eta| acceptance
+    auto particle = tracks.iteratorAt(chosenTTPos).mcParticle();
+    float particleEta = particle.eta();
+    bool bPartWithinEta = std::fabs(particleEta) < trk.etaCut;
+
+    if (bSigEv) {
+      float particlePt = particle.pt();
+      bool bPartWithinPtOfTT = (particlePt > ptTTMin) && (particlePt < ptTTMax);
+
+      if (bPartWithinEta && bPartWithinPtOfTT) {
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 0.5, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 0.5, 0.5, weight);
+      }
+
+      if (!bPartWithinEta && bPartWithinPtOfTT) {
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 1.5, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0M, 1.5, 0.5, weight);
+      }
+
+      if (bPartWithinEta && !bPartWithinPtOfTT) {
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 0.5, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 0.5, 1.5, weight);
+      }
+
+      if (!bPartWithinEta && !bPartWithinPtOfTT) {
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 1.5, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 1.5, 1.5, weight);
+      }
+    }
+    if (!bPartWithinEta)
+      return;
+
+    //=============================================================================
+    // Fill histograms
+    float particlePt = particle.pt();
+    float particlePhi = particle.phi();
+
+    float relPtSmearing = (particlePt - tracks.iteratorAt(chosenTTPos).pt()) / particlePt;
+    float phiSmearing = particlePhi - tracks.iteratorAt(chosenTTPos).phi();
+    float etaSmearing = particleEta - tracks.iteratorAt(chosenTTPos).eta();
+
+    if (bSigEv) {
+      spectra.fill(HIST("hScaleMultFT0C_PtSmearingTTSig"), scaledFT0C, relPtSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaleMultFT0M_PtSmearingTTSig"), scaledFT0M, relPtSmearing, particlePt, weight);
+
+      spectra.fill(HIST("hScaleMultFT0C_PhiSmearingTTSig"), scaledFT0C, phiSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaleMultFT0M_PhiSmearingTTSig"), scaledFT0M, phiSmearing, particlePt, weight);
+
+      spectra.fill(HIST("hScaleMultFT0C_EtaSmearingTTSig"), scaledFT0C, etaSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaleMultFT0M_EtaSmearingTTSig"), scaledFT0M, etaSmearing, particlePt, weight);
+    } else {
+      spectra.fill(HIST("hScaleMultFT0C_PtSmearingTTRef"), scaledFT0C, relPtSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaleMultFT0M_PtSmearingTTRef"), scaledFT0M, relPtSmearing, particlePt, weight);
+
+      spectra.fill(HIST("hScaleMultFT0C_PhiSmearingTTRef"), scaledFT0C, phiSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaleMultFT0M_PhiSmearingTTRef"), scaledFT0M, phiSmearing, particlePt, weight);
+
+      spectra.fill(HIST("hScaleMultFT0C_EtaSmearingTTRef"), scaledFT0C, etaSmearing, particlePt, weight);
+      spectra.fill(HIST("hScaleMultFT0M_EtaSmearingTTRef"), scaledFT0M, etaSmearing, particlePt, weight);
+    }
+  }
+
   //-----------------------------------------------------------------------------
   // Block of Process Functions
 
@@ -2420,6 +2594,39 @@ struct RecoilJets {
     fillBkgdFluctuationsMCPartLevel(collision, jetsPerColl, particlesPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCPartLevelWeighted, "process MC part. level (weighted JJ) data to estimate bkgd fluctuations", false);
+
+  //=============================================================================
+  // Pt and Phi smearing of TT
+  //=============================================================================
+  void processTTSmearingPtPhi(CollDetIt const& collision,
+                              aod::JetMcCollisions const&,
+                              TrackMCLbsTbl const& tracksPerColl,
+                              aod::JetParticles const& particles)
+  {
+
+    // Skip detector level collisions
+    if (skipEvent(collision) || !collision.has_mcCollision())
+      return;
+
+    fillTTSmearingPtPhi(collision, tracksPerColl, particles);
+  }
+  PROCESS_SWITCH(RecoilJets, processTTSmearingPtPhi, "process MC data (no weight; MB events) to estimate pT and phi smearing of TT", false);
+
+  //_________________________________
+  void processTTSmearingPtPhiWeighted(CollOutlierDetIt const& collision,
+                                      aod::JetMcCollisions const&,
+                                      TrackMCLbsTbl const& tracksPerColl,
+                                      aod::JetParticles const& particles)
+  {
+
+    // Skip detector level collisions
+    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
+      return;
+
+    auto weight = collision.mcCollision().weight();
+    fillTTSmearingPtPhi(collision, tracksPerColl, particles, weight);
+  }
+  PROCESS_SWITCH(RecoilJets, processTTSmearingPtPhiWeighted, "process MC data (weighted JJ) to estimate pT and phi smearing of TT", false);
 
   //------------------------------------------------------------------------------
   // Auxiliary functions
