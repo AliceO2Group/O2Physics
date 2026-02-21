@@ -50,6 +50,7 @@
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+#include <Framework/HistogramSpec.h>
 #include <Framework/SliceCache.h>
 
 #include "Math/GenVector/Boost.h"
@@ -316,29 +317,27 @@ struct F0980pbpbanalysis {
     if constexpr (requires { obj.tpcCrossedRowsOverFindableCls(); }) {
       if (objecttype == QATrack) {
         if (!pass) {
-          histos.fill(HIST("TrackQA/DCArToPv_BC"), obj.dcaXY());
-          histos.fill(HIST("TrackQA/DCAzToPv_BC"), obj.dcaZ());
-          histos.fill(HIST("TrackQA/DCArVsPT_BC"), obj.pt(), obj.dcaXY());
-          histos.fill(HIST("TrackQA/DCAzVsPT_BC"), obj.pt(), obj.dcaZ());
-          histos.fill(HIST("TrackQA/IsPrim_BC"), obj.isPrimaryTrack());
-          histos.fill(HIST("TrackQA/IsGood_BC"), obj.isGlobalTrackWoDCA());
-          histos.fill(HIST("TrackQA/IsPrimCont_BC"), obj.isPVContributor());
-          histos.fill(HIST("TrackQA/TPCFindableClusters_BC"), obj.tpcNClsFindable());
-          histos.fill(HIST("TrackQA/TPCCrossedRows_BC"), obj.tpcNClsCrossedRows());
-          histos.fill(HIST("TrackQA/TPCRatioRowsOverFindable_BC"), obj.tpcCrossedRowsOverFindableCls());
-          histos.fill(HIST("TrackQA/TPCChi2_BC"), obj.tpcChi2NCl());
+          histos.fill(HIST("TrackQA/DCArToPv_BC"), obj.pt(), centrality, obj.dcaXY());
+          histos.fill(HIST("TrackQA/DCAzToPv_BC"), obj.pt(), centrality, obj.dcaZ());
+          histos.fill(HIST("TrackQA/IsPrim_BC"), centrality, obj.isPrimaryTrack());
+          histos.fill(HIST("TrackQA/IsGood_BC"), centrality, obj.isGlobalTrackWoDCA());
+          histos.fill(HIST("TrackQA/IsPrimCont_BC"), centrality, obj.isPVContributor());
+          histos.fill(HIST("TrackQA/TPCFindableClusters_BC"), centrality, obj.tpcNClsFindable());
+          histos.fill(HIST("TrackQA/TPCCrossedRows_BC"), centrality, obj.tpcNClsCrossedRows());
+          histos.fill(HIST("TrackQA/TPCRatioRowsOverFindable_BC"), centrality, obj.tpcCrossedRowsOverFindableCls());
+          histos.fill(HIST("TrackQA/TPCChi2_BC"), centrality, obj.tpcChi2NCl());
+          histos.fill(HIST("TrackQA/ITSChi2_BC"), centrality, obj.itsChi2NCl());
         } else {
-          histos.fill(HIST("TrackQA/DCArToPv_AC"), obj.dcaXY());
-          histos.fill(HIST("TrackQA/DCAzToPv_AC"), obj.dcaZ());
-          histos.fill(HIST("TrackQA/DCArVsPT_AC"), obj.pt(), obj.dcaXY());
-          histos.fill(HIST("TrackQA/DCAzVsPT_AC"), obj.pt(), obj.dcaZ());
-          histos.fill(HIST("TrackQA/IsPrim_AC"), obj.isPrimaryTrack());
-          histos.fill(HIST("TrackQA/IsGood_AC"), obj.isGlobalTrackWoDCA());
-          histos.fill(HIST("TrackQA/IsPrimCont_AC"), obj.isPVContributor());
-          histos.fill(HIST("TrackQA/TPCFindableClusters_AC"), obj.tpcNClsFindable());
-          histos.fill(HIST("TrackQA/TPCCrossedRows_AC"), obj.tpcNClsCrossedRows());
-          histos.fill(HIST("TrackQA/TPCRatioRowsOverFindable_AC"), obj.tpcCrossedRowsOverFindableCls());
-          histos.fill(HIST("TrackQA/TPCChi2_AC"), obj.tpcChi2NCl());
+          histos.fill(HIST("TrackQA/DCArToPv_AC"), centrality, obj.dcaXY());
+          histos.fill(HIST("TrackQA/DCAzToPv_AC"), centrality, obj.dcaZ());
+          histos.fill(HIST("TrackQA/IsPrim_AC"), centrality, obj.isPrimaryTrack());
+          histos.fill(HIST("TrackQA/IsGood_AC"), centrality, obj.isGlobalTrackWoDCA());
+          histos.fill(HIST("TrackQA/IsPrimCont_AC"), centrality, obj.isPVContributor());
+          histos.fill(HIST("TrackQA/TPCFindableClusters_AC"), centrality, obj.tpcNClsFindable());
+          histos.fill(HIST("TrackQA/TPCCrossedRows_AC"), centrality, obj.tpcNClsCrossedRows());
+          histos.fill(HIST("TrackQA/TPCRatioRowsOverFindable_AC"), centrality, obj.tpcCrossedRowsOverFindableCls());
+          histos.fill(HIST("TrackQA/TPCChi2_AC"), centrality, obj.tpcChi2NCl());
+          histos.fill(HIST("TrackQA/ITSChi2_AC"), centrality, obj.itsChi2NCl());
         }
       }
       if (objecttype == QAPID) {
@@ -346,10 +345,14 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("PIDQA/Nsigma_TPC_BC"), obj.pt(), getTpcNSigma(obj));
           histos.fill(HIST("PIDQA/Nsigma_TOF_BC"), obj.pt(), getTofNSigma(obj));
           histos.fill(HIST("PIDQA/TPC_TOF_BC"), getTpcNSigma(obj), getTofNSigma(obj));
+          histos.fill(HIST("PIDQA/TPC_Cent_BC"), centrality, getTpcNSigma(obj));
+          histos.fill(HIST("PIDQA/TOF_Cent_BC"), centrality, getTofNSigma(obj));
         } else {
           histos.fill(HIST("PIDQA/Nsigma_TPC_AC"), obj.pt(), getTpcNSigma(obj));
           histos.fill(HIST("PIDQA/Nsigma_TOF_AC"), obj.pt(), getTofNSigma(obj));
           histos.fill(HIST("PIDQA/TPC_TOF_AC"), getTpcNSigma(obj), getTofNSigma(obj));
+          histos.fill(HIST("PIDQA/TPC_Cent_AC"), centrality, getTpcNSigma(obj));
+          histos.fill(HIST("PIDQA/TOF_Cent_AC"), centrality, getTofNSigma(obj));
         }
       }
     }
@@ -801,41 +804,41 @@ struct F0980pbpbanalysis {
 
     // Track QA
     if (QAConfig.cfgQATrackCut) {
-      histos.add("TrackQA/DCArToPv_BC", "", {HistType::kTH1F, {histAxisDCAr}});
-      histos.add("TrackQA/DCAzToPv_BC", "", {HistType::kTH1F, {histAxisDCAz}});
-      histos.add("TrackQA/DCArVsPT_BC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAr}});
-      histos.add("TrackQA/DCAzVsPT_BC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAz}});
-      histos.add("TrackQA/IsPrim_BC", "", kTH1F, {{2, -0.5, 1.5}});
-      histos.add("TrackQA/IsGood_BC", "", kTH1F, {{2, -0.5, 1.5}});
-      histos.add("TrackQA/IsPrimCont_BC", "", kTH1F, {{2, -0.5, 1.5}});
-      histos.add("TrackQA/TPCFindableClusters_BC", "", kTH1F, {{200, 0, 200}});
-      histos.add("TrackQA/TPCCrossedRows_BC", "", kTH1F, {{200, 0, 200}});
-      histos.add("TrackQA/TPCRatioRowsOverFindable_BC", "", kTH1F, {{200, 0, 2}});
-      histos.add("TrackQA/TPCChi2_BC", "", kTH1F, {{200, 0, 100}});
-      histos.add("TrackQA/ITSChi2_BC", "", kTH1F, {{200, 0, 100}});
+      histos.add("TrackQA/DCArToPv_BC", "", {HistType::kTH3F, {qaPtAxis, qaCentAxis, histAxisDCAr}});
+      histos.add("TrackQA/DCAzToPv_BC", "", {HistType::kTH3F, {qaPtAxis, qaCentAxis, histAxisDCAz}});
+      histos.add("TrackQA/IsPrim_BC", "", {HistType::kTH2F, {qaCentAxis, {2, -0.5, 1.5}}});
+      histos.add("TrackQA/IsGood_BC", "", {HistType::kTH2F, {qaCentAxis, {2, -0.5, 1.5}}});
+      histos.add("TrackQA/IsPrimCont_BC", "", {HistType::kTH2F, {qaCentAxis, {2, -0.5, 1.5}}});
+      histos.add("TrackQA/TPCFindableClusters_BC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 200}}});
+      histos.add("TrackQA/TPCCrossedRows_BC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 200}}});
+      histos.add("TrackQA/TPCRatioRowsOverFindable_BC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 2}}});
+      histos.add("TrackQA/TPCChi2_BC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 100}}});
+      histos.add("TrackQA/ITSChi2_BC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 100}}});
       //
-      histos.add("TrackQA/DCArToPv_AC", "", {HistType::kTH1F, {histAxisDCAr}});
-      histos.add("TrackQA/DCAzToPv_AC", "", {HistType::kTH1F, {histAxisDCAz}});
-      histos.add("TrackQA/DCArVsPT_AC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAr}});
-      histos.add("TrackQA/DCAzVsPT_AC", "", {HistType::kTH2F, {qaPtAxis, histAxisDCAz}});
-      histos.add("TrackQA/IsPrim_AC", "", kTH1F, {{2, -0.5, 1.5}});
-      histos.add("TrackQA/IsGood_AC", "", kTH1F, {{2, -0.5, 1.5}});
-      histos.add("TrackQA/IsPrimCont_AC", "", kTH1F, {{2, -0.5, 1.5}});
-      histos.add("TrackQA/TPCFindableClusters_AC", "", kTH1F, {{200, 0, 200}});
-      histos.add("TrackQA/TPCCrossedRows_AC", "", kTH1F, {{200, 0, 200}});
-      histos.add("TrackQA/TPCRatioRowsOverFindable_AC", "", kTH1F, {{200, 0, 2}});
-      histos.add("TrackQA/TPCChi2_AC", "", kTH1F, {{200, 0, 100}});
-      histos.add("TrackQA/ITSChi2_AC", "", kTH1F, {{200, 0, 100}});
+      histos.add("TrackQA/DCArToPv_AC", "", {HistType::kTH3F, {qaPtAxis, qaCentAxis, histAxisDCAr}});
+      histos.add("TrackQA/DCAzToPv_AC", "", {HistType::kTH3F, {qaPtAxis, qaCentAxis, histAxisDCAz}});
+      histos.add("TrackQA/IsPrim_AC", "", {HistType::kTH2F, {qaCentAxis, {2, -0.5, 1.5}}});
+      histos.add("TrackQA/IsGood_AC", "", {HistType::kTH2F, {qaCentAxis, {2, -0.5, 1.5}}});
+      histos.add("TrackQA/IsPrimCont_AC", "", {HistType::kTH2F, {qaCentAxis, {2, -0.5, 1.5}}});
+      histos.add("TrackQA/TPCFindableClusters_AC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 200}}});
+      histos.add("TrackQA/TPCCrossedRows_AC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 200}}});
+      histos.add("TrackQA/TPCRatioRowsOverFindable_AC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 2}}});
+      histos.add("TrackQA/TPCChi2_AC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 100}}});
+      histos.add("TrackQA/ITSChi2_AC", "", {HistType::kTH2F, {qaCentAxis, {200, 0, 100}}});
     }
 
     // PID QA
     histos.add("PIDQA/Nsigma_TPC_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     histos.add("PIDQA/Nsigma_TOF_BC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     histos.add("PIDQA/TPC_TOF_BC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
+    histos.add("PIDQA/TPC_Cent_BC", "", {HistType::kTH2F, {qaCentAxis, qaPIDAxis}});
+    histos.add("PIDQA/TOF_Cent_BC", "", {HistType::kTH2F, {qaCentAxis, qaPIDAxis}});
     //
     histos.add("PIDQA/Nsigma_TPC_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     histos.add("PIDQA/Nsigma_TOF_AC", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     histos.add("PIDQA/TPC_TOF_AC", "", {HistType::kTH2F, {qaPIDAxis, qaPIDAxis}});
+    histos.add("PIDQA/TPC_Cent_AC", "", {HistType::kTH2F, {qaCentAxis, qaPIDAxis}});
+    histos.add("PIDQA/TOF_Cent_AC", "", {HistType::kTH2F, {qaCentAxis, qaPIDAxis}});
     //
     // histos.add("PIDQA/Nsigma_TPC_selected", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
     // histos.add("PIDQA/Nsigma_TOF_selected", "", {HistType::kTH2F, {qaPtAxis, qaPIDAxis}});
@@ -947,7 +950,7 @@ struct F0980pbpbanalysis {
   }
 
   void processData(EventCandidates::iterator const& collision,
-                   TrackCandidates const& tracks)
+                   TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     if (EventConfig.cfgEventCentEst == CentEstList::FT0C) {
       centrality = collision.centFT0C();
