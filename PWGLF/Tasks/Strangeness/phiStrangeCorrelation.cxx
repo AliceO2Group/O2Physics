@@ -211,8 +211,8 @@ struct PhiStrangenessCorrelation {
   } minPtMcGenConfigs;
 
   // Filter on phi selected collisions
-  Filter collisionFilter = eventSelectionType == 0 && aod::lf_selection_event::defaultSel == true ||
-                           eventSelectionType == 1 && aod::lf_selection_event::defaultSel == true && aod::lf_selection_event::phimesonSel == true;
+  Filter collisionFilter = (eventSelectionType == 0 && aod::lf_selection_event::defaultSel == true) ||
+                           (eventSelectionType == 1 && aod::lf_selection_event::defaultSel == true && aod::lf_selection_event::phimesonSel == true);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>>;
