@@ -690,7 +690,7 @@ struct LongRangeDihadronCor {
         registry.fill(HIST("FT0AmpCorrect"), id, ampl);
         if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0)
           histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
-        }
+      }
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
@@ -842,7 +842,7 @@ struct LongRangeDihadronCor {
       bool mirrorChannelA = false;
       if (cfgFwdConfig.cfgMirrorFT0ADeadChannels)
         mirrorChannelA = isMirrorId(chanelAid, kFT0A);
-      
+
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist_FT0A_FT0C"), fSampleIndex, posZ, 0.5, eventWeight * amplA);
       }
@@ -859,7 +859,7 @@ struct LongRangeDihadronCor {
         bool mirrorChannelC = false;
         if (cfgFwdConfig.cfgMirrorFT0CDeadChannels)
           mirrorChannelC = isMirrorId(chanelCid, kFT0C);
-        
+
         // fill the right sparse and histograms
         if (system == SameEvent) {
           registry.fill(HIST("deltaEta_deltaPhi_same_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
@@ -873,11 +873,11 @@ struct LongRangeDihadronCor {
             sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, RecoDecay::constrainAngle(phiA - phiC - 2 * PIHalf, -PIHalf), deltaEta, amplA * amplC * eventWeight * triggerWeight);
         } else if (system == MixedEvent) {
           registry.fill(HIST("deltaEta_deltaPhi_mixed_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
-           mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
           if (mirrorChannelA) {
             mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, RecoDecay::constrainAngle(phiA + 2 * PIHalf - phiC, -PIHalf), deltaEta, amplA * amplC * eventWeight * triggerWeight);
             if (mirrorChannelC)
-            mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+              mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
           }
           if (mirrorChannelC)
             mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, RecoDecay::constrainAngle(phiA - phiC - 2 * PIHalf, -PIHalf), deltaEta, amplA * amplC * eventWeight * triggerWeight);
@@ -1251,7 +1251,7 @@ struct LongRangeDihadronCor {
       return;
     }
 
-        int currentRunNumber = bc.runNumber();
+    int currentRunNumber = bc.runNumber();
     if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0 && currentRunNumber != lastRunNumber) {
       lastRunNumber = currentRunNumber;
       if (std::find(runNumbers.begin(), runNumbers.end(), currentRunNumber) == runNumbers.end()) {
