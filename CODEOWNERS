@@ -43,18 +43,18 @@
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng @singhra1994
 # PWG-LF
 /PWGLF @alibuild @omvazque @skundu692 @mpuccio
-/PWGLF/DataModel @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/DataModel @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT
 /PWGLF/Tasks/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
 /PWGLF/TableProducer/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
 /PWGLF/Tasks/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
 /PWGLF/TableProducer/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
-/PWGLF/Tasks/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92
-/PWGLF/TableProducer/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92
+/PWGLF/Tasks/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92 @prottayCMT
+/PWGLF/TableProducer/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92 @prottayCMT
 /PWGLF/Tasks/Strangeness @alibuild @omvazque @skundu692 @mpuccio @ercolessi @romainschotter
 /PWGLF/TableProducer/Strangeness @alibuild @omvazque @mpuccio @skundu692 @ercolessi @romainschotter
-/PWGLF/TableProducer/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Tasks/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
-/PWGLF/Utils @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/TableProducer/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT
+/PWGLF/Tasks/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT
+/PWGLF/Utils @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT
 
 # PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
 /PWGMM      @alibuild @omvazque @mpuccio @skundu692 @aalkin @jgcn

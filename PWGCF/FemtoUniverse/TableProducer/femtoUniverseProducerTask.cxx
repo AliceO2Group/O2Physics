@@ -2564,7 +2564,11 @@ struct FemtoUniverseProducerTask {
     Preslice<StrangePartType>& ps)
   {
     // recos
-    std::set<int> recoMcIds;
+    static std::set<int> recoMcIds;
+    static std::set<int> mcColIds;
+    recoMcIds.clear();
+    mcColIds.clear();
+
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedStrageParts = strangeParts.sliceBy(ps, col.globalIndex());
@@ -2572,6 +2576,7 @@ struct FemtoUniverseProducerTask {
       if constexpr (std::experimental::is_detected<HasBachelor, typename StrangePartType::iterator>::value) {
         const auto colcheck = fillCollisions<true>(col, groupedTracks);
         if (colcheck) {
+          mcColIds.insert(col.mcCollisionId());
           fillTracks<true>(groupedTracks);
           fillCascade<true>(col, groupedStrageParts, groupedTracks);
         }
@@ -2587,6 +2592,9 @@ struct FemtoUniverseProducerTask {
     // truth
     for (const auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+      if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) {
+        continue;
+      }
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                           // fills the reco collisions for mc collision
       fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles

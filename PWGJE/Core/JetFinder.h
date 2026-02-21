@@ -48,7 +48,7 @@ class JetFinder
   /// \return ClusterSequenceArea object needed to access constituents
   // fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet> &inputParticles, std::vector<fastjet::PseudoJet> &jets);
 
-  float phiMin = -2. * M_PI;
+  float phiMin = -1. * M_PI;
   float phiMax = 2. * M_PI;
   float etaMin = -.9;
   float etaMax = .9;
@@ -56,7 +56,7 @@ class JetFinder
   float jetR = .4;
   float jetPtMin = 0.;
   float jetPtMax = 1000.;
-  float jetPhiMin = -2. * M_PI;
+  float jetPhiMin = -1. * M_PI;
   float jetPhiMax = 2. * M_PI;
   float jetEtaMin = -99.;
   float jetEtaMax = 99.;

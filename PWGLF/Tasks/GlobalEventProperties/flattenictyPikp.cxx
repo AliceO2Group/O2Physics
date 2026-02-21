@@ -237,18 +237,19 @@ struct FlattenictyPikp {
   Configurable<bool> cfgFillV0Hist{"cfgFillV0Hist", false, "fill V0 histograms"};
   Configurable<bool> cfgFillChrgType{"cfgFillChrgType", false, "fill histograms per charge types"};
   Configurable<bool> cfgFillChrgTypeV0s{"cfgFillChrgTypeV0s", false, "fill V0s histograms per charge types"};
-  Configurable<std::vector<float>> paramsFuncMIPposEtaP{"paramsFuncMIPposEtaP", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncMIPnegEtaP{"paramsFuncMIPnegEtaP", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncMIPallEtaP{"paramsFuncMIPallEtaP", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncMIPposEtaN{"paramsFuncMIPposEtaN", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncMIPnegEtaN{"paramsFuncMIPnegEtaN", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncMIPallEtaN{"paramsFuncMIPallEtaN", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncPlateaUposEtaP{"paramsFuncPlateaUposEtaP", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncPlateaUnegEtaP{"paramsFuncPlateaUnegEtaP", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncPlateaUallEtaP{"paramsFuncPlateaUallEtaP", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncPlateaUposEtaN{"paramsFuncPlateaUposEtaN", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncPlateaUnegEtaN{"paramsFuncPlateaUnegEtaN", std::vector<float>{-1.f}, "parameters of pol2"};
-  Configurable<std::vector<float>> paramsFuncPlateaUallEtaN{"paramsFuncPlateaUallEtaN", std::vector<float>{-1.f}, "parameters of pol2"};
+  Configurable<std::string> cfgCalibDeDxFunction{"cfgCalibDeDxFunction", "pol8", "Functional form for dEdx calibration"};
+  Configurable<std::vector<float>> paramsFuncMIPposEtaP{"paramsFuncMIPposEtaP", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncMIPnegEtaP{"paramsFuncMIPnegEtaP", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncMIPallEtaP{"paramsFuncMIPallEtaP", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncMIPposEtaN{"paramsFuncMIPposEtaN", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncMIPnegEtaN{"paramsFuncMIPnegEtaN", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncMIPallEtaN{"paramsFuncMIPallEtaN", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncPlateaUposEtaP{"paramsFuncPlateaUposEtaP", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncPlateaUnegEtaP{"paramsFuncPlateaUnegEtaP", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncPlateaUallEtaP{"paramsFuncPlateaUallEtaP", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncPlateaUposEtaN{"paramsFuncPlateaUposEtaN", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncPlateaUnegEtaN{"paramsFuncPlateaUnegEtaN", std::vector<float>{-1.f}, "function parameters"};
+  Configurable<std::vector<float>> paramsFuncPlateaUallEtaN{"paramsFuncPlateaUallEtaN", std::vector<float>{-1.f}, "function parameters"};
   Configurable<std::string> cfgGainEqCcdbPath{"cfgGainEqCcdbPath", "Users/g/gbencedi/flattenicity/GainEq", "CCDB path for gain equalization constants"};
   Configurable<std::string> cfgVtxEqCcdbPath{"cfgVtxEqCcdbPath", "Users/g/gbencedi/flattenicity/ZvtxEq", "CCDB path for z-vertex equalization constants"};
   Configurable<std::string> cfgDeDxCalibCcdbPath{"cfgDeDxCalibCcdbPath", "Users/g/gbencedi/flattenicity/dEdxCalib", "CCDB path for dEdx calibration"};
@@ -890,13 +891,13 @@ struct FlattenictyPikp {
   template <typename T>
   std::unique_ptr<TF1> setFuncPars(T const& vecPars)
   {
-    std::unique_ptr<TF1> fCalibFunc(new TF1("fCalibFunc", "pol2", -1., 1.));
+    std::unique_ptr<TF1> fCalibDeDxFunc(new TF1("fCalibDeDxFunc", cfgCalibDeDxFunction.value.c_str(), -1., 1.));
     if (vecPars.size() >= 1) {
       for (typename T::size_type i = 0; i < vecPars.size(); i++) {
-        fCalibFunc->SetParameter(i, vecPars[i]);
+        fCalibDeDxFunc->SetParameter(i, vecPars[i]);
       }
     }
-    return fCalibFunc;
+    return fCalibDeDxFunc;
   }
 
   template <int pidSgn, o2::track::PID::ID id, typename P>

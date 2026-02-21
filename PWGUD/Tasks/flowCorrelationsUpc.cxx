@@ -11,13 +11,14 @@
 
 /// \file flowCorrelationsUpc.cxx
 /// \brief Provides a sparse with usefull two particle correlation info
-/// \author Mingrui Zhao (mingrui.zhao@cern.ch, mingrui.zhao@mail.labz0.org)
+/// \author Yongxi Du (yongxi.du@cern.ch), Mingrui Zhao (mingrui.zhao@cern.ch, mingrui.zhao@mail.labz0.org)
 /// copied from Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/DataModel/SGTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -94,7 +95,8 @@ struct CalcNchUpc {
 
 struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
+  O2_DEFINE_CONFIGURABLE(cfgIfVertex, bool, false, "choose vertex or not")
+  O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.1f, "minimum accepted track pT")
   O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
   O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.8f, "Eta cut")
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
@@ -106,6 +108,17 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgCutMerging, float, 0.02, "Merging cut on track merge")
   O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
+  O2_DEFINE_CONFIGURABLE(cfgIsGoodItsLayers, bool, false, "whether choose itslayers")
+  O2_DEFINE_CONFIGURABLE(cfgGapSideA, bool, true, "choose gapside A")
+  O2_DEFINE_CONFIGURABLE(cfgGapSideC, bool, false, "choose gapside C")
+  O2_DEFINE_CONFIGURABLE(cfgDcaxy, bool, true, "choose dcaxy")
+  O2_DEFINE_CONFIGURABLE(cfgDcaz, bool, false, "choose dcaz")
+  O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 10.0, "dcaz cut")
+  O2_DEFINE_CONFIGURABLE(cfgItsClusterSize, unsigned int, 5, "ITS cluster size")
+  O2_DEFINE_CONFIGURABLE(cfgMaxTPCChi2NCl, int, 4, "tpcchi2")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelOccupancy, bool, true, "Occupancy cut")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 1000, "High cut on TPC occupancy")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -130,7 +143,6 @@ struct FlowCorrelationsUpc {
   Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
   Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
   Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
-  Configurable<float> cfgGapSideSelection{"cfgGapSideSelection", 2, "gap selection"};
 
   // make the filters and cuts.
   // Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::flowcorrupc::multiplicity) > cfgMinMult && (aod::flowcorrupc::multiplicity) < cfgMaxMult && (aod::evsel::sel8) == true;
@@ -212,29 +224,29 @@ struct FlowCorrelationsUpc {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    registry.fill(HIST("hTrackCount"), 0.5);
     // UPC selection
     if (!track.isPVContributor()) {
       return false;
     }
-    constexpr float kDcazCut = 2.0;
-    if (!(std::fabs(track.dcaZ()) < kDcazCut)) {
+    // registry.fill(HIST("hTrackCount"), 1.5);
+    if (cfgDcaz && !(std::fabs(track.dcaZ()) < cfgDcazCut)) {
       return false;
     }
+    // registry.fill(HIST("hTrackCount"), 2.5);
     double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
-    if (!(std::fabs(track.dcaXY()) < dcaLimit)) {
+    if (cfgDcaxy && !(std::fabs(track.dcaXY()) < dcaLimit)) {
       return false;
     }
-    constexpr int kMinITSClusters = 5;
-    constexpr int kMaxTPCChi2NCl = 4;
-
-    if (track.itsClusterSizes() <= kMinITSClusters) {
+    // registry.fill(HIST("hTrackCount"), 3.5);
+    if (track.itsClusterSizes() <= cfgItsClusterSize) {
       return false;
     }
-    if (track.tpcChi2NCl() >= kMaxTPCChi2NCl) {
+    // registry.fill(HIST("hTrackCount"), 4.5);
+    if (track.tpcChi2NCl() >= cfgMaxTPCChi2NCl) {
       return false;
     }
-    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax)
-      return false;
+    // registry.fill(HIST("hTrackCount"), 5.5);
     return true;
   }
 
@@ -324,23 +336,47 @@ struct FlowCorrelationsUpc {
     if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
       return;
     }
-    if (collision.trs() == 0) {
+    if (cfgIsGoodItsLayers && collision.trs() == 0) {
       return;
     }
 
     int gapSide = collision.gapSide();
-    const int minGapSide = 0;
-    const int maxGapSide = 2;
-    if (gapSide > minGapSide && gapSide < maxGapSide) {
+    if (gapSide == 0) {
+      if (!cfgGapSideA) {
+        return;
+      }
+    }
+    if (gapSide == 1) {
+      if (!cfgGapSideC) {
+        return;
+      }
+    }
+    if (gapSide != 0 && gapSide != 1) {
       return;
     }
-
     int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     gapSide = trueGapSide;
-    if (gapSide == cfgGapSideSelection) {
+    if (gapSide == 0) {
+      if (!cfgGapSideA) {
+        return;
+      }
+    }
+    if (gapSide == 1) {
+      if (!cfgGapSideC) {
+        return;
+      }
+    }
+    if (gapSide != 0 && gapSide != 1) {
       return;
     }
-
+    float vtxz = collision.posZ();
+    if (cfgIfVertex && abs(vtxz) > cfgZVtxCut) {
+      return;
+    }
+    int occupancy = collision.occupancyInTime();
+    if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
+      return;
+    }
     int runIndex = collision.runNumber();
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
@@ -365,28 +401,65 @@ struct FlowCorrelationsUpc {
       if (tracks1.size() < cfgMinMult || tracks1.size() > cfgMaxMult || tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
         continue;
       }
-      if (collision1.trs() == 0 || collision2.trs() == 0) {
+      if (cfgIsGoodItsLayers && (collision1.trs() == 0 || collision2.trs() == 0)) {
         continue;
       }
 
-      const int minGapSide = 0;
-      const int maxGapSide = 2;
-      if (collision1.gapSide() > minGapSide && collision1.gapSide() < maxGapSide) {
+      int gapSide1 = collision1.gapSide();
+      if (gapSide1 == 0) {
+        if (!cfgGapSideA) {
+          continue;
+        }
+      }
+      if (gapSide1 == 1) {
+        if (!cfgGapSideC) {
+          continue;
+        }
+      }
+      int gapSide2 = collision2.gapSide();
+      if (gapSide2 == 0) {
+        if (!cfgGapSideA) {
+          continue;
+        }
+      }
+      if (gapSide2 == 1) {
+        if (!cfgGapSideC) {
+          continue;
+        }
+      }
+      int trueGapSide1 = sgSelector.trueGap(collision1, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
+      int trueGapSide2 = sgSelector.trueGap(collision2, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
+      if (trueGapSide1 != trueGapSide2) {
         continue;
       }
-      if (collision2.gapSide() > minGapSide && collision2.gapSide() < maxGapSide) {
+      if (trueGapSide1 == 0) {
+        if (!cfgGapSideA) {
+          continue;
+        }
+      }
+      if (trueGapSide2 == 1) {
+        if (!cfgGapSideC) {
+          continue;
+        }
+      }
+      if ((gapSide1 != 0 && gapSide1 != 1) || (gapSide2 != 0 && gapSide2 != 1)) {
         continue;
       }
-
-      int trueGapSide = sgSelector.trueGap(collision1, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-      int gapSide = trueGapSide;
-      if (gapSide == cfgGapSideSelection) {
-        continue;
+      float vtxz = collision1.posZ();
+      if (cfgIfVertex && abs(vtxz) > cfgZVtxCut) {
+        return;
       }
-      trueGapSide = sgSelector.trueGap(collision2, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-      gapSide = trueGapSide;
-      if (gapSide == cfgGapSideSelection) {
-        continue;
+      int occupancy = collision1.occupancyInTime();
+      if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
+        return;
+      }
+      vtxz = collision2.posZ();
+      if (cfgIfVertex && abs(vtxz) > cfgZVtxCut) {
+        return;
+      }
+      occupancy = collision2.occupancyInTime();
+      if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
+        return;
       }
       registry.fill(HIST("eventcount"), MixedEvent);                                                                                         // fill the mixed event in the 3 bin
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, collision1.runNumber()); // fill the ME histogram and Sparse

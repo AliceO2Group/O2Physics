@@ -49,7 +49,8 @@ using PIDTracks = soa::Join<
   aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection,
   aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCEl>;
 
-using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs,
+                                     aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, o2::aod::BarrelMults>;
 using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 static constexpr int NCentHists{10};
@@ -78,14 +79,35 @@ struct DedxPidAnalysis {
 
   bool fillHist = false;
 
-  enum V0SelectionMode {
+  enum MultSelectionMode : int {
+    NoMultiplicity = 0,
+    MultFV0A = 1,
+    MultFT0M = 2,
+    MultFDDM = 3,
+    MultTracklets = 4,
+    MultTPC = 5,
+    MultNTracksPV = 6,
+    MultNTracksPVeta1 = 7,
+    CentralityFT0C = 8,
+    CentralityFT0M = 9,
+    CentralityFV0A = 10
+  };
+
+  enum V0SelectionMode : int {
     V0TPC = 1,
     V0TOF = 2,
     V0TPCTOF = 3
 
   };
 
-  enum MomentumMode {
+  enum NINELSelectionMode : int {
+    NoSelINEL = 1,
+    SelINELgt0 = 2,
+    SelINELgt1 = 3
+
+  };
+
+  enum MomentumMode : int {
     TpcInnerParam = 1,
     TotalMomentum = 2
   };
@@ -96,8 +118,8 @@ struct DedxPidAnalysis {
     SelEigth,
     ZVtxCut,
     NoSameBunchPileup,
-    GoodZvtxFT0vsPV
-
+    GoodZvtxFT0vsPV,
+    INELgt
   };
 
   // Track primary label
@@ -173,10 +195,12 @@ struct DedxPidAnalysis {
   Configurable<bool> nClTPCFoundCut{"nClTPCFoundCut", false, "number of found clusters in TPC cut"};
   Configurable<bool> nClTPCPIDCut{"nClTPCPIDCut", true, "number of PID clusters in TPC cut"};
   Configurable<bool> nGoodZvtx{"nGoodZvtx", true, "Rejects events with no vertex match between FT0 and PV"}; //
-  Configurable<bool> nPileUp{"nPileUp", true, "Rejects events with pileup in the same bunch crossing"};      //
+  Configurable<bool> nPileUp{"nPileUp", true, "Rejects events with pileup in the same bunch crossing"};
+  Configurable<int> nINELSelectionMode{"nINELSelectionMode", 2, "INEL event selection: 1 no sel, 2 INEL>0, 3 INEL>1"};
   Configurable<int> v0SelectionMode{"v0SelectionMode", 3, "V0 Selection base on TPC: 1, TOF:2 ,Both:3"};
-  Configurable<int> momentumMode{"momentumMode", 1, "1: TPC inner param, 2: Total momentum p"};
+  Configurable<int> momentumMode{"momentumMode", 2, "1: TPC inner param, 2: Total momentum p"};
   Configurable<uint8_t> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+  Configurable<int> multiplicityEstimator{"multiplicityEstimator", 9, "Flag to use a multiplicity estimator; No multiplicity: 0, MultFV0A: 1, MultFT0M: 2, MultFDDM: 3 ,MultTracklets: 4,MultTPC: 5,MultNTracksPV: 6 ,MultNTracksPVeta1: 7,CentralityFT0C: 8 ,CentralityFT0M: 9, CentralityFV0A: 10"};
   Configurable<double> lowParam1{"lowParam1", 0.119297, "First parameter for low phi cut"};
   Configurable<double> lowParam2{"lowParam2", 0.000379693, "Second parameter for low phi cut"};
   Configurable<double> highParam1{"highParam1", 0.16685, "First parameter for high phi cut"};
@@ -201,6 +225,7 @@ struct DedxPidAnalysis {
   Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
+  ConfigurableAxis centBins{"centBins", {100, 0, 100}, "Binning for centralidad"};
 
   // phi cut fits
   TF1* fphiCutHigh = nullptr;
@@ -230,6 +255,7 @@ struct DedxPidAnalysis {
 
   void init(InitContext const&)
   {
+    const char* label = "No INEL selection";
     if (nPileUp) {
       LOGF(info, "Applying NoSameBunchPileup cut");
     } else {
@@ -239,6 +265,15 @@ struct DedxPidAnalysis {
       LOGF(info, "Applying GoodZvtxFT0vsPV cut");
     } else {
       LOGF(info, "GoodZvtxFT0vsPV cut disabled");
+    }
+    if (nINELSelectionMode == NoSelINEL) {
+      LOGF(info, "INEL cut disabled");
+    } else if (nINELSelectionMode == SelINELgt0) {
+      LOGF(info, "Applying INEL > 0 cut");
+      label = "INEL > 0";
+    } else if (nINELSelectionMode == SelINELgt1) {
+      LOGF(info, "Applying INEL > 1 cut");
+      label = "INEL > 1";
     }
     if (v0SelectionMode == V0TPC) {
       LOGF(info, "V0 seleccion using TPC only");
@@ -282,6 +317,55 @@ struct DedxPidAnalysis {
     AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
     AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
     AxisSpec pAxisTrack = {binP, "#it{p} (GeV/c)"};
+    AxisSpec centAxis{centBins, "Undefined multiplicity estimator"};
+    switch (multiplicityEstimator) {
+      case MultSelectionMode::NoMultiplicity: // No multiplicity
+        LOGF(info, "No multiplicity estimator applied");
+        break;
+      case MultSelectionMode::MultFV0A: // MultFV0A
+        centAxis.title = "MultFV0A";
+        LOGF(info, "MultFV0A estimator applied");
+        break;
+      case MultSelectionMode::MultFT0M: // MultFT0M
+        centAxis.title = "MultFT0M";
+        LOGF(info, "MultFT0M estimator applied");
+        break;
+      case MultSelectionMode::MultFDDM: // MultFDDM
+        centAxis.title = "MultFDDM";
+        LOGF(info, " MultFDDM estimator applied");
+        break;
+      case MultSelectionMode::MultTracklets: // MultTracklets
+        centAxis.title = "MultTracklets";
+        LOGF(info, "MultTracklets estimator applied");
+        break;
+      case MultSelectionMode::MultTPC: // MultTPC
+        centAxis.title = "MultTPC";
+        LOGF(info, "MultTPC estimator applied");
+        break;
+      case MultSelectionMode::MultNTracksPV: // MultNTracksPV
+        centAxis.title = "MultNTracksPV";
+        LOGF(info, "MultNTracksPV estimator applied");
+        break;
+      case MultSelectionMode::MultNTracksPVeta1: // MultNTracksPVeta1
+        centAxis.title = "MultNTracksPVeta1";
+        LOGF(info, "MultNTracksPVeta1 estimator applied");
+        break;
+      case MultSelectionMode::CentralityFT0C: // Centrality FT0C
+        centAxis.title = "Centrality FT0C";
+        LOGF(info, "Centrality FT0C estimator applied");
+        break;
+      case MultSelectionMode::CentralityFT0M: // Centrality FT0M
+        centAxis.title = "Centrality FT0M";
+        LOGF(info, "Centrality FT0M estimator applied");
+        break;
+      case MultSelectionMode::CentralityFV0A: // Centrality FV0A
+        centAxis.title = "Centrality FV0A";
+        LOGF(info, "Centrality FV0A estimator applied");
+        break;
+      default:
+        LOG(fatal) << "Unrecognized option for multiplicity " << multiplicityEstimator;
+    }
+
     fphiCutLow = new TF1("StandardPhiCutLow",
                          Form("%f/x/x+pi/18.0-%f", lowParam1.value, lowParam2.value),
                          0, 50);
@@ -537,10 +621,10 @@ struct DedxPidAnalysis {
     registryDeDx.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{100, -20.0, +20.0, "z_{vtx} (cm)"}});
 
     // Event Counter by centrality
-    registryDeDx.add("histCentrality", "collision centrality", HistType::kTH1F, {{100, 0.0, 100, "cent"}});
+    registryDeDx.add("histCentrality", "Centrality", HistType::kTH1F, {centAxis});
 
     // Event Counter
-    registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{5, 0.5, 5.5, ""}});
+    registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
     auto hstat = registryDeDx.get<TH1>(HIST("evsel"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(AllEv, "AllEv");
@@ -548,6 +632,7 @@ struct DedxPidAnalysis {
     x->SetBinLabel(ZVtxCut, "ZVtxCut");
     x->SetBinLabel(NoSameBunchPileup, "NoSameBunchPileup");
     x->SetBinLabel(GoodZvtxFT0vsPV, "GoodZvtxFT0vsPV");
+    x->SetBinLabel(INELgt, label);
 
     // Track Prim Counter
     registryDeDx.add("trackselAll", "track selected all particles", HistType::kTH1F, {{5, 0.5, 5.5, ""}});
@@ -1210,7 +1295,46 @@ struct DedxPidAnalysis {
 
     return true;
   }
-
+  // Get Multiplicity
+  template <typename T>
+  float getMultiplicity(const T& collision)
+  {
+    switch (multiplicityEstimator) {
+      case MultSelectionMode::NoMultiplicity: // No multiplicity
+        return 50.f;                          // to check if its filled
+        break;
+      case MultSelectionMode::MultFV0A: // MultFV0M
+        return collision.multZeqFV0A();
+        break;
+      case MultSelectionMode::MultFT0M:
+        return collision.multZeqFT0A() + collision.multZeqFT0C();
+        break;
+      case MultSelectionMode::MultFDDM: // MultFDDM
+        return collision.multZeqFDDA() + collision.multZeqFDDC();
+        break;
+      case MultSelectionMode::MultTracklets: // MultTracklets
+        return 0.f;                          // Undefined in Run3
+        break;
+      case MultSelectionMode::MultTPC: // MultTPC
+        return collision.multTPC();
+        break;
+      case MultSelectionMode::MultNTracksPV: // MultNTracksPV
+        return collision.multZeqNTracksPV();
+        break;
+      case MultSelectionMode::MultNTracksPVeta1: // MultNTracksPVeta1
+        return collision.multNTracksPVeta1();
+        break;
+      case MultSelectionMode::CentralityFT0C: // Centrality FT0C
+        return collision.centFT0C();
+        break;
+      case MultSelectionMode::CentralityFT0M: // Centrality FT0M
+        return collision.centFT0M();
+        break;
+      default:
+        LOG(fatal) << "Unknown multiplicity estimator: " << multiplicityEstimator;
+        return 0.f;
+    }
+  }
   // Process Data
   void process(SelectedCollisions::iterator const& collision, BCsRun3 const& /**/,
                aod::V0Datas const& fullV0s, PIDTracks const& tracks)
@@ -1239,6 +1363,17 @@ struct DedxPidAnalysis {
       registryDeDx.fill(HIST("evsel"), EvCutLabel::GoodZvtxFT0vsPV);
     }
 
+    if (nINELSelectionMode == NoSelINEL) {
+    } else if (nINELSelectionMode == SelINELgt0) {
+      if (!collision.isInelGt0())
+        return;
+      registryDeDx.fill(HIST("evsel"), EvCutLabel::INELgt);
+    } else if (nINELSelectionMode == SelINELgt1) {
+      if (!collision.isInelGt1())
+        return;
+      registryDeDx.fill(HIST("evsel"), EvCutLabel::INELgt);
+    }
+
     // Event Counter
     registryDeDx.fill(HIST("histRecVtxZData"), collision.posZ());
 
@@ -1247,7 +1382,7 @@ struct DedxPidAnalysis {
     const uint64_t timeStamp{foundBC.timestamp()};
     const int magField{getMagneticField(timeStamp)};
 
-    float centrality = collision.centFT0C();
+    float centrality = getMultiplicity(collision);
     if (centrality < CentClasses[0] || centrality > CentClasses[10])
       return;
 

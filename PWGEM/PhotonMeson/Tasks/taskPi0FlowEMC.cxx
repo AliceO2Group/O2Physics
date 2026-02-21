@@ -120,8 +120,8 @@ struct TaskPi0FlowEMC {
   Configurable<int> qvecSubBDetector{"qvecSubBDetector", 4, "Sub B Detector for Q vector estimation for resolution (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5, FV0A: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3)"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int> cfgEMCalMapLevelBackground{"cfgEMCalMapLevelBackground", 4, "Different levels of correction for the background, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};
-  Configurable<int> cfgEMCalMapLevelSameEvent{"cfgEMCalMapLevelSameEvent", 4, "Different levels of correction for the same event, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: exclude bad channels, 1: remove edges)"};
+  Configurable<int> cfgEMCalMapLevelBackground{"cfgEMCalMapLevelBackground", 4, "Different levels of correction for the background, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: remove edges, 1: exclude bad channels)"};
+  Configurable<int> cfgEMCalMapLevelSameEvent{"cfgEMCalMapLevelSameEvent", 4, "Different levels of correction for the same event, the smaller number includes the level of the higher number (4: none, 3: only inside EMCal, 2: remove edges, 1: exclude bad channels)"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   Configurable<bool> cfgDoM02{"cfgDoM02", false, "Flag to enable flow vs M02 for single photons"};
   Configurable<bool> cfgDoReverseScaling{"cfgDoReverseScaling", false, "Flag to reverse the scaling that is possibly applied during NonLin"};
@@ -795,7 +795,7 @@ struct TaskPi0FlowEMC {
       if (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelBackground.value) {
         continue;
       }
-      float energyCorrectionFactor = 1.f;
+      energyCorrectionFactor = 1.f;
       if (correctionConfig.cfgEnableNonLin.value) {
         energyCorrectionFactor = fEMCalCorrectionFactor->Eval(photon.e() > MinEnergy ? photon.e() : MinEnergy);
       }
@@ -908,7 +908,7 @@ struct TaskPi0FlowEMC {
         if (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelBackground.value) {
           continue;
         }
-        float energyCorrectionFactor = 1.f;
+        energyCorrectionFactor = 1.f;
         if (correctionConfig.cfgEnableNonLin.value) {
           energyCorrectionFactor = fEMCalCorrectionFactor->Eval(photon.e() > MinEnergy ? photon.e() : MinEnergy);
         }
@@ -1100,9 +1100,14 @@ struct TaskPi0FlowEMC {
   // Pi0 from EMCal
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags flags(clusters.size());
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds, &registry);
 
+    energyCorrectionFactor = 1.f;
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
     }
@@ -1148,9 +1153,13 @@ struct TaskPi0FlowEMC {
   // Pi0 from EMCal
   void processEMCalMixed(FilteredCollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags flags(clusters.size());
     fEMCCut.AreSelectedRunning(flags, clusters, matchedPrims, matchedSeconds);
-    float energyCorrectionFactor = 1.f;
+    energyCorrectionFactor = 1.f;
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
     }
@@ -1243,12 +1252,21 @@ struct TaskPi0FlowEMC {
   // PCM-EMCal same event
   void processEMCalPCMC(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0 && photons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+    if (clusters.size() > 0) {
+      fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+    }
 
     EMBitFlags v0flags(photons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
+    if (photons.size() > 0) {
+      fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
+    }
 
+    energyCorrectionFactor = 1.f;
     if (cfgDoReverseScaling.value) {
       energyCorrectionFactor = 1.0505f;
     }
@@ -1331,6 +1349,11 @@ struct TaskPi0FlowEMC {
   // PCM-EMCal mixed event
   void processEMCalPCMMixed(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& pcmPhotons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0 && pcmPhotons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
+
     using BinningTypeMixed = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
     BinningTypeMixed binningOnPositions{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
 
@@ -1338,12 +1361,16 @@ struct TaskPi0FlowEMC {
 
     Pair<CollsWithQvecs, EMCalPhotons, PCMPhotons, BinningTypeMixed> pairPCMEMC{binningOnPositions, mixingConfig.cfgMixingDepth, -1, collisions, associatedTables, &cache}; // indicates that mixingConfig.cfgMixingDepth events should be mixed and under/overflow (-1) to be ignored
 
-    float energyCorrectionFactor = 1.f;
+    energyCorrectionFactor = 1.f;
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
+    if (clusters.size() > 0) {
+      fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+    }
 
     EMBitFlags v0flags(pcmPhotons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(pcmPhotons), aod::V0Legs>(v0flags, pcmPhotons);
+    if (pcmPhotons.size() > 0) {
+      fV0PhotonCut.AreSelectedRunning<decltype(pcmPhotons), aod::V0Legs>(v0flags, pcmPhotons, &registry);
+    }
 
     for (const auto& [c1, photonEMC, c2, photonPCM] : pairPCMEMC) {
       if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
@@ -1415,6 +1442,10 @@ struct TaskPi0FlowEMC {
   // Pi0 from EMCal
   void processM02(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
+    if (clusters.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags emcFlags(clusters.size());
     fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds);
 
@@ -1491,6 +1522,10 @@ struct TaskPi0FlowEMC {
   // Pi0 from EMCal
   void processPCM(CollsWithQvecs const& collisions, PCMPhotons const& photons, aod::V0Legs const&)
   {
+    if (photons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags v0flags(photons.size());
     fV0PhotonCut.AreSelectedRunning<decltype(photons), aod::V0Legs>(v0flags, photons, &registry);
     for (const auto& collision : collisions) {
@@ -1509,15 +1544,9 @@ struct TaskPi0FlowEMC {
         if (!(v0flags.test(g1.globalIndex())) || !(v0flags.test(g2.globalIndex()))) {
           continue;
         }
-        if (correctionConfig.cfgEnableNonLin.value) {
-          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g1.e() > MinEnergy ? g1.e() : MinEnergy);
-        }
-        if (correctionConfig.cfgEnableNonLin.value) {
-          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g2.e() > MinEnergy ? g2.e() : MinEnergy);
-        }
 
-        ROOT::Math::PtEtaPhiMVector v1(energyCorrectionFactor * g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(energyCorrectionFactor * g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
@@ -1550,13 +1579,18 @@ struct TaskPi0FlowEMC {
   void processPCMMixed(FilteredCollsWithQvecs const& collisions, PCMPhotons const& pcmPhotons, aod::V0Legs const&)
   {
 
+    if (pcmPhotons.size() <= 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
+
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>>;
     BinningType binningMixedEvent{{mixingConfig.cfgVtxBins, mixingConfig.cfgCentBins, mixingConfig.cfgEPBins}, true};
 
     auto pcmPhotonTuple = std::make_tuple(pcmPhotons);
     SameKindPair<FilteredCollsWithQvecs, PCMPhotons, BinningType> pair{binningMixedEvent, mixingConfig.cfgMixingDepth, -1, collisions, pcmPhotonTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
-    float energyCorrectionFactor = 1.f;
+    energyCorrectionFactor = 1.f;
 
     EMBitFlags v0flags(pcmPhotons.size());
     fV0PhotonCut.AreSelectedRunning<decltype(pcmPhotons), aod::V0Legs>(v0flags, pcmPhotons);

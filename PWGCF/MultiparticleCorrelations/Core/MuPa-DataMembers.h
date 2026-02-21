@@ -21,7 +21,9 @@
 // General remarks:
 // 0. Starting with C++11, it's possible to initialize data members at declaration, so I do it here
 // 1. Use //!<! for introducing a Doxygen comment interpreted as transient in both ROOT 5 and ROOT 6.
+// ...
 
+// Categories:
 // a) Base list to hold all output objects ("grandmother" of all lists);
 // *) Task configuration;
 // *) QA;
@@ -32,6 +34,7 @@
 // *) Particle weights;
 // *) Nested loops;
 // *) Results;
+// ...
 
 // a) Base list to hold all output objects ("grandmother" of all lists):
 
@@ -70,23 +73,28 @@ struct TaskConfiguration {
   TArrayI* fRandomIndices = NULL;                // array to store random indices obtained from Fisher-Yates algorithm
   int fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event, applies to all centralities. It is set and applied if > 0. Set to <=0 to ignore.
 
-  bool fUseStopwatch = false;            // do some basing profiling with TStopwatch for where the execution time is going
-  TStopwatch* fTimer[eTimer_N] = {NULL}; // stopwatch, global (overal execution time) and local
-  float fFloatingPointPrecision = 1.e-6; // two floats are the same if abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
-  int fSequentialBailout = 0;            // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
-  bool fUseSpecificCuts = false;         // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
-  TString fWhichSpecificCuts = "";       // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
-  TString fSkipTheseRuns = "";           // comma-separated list of runs which will be skipped during analysis in hl (a.k.a. "bad runs")
-  bool fSkipRun = false;                 // based on the content of fWhichSpecificCuts, skip or not the current run
-  TDatabasePDG* fDatabasePDG = NULL;     // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
-                                         // TBI 20250625 replace eventually with the service O2DatabasePDG, when memory consumption problem is resolved
-  bool fUseSetBinLabel = false;          // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
-                                         // See also local executable PostprocessLabels.C
-  bool fUseClone = false;                // until Clone(...) large memory consumption is resolved, do not use hist->Clone(...), see ROOT Forum
-  bool fUseFormula = false;              // until TFormula large memory consumption is resolved, do not use, see ROOT Forum
-  bool fUseDatabasePDG = false;          // I use it at the moment only to retreive charge for MC particle from its PDG code, because there is no direct getter mcParticle.sign()
-                                         // But most likely I will use it to retrieve other particle proprties from PDG table. There is a standard memory blow-up when used.
-} tc;                                    // "tc" labels an instance of this group of variables.
+  bool fUseStopwatch = false;                                 // do some basing profiling with TStopwatch for where the execution time is going
+  TStopwatch* fTimer[eTimer_N] = {NULL};                      // stopwatch, global (overal execution time) and local
+  float fFloatingPointPrecision = 1.e-6;                      // two floats are the same if abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
+  int fSequentialBailout = 0;                                 // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
+  bool fUseSpecificCuts = false;                              // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
+  TString fWhichSpecificCuts = "";                            // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
+  TString fSkipTheseRuns = "";                                // comma-separated list of runs which will be skipped during analysis in hl (a.k.a. "bad runs")
+  bool fSkipRun = false;                                      // based on the content of fWhichSpecificCuts, skip or not the current run
+  bool fCalculateAsFunctionOf[eAsFunctionOf_N] = {false};     //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+                                                              // Example: tc.fCalculateAsFunctionOf[AFO_PT] = mupa.fCalculateCorrelationsAsFunctionOf[AFO_PT] || t0.fCalculateTest0AsFunctionOf[AFO_PT]
+                                                              //                                              || es.fCalculateEtaSeparationsAsFunctionOf[AFO_PT]
+  bool fCalculate2DAsFunctionOf[eAsFunctionOf2D_N] = {false}; //! See example above for 1D case + enum for 2D details
+  bool fCalculate3DAsFunctionOf[eAsFunctionOf3D_N] = {false}; //! See example above for 1D case + enum for 3D details
+  TDatabasePDG* fDatabasePDG = NULL;                          // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
+                                                              // TBI 20250625 replace eventually with the service O2DatabasePDG, when memory consumption problem is resolved
+  bool fUseSetBinLabel = false;                               // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
+                                                              // See also local executable PostprocessLabels.C
+  bool fUseClone = false;                                     // until Clone(...) large memory consumption is resolved, do not use hist->Clone(...), see ROOT Forum
+  bool fUseFormula = false;                                   // until TFormula large memory consumption is resolved, do not use, see ROOT Forum
+  bool fUseDatabasePDG = false;                               // I use it at the moment only to retreive charge for MC particle from its PDG code, because there is no direct getter mcParticle.sign()
+                                                              // But most likely I will use it to retrieve other particle proprties from PDG table. There is a standard memory blow-up when used.
+} tc;                                                         // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
 struct EventByEventQuantities {
@@ -95,7 +103,8 @@ struct EventByEventQuantities {
                                       // Results "vs. mult" are plotted against fMultiplicity, whatever it is set to.
                                       // Use configurable cfMultiplicityEstimator[eMultiplicityEstimator] to define what is this multiplicity, by default it is "SelectedTracks"
   float fReferenceMultiplicity = 0.;  // reference multiplicity, calculated outside of my code. Can be "MultTPC", "MultFV0M", etc.
-                                      // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity, by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
+                                      // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity,
+                                      // by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
   float fCentrality = 0.;             // event-by-event centrality, in reconstructed data. Value of the default centrality estimator, set via configurable cfCentralityEstimator
   float fCentralitySim = 0.;          // event-by-event centrality, in simulated data. Calculated directly from IP at the moment, eventually I will access it from o2::aod::hepmcheavyion::Centrality
   float fOccupancy = 0.;              // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator.
@@ -103,9 +112,19 @@ struct EventByEventQuantities {
   float fInteractionRate = 0.;        // event-by-event interaction rate
   float fCurrentRunDuration = 0.;     // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
   float fVz = 0.;                     // vertex z position
+  float fVzSim = 0.;                  // vertex z position, in simulated data
   float fFT0CAmplitudeOnFoundBC = 0.; // TBI20250331 finalize the comment here
   float fImpactParameter = 0.;        // calculated only for simulated/generated data
 } ebye;                               // "ebye" is a common label for objects in this struct
+
+// *) Particle-by-particle quantities:
+//    Remark: Here I define all particle quantities, that I need across several member functions.
+struct ParticleByParticleQuantities {
+  double fPhi = 0.;      // azimuthal angle
+  double fPt = 0.;       // transverse momentum
+  double fEta = 0.;      // pseudorapidity
+  double fCharge = -44.; // particle charge. Yes, never initialize charge to 0.
+} pbyp;
 
 // *) QA:
 //    Remark 1: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
@@ -226,11 +245,17 @@ struct ParticleHistograms {
   TString fParticleHistogramsName2D[eParticleHistograms2D_N] = {""};         // name of particle histogram 2D, determined programatically from two 1D, in the format "%s_vs_%s"
 
   // **) n-dimensional sparse histograms:
-  THnSparse* fParticleSparseHistograms[eDiffWeightCategory_N][2] = {{NULL}}; //! [ category of sparse histograms - see enum eDiffWeightCategory ][reco,sim]
-                                                                             // Remark 0: I anticipate I will need this only for differential particle weights,
-                                                                             //           therefore I couple it with eDiffWeightCategory_N
-                                                                             // Remark 1: I fill these histograms only AFTER cuts, therefore no need for extra dimension
-  bool fBookParticleSparseHistograms[eDiffWeightCategory_N] = {false};       // fill or not specific category of sparse histograms
+  THnSparse* fParticleSparseHistograms[eDiffWeightCategory_N][2][2] = {{{NULL}}}; //! [ category of sparse histograms - see enum eDiffWeightCategory ][reco,sim][before, after particle cuts]
+                                                                                  // Remark 0: I anticipate I will need this only for differential particle weights,
+                                                                                  //           therefore I couple it with eDiffWeightCategory_N
+                                                                                  // Remark 1: I fill these histograms only AFTER cuts, therefore no need for extra dimension
+  bool fBookParticleSparseHistograms[eDiffWeightCategory_N] = {false};            // fill or not specific category of sparse histograms
+
+  bool fFillParticleSparseHistogramsBeforeCuts = false; // by default, I fill sparse histograms only after the cuts. In rare cases, e.g. in internal validation
+                                                        // when I am developing pT and eta weights, I calculate them from the ratio [sim][before] / [sim][after],
+                                                        // therefore in that case I need to fill sparse also before cuts. As of 20251124, this is the only case when it's justified
+                                                        // to fill sparse also before cuts
+
   // bool fFillParticleSparseHistogramsDimension[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{true}}; // fill or not the specific dimension of a category of sparse histograms TBI 20250223 implement this eventually
   TString fParticleSparseHistogramsName[eDiffWeightCategory_N] = {""};                                      // name of particle sparse histogram, determined programatically from requested axes
   TString fParticleSparseHistogramsTitle[eDiffWeightCategory_N] = {""};                                     // title of particle sparse histogram, determined programatically from requested axes
@@ -260,12 +285,14 @@ struct ParticleCuts {
 
 // *) Q-vectors:
 struct Qvector {
-  TList* fQvectorList = NULL;                                                                      // list to hold all Q-vector objects
-  TProfile* fQvectorFlagsPro = NULL;                                                               // profile to hold all flags for Q-vector
-  bool fCalculateQvectors = true;                                                                  // to calculate or not to calculate Q-vectors, that's a Boolean...
-                                                                                                   // Does NOT apply to Qa, Qb, etc., vectors, needed for eta separ.
-  TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};       //! generic Q-vector
-  TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}}; //! "integrated" Q-vector
+  TList* fQvectorList = NULL;                                                                // list to hold all Q-vector objects
+  TProfile* fQvectorFlagsPro = NULL;                                                         // profile to hold all flags for Q-vector
+  bool fCalculateQvectors = true;                                                            // to calculate or not to calculate Q-vectors, that's a Boolean...
+                                                                                             // Does NOT apply to Qa, Qb, etc., vectors, needed for eta separ.
+  TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}}; //! generic Q-vector, legacy code (TBI 20250718 remove, and switch to line below eventually)
+  // std::vector<std::vector<std::complex<double>>> fQ; // generic Q-vector
+  TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}}; //! integrated Q-vector, legacy code (TBI 20250718 remove, and switch to line below eventually)
+  // std::vector<std::vector<std::complex<double>>> fQvector; // dynamically allocated integrated Q-vector => it has to be done this way, to optimize memory usage
 
   bool fCalculateqvectorsKineAny = false;                              // by default, it's off. It's set to true automatically if any of kine correlators is requested,
                                                                        // either for Correlations, Test0, EtaSeparations, etc.
@@ -275,7 +302,7 @@ struct Qvector {
   std::vector<std::vector<std::vector<std::vector<std::complex<double>>>>> fqvector; // dynamically allocated differential q-vector => it has to be done this way, to optimize memory usage
                                                                                      // dimensions: [eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1]
   std::vector<int> fNumberOfKineBins = {0};                                          // for each kine vector which was requested in this analysis, here I calculate and store the corresponding number of kine bins
-  std::vector<std::vector<int>> fqvectorEntries;                                     // dynamically allocated number of entries for differential q-vector => it has to be done this way, to optimize memory usage
+  std::vector<std::vector<int>> fqvectorEntries;                                     // dynamically allocated number of entries for differential q-vector => it has to be done this way, to optimize memory usage. Dimensions: [eqvectorKine_N][gMaxNoBinsKine]
 
   // q-vectors for eta separations:
   TComplex fQabVector[2][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{TComplex(0., 0.)}}};          //! integrated [-eta or +eta][harmonic][eta separation]
@@ -318,7 +345,7 @@ struct ParticleWeights {
   bool fUseDiffEtaWeights[eDiffEtaWeights_N] = {false};          // use differential eta weights, see enum eDiffEtaWeights for supported dimensions
   // ...
   int fDWdimension[eDiffWeightCategory_N] = {0};           // dimension of differential weight for each category in current analysis
-  TArrayD* fFindBinVector[eDiffWeightCategory_N] = {NULL}; // this is the vector I use to find bin TBI 20250224 finalie description
+  TArrayD* fFindBinVector[eDiffWeightCategory_N] = {NULL}; // this is the vector I use to find bin when I obtain weights with sparse histograms
 
   TString fFileWithWeights = "";           // path to external ROOT file which holds all particle weights
   bool fParticleWeightsAreFetched = false; // ensures that particle weights are fetched only once
@@ -372,7 +399,7 @@ struct InternalValidation {
                                                       // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
                                                       // Can be used in combination with setting fSequentialBailout > 0.
   unsigned int fnEventsInternalValidation = 0;        // how many on-the-fly events will be sampled for each real event, for internal validation
-  TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated" or "persistent", see .cxx for full documentation
+  TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated", "persistent", "ptDependent", "ptEtaDependent", see .cxx for full documentation
   bool fRescaleWithTheoreticalInput = false;          // if true, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
   bool fRandomizeReactionPlane = true;                // if true, RP is randomized e-by-e. I need false basically only when validating against theoretical input non-isotropic correlators
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }
@@ -429,7 +456,7 @@ struct Results {                                         // This is in addition 
   TProfile2D* fResultsPro2D[eAsFunctionOf2D_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
   TProfile3D* fResultsPro3D[eAsFunctionOf3D_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
 
-  // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
+  // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, fResultsPro, and fParticleSparseHistograms
   TArrayD* fResultsProBinEdges[eAsFunctionOf_N] = {NULL};              // here I keep bin edges uniformly, both for fixed-length binning and variable-length binning
   float fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};       // [nBins,min,max]
   TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};    // here for each variable in eAsFunctionOf I specify array holding bin boundaries

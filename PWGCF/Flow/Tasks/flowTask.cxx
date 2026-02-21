@@ -59,6 +59,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 static constexpr double LongArrayDouble[4][2] = {{-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}, {-2.0, -2.0}};
+static constexpr float TrackCutArray[6][2] = {{2.5f, 2.5f}, {50.0f, 50.0f}, {70.0f, 70.0f}, {5.0f, 5.0f}, {2.0f, 2.0f}, {7.0f, 7.0f}};
 
 struct FlowTask {
 
@@ -77,11 +78,20 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEtaVnPt, float, 0.4, "eta range for pt in vn-pt correlations")
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgEtaGapPtPtEnabled, bool, false, "switch of subevent pt-pt correlations")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
-  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  Configurable<LabeledArray<float>> cfgTrackCuts{"cfgTrackCuts", {TrackCutArray[0], 6, 2, {"chi2 per TPCcls", "TPC cluster", "TPC crossed rows", "ITS cluster", "DCAz", "DCAxy Nsigma"}, {"Nch", "Observable"}}, "separate Nch and observable track selections"};
+  enum TrackCut {
+    // enum for labelledArray track selection
+    kChi2prTPCcls = 0, // max chi2 per TPC clusters
+    kTPCclu,           // minimum TPC found clusters
+    kTPCCrossedRows,   // minimum TPC crossed rows
+    kITSclu,           // minimum ITS found clusters
+    kDCAz,             // max DCA to vertex z
+    kDCAxyNSigma       // 0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track
+  };
+  enum TrackCutGroup {
+    kTrCutNch = 0,
+    kTrCutObs = 1
+  };
   // Additional events selection flags
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
@@ -104,12 +114,6 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgUseNchCorrected, bool, false, "Use Nch-corrected for flow observables, you also need to set cfgUseNch to true")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 30, "Number of subsamples")
-  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
-  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRunbyRun, bool, false, "NUA weights are filled run-by-run")
-  O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
-  O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
-  O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePtRef, bool, true, "Use refernce pt range for pt container (if you are checking the spectra, you need to extent it)")
@@ -117,7 +121,25 @@ struct FlowTask {
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<GFWCorrConfigs> cfgUserPtVnCorrConfig{"cfgUserPtVnCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}"}, {"ChGap22", "ChGap32"}, {0, 0}, {3, 3}}, "Configurations for vn-pt correlations"};
-  Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
+    O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
+    O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRunbyRun, bool, false, "NUA weights are filled run-by-run")
+    O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+    O2_DEFINE_CONFIGURABLE(cfgEfficiencyForNch, std::string, "", "CCDB path to efficiency object, only for Nch correction")
+    O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+    O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
+    O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable")
+    Configurable<std::vector<float>> cfgConsistentEventVector{"cfgConsistentEventVector", std::vector<float>{-0.8, -0.5, -0.4, 0.4, 0.5, 0.8}, "eta regions: left(min,max), mid(min,max), right(min,max)"};
+    Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
+  } cfgUserIO;
+  struct AcceptedTracks {
+    int nNeg;
+    int nMid;
+    int nPos;
+    int nFull;
+  };
+
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, false, "V0A T0A 5 sigma cut")
     Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
@@ -160,6 +182,13 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutPtMin, float, 2.0f, "start point of phi-pt cut")
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
+    // Functional form of pt-dependent DCAxy cut
+    TF1* fPtDepDCAxy = nullptr;
+    TF1* fPtDepDCAxyForNch = nullptr;
+    O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
+  } cfgFuncParas;
+
+  struct : ConfigurableGroup {
     // for deltaPt/<pT> vs centrality
     O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs centrality")
     O2_DEFINE_CONFIGURABLE(cfgDptDisSelectionSwitch, int, 0, "0: disable, 1: use low cut, 2:use high cut")
@@ -170,13 +199,16 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgDptDisCutLow, std::string, "", "CCDB path to dpt lower boundary")
     O2_DEFINE_CONFIGURABLE(cfgDptDisCutHigh, std::string, "", "CCDB path to dpt higher boundary")
     ConfigurableAxis cfgDptDisAxisNormal{"cfgDptDisAxisNormal", {200, -1., 1.}, "normalized axis"};
-    // Functional form of pt-dependent DCAxy cut
-    TF1* fPtDepDCAxy = nullptr;
-    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
-    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
-  } cfgFuncParas;
+    // for v02(pT)
+    O2_DEFINE_CONFIGURABLE(cfgV02Enabled, bool, false, "Produce v02(pT)")
+    O2_DEFINE_CONFIGURABLE(cfgV02CorrIndex, int, 8, "correlation index for n(pT)*corr")
+    O2_DEFINE_CONFIGURABLE(cfgV02FracEtaMin, float, -0.4, "minimum eta for particle fraction")
+    O2_DEFINE_CONFIGURABLE(cfgV02FracEtaMax, float, 0.4, "max eta for particle fraction")
+    std::vector<float> nPt; // fraction of particles in each pT bin in one event
+    std::vector<std::shared_ptr<TProfile2D>> listNptV2;
+    std::vector<std::shared_ptr<TH2>> listPtX;
+  } cfgAdditionObs;
 
-  ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
   ConfigurableAxis axisIndependent{"axisIndependent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
   ConfigurableAxis axisNch{"axisNch", {4000, 0, 4000}, "N_{ch}"};
@@ -184,7 +216,7 @@ struct FlowTask {
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   // Filter for MCcollisions
@@ -198,6 +230,7 @@ struct FlowTask {
 
   // Corrections
   TH1D* mEfficiency = nullptr;
+  TH1D* mEfficiencyForNch = nullptr;
   GFWWeights* mAcceptance = nullptr;
   bool correctionsLoaded = false;
 
@@ -309,7 +342,7 @@ struct FlowTask {
       registry.add("MCGen/MChMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
       registry.add("MCGen/MChCent", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
     }
-    if (!cfgUseSmallMemory) {
+    if (!cfgUserIO.cfgUseSmallMemory) {
       registry.add("BeforeSel8_globalTracks_centT0C", "before sel8;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
       registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
       registry.add("BeforeCut_PVTracks_centT0C", "before cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -333,8 +366,8 @@ struct FlowTask {
     registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
-    registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
-    registry.add("hPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+    registry.add("hPt", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
+    registry.add("hPtRef", "p_{T} distribution for refernce particle", {HistType::kTH1D, {axisPt}});
     registry.add("pt_phi_bef", "before cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, cfgFuncParas.axisPhiMod}});
     registry.add("pt_phi_aft", "after cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, cfgFuncParas.axisPhiMod}});
     registry.add("hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
@@ -359,13 +392,13 @@ struct FlowTask {
     registry.add("c22_gap08_trackMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partA_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
-    if (cfgFuncParas.cfgDptDisEnable) {
-      registry.add("hNormDeltaPt_X", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgFuncParas.cfgDptDisAxisNormal, axisIndependent}});
+    if (cfgAdditionObs.cfgDptDisEnable) {
+      registry.add("hNormDeltaPt_X", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgAdditionObs.cfgDptDisAxisNormal, axisIndependent}});
     }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
-      registry.add("MCGen/MChPt", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+      registry.add("MCGen/MChPt", "p_{T} distribution after cut", {HistType::kTH1D, {axisPt}});
       registry.add("hMeanPtWithinGap08_MC", "mean p_{T}", {HistType::kTProfile, {axisIndependent}});
       for (auto i = 0; i < cfgNbootstrap; i++) {
         bootstrapArray[i][kMeanPtWithinGap08_MC] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08_MC", i), "", {HistType::kTProfile, {axisIndependent}});
@@ -377,9 +410,20 @@ struct FlowTask {
     double* ptBins = &(axis.binEdges)[0];
     fPtAxis = new TAxis(nPtBins, ptBins);
 
-    if (cfgOutputNUAWeights) {
+    if (cfgUserIO.cfgOutputNUAWeights) {
       fWeights->setPtBins(nPtBins, ptBins);
       fWeights->init(true, false);
+    }
+    if (cfgAdditionObs.cfgV02Enabled) {
+      cfgAdditionObs.nPt.resize(fPtAxis->GetNbins());
+      cfgAdditionObs.listNptV2.resize(cfgNbootstrap + 1);
+      cfgAdditionObs.listPtX.resize(cfgNbootstrap + 1);
+      cfgAdditionObs.listNptV2[0] = registry.add<TProfile2D>(Form("V02/hNptV2"), "", {HistType::kTProfile2D, {axisIndependent, axisPt}});
+      cfgAdditionObs.listPtX[0] = registry.add<TH2>(Form("V02/hPt_X"), "", {HistType::kTH2D, {axisIndependent, axisPt}});
+      for (auto ibo = 0; ibo < cfgNbootstrap; ibo++) {
+        cfgAdditionObs.listNptV2[ibo + 1] = registry.add<TProfile2D>(Form("V02/hNptV2_%d", ibo), "", {HistType::kTProfile2D, {axisIndependent, axisPt}});
+        cfgAdditionObs.listPtX[ibo + 1] = registry.add<TH2>(Form("V02/hPt_X_%d", ibo), ";p_{T};X", {HistType::kTH2D, {axisIndependent, axisPt}});
+      }
     }
 
     // add in FlowContainer to Get boostrap sample automatically
@@ -543,6 +587,10 @@ struct FlowTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {4 2} refP10 {-4 -2}", "Ch10Gap4242", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2 2} refP10 {-2 -2}", "Ch10Gap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {2 2} refP10 {-2 -2}", "Ch10Gap24", kTRUE));
+    LOGF(info, "Embedded GFW CorrelatorConfig:");
+    for (auto icorr = 0; icorr < static_cast<int>(corrconfigs.size()); icorr++) {
+      LOGF(info, "corrconfigs.at(%d): %s", icorr, corrconfigs.at(icorr).Head.c_str());
+    }
     if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
       LOGF(info, "User adding GFW CorrelatorConfig:");
       // attentaion: here we follow the index of cfgUserDefineGFWCorr
@@ -552,11 +600,11 @@ struct FlowTask {
           break;
         }
         if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
-          LOGF(info, "%d: enable pt-Diff for %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
           corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kTRUE));
+          LOGF(info, "corrconfigs.at(%d): enable pt-Diff for %s %s", corrconfigs.size() - 1, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
         } else {
-          LOGF(info, "%d: %s %s", i, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
           corrconfigs.push_back(fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
+          LOGF(info, "corrconfigs.at(%d): %s %s", corrconfigs.size() - 1, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
         }
       }
     }
@@ -648,10 +696,15 @@ struct FlowTask {
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
 
-    if (cfgFuncParas.cfgDCAxyNSigma) {
-      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()), 0.001, 1000);
-      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgFuncParas.cfgDCAxyNSigma);
-      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgFuncParas.cfgDCAxy->c_str()));
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]) {
+      cfgFuncParas.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxy->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs]);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs], cfgFuncParas.cfgDCAxyFunc->c_str()));
+    }
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]) {
+      cfgFuncParas.fPtDepDCAxyForNch = new TF1("ptDepDCAxyForNch", Form("[0]*%s", cfgFuncParas.cfgDCAxyFunc->c_str()), 0.001, 1000);
+      cfgFuncParas.fPtDepDCAxyForNch->SetParameter(0, cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch]);
+      LOGF(info, "DCAxy pt-dependence function for Nch: %s", Form("%0.1f * %s", cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch], cfgFuncParas.cfgDCAxyFunc->c_str()));
     }
   }
 
@@ -691,6 +744,25 @@ struct FlowTask {
       if (std::fabs(val) < 1) {
         registry.fill(vnWeff, cent, val, dnx * WeffEvent);
         registry.fill(vnpT, cent, val * meanPt, dnx * WeffEvent);
+      }
+      return;
+    }
+    return;
+  }
+
+  void fillNptV2Profile(const GFW::CorrConfig& corrconf, const std::vector<float>& npt, const double& cent, const int& isample)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        for (auto iPt = 0; iPt < fPtAxis->GetNbins(); iPt++) {
+          auto pt = fPtAxis->GetBinCenter(iPt + 1);
+          cfgAdditionObs.listNptV2[isample]->Fill(cent, pt, val * npt[iPt], dnx);
+        }
       }
       return;
     }
@@ -770,41 +842,48 @@ struct FlowTask {
   {
     if (correctionsLoaded)
       return;
-    if (cfgAcceptance.value.empty() == false) {
-      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
+    if (cfgUserIO.cfgAcceptance.value.empty() == false) {
+      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgUserIO.cfgAcceptance, timestamp);
       if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), (void*)mAcceptance);
       else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgUserIO.cfgAcceptance.value.c_str(), (void*)mAcceptance);
     }
-    if (cfgEfficiency.value.empty() == false) {
-      mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+    if (cfgUserIO.cfgEfficiency.value.empty() == false) {
+      mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgUserIO.cfgEfficiency, timestamp);
       if (mEfficiency == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgUserIO.cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiency.value.c_str(), (void*)mEfficiency);
     }
-    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDishEvAvgMeanPt.value.empty() == false) {
-      cfgFuncParas.hEvAvgMeanPt = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDishEvAvgMeanPt, timestamp);
-      if (cfgFuncParas.hEvAvgMeanPt == nullptr) {
-        LOGF(fatal, "Could not load mean pT histogram from %s", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str());
+    if (cfgUserIO.cfgEfficiencyForNch.value.empty() == false) {
+      mEfficiencyForNch = ccdb->getForTimeStamp<TH1D>(cfgUserIO.cfgEfficiencyForNch, timestamp);
+      if (mEfficiencyForNch == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgUserIO.cfgEfficiencyForNch.value.c_str());
       }
-      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgFuncParas.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgFuncParas.hEvAvgMeanPt);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgUserIO.cfgEfficiencyForNch.value.c_str(), (void*)mEfficiencyForNch);
     }
-    if (cfgFuncParas.cfgDptDisEnable && cfgFuncParas.cfgDptDisSelectionSwitch > kNoDptCut) {
-      if (cfgFuncParas.cfgDptDisCutLow.value.empty() == false) {
-        cfgFuncParas.fDptDisCutLow = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDisCutLow, timestamp);
-        if (cfgFuncParas.fDptDisCutLow == nullptr) {
-          LOGF(fatal, "Could not load dptDis low cut histogram from %s", cfgFuncParas.cfgDptDisCutLow.value.c_str());
-        }
-        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgFuncParas.cfgDptDisCutLow.value.c_str(), (void*)cfgFuncParas.fDptDisCutLow);
+    if (cfgAdditionObs.cfgDptDisEnable && cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.empty() == false) {
+      cfgAdditionObs.hEvAvgMeanPt = ccdb->getForTimeStamp<TH1D>(cfgAdditionObs.cfgDptDishEvAvgMeanPt, timestamp);
+      if (cfgAdditionObs.hEvAvgMeanPt == nullptr) {
+        LOGF(fatal, "Could not load mean pT histogram from %s", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str());
       }
-      if (cfgFuncParas.cfgDptDisCutHigh.value.empty() == false) {
-        cfgFuncParas.fDptDisCutHigh = ccdb->getForTimeStamp<TH1D>(cfgFuncParas.cfgDptDisCutHigh, timestamp);
-        if (cfgFuncParas.fDptDisCutHigh == nullptr) {
-          LOGF(fatal, "Could not load dptDis high cut histogram from %s", cfgFuncParas.cfgDptDisCutHigh.value.c_str());
+      LOGF(info, "Loaded mean pT histogram from %s (%p)", cfgAdditionObs.cfgDptDishEvAvgMeanPt.value.c_str(), (void*)cfgAdditionObs.hEvAvgMeanPt);
+    }
+    if (cfgAdditionObs.cfgDptDisEnable && cfgAdditionObs.cfgDptDisSelectionSwitch > kNoDptCut) {
+      if (cfgAdditionObs.cfgDptDisCutLow.value.empty() == false) {
+        cfgAdditionObs.fDptDisCutLow = ccdb->getForTimeStamp<TH1D>(cfgAdditionObs.cfgDptDisCutLow, timestamp);
+        if (cfgAdditionObs.fDptDisCutLow == nullptr) {
+          LOGF(fatal, "Could not load dptDis low cut histogram from %s", cfgAdditionObs.cfgDptDisCutLow.value.c_str());
         }
-        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgFuncParas.cfgDptDisCutHigh.value.c_str(), (void*)cfgFuncParas.fDptDisCutHigh);
+        LOGF(info, "Loaded dptDis low cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutLow.value.c_str(), (void*)cfgAdditionObs.fDptDisCutLow);
+      }
+      if (cfgAdditionObs.cfgDptDisCutHigh.value.empty() == false) {
+        cfgAdditionObs.fDptDisCutHigh = ccdb->getForTimeStamp<TH1D>(cfgAdditionObs.cfgDptDisCutHigh, timestamp);
+        if (cfgAdditionObs.fDptDisCutHigh == nullptr) {
+          LOGF(fatal, "Could not load dptDis high cut histogram from %s", cfgAdditionObs.cfgDptDisCutHigh.value.c_str());
+        }
+        LOGF(info, "Loaded dptDis high cut histogram from %s (%p)", cfgAdditionObs.cfgDptDisCutHigh.value.c_str(), (void*)cfgAdditionObs.fDptDisCutHigh);
       }
     }
     correctionsLoaded = true;
@@ -825,6 +904,19 @@ struct FlowTask {
       weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
+    return true;
+  }
+
+  bool setNchEffWeights(float& eff_nch, float pt)
+  {
+    float effNch = 1.;
+    if (mEfficiencyForNch)
+      effNch = mEfficiencyForNch->GetBinContent(mEfficiencyForNch->FindBin(pt));
+    else
+      effNch = 1.0;
+    if (effNch == 0)
+      return false;
+    eff_nch = 1. / effNch;
     return true;
   }
 
@@ -944,9 +1036,17 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgFuncParas.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutObs] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxy->Eval(track.pt())))
       return false;
-    return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
+    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutObs]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutObs]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutObs]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutObs]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutObs]));
+  }
+
+  template <typename TTrack>
+  bool trackSelectedForNch(TTrack track)
+  {
+    if (cfgTrackCuts->getData()[kDCAxyNSigma][kTrCutNch] && (std::fabs(track.dcaXY()) > cfgFuncParas.fPtDepDCAxyForNch->Eval(track.pt())))
+      return false;
+    return ((track.tpcNClsFound() >= cfgTrackCuts->getData()[kTPCclu][kTrCutNch]) && (track.tpcNClsCrossedRows() >= cfgTrackCuts->getData()[kTPCCrossedRows][kTrCutNch]) && (track.itsNCls() >= cfgTrackCuts->getData()[kITSclu][kTrCutNch]) && (track.tpcChi2NCl() < cfgTrackCuts->getData()[kChi2prTPCcls][kTrCutNch]) && (std::fabs(track.dcaZ()) < cfgTrackCuts->getData()[kDCAz][kTrCutNch]));
   }
 
   template <typename TTrack>
@@ -1024,7 +1124,7 @@ struct FlowTask {
   void processData(FilteredCollisions::iterator const& collision, aod::BCsWithTimestamps const&, FilteredTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
-    if (!cfgUseSmallMemory && tracks.size() >= 1) {
+    if (!cfgUserIO.cfgUseSmallMemory && tracks.size() >= 1) {
       registry.fill(HIST("BeforeSel8_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
     }
     if (!collision.sel8())
@@ -1034,12 +1134,12 @@ struct FlowTask {
     registry.fill(HIST("hEventCount"), 1.5);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int currentRunNumber = bc.runNumber();
-    for (const auto& ExcludedRun : cfgRunRemoveList.value) {
+    for (const auto& ExcludedRun : cfgUserIO.cfgRunRemoveList.value) {
       if (currentRunNumber == ExcludedRun) {
         return;
       }
     }
-    if (cfgOutputNUAWeightsRunbyRun && currentRunNumber != lastRunNumber) {
+    if (cfgUserIO.cfgOutputNUAWeightsRunbyRun && currentRunNumber != lastRunNumber) {
       lastRunNumber = currentRunNumber;
       if (std::find(runNumbers.begin(), runNumbers.end(), currentRunNumber) == runNumbers.end()) {
         // if run number is not in the preconfigured list, create new output histograms for this run
@@ -1054,7 +1154,7 @@ struct FlowTask {
     }
 
     registry.fill(HIST("hEventCount"), 2.5);
-    if (!cfgUseSmallMemory) {
+    if (!cfgUserIO.cfgUseSmallMemory) {
       registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
       registry.fill(HIST("BeforeCut_PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
       registry.fill(HIST("BeforeCut_globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
@@ -1069,12 +1169,14 @@ struct FlowTask {
       return;
     registry.fill(HIST("hEventCount"), 3.5);
     float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), cent);
     fGFW->Clear();
     fFCpt->clearVector();
+    cfgAdditionObs.nPt.clear();
     if (cfgGetInteractionRate) {
       initHadronicRate(bc);
       double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
@@ -1087,7 +1189,7 @@ struct FlowTask {
     registry.fill(HIST("hEventCount"), 4.5);
 
     // fill event QA
-    if (!cfgUseSmallMemory) {
+    if (!cfgUserIO.cfgUseSmallMemory) {
       registry.fill(HIST("globalTracks_centT0C"), collision.centFT0C(), tracks.size());
       registry.fill(HIST("PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
       registry.fill(HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
@@ -1101,8 +1203,9 @@ struct FlowTask {
     }
 
     // track weights
-    float weff = 1, wacc = 1;
+    float weff = 1, wacc = 1, weffForNch = 1;
     double weffEvent = 0;
+    double weffEventFrac = 0;
     double ptSum = 0., ptSum_Gap08 = 0.;
     double weffEventWithinGap08 = 0., weffEventSquareWithinGap08 = 0.;
     double sumPtsquareWsquareWithinGap08 = 0., sumPtWsquareWithinGap08 = 0.;
@@ -1115,6 +1218,10 @@ struct FlowTask {
       // magnet field dependence cut
       magnetfield = getMagneticField(bc.timestamp());
     }
+    AcceptedTracks acceptedTracks{0, 0, 0, 0};
+    std::vector<float> consistentEventVector = cfgUserIO.cfgConsistentEventVector;
+    if (cfgUserIO.cfgConsistentEventFlag)
+      LOGF(info, "consistentEventVector.size = %u", consistentEventVector.size());
 
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
@@ -1145,6 +1252,9 @@ struct FlowTask {
     }
 
     for (const auto& track : tracks) {
+      if (trackSelectedForNch(track) && setNchEffWeights(weffForNch, track.pt())) {
+        nTracksCorrected += weffForNch;
+      }
       if (!trackSelected(track))
         continue;
       if (cfgFuncParas.cfgShowTPCsectorOverlap && !rejectionTPCoverlap(track, magnetfield))
@@ -1152,16 +1262,16 @@ struct FlowTask {
       bool withinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       bool withinEtaGap08 = (std::abs(track.eta()) < cfgCutEta);
-      if (cfgOutputNUAWeights) {
-        if (cfgOutputNUAWeightsRefPt) {
+      if (cfgUserIO.cfgOutputNUAWeights) {
+        if (cfgUserIO.cfgOutputNUAWeightsRefPt) {
           if (withinPtRef) {
             fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-            if (cfgOutputNUAWeightsRunbyRun)
+            if (cfgUserIO.cfgOutputNUAWeightsRunbyRun)
               th3sPerRun[currentRunNumber]->Fill(track.phi(), track.eta(), collision.posZ());
           }
         } else {
           fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-          if (cfgOutputNUAWeightsRunbyRun)
+          if (cfgUserIO.cfgOutputNUAWeightsRunbyRun)
             th3sPerRun[currentRunNumber]->Fill(track.phi(), track.eta(), collision.posZ());
         }
       }
@@ -1180,6 +1290,13 @@ struct FlowTask {
         }
       }
       registry.fill(HIST("hPt"), track.pt());
+      if (cfgAdditionObs.cfgV02Enabled && track.eta() >= cfgAdditionObs.cfgV02FracEtaMin && track.eta() <= cfgAdditionObs.cfgV02FracEtaMax) {
+        cfgAdditionObs.listPtX[0]->Fill(independent, track.pt(), weff);
+        cfgAdditionObs.listPtX[sampleIndex + 1]->Fill(independent, track.pt(), weff);
+        if ((fPtAxis->FindBin(track.pt()) - 1) < fPtAxis->GetNbins()) // sanity check to avoid out of range error
+          cfgAdditionObs.nPt[fPtAxis->FindBin(track.pt()) - 1] += weff;
+        weffEventFrac += weff;
+      }
       if (withinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
         registry.fill(HIST("hPhiWeighted"), track.phi(), wacc);
@@ -1194,7 +1311,6 @@ struct FlowTask {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         weffEvent += weff;
         ptSum += weff * track.pt();
-        nTracksCorrected += weff;
         if (withinEtaGap08) {
           ptSum_Gap08 += weff * track.pt();
           sumPtWsquareWithinGap08 += weff * weff * track.pt();
@@ -1202,6 +1318,15 @@ struct FlowTask {
           weffEventWithinGap08 += weff;
           weffEventSquareWithinGap08 += weff * weff;
         }
+      }
+      if (cfgUserIO.cfgConsistentEventFlag && consistentEventVector.size() == 6) { // o2-linter: disable=magic-number (size match)
+        acceptedTracks.nFull += 1;
+        if (track.eta() > consistentEventVector[0] && track.eta() < consistentEventVector[1])
+          acceptedTracks.nNeg += 1;
+        if (track.eta() > consistentEventVector[2] && track.eta() < consistentEventVector[3])
+          acceptedTracks.nMid += 1;
+        if (track.eta() > consistentEventVector[4] && track.eta() < consistentEventVector[5])
+          acceptedTracks.nPos += 1;
       }
       if (withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
@@ -1219,15 +1344,32 @@ struct FlowTask {
       independent = nTracksCorrected;
     }
 
-    if (cfgFuncParas.cfgDptDisEnable) {
+    if (cfgUserIO.cfgConsistentEventFlag) {
+      if (cfgUserIO.cfgConsistentEventFlag & 1) {
+        if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
+          return;
+      } else if (cfgUserIO.cfgConsistentEventFlag & 2) {
+        if (acceptedTracks.nFull < 4) // o2-linter: disable=magic-number (at least four tracks in full acceptance)
+          return;
+      } else if (cfgUserIO.cfgConsistentEventFlag & 4) {
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in each subevent)
+          return;
+      }
+      if (cfgUserIO.cfgConsistentEventFlag & 8) {
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
+          return;
+      }
+    }
+
+    if (cfgAdditionObs.cfgDptDisEnable) {
       double meanPt = ptSum / weffEvent;
-      double deltaPt = meanPt - cfgFuncParas.hEvAvgMeanPt->GetBinContent(cfgFuncParas.hEvAvgMeanPt->FindBin(independent));
+      double deltaPt = meanPt - cfgAdditionObs.hEvAvgMeanPt->GetBinContent(cfgAdditionObs.hEvAvgMeanPt->FindBin(independent));
       double normDeltaPt = deltaPt / meanPt;
       registry.fill(HIST("hNormDeltaPt_X"), normDeltaPt, independent, weffEvent);
-      if (cfgFuncParas.cfgDptDisSelectionSwitch == kLowDptCut && normDeltaPt > cfgFuncParas.fDptDisCutLow->GetBinContent(cfgFuncParas.fDptDisCutLow->FindBin(independent))) {
+      if (cfgAdditionObs.cfgDptDisSelectionSwitch == kLowDptCut && normDeltaPt > cfgAdditionObs.fDptDisCutLow->GetBinContent(cfgAdditionObs.fDptDisCutLow->FindBin(independent))) {
         // only keep low 10% dpt event
         return;
-      } else if (cfgFuncParas.cfgDptDisSelectionSwitch == kHighDptCut && normDeltaPt < cfgFuncParas.fDptDisCutHigh->GetBinContent(cfgFuncParas.fDptDisCutHigh->FindBin(independent))) {
+      } else if (cfgAdditionObs.cfgDptDisSelectionSwitch == kHighDptCut && normDeltaPt < cfgAdditionObs.fDptDisCutHigh->GetBinContent(cfgAdditionObs.fDptDisCutHigh->FindBin(independent))) {
         // only keep high 10% dpt event
         return;
       }
@@ -1240,7 +1382,6 @@ struct FlowTask {
     }
     if (weffEventWithinGap08)
       registry.fill(HIST("hMeanPtWithinGap08"), independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
-    int sampleIndex = static_cast<int>(cfgNbootstrap * lRandom);
     if (weffEventWithinGap08)
       bootstrapArray[sampleIndex][kMeanPtWithinGap08]->Fill(independent, ptSum_Gap08 / weffEventWithinGap08, 1.0);
     // c22_gap8 * pt_withGap8
@@ -1254,6 +1395,15 @@ struct FlowTask {
       registry.fill(HIST("PtVariance_partB_WithinGap08"), independent,
                     (weffEventWithinGap08 * ptSum_Gap08 - sumPtWsquareWithinGap08) / weffEventDiffWithGap08,
                     weffEventDiffWithGap08);
+    }
+
+    // v02
+    if (cfgAdditionObs.cfgV02Enabled && weffEventFrac > 0) {
+      for (auto ipt = 0; ipt < fPtAxis->GetNbins(); ipt++) {
+        cfgAdditionObs.nPt[ipt] /= weffEventFrac;
+      }
+      fillNptV2Profile(corrconfigs.at(cfgAdditionObs.cfgV02CorrIndex), cfgAdditionObs.nPt, independent, 0);
+      fillNptV2Profile(corrconfigs.at(cfgAdditionObs.cfgV02CorrIndex), cfgAdditionObs.nPt, independent, sampleIndex + 1);
     }
 
     // Filling Flow Container
