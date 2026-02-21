@@ -75,7 +75,7 @@ struct LumiStabilityPP {
   static constexpr int defaulFlags[1][NBCCategories] = {{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
   Configurable<LabeledArray<int>> doTypeBC{"doTypeBC", {defaulFlags[0], NBCCategories, {"BCA", "BCB", "BCC", "BCE", "BCL", "BCSLFDD", "BCSLFT0", "BCNL", "BCNSLFDD", "BCNSLFT0"}}, "Create and fill histograms for different BC types"};
 
-  Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of empty (SL) or non-B (L) BCs before a (super)leading BC"};
+  Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of empty BCs before a (super)leading BC"};
   Configurable<int> bcShiftFDDForData2023{"bcShiftFDDForData2023", 7, "Number of bc to shift for FDD to be applied for 2023 data only"};
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
@@ -203,16 +203,16 @@ struct LumiStabilityPP {
     int totalLeadingBCs = 0;
     for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
       if (bcPatternB[iBC]) {    // Check if current BC is of type B
-        int nonBBCsBefore = 0;  // Count how many consecutive BCs before this one are NOT type B
+        int emptyBCsBefore = 0; // Count how many consecutive BCs before this one are empty
         for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
-          if (!bcPatternB[prevBC]) {
-            nonBBCsBefore++;
+          if (bcPatternE[prevBC]) {
+            emptyBCsBefore++;
           } else {
-            break; // Stop counting if we hit a type B BC
+            break; // Stop counting if we hit a non-empty BC
           }
         }
-        if (nonBBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC empty BCs before this one, mark it as leading
+        if (emptyBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC empty BCs before this one, mark it as leading
           bcPatternL[iBC] = true;
           totalLeadingBCs++;
         }
