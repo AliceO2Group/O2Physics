@@ -540,7 +540,6 @@ struct PidDiHadron {
       histos.add("ExpTpcdEdx_ptwise_pi", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
       histos.add("ExpTpcdEdx_ptwise_ka", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
       histos.add("ExpTpcdEdx_ptwise_pr", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
-
     }
 
     histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -883,7 +882,6 @@ struct PidDiHadron {
             histos.fill(HIST("ExpSigma_ptwise"), track1.pt(), track1.tpcExpSigmaPr(), track1.tofNSigmaPr());
           }
         }
-        
       }
       if (cfgGetNsigmaQA && cfgUseItsPID) {
         if (cfgPIDParticle == kPions)
@@ -1584,7 +1582,6 @@ struct PidDiHadron {
           histos.fill(HIST("hNsigmaProtonTruePositives"), track.pt());
         }
       } // Proton condition
-
     } // end of tracks MC loop
   } // end of process MC
   PROCESS_SWITCH(PidDiHadron, processMC, "Process Monte Carlo", true);
