@@ -530,7 +530,7 @@ class EMCPhotonCut : public TNamed
           auto dPhis = cluster.deltaPhi();   // std:vector<float>
           auto trackspt = cluster.trackpt(); // std:vector<float>
           auto tracksp = cluster.trackp();   // std:vector<float>
-          int ntrack = tracksp.size();
+          int ntrack = trackspt.size();
           for (int itr = 0; itr < ntrack; itr++) {
             float dEta = std::fabs(dEtas[itr]);
             float dPhi = std::fabs(dPhis[itr]);
@@ -550,7 +550,6 @@ class EMCPhotonCut : public TNamed
             auto dEta = std::fabs(emcmatchedtrack.deltaEta());
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
             auto trackpt = emcmatchedtrack.trackPt();
-            auto trackp = emcmatchedtrack.trackP();
             bool result = (dEta > GetSecTrackMatchingEta(trackpt)) ||
                           (dPhi > GetSecTrackMatchingPhi(trackpt));
             if (!result) {
@@ -561,8 +560,7 @@ class EMCPhotonCut : public TNamed
           auto dEtas = cluster.deltaEtaSec();   // std:vector<float>
           auto dPhis = cluster.deltaPhiSec();   // std:vector<float>
           auto trackspt = cluster.trackptSec(); // std:vector<float>
-          auto tracksp = cluster.trackpSec();   // std:vector<float>
-          int ntrack = tracksp.size();
+          int ntrack = trackspt.size();
           for (int itr = 0; itr < ntrack; itr++) {
             float dEta = std::fabs(dEtas[itr]);
             float dPhi = std::fabs(dPhis[itr]);
