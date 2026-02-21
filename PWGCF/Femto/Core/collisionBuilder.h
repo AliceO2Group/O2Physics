@@ -395,20 +395,10 @@ class CollisionBuilder
   void init(o2::framework::HistogramRegistry* registry, T1& confFilter, T2& confBits, T3& confRct, T4& confCcdb, T5& confTable, T6& initContext)
   {
     LOG(info) << "Initialize femto collision builder...";
-    mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
-    mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
-    mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
-    mProducedSphericities = utils::enableTable("FColSphericities_001", confTable.produceSphericities.value, initContext);
-    mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
-    mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
-    mProduceQns = utils::enableTable("FColQnBins_001", confTable.produceQns.value, initContext);
-    if (mProducedCollisions || mProducedCollisionMasks || mProducedPositions || mProducedSphericities || mProducedMultiplicities || mProducedCentralities) {
-      mFillAnyTable = true;
-    } else {
-      LOG(info) << "No tables configured, Selection object will not be configured...";
-      LOG(info) << "Initialization done...";
-      return;
-    }
+
+    mMagFieldForced = confCcdb.magFieldForced.value;
+    mGrpPath = confCcdb.grpPath.value;
+    mSubGeneratorId = confFilter.subGeneratorId.value;
 
     if (!confBits.triggers.value.empty()) {
       mUseTrigger = true;
@@ -425,9 +415,21 @@ class CollisionBuilder
       LOG(info) << "Init RCT flag checker with label: " << confRct.label.value << "; use ZDC: " << confRct.useZdc.value << "; Limimted acceptance is bad: " << confRct.treatLimitedAcceptanceAsBad.value;
       mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
     }
-    mMagFieldForced = confCcdb.magFieldForced.value;
-    mGrpPath = confCcdb.grpPath.value;
-    mSubGeneratorId = confFilter.subGeneratorId.value;
+
+    mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
+    mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
+    mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
+    mProducedSphericities = utils::enableTable("FColSphericities_001", confTable.produceSphericities.value, initContext);
+    mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
+    mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
+    mProduceQns = utils::enableTable("FColQnBins_001", confTable.produceQns.value, initContext);
+    if (mProducedCollisions || mProducedCollisionMasks || mProducedPositions || mProducedSphericities || mProducedMultiplicities || mProducedCentralities) {
+      mFillAnyTable = true;
+    } else {
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
+      return;
+    }
 
     mCollisionSelection.configure(registry, confFilter, confBits);
     mCollisionSelection.printSelections(colSelsName);

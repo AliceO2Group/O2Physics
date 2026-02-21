@@ -409,7 +409,7 @@ struct BjetTaggingGnn {
 
   using AnalysisCollisions = soa::Join<aod::JetCollisions, aod::JCollisionPIs>;
   using FilteredCollisions = soa::Filtered<AnalysisCollisions>;
-  using AnalysisCollisionsTriggered = soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JCollisionBCs>;
+  using AnalysisCollisionsTriggered = soa::Join<aod::JetCollisions, aod::JCollisionPIs>;
   using FilteredCollisionsTriggered = soa::Filtered<AnalysisCollisionsTriggered>;
   using OrigCollisions = soa::Join<aod::Collisions, aod::PVMults>;
   using DataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags>;

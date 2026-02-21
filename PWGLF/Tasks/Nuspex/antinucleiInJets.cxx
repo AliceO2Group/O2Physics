@@ -140,6 +140,12 @@ struct AntinucleiInJets {
   // Random generator for subsample assignment
   TRandom3 mRand;
 
+  // Parameters for ppRef analysis
+  Configurable<bool> isppRefAnalysis{"isppRefAnalysis", false, "Is ppRef analysis"};
+  Configurable<double> cfgAreaFrac{"cfgAreaFrac", 0.6, "fraction of jet area"};
+  Configurable<double> cfgEtaJetMax{"cfgEtaJetMax", 0.5, "max jet eta"};
+  Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.15, "minimum pt of tracks for jet reconstruction"};
+
   // Event selection criteria
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "Reject events near the ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "Reject events near the TF border"};
@@ -154,6 +160,7 @@ struct AntinucleiInJets {
 
   // Jet selection and event filtering parameters
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
+  Configurable<double> maxJetPt{"maxJetPt", 1000.0, "Maximum pt of the jet after bkg subtraction"};
   Configurable<double> ptLeadingMin{"ptLeadingMin", 5.0, "pt Leading Min"};
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
@@ -313,6 +320,7 @@ struct AntinucleiInJets {
 
       // Jet effective area over piR^2
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
+      registryData.add("jetArea", "jetArea", HistType::kTH1F, {{5000, 0, 5, "area"}});
 
       // angle between track and jet axis
       registryData.add("theta_track_jet", "theta_track_jet", HistType::kTH2F, {{100, 0, 100, "#it{p}^{jet}_{T} (GeV/#it{c})"}, {400, 0, 20.0, "#theta_{track-jet} (deg)"}});
@@ -871,7 +879,6 @@ struct AntinucleiInJets {
     static constexpr int MinTpcCr = 70;
     static constexpr double MaxChi2Tpc = 4.0;
     static constexpr double MaxChi2Its = 36.0;
-    static constexpr double MinPtTrack = 0.1;
     static constexpr double DcaxyMaxTrackPar0 = 0.0105;
     static constexpr double DcaxyMaxTrackPar1 = 0.035;
     static constexpr double DcaxyMaxTrackPar2 = 1.1;
@@ -891,7 +898,7 @@ struct AntinucleiInJets {
       return false;
     if (std::fabs(track.eta()) > maxEta)
       return false;
-    if (track.pt() < MinPtTrack)
+    if (track.pt() < cfgMinPtTrack)
       return false;
     if (std::fabs(track.dcaXY()) > (DcaxyMaxTrackPar0 + DcaxyMaxTrackPar1 / std::pow(track.pt(), DcaxyMaxTrackPar2)))
       return false;
@@ -1242,18 +1249,24 @@ struct AntinucleiInJets {
     for (const auto& jet : jets) {
 
       // Jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+      if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
+        continue;
+      if (isppRefAnalysis && std::fabs(jet.eta()) > cfgEtaJetMax)
         continue;
 
       // Jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (jetMinusBkg.pt() < minJetPt)
+      if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
+        continue;
+      if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
         continue;
 
       // Apply area cut if required
       double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-      if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+      if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
+        continue;
+      if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
         continue;
       isAtLeastOneJetSelected = true;
 
@@ -1268,6 +1281,7 @@ struct AntinucleiInJets {
 
       // Fill histogram with jet effective area / piR^2
       registryData.fill(HIST("jetEffectiveAreaOverPiR2"), jet.area() / (PI * rJet * rJet));
+      registryData.fill(HIST("jetArea"), jet.area());
 
       // Get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -1529,7 +1543,7 @@ struct AntinucleiInJets {
       // Jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (jetMinusBkg.pt() < minJetPt)
+      if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
         continue;
 
       // Apply area cut if required
@@ -1607,7 +1621,7 @@ struct AntinucleiInJets {
       registryQC.fill(HIST("ptDistributionJetCone"), ptJetBeforeSub);
       registryQC.fill(HIST("ptDistributionJet"), ptJetAfterSub);
 
-      if (jetMinusBkg.pt() < minJetPt)
+      if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
         continue;
       njetsHighPt++;
       registryQC.fill(HIST("sumPtJet"), jet.pt());
@@ -2061,18 +2075,24 @@ struct AntinucleiInJets {
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+        if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
+          continue;
+        if (isppRefAnalysis && std::fabs(jet.eta()) > cfgEtaJetMax)
           continue;
 
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (jetMinusBkg.pt() < minJetPt)
+        if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
+          continue;
+        if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
           continue;
 
         // Apply area cut if required
         double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-        if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+        if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
+          continue;
+        if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
 
@@ -2289,18 +2309,24 @@ struct AntinucleiInJets {
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+        if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
+          continue;
+        if (isppRefAnalysis && std::fabs(jet.eta()) > cfgEtaJetMax)
           continue;
 
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (jetMinusBkg.pt() < minJetPt)
+        if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
+          continue;
+        if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
           continue;
 
         // Apply area cut if required
         double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-        if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+        if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
+          continue;
+        if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
 
@@ -3040,7 +3066,7 @@ struct AntinucleiInJets {
       // Jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (jetMinusBkg.pt() < minJetPt)
+      if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
         continue;
 
       // Apply area cut if required
@@ -3618,7 +3644,7 @@ struct AntinucleiInJets {
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (jetMinusBkg.pt() < minJetPt)
+        if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
           continue;
 
         // Apply area cut if required

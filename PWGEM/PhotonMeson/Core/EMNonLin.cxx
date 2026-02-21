@@ -21,7 +21,6 @@ using namespace o2::pwgem::nonlin;
 
 float EMNonLin::getCorrectionFactor(float inputCalibValue, PhotonType photonType, float cent)
 {
-
   float param0 = 0, param1 = 0, param2 = 0, val = 1.f;
   switch (photonType) {
     case PhotonType::kEMC:
@@ -37,9 +36,9 @@ float EMNonLin::getCorrectionFactor(float inputCalibValue, PhotonType photonType
       break;
     case PhotonType::kPCM:
       if (cent >= 0 && cent <= 100) {
-        param0 = 11.2144f;
-        param1 = 0.0986184f;
-        param2 = 10.9302f;
+        param0 = 10.7203f;
+        param1 = 0.0383968f;
+        param2 = 10.6025f;
       } else {
         param0 = 0.f;
         param1 = 0.f;

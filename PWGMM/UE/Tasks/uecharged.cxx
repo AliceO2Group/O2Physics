@@ -290,6 +290,9 @@ struct ueCharged {
       ue.add("postselection_track/hvtxXY", "vtxXY after track selection", HistType::kTH1D, {{121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
       ue.add("postselection_track/htracks", "tracks after track selection", HistType::kTH1D, {{100, 0., 100., "N_{tracks}"}});
     }
+
+    ue.add("hPtAssoc_True", "pT mc True; pT; ", HistType::kTH1D, {ptAxis});
+    ue.add("hPtAssoc_Rec", "pT mc Rec; pT; ", HistType::kTH1D, {ptAxis});
   }
 
   float deltaPhi(float phia, float phib,
@@ -679,6 +682,7 @@ struct ueCharged {
         flPhiTrue = particle.phi();
         flIndexTrue = particle.globalIndex();
       }
+      ue.fill(HIST("hPtAssoc_True"), particle.pt());
     }
 
     ue.fill(HIST("hPtLeadingTrue"), flPtTrue);
@@ -807,6 +811,7 @@ struct ueCharged {
         flPhi = track.phi();
         flIndex = track.globalIndex();
       }
+      ue.fill(HIST("hPtAssoc_Rec"), track.pt());
     }
 
     ue.fill(HIST("hPtLeadingVsTracks"), flPt, track_multiplicity);

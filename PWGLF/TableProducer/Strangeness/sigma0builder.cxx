@@ -2225,7 +2225,7 @@ struct sigma0builder {
 
       //_______________________________________________
       // Wrongly collision association study (MC-specific)
-      if constexpr (requires { coll.StraMCCollisionId(); }) {
+      if constexpr (requires { coll.straMCCollisionId(); }) {
         if (doAssocStudy) {
           analyzeV0CollAssoc(coll, fullV0s, bestGammasArray, true);   // Photon-analysis
           analyzeV0CollAssoc(coll, fullV0s, bestLambdasArray, false); // Lambda-analysis
