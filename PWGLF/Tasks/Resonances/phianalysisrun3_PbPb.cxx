@@ -13,6 +13,7 @@
 /// \author Sarjeeta Gami
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -94,6 +95,8 @@ struct phianalysisrun3_PbPb {
     Configurable<bool> additionalEvSel4{"additionalEvSel4", true, "Additional evsel4"};
     Configurable<bool> additionalEvSel5{"additionalEvSel5", true, "Additional evsel5"};
     Configurable<bool> additionalEvSel6{"additionalEvSel6", true, "Additional evsel6"};
+    Configurable<bool> cutvz{"cutvz", true, "Vz cut"};
+    Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
   } selectionConfig;
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<int> pid{"pid", 0, "pid"};
@@ -130,7 +133,7 @@ struct phianalysisrun3_PbPb {
   Configurable<int> centestimator{"centestimator", 0, "Select multiplicity estimator: 0 - FT0C, 1 - FT0A, 2 - FT0M, 3 - FV0A, 4 - PVTracks"};
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
-  Configurable<bool> isApplyCentFT0M{"isApplyCentFV0A", false, "Centrality based on FT0M"};
+  Configurable<bool> isApplyCentFT0M{"isApplyCentFV0M", false, "Centrality based on FT0M"};
 
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
   // MC
@@ -148,7 +151,7 @@ struct phianalysisrun3_PbPb {
       histos.add("hCentrality", "Centrality distribution", kTH1F, {centAxisphi});
       histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
       histos.add("hOccupancy", "Occupancy distribution", kTH1F, {{500, 0, 50000}});
-      histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
+      histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{11, 0, 11.0}});
       histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {centAxisphi, ptAxisphi, massAxisphi});
       histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {centAxisphi, ptAxisphi, massAxisphi});
       histos.add("h3PhiInvMassRot", "Invariant mass of Phi meson Rotation", kTH3F, {centAxisphi, ptAxisphi, massAxisphi});
@@ -253,22 +256,22 @@ struct phianalysisrun3_PbPb {
       histos.add("TPC_Nsigma1_MC", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3D, {{200, -12, 12}, centAxisphi, ptAxisphi}});
       histos.add("trkDCAxy", "DCAxy distribution of positive kaon track candidates", HistType::kTH3F, {{150, -1.0f, 1.0f}, centAxisphi, ptAxisphi});
       histos.add("trkDCAz", "DCAxy distribution of negative kaon track candidates", HistType::kTH3F, {{150, -1.0f, 1.0f}, centAxisphi, ptAxisphi});
-      registry.add("Factors/hCentralityVsMultMC", "Event centrality vs MC multiplicity", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
-      registry.add("Factors/hEventCentrality", "Event centrality", kTH1F, {{101, 0, 101}});
-      registry.add("Factors/hNrecInGen", "Number of collisions in MC", kTH1F, {{4, -0.5, 3.5}});
-      registry.add("Factors/hGenEvents", "Generated events", HistType::kTH2F, {{axisNch}, {4, 0, 4}});
-      auto hGenEvents = registry.get<TH2>(HIST("Factors/hGenEvents"));
-      hGenEvents->GetYaxis()->SetBinLabel(1, "All generated events");
-      hGenEvents->GetYaxis()->SetBinLabel(2, "Generated events with Mc collision V_{z} cut");
-      hGenEvents->GetYaxis()->SetBinLabel(3, "Generated events with at least one reconstructed event");
-      registry.add("Factors/h2dGenPhi", "Centrality vs p_{T}", kTH2D, {{101, 0.0f, 101.0f}, ptAxisphi});
-      registry.add("Factors/h3dGenPhiVsMultMCVsCentrality", "MC multiplicity vs centrality vs p_{T}", kTH3D, {axisNch, {101, 0.0f, 101.0f}, ptAxisphi});
       if (doprocessEvtLossSigLossMC) {
         histos.add("QAevent/hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
         histos.add("QAevent/hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
         histos.add("QAevent/hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {{120, 0.0f, 120.0f}, impactParAxis});
         histos.add("QAevent/phigenBeforeEvtSel", "phi before event selections", kTH2F, {ptAxis, impactParAxis});
         histos.add("QAevent/phigenAfterEvtSel", "phi after event selections", kTH2F, {ptAxis, impactParAxis});
+        histos.add("QAevent/hMultEta05Rec", "multiplicity in eta<0.5 of selected MC events", kTH1F, {multAxis});
+        histos.add("QAevent/hMultEta05vsCentrRec", "multiplicity in eta<0.5 of selected MC events vs centrality", kTH2F, {centAxis, multAxis});
+        histos.add("QAevent/hMultEta05Gen", "multiplicity in eta<0.5 of generated MC events", kTH1F, {multAxis});
+        histos.add("QAevent/hgendndetaVsMultEta05BeforeEvtSel", "hgendndetaBeforeEvtSel vs multiplicity in eta<0.5", kTH2F, {ptAxis, multAxis});
+        histos.add("QAevent/hgendndetaVsMultEta05AfterEvtSel", "hgendndetaAfterEvtSel vs multiplicity in eta<0.5", kTH2F, {ptAxis, multAxis});
+        histos.add("QAevent/hMultEta08Rec", "multiplicity in eta<0.5 of selected MC events", kTH1F, {multAxis});
+        histos.add("QAevent/hMultEta08vsCentrRec", "multiplicity in eta<0.5 of selected MC events vs centrality", kTH2F, {centAxis, multAxis});
+        histos.add("QAevent/hMultEta08Gen", "multiplicity in eta<0.5 of generated MC events", kTH1F, {multAxis});
+        histos.add("QAevent/hgendndetaVsMultEta08BeforeEvtSel", "hgendndetaBeforeEvtSel vs multiplicity in eta<0.5", kTH2F, {ptAxis, multAxis});
+        histos.add("QAevent/hgendndetaVsMultEta08AfterEvtSel", "hgendndetaAfterEvtSel vs multiplicity in eta<0.5", kTH2F, {ptAxis, multAxis});
       }
       if (doprocessEvtLossSigLossMC1) {
         histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
@@ -373,7 +376,7 @@ struct phianalysisrun3_PbPb {
   template <typename CollType>
   bool myEventSelections(const CollType& collision)
   {
-    if (std::abs(collision.posZ()) > selectionConfig.cfgCutVertex)
+    if (selectionConfig.cutvz && !(std::abs(collision.posZ()) < selectionConfig.cfgCutVertex))
       return false;
 
     if (!collision.sel8())
@@ -394,6 +397,9 @@ struct phianalysisrun3_PbPb {
       return false;
     if (selectionConfig.additionalEvSel6 && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
+    if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
+      return false;
+    }
     int occupancy = collision.trackOccupancyInTimeRange();
     if (selectionConfig.fillOccupancy && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy))
       return false;
@@ -420,7 +426,7 @@ struct phianalysisrun3_PbPb {
       cent = col.centFT0C();
     }
     if (isApplyCentFT0M) {
-      cent = col.centFT0A();
+      cent = col.centFT0M();
     }
     return cent;
   }
@@ -476,7 +482,9 @@ struct phianalysisrun3_PbPb {
       }
     }
   }
-  Filter collisionFilter = nabs(aod::collision::posZ) < selectionConfig.cfgCutVertex;
+  Filter collisionFilter =
+    (!selectionConfig.cutvz) ||
+    (nabs(aod::collision::posZ) < selectionConfig.cfgCutVertex);
   Filter acceptanceFilter = (nabs(aod::track::eta) < selectionConfig.cfgCutEta && nabs(aod::track::pt) > selectionConfig.cfgCutPT);
   Filter dcacutFilter = (nabs(aod::track::dcaXY) < selectionConfig.cfgCutDCAxy) && (nabs(aod::track::dcaZ) < selectionConfig.cfgCutDCAz);
 
@@ -515,7 +523,7 @@ struct phianalysisrun3_PbPb {
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 1.5);
-    if (!collision.sel8()) {
+    if (cfgDoSel8 && !collision.sel8()) {
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 2.5);
@@ -548,6 +556,10 @@ struct phianalysisrun3_PbPb {
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 9.5);
+    if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 10.5);
     float multiplicity{-1};
     const int kCentFT0C = 0;
     const int kCentFT0A = 1;
@@ -698,6 +710,11 @@ struct phianalysisrun3_PbPb {
       if (selectionConfig.additionalEvSel6 && (!c1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !c2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
+      if (selectionConfig.isINELgt0 &&
+          (!c1.isInelGt0() || !c2.isInelGt0())) {
+        continue;
+      }
+
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
 
@@ -769,6 +786,11 @@ struct phianalysisrun3_PbPb {
       if (selectionConfig.additionalEvSel6 && (!c1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !c2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
+      if (selectionConfig.isINELgt0 &&
+          (!c1.isInelGt0() || !c2.isInelGt0())) {
+        continue;
+      }
+
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
 
@@ -841,6 +863,11 @@ struct phianalysisrun3_PbPb {
       if (selectionConfig.additionalEvSel6 && (!c1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !c2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
+      if (selectionConfig.isINELgt0 &&
+          (!c1.isInelGt0() || !c2.isInelGt0())) {
+        continue;
+      }
+
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
 
@@ -913,6 +940,11 @@ struct phianalysisrun3_PbPb {
       if (selectionConfig.additionalEvSel6 && (!c1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !c2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
+      if (selectionConfig.isINELgt0 &&
+          (!c1.isInelGt0() || !c2.isInelGt0())) {
+        continue;
+      }
+
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
 
@@ -1664,7 +1696,7 @@ struct phianalysisrun3_PbPb {
   void processGen1(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     histos.fill(HIST("hMC1"), 0.5);
-    if (std::abs(mcCollision.posZ()) < selectionConfig.cfgCutVertex) {
+    if (!selectionConfig.cutvz || std::abs(mcCollision.posZ()) < selectionConfig.cfgCutVertex) {
       histos.fill(HIST("hMC1"), 1.5);
     }
     std::vector<int64_t> selectedEvents(collisions.size());
@@ -1675,7 +1707,8 @@ struct phianalysisrun3_PbPb {
       if (cfgDoSel8 && !collision.sel8()) {
         continue;
       }
-      if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
+      if (selectionConfig.cutvz &&
+          std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
         continue;
       }
 
@@ -1704,11 +1737,15 @@ struct phianalysisrun3_PbPb {
         continue;
       }
       histos.fill(HIST("hMC1"), 9.5);
+      if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
+        continue;
+      }
+      histos.fill(HIST("hMC1"), 10.5);
       int occupancy = collision.trackOccupancyInTimeRange();
       if (selectionConfig.fillOccupancy && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 10.5);
+      histos.fill(HIST("hMC1"), 11.5);
       const int kCentFT0C = 0;
       const int kCentFT0A = 1;
       const int kCentFT0M = 2;
@@ -1728,11 +1765,11 @@ struct phianalysisrun3_PbPb {
     }
     selectedEvents.resize(nevts);
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
-    histos.fill(HIST("hMC1"), 11.5);
+    histos.fill(HIST("hMC1"), 12.5);
     if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    histos.fill(HIST("hMC1"), 12.5);
+    histos.fill(HIST("hMC1"), 13.5);
     for (const auto& mcParticle : mcParticles) {
 
       if (mcParticle.y() < rapiditycut1 || mcParticle.y() > rapiditycut2) {
@@ -1777,7 +1814,8 @@ struct phianalysisrun3_PbPb {
     if (cfgDoSel8 && !collision.sel8()) {
       return;
     }
-    if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
+    if (selectionConfig.cutvz &&
+        std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
       return;
     }
     if (selectionConfig.additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -1801,6 +1839,9 @@ struct phianalysisrun3_PbPb {
     if (selectionConfig.additionalEvSel6 && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
+    if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
+      return;
+    }
     int occupancy = collision.trackOccupancyInTimeRange();
     if (selectionConfig.fillOccupancy && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
       return;
@@ -1820,7 +1861,7 @@ struct phianalysisrun3_PbPb {
       multiplicity = collision.centFV0A();
     }
     histos.fill(HIST("Centrec1"), multiplicity);
-    histos.fill(HIST("hMC1"), 13.5);
+    histos.fill(HIST("hMC1"), 14.5);
     auto oldindex = -999;
     for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
@@ -1914,104 +1955,81 @@ struct phianalysisrun3_PbPb {
   }
 
   PROCESS_SWITCH(phianalysisrun3_PbPb, processRec1, "Process Reconstructed", false);
-  void processEvtLossSigLossMC(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  void processEvtLossSigLossMC(McCollisionMults::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
   {
 
+    if (selectionConfig.cutvz &&
+        std::abs(mcCollision.posZ()) > selectionConfig.cfgCutVertex) {
+      return;
+    }
     // Event loss estimation
     auto impactPar = mcCollision.impactParameter();
     histos.fill(HIST("QAevent/hImpactParameterGen"), impactPar);
-
+    histos.fill(HIST("QAevent/hMultEta05Gen"), mcCollision.multMCNParticlesEta05());
+    histos.fill(HIST("QAevent/hMultEta08Gen"), mcCollision.multMCNParticlesEta08());
     bool isSel = false;
     auto centrality = -999.;
     for (const auto& RecCollision : recCollisions) {
       if (!myEventSelections(RecCollision))
         continue;
-      centrality = RecCollision.centFT0C();
+      const int kCentFT0C = 0;
+      const int kCentFT0A = 1;
+      const int kCentFT0M = 2;
+      const int kCentFV0A = 3;
+
+      if (centestimator == kCentFT0C) {
+        centrality = RecCollision.centFT0C();
+
+      } else if (centestimator == kCentFT0A) {
+        centrality = RecCollision.centFT0A();
+
+      } else if (centestimator == kCentFT0M) {
+        centrality = RecCollision.centFT0M();
+
+      } else if (centestimator == kCentFV0A) {
+        centrality = RecCollision.centFV0A();
+      }
+
       isSel = true;
     }
 
     if (isSel) {
       histos.fill(HIST("QAevent/hImpactParameterRec"), impactPar);
       histos.fill(HIST("QAevent/hImpactParvsCentrRec"), centrality, impactPar);
+      histos.fill(HIST("QAevent/hMultEta05Rec"), mcCollision.multMCNParticlesEta05());
+      histos.fill(HIST("QAevent/hMultEta05vsCentrRec"), centrality, mcCollision.multMCNParticlesEta05());
+      histos.fill(HIST("QAevent/hMultEta08Rec"), mcCollision.multMCNParticlesEta08());
+      histos.fill(HIST("QAevent/hMultEta08vsCentrRec"), centrality, mcCollision.multMCNParticlesEta08());
     }
 
     // Generated MC
     for (const auto& mcPart : mcParticles) {
-      const double kMaxRapidity = 0.5;
+      if (mcPart.y() < rapiditycut1 || mcPart.y() > rapiditycut2)
+        continue;
 
-      if (std::abs(mcPart.y()) >= kMaxRapidity || std::abs(mcPart.pdgCode()) != o2::constants::physics::kPhi)
-
+      // select phi meson
+      if (std::abs(mcPart.pdgCode()) != o2::constants::physics::kPhi)
         continue;
 
       // signal loss estimation
       histos.fill(HIST("QAevent/phigenBeforeEvtSel"), mcPart.pt(), impactPar);
+      histos.fill(HIST("QAevent/hgendndetaVsMultEta05BeforeEvtSel"), mcPart.pt(), mcCollision.multMCNParticlesEta05());
+      histos.fill(HIST("QAevent/hgendndetaVsMultEta08BeforeEvtSel"), mcPart.pt(), mcCollision.multMCNParticlesEta08());
       if (isSel) {
         // signal loss estimation
         histos.fill(HIST("QAevent/phigenAfterEvtSel"), mcPart.pt(), impactPar);
+        histos.fill(HIST("QAevent/hgendndetaVsMultEta05AfterEvtSel"), mcPart.pt(), mcCollision.multMCNParticlesEta05());
+        histos.fill(HIST("QAevent/hgendndetaVsMultEta08AfterEvtSel"), mcPart.pt(), mcCollision.multMCNParticlesEta08());
       }
     } // end loop on gen particles
   }
   PROCESS_SWITCH(phianalysisrun3_PbPb, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
-  void processFactors(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& mcParticles)
-  {
-    registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 0.5);
-
-    if (std::abs(mcCollision.posZ()) > selectionConfig.cfgCutVertex)
-      return;
-
-    registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 1.5);
-
-    float centrality = 100.5f;
-    for (auto const& collision : collisions) {
-      centrality = collision.centFT0M();
-    }
-
-    registry.fill(HIST("Factors/hCentralityVsMultMC"), centrality, mcCollision.multMCNParticlesEta08());
-    registry.fill(HIST("Factors/hNrecInGen"), collisions.size());
-
-    for (const auto& particle : mcParticles) {
-
-      if (std::abs(particle.y()) > confRapidity)
-        continue;
-
-      if (particle.pdgCode() == o2::constants::physics::kPhi) {
-        int dauSize = 2;
-        auto daughters = particle.daughters_as<aod::McParticles>();
-        if (daughters.size() != dauSize)
-          continue;
-
-        auto daup = false;
-        auto daun = false;
-
-        for (const auto& dau : daughters) {
-          if (dau.pdgCode() == PDG_t::kKPlus) {
-            daup = true;
-            d1 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massKa);
-          } else if (dau.pdgCode() == PDG_t::kKMinus) {
-            daun = true;
-            d2 = ROOT::Math::PxPyPzMVector(dau.px(), dau.py(), dau.pz(), massKa);
-          }
-        }
-        if (!daup || !daun)
-          continue;
-
-        mother = d1 + d2;
-
-        registry.fill(HIST("Factors/h2dGenPhi"), centrality, mother.Pt());
-        registry.fill(HIST("Factors/h3dGenPhiVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta08(), centrality, mother.Pt());
-      }
-    }
-
-    if (collisions.size() == 0)
-      return;
-
-    registry.fill(HIST("Factors/hGenEvents"), mcCollision.multMCNParticlesEta08(), 2.5);
-  }
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processFactors, "Process Signal Loss, Event Loss", false);
   void processEvtLossSigLossMC1(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& GenParticles)
   {
-    if (std::abs(mcCollision.posZ()) > selectionConfig.cfgCutVertex)
+    if (selectionConfig.cutvz &&
+        std::abs(mcCollision.posZ()) > selectionConfig.cfgCutVertex) {
       return;
+    }
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
     histos.fill(HIST("hImpactParameterGen1"), mcCollision.impactParameter());
@@ -2043,7 +2061,7 @@ struct phianalysisrun3_PbPb {
     }
     for (const auto& particle : GenParticles) {
 
-      if (std::abs(particle.y()) > confRapidity)
+      if (particle.y() < rapiditycut1 || particle.y() > rapiditycut2)
         continue;
 
       if (particle.pdgCode() != o2::constants::physics::kPhi)
