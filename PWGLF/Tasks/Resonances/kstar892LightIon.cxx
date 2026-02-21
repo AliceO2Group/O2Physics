@@ -32,6 +32,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
@@ -153,6 +154,11 @@ struct Kstar892LightIon {
 
     // Fixed variables
     float lowPtCutPID = 0.5;
+
+    Configurable<bool> selHasFT0{"selHasFT0", true, "Has FT0?"};
+    Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
+    Configurable<bool> selTVXMC{"selTVXMC", true, "apply TVX selection in MC?"};
+    Configurable<bool> selINELgt0{"selINELgt0", true, "Select INEL > 0?"};
   } selectionConfig;
 
   Configurable<bool> calcLikeSign{"calcLikeSign", true, "Calculate Like Sign"};
@@ -167,6 +173,12 @@ struct Kstar892LightIon {
   Configurable<int> selectCentEstimator{"selectCentEstimator", 0, "Select centrality estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C, 3 - FV0A"};
 
   Configurable<int> reflectionType{"reflectionType", 0, "Reflection: 0=Rho, 1=Omega, 2=Phi, 3=Kstar (for processRecReflection)"};
+
+  Configurable<float> nchAcceptance{"nchAcceptance", 0.5, "Eta window to measure Nch MC for Nch vs Cent distribution"};
+
+  Configurable<int> nBinsNch{"nBinsNch", 400, "N bins Nch (|eta|<0.8)"};
+  Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
+  Configurable<float> maxNch{"maxNch", 400, "Max Nch (|eta|<0.8)"};
 
   // Configurable for histograms
   ConfigurableAxis binsCentPlot{"binsCentPlot", {110, 0.0, 110}, "Centrality axis"};
@@ -368,6 +380,39 @@ struct Kstar892LightIon {
 
     if (doprocessRecReflection) {
       hMC.add("Reflections/hReflection", "Refelction template of Rho", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+    }
+
+    if (doprocessMCCheck) {
+      hMC.add("MCCheck/CentVsFoundFT0", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{centralityAxis}, {2, 0, 2}}});
+      hMC.add("MCCheck/zPosMC", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries;", kTH1F, {vertexZAxis});
+      hMC.add("MCCheck/zPos", "With Event Selection;;Entries;", kTH1F, {vertexZAxis});
+      hMC.add("MCCheck/Cent", ";;Entries", kTH1F, {centralityAxis});
+      hMC.add("MCCheck/NchVsCent", "Measured Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Nch", kTH2F, {{centralityAxis, {nBinsNch, minNch, maxNch}}});
+
+      // MC events passing the TVX requirement
+      hMC.add("MCCheck/NchMCcentVsTVX", ";Passed(=1.5) NOT Passed(=0.5);", kTH2F, {{{nBinsNch, minNch, maxNch}, {2, 0, 2}}});
+
+      hMC.add("MCCheck/NumberOfRecoCollisions", "Number of times Gen. Coll.are reconstructed;N;Entries", kTH1F, {{10, -0.5, 9.5}});
+
+      // Needed for the Gen. Nch to Centrality conversion
+      hMC.add("MCCheck/NchMCVsCent", "Generated Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Gen. Nch MC (|#eta|<0.8)", kTH2F, {{centralityAxis, {nBinsNch, minNch, maxNch}}});
+
+      // Needed to measure Event Loss
+      hMC.add("MCCheck/NchMC_WithRecoEvt", "Generated Nch of Evts With at least one Rec. Coll. + Sel. criteria;Gen. Nch MC (|#eta|<0.8);Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
+      hMC.add("MCCheck/NchMC_AllGen", "Generated Nch of All Gen. Evts.;Gen. Nch;Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
+
+      // Needed to measure Event Splitting
+      hMC.add("MCCheck/Centrality_WRecoEvt", "Generated Events With at least One Rec. Collision And NO Sel. criteria;;Entries", kTH1F, {centralityAxis});
+      hMC.add("MCCheck/Centrality_WRecoEvtWSelCri", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries", kTH1F, {centralityAxis});
+      hMC.add("MCCheck/Centrality_AllRecoEvt", "Generated Events Irrespective of the number of times it was reconstructed + Evt. Selections;;Entries", kTH1F, {centralityAxis});
+
+      hMC.add("MCCheck/PtKstarVsCentMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;;", kTH2F, {ptAxis, centralityAxis});
+
+      // Needed to calculate the numerator of the Signal Loss correction
+      hMC.add("MCCheck/PtKstarVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{ptAxis, {nBinsNch, minNch, maxNch}}});
+
+      // Needed to calculate the denominator of the Signal Loss correction
+      hMC.add("MCCheck/PtKstarVsNchMC_AllGen", "All Generated Events;;Gen. Nch (|#eta|<0.8);", kTH2F, {{ptAxis, {nBinsNch, minNch, maxNch}}});
     }
   }
 
@@ -1551,7 +1596,8 @@ struct Kstar892LightIon {
     hMC.fill(HIST("ImpactCorr/hImpactParameterGen"), impactPar);
 
     bool isSelectedEvent = false;
-    auto centrality = -999.;
+    centrality = -1.f;
+
     for (const auto& RecCollision : recCollisions) {
       if (!RecCollision.has_mcCollision())
         continue;
@@ -1602,7 +1648,7 @@ struct Kstar892LightIon {
     hMC.fill(HIST("LossMult/hMultMC"), multMC);
 
     bool isSelectedEvent = false;
-    float centrality = -1.f;
+    centrality = -1.f;
 
     for (auto const& collision : recCollisions) {
 
@@ -1949,6 +1995,230 @@ struct Kstar892LightIon {
     }
   }
   PROCESS_SWITCH(Kstar892LightIon, processRecReflection, "Process particle reflection", false);
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  void processMCCheck(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& mcParticles, TrackCandidatesMC const&)
+  {
+
+    //---------------------------
+    // Only INEL > 0 generated collisions
+    // By counting number of primary charged particles in |eta| < 1
+    //---------------------------
+    int nChMC{0};
+    int nChMCEta08{0};
+    int nChFT0A{0};
+    int nChFT0C{0};
+    static constexpr float MinCharge{3.f};
+    static constexpr float MinFT0A{3.5f};
+    static constexpr float MaxFT0A{4.9f};
+    static constexpr float MinFT0C{-3.3f};
+    static constexpr float MaxFT0C{-2.1f};
+    static constexpr float One{1.0f};
+    static constexpr int ZeroInt{0};
+
+    for (const auto& particle : mcParticles) {
+
+      auto charge{0.};
+      // Get the MC particle
+      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (pdgParticle != nullptr) {
+        charge = pdgParticle->Charge();
+      } else {
+        continue;
+      }
+
+      // Is it a charged particle?
+      if (std::abs(charge) < MinCharge)
+        continue;
+
+      // Is it a primary particle?
+      if (!particle.isPhysicalPrimary())
+        continue;
+
+      const float eta{particle.eta()};
+
+      // TVX requirement
+      if (eta > MinFT0A && eta < MaxFT0A) {
+        nChFT0A++;
+      }
+
+      if (eta > MinFT0C && eta < MaxFT0C) {
+        nChFT0C++;
+      }
+
+      if (std::abs(eta) < nchAcceptance) {
+        nChMCEta08++;
+      }
+
+      // INEL > 0
+      if (std::abs(eta) > One)
+        continue;
+
+      nChMC++;
+    }
+
+    //---------------------------
+    // Only events with at least one charged particle in the FT0A and FT0C acceptances
+    //---------------------------
+    if (selectionConfig.selTVXMC) {
+      if (!(nChFT0A > ZeroInt && nChFT0C > ZeroInt)) {
+        hMC.fill(HIST("MCCheck/NchMCcentVsTVX"), nChMC, 0.5);
+        return;
+      }
+      hMC.fill(HIST("MCCheck/NchMCcentVsTVX"), nChMC, 1.5);
+    }
+
+    //---------------------------
+    // Only MC events with |Vtx Z| < 10 cm
+    //---------------------------
+    if (selectionConfig.isZvtxPosSelMC && (std::fabs(mccollision.posZ()) > selectionConfig.cfgVrtxZCut)) {
+      return;
+    }
+
+    //---------------------------
+    // Only INEL > 0 generated events
+    //---------------------------
+    if (selectionConfig.selINELgt0) {
+      if (!(nChMC > ZeroInt)) {
+        return;
+      }
+    }
+
+    const auto& nRecColls{collisions.size()};
+    hMC.fill(HIST("MCCheck/NumberOfRecoCollisions"), nRecColls);
+
+    //---------------------------
+    // Only Generated evets with at least one reconstrued collision
+    //---------------------------
+    if (nRecColls > ZeroInt) {
+
+      // Finds the collisions with the largest number of contributors
+      // in case nRecColls is larger than One
+      int biggestNContribs{-1};
+      int bestCollisionIndex{-1};
+      centrality = -1.f;
+      for (const auto& collision : collisions) {
+
+        if (selectCentEstimator == kFT0M) {
+          centrality = collision.centFT0M();
+        } else if (selectCentEstimator == kFT0A) {
+          centrality = collision.centFT0A();
+        } else if (selectCentEstimator == kFT0C) {
+          centrality = collision.centFT0C();
+        } else if (selectCentEstimator == kFV0A) {
+          centrality = collision.centFV0A();
+        } else {
+          centrality = collision.centFT0M(); // default
+        }
+
+        if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
+          continue;
+        }
+
+        if (biggestNContribs < collision.numContrib()) {
+          biggestNContribs = collision.numContrib();
+          bestCollisionIndex = collision.globalIndex();
+        }
+
+        // Needed to calculate denominator of the Event Splitting correction
+        if (selectionEvent(collision, false)) {
+          hMC.fill(HIST("MCCheck/Centrality_AllRecoEvt"), centrality);
+        }
+      }
+
+      //---------------------------
+      // Loop over the reconstructed collisions
+      // Only that one with the largest number of contributors is considered
+      //---------------------------
+      centrality = -1.f;
+      for (const auto& collision : collisions) {
+
+        if (selectCentEstimator == kFT0M) {
+          centrality = collision.centFT0M();
+        } else if (selectCentEstimator == kFT0A) {
+          centrality = collision.centFT0A();
+        } else if (selectCentEstimator == kFT0C) {
+          centrality = collision.centFT0C();
+        } else if (selectCentEstimator == kFV0A) {
+          centrality = collision.centFV0A();
+        } else {
+          centrality = collision.centFT0M(); // default
+        }
+
+        //---------------------------
+        // Reject collisions if has_foundFT0() returns false
+        //---------------------------
+        if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
+          hMC.fill(HIST("MCCheck/CentVsFoundFT0"), centrality, 0.5);
+          continue;
+        }
+        hMC.fill(HIST("MCCheck/CentVsFoundFT0"), centrality, 1.5);
+
+        //---------------------------
+        // Pick the collisions with the largest number of contributors
+        //---------------------------
+        if (bestCollisionIndex != collision.globalIndex()) {
+          continue;
+        }
+
+        //---------------------------
+        // Needed to construct the correlation between MC Nch v.s. centrality
+        //---------------------------
+
+        hMC.fill(HIST("MCCheck/Centrality_WRecoEvt"), centrality);
+        hMC.fill(HIST("MCCheck/zPosMC"), mccollision.posZ());
+
+        //---------------------------
+        // Event selection
+        // for reconstructed collisions
+        //---------------------------
+        if (!selectionEvent(collision, false)) {
+          continue;
+        }
+
+        hMC.fill(HIST("MCCheck/Centrality_WRecoEvtWSelCri"), centrality);
+        hMC.fill(HIST("MCCheck/NchMCVsCent"), centrality, nChMCEta08);
+        hMC.fill(HIST("MCCheck/NchMC_WithRecoEvt"), nChMCEta08); // Numerator of event loss correction
+        hMC.fill(HIST("MCCheck/zPos"), collision.posZ());
+        hMC.fill(HIST("MCCheck/Cent"), centrality);
+
+        //---------------------------
+        // All Generated events with at least one associated reconstructed collision
+        // The Generated events are not subjected to any selection criteria
+        // However, the associated reconstructed collisions pass the selection criteria
+        // This histograms are used for the denominator of the tracking efficiency
+        //---------------------------
+        for (const auto& mcPart : mcParticles) {
+          if ((mcPart.y() < selectionConfig.motherRapidityMin || mcPart.y() > selectionConfig.motherRapidityMax) || std::abs(mcPart.pdgCode()) != o2::constants::physics::kK0Star892)
+            continue;
+
+          hMC.fill(HIST("MCCheck/PtKstarVsCentMC_WithRecoEvt"), mcPart.pt(), centrality);
+          hMC.fill(HIST("MCCheck/PtKstarVsNchMC_WithRecoEvt"), mcPart.pt(), nChMCEta08); // Numerator of signal loss
+        } // Loop over generated particles per generated collision
+        // hMC.fill(HIST("MCCheck/NchVsCent"), centrality, nCh);
+      } // Loop over Reco. Collisions: Only the collisions with the largest number of contributors
+    } // If condition: Only simulated evets with at least one reconstrued collision
+
+    //---------------------------
+    // All Generated events irrespective of whether there is an associated reconstructed collision
+    // Consequently, the centrality being a reconstructed quantity, might not always be available
+    // Therefore it is expressed as a function of the generated pT and the generated Nch in ∣eta∣ < 0.8
+    // This is used for the denominator of the signal loss correction
+    //---------------------------
+    for (const auto& mcPart : mcParticles) {
+      if ((mcPart.y() < selectionConfig.motherRapidityMin || mcPart.y() > selectionConfig.motherRapidityMax) || std::abs(mcPart.pdgCode()) != o2::constants::physics::kK0Star892)
+        continue;
+
+      hMC.fill(HIST("MCCheck/PtKstarVsNchMC_AllGen"), mcPart.pt(), nChMCEta08);
+    } // Loop over Generated Particles
+
+    //---------------------------
+    //  This is used for the denominator of the event loss correction
+    //---------------------------
+    hMC.fill(HIST("MCCheck/NchMC_AllGen"), nChMCEta08);
+  }
+  PROCESS_SWITCH(Kstar892LightIon, processMCCheck, "Cross-check MC analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
