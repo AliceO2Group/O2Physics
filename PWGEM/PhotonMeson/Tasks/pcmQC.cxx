@@ -483,7 +483,7 @@ struct PCMQC {
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   template <typename TV0Photon>
-  void process(FilteredMyCollisions const& collisions, TV0Photon const& v0photons, aod::V0Legs const& )
+  void process(FilteredMyCollisions const& collisions, TV0Photon const& v0photons, aod::V0Legs const&)
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
