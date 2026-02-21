@@ -65,9 +65,9 @@ struct JetSpectraEseTask {
   ConfigurableAxis binFit0{"binFit0", {100, 0, 50}, ""};
   ConfigurableAxis binFit13{"binFit13", {100, 0, 1.4}, ""};
   ConfigurableAxis binFit24{"binFit24", {100, 0, 10}, ""};
-  ConfigurableAxis binTrackPt{"binTrackPt", {1000, 0, 100}, ""};
+  ConfigurableAxis binTrackPt{"binTrackPt", {100, 0, 100}, ""};
   ConfigurableAxis dbinEta{"dbinEta", {100, -1.6, 1.6}, ""};
-  ConfigurableAxis dbinPhi{"dbinPhi", {120, -o2::constants::math::PIHalf, o2::constants::math::TwoPI - o2::constants::math::PIHalf}, ""};
+  ConfigurableAxis dbinPhi{"dbinPhi", {120, -o2::constants::math::PIHalf, 3 * o2::constants::math::PI / 2}, ""};
 
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
@@ -136,6 +136,9 @@ struct JetSpectraEseTask {
   AxisSpec fitAxis24 = {binFit24, "Fit24"};
 
   AxisSpec trackPtAxis = {binTrackPt, "#it{p}_{T}"};
+  ConfigurableAxis assocTrackPt{"assocTrackPt", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "pT of associated track"};
+  ConfigurableAxis rhoAxis{"rhoAxis", {50, 0, 200}, "#rho"};
+  ConfigurableAxis vertexZAxis{"vertexZAxis", {50, -10.0, 10.0}, "z vertex"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -212,15 +215,15 @@ struct JetSpectraEseTask {
       registry.add("hJetPt_bkgsub", "jet pT background sub;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{jetPtAxis}}});
       registry.add("hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{etaAxis}}});
       registry.add("hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{phiAxis}}});
-      registry.add("eventQA/hRho", ";#rho;entries", {HistType::kTH2F, {{centAxis}, {100, 0, 200.}}});
-      registry.add("eventQA/hRhoPhi", ";#rho;entries", {HistType::kTH2F, {{centAxis}, {100, 0, 200.}}});
-      registry.add("hJetArea", ";area_{jet};entries", {HistType::kTH1F, {{80, 0, 10.}}});
-      registry.add("hJetAreaRho", "", {HistType::kTH1F, {{100, 0, 500.}}});
+      registry.add("eventQA/hRho", ";#rho;entries", {HistType::kTH2F, {{centAxis}, {rhoAxis}}});
+      registry.add("eventQA/hRhoPhi", ";#rho;entries", {HistType::kTH2F, {{centAxis}, {rhoAxis}}});
+      registry.add("hJetArea", ";area_{jet};entries", {HistType::kTH1F, {{50, 0, 5.}}});
+      registry.add("hJetAreaRho", "", {HistType::kTH1F, {{50, 0, 10.}}});
       registry.add("hCentJetPtdPhiq2", "", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {dPhiAxis}, {eseAxis}}});
       registry.add("hCentJetPtdPhiq2RhoPhi", "", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {dPhiAxis}, {eseAxis}}});
 
-      registry.add("eventQA/before/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{100, -10.0, 10.0}}});
-      registry.add("eventQA/after/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{100, -10.0, 10.0}}});
+      registry.add("eventQA/before/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
+      registry.add("eventQA/after/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
 
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kFilteredInputEv, "Input filtered event");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kEventSel, "Event selection");
@@ -240,9 +243,9 @@ struct JetSpectraEseTask {
       registry.add("eventQA/hfitPar3", "", {HistType::kTH2F, {{centAxis}, {fitAxis13}}});
       registry.add("eventQA/hfitPar4", "", {HistType::kTH2F, {{centAxis}, {fitAxis24}}});
       registry.add("eventQA/hPValueCentCDF", "p-value cDF vs centrality; centrality; p-value", {HistType::kTH2F, {{centAxis}, {40, 0, 1}}});
-      registry.add("eventQA/hCentChi2Ndf", "Chi2 vs centrality; centrality; #tilde{#chi^{2}}", {HistType::kTH2F, {{centAxis}, {100, 0, 5}}});
-      registry.add("eventQA/hCentPhi", "centrality vs #rho(#varphi); centrality;  #rho(#varphi) ", {HistType::kTH2F, {{centAxis}, {210, -10.0, 200.0}}});
-      registry.add("eventQA/hdPhiRhoPhi", "#varphi vs #rho(#varphi); #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, -o2::constants::math::PI, o2::constants::math::PI}, {210, -10.0, 200.0}}});
+      registry.add("eventQA/hCentChi2Ndf", "Chi2 vs centrality; centrality; #tilde{#chi^{2}}", {HistType::kTH2F, {{centAxis}, {50, 0, 5}}});
+      registry.add("eventQA/hCentPhi", "centrality vs #rho(#varphi); centrality;  #rho(#varphi) ", {HistType::kTH2F, {{centAxis}, {rhoAxis}}});
+      registry.add("eventQA/hdPhiRhoPhi", "#varphi vs #rho(#varphi); #varphi - #Psi_{EP,2};  #rho(#varphi) ", {HistType::kTH2F, {{40, -o2::constants::math::PI, o2::constants::math::PI}, {rhoAxis}}});
 
       registry.add("jetQA/before/hLeadJetPt", ";Centrality;#it{p}_{T,lead jet} (GeV/#it{c});entries", {HistType::kTH2F, {{centAxis}, {jetPtAxis}}});
       registry.add("jetQA/before/hLeadJetPhi", ";Centrality;#phi_{lead jet};entries", {HistType::kTH2F, {{centAxis}, {phiAxis}}});
@@ -255,7 +258,7 @@ struct JetSpectraEseTask {
       std::vector<o2::framework::AxisSpec> axes = {
         {centAxis},
         {jetPtAxis},
-        {trackPtAxis},
+        {assocTrackPt},
         {detaAxis},
         {dphiAxis},
         {dPhiAxis},
@@ -283,14 +286,14 @@ struct JetSpectraEseTask {
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kEse, "ESE available");
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kRhoLocal, "rho(#phi) available");
       registry.get<TH1>(HIST("eventQA/hEventCounterMixed"))->GetXaxis()->SetBinLabel(kLeadJetCut, "leading jet pT cut");
-      registry.add("eventQA/before/hVtxZMixed", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{100, -10.0, 10.0}}});
-      registry.add("eventQA/after/hVtxZMixed", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{100, -10.0, 10.0}}});
-      registry.add("eventQA/before/hVtxZMixed2", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{100, -10.0, 10.0}}});
-      registry.add("eventQA/after/hVtxZMixed2", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{100, -10.0, 10.0}}});
+      registry.add("eventQA/before/hVtxZMixed", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
+      registry.add("eventQA/after/hVtxZMixed", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
+      registry.add("eventQA/before/hVtxZMixed2", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
+      registry.add("eventQA/after/hVtxZMixed2", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
       registry.add("eventQA/hCentralityAnalyzedMixed", ";Centrality;entries", {HistType::kTH1F, {{centAxis}}});
       registry.add("eventQA/hCentralityAnalyzedMixed2", ";Centrality;entries", {HistType::kTH1F, {{centAxis}}});
-      registry.add("eventQA/hDeltaCentMixed", ";Centrality difference;entries", {HistType::kTH1F, {{100, -100, 100}}});
-      registry.add("eventQA/hDeltaVtxZMixed", ";z_{vtx} difference (cm);entries", {HistType::kTH1F, {{100, -20.0, 20.0}}});
+      registry.add("eventQA/hDeltaCentMixed", ";Centrality difference;entries", {HistType::kTH1F, {{50, -100, 100}}});
+      registry.add("eventQA/hDeltaVtxZMixed", ";z_{vtx} difference (cm);entries", {HistType::kTH1F, {{50, -20.0, 20.0}}});
 
       registry.add("trackQA/before/hTrackPtMixed", "", {HistType::kTH2F, {{centAxis}, {trackPtAxis}}});
       registry.add("trackQA/before/hTrackEtaMixed", "", {HistType::kTH2F, {{centAxis}, {etaAxis}}});
@@ -301,12 +304,12 @@ struct JetSpectraEseTask {
       std::vector<o2::framework::AxisSpec> axes = {
         {centAxis},
         {jetPtAxis},
-        {trackPtAxis},
+        {assocTrackPt},
         {detaAxis},
         {dphiAxis},
         {dPhiAxis},
         {eseAxis}};
-      registry.add("thn_jethad_corr_mixed", "jet-had; centrality; #it{p}_{T,lead jet} - #rho_{local} * area_{jet} (GeV/#it{c}); #it{p}_{T,track} (GeV/#it{c}); #Delta#eta; #Delta#phi; #Delta#phi to EP; #it{q}_{2}", {HistType::kTHnSparseF, axes});
+      registry.add("thn_jethad_corr_mixed", "jet-had; centrality; #it{p}_{T,jet} - #rho_{local} * area_{jet} (GeV/#it{c}); #it{p}_{T,track} (GeV/#it{c}); #Delta#eta; #Delta#phi; #Delta#phi to EP; #it{q}_{2}", {HistType::kTHnSparseF, axes});
       registry.add("hNtrigMixed", "", {HistType::kTHnSparseF, {{centAxis}, {jetPtAxis}, {dPhiAxis}, {eseAxis}}});
     }
     if (doprocessESEEPData) {
