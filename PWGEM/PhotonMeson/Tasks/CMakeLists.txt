@@ -91,6 +91,11 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-pcmpcm
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pi0eta-to-gammagamma-pcmpcm-ml
+                    SOURCES Pi0EtaToGammaGammaPCMPCMML.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pi0eta-to-gammagamma-pcmdalitzee
                     SOURCES Pi0EtaToGammaGammaPCMDalitzEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
@@ -110,6 +115,11 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-pcmpcm
                     SOURCES Pi0EtaToGammaGammaMCPCMPCM.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-pcmpcm-ml
+                   SOURCES Pi0EtaToGammaGammaMCPCMPCMML.cxx
+                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
+                   COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-pcmdalitzee
                     SOURCES Pi0EtaToGammaGammaMCPCMDalitzEE.cxx
