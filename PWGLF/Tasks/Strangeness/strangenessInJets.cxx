@@ -344,15 +344,6 @@ struct StrangenessInJets {
         registryMC.add("K0s_generated_fullevent", "K0s_generated_fullevent", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("Lambda_generated_fullevent", "Lambda_generated_fullevent", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_generated_fullevent", "AntiLambda_generated_fullevent", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("K0s_generated_recoevent", "K0s_generated_recoevent", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("Lambda_generated_recoevent", "Lambda_generated_recoevent", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("AntiLambda_generated_recoevent", "AntiLambda_generated_recoevent", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("K0s_generated_recojet_jet", "K0s_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("Lambda_generated_recojet_jet", "Lambda_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("AntiLambda_generated_recojet_jet", "AntiLambda_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("K0s_generated_recojet_ue", "K0s_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("Lambda_generated_recojet_ue", "Lambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("AntiLambda_generated_recojet_ue", "AntiLambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (enabledSignals.value[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_generated_jet", "XiPos_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -428,6 +419,21 @@ struct StrangenessInJets {
         registryMC.add("K0s_reconstructed_fullevent", "K0s_reconstructed_fullevent", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("Lambda_reconstructed_fullevent", "Lambda_reconstructed_fullevent", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_fullevent", "AntiLambda_reconstructed_fullevent", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_reconstructed_eventwjet", "K0s_reconstructed_eventwjet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_reconstructed_eventwjet", "Lambda_reconstructed_eventwjet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_reconstructed_eventwjet", "AntiLambda_reconstructed_eventwjet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_generated_eventwjet", "K0s_generated_eventwjet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_generated_eventwjet", "Lambda_generated_eventwjet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_generated_eventwjet", "AntiLambda_generated_eventwjet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_generated_recoevent", "K0s_generated_recoevent", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_generated_recoevent", "Lambda_generated_recoevent", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_generated_recoevent", "AntiLambda_generated_recoevent", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_generated_recojet_jet", "K0s_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_generated_recojet_jet", "Lambda_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_generated_recojet_jet", "AntiLambda_generated_recojet_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_generated_recojet_ue", "K0s_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_generated_recojet_ue", "Lambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_generated_recojet_ue", "AntiLambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
       }
 
       if (enabledSignals.value[ParticleOfInterest::kCascades]) {
@@ -1862,6 +1868,71 @@ struct StrangenessInJets {
       // Fill event counter for events with at least one selected jet
       registryMC.fill(HIST("number_of_events_mc_rec"), 4.5);
       registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
+
+      // V0 particles
+      if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+        for (const auto& v0 : v0sPerColl) {
+          const auto& pos = v0.posTrack_as<DaughterTracksMC>();
+          const auto& neg = v0.negTrack_as<DaughterTracksMC>();
+
+          // Get MC particles
+          if (!pos.has_mcParticle() || !neg.has_mcParticle())
+            continue;
+          auto posParticle = pos.mcParticle_as<aod::McParticles>();
+          auto negParticle = neg.mcParticle_as<aod::McParticles>();
+          if (!posParticle.has_mothers() || !negParticle.has_mothers())
+            continue;
+
+          // Get Mothers
+          auto motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+          auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+          if (motherPos != motherNeg)
+            continue;
+          if (!motherPos.isPhysicalPrimary())
+            continue;
+
+          if (std::abs(motherPos.eta()) > 0.8)
+            continue;
+
+          // K0s
+          if (passedK0ShortSelection(v0, pos, neg) && motherPos.pdgCode() == kK0Short) {
+            registryMC.fill(HIST("K0s_reconstructed_eventwjet"), multiplicity, v0.pt());
+          }
+          // Lambda
+          if (passedLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0) {
+            registryMC.fill(HIST("Lambda_reconstructed_eventwjet"), multiplicity, v0.pt());
+          }
+          // AntiLambda
+          if (passedAntiLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0Bar) {
+            registryMC.fill(HIST("AntiLambda_reconstructed_eventwjet"), multiplicity, v0.pt());
+          }
+        }
+      }
+
+      for (auto& particle : mcParticlesPerColl) {
+
+        if (particle.isPhysicalPrimary() && std::abs(particle.eta()) <= 0.8) {
+          switch (particle.pdgCode()) {
+            case kK0Short:
+              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                registryMC.fill(HIST("K0s_generated_eventwjet"), multiplicity, particle.pt());
+              }
+              break;
+            case kLambda0:
+              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                registryMC.fill(HIST("Lambda_generated_eventwjet"), multiplicity, particle.pt());
+              }
+              break;
+            case kLambda0Bar:
+              if (enabledSignals.value[ParticleOfInterest::kV0Particles]) {
+                registryMC.fill(HIST("AntiLambda_generated_eventwjet"), multiplicity, particle.pt());
+              }
+              break;
+            default:
+              break;
+          }
+        }
+      }
 
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
