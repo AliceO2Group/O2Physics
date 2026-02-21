@@ -62,10 +62,10 @@ using CollDetIt = soa::Filtered<aod::JetCollisionsMCD>::iterator;
 using CollRhoDetIt = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator;
 
 using CollPartIt = soa::Filtered<aod::JetMcCollisions>::iterator;
-using CollRhoPartTbl = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>;
+using CollRhoPartTbl = soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>;
 using CollRhoPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator;
 using CollRhoOutlierPartIt = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>::iterator;
-using CollRhoOutlierPartTbl = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>;
+using CollRhoOutlierPartTbl = soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>;
 
 // --- Event multiplicity (+ ZDC etc.)
 using EvMultZDCDataIt = soa::Filtered<soa::Join<aod::JetCollisions, aod::ZDCMults>>::iterator;
@@ -2138,7 +2138,6 @@ struct RecoilJets {
   //=============================================================================
   // Pt and Phi smearing of TT
   //=============================================================================
-
   template <typename JColl, typename JTracks, typename JParticles>
   void fillTTSmearingPtPhi(JColl const& collision,
                            JTracks const& tracks,
@@ -2205,23 +2204,23 @@ struct RecoilJets {
       bool bPartWithinPtOfTT = (particlePt > ptTTMin) && (particlePt < ptTTMax);
 
       if (bPartWithinEta && bPartWithinPtOfTT) {
-        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 0.5, 0.5, weight);
-        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 0.5, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 0.5, 0.5);
+        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 0.5, 0.5);
       }
 
       if (!bPartWithinEta && bPartWithinPtOfTT) {
-        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 1.5, 0.5, weight);
-        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0M, 1.5, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 1.5, 0.5);
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0M, 1.5, 0.5);
       }
 
       if (bPartWithinEta && !bPartWithinPtOfTT) {
-        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 0.5, 1.5, weight);
-        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 0.5, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 0.5, 1.5);
+        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 0.5, 1.5);
       }
 
       if (!bPartWithinEta && !bPartWithinPtOfTT) {
-        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 1.5, 1.5, weight);
-        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 1.5, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0C_FractionOfPartTTSigSatisfCond"), scaledFT0C, 1.5, 1.5);
+        spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 1.5, 1.5);
       }
     }
     if (!bPartWithinEta)
@@ -2368,7 +2367,7 @@ struct RecoilJets {
   // Construction of response matrix
   //=============================================================================
   void processJetsGeoMatching(CollRhoDetIt const& collision,
-                              CollRhoPartTbl const& mcCollisions,
+                              CollRhoPartTbl const&,
                               TrackTbl const& tracksPerColl,
                               MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
                               MatchedJetsPartToDetTbl const& mcPartJets)
@@ -2379,7 +2378,9 @@ struct RecoilJets {
 
     auto mcCollisionId = collision.mcCollisionId();
     auto detLevelCollRho = collision.rho();
-    auto partLevelCollRho = mcCollisions.iteratorAt(mcCollisionId).rho();
+
+    auto mcColl = collision.mcCollision_as<CollRhoPartTbl>();
+    auto partLevelCollRho = mcColl.rho();
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
@@ -2390,7 +2391,7 @@ struct RecoilJets {
 
   //___________________________
   void processJetsGeoPtMatching(CollRhoDetIt const& collision,
-                                CollRhoPartTbl const& mcCollisions,
+                                CollRhoPartTbl const&,
                                 TrackTbl const& tracksPerColl,
                                 MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
                                 MatchedJetsPartToDetTbl const& mcPartJets)
@@ -2401,7 +2402,9 @@ struct RecoilJets {
 
     auto mcCollisionId = collision.mcCollisionId();
     auto detLevelCollRho = collision.rho();
-    auto partLevelCollRho = mcCollisions.iteratorAt(mcCollisionId).rho();
+
+    auto mcColl = collision.mcCollision_as<CollRhoPartTbl>();
+    auto partLevelCollRho = mcColl.rho();    
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
@@ -2412,7 +2415,7 @@ struct RecoilJets {
 
   //_________________________________
   void processJetsGeoMatchingWeighted(CollRhoOutlierDetIt const& collision,
-                                      CollRhoOutlierPartTbl const& mcCollisions,
+                                      CollRhoOutlierPartTbl const&,
                                       TrackTbl const& tracksPerColl,
                                       MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
                                       MatchedJetsPartToDetTbl const& mcPartJets)
@@ -2423,9 +2426,11 @@ struct RecoilJets {
 
     auto mcCollisionId = collision.mcCollisionId();
     auto detLevelCollRho = collision.rho();
-    auto partLevelCollRho = mcCollisions.iteratorAt(mcCollisionId).rho();
-    auto weight = mcCollisions.iteratorAt(mcCollisionId).weight();
 
+    auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
+    auto partLevelCollRho = mcColl.rho();    
+    auto weight = mcColl.weight();
+    
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
@@ -2435,7 +2440,7 @@ struct RecoilJets {
 
   //___________________________________
   void processJetsGeoPtMatchingWeighted(CollRhoOutlierDetIt const& collision,
-                                        CollRhoOutlierPartTbl const& mcCollisions,
+                                        CollRhoOutlierPartTbl const&,
                                         TrackTbl const& tracksPerColl,
                                         MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
                                         MatchedJetsPartToDetTbl const& mcPartJets)
@@ -2446,8 +2451,10 @@ struct RecoilJets {
 
     auto mcCollisionId = collision.mcCollisionId();
     auto detLevelCollRho = collision.rho();
-    auto partLevelCollRho = mcCollisions.iteratorAt(mcCollisionId).rho();
-    auto weight = mcCollisions.iteratorAt(mcCollisionId).weight();
+
+    auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
+    auto partLevelCollRho = mcColl.rho();    
+    auto weight = mcColl.weight();
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsPerMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
