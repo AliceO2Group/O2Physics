@@ -191,7 +191,7 @@ struct Chk892pp {
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
-    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                      // bool
+    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                     // bool
     Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                 // TPC
     Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 5.0, "TOF nSigma cut for Pion"};                 // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
@@ -275,6 +275,7 @@ struct Chk892pp {
   int kPDGK0 = kK0;
   int kKstarPlus = o2::constants::physics::Pdg::kKPlusStar892;
   // int kPiPlus = 211;
+	double fMaxPosPV = 1e-2;
 
   void init(o2::framework::InitContext&)
   {
@@ -444,10 +445,16 @@ struct Chk892pp {
       histos.add("EffK0s/recoK0s", "Reco K0s (|y<0.8|)", HistType::kTH2F, {ptAxis, centAxis});
 
       histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("EffKstar/genKstar_pri", "Gen primary Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("EffKstar/genKstar_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
 
       histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_den_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_num", "Gen Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num_pri", "Gen primary Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
       histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
       histos.add("Correction/MCTruthCent_all", "MC truth FT0M centrality (all mcCollisions)", HistType::kTH1F, {centAxis});
@@ -543,8 +550,8 @@ struct Chk892pp {
       if (std::abs(track.dcaXY()) > TrackCuts.cfgMaxbDCArToPVcut)
         return false;
     }
-    if (TrackCuts.cfgpTdepDCAzCut) {
-      // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
+		if (TrackCuts.cfgpTdepDCAzCut) {
+			// Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
       if (std::abs(track.dcaZ()) > (0.004 + (0.013 / track.pt())))
         return false;
     } else {
@@ -911,7 +918,8 @@ struct Chk892pp {
     return true;
   } // matchRecoToTruthKstar
 
-  void effKstarProcessGen(MCTrueTrackCandidates const& mcparts)
+
+  void effKstarProcessGen(soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const&, MCTrueTrackCandidates const& mcparts)
   {
     for (const auto& part : mcparts) {
       if (!part.has_mcCollision())
@@ -921,37 +929,44 @@ struct Chk892pp {
       if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
         continue;
 
-      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
-      bool hasRightPion = false;
-      bool hasK0sToPipi = false;
 
-      for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
-        const int pdg1 = d1.pdgCode();
-        if (pdg1 == pionWanted) {
-          hasRightPion = true;
-        } else if (std::abs(pdg1) == kPDGK0) {
-          for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) {
-            if (std::abs(d2.pdgCode()) == kPDGK0s) {
-              bool seenPip = false, seenPim = false;
-              for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) {
-                if (d3.pdgCode() == +kPiPlus)
-                  seenPip = true;
-                else if (d3.pdgCode() == -kPiPlus)
-                  seenPim = true;
-              }
-              if (seenPip && seenPim) {
-                hasK0sToPipi = true;
-                break;
-              }
-            }
-          }
-        }
-        if (hasRightPion && hasK0sToPipi)
-          break;
-      }
+			const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+			bool hasRightPion = false;
+			bool hasK0sToPipi = false;
 
-      if (!(hasRightPion && hasK0sToPipi))
-        continue;
+			for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
+				const int pdg1 = d1.pdgCode();
+				if (pdg1 == pionWanted)
+				{
+					hasRightPion = true;
+				} else if (std::abs(pdg1) == kPDGK0) 
+				{
+					for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) 
+					{
+						if (std::abs(d2.pdgCode()) == kPDGK0s) 
+						{
+							bool seenPip = false, seenPim = false;
+							for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) 
+							{
+								if (d3.pdgCode() == +kPiPlus)
+									seenPip = true;
+								else if (d3.pdgCode() == -kPiPlus)
+									seenPim = true;
+							}
+							if (seenPip && seenPim) 
+							{
+								hasK0sToPipi = true;
+								break;
+							}
+						}
+					}
+				}
+				if (hasRightPion && hasK0sToPipi) break;
+			}
+
+			if (!(hasRightPion && hasK0sToPipi))
+				continue;
+
 
       const auto mcid = part.mcCollisionId();
       if (allowedMcIds.count(mcid) == 0)
@@ -962,10 +977,28 @@ struct Chk892pp {
         continue;
 
       const float lCentrality = iter->second;
-
+		
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
+
+			if (part.vt() == 0)
+			{
+			  histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
+			}
+
+			const auto mcc = part.mcCollision_as<soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms>>();
+
+			const float dx = part.vx() - mcc.posX();
+			const float dy = part.vy() - mcc.posY();
+			const float dz = part.vz() - mcc.posZ();
+
+			const float distanceFromPV = std::sqrt(dx*dx + dy*dy + dz*dz);
+
+			if (distanceFromPV < fMaxPosPV)
+			{
+				histos.fill(HIST("EffKstar/genKstar_pri_pos"), part.pt(), lCentrality);
+			}
     }
-  } // effKstarProcessGen
+  } //effKstarProcessGen
 
   template <typename V0RangeT, typename TrkRangeT>
   void effKstarProcessReco(V0RangeT const& v0s, TrkRangeT const& tracks)
@@ -1031,7 +1064,7 @@ struct Chk892pp {
     }
   } // effKstarProcessReco
 
-  void fillSigLossNum(MCTrueTrackCandidates const& mcparts)
+  void fillSigLossNum(soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const&, MCTrueTrackCandidates const& mcparts)
   {
     for (auto const& part : mcparts) {
       if (!part.has_mcCollision())
@@ -1052,10 +1085,27 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
+			if (part.vt() == 0)
+			{
+			  histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
+			}
+
+			const auto mcc = part.mcCollision_as<soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms>>();
+
+			const float dx = part.vx() - mcc.posX();
+			const float dy = part.vy() - mcc.posY();
+			const float dz = part.vz() - mcc.posZ();
+
+			const float distanceFromPV = std::sqrt(dx*dx + dy*dy + dz*dz);
+
+			if (distanceFromPV < fMaxPosPV)
+			{
+				histos.fill(HIST("Correction/sigLoss_num_pri_pos"), part.pt(), lCentrality);
+			}
     }
   } // fillSigLossNum
 
-  void fillSigLossDen(MCTrueTrackCandidates const& mcparts)
+  void fillSigLossDen(soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const&, MCTrueTrackCandidates const& mcparts)
   {
     for (auto const& part : mcparts) {
       if (!part.has_mcCollision())
@@ -1076,6 +1126,24 @@ struct Chk892pp {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+			if (part.vt() == 0)
+			{
+			  histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+			}
+
+			const auto mcc = part.mcCollision_as<soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms>>();
+
+			const float dx = part.vx() - mcc.posX();
+			const float dy = part.vy() - mcc.posY();
+			const float dz = part.vz() - mcc.posZ();
+
+			const float distanceFromPV = std::sqrt(dx*dx + dy*dy + dz*dz);
+
+			if (distanceFromPV < fMaxPosPV)
+			{
+				histos.fill(HIST("Correction/sigLoss_den_pri_pos"), part.pt(), lCentrality);
+			}
+
     }
   } // fillSigLossDen
 
@@ -1338,10 +1406,10 @@ struct Chk892pp {
     buildReferenceMcIds(mccolls, mcpart);
     effK0sProcessGen(mcpart);
     effK0sProcessReco(v0s);
-    effKstarProcessGen(mcpart);
+    effKstarProcessGen(mccolls, mcpart);
     effKstarProcessReco(v0s, tracks);
-    fillSigLossNum(mcpart);
-    fillSigLossDen(mcpart);
+    fillSigLossNum(mccolls, mcpart);
+    fillSigLossDen(mccolls, mcpart);
 
     for (const auto& mcid : refClassIds) {
       histos.fill(HIST("Correction/EF_den"), refCentByMcId[mcid]);
