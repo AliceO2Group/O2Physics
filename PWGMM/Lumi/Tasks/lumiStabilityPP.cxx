@@ -203,7 +203,7 @@ struct LumiStabilityPP {
     int totalLeadingBCs = 0;
     for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
       if (bcPatternB[iBC]) {    // Check if current BC is of type B
-        int nonBBCsBefore = 0; // Count how many consecutive BCs before this one are NOT type B
+        int nonBBCsBefore = 0;  // Count how many consecutive BCs before this one are NOT type B
         for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
           if (!bcPatternB[prevBC]) {
@@ -304,7 +304,7 @@ struct LumiStabilityPP {
         isSuperLeadingBcFT0 = false; // not a super-leading BC for FT0
       }
 
-      if (ctpInputMask.test(13) || ctpInputMask.test(15) || ctpInputMask.test(16) || ctpInputMask.test(17)|| ctpInputMask.test(18)) { // 5 FDD triggers
+      if (ctpInputMask.test(13) || ctpInputMask.test(15) || ctpInputMask.test(16) || ctpInputMask.test(17) || ctpInputMask.test(18)) { // 5 FDD triggers
         globalBCIdOfLastBCWithActivityFDD = globalBC;
       }
       if (ctpInputMask.test(1) || ctpInputMask.test(2) || ctpInputMask.test(3) || ctpInputMask.test(4) || ctpInputMask.test(5)) { // 5 FT0 triggers
