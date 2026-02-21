@@ -378,6 +378,7 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNEvents"), 5.5, collision.centFT0M());
     rPtAnalysis.get<TH2>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "cutZVertex");
     if (doisInelGt0 && !(collision.multNTracksPVeta1() > 0)) {
+      // if (doisInelGt0 && !(collision.multMCNParticlesEta10() > 0)) { CHANGE TO THIS
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 6.5, collision.centFT0M());
@@ -694,6 +695,7 @@ struct V0PtInvMassPlots {
   using DaughterTracksDerived = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
   o2::framework::Service<o2::framework::O2DatabasePDG> pdgDB;
 
+  // This is the process for Generated Particles
   void genMCProcess(
     soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
     soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::McCentFT0Ms>> const& collisions,
@@ -704,6 +706,7 @@ struct V0PtInvMassPlots {
     if (std::abs(mcCollision.posZ()) > cutZVertex) {
       return;
     }
+    // if (!(mcCollision.multMCNParticlesEta10() > 0)) { TRY TO CHANGE TO THIS
     if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       return;
     }
@@ -1092,11 +1095,10 @@ struct V0PtInvMassPlots {
       }
     }
   }
-  // This is the Process for the MC reconstructed Data
-  void recMCProcessDerived(soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::StraCents>::iterator const& collision,
-                           // <aod::McCollisions> const& /*mcCollisions*/,
-                           soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0CoreMCLabels, aod::V0MCMothers> const& V0s,
-                           DaughterTracksDerived const&)
+  void recMCProcessDerived(
+    soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::StraCents, aod::StraMCCollMults>::iterator const& collision,
+    soa::Join<aod::V0CollRefs, aod::V0MCCores, aod::V0Datas, aod::V0Extras, aod::V0CoreMCLabels, aod::V0MCMothers> const& V0s,
+    DaughterTracksDerived const&)
   {
     // tokenise strings into individual values
     pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
@@ -1139,18 +1141,18 @@ struct V0PtInvMassPlots {
         if (acceptK0sh(v0, posDaughterTrack, negDaughterTrack, collision)) { // K0sh Selection
           // K0sh Signal Split Numerator Start
           for (int i = 0; i < nKaonHistograms; i++) {
-            if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
-              pthistos::kaonSplit[i]->Fill(v0.mK0Short(), collision.centFT0M());       // filling the k0s namespace histograms for K0sh Splitting Numerator
+            if (kaonptedgevalues[i] <= v0.ptMC() && v0.ptMC() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges for K0sh Splitting Numerator
+              pthistos::kaonSplit[i]->Fill(v0.mK0Short(), collision.centFT0M());           // filling the k0s namespace histograms for K0sh Splitting Numerator
             }
           }
-          // K0sh Signla Split Numerator End
+          // K0sh SignaL Split Numerator End
           if (v0.has_v0MCCore()) {
             auto v0mcParticle = v0.v0MCCore_as<aod::V0MCCores>();
             if (dotruthk0sh && (v0mcParticle.pdgCode() == kK0Short)) { // kzero matched
               if (v0mcParticle.isPhysicalPrimary()) {
                 for (int i = 0; i < nKaonHistograms; i++) {
-                  if (kaonptedgevalues[i] <= v0.pt() && v0.pt() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
-                    pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());          // filling the k0s namespace histograms
+                  if (kaonptedgevalues[i] <= v0.ptMC() && v0.ptMC() < kaonptedgevalues[i + 1]) { // finding v0s with pt within the range of our bin edges
+                    pthistos::kaonPt[i]->Fill(v0.mK0Short(), collision.centFT0M());              // filling the k0s namespace histograms
                   }
                 }
               }
@@ -1170,7 +1172,7 @@ struct V0PtInvMassPlots {
         if (acceptLambda(v0, posDaughterTrack, negDaughterTrack, collision)) { // Lambda Selections
           // Lambda Signal Split Numerator Start
           for (int i = 0; i < nLambdaHistograms; i++) {
-            if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+            if (lambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < lambdaptedgevalues[i + 1]) {
               pthistos::lambdaSplit[i]->Fill(v0.mLambda(), collision.centFT0M());
             }
           }
@@ -1180,7 +1182,7 @@ struct V0PtInvMassPlots {
             if (dotruthLambda && (v0mcParticle.pdgCode() == kLambda0)) { // lambda matched
               if (v0mcParticle.isPhysicalPrimary()) {
                 for (int i = 0; i < nLambdaHistograms; i++) {
-                  if (lambdaptedgevalues[i] <= v0.pt() && v0.pt() < lambdaptedgevalues[i + 1]) {
+                  if (lambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < lambdaptedgevalues[i + 1]) {
                     pthistos::lambdaPt[i]->Fill(v0.mLambda(), collision.centFT0M());
                   }
                 }
@@ -1207,7 +1209,7 @@ struct V0PtInvMassPlots {
         if (acceptAntilambda(v0, posDaughterTrack, negDaughterTrack, collision)) { // Antilambda Selections
           // Antilambda Signal Split Numerator End
           for (int i = 0; i < nAntilambdaHistograms; i++) {
-            if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+            if (antilambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < antilambdaptedgevalues[i + 1]) {
               pthistos::antilambdaSplit[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
             }
           }
@@ -1217,7 +1219,7 @@ struct V0PtInvMassPlots {
             if (dotruthAntilambda && (v0mcParticle.pdgCode() == kLambda0Bar)) { // antilambda matched
               if (v0mcParticle.isPhysicalPrimary()) {
                 for (int i = 0; i < nAntilambdaHistograms; i++) {
-                  if (antilambdaptedgevalues[i] <= v0.pt() && v0.pt() < antilambdaptedgevalues[i + 1]) {
+                  if (antilambdaptedgevalues[i] <= v0.ptMC() && v0.ptMC() < antilambdaptedgevalues[i + 1]) {
                     pthistos::antilambdaPt[i]->Fill(v0.mAntiLambda(), collision.centFT0M());
                   }
                 }
@@ -1241,10 +1243,133 @@ struct V0PtInvMassPlots {
       }
     }
   }
+
+  // This si the process for the MC generated derived data
+  void genMCProcessDerived(
+    // soa::Join<aod::StraMcCollisions, aod::StraMcCents>::iterator const& mcCollision, will include when table is available in the O2 framework
+    soa::Join<aod::StraMCCollisions, aod::StraCents, aod::StraMCCollMults>::iterator const& mcCollision,
+    soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCollLabels, aod::StraCents>> const& collisions,
+    soa::Join<aod::V0MCCores, aod::V0CoreMCLabels> const& V0s,
+    soa::Join<aod::CascMCCores, aod::CascCoreMCLabels> const& cascs,
+    DaughterTracksDerived const&)
+  {
+    // Event Efficiency, Event Split and V0 Signal Loss Corrections
+    rMCCorrections.fill(HIST("hNEvents_Corrections"), 0.5, mcCollision.centFT0M()); // All Events
+    if (std::abs(mcCollision.posZ()) > cutZVertex) {
+      return;
+    }
+    if (!(mcCollision.multMCNParticlesEta10() > 0)) {
+      return;
+    }
+    rMCCorrections.fill(HIST("hNEvents_Corrections"), 1.5, mcCollision.centFT0M()); // Event Efficiency Denominator
+    // Particles (of interest) Generated Pt Spectrum and Signal Loss Denominator Loop
+    for (const auto& v0 : V0s) {
+      if (v0.has_v0MCCore()) {
+        auto v0mcParticle = v0.v0MCCore_as<aod::V0MCCores>();
+        if (v0mcParticle.isPhysicalPrimary()) {
+          if (v0mcParticle.pdgCode() == kK0Short) // kzero matched
+          {
+            if (std::abs(v0mcParticle.rapidityMC(0)) < rapidityCut) {
+              rMCCorrections.fill(HIST("hK0shGeneratedPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
+            }
+          }
+          if (v0mcParticle.pdgCode() == kLambda0) // lambda matched
+          {
+            if (std::abs(v0mcParticle.rapidityMC(1)) < rapidityCut) {
+              rMCCorrections.fill(HIST("hLambdaGeneratedPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
+            }
+          }
+          if (v0mcParticle.pdgCode() == kLambda0Bar) // antilambda matched
+          {
+            if (std::abs(v0mcParticle.rapidityMC(2)) < rapidityCut) {
+              rMCCorrections.fill(HIST("hAntiLambdaGeneratedPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
+            }
+          }
+        }
+      }
+    }
+    for (const auto& casc : cascs) {
+      if (casc.isPhysicalPrimary()) {
+        // Make rapidity cuts, from O2's documentation: rapidity (0, 1: Xi; 2, 3: Omega)
+        if (casc.pdgCode() == kXiMinus) // Xi Minus matched
+        {
+          if (std::abs(casc.rapidityMC(0)) < rapidityCut) {
+            rMCCorrections.fill(HIST("hXiMinusGeneratedPtSpectrum"), casc.ptMC(), mcCollision.centFT0M());
+          }
+        }
+        if (casc.pdgCode() == kXi0) // Xi Zero matched
+        {
+          if (std::abs(casc.rapidityMC(0)) < rapidityCut) { // Using the Xi mass assumption
+            rMCCorrections.fill(HIST("hXiZeroGeneratedPtSpectrum"), casc.ptMC(), mcCollision.centFT0M());
+          }
+        }
+        if (casc.pdgCode() == kOmegaMinus) // Omega matched
+        {
+          if (std::abs(casc.rapidityMC(2)) < rapidityCut) {
+            rMCCorrections.fill(HIST("hOmegaGeneratedPtSpectrum"), casc.ptMC(), mcCollision.centFT0M());
+          }
+        }
+        if (casc.pdgCode() == kXiPlusBar) // Xi Plus matched
+        {
+          if (std::abs(casc.rapidityMC(1)) < rapidityCut) {
+            rMCCorrections.fill(HIST("hXiPlusGeneratedPtSpectrum"), casc.ptMC(), mcCollision.centFT0M());
+          }
+        }
+        if (casc.pdgCode() == -kXi0) // Anti-Xi Zero matched
+        {
+          if (std::abs(casc.rapidityMC(1)) < rapidityCut) { // Using the Xi mass assumption
+            rMCCorrections.fill(HIST("hAntiXiZeroGeneratedPtSpectrum"), casc.ptMC(), mcCollision.centFT0M());
+          }
+        }
+        if (casc.pdgCode() == kOmegaPlusBar) // Anti-Omega matched
+        {
+          if (std::abs(casc.rapidityMC(3)) < rapidityCut) {
+            rMCCorrections.fill(HIST("hAntiOmegaGeneratedPtSpectrum"), casc.ptMC(), mcCollision.centFT0M());
+          }
+        }
+      }
+    }
+    // Signal Loss Numenator Loop
+    for (const auto& collision : collisions) {
+      rMCCorrections.fill(HIST("hNEvents_Corrections"), 2.5, mcCollision.centFT0M()); // Number of Events Reconsctructed
+      if (!acceptEvent(collision)) {                                                  // Event Selection
+        return;
+      }
+      rMCCorrections.fill(HIST("hNEvents_Corrections"), 3.5, mcCollision.centFT0M()); // Event Split Denomimator and Event Efficiency Numenator
+      for (const auto& v0 : V0s) {
+        if (v0.has_v0MCCore()) {
+          auto v0mcParticle = v0.v0MCCore_as<aod::V0MCCores>();
+          if (!v0mcParticle.isPhysicalPrimary()) {
+            continue;
+          }
+          if (v0mcParticle.pdgCode() == kK0Short) // kzero matched
+          {
+            if (std::abs(v0mcParticle.rapidityMC(0)) < rapidityCut) {
+              rMCCorrections.fill(HIST("hK0shAfterEventSelectionPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
+            }
+          }
+          if (v0mcParticle.pdgCode() == kLambda0) // lambda matched
+          {
+            if (std::abs(v0mcParticle.rapidityMC(1)) < rapidityCut) {
+              rMCCorrections.fill(HIST("hLambdaAfterEventSelectionPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
+            }
+          }
+          if (v0mcParticle.pdgCode() == kLambda0Bar) // antilambda matched
+          {
+            if (std::abs(v0mcParticle.rapidityMC(2)) < rapidityCut) {
+              rMCCorrections.fill(HIST("hAntiLambdaAfterEventSelectionPtSpectrum"), v0.ptMC(), mcCollision.centFT0M());
+            }
+          }
+        }
+      }
+    }
+    // End of Signal Loss Numenator Loop
+  }
+
   PROCESS_SWITCH(V0PtInvMassPlots, genMCProcess, "Process Run 3 MC Generated", false);
   PROCESS_SWITCH(V0PtInvMassPlots, recMCProcess, "Process Run 3 MC Reconstructed", false);
   PROCESS_SWITCH(V0PtInvMassPlots, dataProcess, "Process Run 3 Data,", false);
-  // PROCESS_SWITCH(V0PtInvMassPlots, genMCProcessDerived, "Process Run 3 MC Generated", false);
+  PROCESS_SWITCH(V0PtInvMassPlots, genMCProcessDerived, "Process Run 3 MC Generated", false);
   PROCESS_SWITCH(V0PtInvMassPlots, recMCProcessDerived, "Process Run 3 MC Reconstructed", false);
   PROCESS_SWITCH(V0PtInvMassPlots, dataProcessDerived, "Process Run 3 Data,", false);
 };
