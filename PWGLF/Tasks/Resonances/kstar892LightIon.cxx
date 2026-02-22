@@ -82,7 +82,6 @@ struct Kstar892LightIon {
   struct : ConfigurableGroup {
     // Configurables for event selections
     Configurable<float> cfgVrtxZCut{"cfgVrtxZCut", 10.0f, "Accepted z-vertex range (cm)"};
-    Configurable<bool> isApplycutVzLoss{"isApplycutVzLoss", true, "Apply Vertex-z cut in processAllLossMC"};
     Configurable<bool> isApplysel8{"isApplysel8", true, "Apply sel8 event selection"};
     Configurable<bool> isApplyINELgt0{"isApplyINELgt0", true, "INEL>0 selection"};
     Configurable<bool> isTriggerTVX{"isTriggerTVX", true, "TriggerTVX"};
@@ -99,7 +98,9 @@ struct Kstar892LightIon {
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
 
     // check
-    Configurable<bool> isApplyEvSelFactors{"isApplyEvSelFactors", false, "Apply event selection cut in processCorrFactors"};
+    Configurable<bool> isApplyMCGenInelgt0{"isApplyMCGenInelgt0", true, "Apply INEL>0 cut in MC Gen Collisions"};
+    Configurable<bool> isApplyMCGenTVX{"isApplyMCGenTVX", true, "Apply TVX cut in MC Gen Collisions"};
+    Configurable<bool> isApplyMCGenVz{"isApplyMCGenVz", true, "Apply Vz cut in MC Gen Collisions"};
 
     // Configurables for track selections
     Configurable<bool> isPVContributor{"isPVContributor", true, "PV contributor track selection"}; // PV Contriuibutor
@@ -817,7 +818,7 @@ struct Kstar892LightIon {
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTOFbeta, aod::TrackSelectionExtension>;
 
-  using EventMCGenerated = soa::Join<aod::McCollisions, aod::MultsExtraMC>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+  using EventMCGenerated = soa::Join<aod::McCollisions, aod::MultMCExtras>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::MultZeqs, aod::FT0Mults, aod::PVMults, aod::CentFV0As>;
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::McTrackLabels, aod::pidTOFbeta, aod::TrackSelectionExtension>;
 
@@ -1272,6 +1273,19 @@ struct Kstar892LightIon {
 
   void processGen(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
+
+    if (selectionConfig.isApplyMCGenInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+
+    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
+
+    if (selectionConfig.isApplyMCGenVz && std::abs(mcCollision.posZ()) >= selectionConfig.cfgVrtxZCut) {
+      return;
+    }
+
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
     centrality = -1.0;
@@ -1590,8 +1604,20 @@ struct Kstar892LightIon {
   }
   PROCESS_SWITCH(Kstar892LightIon, processRec, "Process Reconstructed", false);
 
-  void processEvtLossSigLossMC(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  void processEvtLossSigLossMC(EventMCGenerated::iterator const& mcCollision, const soa::SmallGroups<EventCandidatesMC>& recCollisions, aod::McParticles const& mcParticles)
   {
+    if (selectionConfig.isApplyMCGenInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+
+    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
+
+    if (selectionConfig.isApplyMCGenVz && std::abs(mcCollision.posZ()) >= selectionConfig.cfgVrtxZCut) {
+      return;
+    }
+
     auto impactPar = mcCollision.impactParameter();
     hMC.fill(HIST("ImpactCorr/hImpactParameterGen"), impactPar);
 
@@ -1639,11 +1665,21 @@ struct Kstar892LightIon {
   }
   PROCESS_SWITCH(Kstar892LightIon, processEvtLossSigLossMC, "Process Signal Loss, Event Loss using impact parameter", false);
 
-  using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
-  using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
-
-  void processLossMCMultiplicity(McCollisionMults::iterator const& mcCollision, aod::McParticles const& mcParticles, soa::SmallGroups<EventCandidatesMC> const& recCollisions)
+  void processLossMCMultiplicity(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, soa::SmallGroups<EventCandidatesMC> const& recCollisions)
   {
+
+    if (selectionConfig.isApplyMCGenInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+
+    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
+
+    if (selectionConfig.isApplyMCGenVz && std::abs(mcCollision.posZ()) >= selectionConfig.cfgVrtxZCut) {
+      return;
+    }
+
     const int multMC = mcCollision.multMCNParticlesEta05();
     hMC.fill(HIST("LossMult/hMultMC"), multMC);
 
@@ -1697,10 +1733,19 @@ struct Kstar892LightIon {
   }
   PROCESS_SWITCH(Kstar892LightIon, processLossMCMultiplicity, "Signal + Event loss (using MC multiplicity)", false);
 
-  void processAllLossMC(McCollisionMults::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  void processAllLossMC(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
   {
-    if (selectionConfig.isApplycutVzLoss && std::abs(mcCollision.posZ()) > selectionConfig.cfgVrtxZCut)
+    if (selectionConfig.isApplyMCGenInelgt0 && !mcCollision.isInelGt0()) {
       return;
+    }
+
+    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
+
+    if (selectionConfig.isApplyMCGenVz && std::abs(mcCollision.posZ()) >= selectionConfig.cfgVrtxZCut) {
+      return;
+    }
 
     // Event loss estimation
     auto impactPar = mcCollision.impactParameter();
