@@ -91,6 +91,7 @@ enum EventSelectionFlags {
 };
 
 DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 32); //! Bitmask of selection flags
+DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint32_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::emevsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::emevsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::emevsel::kNoITSROFrameBorder)); });
 
 template <typename TBC>
 uint32_t reduceSelectionBit(TBC const& bc)
@@ -230,7 +231,7 @@ DECLARE_SOA_COLUMN(CentFT0Auint8, centFT0Auint8, uint8_t);       //! this is onl
 
 DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int16_t posZint16) -> float { return (posZint16 < 0 ? std::nextafter(posZint16 * 0.01f, -std::numeric_limits<float>::infinity()) : std::nextafter(posZint16 * 0.01f, std::numeric_limits<float>::infinity())); }); //! poZ is multiplied by 100 in createEMEventDileton.cxx
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, [](uint16_t centuint16) -> float { return std::nextafter(centuint16 * 0.002f, std::numeric_limits<float>::infinity()); });                                                                                    //! centrality is multiplied by 500 in createEMEventDilepton.cxx
-DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::emevsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::emevsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::emevsel::kNoITSROFrameBorder)); });
+DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)); });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0M, ep2ft0m, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0A, ep2ft0a, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0C, ep2ft0c, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
@@ -318,7 +319,7 @@ DECLARE_SOA_TABLE_VERSIONED(EMEvents_004, "AOD", "EMEVENT", 4, //!   Main event 
 DECLARE_SOA_TABLE_VERSIONED(EMEvents_005, "AOD", "EMEVENT", 5, //!   Main event information table
                             o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, emevsel::Selection, evsel::Rct, timestamp::Timestamp,
                             collision::PosZ,
-                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<emevsel::Selection>);
+                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevsel::Sel8<emevsel::Selection>);
 
 using EMEvents = EMEvents_005;
 using EMEvent = EMEvents::iterator;
@@ -497,7 +498,7 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_001, "AOD", "EMEVENTNORMINFO", 1, /
 
 DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_002, "AOD", "EMEVENTNORMINFO", 2,                                                                         //! event information for normalization
                             emevsel::Selection, evsel::Rct, emevent::PosZint8, emevent::CentFT0Muint8, emevent::CentFT0Cuint8, emevent::CentNTPVuint8, /*emevent::CentNGlobaluint8,*/
-                            emevent::Sel8<emevsel::Selection>, emeventnorm::PosZ<emevent::PosZint8>, emeventnorm::CentFT0M<emevent::CentFT0Muint8>, emeventnorm::CentFT0C<emevent::CentFT0Cuint8>, emeventnorm::CentNTPV<emevent::CentNTPVuint8>, /*emeventnorm::CentNTPV<emevent::CentNGlobaluint8>,*/ o2::soa::Marker<1>);
+                            emevsel::Sel8<emevsel::Selection>, emeventnorm::PosZ<emevent::PosZint8>, emeventnorm::CentFT0M<emevent::CentFT0Muint8>, emeventnorm::CentFT0C<emevent::CentFT0Cuint8>, emeventnorm::CentNTPV<emevent::CentNTPVuint8>, /*emeventnorm::CentNTPV<emevent::CentNGlobaluint8>,*/ o2::soa::Marker<1>);
 
 using EMEventNormInfos = EMEventNormInfos_002;
 using EMEventNormInfo = EMEventNormInfos::iterator;
@@ -1160,7 +1161,7 @@ using EMThinEvent = EMThinEvents::iterator;
 
 DECLARE_SOA_TABLE_VERSIONED(EMThinEventNormInfos_000, "AOD", "EMTHINEVENTNORM", 0,                                                                                       //! event information for normalization
                             o2::soa::Index<>, emevsel::Selection, evsel::Rct, emevent::PosZint8, emevent::CentFT0Muint8, emevent::CentFT0Cuint8, emevent::CentNTPVuint8, /*emevent::CentNGlobaluint8,*/
-                            emevent::Sel8<emevsel::Selection>, emeventnorm::PosZ<emevent::PosZint8>, emeventnorm::CentFT0M<emevent::CentFT0Muint8>, emeventnorm::CentFT0C<emevent::CentFT0Cuint8>, emeventnorm::CentNTPV<emevent::CentNTPVuint8>, /*emeventnorm::CentNGlobal<emevent::CentNGlobaluint8>,*/ o2::soa::Marker<2>);
+                            emevsel::Sel8<emevsel::Selection>, emeventnorm::PosZ<emevent::PosZint8>, emeventnorm::CentFT0M<emevent::CentFT0Muint8>, emeventnorm::CentFT0C<emevent::CentFT0Cuint8>, emeventnorm::CentNTPV<emevent::CentNTPVuint8>, /*emeventnorm::CentNGlobal<emevent::CentNGlobaluint8>,*/ o2::soa::Marker<2>);
 using EMThinEventNormInfos = EMThinEventNormInfos_000;
 using EMThinEventNormInfo = EMThinEventNormInfos::iterator;
 
