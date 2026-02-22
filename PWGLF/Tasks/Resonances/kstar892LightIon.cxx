@@ -97,6 +97,8 @@ struct Kstar892LightIon {
     Configurable<bool> isVertexITSTPC{"isVertexITSTPC", false, "Vertex ITS TPC"};
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
 
+    Configurable<bool> isApplyhasFT0{"isApplyhasFT0", false, "Apply has_foundFT0 event selection"};
+
     // check
     Configurable<bool> isApplyMCGenInelgt0{"isApplyMCGenInelgt0", true, "Apply INEL>0 cut in MC Gen Collisions"};
     Configurable<bool> isApplyMCGenTVX{"isApplyMCGenTVX", true, "Apply TVX cut in MC Gen Collisions"};
@@ -156,10 +158,10 @@ struct Kstar892LightIon {
     // Fixed variables
     float lowPtCutPID = 0.5;
 
-    Configurable<bool> selHasFT0{"selHasFT0", true, "Has FT0?"};
+    Configurable<bool> selHasFT0MC{"selHasFT0MC", true, "Has FT0?"};
     Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
     Configurable<bool> selTVXMC{"selTVXMC", true, "apply TVX selection in MC?"};
-    Configurable<bool> selINELgt0{"selINELgt0", true, "Select INEL > 0?"};
+    Configurable<bool> selINELgt0MC{"selINELgt0MC", true, "Select INEL > 0?"};
   } selectionConfig;
 
   Configurable<bool> calcLikeSign{"calcLikeSign", true, "Calculate Like Sign"};
@@ -252,7 +254,9 @@ struct Kstar892LightIon {
       std::string("kIsGoodZvtxFT0vsPV") + check(selectionConfig.isGoodZvtxFT0vsPV.value),
       std::string("isVertexITSTPC") + check(selectionConfig.isVertexITSTPC.value),
       std::string("isVertexTOFMatched") + check(selectionConfig.isVertexTOFMatched.value),
-      std::string("INEL > 0") + check(selectionConfig.isApplyINELgt0.value)};
+      std::string("INEL > 0") + check(selectionConfig.isApplyINELgt0.value),
+      std::string("hasFT0") + check(selectionConfig.isApplyhasFT0.value)};
+
     // assign labels
     for (size_t i = 0; i < eveCutLabels.size(); ++i) {
       hEventSelection.get<TH1>(HIST("hEventCut"))->GetXaxis()->SetBinLabel(i + 1, eveCutLabels[i].c_str());
@@ -498,6 +502,12 @@ struct Kstar892LightIon {
     }
     if (fillHist)
       hEventSelection.fill(HIST("hEventCut"), 14);
+
+    if (selectionConfig.isApplyhasFT0 && !collision.has_foundFT0()) {
+      return false;
+    }
+    if (fillHist)
+      hEventSelection.fill(HIST("hEventCut"), 15);
 
     return true;
   }
@@ -2124,7 +2134,7 @@ struct Kstar892LightIon {
     //---------------------------
     // Only INEL > 0 generated events
     //---------------------------
-    if (selectionConfig.selINELgt0) {
+    if (selectionConfig.selINELgt0MC) {
       if (!(nChMC > ZeroInt)) {
         return;
       }
@@ -2157,7 +2167,7 @@ struct Kstar892LightIon {
           centrality = collision.centFT0M(); // default
         }
 
-        if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
+        if (selectionConfig.selHasFT0MC && !collision.has_foundFT0()) {
           continue;
         }
 
@@ -2194,7 +2204,7 @@ struct Kstar892LightIon {
         //---------------------------
         // Reject collisions if has_foundFT0() returns false
         //---------------------------
-        if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
+        if (selectionConfig.selHasFT0MC && !collision.has_foundFT0()) {
           hMC.fill(HIST("MCCheck/CentVsFoundFT0"), centrality, 0.5);
           continue;
         }
