@@ -74,7 +74,6 @@ using namespace o2::aod::rctsel;
 auto static constexpr CminCharge = 3.f;
 auto static constexpr CintZero = 0;
 auto static constexpr Czero = 0.f;
-auto static constexpr Cone = 1.f;
 auto static constexpr Cninety = 90.f;
 auto static constexpr ConeHeighty = 180.f;
 auto static constexpr CminAccFT0A = 3.5f;
