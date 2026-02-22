@@ -469,7 +469,7 @@ std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoeffic
         }
         localPeakCount += counts[j];
       }
-      if (localPeakCount < (1.0 / std::abs(trim))*data.size()) {
+      if (localPeakCount < (1.0 / std::abs(trim)) * data.size()) {
         // set all bins belonging to this local peak to zero
         for (int j = i; j >= 0; --j) {
           if (counts[j] == 0) {
