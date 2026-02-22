@@ -1602,7 +1602,7 @@ struct StrangenessInJets {
 
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
-                              DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s,
+                              DaughterTracksMC const& mcTracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
                               aod::CascDataExt const& Cascades, aod::McParticles const& mcParticles)
   {
     // Define per-event containers
