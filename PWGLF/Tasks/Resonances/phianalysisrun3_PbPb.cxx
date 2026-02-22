@@ -96,6 +96,7 @@ struct phianalysisrun3_PbPb {
     Configurable<bool> additionalEvSel5{"additionalEvSel5", true, "Additional evsel5"};
     Configurable<bool> additionalEvSel6{"additionalEvSel6", true, "Additional evsel6"};
     Configurable<bool> cutvz{"cutvz", true, "Vz cut"};
+    Configurable<bool> cutvzgen{"cutvzgen", true, "Vz cut"};
     Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
   } selectionConfig;
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
@@ -134,7 +135,8 @@ struct phianalysisrun3_PbPb {
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
   Configurable<bool> isApplyCentFT0M{"isApplyCentFV0M", false, "Centrality based on FT0M"};
-
+  Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
+  Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
@@ -1693,59 +1695,77 @@ struct phianalysisrun3_PbPb {
     }
   }
   PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEventMC, "Process Mixed event MC", true);
-  void processGen1(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  void processGen1(McCollisionMults::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
+    // all events
     histos.fill(HIST("hMC1"), 0.5);
-    if (!selectionConfig.cutvz || std::abs(mcCollision.posZ()) < selectionConfig.cfgCutVertex) {
+
+    // vertex QA (not selection)
+    if (!selectionConfig.cutvzgen ||
+        std::abs(mcCollision.posZ()) < selectionConfig.cfgCutVertex) {
       histos.fill(HIST("hMC1"), 1.5);
     }
+
+    // INEL>0 selection
+    if (isApplyInelgt0 && !mcCollision.isInelGt0())
+      return;
+
+    histos.fill(HIST("hMC1"), 2.5);
+
+    // TVX selection
+    if (isApplyTVX &&
+        !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0))
+      return;
+
+    histos.fill(HIST("hMC1"), 3.5);
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
     auto multiplicity = -1.0;
     for (const auto& collision : collisions) {
-      histos.fill(HIST("hMC1"), 2.5);
+      histos.fill(HIST("hMC1"), 4.5);
       if (cfgDoSel8 && !collision.sel8()) {
         continue;
       }
+      histos.fill(HIST("hMC1"), 5.5);
       if (selectionConfig.cutvz &&
           std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
         continue;
       }
 
-      histos.fill(HIST("hMC1"), 3.5);
+      histos.fill(HIST("hMC1"), 6.5);
       if (selectionConfig.additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 4.5);
+      histos.fill(HIST("hMC1"), 7.5);
       if (selectionConfig.additionalEvSel2 && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 5.5);
+      histos.fill(HIST("hMC1"), 8.5);
       if (selectionConfig.additionalEvSel3 && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 6.5);
+      histos.fill(HIST("hMC1"), 9.5);
       if (selectionConfig.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 7.5);
+      histos.fill(HIST("hMC1"), 10.5);
       if (selectionConfig.additionalEvSel5 && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 8.5);
+      histos.fill(HIST("hMC1"), 11.5);
       if (selectionConfig.additionalEvSel6 && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 9.5);
+      histos.fill(HIST("hMC1"), 12.5);
       if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 10.5);
+      histos.fill(HIST("hMC1"), 13.5);
       int occupancy = collision.trackOccupancyInTimeRange();
       if (selectionConfig.fillOccupancy && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
         continue;
       }
-      histos.fill(HIST("hMC1"), 11.5);
+      histos.fill(HIST("hMC1"), 14.5);
       const int kCentFT0C = 0;
       const int kCentFT0A = 1;
       const int kCentFT0M = 2;
@@ -1765,11 +1785,11 @@ struct phianalysisrun3_PbPb {
     }
     selectedEvents.resize(nevts);
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
-    histos.fill(HIST("hMC1"), 12.5);
+    histos.fill(HIST("hMC1"), 15.5);
     if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    histos.fill(HIST("hMC1"), 13.5);
+    histos.fill(HIST("hMC1"), 16.5);
     for (const auto& mcParticle : mcParticles) {
 
       if (mcParticle.y() < rapiditycut1 || mcParticle.y() > rapiditycut2) {
@@ -1861,7 +1881,7 @@ struct phianalysisrun3_PbPb {
       multiplicity = collision.centFV0A();
     }
     histos.fill(HIST("Centrec1"), multiplicity);
-    histos.fill(HIST("hMC1"), 14.5);
+    histos.fill(HIST("hMC1"), 17.5);
     auto oldindex = -999;
     for (const auto& track1 : tracks) {
       if (!selectionTrack(track1)) {
@@ -1958,8 +1978,15 @@ struct phianalysisrun3_PbPb {
   void processEvtLossSigLossMC(McCollisionMults::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
   {
 
-    if (selectionConfig.cutvz &&
+    if (selectionConfig.cutvzgen &&
         std::abs(mcCollision.posZ()) > selectionConfig.cfgCutVertex) {
+      return;
+    }
+    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+
+    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
       return;
     }
     // Event loss estimation
@@ -2026,8 +2053,15 @@ struct phianalysisrun3_PbPb {
   PROCESS_SWITCH(phianalysisrun3_PbPb, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
   void processEvtLossSigLossMC1(McCollisionMults::iterator const& mcCollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& GenParticles)
   {
-    if (selectionConfig.cutvz &&
+    if (selectionConfig.cutvzgen &&
         std::abs(mcCollision.posZ()) > selectionConfig.cfgCutVertex) {
+      return;
+    }
+    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+
+    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
       return;
     }
     // All generated events
