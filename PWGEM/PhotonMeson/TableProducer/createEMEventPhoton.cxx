@@ -407,10 +407,10 @@ struct AssociatePhotonToEMEvent {
     fillEventId(collisions, photons, emceventid, perCollisionEMC);
   }
 
-  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
-  {
-    fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
-  }
+  // void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  // {
+  //   fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
+  // }
 
   void processDummy(aod::EMEvents const&) {}
 
@@ -418,7 +418,7 @@ struct AssociatePhotonToEMEvent {
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
+  // PROCESS_SWITCH(AssociatePhotonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
