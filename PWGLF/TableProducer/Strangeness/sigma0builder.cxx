@@ -1253,7 +1253,7 @@ struct sigma0builder {
     for (size_t i = 0; i < selV0Indices.size(); ++i) {
       auto v0 = fullv0s.rawIteratorAt(selV0Indices[i]);
 
-      if (!v0.has_v0MCCore()) 
+      if (!v0.has_v0MCCore())
         continue;
 
       auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
