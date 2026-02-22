@@ -42,6 +42,20 @@ template <typename TSecondaries>
 static constexpr bool HasSecondaries = !std::is_same_v<TSecondaries, std::nullptr_t>;
 
 template <typename T>
+concept IsNonLinIterator = o2::soa::is_iterator<T> && requires(T t) {
+  // Check that the *elements* of the container have the required methods:
+  { t.corrE() } -> std::same_as<float>;
+  { t.corrPt() } -> std::same_as<float>;
+};
+
+template <typename T>
+concept IsNonLinContainer = o2::soa::is_table<T> && requires(T t) {
+  // Check that the *elements* of the container have the required methods:
+  { t.begin().corrE() } -> std::same_as<float>;
+  { t.begin().corrPt() } -> std::same_as<float>;
+};
+
+template <typename T>
 concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
   // Check that the *elements* of the container have the required methods:
   { t.deltaEta() } -> std::same_as<float>;
@@ -114,7 +128,7 @@ class EMCPhotonCut : public TNamed
 
   static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
 
-  constexpr auto getClusterId(o2::soa::is_iterator auto const& t) const
+  static constexpr auto getClusterId(o2::soa::is_iterator auto const& t)
   {
     if constexpr (requires { t.emEmcClusterId(); }) {
       return t.emEmcClusterId();
@@ -384,7 +398,11 @@ class EMCPhotonCut : public TNamed
         return cluster.definition() == mDefinition;
 
       case EMCPhotonCuts::kEnergy:
-        return cluster.e() > mMinE;
+        if constexpr (IsNonLinIterator<std::decay_t<decltype(cluster)>>) {
+          return cluster.corrE() > mMinE;
+        } else {
+          return cluster.e() > mMinE;
+        }
 
       case EMCPhotonCuts::kNCell:
         return cluster.nCells() >= mMinNCell;
@@ -478,7 +496,11 @@ class EMCPhotonCut : public TNamed
         return cluster.definition() == mDefinition;
 
       case EMCPhotonCuts::kEnergy:
-        return cluster.e() > mMinE;
+        if constexpr (IsNonLinIterator<Cluster>) {
+          return cluster.corrE() > mMinE;
+        } else {
+          return cluster.e() > mMinE;
+        }
 
       case EMCPhotonCuts::kNCell:
         return cluster.nCells() >= mMinNCell;
@@ -496,7 +518,9 @@ class EMCPhotonCut : public TNamed
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
             auto trackpt = emcmatchedtrack.trackPt();
             auto trackp = emcmatchedtrack.trackP();
-            bool result = (dEta > GetTrackMatchingEta(trackpt)) || (dPhi > GetTrackMatchingPhi(trackpt)) || (cluster.e() / trackp >= mMinEoverP);
+            bool result = (dEta > GetTrackMatchingEta(trackpt)) ||
+                          (dPhi > GetTrackMatchingPhi(trackpt)) ||
+                          (cluster.e() / trackp >= mMinEoverP);
             if (!result) {
               return false;
             }
@@ -506,7 +530,7 @@ class EMCPhotonCut : public TNamed
           auto dPhis = cluster.deltaPhi();   // std:vector<float>
           auto trackspt = cluster.trackpt(); // std:vector<float>
           auto tracksp = cluster.trackp();   // std:vector<float>
-          int ntrack = tracksp.size();
+          int ntrack = trackspt.size();
           for (int itr = 0; itr < ntrack; itr++) {
             float dEta = std::fabs(dEtas[itr]);
             float dPhi = std::fabs(dPhis[itr]);
@@ -526,8 +550,8 @@ class EMCPhotonCut : public TNamed
             auto dEta = std::fabs(emcmatchedtrack.deltaEta());
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
             auto trackpt = emcmatchedtrack.trackPt();
-            auto trackp = emcmatchedtrack.trackP();
-            bool result = (dEta > GetSecTrackMatchingEta(trackpt)) || (dPhi > GetSecTrackMatchingPhi(trackpt)) || (cluster.e() / trackp >= mMinEoverP);
+            bool result = (dEta > GetSecTrackMatchingEta(trackpt)) ||
+                          (dPhi > GetSecTrackMatchingPhi(trackpt));
             if (!result) {
               return false;
             }
@@ -536,8 +560,7 @@ class EMCPhotonCut : public TNamed
           auto dEtas = cluster.deltaEtaSec();   // std:vector<float>
           auto dPhis = cluster.deltaPhiSec();   // std:vector<float>
           auto trackspt = cluster.trackptSec(); // std:vector<float>
-          auto tracksp = cluster.trackpSec();   // std:vector<float>
-          int ntrack = tracksp.size();
+          int ntrack = trackspt.size();
           for (int itr = 0; itr < ntrack; itr++) {
             float dEta = std::fabs(dEtas[itr]);
             float dPhi = std::fabs(dPhis[itr]);

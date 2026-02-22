@@ -431,16 +431,17 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronDaEMEventIds_001, "AOD", "PRMELDAEV
 using EMPrimaryElectronDaEMEventIds = EMPrimaryElectronDaEMEventIds_001;
 using EMPrimaryElectronDaEMEventId = EMPrimaryElectronDaEMEventIds::iterator;
 
-namespace v0photonsphiv
+namespace v0photonsphivpsi
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent); //!
 DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent);                 //!
 DECLARE_SOA_COLUMN(PhiV, phiv, float);      //!
-} // namespace v0photonsphiv
-DECLARE_SOA_TABLE(V0PhotonsPhiV, "AOD", "V0PHOTONPHIV", //!
-                  o2::soa::Index<>, v0photonsphiv::PhiV);
+DECLARE_SOA_COLUMN(PsiPair, psipair, float);
+} // namespace v0photonsphivpsi
+DECLARE_SOA_TABLE(V0PhotonsPhiVPsi, "AOD", "V0PHOTONPHIVPSI", //!
+                  o2::soa::Index<>, v0photonsphivpsi::PhiV, v0photonsphivpsi::PsiPair);
 // iterators
-using V0PhotonsPhiV = V0PhotonsPhiV;
+using V0PhotonsPhiVPsi = V0PhotonsPhiVPsi;
 
 namespace dalitzee
 {

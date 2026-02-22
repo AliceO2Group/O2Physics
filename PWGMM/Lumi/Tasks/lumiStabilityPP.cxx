@@ -61,13 +61,6 @@ enum BCCategories { BCA = 0,      // A side BCs (bunch-crossings that had beam o
                     BCNSLFT0 = 9, // non-super-leading BCs for FT0 of type B (bunch-crossings that had beam from both sides but are not SL for FT0 activity for a configurable number of preceding BCs)
                     NBCCategories };
 } // namespace lumi
-namespace aod
-{
-// Columns to store the information about the presence of FT0 and FDD signals associated to a given BC
-DECLARE_SOA_TABLE(BcDetectorInfo, "AOD", "BCDETECTORINFO", //!
-                  indices::FT0Id,
-                  indices::FDDId);
-} // namespace aod
 } // namespace o2
 
 using namespace o2;
@@ -75,42 +68,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::lumi;
 
-using BCsWithTimeStamps = soa::Join<aod::BCs, aod::Timestamps, aod::BcDetectorInfo>;
-
-struct BuildBcFlagTable {
-
-  Produces<aod::BcDetectorInfo> bcFlags;
-
-  void init(InitContext&) {}
-
-  void process(aod::BC const& bc,
-               aod::FT0s const& ft0s,
-               aod::FDDs const& fdds)
-  {
-    int64_t idxFT0{-1}, idxFDD{-1};
-    for (const auto& ft0 : ft0s) {
-      if (ft0.bcId() == bc.globalIndex()) {
-        idxFT0 = ft0.globalIndex();
-        break;
-      }
-    }
-    for (const auto& fdd : fdds) {
-      if (fdd.bcId() == bc.globalIndex()) {
-        idxFDD = fdd.globalIndex();
-        break;
-      }
-    }
-    bcFlags(idxFT0, idxFDD);
-  }
-};
+using BCsWithTimeStamps = soa::Join<aod::BCs, aod::Timestamps>;
 
 struct LumiStabilityPP {
 
   static constexpr int defaulFlags[1][NBCCategories] = {{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
   Configurable<LabeledArray<int>> doTypeBC{"doTypeBC", {defaulFlags[0], NBCCategories, {"BCA", "BCB", "BCC", "BCE", "BCL", "BCSLFDD", "BCSLFT0", "BCNL", "BCNSLFDD", "BCNSLFT0"}}, "Create and fill histograms for different BC types"};
 
-  Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of empty BCs before a leading BC"};
-  Configurable<int> bcShiftFDDForData2023{"bcShiftFDDForData2023", -15, "Number of bc to shift for FDD to be applied for 2023 data only"};
+  Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of empty BCs before a (super)leading BC"};
+  Configurable<int> bcShiftFDDForData2023{"bcShiftFDDForData2023", 7, "Number of bc to shift for FDD to be applied for 2023 data only"};
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE, bcPatternL;
@@ -132,8 +98,6 @@ struct LumiStabilityPP {
   std::map<int, std::shared_ptr<TH1>> histNBcsVsTime;
   std::map<int, std::shared_ptr<TH1>> histNBcsVsBcId;
   std::map<int, std::shared_ptr<TH1>> histTfPerMin;
-  std::map<int, std::shared_ptr<TH1>> histBcHasFT0;
-  std::map<int, std::shared_ptr<TH1>> histBcHasFDD;
   std::map<int, std::shared_ptr<TH1>> histFillingScheme;
   std::map<int, std::shared_ptr<TH1>> histFillTime;
   std::map<int, std::shared_ptr<TH1>> histInteractionRate;
@@ -176,17 +140,6 @@ struct LumiStabilityPP {
     histFillingScheme[runNumber] = registry.add<TH1>(Form("%d/FillingScheme", runNumber), "Filling Scheme;Filling Scheme;", HistType::kTH1D, {{1, 0, 1}});
     histFillTime[runNumber] = registry.add<TH1>(Form("%d/FillTime", runNumber), "Fill time;Fill time;", HistType::kTH1D, {{1, 0, 1}});
     histInteractionRate[runNumber] = registry.add<TH1>(Form("%d/InteractionRate", runNumber), "Interaction rate (kHz);Interaction rate (kHz);", HistType::kTH1D, {{3000, 0., 3000.}});
-
-    histBcHasFT0[runNumber] = registry.add<TH2>(Form("%d/FITQA/BCHasFT0", runNumber), "Does the BC have FT0?;BC has FT0;TVX triggered according to CTP;#bf{#it{N}_{BC}}", HistType::kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
-    histBcHasFT0[runNumber]->GetYaxis()->SetBinLabel(1, "No CTP trigger");
-    histBcHasFT0[runNumber]->GetYaxis()->SetBinLabel(2, "CTP triggered");
-    histBcHasFT0[runNumber]->GetXaxis()->SetBinLabel(1, "No found FT0");
-    histBcHasFT0[runNumber]->GetXaxis()->SetBinLabel(2, "Found FT0");
-    histBcHasFDD[runNumber] = registry.add<TH2>(Form("%d/FITQA/BCHasFDD", runNumber), "Does the BC have FDD?;BC has FDD;FDD triggered according to CTP;#bf{#it{N}_{BC}}", HistType::kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
-    histBcHasFDD[runNumber]->GetYaxis()->SetBinLabel(1, "No CTP trigger");
-    histBcHasFDD[runNumber]->GetYaxis()->SetBinLabel(2, "CTP triggered");
-    histBcHasFDD[runNumber]->GetXaxis()->SetBinLabel(1, "No found FDD");
-    histBcHasFDD[runNumber]->GetXaxis()->SetBinLabel(2, "Found FDD");
 
     for (int iTrigger{0}; iTrigger < NTriggerAliases; ++iTrigger) {
       for (int iBCCategory{0}; iBCCategory < NBCCategories; ++iBCCategory) {
@@ -242,7 +195,7 @@ struct LumiStabilityPP {
     bcPatternB = beamPatternA & beamPatternC;
     bcPatternE = ~beamPatternA & ~beamPatternC;
 
-    // Create bcPatternL: leading BCs of type B that follow at least "numEmptyBCsBeforeLeadingBC" empty BCs
+    // Create bcPatternL: leading BCs of type B that follow at least "numEmptyBCsBeforeLeadingBC" non-B BCs
     bcPatternL.reset(); // Initialize all bits to false
     LOG(info) << "Starting to create bcPatternL from bcPatternB";
     LOG(info) << "Total number of BCs to check: " << o2::constants::lhc::LHCMaxBunches;
@@ -250,13 +203,13 @@ struct LumiStabilityPP {
     int totalLeadingBCs = 0;
     for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
       if (bcPatternB[iBC]) {    // Check if current BC is of type B
-        int emptyBCsBefore = 0; // Count how many consecutive BCs before this one are NOT type B
+        int emptyBCsBefore = 0; // Count how many consecutive BCs before this one are empty
         for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
-          if (!bcPatternB[prevBC]) {
+          if (bcPatternE[prevBC]) {
             emptyBCsBefore++;
           } else {
-            break; // Stop counting if we hit a type B BC
+            break; // Stop counting if we hit a non-empty BC
           }
         }
         if (emptyBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC empty BCs before this one, mark it as leading
@@ -319,21 +272,16 @@ struct LumiStabilityPP {
       }
 
       setLHCIFData(bc);
-      BCsWithTimeStamps::iterator bcFDD;
-      auto idxBc = bc.globalIndex();
+      int bcShiftFDD{0};
       if (isData23) {
-        if ((bcShiftFDDForData2023 < 0 && idxBc < -bcShiftFDDForData2023) || (bcShiftFDDForData2023 > 0 && idxBc > bcs.size() - bcShiftFDDForData2023)) { // we need to skip the first/last bcs because of the FDD-FT0 shift
-          continue;
-        }
-        bcFDD = bcs.rawIteratorAt(idxBc + bcShiftFDDForData2023);
+        bcShiftFDD = bcShiftFDDForData2023;
       } else {
-        bcFDD = bc;
+        bcShiftFDD = 0;
       }
-
       float timeSinceSOF = getTimeSinceSOF(bc);
 
-      bool isTriggerTVX = (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex) : false);
-      if (isTriggerTVX) {
+      std::bitset<64> ctpInputMask(bc.inputMask());
+      if (ctpInputMask.test(2)) {
         histNBcsVsTime[runNumber]->Fill(timeSinceSOF);
         int runVdM23Start{542757};
         int runVdM23Stop{542768};
@@ -344,30 +292,34 @@ struct LumiStabilityPP {
       }
 
       int64_t globalBC = bc.globalBC();
+      int64_t globalBCFDD = bc.globalBC() + bcShiftFDD;
       int localBC = globalBC % nBCsPerOrbit;
+      int localBCFDD = globalBCFDD % nBCsPerOrbit;
 
       bool isSuperLeadingBcFDD{true}, isSuperLeadingBcFT0{true};
-      if (globalBC - globalBCIdOfLastBCWithActivityFDD < numEmptyBCsBeforeLeadingBC) {
+      if (globalBCFDD - globalBCIdOfLastBCWithActivityFDD < numEmptyBCsBeforeLeadingBC) {
         isSuperLeadingBcFDD = false; // not a super-leading BC for FDD
       }
       if (globalBC - globalBCIdOfLastBCWithActivityFT0 < numEmptyBCsBeforeLeadingBC) {
         isSuperLeadingBcFT0 = false; // not a super-leading BC for FT0
       }
 
-      if (bcFDD.has_fdd()) {
+      if (ctpInputMask.test(13) || ctpInputMask.test(15) || ctpInputMask.test(16) || ctpInputMask.test(17) || ctpInputMask.test(18)) { // 5 FDD triggers
         globalBCIdOfLastBCWithActivityFDD = globalBC;
       }
-      if (bc.has_ft0()) {
-        globalBCIdOfLastBCWithActivityFT0 = globalBC;
+      if (ctpInputMask.test(1) || ctpInputMask.test(2) || ctpInputMask.test(3) || ctpInputMask.test(4) || ctpInputMask.test(5)) { // 5 FT0 triggers
+        globalBCIdOfLastBCWithActivityFT0 = globalBCFDD;
       }
 
       if (!bcPatternB[localBC]) {
-        isSuperLeadingBcFDD = false; // not a super-leading BC
         isSuperLeadingBcFT0 = false; // not a super-leading BC
+      }
+      if (!bcPatternB[localBCFDD]) {
+        isSuperLeadingBcFDD = false; // not a super-leading BC
       }
 
       int64_t globalBCStart = (globalBCLastInspectedBC >= 0 && globalBCLastInspectedBC < globalBC) ? globalBCLastInspectedBC + 1 : globalBC;
-      int64_t maxBcDiff = (rate > 0) ? 10 * static_cast<int>(nBunchesFillingScheme * constants::lhc::LHCRevFreq / rate / 1.e3) : 500;
+      int64_t maxBcDiff = (rate > 0) ? 10 * static_cast<int>(nBunchesFillingScheme * constants::lhc::LHCRevFreq / rate / 1.e3) : 1500;
       if (globalBC - globalBCStart > maxBcDiff) { // we changed fill, we should not count all BCs between the current and the previous one
         globalBCStart = globalBC;
       }
@@ -409,12 +361,6 @@ struct LumiStabilityPP {
         currentTFid = thisTFid;
         histTfPerMin[runNumber]->Fill(timeSinceSOF);
       }
-
-      std::bitset<64> ctpInputMask(bc.inputMask());
-      std::bitset<64> ctpInputMaskFDD(bcFDD.inputMask());
-
-      histBcHasFT0[runNumber]->Fill(bc.has_ft0(), ctpInputMask.test(2));
-      histBcHasFDD[runNumber]->Fill(bcFDD.has_fdd(), ctpInputMaskFDD.test(15));
 
       for (int iTrigger{0}; iTrigger < NTriggerAliases; ++iTrigger) {
         for (int iBCCategory{0}; iBCCategory < NBCCategories; ++iBCCategory) {
@@ -485,27 +431,27 @@ struct LumiStabilityPP {
               if (iBCCategory == BCNSLFT0 && !isSuperLeadingBcFT0 && bcPatternB[localBC])
                 fillHistograms<FT0CE, BCNSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
             }
-            if (iTrigger == FDD && ctpInputMaskFDD.test(15)) {
-              if (iBCCategory == BCA && bcPatternA[localBC])
-                fillHistograms<FDD, BCA>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
-              if (iBCCategory == BCB && bcPatternB[localBC])
-                fillHistograms<FDD, BCB>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
-              if (iBCCategory == BCC && bcPatternC[localBC])
-                fillHistograms<FDD, BCC>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
-              if (iBCCategory == BCE && bcPatternE[localBC])
-                fillHistograms<FDD, BCE>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
-              if (iBCCategory == BCL && bcPatternL[localBC])
-                fillHistograms<FDD, BCL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+            if (iTrigger == FDD && ctpInputMask.test(15)) {
+              if (iBCCategory == BCA && bcPatternA[localBCFDD])
+                fillHistograms<FDD, BCA>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+              if (iBCCategory == BCB && bcPatternB[localBCFDD])
+                fillHistograms<FDD, BCB>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+              if (iBCCategory == BCC && bcPatternC[localBCFDD])
+                fillHistograms<FDD, BCC>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+              if (iBCCategory == BCE && bcPatternE[localBCFDD])
+                fillHistograms<FDD, BCE>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+              if (iBCCategory == BCL && bcPatternL[localBCFDD])
+                fillHistograms<FDD, BCL>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
               if (iBCCategory == BCSLFDD && isSuperLeadingBcFDD)
-                fillHistograms<FDD, BCSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCSLFDD>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
               if (iBCCategory == BCSLFT0 && isSuperLeadingBcFT0)
-                fillHistograms<FDD, BCSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
-              if (iBCCategory == BCNL && !bcPatternL[localBC] && bcPatternB[localBC])
-                fillHistograms<FDD, BCNL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
-              if (iBCCategory == BCNSLFDD && !isSuperLeadingBcFDD && bcPatternB[localBC])
-                fillHistograms<FDD, BCNSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
-              if (iBCCategory == BCNSLFT0 && !isSuperLeadingBcFT0 && bcPatternB[localBC])
-                fillHistograms<FDD, BCNSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCSLFT0>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+              if (iBCCategory == BCNL && !bcPatternL[localBCFDD] && bcPatternB[localBCFDD])
+                fillHistograms<FDD, BCNL>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+              if (iBCCategory == BCNSLFDD && !isSuperLeadingBcFDD && bcPatternB[localBCFDD])
+                fillHistograms<FDD, BCNSLFDD>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+              if (iBCCategory == BCNSLFT0 && !isSuperLeadingBcFT0 && bcPatternB[localBCFDD])
+                fillHistograms<FDD, BCNSLFT0>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
             }
           }
         }
@@ -540,5 +486,5 @@ struct LumiStabilityPP {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   metadataInfo.initMetadata(cfgc);
-  return WorkflowSpec{adaptAnalysisTask<BuildBcFlagTable>(cfgc), adaptAnalysisTask<LumiStabilityPP>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<LumiStabilityPP>(cfgc)};
 }
