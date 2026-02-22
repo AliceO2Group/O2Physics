@@ -31,6 +31,11 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include <Common/Core/trackUtilities.h>
 
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/Zorro.h"
+
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -69,6 +74,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+
+Zorro zorro;
 
 // Some definitions
 namespace o2::aod
@@ -233,10 +240,17 @@ void PrintBitMap(TMap map, int nbits)
   }
 }
 
+// Enum containing the ordering of statistics histograms to be written in the QA file
+enum ZorroStatHist {
+  kStatsZorroInfo=0,
+  kStatsZorroSel
+};
+
 struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
   Produces<aod::MixingHashes> hash;
   OutputObj<THashList> fOutputList{"output"};
+  OutputObj<TList> fStatsList{"Statistics"};
   Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
@@ -248,13 +262,54 @@ struct AnalysisEventSelection {
   Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"cfgSplitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
   Configurable<bool> fConfigCheckSplitCollisions{"cfgCheckSplitCollisions", false, "If true, run the split collision check and fill histograms"};
 
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  // Zorro selection
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro"};
+    Configurable<std::string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
+    Configurable<bool> fConfigRunZorroSel{"cfgRunZorroSel", false, "Select events with trigger mask"};
+    Configurable<uint64_t> fBcTolerance{"cfgBcTolerance", 100, "Number of BCs of margin for software triggers"};
+    Configurable<std::string> fConfigCcdbPathZorro{"ccdb-path-zorro", "/Users/m/mpuccio/EventFiltering/OTS/Chunked/", "base path to the ccdb object for zorro"};
+  } fConfigZorro;
+  
+   // RCT selection
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigUseRCT{"cfgUseRCT", false, "Enable event selection with RCT flags"};
+    Configurable<std::string> fConfigRCTLabel{"cfgRCTLabel", "CBT", "RCT flag labels : CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
+  } fConfigRCT;
+
+   // CCDB connection configurables
+  struct : ConfigurableGroup {
+    Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+    Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+    Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    Configurable<std::string> fConfigGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
+    Configurable<std::string> fConfigGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
+  } fConfigCCDB;
+  
+  // TPC postcalibration related options
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
+    Configurable<int> fConfigTPCpostCalibType{"cfgTPCpostCalibType", 1, "1: (TPCncls,pIN,eta) calibration typically for pp, 2: (eta,nPV,nLong,tLong) calibration typically for PbPb"};
+    Configurable<bool> fConfigTPCuseInterpolatedCalib{"cfgTPCpostCalibUseInterpolation", true, "If true, use interpolated calibration values (default: true)"};
+    Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
+    Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
+    Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
+  } fConfigPostCalibTPC;
+
+   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
+
+  // RCT flag checker
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT"};
 
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
 
   AnalysisCompositeCut* fEventCut;
+
+  o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
+  o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::ccdb::CcdbApi fCCDBApi;
@@ -304,6 +359,16 @@ struct AnalysisEventSelection {
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
+    // Zorro information: kStatsZorroInfo
+    // Zorro trigger selection: kStatsZorroSel
+    fStatsList.setObject(new TList());
+    fStatsList->SetOwner(kTRUE);
+    TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
+    fStatsList->AddAt(histZorroInfo, kStatsZorroInfo);
+ 
+    TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
+    fStatsList->AddAt(histZorroSel, kStatsZorroSel);
+
     TString mixVarsString = fConfigMixingVariables.value;
     std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
     if (objArray->GetEntries() > 0) {
@@ -315,11 +380,20 @@ struct AnalysisEventSelection {
     }
 
     fCurrentRun = -1;
-    fCCDB->setURL(fConfigCcdbUrl.value);
+    fCCDB->setURL(fConfigCCDB.fConfigCcdbUrl.value);
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
-    fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
-    fCCDBApi.init(fConfigCcdbUrl.value);
+    fCCDB->setCreatedNotAfter(fConfigCCDB.fConfigNoLaterThan.value);
+    fCCDBApi.init(fConfigCCDB.fConfigCcdbUrl.value);
+  
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      fCCDB->get<TGeoManager>(fConfigCCDB.fConfigGeoPath.value);
+    }
+
+    if (fConfigRCT.fConfigUseRCT.value) {
+      rctChecker.init(fConfigRCT.fConfigRCTLabel);
+    }
+
     cout << "AnalysisEventSelection::init() completed" << endl;
   }
 
@@ -327,13 +401,57 @@ struct AnalysisEventSelection {
   void runEventSelection(TEvents const& events, BCsWithTimestamps const& bcs)
   {
     cout << "AnalysisEventSelection::runEventSelection() called with " << events.size() << " events and " << bcs.size() << " BCs" << endl;
-    if (bcs.size() > 0 && bcs.begin().runNumber() != fCurrentRun) {
+    
+     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
+      if (fConfigPostCalibTPC.fConfigComputeTPCpostCalib) {
+        auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCCDB.fConfigCcdbPathTPC.value, bcs.begin().timestamp());
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+        if (fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) {
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonMean, calibList->FindObject("mean_map_kaon"));
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonSigma, calibList->FindObject("sigma_map_kaon"));
+        }
+        if (fConfigPostCalibTPC.fConfigTPCpostCalibType == 2) {
+          VarManager::SetCalibrationObject(VarManager::kTPCElectronStatus, calibList->FindObject("status_map_electron"));
+          VarManager::SetCalibrationObject(VarManager::kTPCPionStatus, calibList->FindObject("status_map_pion"));
+          VarManager::SetCalibrationObject(VarManager::kTPCProtonStatus, calibList->FindObject("status_map_proton"));
+          if (fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) {
+            VarManager::SetCalibrationObject(VarManager::kTPCKaonStatus, calibList->FindObject("status_map_kaon"));
+          }
+        }
+        VarManager::SetCalibrationType(fConfigPostCalibTPC.fConfigTPCpostCalibType, fConfigPostCalibTPC.fConfigTPCuseInterpolatedCalib);
+      }
+      if (fIsRun2 == true) {
+        fGrpMagRun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(fConfigCCDB.fConfigGrpMagPathRun2, bcs.begin().timestamp());
+        if (fGrpMagRun2 != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(fGrpMagRun2);
+        }
+      } else {
+        fGrpMag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.fConfigGrpMagPath, bcs.begin().timestamp());
+        auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
+        if (fGrpMag != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(fGrpMag);
+          VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
+        }
+        if (fZShift != nullptr && !fZShift->empty()) {
+          VarManager::SetZShift((*fZShift)[0]);
+        }
+        /*if (fConfigVariousOptions.fPropMuon) {
+          VarManager::SetupMuonMagField();
+        }*/
+      }
       std::map<std::string, std::string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
       uint64_t sor = std::atol(header["SOR"].c_str());
       uint64_t eor = std::atol(header["EOR"].c_str());
       VarManager::SetSORandEOR(sor, eor);
-    }
+
+      fCurrentRun = bcs.begin().runNumber();
+    } // end updating the CCDB quantities at change of run
 
     cout << "Filling TimeFrame statistics histograms" << endl;
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -358,12 +476,33 @@ struct AnalysisEventSelection {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
       }
-      if (fEventCut->IsSelected(VarManager::fgValues)) {
-        if (fConfigQA) {
-          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      
+      if (fConfigZorro.fConfigRunZorro) {
+        zorro.setBaseCCDBPath(fConfigZorro.fConfigCcdbPathZorro.value);
+        zorro.setBCtolerance(fConfigZorro.fBcTolerance);
+        zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
+        zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+
+        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
+          continue;
         }
-        decision = true;
+
+        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        if (fConfigZorro.fConfigRunZorroSel && (!zorroSel)) {
+          continue;
+          }
+        } else {
+	
+	if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
+          continue;
+          }
+       }
+      
+      decision = true;
+      if (fConfigQA) {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
       }
+
       fSelMap[event.globalIndex()] = decision;
       if (fBCCollMap.find(bc.globalBC()) == fBCCollMap.end()) {
         std::vector<int64_t> evIndices = {event.globalIndex()};
@@ -616,13 +755,19 @@ struct AnalysisTrackSelection {
         continue;
       }
 
+      ///
+      auto track = tracks.rawIteratorAt(assoc.trackId());
+      auto evFromTrack = events.rawIteratorAt(track.collisionId());
+      if (!evFromTrack.isEventSelected_bit(0)) { trackSel(0); continue;}
+
+
       VarManager::ResetValues(VarManager::kNTFWiseVariables, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
       VarManager::FillEvent<TEventFillMap>(event);
 
-      auto track = tracks.rawIteratorAt(assoc.trackId());
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
+      if(track.collisionId() != event.globalIndex())
       VarManager::FillTrackCollision<TTrackFillMap>(track, event);
 
       if (fConfigQA)
@@ -946,6 +1091,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
     Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
     Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts, !!! Use only if you know what you are doing, otherwise leave empty"};
+    Configurable<bool> collSplitting{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
     Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
     Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
@@ -1355,6 +1501,10 @@ struct AnalysisSameEventPairing {
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0))
         continue;
+
+      if (fConfigOptions.collSplitting && event.isEventSelected_bit(2)) {
+        continue;
+      }
 
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
