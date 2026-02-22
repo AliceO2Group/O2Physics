@@ -20,6 +20,7 @@
 #include "bestCollisionTable.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -72,10 +73,14 @@ using namespace o2::aod::rctsel;
 
 auto static constexpr CminCharge = 3.f;
 auto static constexpr CintZero = 0;
-auto static constexpr CintTwo = 2;
 auto static constexpr Czero = 0.f;
+auto static constexpr Cone = 1.f;
 auto static constexpr Cninety = 90.f;
 auto static constexpr ConeHeighty = 180.f;
+auto static constexpr CminAccFT0A = 3.5f;
+auto static constexpr CmaxAccFT0A = 4.9f;
+auto static constexpr CminAccFT0C = -3.3f;
+auto static constexpr CmaxAccFT0C = -2.1f;
 
 enum TrkSel {
   trkSelAll,
@@ -105,6 +110,11 @@ enum AmbTrkType {
   kAmbGt1 = 4,
   nAmbTrkType
 };
+
+std::unordered_map<int, float> mapVtxXrec;
+std::unordered_map<int, float> mapVtxYrec;
+std::unordered_map<int, float> mapVtxZrec;
+std::unordered_map<int, float> mapMcCollIdPerRecColl;
 
 struct DndetaMFTPbPb {
   SliceCache cache;
@@ -141,6 +151,7 @@ struct DndetaMFTPbPb {
     Configurable<bool> cfgRemoveReassigned{"cfgRemoveReassigned", false, "Remove reassgined tracks"};
     Configurable<bool> cfgUseTrackParExtra{"cfgUseTrackParExtra", false, "Use table with refitted track parameters"};
     Configurable<bool> cfgUseInelgt0{"cfgUseInelgt0", false, "Use INEL > 0 condition"};
+    Configurable<bool> cfgUseInelgt0wMFT{"cfgUseInelgt0wMFT", false, "Use INEL > 0 condition with MFT acceptance"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<uint> cfgDCAtype{"cfgDCAtype", 2, "DCA coordinate type [0: DCA-X, 1: DCA-Y, 2: DCA-XY]"};
   } gConf;
@@ -217,6 +228,9 @@ struct DndetaMFTPbPb {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift from CCDB"};
+  Configurable<std::string> cfgZShiftPath{"cfgZShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
+  Configurable<float> cfgManualZShift{"cfgManualZShift", 0.0f, "manual z-shift for propagation of global muon to PV"};
 
   int mRunNumber{-1};
   uint64_t mSOR{0};
@@ -228,6 +242,7 @@ struct DndetaMFTPbPb {
 
   float bZ = 0;                                          // Magnetic field for MFT
   static constexpr double CcenterMFT[3] = {0, 0, -61.4}; // Field at center of MFT
+  float mZShift = 0;                                     // z-vertex shift
 
   o2::parameters::GRPMagField* grpmag = nullptr;
 
@@ -908,27 +923,24 @@ struct DndetaMFTPbPb {
 
     if (doprocessCollAssocMC) {
       // tracks not associated to any collision
-      hCollAssoc[0] = qaregistry.add<THnSparse>("TrackToColl/hNonAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis});
+      hCollAssoc[0] = qaregistry.add<THnSparse>("TrackToColl/hNonAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       // tracks associasted to a collision
-      hCollAssoc[1] = qaregistry.add<THnSparse>("TrackToColl/hAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis});
+      hCollAssoc[1] = qaregistry.add<THnSparse>("TrackToColl/hAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-      hCollAssoc[2] = qaregistry.add<THnSparse>("TrackToColl/hGoodAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis});
+      hCollAssoc[2] = qaregistry.add<THnSparse>("TrackToColl/hGoodAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
-      hCollAssoc[3] = qaregistry.add<THnSparse>("TrackToColl/hGoodAssocTracksAmb", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis});
+      hCollAssoc[3] = qaregistry.add<THnSparse>("TrackToColl/hGoodAssocTracksAmb", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       qaregistry.add("TrackToColl/histFracTracksFakeMcColl", "Fraction of tracks originating from fake collision; fraction; entries", {HistType::kTH1F, {{101, 0., 1.01}}});
       qaregistry.add("TrackToColl/histFracGoodTracks", "Fraction of tracks originating from the correct collision; fraction; entries", {HistType::kTH1F, {{101, 0., 1.01}}});
       qaregistry.add("TrackToColl/histAmbTrackNumColls", "Number of collisions associated to an ambiguous track; no. collisions; entries", {HistType::kTH1F, {{30, -0.5, 29.5}}});
+      qaregistry.add("TrackToColl/histAmbTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track; RMS(#it{Z}^{reco}) (cm); entries", {HistType::kTH1F, {{100, 0., 0.5}}});
     }
 
     if (doprocessReAssocMC) {
-      // tracks not associated to any collision
-      hReAssoc[0] = qaregistry.add<THnSparse>("ReAssoc/hNonAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      // tracks associasted to a collision
-      hReAssoc[1] = qaregistry.add<THnSparse>("ReAssoc/hAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-      hReAssoc[2] = qaregistry.add<THnSparse>("ReAssoc/hGoodAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
-      hReAssoc[3] = qaregistry.add<THnSparse>("ReAssoc/hGoodAssocTracksAmb", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssoc[0] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssoc[1] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestWrong", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssoc[2] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssoc[3] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestWrong", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
     }
 
     if (doprocessEfficiencyInclusive) {
@@ -1073,12 +1085,11 @@ struct DndetaMFTPbPb {
       }
     }
 
-    if (doprocessReassocEfficiencyCentFT0C) {
-      auto hNevt = registry.add<TH1>("Events/hNReEffColls", "Number of generated and reconstructed MC collisions", HistType::kTH1F, {{3, 0.5, 3.5}});
-      hNevt->GetXaxis()->SetBinLabel(1, "Reconstructed collisions");
-      hNevt->GetXaxis()->SetBinLabel(2, "Generated collisions");
+    if (doprocessReassocEfficiency) {
+      registry.add("Events/hNReEffColls", "Number of times generated collisions are reconstructed; N; Counts", HistType::kTH1F, {{10, -0.5, 9.5}});
+      registry.add("Events/hNchTVX", "; status;", HistType::kTH2F, {multAxis, {2, 0, 2}});
 
-      registry.add("Events/Centrality/ReEffStatus", ";status;centrality", HistType::kTH2F, {{8, 0.5, 8.5}, centralityAxis});
+      registry.add("Events/Centrality/ReEffStatus", ";status;centrality", HistType::kTH2F, {{9, 0.5, 9.5}, centralityAxis});
       auto hstat = registry.get<TH2>(HIST("Events/Centrality/ReEffStatus"));
       hstat->GetXaxis()->SetBinLabel(1, "All tracks");
       hstat->GetXaxis()->SetBinLabel(2, "Ambiguous tracks");
@@ -1086,8 +1097,11 @@ struct DndetaMFTPbPb {
       hstat->GetXaxis()->SetBinLabel(4, "Extra tracks");
       hstat->GetXaxis()->SetBinLabel(5, "Originally correctly reassgined");
       hstat->GetXaxis()->SetBinLabel(6, "Correctly reassigned");
-      hstat->GetXaxis()->SetBinLabel(7, "Not reassigned");
-      hstat->GetXaxis()->SetBinLabel(8, "Correctly assigned true");
+      hstat->GetXaxis()->SetBinLabel(7, "Not reassigned (reassigned)");
+      hstat->GetXaxis()->SetBinLabel(8, "Not reassigned");
+      hstat->GetXaxis()->SetBinLabel(9, "Correctly assigned true");
+
+      registry.add({"AmbTracks/hVtxzMCrec", " ; Z_{vtx} (cm)", {HistType::kTH1F, {zAxis}}});
 
       registry.add({"AmbTracks/DCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaxyAxis}}});
       registry.add({"AmbTracks/DCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcazAxis}}});
@@ -1110,6 +1124,13 @@ struct DndetaMFTPbPb {
       registry.add({"AmbTracks/Centrality/THnDCAxyBestFalse", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
       registry.add({"AmbTracks/Centrality/THnDCAxyBestTrueOrigAssoc", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
       registry.add({"AmbTracks/Centrality/THnDCAxyBestTrueOrigReAssoc", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, dcaxyAxis, dcazAxis, centralityAxis}}});
+
+      registry.add({"AmbTracks/BestGenDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestPrimDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestTrueDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestFalseDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestTrueOrigReAssocDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
+      registry.add({"AmbTracks/BestTrueOrigAssocDxyz", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm); DCA_{XY} (cm);  DCA_{Z} (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis, dcaxyAxis, dcazAxis}}});
     }
 
     if (doprocessEventAndSignalLossCentFT0C) {
@@ -1184,6 +1205,22 @@ struct DndetaMFTPbPb {
 
   using FiltParticles = soa::Filtered<aod::McParticles>;
 
+  /// \brief RMS calculation
+  /// \param vec  vector of values to compute RMS
+  template <typename T>
+  T computeRMS(std::vector<T>& vec)
+  {
+    T sum = std::accumulate(vec.begin(), vec.end(), 0.0);
+    T mean = sum / vec.size();
+
+    std::vector<T> diff(vec.size());
+    std::transform(vec.begin(), vec.end(), diff.begin(), [mean](T x) { return x - mean; });
+    T sqSum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    T stdev = std::sqrt(sqSum / vec.size());
+
+    return stdev;
+  }
+
   void initCCDB(ExtBCs::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
@@ -1200,6 +1237,20 @@ struct DndetaMFTPbPb {
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     bZ = field->getBz(CcenterMFT);
     LOG(info) << "The field at the center of the MFT is bZ = " << bZ;
+
+    if (cfgApplyZShiftFromCCDB) {
+      auto* zShift = ccdb->getForTimeStamp<std::vector<float>>(cfgZShiftPath, bc.timestamp());
+      if (zShift != nullptr && !zShift->empty()) {
+        LOGF(info, "reading z shift %f from %s", (*zShift)[0], cfgZShiftPath.value);
+        mZShift = (*zShift)[0];
+      } else {
+        LOGF(info, "z shift is not found in ccdb path %s. set to 0 cm", cfgZShiftPath.value);
+        mZShift = 0;
+      }
+    } else {
+      LOGF(info, "z shift is manually set to %f cm", cfgManualZShift.value);
+      mZShift = cfgManualZShift;
+    }
   }
 
   template <bool fillHis = true, typename B>
@@ -1499,6 +1550,46 @@ struct DndetaMFTPbPb {
       nCharged++;
     }
     return nCharged;
+  }
+
+  template <typename P>
+  bool isInelGt0wMft(P const& particles)
+  {
+    int nChrgMc = 0;
+    int nChrgFT0A = 0;
+    int nChrgFT0C = 0;
+    for (auto const& particle : particles) {
+      if (!isChrgParticle(particle.pdgCode())) {
+        continue;
+      }
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      // trigger TVX
+      if (particle.eta() > CminAccFT0A && particle.eta() < CmaxAccFT0A) {
+        nChrgFT0A++;
+      }
+      if (particle.eta() > CminAccFT0C && particle.eta() < CmaxAccFT0C) {
+        nChrgFT0C++;
+      }
+      // acceptance MFT
+      if (particle.eta() < trackCuts.minEta || particle.eta() > trackCuts.maxEta) {
+        continue;
+      }
+      nChrgMc++;
+    }
+
+    if (nChrgFT0A == CintZero || nChrgFT0C == CintZero) {
+      registry.fill(HIST("Events/hNchTVX"), nChrgMc, 0.5);
+      return false;
+    }
+    registry.fill(HIST("Events/hNchTVX"), nChrgMc, 1.5);
+
+    if (nChrgMc == CintZero) {
+      return false;
+    }
+
+    return true;
   }
 
   template <typename P>
@@ -2934,37 +3025,51 @@ struct DndetaMFTPbPb {
       qaregistry.fill(HIST("TrackToColl/histFracTracksFakeMcColl"), fracFake);
     }
 
-    for (auto const& track : tracks) {
+    for (const auto& track : tracks) {
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         // auto particle = track.mcParticle_as<FiltParticles>();
-        auto particle = track.mcParticle();
-        bool isAmbiguous = (track.compatibleCollIds().size() != 1);
+        const auto& particle = track.mcParticle();
+        bool isAmbiguous = (track.compatibleCollIds().size() > 1);
         if (isAmbiguous) {
           qaregistry.fill(HIST("TrackToColl/histAmbTrackNumColls"), track.compatibleCollIds().size());
+
+          std::vector<float> ambVtxZ{};
+          for (const auto& collIdx : track.compatibleCollIds()) {
+            const auto& ambColl = collisions.rawIteratorAt(collIdx);
+            ambVtxZ.push_back(ambColl.posZ());
+          }
+          if (!ambVtxZ.empty()) {
+            qaregistry.fill(HIST("TrackToColl/histAmbTrackZvtxRMS"), computeRMS(ambVtxZ));
+          }
         }
+        float deltaX = -999.f;
+        float deltaY = -999.f;
         float deltaZ = -999.f;
         if (index) {
-          auto collision = track.collision_as<CollisionsWithMCLabels>();
-          auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
+          const auto& collision = track.collision_as<CollisionsWithMCLabels>();
+          const auto& mcCollision = particle.mcCollision_as<aod::McCollisions>();
+          deltaX = collision.posX() - mcCollision.posX();
+          deltaY = collision.posY() - mcCollision.posY();
           deltaZ = collision.posZ() - mcCollision.posZ();
           if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
-            hCollAssoc[index + 1]->Fill(track.pt(), track.eta(), deltaZ);
+            hCollAssoc[index + 1]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
           } else {
             if (isAmbiguous) {
               for (const auto& collIdx : track.compatibleCollIds()) {
-                auto ambCollision = collisions.rawIteratorAt(collIdx);
-                if (ambCollision.has_mcCollision() && ambCollision.mcCollisionId() == particle.mcCollisionId()) {
-                  hCollAssoc[index + 2]->Fill(track.pt(), track.eta(), deltaZ);
+                auto ambColl = collisions.rawIteratorAt(collIdx);
+                if (ambColl.has_mcCollision() && ambColl.mcCollisionId() == particle.mcCollisionId()) {
+                  hCollAssoc[index + 2]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
+                  // hCollAssoc[index + 2]->Fill(track.pt(), track.eta(), ambColl.posX() - mcCollision.posX(), ambColl.posY() - mcCollision.posY(), ambColl.posZ() - mcCollision.posZ());
                   break;
                 }
               }
             }
           }
+          hCollAssoc[index]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
         }
-        hCollAssoc[index]->Fill(track.pt(), track.eta(), deltaZ);
       } else {
-        hCollAssoc[index]->Fill(track.pt(), track.eta(), -999.f);
+        hCollAssoc[index]->Fill(track.pt(), track.eta(), -999.f, -999.f, -999.f);
       }
     }
   }
@@ -2979,50 +3084,136 @@ struct DndetaMFTPbPb {
   PROCESS_SWITCH(DndetaMFTPbPb, processCollAssocMC, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
   template <typename C>
-  void processCheckReAssocMC(C const& /*collisions*/,
+  void processCheckReAssocMC(C const& collisions,
                              soa::SmallGroups<aod::BestCollisionsFwd3d> const& besttracks,
                              FiltMcMftTracks const& /*tracks*/,
                              FiltParticles const& /*particles*/,
                              aod::McCollisions const& /*mccollisions*/
   )
   {
-    for (auto const& track : besttracks) {
-      uint index = uint(track.bestCollisionId() >= 0); // assigned
-      if (!isBestTrackSelected<false>(track)) {
-        continue;
-      }
-      auto itrack = track.mfttrack_as<FiltMcMftTracks>();
+    const auto& nRecoColls = collisions.size();
+    // Generated evets with >= 1 reco collisions
+    if (nRecoColls > CintZero) {
 
-      if (gConf.cfgRemoveReassigned) {
-        if (itrack.collisionId() != track.bestCollisionId()) {
+      mapVtxXrec.clear();
+      mapVtxYrec.clear();
+      mapVtxZrec.clear();
+      mapMcCollIdPerRecColl.clear();
+      mapVtxXrec.reserve(collisions.size());
+      mapVtxYrec.reserve(collisions.size());
+      mapVtxZrec.reserve(collisions.size());
+      mapMcCollIdPerRecColl.reserve(collisions.size());
+
+      auto maxNcontributors = -1;
+      auto bestCollIndex = -1;
+      for (auto const& collision : collisions) {
+        if (!isGoodEvent<false>(collision)) {
+          continue;
+        }
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        if (maxNcontributors < collision.numContrib()) {
+          maxNcontributors = collision.numContrib();
+          bestCollIndex = collision.globalIndex();
+          mapVtxXrec.emplace(collision.globalIndex(), collision.posX());
+          mapVtxYrec.emplace(collision.globalIndex(), collision.posY());
+          mapVtxZrec.emplace(collision.globalIndex(), collision.posZ());
+          mapMcCollIdPerRecColl.emplace(collision.globalIndex(), collision.mcCollisionId());
+        } else {
           continue;
         }
       }
-      if (!isTrackSelected<false>(itrack)) {
-        continue;
-      }
-      if (itrack.has_mcParticle()) {
-        auto particle = itrack.mcParticle_as<FiltParticles>();
 
-        float deltaX = -999.f;
-        float deltaY = -999.f;
-        float deltaZ = -999.f;
-        if (index) {
-          auto collision = itrack.collision_as<CollisionsWithMCLabels>();
-          auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-          deltaX = collision.posX() - mcCollision.posX();
-          deltaY = collision.posY() - mcCollision.posY();
-          deltaZ = collision.posZ() - mcCollision.posZ();
-          if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
-            hReAssoc[index + 1]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-          } else {
-            hReAssoc[index + 2]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
+      for (const auto& collision : collisions) {
+        if (!isGoodEvent<false>(collision)) {
+          continue;
+        }
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        // Select collisions with the largest number of contributors
+        if (bestCollIndex != collision.globalIndex()) {
+          continue;
+        }
+
+        auto perCollisionASample = besttracks.sliceBy(perColU, collision.globalIndex());
+        for (auto const& atrack : perCollisionASample) {
+          if (!isBestTrackSelected<false>(atrack)) {
+            continue;
+          }
+          auto itrack = atrack.template mfttrack_as<FiltMcMftTracks>();
+          if (!isTrackSelected<false>(itrack)) {
+            continue;
+          }
+          float phi = itrack.phi();
+          o2::math_utils::bringTo02Pi(phi);
+          if (phi < Czero || TwoPI < phi) {
+            continue;
+          }
+          if (!itrack.has_collision()) {
+            continue;
+          }
+          if (gConf.cfgRemoveReassigned) {
+            if (itrack.collisionId() != atrack.bestCollisionId()) {
+              continue;
+            }
+          }
+          if (itrack.has_mcParticle()) {
+            auto particle = itrack.template mcParticle_as<FiltParticles>();
+            auto collision = itrack.template collision_as<CollisionsWithMCLabels>();
+            auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+
+            if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
+              continue;
+            }
+
+            float deltaX = -999.f;
+            float deltaY = -999.f;
+            float deltaZ = -999.f;
+
+            if (mapVtxXrec.find(atrack.bestCollisionId()) == mapVtxXrec.end()) {
+              continue;
+            }
+            if (mapVtxYrec.find(atrack.bestCollisionId()) == mapVtxYrec.end()) {
+              continue;
+            }
+            if (mapVtxZrec.find(atrack.bestCollisionId()) == mapVtxZrec.end()) {
+              continue;
+            }
+            if (mapMcCollIdPerRecColl.find(atrack.bestCollisionId()) == mapMcCollIdPerRecColl.end()) {
+              continue;
+            }
+            const float vtxXbest = mapVtxXrec.find(atrack.bestCollisionId())->second;
+            const float vtxYbest = mapVtxYrec.find(atrack.bestCollisionId())->second;
+            const float vtxZbest = mapVtxZrec.find(atrack.bestCollisionId())->second;
+            // LOGP(info, "\t ---> \t .... \t vtxZrec: {} - collision.posZ(): {}", vtxZrec, collision.posZ());
+            const float mcCollIdRec = mapMcCollIdPerRecColl.find(atrack.bestCollisionId())->second;
+            // LOGP(info, "\t ---> \t .... \t mcCollIdRec: {} - bestMCCol: {}", mcCollIdRec, bestMCCol);
+            deltaX = vtxXbest - mcCollision.posX();
+            deltaY = vtxYbest - mcCollision.posY();
+            deltaZ = vtxZbest - mcCollision.posZ();
+
+            if (itrack.collisionId() == atrack.bestCollisionId()) { // associated
+              if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) {
+                hReAssoc[0]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
+              } else {
+                hReAssoc[1]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
+              }
+            } else {
+              if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) {
+                hReAssoc[2]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
+              } else {
+                hReAssoc[3]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
+              }
+            }
           }
         }
-        hReAssoc[index]->Fill(itrack.pt(), itrack.eta(), deltaX, deltaY, deltaZ);
-      } else {
-        hReAssoc[index]->Fill(itrack.pt(), itrack.eta(), -999.f, -999.f, -999.f);
       }
+      mapVtxXrec.clear();
+      mapVtxYrec.clear();
+      mapVtxZrec.clear();
+      mapMcCollIdPerRecColl.clear();
     }
   }
 
@@ -3266,8 +3457,8 @@ struct DndetaMFTPbPb {
           } else {
             if (isAmbiguous) {
               for (const auto& collIdx : track.compatibleCollIds()) {
-                auto ambCollision = collisions.rawIteratorAt(collIdx);
-                if (ambCollision.has_mcCollision() && ambCollision.mcCollisionId() == particle.mcCollisionId()) {
+                auto ambColl = collisions.rawIteratorAt(collIdx);
+                if (ambColl.has_mcCollision() && ambColl.mcCollisionId() == particle.mcCollisionId()) {
                   if (!particle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
                     if constexpr (has_reco_cent<C>) {
                       registry.fill(HIST("Tracks/Centrality/THnGenSecAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
@@ -3649,11 +3840,10 @@ struct DndetaMFTPbPb {
   Preslice<MftTracksWCollsMC> compCollPerCol = o2::aod::fwdtrack::collisionId;
 
   /// @brief process function to check reassociation efficiency
-  template <typename C, typename MC>
-  void processReassocEfficiency(typename soa::Join<C, aod::McCollisionLabels> const& collisions,
+  void processReassocEfficiency(CollsMCExtra::iterator const& mcCollision,
+                                soa::SmallGroups<CollsGenCentFT0C> const& collisions,
                                 MftTracksWCollsMC const& tracks,
-                                MC const& mcCollisions,
-                                aod::McParticles const& /*particles*/,
+                                aod::McParticles const& particles,
                                 ExtBCs const& bcs)
   {
     if (bcs.size() == 0) {
@@ -3662,158 +3852,203 @@ struct DndetaMFTPbPb {
     auto bc = bcs.begin();
     initCCDB(bc);
 
-    registry.fill(HIST("Events/hNReEffColls"), 1.f, collisions.size());
-    registry.fill(HIST("Events/hNReEffColls"), 2.f, mcCollisions.size());
+    // At least one generated primary in MFT acceptance + TVX triggered collisions
+    if (gConf.cfgUseInelgt0wMFT && !isInelGt0wMft(particles)) {
+      return;
+    }
+    if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
+      return;
+    }
 
-    for (const auto& collision : collisions) {
-      if (!isGoodEvent<false>(collision)) {
-        continue;
+    const auto& nRecoColls = collisions.size();
+    registry.fill(HIST("Events/hNReEffColls"), 1.f, nRecoColls);
+
+    // Generated evets with >= 1 reco collisions
+    if (nRecoColls > CintZero) {
+
+      auto maxNcontributors = -1;
+      auto bestCollIndex = -1;
+      auto crec = -1;
+      for (auto const& collision : collisions) {
+        if (!isGoodEvent<false>(collision)) {
+          continue;
+        }
+        if (maxNcontributors < collision.numContrib()) {
+          maxNcontributors = collision.numContrib();
+          bestCollIndex = collision.globalIndex();
+          crec = getRecoCent(collision);
+        } else {
+          continue;
+        }
       }
-      float crec = getRecoCent(collision);
-      registry.fill(HIST("Events/Centrality/ReEffStatus"), 1, crec);
 
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
+      registry.fill(HIST("AmbTracks/hVtxzMCrec"), mcCollision.posZ());
 
-      std::array<double, 3> dcaInfOrig;
-      std::array<double, 2> dcaInfo;
-      double bestDCA[2];
-      auto trkPerColl = tracks.sliceBy(compCollPerCol, collision.globalIndex());
-
-      for (auto const& track : trkPerColl) {
-        dcaInfOrig[0] = 999.f; // original DCAx from propagation
-        dcaInfOrig[1] = 999.f; // original DCAy from propagation
-        dcaInfOrig[2] = 999.f; // original DCAz from propagation
-        dcaInfo[0] = 999.f;    // calcualted DCAxy
-        dcaInfo[1] = 999.f;    // calculated DCAz - same as original
-        bestDCA[0] = 999.f;    // minimal DCAxy
-        bestDCA[1] = 999.f;    // minimal DCAz
-
-        if (!isTrackSelected<false>(track)) {
+      for (const auto& collision : collisions) {
+        if (!isGoodEvent<false>(collision)) {
+          continue;
+        }
+        // Select collisions with the largest number of contributors
+        if (bestCollIndex != collision.globalIndex()) {
           continue;
         }
 
-        auto bestCol = track.collisionId();
-        uint index = uint(track.collisionId() >= 0);
-        auto ids = track.compatibleCollIds();
-        bool isAmbiguous = (ids.size() > 1);
+        registry.fill(HIST("Events/Centrality/ReEffStatus"), 1, crec);
 
-        if (!track.has_mcParticle()) {
-          continue;
-        }
-        auto particle = track.template mcParticle_as<aod::McParticles>();
-        if (!isChrgParticle(particle.pdgCode())) {
-          continue;
-        }
-        if (particle.eta() <= trackCuts.minEta || particle.eta() >= trackCuts.maxEta) {
-          continue;
-        }
-        if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
+        if (!collision.has_mcCollision()) {
           continue;
         }
 
-        int bestMCCol = -1;
-        std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
-        SMatrix55 tcovs(v1.begin(), v1.end());
-        SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
-        o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
+        std::array<double, 3> dcaInfOrig;
+        std::array<double, 2> dcaInfo;
+        double bestDCA[2];
+        auto trkPerColl = tracks.sliceBy(compCollPerCol, collision.globalIndex());
 
-        if (index) {
-          auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
-          if (eventCuts.useZDiffCut) {
-            if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
+        for (auto const& track : trkPerColl) {
+          dcaInfOrig[0] = 999.f; // original DCAx from propagation
+          dcaInfOrig[1] = 999.f; // original DCAy from propagation
+          dcaInfOrig[2] = 999.f; // original DCAz from propagation
+          dcaInfo[0] = 999.f;    // calcualted DCAxy
+          dcaInfo[1] = 999.f;    // calculated DCAz - same as original
+          bestDCA[0] = 999.f;    // minimal DCAxy
+          bestDCA[1] = 999.f;    // minimal DCAz
+
+          if (!isTrackSelected<false>(track)) {
+            continue;
+          }
+
+          auto bestCol = track.has_collision() ? track.collisionId() : -1;
+          uint index = uint(track.collisionId() >= 0);
+          bool isAmbiguous = (track.compatibleCollIds().size() > 1);
+
+          if (!track.has_mcParticle()) {
+            continue;
+          }
+          auto particle = track.mcParticle_as<aod::McParticles>();
+          if (!isChrgParticle(particle.pdgCode())) {
+            continue;
+          }
+          if (particle.eta() <= trackCuts.minEta || particle.eta() >= trackCuts.maxEta) {
+            continue;
+          }
+          if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
+            continue;
+          }
+
+          if (gConf.cfgRemoveReassigned) {
+            if (track.compatibleCollIds().empty() || (track.compatibleCollIds().size() == 1 && bestCol == track.compatibleCollIds()[0])) {
               continue;
             }
           }
 
-          if (isAmbiguous) {
-            for (const auto& collIdx : track.compatibleCollIds()) {
-              auto ambCollision = collisions.rawIteratorAt(collIdx);
-              if (!ambCollision.has_mcCollision()) {
+          int bestMCCol = -1;
+          o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, mZShift);
+
+          if (index) {
+            auto mcCollision = particle.mcCollision_as<CollsMCExtra>();
+            if (eventCuts.useZDiffCut) {
+              if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
                 continue;
               }
-
-              trackPar.propagateToDCAhelix(bZ, {ambCollision.posX(), ambCollision.posY(), ambCollision.posZ()}, dcaInfOrig);
-
-              if (gConf.cfgDCAtype == 0) {
-                dcaInfo[0] = dcaInfOrig[0];
-              } else if (gConf.cfgDCAtype == 1) {
-                dcaInfo[0] = dcaInfOrig[1];
-              } else if (gConf.cfgDCAtype == CintTwo) {
-                dcaInfo[0] = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
-              }
-              dcaInfo[1] = dcaInfOrig[2];
-
-              // LOGP(info, "-> track {}: {}", track.globalIndex(), dcaInfo[0]);
-              registry.fill(HIST("AmbTracks/DCAXY"), dcaInfo[0]);
-              registry.fill(HIST("AmbTracks/DCAZ"), dcaInfo[1]);
-
-              if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
-                bestCol = ambCollision.globalIndex();
-                bestMCCol = ambCollision.mcCollisionId();
-                bestDCA[0] = dcaInfo[0];
-                bestDCA[1] = dcaInfo[1];
-              }
             }
 
-            registry.fill(HIST("AmbTracks/DCAXYBest"), bestDCA[0]);
-            registry.fill(HIST("AmbTracks/DCAZBest"), bestDCA[1]);
-            registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestGen"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+            if (isAmbiguous) {
+              for (const auto& collIdx : track.compatibleCollIds()) {
+                auto ambColl = collisions.rawIteratorAt(collIdx);
+                if (!ambColl.has_mcCollision()) {
+                  continue;
+                }
 
-            if (particle.isPhysicalPrimary()) {
-              registry.fill(HIST("AmbTracks/DCAXYBestPrim"), bestDCA[0]);
-              registry.fill(HIST("AmbTracks/DCAZBestPrim"), bestDCA[1]);
-              registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestGenPrim"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
-            }
+                trackPar.propagateToDCAhelix(bZ, {ambColl.posX(), ambColl.posY(), ambColl.posZ()}, dcaInfOrig);
 
-            auto mcCollID = particle.mcCollisionId();
-            registry.fill(HIST("Events/Centrality/ReEffStatus"), 2, crec);
+                if (gConf.cfgDCAtype == 0) {
+                  dcaInfo[0] = dcaInfOrig[0];
+                } else if (gConf.cfgDCAtype == 1) {
+                  dcaInfo[0] = dcaInfOrig[1];
+                } else if (gConf.cfgDCAtype == 2) {
+                  dcaInfo[0] = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
+                }
+                dcaInfo[1] = dcaInfOrig[2];
 
-            if (!track.has_collision()) {
-              registry.fill(HIST("Events/Centrality/ReEffStatus"), 4, crec);
-              if (bestMCCol == mcCollID) // correctly assigned to bestCol
-              {
-                registry.fill(HIST("Events/Centrality/ReEffStatus"), 6, crec);
-                registry.fill(HIST("AmbTracks/DCAXYBestTrue"), bestDCA[0]);
-                registry.fill(HIST("AmbTracks/DCAZBestTrue"), bestDCA[1]);
-                registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrue"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
-              } else {
-                registry.fill(HIST("AmbTracks/DCAXYBestFalse"), bestDCA[0]);
-                registry.fill(HIST("AmbTracks/DCAZBestFalse"), bestDCA[1]);
-                registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestFalse"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
+                  bestCol = ambColl.globalIndex();
+                  bestMCCol = ambColl.mcCollisionId();
+                  bestDCA[0] = dcaInfo[0];
+                  bestDCA[1] = dcaInfo[1];
+                }
+
+                // LOGP(info, "-> track {}: {}", track.globalIndex(), dcaInfo[0]);
+                registry.fill(HIST("AmbTracks/DCAXY"), dcaInfo[0]);
+                registry.fill(HIST("AmbTracks/DCAZ"), dcaInfo[1]);
               }
-            } else if (track.collisionId() != bestCol) { // reassgined
-              auto collOrig = track.template collision_as<soa::Join<C, aod::McCollisionLabels>>();
-              registry.fill(HIST("Events/Centrality/ReEffStatus"), 3, crec);
-              if (bestMCCol == mcCollID) // correctly reassigned
-              {
-                registry.fill(HIST("Events/Centrality/ReEffStatus"), 6, crec);
-                registry.fill(HIST("AmbTracks/DCAXYBestTrue"), bestDCA[0]);
-                registry.fill(HIST("AmbTracks/DCAZBestTrue"), bestDCA[1]);
-                registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrue"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
-              } else { // uncorrectly reassigned
-                registry.fill(HIST("AmbTracks/DCAXYBestFalse"), bestDCA[0]);
-                registry.fill(HIST("AmbTracks/DCAZBestFalse"), bestDCA[1]);
-                registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestFalse"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+
+              registry.fill(HIST("AmbTracks/DCAXYBest"), bestDCA[0]);
+              registry.fill(HIST("AmbTracks/DCAZBest"), bestDCA[1]);
+              registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestGen"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+              registry.fill(HIST("AmbTracks/BestGenDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
+
+              if (particle.isPhysicalPrimary()) {
+                registry.fill(HIST("AmbTracks/DCAXYBestPrim"), bestDCA[0]);
+                registry.fill(HIST("AmbTracks/DCAZBestPrim"), bestDCA[1]);
+                registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestGenPrim"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                registry.fill(HIST("AmbTracks/BestPrimDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
               }
-              if (collOrig.mcCollisionId() == mcCollID) { // initially correctly assigned
-                registry.fill(HIST("Events/Centrality/ReEffStatus"), 5, crec);
-                registry.fill(HIST("AmbTracks/DCAXYBestTrueOrigReAssoc"), bestDCA[0]);
-                registry.fill(HIST("AmbTracks/DCAZBestTrueOrigReAssoc"), bestDCA[1]);
-                registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrueOrigReAssoc"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
-              }
-            } else { // the track has a collision and track.collisionId() == bestCol
-              if (track.collisionId() != bestCol) {
-                // LOGP(info, "-> track id {}: bestCollid {}", track.collisionId(), bestCol);
-              }
-              registry.fill(HIST("Events/Centrality/ReEffStatus"), 7, crec);
-              if (bestMCCol == mcCollID) // correctly assigned
-              {
+
+              auto mcCollID = particle.mcCollisionId();
+              registry.fill(HIST("Events/Centrality/ReEffStatus"), 2, crec);
+
+              if (!track.has_collision()) {
+                registry.fill(HIST("Events/Centrality/ReEffStatus"), 4, crec);
+                if (bestMCCol == mcCollID) // correctly assigned to bestCol
+                {
+                  registry.fill(HIST("Events/Centrality/ReEffStatus"), 6, crec);
+                  registry.fill(HIST("AmbTracks/DCAXYBestTrue"), bestDCA[0]);
+                  registry.fill(HIST("AmbTracks/DCAZBestTrue"), bestDCA[1]);
+                  registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrue"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                  registry.fill(HIST("AmbTracks/BestTrueDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
+                } else {
+                  registry.fill(HIST("AmbTracks/DCAXYBestFalse"), bestDCA[0]);
+                  registry.fill(HIST("AmbTracks/DCAZBestFalse"), bestDCA[1]);
+                  registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestFalse"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                  registry.fill(HIST("AmbTracks/BestFalseDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
+                }
+              } else if (track.collisionId() != bestCol) { // reassgined
+                auto collOrig = collisions.rawIteratorAt(track.collisionId());
+                registry.fill(HIST("Events/Centrality/ReEffStatus"), 3, crec);
+                if (bestMCCol == mcCollID) // correctly reassigned
+                {
+                  registry.fill(HIST("Events/Centrality/ReEffStatus"), 6, crec);
+                  registry.fill(HIST("AmbTracks/DCAXYBestTrue"), bestDCA[0]);
+                  registry.fill(HIST("AmbTracks/DCAZBestTrue"), bestDCA[1]);
+                  registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrue"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                  registry.fill(HIST("AmbTracks/BestTrueDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
+                } else { // uncorrectly reassigned
+                  registry.fill(HIST("AmbTracks/DCAXYBestFalse"), bestDCA[0]);
+                  registry.fill(HIST("AmbTracks/DCAZBestFalse"), bestDCA[1]);
+                  registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestFalse"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                  registry.fill(HIST("AmbTracks/BestFalseDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
+                }
+                if (collOrig.mcCollisionId() == mcCollID) { // initially correctly assigned
+                  registry.fill(HIST("Events/Centrality/ReEffStatus"), 5, crec);
+                  registry.fill(HIST("AmbTracks/DCAXYBestTrueOrigReAssoc"), bestDCA[0]);
+                  registry.fill(HIST("AmbTracks/DCAZBestTrueOrigReAssoc"), bestDCA[1]);
+                  registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrueOrigReAssoc"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                  registry.fill(HIST("AmbTracks/BestTrueOrigReAssocDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
+                }
+              } else { // not reassigned - the track has a collision and track.collisionId() == bestCol
+                if (track.collisionId() != bestCol) {
+                  registry.fill(HIST("Events/Centrality/ReEffStatus"), 7, crec);
+                  // LOGP(info, "-> track id {}: bestCollid {}", track.collisionId(), bestCol);
+                }
                 registry.fill(HIST("Events/Centrality/ReEffStatus"), 8, crec);
-                registry.fill(HIST("AmbTracks/DCAXYBestTrueOrigAssoc"), bestDCA[0]);
-                registry.fill(HIST("AmbTracks/DCAZBestTrueOrigAssoc"), bestDCA[1]);
-                registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrueOrigAssoc"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                if (bestMCCol == mcCollID) // correctly assigned
+                {
+                  registry.fill(HIST("Events/Centrality/ReEffStatus"), 9, crec);
+                  registry.fill(HIST("AmbTracks/DCAXYBestTrueOrigAssoc"), bestDCA[0]);
+                  registry.fill(HIST("AmbTracks/DCAZBestTrueOrigAssoc"), bestDCA[1]);
+                  registry.fill(HIST("AmbTracks/Centrality/THnDCAxyBestTrueOrigAssoc"), particle.pt(), particle.eta(), mcCollision.posZ(), bestDCA[0], bestDCA[1], crec);
+                  registry.fill(HIST("AmbTracks/BestTrueOrigAssocDxyz"), collision.posX() - mcCollision.posX(), collision.posY() - mcCollision.posY(), collision.posZ() - mcCollision.posZ(), bestDCA[0], bestDCA[1]);
+                }
               }
             }
           }
@@ -3822,16 +4057,7 @@ struct DndetaMFTPbPb {
     }
   }
 
-  void processReassocEfficiencyCentFT0C(soa::Join<CollsCentFT0C, aod::McCollisionLabels> const& collisions,
-                                        MftTracksWCollsMC const& tracks,
-                                        aod::McCollisions const& mccollisions,
-                                        aod::McParticles const& particles,
-                                        ExtBCs const& bcs)
-  {
-    processReassocEfficiency<CollsCentFT0C, aod::McCollisions>(collisions, tracks, mccollisions, particles, bcs);
-  }
-
-  PROCESS_SWITCH(DndetaMFTPbPb, processReassocEfficiencyCentFT0C, "Process collision-reassociation efficiency based on track propagation DCA 3D (in FT0C centrality bins)", false);
+  PROCESS_SWITCH(DndetaMFTPbPb, processReassocEfficiency, "Process collision-reassociation efficiency based on track propagation DCA 3D (in FT0C centrality bins)", false);
 
   /// @brief process function to calculate signal loss based on MC
   void processEventAndSignalLossCentFT0C(CollsMCExtra::iterator const& mcCollision,
