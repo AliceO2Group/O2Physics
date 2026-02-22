@@ -197,8 +197,7 @@ struct UpcRhoAnalysis {
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
   Configurable<bool> cutNumContribs{"cutNumContribs", true, "cut on number of contributors"};
   Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 2, "max number of contributors cut on collisions"};
-  Configurable<float> znCommonEnergyCut{"znCommonEnergyCut", 0.0, "ZN common energy cut"};
-  Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut"};
+  Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut (ns)"};
   Configurable<bool> cutOccupancy{"cutOccupancy", true, "cut on collision occupancy?"};
   Configurable<float> occupancyCut{"occupancyCut", 1000.0, "occupancy cut"};
 
@@ -814,20 +813,19 @@ struct UpcRhoAnalysis {
     if (std::isinf(timeZNC))
       timeZNC = -999;
 
-    if (energyCommonZNA <= znCommonEnergyCut && energyCommonZNC <= znCommonEnergyCut) {
+    if (std::abs(timeZNA) > znTimeCut && std::abs(timeZNC) > znTimeCut) {
       onon = true;
       neutronClass = 0;
     }
-    if (energyCommonZNA > znCommonEnergyCut && std::abs(timeZNA) <= znTimeCut && energyCommonZNC <= znCommonEnergyCut) {
+    if (std::abs(timeZNA) <= znTimeCut && std::abs(timeZNC) > znTimeCut) {
       xnon = true;
       neutronClass = 1;
     }
-    if (energyCommonZNA <= znCommonEnergyCut && energyCommonZNC > znCommonEnergyCut && std::abs(timeZNC) <= znTimeCut) {
+    if (std::abs(timeZNA) > znTimeCut && std::abs(timeZNC) <= znTimeCut) {
       onxn = true;
       neutronClass = 2;
     }
-    if (energyCommonZNA > znCommonEnergyCut && std::abs(timeZNA) <= znTimeCut &&
-        energyCommonZNC > znCommonEnergyCut && std::abs(timeZNC) <= znTimeCut) {
+    if (std::abs(timeZNA) <= znTimeCut && std::abs(timeZNC) <= znTimeCut) {
       xnxn = true;
       neutronClass = 3;
     }
