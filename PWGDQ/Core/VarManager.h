@@ -2398,7 +2398,8 @@ void VarManager::FillEvent(T const& event, float* values)
 }
 
 template <typename T>
-void VarManager::FillEventTracks(T const& tracks, float* values) {
+void VarManager::FillEventTracks(T const& tracks, float* values)
+{
   if (!values) {
     values = fgValues;
   }
