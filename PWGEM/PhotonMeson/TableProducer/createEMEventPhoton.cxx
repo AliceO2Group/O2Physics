@@ -66,14 +66,14 @@ using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
   // Produces<o2::aod::EMBCs> embc;
-  Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::EMEvents_004> event;
   Produces<o2::aod::EMEventsAlias> eventalias;
   // Produces<o2::aod::EMEventsCov> eventCov;
-  Produces<o2::aod::EMEventsMult> eventMult;
-  Produces<o2::aod::EMEventsCent> eventCent;
-  Produces<o2::aod::EMEventsQvec> eventQvec;
+  Produces<o2::aod::EMEventsMult_000> eventMult;
+  Produces<o2::aod::EMEventsCent_000> eventCent;
+  Produces<o2::aod::EMEventsQvec_001> eventQvec;
   Produces<o2::aod::EMSWTriggerBits> emswtbit;
-  Produces<o2::aod::EMEventNormInfos> event_norm_info;
+  Produces<o2::aod::EMEventNormInfos_001> event_norm_info;
   Produces<o2::aod::EMEventsWeight> eventWeights;
 
   enum class EMEventType : int {
@@ -359,7 +359,7 @@ struct CreateEMEventPhoton {
 };
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
-  Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
+  Produces<o2::aod::EMPrimaryElectronDaEMEventIds> prmeleventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
   Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;

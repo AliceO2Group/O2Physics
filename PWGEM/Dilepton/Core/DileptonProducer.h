@@ -69,7 +69,7 @@ using namespace o2::aod::pwgem::dilepton::utils;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec2, aod::EMEventsQvec3>;
 using MyCollision = MyCollisions::iterator;
 
 using MyElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMPrimaryElectronsPrefilterBitDerived>;
@@ -774,7 +774,7 @@ struct DileptonProducer {
         continue;
       }
 
-      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZint16(), collision.centFT0Cuint16());
+      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZint8(), collision.centFT0Muint8(), collision.centFT0Cuint8(), collision.centNTPVuint8()/*, collision.centNGlobaluint8()*/);
 
     } // end of collision loop
   }

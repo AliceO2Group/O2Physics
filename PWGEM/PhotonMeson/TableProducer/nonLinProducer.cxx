@@ -57,7 +57,7 @@ struct NonLinProducer {
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
-  using Colls = soa::Join<aod::EMEvents, aod::EMEventsCent>;
+  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsCent_000>;
 
   EMNonLin emNonLinEMC;
   EMNonLin emNonLinPCM;
@@ -110,8 +110,8 @@ struct NonLinProducer {
     for (const auto& cluster : clusters) {
 
       // check that we are at the correct collision
-      if (cluster.emeventId() != collIndex) {
-        collIndex = cluster.emeventId();
+      if (cluster.emphotoneventId() != collIndex) {
+        collIndex = cluster.emphotoneventId();
         collision.setCursor(collIndex);
       }
 
@@ -144,8 +144,8 @@ struct NonLinProducer {
     for (const auto& v0 : v0s) {
 
       // check that we are at the correct collision
-      if (v0.emeventId() != collIndex) {
-        collIndex = v0.emeventId();
+      if (v0.emphotoneventId() != collIndex) {
+        collIndex = v0.emphotoneventId();
         collision.setCursor(collIndex);
       }
 

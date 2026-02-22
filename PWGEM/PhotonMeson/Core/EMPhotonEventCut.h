@@ -16,18 +16,38 @@
 #ifndef PWGEM_PHOTONMESON_CORE_EMPHOTONEVENTCUT_H_
 #define PWGEM_PHOTONMESON_CORE_EMPHOTONEVENTCUT_H_
 
-#include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+
+#include "TNamed.h"
 
 using namespace std;
 
-class EMPhotonEventCut : public EMEventCut
+class EMPhotonEventCut : public TNamed
 {
  public:
   EMPhotonEventCut() = default;
-  EMPhotonEventCut(const char* name, const char* title) : EMEventCut(name, title) {}
+  EMPhotonEventCut(const char* name, const char* title) : TNamed(name, title) {}
 
   enum class EMPhotonEventCuts : int {
-    kEMCReadoutInMB = 0,
+    kSel8 = 0,
+    kFT0AND,
+    kZvtx,
+    kNoTFB,
+    kNoITSROFB,
+    kNoSameBunchPileup,
+    kIsVertexITSTPC,
+    kIsVertexTOFmatched,
+    kIsGoodZvtxFT0vsPV,
+    kNoCollInTimeRangeStandard,
+    kNoCollInTimeRangeStrict,
+    kNoCollInITSROFStandard,
+    kNoCollInITSROFStrict,
+    kNoHighMultCollInPrevRof,
+    kIsGoodITSLayer3,
+    kIsGoodITSLayer0123,
+    kIsGoodITSLayersAll,
+    kEMCReadoutInMB,
     kEMCHardwareTriggered,
     kNCuts
   };
@@ -35,7 +55,7 @@ class EMPhotonEventCut : public EMEventCut
   template <typename T>
   bool IsSelected(T const& collision) const
   {
-    if (!EMEventCut::IsSelected(collision)) {
+    if (!EMPhotonEventCut::IsSelected(collision)) {
       return false;
     }
     if (mRequireEMCReadoutInMB && !IsSelected(collision, EMPhotonEventCuts::kEMCReadoutInMB)) {
@@ -51,6 +71,57 @@ class EMPhotonEventCut : public EMEventCut
   bool IsSelected(T const& collision, const EMPhotonEventCuts& cut) const
   {
     switch (cut) {
+      case EMPhotonEventCuts::kSel8:
+        return collision.sel8();
+
+      case EMPhotonEventCuts::kFT0AND:
+        return collision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
+
+      case EMPhotonEventCuts::kZvtx:
+        return mMinZvtx < collision.posZ() && collision.posZ() < mMaxZvtx;
+
+      case EMPhotonEventCuts::kNoTFB:
+        return collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+
+      case EMPhotonEventCuts::kNoITSROFB:
+        return collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+
+      case EMPhotonEventCuts::kNoSameBunchPileup:
+        return collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+
+      case EMPhotonEventCuts::kIsVertexITSTPC:
+        return collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+
+      case EMPhotonEventCuts::kIsVertexTOFmatched:
+        return collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
+
+      case EMPhotonEventCuts::kIsGoodZvtxFT0vsPV:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+
+      case EMPhotonEventCuts::kNoCollInTimeRangeStandard:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
+
+      case EMPhotonEventCuts::kNoCollInTimeRangeStrict:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict);
+
+      case EMPhotonEventCuts::kNoCollInITSROFStandard:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard);
+
+      case EMPhotonEventCuts::kNoCollInITSROFStrict:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict);
+
+      case EMPhotonEventCuts::kNoHighMultCollInPrevRof:
+        return collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof);
+
+      case EMPhotonEventCuts::kIsGoodITSLayer3:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+
+      case EMPhotonEventCuts::kIsGoodITSLayer0123:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+
+      case EMPhotonEventCuts::kIsGoodITSLayersAll:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+
       case EMPhotonEventCuts::kEMCReadoutInMB:
         return (collision.alias_bit(kTVXinEMC));
 
@@ -63,10 +134,44 @@ class EMPhotonEventCut : public EMEventCut
   }
 
   // Setters
+  void SetRequireSel8(bool flag);
+  void SetRequireFT0AND(bool flag);
+  void SetZvtxRange(float min, float max);
+  void SetRequireNoTFB(bool flag);
+  void SetRequireNoITSROFB(bool flag);
+  void SetRequireNoSameBunchPileup(bool flag);
+  void SetRequireVertexITSTPC(bool flag);
+  void SetRequireVertexTOFmatched(bool flag);
+  void SetRequireGoodZvtxFT0vsPV(bool flag);
+  void SetRequireNoCollInTimeRangeStandard(bool flag);
+  void SetRequireNoCollInTimeRangeStrict(bool flag);
+  void SetRequireNoCollInITSROFStandard(bool flag);
+  void SetRequireNoCollInITSROFStrict(bool flag);
+  void SetRequireNoHighMultCollInPrevRof(bool flag);
+  void SetRequireGoodITSLayer3(bool flag);
+  void SetRequireGoodITSLayer0123(bool flag);
+  void SetRequireGoodITSLayersAll(bool flag);
   void SetRequireEMCReadoutInMB(bool flag);
   void SetRequireEMCHardwareTriggered(bool flag);
 
  private:
+  bool mRequireSel8{false};
+  bool mRequireFT0AND{true};
+  float mMinZvtx{-10.f}, mMaxZvtx{+10.f};
+  bool mRequireNoTFB{false};
+  bool mRequireNoITSROFB{false};
+  bool mRequireNoSameBunchPileup{false};
+  bool mRequireVertexITSTPC{false};
+  bool mRequireVertexTOFmatched{false};
+  bool mRequireGoodZvtxFT0vsPV{false};
+  bool mRequireNoCollInTimeRangeStandard{false};
+  bool mRequireNoCollInTimeRangeStrict{false};
+  bool mRequireNoCollInITSROFStandard{false};
+  bool mRequireNoCollInITSROFStrict{false};
+  bool mRequireNoHighMultCollInPrevRof{false};
+  bool mRequireGoodITSLayer3{false};
+  bool mRequireGoodITSLayer0123{false};
+  bool mRequireGoodITSLayersAll{false};
   bool mRequireEMCReadoutInMB{false};
   bool mRequireEMCHardwareTriggered{false};
 

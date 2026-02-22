@@ -8,27 +8,31 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
-// This code loops over photons and makes pairs for neutral mesons analyses.
-//    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/DiphotonHadronMPC.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::soa;
+
+struct phosIdConverter1 {
+  Produces<aod::PHOSEMEventIds_001> id_001;
+
+  void process(aod::PHOSEMEventIds_000 const& ids)
+  {
+    for (const auto& id : ids) {
+      id_001(id.emeventId());
+    } // end of id loop
+  }
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<DiphotonHadronMPC<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"diphoton-hadron-mpc-pcmpcm"}),
-  };
+  return WorkflowSpec{adaptAnalysisTask<phosIdConverter1>(cfgc, TaskName{"phosid-converter1"})};
 }
