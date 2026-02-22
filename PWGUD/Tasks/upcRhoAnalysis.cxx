@@ -175,34 +175,34 @@ struct UpcRhoAnalysis {
   const std::vector<int> runNumbers = {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544911, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544991, 544992, 545004, 545008, 545009, 545041, 545042, 545044, 545047, 545060, 545062, 545063, 545064, 545066, 545086, 545103, 545117, 545171, 545184, 545185, 545210, 545222, 545223, 545246, 545249, 545262, 545289, 545291, 545294, 545295, 545296, 545311, 545312, 545332, 545345, 545367};
   AxisSpec runNumberAxis = {static_cast<int>(runNumbers.size()), 0.5, static_cast<double>(runNumbers.size()) + 0.5, "run number"};
 
-  Configurable<bool> isPO{"isPO", false, "process proton-oxygen data"};
+  Configurable<bool> isPO{"isPO", false, "processing p-O data?"};
 
-  Configurable<bool> cutGapSide{"cutGapSide", true, "apply gap side cut"};
+  Configurable<bool> cutGapSide{"cutGapSide", true, "apply gap side cut?"};
   Configurable<int> gapSide{"gapSide", 2, "required gap side"};
-  Configurable<bool> useTrueGap{"useTrueGap", false, "use true gap"};
+  Configurable<bool> useTrueGap{"useTrueGap", false, "use true gap?"};
   Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", 180000, "FV0A threshold for SG selector"};
   Configurable<float> cutTrueGapSideFT0A{"cutTrueGapSideFT0A", 150., "FT0A threshold for SG selector"};
   Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
   Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 10000., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
 
-  Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
-  Configurable<bool> useRecoFlag{"useRecoFlag", false, "use reco flag for event selection"};
+  Configurable<bool> requireTof{"requireTof", false, "require TOF signal?"};
+  Configurable<bool> useRecoFlag{"useRecoFlag", false, "use UPC/STD reconstruction flag for event selection?"};
   Configurable<int> cutRecoFlag{"cutRecoFlag", 1, "0 = std mode, 1 = upc mode"};
-  Configurable<bool> useRctFlag{"useRctFlag", false, "use RCT flags for event selection"};
+  Configurable<bool> useRctFlag{"useRctFlag", false, "use RCT flags for event selection?"};
   Configurable<int> cutRctFlag{"cutRctFlag", 0, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
 
-  Configurable<bool> selectRuns{"selectRuns", false, "select runs from the list"};
+  Configurable<bool> selectRuns{"selectRuns", false, "select runs?"};
   Configurable<std::vector<int>> selectedRuns{"selectedRuns", {544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474, 544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512, 544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567, 544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672, 544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794, 544795, 544797, 544813, 544868, 544886, 544887, 544896, 544913, 544914, 544917, 544931, 544947, 544961, 544963, 544964, 544968, 544992, 545009, 545044, 545047, 545063, 545064, 545066, 545185, 545210, 545223, 545249, 545291, 545294, 545295, 545296, 545312}, "list of selected runs"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
-  Configurable<bool> cutNumContribs{"cutNumContribs", true, "cut on number of contributors"};
+  Configurable<bool> cutNumContribs{"cutNumContribs", true, "cut on number of contributors?"};
   Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 2, "max number of contributors cut on collisions"};
   Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut (ns)"};
   Configurable<bool> cutOccupancy{"cutOccupancy", true, "cut on collision occupancy?"};
   Configurable<float> occupancyCut{"occupancyCut", 1000.0, "occupancy cut"};
 
   Configurable<float> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
-  Configurable<bool> rejectLowerProbPairs{"rejectLowerProbPairs", true, "reject track pairs with lower El or Ka PID radii"};
+  Configurable<bool> rejectLowerProbPairs{"rejectLowerProbPairs", true, "reject track pairs with smaller El/Ka/Pr PID radii?"};
   Configurable<float> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
   Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 4, "min ITS clusters cut"};
   Configurable<float> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
