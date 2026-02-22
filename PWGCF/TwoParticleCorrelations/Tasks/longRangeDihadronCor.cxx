@@ -54,11 +54,11 @@
 #include "TRandom3.h"
 #include <TPDGCode.h>
 
-#include <string>
-#include <vector>
 #include <map>
-#include <utility>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 
 using namespace o2;
