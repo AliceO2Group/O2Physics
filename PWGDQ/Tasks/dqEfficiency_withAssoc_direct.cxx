@@ -23,9 +23,6 @@
 #include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include <DetectorsVertexing/PVertexer.h>
-#include <ReconstructionDataFormats/Track.h>
-#include <Common/Core/trackUtilities.h>
 
 #include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
@@ -739,8 +736,11 @@ struct AnalysisTrackSelection {
       ///
       auto track = tracks.rawIteratorAt(assoc.trackId());
       auto evFromTrack = events.rawIteratorAt(track.collisionId());
-      if (!evFromTrack.isEventSelected_bit(0)) { trackSel(0); continue;}
-       
+      if (!evFromTrack.isEventSelected_bit(0)) {
+        trackSel(0);
+        continue;
+      }
+
       // cout << "Processing association: event global index " << event.globalIndex() << endl;
       VarManager::ResetValues(VarManager::kNTFWiseVariables, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
@@ -752,8 +752,8 @@ struct AnalysisTrackSelection {
 
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      if(track.collisionId() != event.globalIndex())
-      VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      if (track.collisionId() != event.globalIndex())
+        VarManager::FillTrackCollision<TTrackFillMap>(track, event);
       // cout << "Filled track observables for association" << endl;
 
       bool isCorrectAssoc = false;
@@ -1514,7 +1514,6 @@ struct AnalysisSameEventPairing {
 
     cout << "AnalysisSameEventPairing::init() completed" << endl;
   }
-
 
   void initParamsFromCCDB(uint64_t timestamp, bool withTwoProngFitter = true)
   {

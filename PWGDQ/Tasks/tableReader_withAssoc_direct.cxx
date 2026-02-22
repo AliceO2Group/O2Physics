@@ -22,19 +22,17 @@
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/Zorro.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include <Common/Core/trackUtilities.h>
-
-#include "Common/CCDB/TriggerAliases.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/Zorro.h"
-
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -242,7 +240,7 @@ void PrintBitMap(TMap map, int nbits)
 
 // Enum containing the ordering of statistics histograms to be written in the QA file
 enum ZorroStatHist {
-  kStatsZorroInfo=0,
+  kStatsZorroInfo = 0,
   kStatsZorroSel
 };
 
@@ -270,14 +268,14 @@ struct AnalysisEventSelection {
     Configurable<uint64_t> fBcTolerance{"cfgBcTolerance", 100, "Number of BCs of margin for software triggers"};
     Configurable<std::string> fConfigCcdbPathZorro{"ccdb-path-zorro", "/Users/m/mpuccio/EventFiltering/OTS/Chunked/", "base path to the ccdb object for zorro"};
   } fConfigZorro;
-  
-   // RCT selection
+
+  // RCT selection
   struct : ConfigurableGroup {
     Configurable<bool> fConfigUseRCT{"cfgUseRCT", false, "Enable event selection with RCT flags"};
     Configurable<std::string> fConfigRCTLabel{"cfgRCTLabel", "CBT", "RCT flag labels : CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
   } fConfigRCT;
 
-   // CCDB connection configurables
+  // CCDB connection configurables
   struct : ConfigurableGroup {
     Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
@@ -287,7 +285,7 @@ struct AnalysisEventSelection {
     Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
     Configurable<std::string> fConfigGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
   } fConfigCCDB;
-  
+
   // TPC postcalibration related options
   struct : ConfigurableGroup {
     Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
@@ -298,7 +296,7 @@ struct AnalysisEventSelection {
     Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
   } fConfigPostCalibTPC;
 
-   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
+  Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
 
   // RCT flag checker
   o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT"};
@@ -365,7 +363,7 @@ struct AnalysisEventSelection {
     fStatsList->SetOwner(kTRUE);
     TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
     fStatsList->AddAt(histZorroInfo, kStatsZorroInfo);
- 
+
     TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
     fStatsList->AddAt(histZorroSel, kStatsZorroSel);
 
@@ -385,7 +383,7 @@ struct AnalysisEventSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigCCDB.fConfigNoLaterThan.value);
     fCCDBApi.init(fConfigCCDB.fConfigCcdbUrl.value);
-  
+
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       fCCDB->get<TGeoManager>(fConfigCCDB.fConfigGeoPath.value);
     }
@@ -401,8 +399,8 @@ struct AnalysisEventSelection {
   void runEventSelection(TEvents const& events, BCsWithTimestamps const& bcs)
   {
     cout << "AnalysisEventSelection::runEventSelection() called with " << events.size() << " events and " << bcs.size() << " BCs" << endl;
-    
-     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
+
+    if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigPostCalibTPC.fConfigComputeTPCpostCalib) {
         auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCCDB.fConfigCcdbPathTPC.value, bcs.begin().timestamp());
         VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
@@ -476,7 +474,7 @@ struct AnalysisEventSelection {
       if (fConfigQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
       }
-      
+
       if (fConfigZorro.fConfigRunZorro) {
         zorro.setBaseCCDBPath(fConfigZorro.fConfigCcdbPathZorro.value);
         zorro.setBCtolerance(fConfigZorro.fBcTolerance);
@@ -490,17 +488,17 @@ struct AnalysisEventSelection {
         bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
         if (fConfigZorro.fConfigRunZorroSel && (!zorroSel)) {
           continue;
-          }
-        } else {
-	
-	if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
+        }
+      } else {
+
+        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
           continue;
-          }
-       }
-      
+        }
+      }
+
       decision = true;
       if (fConfigQA) {
-          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
       }
 
       fSelMap[event.globalIndex()] = decision;
@@ -758,8 +756,10 @@ struct AnalysisTrackSelection {
       ///
       auto track = tracks.rawIteratorAt(assoc.trackId());
       auto evFromTrack = events.rawIteratorAt(track.collisionId());
-      if (!evFromTrack.isEventSelected_bit(0)) { trackSel(0); continue;}
-
+      if (!evFromTrack.isEventSelected_bit(0)) {
+        trackSel(0);
+        continue;
+      }
 
       VarManager::ResetValues(VarManager::kNTFWiseVariables, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
@@ -767,8 +767,8 @@ struct AnalysisTrackSelection {
 
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      if(track.collisionId() != event.globalIndex())
-      VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      if (track.collisionId() != event.globalIndex())
+        VarManager::FillTrackCollision<TTrackFillMap>(track, event);
 
       if (fConfigQA)
         fHistMan->FillHistClass("AssocsBarrel_BeforeCuts", VarManager::fgValues);
