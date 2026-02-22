@@ -260,6 +260,7 @@ struct StrangenessInJets {
     // Define binning and axis specifications for multiplicity, eta, pT, PID, and invariant mass histograms
     AxisSpec multAxis = {axisOptions.multBinning, "FT0C percentile"};
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptAxisFull{250, 0.0, 25.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassXiAxis{200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"};
@@ -434,14 +435,14 @@ struct StrangenessInJets {
         registryMC.add("K0s_generated_recojet_ue", "K0s_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("Lambda_generated_recojet_ue", "Lambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_generated_recojet_ue", "AntiLambda_generated_recojet_ue", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("hFDVsPtLambdaVsMotherPt_DoubleCharged_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-});", {HistType::kTH2F, {ptAxis, ptAxis}});
-        registryMC.add("hFDVsPtLambdaVsMotherPt_MCRatio_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-/0});", {HistType::kTH2F, {ptAxis, ptAxis}});
-        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+})", {HistType::kTH2F, {ptAxis, ptAxis}});
-        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_MCRatio_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+/0})", {HistType::kTH2F, {ptAxis, ptAxis}});
-        registryMC.add("hFDVsPtLambdaVsMotherPt_DoubleCharged_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-});", {HistType::kTH2F, {ptAxis, ptAxis}});
-        registryMC.add("hFDVsPtLambdaVsMotherPt_MCRatio_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-/0});", {HistType::kTH2F, {ptAxis, ptAxis}});
-        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+})", {HistType::kTH2F, {ptAxis, ptAxis}});
-        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_MCRatio_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+/0})", {HistType::kTH2F, {ptAxis, ptAxis}});
+        registryMC.add("hFDVsPtLambdaVsMotherPt_DoubleCharged_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-});", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
+        registryMC.add("hFDVsPtLambdaVsMotherPt_MCRatio_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-/0});", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
+        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+})", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
+        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_MCRatio_jet", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+/0})", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
+        registryMC.add("hFDVsPtLambdaVsMotherPt_DoubleCharged_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-});", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
+        registryMC.add("hFDVsPtLambdaVsMotherPt_MCRatio_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#Xi^{-/0});", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
+        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+})", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
+        registryMC.add("hFDVsPtAntiLambdaVsMotherPt_MCRatio_ue", ";p_{T} [GeV/c] (V0);p_{T}^{gen} [GeV/c] (#bar{#Xi}^{+/0})", {HistType::kTH2F, {ptAxisFull, ptAxisFull}});
       }
 
       if (enabledSignals.value[ParticleOfInterest::kCascades]) {
