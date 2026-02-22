@@ -140,7 +140,7 @@ struct AssociateMCInfoDilepton {
   Partition<aod::McParticles> mcvectormesons = o2::aod::mcparticle::pdgCode == 223 || o2::aod::mcparticle::pdgCode == 333;
 
   template <uint8_t system, typename TTracks, typename TFwdTracks, typename TMFTTracks, typename TPCMs, typename TPCMLegs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcTracks, TTracks const& o2tracks, TFwdTracks const& o2fwdtracks, TMFTTracks const&, TPCMs const& v0photons, TPCMLegs const&, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcTracks, TTracks const& o2tracks, TFwdTracks const& o2fwdtracks, TMFTTracks const&, TPCMs const&, TPCMLegs const&, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
