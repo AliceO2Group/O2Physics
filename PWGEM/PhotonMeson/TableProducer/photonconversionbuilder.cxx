@@ -98,7 +98,7 @@ struct PhotonConversionBuilder {
   Produces<aod::V0Legs> v0legs;
   Produces<aod::V0LegsXYZ> v0legsXYZ;
   Produces<aod::V0LegsDeDxMC> v0legsDeDxMC;
-  Produces<aod::V0PhotonsPhiV> v0photonsphiv;
+  Produces<aod::V0PhotonsPhiVPsi> v0photonsphivpsi;
   // Produces<aod::V0PhotonsKFCov> v0photonskfcov;
   // Produces<aod::EMEventsNgPCM> events_ngpcm;
 
@@ -165,7 +165,7 @@ struct PhotonConversionBuilder {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<int> nClassesPCMMl{"nClassesPCMMl", static_cast<int>(o2::analysis::em_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<int> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  Configurable<std::string> centTypePCMMl{"centTypePCMMl", "CentFT0C", "Centrality type for 2D ML application: CentFT0C, CentFT0M, or CentFT0A"};
+  Configurable<int> centTypePCMMl{"centTypePCMMl", 2, "Centrality type for 2D ML application: FT0M:0, FT0A:1, FT0C:2"};
   Configurable<std::vector<int>> cutDirPCMMl{"cutDirPCMMl", std::vector<int>{o2::analysis::em_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_PCM/"}, "Paths of models on CCDB"};
@@ -176,8 +176,11 @@ struct PhotonConversionBuilder {
   Configurable<std::vector<double>> binsCentPCMMl{"binsCentPCMMl", std::vector<double>{0.0, 100.0}, "Centrality bin limits for ML application"};
   Configurable<std::vector<double>> cutsPCMMlFlat{"cutsPCMMlFlat", {0.5}, "Flattened ML cuts: [bin0_score0, bin0_score1, ..., binN_scoreM]"};
 
+  Configurable<float> propV0LegsRadius{"propV0LegsRadius", 60.f, "Radius to which the V0 legs are propagated to calculate psipair and phiV"};
+
   o2::analysis::EmMlResponsePCM<float> emMlResponse;
   std::vector<float> outputML;
+  V0PhotonCandidate v0photoncandidate;
   o2::ccdb::CcdbApi ccdbApi;
 
   int mRunNumber;
@@ -213,9 +216,7 @@ struct PhotonConversionBuilder {
       {"V0/hRxy_minX_ITSTPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hRxy_minX_TPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hPCA_diffX", "PCA vs. trackiu X - R_{xy};distance btween 2 legs (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{500, 0.0f, 5.f}, {100, -50.0, 50.0f}}}},
-      {"V0/hPhiV", "#phi_{V}; #phi_{V} (rad.)", {HistType::kTH1F, {{500, 0.0f, o2::constants::math::TwoPI}}}},
-      {"V0/hBDTvalueBeforeCutVsPt", "BDT response before cut vs pT; pT (GeV/c); BDT response", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}}},
-      {"V0/hBDTvalueAfterCutVsPt", "BDT response after cut vs pT; pT (GeV/c); BDT response", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}}},
+      {"V0/hPhiVPsiPair", "phiV vs. psi pair;#psi_{pair} (rad.);#phi_{V} (rad.)", {HistType::kTH2F, {{500, -o2::constants::math::PI, o2::constants::math::PI}, {500, 0.0f, o2::constants::math::TwoPI}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, o2::constants::math::TwoPI}, {200, -1, +1}}}},
       {"V0Leg/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, 0, 1}}}},
@@ -305,6 +306,22 @@ struct PhotonConversionBuilder {
       }
       emMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       emMlResponse.init();
+      if (nClassesPCMMl == 2) {
+        registry.add("V0/hBDTBackgroundScoreBeforeCutVsPt", "BDT background score before cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTBackgroundScoreAfterCutVsPt", "BDT background score after cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTSignalScoreBeforeCutVsPt", "BDT signal score before cut vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTSignalScoreAfterCutVsPt", "BDT signal score after cut vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+      } else if (nClassesPCMMl == 3) {
+        registry.add("V0/hBDTBackgroundScoreBeforeCutVsPt", "BDT background score before cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTBackgroundScoreAfterCutVsPt", "BDT background score after cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTPrimaryPhotonScoreBeforeCutVsPt", "BDT primary photon score before cut vs pT; pT (GeV/c); BDT primary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTPrimaryPhotonScoreAfterCutVsPt", "BDT primary photon score after cut vs pT; pT (GeV/c); BDT primary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTSecondaryPhotonScoreBeforeCutVsPt", "BDT secondary photon score before cut vs pT; pT (GeV/c); BDT secondary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTSecondaryPhotonScoreAfterCutVsPt", "BDT secondary photon score after cut vs pT; pT (GeV/c); BDT secondary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+      } else {
+        registry.add("V0/hBDTScoreBeforeCutVsPt", "BDT score before cut vs pT; pT (GeV/c); BDT score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+        registry.add("V0/hBDTScoreAfterCutVsPt", "BDT score after cut vs pT; pT (GeV/c); BDT score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
+      }
     }
   }
 
@@ -468,17 +485,17 @@ struct PhotonConversionBuilder {
     return cospaRZ;
   }
 
-  template <bool isMC, typename TTrack, typename TShiftedTrack, typename TKFParticle>
-  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, const float dcaXY, const float dcaZ)
+  template <bool isMC, typename TTrack, typename TShiftedTrack>
+  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, const float dcaXY, const float dcaZ)
   {
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
-           kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
+           shiftedtrack.GetPx(), shiftedtrack.GetPy(), shiftedtrack.GetPz(), dcaXY, dcaZ,
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
            track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap());
 
-    v0legsXYZ(shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ());
+    v0legsXYZ(shiftedtrack.GetX(), shiftedtrack.GetY(), shiftedtrack.GetZ());
 
     if constexpr (isMC) {
       v0legsDeDxMC(track.mcTunedTPCSignal());
@@ -562,6 +579,37 @@ struct PhotonConversionBuilder {
     }
     if (rxy_tmp < std::fabs(xyz[2]) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
+    }
+
+    float phiv = 999.f;
+    float psipair = 999.f;
+    float baseR = std::hypot(xyz[0], xyz[1]);
+    float offsetsR[3] = {propV0LegsRadius, 30.f, 10.f};
+    bool pPropagatedSuccess = false;
+    bool nPropagatedSuccess = false;
+    auto pTrackProp = pTrack;
+    auto nTrackProp = nTrack;
+    for (float offsetR : offsetsR) {
+      pTrackProp = pTrack;
+      pTrackProp.setPID(o2::track::PID::Electron);
+      nTrackProp = nTrack;
+      nTrackProp.setPID(o2::track::PID::Electron);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackProp, 2.f, matCorr, &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackProp, 2.f, matCorr, &dcaInfo);
+      pPropagatedSuccess = o2::base::Propagator::Instance()->propagateToR(pTrackProp, baseR + offsetR);
+      nPropagatedSuccess = o2::base::Propagator::Instance()->propagateToR(nTrackProp, baseR + offsetR);
+      if (pPropagatedSuccess && nPropagatedSuccess) {
+        KFPTrack kfp_track_posProp = createKFPTrackFromTrackParCov(pTrackProp, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
+        KFPTrack kfp_track_eleProp = createKFPTrackFromTrackParCov(nTrackProp, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
+        phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz(), pos.sign(), ele.sign(), d_bz);
+        psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz());
+        break;
+      } else {
+        LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
+      }
+    }
+    if (phiv == 999.f || psipair == 999.f) {
+      LOG(debug) << "Propagation failed for all radii (" << propV0LegsRadius << ", 30, 10 cm). Using default values for phiv and psipair (999.f).";
     }
 
     KFPTrack kfp_track_pos = createKFPTrackFromTrackParCov(pTrack, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
@@ -674,7 +722,8 @@ struct PhotonConversionBuilder {
     kfp_pos_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
-    V0PhotonCandidate v0photoncandidate(gammaKF_DecayVtx, kfp_pos_DecayVtx, kfp_ele_DecayVtx, collision, cospa_kf, d_bz);
+    CentType centType = static_cast<CentType>(centTypePCMMl.value);
+    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, kfp_pos_DecayVtx, kfp_ele_DecayVtx, collision, cospa_kf, psipair, phiv, centType);
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
@@ -724,26 +773,36 @@ struct PhotonConversionBuilder {
       bool isSelectedML = false;
       std::vector<float> mlInputFeatures = emMlResponse.getInputFeatures(v0photoncandidate, pos, ele);
       if (use2DBinning) {
-        if (std::string(centTypePCMMl) == "CentFT0C") {
-          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0C(), outputML);
-        } else if (std::string(centTypePCMMl) == "CentFT0A") {
-          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0A(), outputML);
-        } else if (std::string(centTypePCMMl) == "CentFT0M") {
-          isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCentFT0M(), outputML);
-        } else {
-          LOG(fatal) << "Unsupported centTypePCMMl: " << centTypePCMMl << " , please choose from CentFT0C, CentFT0A, CentFT0M.";
-        }
+        isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), v0photoncandidate.getCent(), outputML);
       } else {
         isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), outputML);
       }
       if (filltable) {
-        registry.fill(HIST("V0/hBDTvalueBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+        if (nClassesPCMMl == 2) {
+          registry.fill(HIST("V0/hBDTBackgroundScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+          registry.fill(HIST("V0/hBDTSignalScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
+        } else if (nClassesPCMMl == 3) {
+          registry.fill(HIST("V0/hBDTPrimaryPhotonScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+          registry.fill(HIST("V0/hBDTSecondaryPhotonScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
+          registry.fill(HIST("V0/hBDTBackgroundScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[2]);
+        } else {
+          registry.fill(HIST("V0/hBDTScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+        }
       }
       if (!isSelectedML) {
         return;
       }
       if (filltable) {
-        registry.fill(HIST("V0/hBDTvalueAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+        if (nClassesPCMMl == 2) {
+          registry.fill(HIST("V0/hBDTBackgroundScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+          registry.fill(HIST("V0/hBDTSignalScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
+        } else if (nClassesPCMMl == 3) {
+          registry.fill(HIST("V0/hBDTPrimaryPhotonScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+          registry.fill(HIST("V0/hBDTSecondaryPhotonScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
+          registry.fill(HIST("V0/hBDTBackgroundScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[2]);
+        } else {
+          registry.fill(HIST("V0/hBDTScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
+        }
       }
     }
 
@@ -760,7 +819,7 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPCA_Rxy"), rxy, v0photoncandidate.getPCA());
       registry.fill(HIST("V0/hDCAxyz"), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV());
       registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.getPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
-      registry.fill(HIST("V0/hPhiV"), v0photoncandidate.getPhiV());
+      registry.fill(HIST("V0/hPhiVPsiPair"), v0photoncandidate.getPsiPair(), v0photoncandidate.getPhiV());
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -797,12 +856,12 @@ struct PhotonConversionBuilder {
                   v0_sv.M(), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV(),
                   cospa_kf, cospaXY_kf, cospaRZ_kf,
                   v0photoncandidate.getPCA(), v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), v0photoncandidate.getChi2NDF());
-      v0photonsphiv(v0photoncandidate.getPhiV());
+      v0photonsphivpsi(v0photoncandidate.getPhiV(), v0photoncandidate.getPsiPair());
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 
-      fillTrackTable<isMC>(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
-      fillTrackTable<isMC>(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
+      fillTrackTable<isMC>(pos, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
+      fillTrackTable<isMC>(ele, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
     } // end of fill table
   }
 
