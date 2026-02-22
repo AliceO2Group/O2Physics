@@ -642,7 +642,7 @@ struct RecoilJets {
     }
 
     // Multiplicity for raw data and detector level MC
-    if (doprocessEventActivityOO || doprocessEventActivityMCDetLevelWeightedOO) {
+    if (doprocessEventActivity || doprocessEventActivityMCDetLevelWeighted) {
 
       //====================================================================================
       // FIT data
@@ -720,7 +720,7 @@ struct RecoilJets {
       }
     }
 
-    if (doprocessEventActivityQA) {
+    if (doprocessEventActivitySelectionQA) {
       spectra.add("hEventSelectionCount", "Count # of events in the analysis", kTH1F, {{5, 0.0, 5.}});
       spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(1, "sel8");
       spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(2, "IsGoodZvtxFT0vsPV");
@@ -1483,8 +1483,8 @@ struct RecoilJets {
   // Event Activity analysis
   //=============================================================================
   template <typename JCollision>
-  void fillMultiplicityHistogramsOO(JCollision const& collision,
-                                    float weight = 1.)
+  void fillMultiplicityHistograms(JCollision const& collision,
+                                  float weight = 1.)
   {
     float multFT0A = collision.multFT0A();
     float multFT0C = collision.multFT0C();
@@ -1557,7 +1557,7 @@ struct RecoilJets {
   // Event Activity QA analysis in OO collisions (raw and MC detector level (no weight; MB events))
   //=============================================================================
   template <typename BC, typename Collision, typename ZDC>
-  void fillMultiplicityQA(Collision const& collision,
+  void fillEventActivitySelectionQAHistograms(Collision const& collision,
                           BC const&,
                           ZDC const&,
                           float weight = 1.)
@@ -2464,28 +2464,28 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processJetsGeoPtMatchingWeighted, "process matching of MC jets using Geo+Pt criteria (weighted JJ)", false);
 
   //=============================================================================
-  // Event Activity analysis in OO collisions (raw and MC detector level (no weight; MB events))
+  // Event Activity analysis in OO and pp collisions (raw and MC detector level (no weight; MB events))
   //=============================================================================
-  void processEventActivityOO(EvMultZDCDataIt const& collision)
+  void processEventActivity(EvMultZDCDataIt const& collision)
   {
     if (skipEvent(collision))
       return;
 
-    fillMultiplicityHistogramsOO(collision);
+    fillMultiplicityHistograms(collision);
   }
-  PROCESS_SWITCH(RecoilJets, processEventActivityOO, "process event activity in OO collisions and MC det. level (no weight; MB events)", false);
+  PROCESS_SWITCH(RecoilJets, processEventActivity, "process event activity in raw data and MC det. level (no weight; MB events)", false);
 
-  //___________________________________________
-  void processEventActivityMCDetLevelWeightedOO(EvMultOutlierZDCDetIt const& collision,
-                                                aod::JetMcCollisions const&)
+  //_________________________________________
+  void processEventActivityMCDetLevelWeighted(EvMultOutlierZDCDetIt const& collision,
+                                              aod::JetMcCollisions const&)
   {
     if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
       return;
 
     auto weight = collision.mcCollision().weight();
-    fillMultiplicityHistogramsOO(collision, weight);
+    fillMultiplicityHistograms(collision, weight);
   }
-  PROCESS_SWITCH(RecoilJets, processEventActivityMCDetLevelWeightedOO, "process event activity in MC det. level OO collisions (weighted JJ)", false);
+  PROCESS_SWITCH(RecoilJets, processEventActivityMCDetLevelWeighted, "process event activity in MC det. level events (weighted JJ)", false);
 
   //=============================================================================
   // Event Activity analysis in OO and pp collisions at Particle level
@@ -2511,19 +2511,19 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processEventActivityMCPartLevelWeighted, "process event activity in MC part. level events (weighted JJ)", false);
 
   //=============================================================================
-  // Event Activity QA analysis in OO collisions (raw and MC detector level (no weight; MB events))
+  // Event Activity QA analysis in raw OO and pp collisions
   //=============================================================================
-  void processEventActivityQA(CollEvSelExtendedIt const& collision,
-                              BCsRun3Tbl const& BCs,
-                              aod::Zdcs const& ZDCs)
+  void processEventActivitySelectionQA(CollEvSelExtendedIt const& collision,
+                                       BCsRun3Tbl const& BCs,
+                                       aod::Zdcs const& ZDCs)
   {
     // Base flag for event selection
     if (!collision.sel8())
       return;
 
-    fillMultiplicityQA(collision, BCs, ZDCs);
+    fillEventActivitySelectionQAHistograms(collision, BCs, ZDCs);
   }
-  PROCESS_SWITCH(RecoilJets, processEventActivityQA, "process function for EA QA purposes in raw and MC det. level (no weight; MB events) data", false);
+  PROCESS_SWITCH(RecoilJets, processEventActivitySelectionQA, "process function for EA QA purposes in raw OO and pp data", false);
 
   //=============================================================================
   // Di-hadron azimuthal correlation in raw and MC det. level (no weight; MB events) data
