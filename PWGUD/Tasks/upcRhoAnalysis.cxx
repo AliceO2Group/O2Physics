@@ -227,7 +227,7 @@ struct UpcRhoAnalysis {
   ConfigurableAxis deltaPhiAxis{"deltaPhiAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#Delta#it{#phi} (rad)"};
   ConfigurableAxis znCommonEnergyAxis{"znCommonEnergyAxis", {250, -5.0, 20.0}, "ZN common energy (TeV)"};
   ConfigurableAxis znTimeAxis{"znTimeAxis", {200, -10.0, 10.0}, "ZN time (ns)"};
-  ConfigurableAxis nSigmaAxis{"nSigmaAxis", {600, -30.0, 30.0}, "TPC #it{n#sigma}"};
+  ConfigurableAxis nSigmaAxis{"nSigmaAxis", {400, -20.0, 20.0}, "TPC #it{n#sigma}"};
   ConfigurableAxis resolutionAxis{"resolutionAxis", {2000, -1.0, 1.0}, "resolution"};
 
   HistogramRegistry rQC{"rQC", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -252,12 +252,12 @@ struct UpcRhoAnalysis {
       rQC.add("QC/collisions/all/hTotalFV0AmplitudeA", ";FV0A amplitude;counts", kTH1D, {{300, 0.0, 300.0}});
       rQC.add("QC/collisions/all/hTotalFDDAmplitudeA", ";FDDA amplitude;counts", kTH1D, {{160, 0.0, 160.0}});
       rQC.add("QC/collisions/all/hTotalFDDAmplitudeC", ";FDDC amplitude;counts", kTH1D, {{50, 0.0, 50.0}});
-      rQC.add("QC/collisions/all/hTimeFT0A", ";FT0A time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
-      rQC.add("QC/collisions/all/hTimeFT0C", ";FT0C time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
-      rQC.add("QC/collisions/all/hTimeFV0A", ";FV0A time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
-      rQC.add("QC/collisions/all/hTimeFDDA", ";FDDA time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
-      rQC.add("QC/collisions/all/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{500, -10.0, 40.0}});
-      rQC.add("QC/collisions/all/hOccupancyInTime", ";occupancy in time;counts", kTH1D, {{1100, -100.0, 1000.0}});
+      rQC.add("QC/collisions/all/hTimeFT0A", ";FT0A time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
+      rQC.add("QC/collisions/all/hTimeFT0C", ";FT0C time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
+      rQC.add("QC/collisions/all/hTimeFV0A", ";FV0A time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
+      rQC.add("QC/collisions/all/hTimeFDDA", ";FDDA time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
+      rQC.add("QC/collisions/all/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
+      rQC.add("QC/collisions/all/hOccupancyInTime", ";occupancy in time;counts", kTH1D, {{1100, 0.0, 1100.0}});
       // events with selected rho candidates
       rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
       rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
@@ -269,18 +269,20 @@ struct UpcRhoAnalysis {
         rQC.get<TH1>(HIST("QC/collisions/hSelectionCounter"))->GetXaxis()->SetBinLabel(i + 1, collisionSelectionCounterLabels[i].c_str());
         rQC.get<TH2>(HIST("QC/collisions/hSelectionCounterPerRun"))->GetXaxis()->SetBinLabel(i + 1, collisionSelectionCounterLabels[i].c_str());
       }
+      for (int i = 0; i < static_cast<int>(runNumbers.size()); ++i)
+        rQC.get<TH2>(HIST("QC/collisions/hSelectionCounterPerRun"))->GetYaxis()->SetBinLabel(i + 1, std::to_string(runNumbers[i]).c_str());
       // tracks
       rQC.add("QC/tracks/all/hTpcNSigmaPi", ";TPC #it{n#sigma}(#pi);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hTpcNSigmaEl", ";TPC #it{n#sigma}(e);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hTpcNSigmaKa", ";TPC #it{n#sigma}(K);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hTpcNSigmaPr", ";TPC #it{n#sigma}(p);counts", kTH1D, {nSigmaAxis});
       rQC.add("QC/tracks/all/hDcaXYZ", ";track #it{DCA}_{z} (cm);track #it{DCA}_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {400, -2.0, 2.0}});
-      rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{11, -0.5, 10.5}});
-      rQC.add("QC/tracks/all/hItsChi2NCl", ";ITS #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{200, 0.0, 20.0}});
-      rQC.add("QC/tracks/all/hTpcChi2NCl", ";TPC #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{200, 0.0, 20.0}});
+      rQC.add("QC/tracks/all/hItsNCls", ";ITS #it{N}_{cls};counts", kTH1D, {{9, -0.5, 8.5}});
+      rQC.add("QC/tracks/all/hItsChi2NCl", ";ITS #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{150, 0.0, 15.0}});
+      rQC.add("QC/tracks/all/hTpcChi2NCl", ";TPC #it{#chi}^{2}/#it{N}_{cls};counts", kTH1D, {{150, 0.0, 15.0}});
       rQC.add("QC/tracks/all/hTpcNCls", ";found TPC #it{N}_{cls};counts", kTH1D, {{160, 0.0, 160.0}}); // tpcNClsFindable() - track.tpcNClsFindableMinusFound
       rQC.add("QC/tracks/all/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{160, 0.0, 160.0}});
-      rQC.add("QC/tracks/all/hTpcNClsCrossedRowsOverNClsFindable", ";TPC crossed rows/findable #it{N}_{cls};counts", kTH1D, {{300, 0.5, 2.5}});
+      rQC.add("QC/tracks/all/hTpcNClsCrossedRowsOverNClsFindable", ";TPC crossed rows/findable #it{N}_{cls};counts", kTH1D, {{160, 0.6, 2.2}});
       rQC.add("QC/tracks/all/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
       rQC.add("QC/tracks/all/hEta", ";#it{#eta};counts", kTH1D, {etaAxis});
       rQC.add("QC/tracks/all/hPhi", ";#it{#phi} (rad);counts", kTH1D, {phiAxis});
@@ -452,6 +454,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPi"), track.tpcNSigmaPi());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaEl"), track.tpcNSigmaEl());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaKa"), track.tpcNSigmaKa());
+    rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hTpcNSigmaPr"), track.tpcNSigmaPr());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hDcaXYZ"), track.dcaZ(), track.dcaXY());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsNCls"), track.itsNCls());
     rQC.fill(HIST("QC/tracks/") + HIST(AppliedSelections[cuts]) + HIST("hItsChi2NCl"), track.itsChi2NCl());
