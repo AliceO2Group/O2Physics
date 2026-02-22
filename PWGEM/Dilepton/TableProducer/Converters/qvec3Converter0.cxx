@@ -33,13 +33,13 @@ struct qvec3Converter0 {
   {
     for (const auto& collision : collisions) {
       qvec3_000(
-          collision.q3xft0m(), collision.q3yft0m(),
-          collision.q3xft0a(), collision.q3yft0a(),
-          collision.q3xft0c(), collision.q3yft0c(),
-          collision.q3xfv0a(), collision.q3yfv0a(),
-          collision.q3xbpos(), collision.q3ybpos(),
-          collision.q3xbneg(), collision.q3ybneg(),
-          collision.q3xbtot(), collision.q3ybtot());
+        collision.q3xft0m(), collision.q3yft0m(),
+        collision.q3xft0a(), collision.q3yft0a(),
+        collision.q3xft0c(), collision.q3yft0c(),
+        collision.q3xfv0a(), collision.q3yfv0a(),
+        collision.q3xbpos(), collision.q3ybpos(),
+        collision.q3xbneg(), collision.q3ybneg(),
+        collision.q3xbtot(), collision.q3ybtot());
     } // end of collision loop
   }
 };

@@ -35,8 +35,7 @@ struct eventMultConverter1 {
       mult_001(
         collision.multFT0A(),
         collision.multFT0C(),
-        collision.multNTracksPV()
-        );
+        collision.multNTracksPV());
     } // end of mult row loop
   }
 };
