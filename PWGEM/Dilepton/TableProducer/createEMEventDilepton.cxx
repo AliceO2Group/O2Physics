@@ -138,15 +138,15 @@ struct CreateEMEventDilepton {
           }
         }
         if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f)/*, static_cast<uint8_t>(105.f + 110.f)*/);
+          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f) /*, static_cast<uint8_t>(105.f + 110.f)*/);
         } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
           uint8_t centFT0Muint8 = collision.centFT0M() < 1.f ? static_cast<uint8_t>(collision.centFT0M() * 100.f) : static_cast<uint8_t>(collision.centFT0M() + 110.f);
           uint8_t centFT0Cuint8 = collision.centFT0C() < 1.f ? static_cast<uint8_t>(collision.centFT0C() * 100.f) : static_cast<uint8_t>(collision.centFT0C() + 110.f);
           uint8_t centNTPVuint8 = collision.centNTPV() < 1.f ? static_cast<uint8_t>(collision.centNTPV() * 100.f) : static_cast<uint8_t>(collision.centNTPV() + 110.f);
           // uint8_t centNGlobaluint8 = collision.centNGlobal() < 1.f ? static_cast<uint8_t>(collision.centNGlobal() * 100.f) : static_cast<uint8_t>(collision.centNGlobal() + 110.f);
-          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, centFT0Muint8, centFT0Cuint8, centNTPVuint8/*, centNGlobaluint8*/);
+          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, centFT0Muint8, centFT0Cuint8, centNTPVuint8 /*, centNGlobaluint8*/);
         } else {
-          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f)/*, static_cast<uint8_t>(105.f + 110.f)*/);
+          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f) /*, static_cast<uint8_t>(105.f + 110.f)*/);
         }
       }
 
@@ -174,7 +174,7 @@ struct CreateEMEventDilepton {
 
       // eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
-      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV()/*, collision.multNTracksGlobal()*/);
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV() /*, collision.multNTracksGlobal()*/);
 
       if constexpr (eventtype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f, 105.f);
@@ -190,7 +190,7 @@ struct CreateEMEventDilepton {
         registry.fill(HIST("hCentNTPV"), collision.centNTPV());
         registry.fill(HIST("hCentNGlobal"), collision.centFT0M());
 
-        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()/*, collision.centNGlobal()*/);
+        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV() /*, collision.centNGlobal()*/);
         event_qvec2(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
         event_qvec3(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
         // event_qvec(
@@ -203,7 +203,7 @@ struct CreateEMEventDilepton {
         registry.fill(HIST("hCentNTPV"), collision.centNTPV());
         registry.fill(HIST("hCentNGlobal"), collision.centFT0M());
 
-        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()/*, collision.centNGlobal()*/);
+        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV() /*, collision.centNGlobal()*/);
         float q2xft0m = 999.f, q2yft0m = 999.f, q2xft0a = 999.f, q2yft0a = 999.f, q2xft0c = 999.f, q2yft0c = 999.f, q2xfv0a = 999.f, q2yfv0a = 999.f, q2xbpos = 999.f, q2ybpos = 999.f, q2xbneg = 999.f, q2ybneg = 999.f, q2xbtot = 999.f, q2ybtot = 999.f;
         float q3xft0m = 999.f, q3yft0m = 999.f, q3xft0a = 999.f, q3yft0a = 999.f, q3xft0c = 999.f, q3yft0c = 999.f, q3xfv0a = 999.f, q3yfv0a = 999.f, q3xbpos = 999.f, q3ybpos = 999.f, q3xbneg = 999.f, q3ybneg = 999.f, q3xbtot = 999.f, q3ybtot = 999.f;
 

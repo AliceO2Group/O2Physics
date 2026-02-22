@@ -774,7 +774,7 @@ struct DileptonProducer {
         continue;
       }
 
-      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZint8(), collision.centFT0Muint8(), collision.centFT0Cuint8(), collision.centNTPVuint8()/*, collision.centNGlobaluint8()*/);
+      normTable(collision.selection_raw(), collision.rct_raw(), collision.posZint8(), collision.centFT0Muint8(), collision.centFT0Cuint8(), collision.centNTPVuint8() /*, collision.centNGlobaluint8()*/);
 
     } // end of collision loop
   }
