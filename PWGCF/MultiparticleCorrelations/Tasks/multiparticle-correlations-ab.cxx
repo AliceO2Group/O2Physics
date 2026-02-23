@@ -145,6 +145,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     bool oldHistAddStatus = TH1::AddDirectoryStatus();
     TH1::AddDirectory(kFALSE);
 
+    // *) Print environment (here I always print it, in Steer(...) only if verbose is set to true):
+    printEnvironment();
+
     // *) Default configuration, booking, binning and cuts:
     insanityChecksOnDefinitionsOfConfigurables(); // values passed via configurables are insanitized here. Nothing is initialized yet via configurables in this method
     defaultConfiguration();                       // here default values from configurables are taken into account

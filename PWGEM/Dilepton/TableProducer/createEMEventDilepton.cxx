@@ -46,28 +46,32 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+// using MyMults = soa::Join<aod::Mults, /*aod::MultsGlobal,*/ aod::FT0MultZeqs, aod::PVMultZeqs/*, aod::GlobalMultZeqs*/>;
+using MyCents = soa::Join<aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::CentNGlobals>; // centrality table has dependency on multiplicity table.
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs, aod::Mults>;
-using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
-using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
+using MyCollisions_Cent = soa::Join<MyCollisions, MyCents>;
+using MyCollisions_Cent_Qvec = soa::Join<MyCollisions, MyCents, MyQvectors>;
 
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
-using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
-using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
+using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, MyCents>;
+using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT, MyCents, MyQvectors>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
-using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
-using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
+using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, MyCents>;
+using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC, MyCents, MyQvectors>;
 
 struct CreateEMEventDilepton {
-  Produces<o2::aod::EMBCs> embc;
+  Produces<o2::aod::EMBCs_001> embc;
   Produces<o2::aod::EMEvents> event;
   Produces<o2::aod::EMEventsXY> eventXY;
   // Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
-  Produces<o2::aod::EMEventsQvec> event_qvec;
+  // Produces<o2::aod::EMEventsQvec> event_qvec;
+  Produces<o2::aod::EMEventsQvec2> event_qvec2;
+  Produces<o2::aod::EMEventsQvec3> event_qvec3;
   Produces<o2::aod::EMEventNormInfos> event_norm_info;
 
   enum class EMEventType : int {
@@ -79,7 +83,7 @@ struct CreateEMEventDilepton {
   // // CCDB options
   // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
-  HistogramRegistry registry{"registry"};
+  HistogramRegistry registry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   void init(o2::framework::InitContext&)
   {
     // ccdb->setURL(ccdburl);
@@ -87,9 +91,15 @@ struct CreateEMEventDilepton {
     // ccdb->setLocalObjectValidityChecking();
     // ccdb->setFatalWhenNull(false);
 
-    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
+    auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
+
+    registry.add("hCentFT0M", "hCentFT0M;centrality FT0M (%);Number of collisions", kTH1F, {{110, 0, 110}}, false);
+    registry.add("hCentFT0A", "hCentFT0A;centrality FT0A (%);Number of collisions", kTH1F, {{110, 0, 110}}, false);
+    registry.add("hCentFT0C", "hCentFT0C;centrality FT0C (%);Number of collisions", kTH1F, {{110, 0, 110}}, false);
+    registry.add("hCentNTPV", "hCentNTPV;centrality NTPV (%);Number of collisions", kTH1F, {{110, 0, 110}}, false);
+    registry.add("hCentNGlobal", "hCentNGlobal;centrality NGlobal (%);Number of collisions", kTH1F, {{110, 0, 110}}, false);
   }
 
   ~CreateEMEventDilepton() {}
@@ -102,7 +112,8 @@ struct CreateEMEventDilepton {
   {
     for (const auto& bc : bcs) {
       if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
+        embc(o2::aod::emevsel::reduceSelectionBit(bc), bc.rct_raw()); // TVX is fired.
+        // embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
       }
     } // end of bc loop
 
@@ -118,20 +129,24 @@ struct CreateEMEventDilepton {
       auto bc = collision.template bc_as<TBCs>(); // use this for Zorro
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        int16_t posZint16 = static_cast<int16_t>(collision.posZ() * 100.f);
-        if (posZint16 == 0) {
+        int8_t posZint8 = static_cast<int8_t>(collision.posZ() * 2.f);
+        if (posZint8 == 0) {
           if (collision.posZ() < 0.f) {
-            posZint16 = -1;
+            posZint8 = -1;
           } else {
-            posZint16 = +1;
+            posZint8 = +1;
           }
         }
         if constexpr (eventtype == EMEventType::kEvent) {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
+          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f) /*, static_cast<uint8_t>(105.f + 110.f)*/);
         } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(collision.centFT0C() * 500.f));
+          uint8_t centFT0Muint8 = collision.centFT0M() < 1.f ? static_cast<uint8_t>(collision.centFT0M() * 100.f) : static_cast<uint8_t>(collision.centFT0M() + 110.f);
+          uint8_t centFT0Cuint8 = collision.centFT0C() < 1.f ? static_cast<uint8_t>(collision.centFT0C() * 100.f) : static_cast<uint8_t>(collision.centFT0C() + 110.f);
+          uint8_t centNTPVuint8 = collision.centNTPV() < 1.f ? static_cast<uint8_t>(collision.centNTPV() * 100.f) : static_cast<uint8_t>(collision.centNTPV() + 110.f);
+          // uint8_t centNGlobaluint8 = collision.centNGlobal() < 1.f ? static_cast<uint8_t>(collision.centNGlobal() * 100.f) : static_cast<uint8_t>(collision.centNGlobal() + 110.f);
+          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, centFT0Muint8, centFT0Cuint8, centNTPVuint8 /*, centNGlobaluint8*/);
         } else {
-          event_norm_info(collision.selection_raw(), collision.rct_raw(), posZint16, static_cast<uint16_t>(105.f * 500.f));
+          event_norm_info(o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), posZint8, static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f), static_cast<uint8_t>(105.f + 110.f) /*, static_cast<uint8_t>(105.f + 110.f)*/);
         }
       }
 
@@ -147,14 +162,11 @@ struct CreateEMEventDilepton {
         if (collision.swtaliastmp_raw() == 0) {
           continue;
         }
-        // else {
-        //   emswtbit(collision.swtaliastmp_raw());
-        // }
       }
 
       registry.fill(HIST("hEventCounter"), 2);
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), o2::aod::emevsel::reduceSelectionBit(collision), collision.rct_raw(), bc.timestamp(),
             collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
@@ -162,20 +174,36 @@ struct CreateEMEventDilepton {
 
       // eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
-      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV() /*, collision.multNTracksGlobal()*/);
 
       if constexpr (eventtype == EMEventType::kEvent) {
-        event_cent(105.f, 105.f, 105.f);
-        event_qvec(
-          999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-          999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        event_cent(105.f, 105.f, 105.f, 105.f);
+        event_qvec2(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        event_qvec3(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        // event_qvec(
+        //   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+        //   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
       } else if constexpr (eventtype == EMEventType::kEvent_Cent) {
-        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
-        event_qvec(
-          999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-          999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        registry.fill(HIST("hCentFT0M"), collision.centFT0M());
+        registry.fill(HIST("hCentFT0A"), collision.centFT0A());
+        registry.fill(HIST("hCentFT0C"), collision.centFT0C());
+        registry.fill(HIST("hCentNTPV"), collision.centNTPV());
+        registry.fill(HIST("hCentNGlobal"), collision.centFT0M());
+
+        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV() /*, collision.centNGlobal()*/);
+        event_qvec2(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        event_qvec3(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        // event_qvec(
+        //   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+        //   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
       } else if constexpr (eventtype == EMEventType::kEvent_Cent_Qvec) {
-        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
+        registry.fill(HIST("hCentFT0M"), collision.centFT0M());
+        registry.fill(HIST("hCentFT0A"), collision.centFT0A());
+        registry.fill(HIST("hCentFT0C"), collision.centFT0C());
+        registry.fill(HIST("hCentNTPV"), collision.centNTPV());
+        registry.fill(HIST("hCentNGlobal"), collision.centFT0M());
+
+        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV() /*, collision.centNGlobal()*/);
         float q2xft0m = 999.f, q2yft0m = 999.f, q2xft0a = 999.f, q2yft0a = 999.f, q2xft0c = 999.f, q2yft0c = 999.f, q2xfv0a = 999.f, q2yfv0a = 999.f, q2xbpos = 999.f, q2ybpos = 999.f, q2xbneg = 999.f, q2ybneg = 999.f, q2xbtot = 999.f, q2ybtot = 999.f;
         float q3xft0m = 999.f, q3yft0m = 999.f, q3xft0a = 999.f, q3yft0a = 999.f, q3xft0c = 999.f, q3yft0c = 999.f, q3xfv0a = 999.f, q3yfv0a = 999.f, q3xbpos = 999.f, q3ybpos = 999.f, q3xbneg = 999.f, q3ybneg = 999.f, q3xbtot = 999.f, q3ybtot = 999.f;
 
@@ -188,14 +216,16 @@ struct CreateEMEventDilepton {
           q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xfv0a = collision.qvecFV0AReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
           q2yft0m = collision.qvecFT0MImVec()[0], q2yft0a = collision.qvecFT0AImVec()[0], q2yft0c = collision.qvecFT0CImVec()[0], q2yfv0a = collision.qvecFV0AImVec()[0], q2ybpos = collision.qvecBPosImVec()[0], q2ybneg = collision.qvecBNegImVec()[0], q2ybtot = collision.qvecBTotImVec()[0];
         }
-        event_qvec(
-          q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xfv0a, q2yfv0a, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
-          q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xfv0a, q3yfv0a, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
+        // event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xfv0a, q2yfv0a, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
+        //   q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xfv0a, q3yfv0a, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
+        event_qvec2(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xfv0a, q2yfv0a, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot);
+        event_qvec3(q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xfv0a, q3yfv0a, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else {
-        event_cent(105.f, 105.f, 105.f);
-        event_qvec(
-          999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
-          999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        event_cent(105.f, 105.f, 105.f, 105.f);
+        // event_qvec( 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+        //   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        event_qvec2(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
+        event_qvec3(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f);
       }
     } // end of collision loop
   } // end of skimEvent
@@ -293,10 +323,10 @@ struct AssociateDileptonToEMEvent {
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventDilepton in MC.
 
-  void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
-  {
-    fillEventId(collisions, photons, v0kfeventid, perCollision_pcm);
-  }
+  // void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
+  // {
+  //   fillEventId(collisions, photons, v0kfeventid, perCollision_pcm);
+  // }
 
   void processElectron(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
@@ -309,14 +339,13 @@ struct AssociateDileptonToEMEvent {
   }
 
   void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
-  // void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTrackEMEventIdsTMP const& tracks)
   {
     fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
   }
 
   void processDummy(aod::EMEvents const&) {}
 
-  PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process indexing for PCM", false);
+  // PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process indexing for PCM", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processElectron, "process indexing for electrons", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processFwdMuon, "process indexing for forward muons", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);

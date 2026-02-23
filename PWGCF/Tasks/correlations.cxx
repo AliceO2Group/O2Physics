@@ -133,7 +133,7 @@ struct CorrelationTask {
 
   // Track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
-  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
+  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   // MC filters
   Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
@@ -1219,7 +1219,8 @@ struct CorrelationTask {
           if constexpr (!reflectionSpec) {
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
           } else {
-            if (mcParticle.mcDecay() == p2track.decay())
+            if ((mcParticle.mcDecay() == aod::cf2prongtrack::D0barToKPiExclusive && (p2track.decay() == aod::cf2prongtrack::D0barToKPiExclusive || p2track.decay() == aod::cf2prongtrack::D0barToKPi)) ||
+                (mcParticle.mcDecay() == aod::cf2prongtrack::D0ToPiK && p2track.decay() == aod::cf2prongtrack::D0ToPiK))
               registry.fill(HIST("invMassSignal"), p2track.invMass(), p2track.pt(), multiplicity);
             else // one particle may be filled into both histograms through duplicates
               registry.fill(HIST("invMassReflected"), p2track.invMass(), p2track.pt(), multiplicity);

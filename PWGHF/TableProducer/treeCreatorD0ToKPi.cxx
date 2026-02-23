@@ -435,7 +435,7 @@ struct HfTreeCreatorD0ToKPi {
       double const yD = HfHelper::yD0(candidate);
       double const eD = HfHelper::eD0(candidate);
       double const ctD = HfHelper::ctD0(candidate);
-      float massD0, massD0bar;
+      float massD0{}, massD0bar{};
       float topolChi2PerNdf = -999.;
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
@@ -536,7 +536,7 @@ struct HfTreeCreatorD0ToKPi {
       double const yD = HfHelper::yD0(candidate);
       double const eD = HfHelper::eD0(candidate);
       double const ctD = HfHelper::ctD0(candidate);
-      float massD0, massD0bar;
+      float massD0{}, massD0bar{};
       float topolChi2PerNdf = -999.;
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();

@@ -75,6 +75,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   Configurable<float> confmom{"confmom", 0.5, "momentum threshold for particle identification using TOF"};
   Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < confmom"};
+  Configurable<float> confNsigmaTPCDaughter{"confNsigmaTPCDaughter", 3.0, "TPC Sigma for daughter"};
+
   Configurable<float> confNsigmaTOFParticle{"confNsigmaTOFParticle", 3.0, "TOF Sigma for particle (daugh & bach) momentum > Confmom"};
   Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > confmom"};
 
@@ -115,7 +117,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<float> confHPtChildPion{"confHPtChildPion", 10.0f, "Higher limit for pt of children pions"};
     Configurable<float> confLPtChildPion{"confLPtChildPion", 0.f, "Lower limit for pt of children pions"};
     Configurable<bool> confV0DuplCosPA{"confV0DuplCosPA", false, "Use cosPA instead of inv. mass as a deciding factor in rejecting a V0 in V0V0 pairs"};
-    Configurable<bool> confAddInvMassCheck{"confAddInvMassCheck", false, "Apply additional cut separate for mLambda and mAntiLambda"};
+    Configurable<bool> confSeparateInvMassCheck{"confSeparateInvMassCheck", false, "Apply additional cut separate for mLambda and mAntiLambda"};
   } ConfV0Selection;
 
   /// Partition for particle 2 using extended table
@@ -146,6 +148,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   /// Correlation part
   // Configurable<int> confTrackChoicePartTwo{"confTrackChoicePartTwo", 1, "0:Proton, 1:Pion, 2:Kaon"}; //not used
   Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
+  Configurable<bool> confIsDebug{"confIsDebug", false, "Enable additional histograms (e.g. three-momentum)"};
   Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<bool> confUseCent{"confUseCent", false, "Use centrality in place of multiplicity"};
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -154,18 +157,21 @@ struct FemtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis confkstarBins{"confkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis confmTBins{"confmTBins", {225, 0., 7.5}, "binning mT"};
-  Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
-  Configurable<bool> confRectV0V0CPR{"confRectV0V0CPR", true, "Enable rectangular CPR cut for V0-V0 pairs"};
-  Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
-  Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
   Configurable<int> confPhiBins{"confPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> confEtaBins{"confEtaBins", 29, "Number of eta bins in deta dphi"};
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
+    Configurable<bool> confRectV0V0CPR{"confRectV0V0CPR", true, "Enable rectangular CPR cut for V0-V0 pairs"};
+    Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+    Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  } ConfCPR;
 
   // Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
@@ -204,17 +210,24 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  bool invMLambda(float invMassLambda, float invMassAntiLambda)
+  bool invMLambda(float invMassLambda, float invMassAntiLambda, int V0Type)
   {
-    if ((invMassLambda < ConfV0Selection.confV0InvMassLowLimit || invMassLambda > ConfV0Selection.confV0InvMassUpLimit) && (invMassAntiLambda < ConfV0Selection.confV0InvMassLowLimit || invMassAntiLambda > ConfV0Selection.confV0InvMassUpLimit)) {
-      return false;
+    if (ConfV0Selection.confSeparateInvMassCheck) {
+      const float pMass = V0Type ? invMassAntiLambda : invMassLambda;
+      if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
+        return false;
+      }
+    } else {
+      if ((invMassLambda < ConfV0Selection.confV0InvMassLowLimit || invMassLambda > ConfV0Selection.confV0InvMassUpLimit) && (invMassAntiLambda < ConfV0Selection.confV0InvMassLowLimit || invMassAntiLambda > ConfV0Selection.confV0InvMassUpLimit)) {
+        return false;
+      }
     }
     return true;
   }
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
   {
-    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle) {
+    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCDaughter) {
       return true;
     } else {
       return false;
@@ -280,6 +293,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
     qaRegistry.add("V0Type1/hInvMassAntiLambdaVsCent", "; Centrality; M_{#Lambda}; Entries", kTH2F, {confMultBins, {2000, 1.f, 3.f}});
     qaRegistry.add("V0Type2/hInvMassAntiLambdaVsCent", "; Centrality; M_{#Lambda}; Entries", kTH2F, {confMultBins, {2000, 1.f, 3.f}});
 
+    if (confIsDebug) {
+      qaRegistry.add("SameEvent/hPtPosDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("SameEvent/hPtNegDaugh", ";  #it{p}_{T}^{1} (GeV/c);  #it{p}_{T}^{2} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("SameEvent/hDaughMomPart1", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+      qaRegistry.add("SameEvent/hDaughMomPart2", "; #it{p}_{T}^{+} (GeV/c);  #it{p}_{T}^{-} (GeV/c)", kTH2F, {{500, 0, 5}, {500, 0, 5}});
+    }
+
     trackHistoV0Type1.init(&qaRegistry, ConfV0Selection.confV0TempFitVarpTBins, ConfV0Selection.confV0TempFitVarBins, confIsMC, ConfV0Selection.confV0PDGCodePartTwo, true, "V0Type1");
     posChildV0Type1.init(&qaRegistry, ConfV0Selection.confChildTempFitVarpTBins, ConfV0Selection.confChildTempFitVarBins, false, 0, true, "posChildV0Type1");
     negChildV0Type1.init(&qaRegistry, ConfV0Selection.confChildTempFitVarpTBins, ConfV0Selection.confChildTempFitVarBins, false, 0, true, "negChildV0Type1");
@@ -344,9 +364,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     pairCleaner.init(&qaRegistry);
     pairCleanerV0.init(&qaRegistry);
-    if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
-      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+    if (ConfCPR.confIsCPR.value) {
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
     }
 
     if (!confLocalEfficiency.value.empty()) {
@@ -404,20 +424,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type1))
         continue;
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
       if (posChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][0] || negChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][1] || posChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][0] || negChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][1]) {
         continue;
-      }
-
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float pMass = ConfV0Selection.confV0Type1 ? part.mAntiLambda() : part.mLambda();
-        if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-          continue;
-        }
       }
 
       /// Daughters that do not pass this condition are not selected
@@ -479,7 +492,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     /// Now build the combinations
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // Lambda invariant mass cut
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type1))
         continue;
       /// PID using stored binned nsigma
       if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
@@ -521,14 +534,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         }
       }
 
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float pMass = ConfV0Selection.confV0Type1 ? p2.mAntiLambda() : p2.mLambda();
-        if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-          continue;
-        }
-      }
-
-      if (confIsCPR.value) {
+      if (ConfCPR.confIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           continue;
         }
@@ -543,7 +549,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
     }
   }
-
   /// This function processes the same event for V0 - V0
   template <bool isMC, typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
   void doSameEventV0(FilteredFDCollision const& col, PartType const& parts, PartitionType& groupPartsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
@@ -559,7 +564,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event for first V0 particle
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type1))
         continue;
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
@@ -574,12 +579,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type1 ? part.mAntiLambda() : part.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
         trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
         posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
         negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
@@ -606,7 +605,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event for second V0 particle
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type2))
         continue;
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
@@ -621,12 +620,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type2][1]))
           continue;
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type2 ? part.mAntiLambda() : part.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
         trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
         posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
         negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
@@ -653,19 +646,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     auto pairDuplicateCheckFunc = [&](auto& p1, auto& p2) -> void {
       // V0 inv mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+      if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1))
         return;
       // V0 inv mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2))
         return;
-
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-        const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-        if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
-          return;
-        }
-      }
 
       // track cleaning & checking for duplicate pairs
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
@@ -690,10 +675,10 @@ struct FemtoUniversePairTaskTrackV0Extended {
       if (v0Duplicates.contains(p1.globalIndex()) || v0Duplicates.contains(p2.globalIndex()))
         return false;
       // Lambda invariant mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+      if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1))
         return false;
       // Lambda invariant mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2))
         return false;
 
       const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2 - parts.begin().globalIndex());
@@ -744,18 +729,10 @@ struct FemtoUniversePairTaskTrackV0Extended {
         }
       }
 
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-        const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-        if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
+      if (ConfCPR.confIsCPR.value) {
+        if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
-        }
-      }
-
-      if (confIsCPR.value) {
-        if (confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
-          return false;
-        } else if (!confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+        } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
         }
       }
@@ -773,8 +750,27 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
     /// Now build the combinations for V0s
     for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
-      if (!pairProcessFunc(p1, p2))
-        pairProcessFunc(p2, p1);
+      if (!pairProcessFunc(p1, p2)) {
+        if (pairProcessFunc(p2, p1) && confIsDebug) {
+          const auto& posChild1 = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());
+          const auto& negChild1 = parts.iteratorAt(p2.globalIndex() - 1 - parts.begin().globalIndex());
+          const auto& posChild2 = parts.iteratorAt(p1.globalIndex() - 2 - parts.begin().globalIndex());
+          const auto& negChild2 = parts.iteratorAt(p1.globalIndex() - 1 - parts.begin().globalIndex());
+          qaRegistry.fill(HIST("SameEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
+          qaRegistry.fill(HIST("SameEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
+          qaRegistry.fill(HIST("SameEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
+          qaRegistry.fill(HIST("SameEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
+        }
+      } else if (confIsDebug) {
+        const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2 - parts.begin().globalIndex());
+        const auto& negChild1 = parts.iteratorAt(p1.globalIndex() - 1 - parts.begin().globalIndex());
+        const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());
+        const auto& negChild2 = parts.iteratorAt(p2.globalIndex() - 1 - parts.begin().globalIndex());
+        qaRegistry.fill(HIST("SameEvent/hPtPosDaugh"), posChild1.pt(), posChild2.pt());
+        qaRegistry.fill(HIST("SameEvent/hPtNegDaugh"), negChild1.pt(), negChild2.pt());
+        qaRegistry.fill(HIST("SameEvent/hDaughMomPart1"), posChild1.pt(), negChild1.pt());
+        qaRegistry.fill(HIST("SameEvent/hDaughMomPart2"), posChild2.pt(), negChild2.pt());
+      }
     }
   }
 
@@ -861,7 +857,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
       if ((ConfV0Selection.confV0Type1 == 0 && pdgCode2 != kLambda0) || (ConfV0Selection.confV0Type1 == 1 && pdgCode2 != kLambda0Bar))
         continue;
       // track cleaning
-      if (confIsCPR.value) {
+      if (ConfCPR.confIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           continue;
         }
@@ -953,7 +949,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type1))
           continue;
         /// PID using stored binned nsigma
         if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
@@ -988,18 +984,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
           }
         }
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type1 ? p2.mAntiLambda() : p2.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
-
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
@@ -1053,11 +1042,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda())) {
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1)) {
           continue;
         }
         // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda())) {
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2)) {
           continue;
         }
 
@@ -1110,22 +1099,14 @@ struct FemtoUniversePairTaskTrackV0Extended {
           }
         }
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-          const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-          if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
-
         // track cleaning
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
-          if (confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+        if (ConfCPR.confIsCPR.value) {
+          if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
-          } else if (!confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
         }
@@ -1210,7 +1191,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         int pdgCode2 = static_cast<int>(p2.pidCut());
         if ((ConfV0Selection.confV0Type1 == 0 && pdgCode2 != kLambda0) || (ConfV0Selection.confV0Type1 == 1 && pdgCode2 != kLambda0Bar))
           continue;
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
@@ -1344,7 +1325,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type1))
           continue;
         /// PID using stored binned nsigma
         if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
@@ -1362,18 +1343,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type1 ? p2.mAntiLambda() : p2.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
-
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
@@ -1421,11 +1395,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda())) {
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1)) {
           continue;
         }
         // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda())) {
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2)) {
           continue;
         }
 
@@ -1453,19 +1427,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleTOF(negChild2, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild2, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-          const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-          if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
-
         // track cleaning
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if (confIsCPR.value) {
+        if (ConfCPR.confIsCPR.value) {
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }

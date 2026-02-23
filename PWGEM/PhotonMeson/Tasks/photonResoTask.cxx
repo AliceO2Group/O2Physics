@@ -202,13 +202,13 @@ struct PhotonResoTask {
 
   using PcmMcLegs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
-  using Colls = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
+  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 
   using McColls = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts>;
   using McParticles = EMMCParticles;
 
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::emeventId;
-  PresliceOptional<PcmPhotons> perCollisionPCM = aod::v0photonkf::emeventId;
+  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::emphotoneventId;
+  PresliceOptional<PcmPhotons> perCollisionPCM = aod::v0photonkf::emphotoneventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
@@ -423,11 +423,18 @@ struct PhotonResoTask {
   // PCM-EMCal same event
   void processPcmEmcal(Colls const& collisions, EMCalPhotons const& clusters, PcmPhotons const& photons, PcmMcLegs const& legs, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds, EMMCParticles const& mcParticles)
   {
+    if (clusters.size() <= 0 && photons.size() < 0) {
+      LOG(info) << "Skipping DF because there are not photons!";
+      return;
+    }
     EMBitFlags emcFlags(clusters.size());
-    fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
-
+    if (clusters.size() > 0) {
+      fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
+    }
     EMBitFlags v0flags(photons.size());
-    fV0PhotonCut.AreSelectedRunning<decltype(photons), PcmMcLegs>(v0flags, photons, &registry);
+    if (photons.size() > 0) {
+      fV0PhotonCut.AreSelectedRunning<decltype(photons), PcmMcLegs>(v0flags, photons, &registry);
+    }
 
     // create iterators for photon mc particles
     auto mcPhoton1 = mcParticles.begin();

@@ -157,14 +157,22 @@ struct HeavyionMultiplicity {
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
-  Configurable<float> v0radiusCut{"v0radiusCut", 1.2f, "RadiusCut"};
-  Configurable<float> dcapostopvCut{"dcapostopvCut", 0.05f, "dcapostopvCut"};
-  Configurable<float> dcanegtopvCut{"dcanegtopvCut", 0.05f, "dcanegtopvCut"};
-  Configurable<float> v0cospaCut{"v0cospaCut", 0.995f, "v0cospaCut"};
-  Configurable<float> dcav0daughtercut{"dcav0daughtercut", 1.0f, "dcav0daughtercut"};
-  Configurable<float> minTPCnClsCut{"minTPCnClsCut", 50.0f, "minTPCnClsCut"};
-  Configurable<float> nSigmaTpcCut{"nSigmaTpcCut", 5.0f, "nSigmaTpcCut"};
-  Configurable<float> v0etaCut{"v0etaCut", 0.9f, "v0etaCut"};
+  Configurable<float> v0radiusK0SCut{"v0radiusK0SCut", 1.2f, "K0S RadiusCut"};
+  Configurable<float> dcapostopvK0SCut{"dcapostopvK0SCut", 0.05f, "K0S dcapostopvCut"};
+  Configurable<float> dcanegtopvK0SCut{"dcanegtopvK0SCut", 0.05f, "K0S dcanegtopvCut"};
+  Configurable<float> v0cospaK0SCut{"v0cospaK0SCut", 0.995f, "K0S v0cospaCut"};
+  Configurable<float> dcav0daughterK0Scut{"dcav0daughterK0Scut", 1.0f, "K0S dcav0daughtercut"};
+  Configurable<float> minTPCnClsK0SCut{"minTPCnClsK0SCut", 50.0f, "K0S minTPCnClsCut"};
+  Configurable<float> nSigmaTpcK0SCut{"nSigmaTpcK0SCut", 5.0f, "K0S nSigmaTpcCut"};
+  Configurable<float> v0etaK0SCut{"v0etaK0SCut", 0.9f, "K0S v0etaCut"};
+  Configurable<float> v0radiusLambdaCut{"v0radiusLambdaCut", 1.2f, "Lambda RadiusCut"};
+  Configurable<float> dcapostopvLambdaCut{"dcapostopvLambdaCut", 0.05f, "Lambda dcapostopvCut"};
+  Configurable<float> dcanegtopvLambdaCut{"dcanegtopvLambdaCut", 0.05f, "Lambda dcanegtopvCut"};
+  Configurable<float> v0cospaLambdaCut{"v0cospaLambdaCut", 0.995f, "Lambda v0cospaCut"};
+  Configurable<float> dcav0daughterLambdacut{"dcav0daughterLambdacut", 1.0f, "Lambda dcav0daughtercut"};
+  Configurable<float> minTPCnClsLambdaCut{"minTPCnClsLambdaCut", 50.0f, "Lambda minTPCnClsCut"};
+  Configurable<float> nSigmaTpcLambdaCut{"nSigmaTpcLambdaCut", 5.0f, "Lambda nSigmaTpcCut"};
+  Configurable<float> v0etaLambdaCut{"v0etaLambdaCut", 0.9f, "Lambda v0etaCut"};
   Configurable<float> extraphicut1{"extraphicut1", 3.07666f, "Extra Phi cut 1"};
   Configurable<float> extraphicut2{"extraphicut2", 3.12661f, "Extra Phi cut 2"};
   Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
@@ -201,6 +209,7 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplySplitRecCol{"isApplySplitRecCol", false, "Split MC reco collisions"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
+  Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
 
   void init(InitContext const&)
   {
@@ -377,6 +386,10 @@ struct HeavyionMultiplicity {
       return false;
     }
     histos.fill(HIST("EventHist"), 2);
+
+    if (isApplyTVX && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
 
     if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
@@ -764,33 +777,19 @@ struct HeavyionMultiplicity {
     for (const auto& v0track : v0data) {
       auto v0pTrack = v0track.template posTrack_as<V0TrackCandidates>();
       auto v0nTrack = v0track.template negTrack_as<V0TrackCandidates>();
-      if (std::abs(v0pTrack.eta()) > v0etaCut || std::abs(v0nTrack.eta()) > v0etaCut) {
-        continue;
+      if (std::abs(v0pTrack.eta()) <= v0etaK0SCut && std::abs(v0nTrack.eta()) <= v0etaK0SCut && v0pTrack.tpcNClsFound() >= minTPCnClsK0SCut && v0nTrack.tpcNClsFound() >= minTPCnClsK0SCut && std::abs(v0track.dcapostopv()) >= dcapostopvK0SCut && std::abs(v0track.dcanegtopv()) >= dcanegtopvK0SCut && v0track.v0radius() >= v0radiusK0SCut && v0track.v0cosPA() >= v0cospaK0SCut && std::abs(v0track.dcaV0daughters()) <= dcav0daughterK0Scut && std::abs(v0pTrack.tpcNSigmaPi()) <= nSigmaTpcK0SCut && std::abs(v0nTrack.tpcNSigmaPi()) <= nSigmaTpcK0SCut) {
+
+        histos.fill(HIST("K0sCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mK0Short());
       }
-      if (v0pTrack.tpcNClsFound() < minTPCnClsCut) {
-        continue;
+      if (std::abs(v0pTrack.eta()) <= v0etaLambdaCut && std::abs(v0nTrack.eta()) <= v0etaLambdaCut && v0pTrack.tpcNClsFound() >= minTPCnClsLambdaCut && v0nTrack.tpcNClsFound() >= minTPCnClsLambdaCut && std::abs(v0track.dcapostopv()) >= dcapostopvLambdaCut && std::abs(v0track.dcanegtopv()) >= dcanegtopvLambdaCut && v0track.v0radius() >= v0radiusLambdaCut && v0track.v0cosPA() >= v0cospaLambdaCut && std::abs(v0track.dcaV0daughters()) <= dcav0daughterLambdacut) {
+
+        if (std::abs(v0pTrack.tpcNSigmaPr()) <= nSigmaTpcLambdaCut && std::abs(v0nTrack.tpcNSigmaPi()) <= nSigmaTpcLambdaCut) {
+          histos.fill(HIST("LambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mLambda());
+        }
+        if (std::abs(v0pTrack.tpcNSigmaPi()) <= nSigmaTpcLambdaCut && std::abs(v0nTrack.tpcNSigmaPr()) <= nSigmaTpcLambdaCut) {
+          histos.fill(HIST("AntiLambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mAntiLambda());
+        }
       }
-      if (v0nTrack.tpcNClsFound() < minTPCnClsCut) {
-        continue;
-      }
-      if (std::abs(v0pTrack.tpcNSigmaPi()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0nTrack.tpcNSigmaPi()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0pTrack.tpcNSigmaPr()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0nTrack.tpcNSigmaPr()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0track.dcapostopv()) < dcapostopvCut || std::abs(v0track.dcanegtopv()) < dcanegtopvCut || v0track.v0radius() < v0radiusCut || v0track.v0cosPA() < v0cospaCut || std::abs(v0track.dcaV0daughters()) > dcav0daughtercut) {
-        continue;
-      }
-      histos.fill(HIST("K0sCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mK0Short());
-      histos.fill(HIST("LambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mLambda());
-      histos.fill(HIST("AntiLambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mAntiLambda());
     }
   }
 
@@ -961,6 +960,11 @@ struct HeavyionMultiplicity {
     if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
       return;
     }
+
+    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
+
     if (std::abs(mcCollision.posZ()) >= vtxRange) {
       return;
     }

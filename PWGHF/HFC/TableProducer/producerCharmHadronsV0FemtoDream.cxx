@@ -41,6 +41,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -61,6 +62,7 @@
 
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
 #include <string>
@@ -227,7 +229,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   std::vector<float> outputMlPiKP;
   o2::ccdb::CcdbApi ccdbApi;
   o2::hf_evsel::HfEventSelection hfEvSel;
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; /// Accessing the CCDB
   o2::base::MatLayerCylSet* lut{};
   // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
 
@@ -248,7 +250,9 @@ struct HfProducerCharmHadronsV0FemtoDream {
   using FemtoFullMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
   using FemtoFullMcgenCollision = FemtoFullMcgenCollisions::iterator;
 
-  using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using Generated3ProngMc = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using Generated2ProngMc = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+  using GeneratedDstarMc = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
 
   Filter filterSelectCandidateD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagCharmHadron || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagCharmHadron);
   Filter filterSelectCandidateDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
@@ -1221,7 +1225,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcD0ToPiKWithML, "Provide Mc for D0ToPiK with ml", false);
 
-  void processMcD0ToPiKGen(GeneratedMc const& particles)
+  void processMcD0ToPiKGen(Generated2ProngMc const& particles)
   {
     fillCharmHadMcGen<DecayChannel::D0ToPiK>(particles);
   }
@@ -1280,7 +1284,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDstarToD0PiWithML, "Provide Mc for DstarToD0Pi with ml", false);
 
-  void processMcDstarToD0PiGen(GeneratedMc const& particles)
+  void processMcDstarToD0PiGen(GeneratedDstarMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DstarToD0Pi>(particles);
@@ -1341,7 +1345,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcDplusToPiKPiWithML, "Provide Mc for DplusToPiKPi with ml", false);
 
-  void processMcDplusToPiKPiGen(GeneratedMc const& particles)
+  void processMcDplusToPiKPiGen(Generated3ProngMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::DplusToPiKPi>(particles);
@@ -1402,7 +1406,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   }
   PROCESS_SWITCH(HfProducerCharmHadronsV0FemtoDream, processMcLcToPKPiWithML, "Provide Mc for lctopkpi with ml", false);
 
-  void processMcLcToPKPiGen(GeneratedMc const& particles)
+  void processMcLcToPKPiGen(Generated3ProngMc const& particles)
   {
 
     fillCharmHadMcGen<DecayChannel::LcToPKPi>(particles);

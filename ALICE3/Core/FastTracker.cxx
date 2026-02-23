@@ -36,132 +36,6 @@ namespace o2
 namespace fastsim
 {
 
-std::map<std::string, std::map<std::string, std::string>> GeometryContainer::parseTEnvConfiguration(std::string& filename, std::vector<std::string>& layers)
-{
-  std::map<std::string, std::map<std::string, std::string>> configMap;
-  filename = gSystem->ExpandPathName(filename.c_str());
-  LOG(info) << "Parsing TEnv configuration file: " << filename;
-  TEnv env(filename.c_str());
-  THashList* table = env.GetTable();
-  layers.clear();
-  for (int i = 0; i < table->GetEntries(); ++i) {
-    const std::string key = table->At(i)->GetName();
-    // key should contain exactly one dot
-    if (key.find('.') == std::string::npos || key.find('.') != key.rfind('.')) {
-      LOG(fatal) << "Key " << key << " does not contain exactly one dot";
-      continue;
-    }
-    const std::string firstPart = key.substr(0, key.find('.'));
-    if (std::find(layers.begin(), layers.end(), firstPart) == layers.end()) {
-      layers.push_back(firstPart);
-    }
-  }
-  env.Print();
-  // Layers
-  for (const auto& layer : layers) {
-    LOG(info) << " Reading layer " << layer;
-    for (int i = 0; i < table->GetEntries(); ++i) {
-      const std::string key = table->At(i)->GetName();
-      if (key.find(layer + ".") == 0) {
-        const std::string paramName = key.substr(key.find('.') + 1);
-        const std::string value = env.GetValue(key.c_str(), "");
-        configMap[layer][paramName] = value;
-      }
-    }
-  }
-  return configMap;
-}
-
-void GeometryContainer::init(o2::framework::InitContext& initContext)
-{
-  std::vector<std::string> detectorConfiguration;
-  const bool foundDetectorConfiguration = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "detectorConfiguration", detectorConfiguration, false);
-  if (!foundDetectorConfiguration) {
-    LOG(fatal) << "Could not retrieve detector configuration from OnTheFlyDetectorGeometryProvider task.";
-    return;
-  }
-  LOG(info) << "Size of detector configuration: " << detectorConfiguration.size();
-
-  bool cleanLutWhenLoaded;
-  const bool foundCleanLutWhenLoaded = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "cleanLutWhenLoaded", cleanLutWhenLoaded, false);
-  if (!foundCleanLutWhenLoaded) {
-    LOG(fatal) << "Could not retrieve foundCleanLutWhenLoaded option from OnTheFlyDetectorGeometryProvider task.";
-    return;
-  }
-
-  for (std::string& configFile : detectorConfiguration) {
-    if (configFile.rfind("ccdb:", 0) == 0) {
-      LOG(info) << "ccdb source detected from on-the-fly-detector-geometry-provider";
-      const std::string ccdbPath = configFile.substr(5); // remove "ccdb:" prefix
-      const std::string outPath = "./.ALICE3/Configuration/";
-      configFile = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
-
-      int timeout = 600; // Wait max 10 minutes
-      while (--timeout > 0) {
-        std::ifstream file(configFile);
-        if (file.good()) {
-          break;
-        }
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
-
-      std::ifstream checkFile(configFile);
-      if (!checkFile.good()) {
-        LOG(fatal) << "Timed out waiting for geometry snapshot: " << configFile;
-        return;
-      }
-    }
-
-    LOG(info) << "Detector geometry configuration file used: " << configFile;
-    addEntry(configFile);
-    setLutCleanupSetting(cleanLutWhenLoaded);
-  }
-}
-
-std::map<std::string, std::string> GeometryContainer::GeometryEntry::getConfiguration(const std::string& layerName) const
-{
-  auto it = mConfigurations.find(layerName);
-  if (it != mConfigurations.end()) {
-    return it->second;
-  } else {
-    LOG(fatal) << "Layer " << layerName << " not found in geometry configurations.";
-    return {};
-  }
-}
-
-bool GeometryContainer::GeometryEntry::hasValue(const std::string& layerName, const std::string& key) const
-{
-  auto layerIt = mConfigurations.find(layerName);
-  if (layerIt != mConfigurations.end()) {
-    auto keyIt = layerIt->second.find(key);
-    return keyIt != layerIt->second.end();
-  }
-  return false;
-}
-
-std::string GeometryContainer::GeometryEntry::getValue(const std::string& layerName, const std::string& key, bool require) const
-{
-  auto layer = getConfiguration(layerName);
-  auto entry = layer.find(key);
-  if (entry != layer.end()) {
-    return layer.at(key);
-  } else if (require) {
-    LOG(fatal) << "Key " << key << " not found in layer " << layerName << " configurations.";
-    return "";
-  } else {
-    return "";
-  }
-}
-
-void GeometryContainer::GeometryEntry::replaceValue(const std::string& layerName, const std::string& key, const std::string& value)
-{
-  if (!hasValue(layerName, key)) { // check that the key exists
-    LOG(fatal) << "Key " << key << " does not exist in layer " << layerName << ". Cannot replace value.";
-  }
-  setValue(layerName, key, value);
-}
-
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
 DetLayer* FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
@@ -267,7 +141,7 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
   }
 }
 
-void FastTracker::AddGenericDetector(GeometryContainer::GeometryEntry configMap, o2::ccdb::BasicCCDBManager* ccdbManager)
+void FastTracker::AddGenericDetector(o2::fastsim::GeometryEntry configMap, o2::ccdb::BasicCCDBManager* ccdbManager)
 {
   // Layers
   for (const auto& layer : configMap.getLayerNames()) {

@@ -42,6 +42,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -202,7 +203,7 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   std::vector<float> outputMlPiKP;
   o2::ccdb::CcdbApi ccdbApi;
   o2::hf_evsel::HfEventSelection hfEvSel;
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; /// Accessing the CCDB
   o2::base::MatLayerCylSet* lut{};
   // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
 
@@ -226,9 +227,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
-  using Generated3ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using Generated2ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
-  using GeneratedDstarMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
+  using Generated3ProngMc = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using Generated2ProngMc = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+  using GeneratedDstarMc = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
 
   Filter filterSelectCandidateD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagHadron || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagHadron);
   Filter filterSelectCandidateDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
@@ -301,56 +302,42 @@ struct HfProducerCharmHadronsTrackFemtoDream {
     bool useDstarMl = doprocessDataDstarToD0PiWithML || doprocessMcDstarToD0PiWithML;
 
     if (applyMlMode == FillMlFromNewBDT) {
-      if (useLcMl) {
-        hfMlResponseLc.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-        hfMlResponseLc.cacheInputFeaturesIndices(namesInputFeatures);
-        hfMlResponseLc.init();
-      }
-      if (useDplusMl) {
-        hfMlResponseDplus.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-        hfMlResponseDplus.cacheInputFeaturesIndices(namesInputFeatures);
-        hfMlResponseDplus.init();
-      }
-      if (useD0Ml) {
-        hfMlResponseD0.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-        hfMlResponseD0.cacheInputFeaturesIndices(namesInputFeatures);
-        hfMlResponseD0.init();
-      }
-      if (useDstarMl) {
-        hfMlResponseDstar.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-        hfMlResponseDstar.cacheInputFeaturesIndices(namesInputFeatures);
-        hfMlResponseDstar.init();
-      }
 
-      if (loadModelsFromCCDB) {
+      auto setupFeatures = [&](auto& hfResponse, bool useMlFlag) {
+        if (!useMlFlag) {
+          return;
+        }
+        hfResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        hfResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      };
+
+      setupFeatures(hfMlResponseLc, useLcMl);
+      setupFeatures(hfMlResponseDplus, useDplusMl);
+      setupFeatures(hfMlResponseD0, useD0Ml);
+      setupFeatures(hfMlResponseDstar, useDstarMl);
+
+      const bool useAnyMl = useLcMl || useDplusMl || useD0Ml || useDstarMl;
+      if (loadModelsFromCCDB && useAnyMl) {
         ccdbApi.init(ccdbUrl);
-        if (useLcMl) {
-          hfMlResponseLc.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        }
-        if (useDplusMl) {
-          hfMlResponseDplus.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        }
-        if (useD0Ml) {
-          hfMlResponseD0.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        }
-        if (useDstarMl) {
-          hfMlResponseDstar.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      }
+
+      auto initModel = [&](auto& hfResponse, bool useMlFlag) {
+        if (!useMlFlag) {
+          return;
         }
 
-      } else {
-        if (useLcMl) {
-          hfMlResponseLc.setModelPathsLocal(onnxFileNames);
+        if (loadModelsFromCCDB) {
+          hfResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfResponse.setModelPathsLocal(onnxFileNames);
         }
-        if (useDplusMl) {
-          hfMlResponseDplus.setModelPathsLocal(onnxFileNames);
-        }
-        if (useD0Ml) {
-          hfMlResponseD0.setModelPathsLocal(onnxFileNames);
-        }
-        if (useDstarMl) {
-          hfMlResponseDstar.setModelPathsLocal(onnxFileNames);
-        }
-      }
+        hfResponse.init();
+      };
+
+      initModel(hfMlResponseLc, useLcMl);
+      initModel(hfMlResponseDplus, useDplusMl);
+      initModel(hfMlResponseD0, useD0Ml);
+      initModel(hfMlResponseDstar, useDstarMl);
     }
   }
 

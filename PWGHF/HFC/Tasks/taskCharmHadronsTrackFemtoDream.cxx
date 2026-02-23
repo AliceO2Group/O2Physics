@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfTaskCharmHadronsTrackFemtoDream.cxx
+/// \file taskCharmHadronsTrackFemtoDream.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
@@ -47,6 +47,7 @@
 
 #include <array>
 #include <cstdint>
+#include <numeric>
 #include <string>
 #include <utility>
 
@@ -91,7 +92,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   constexpr static int OriginRecPrompt = 1;
   constexpr static int OriginRecFD = 2;
   constexpr static int CutBitChargePositive = 2;
-  constexpr static uint32_t pidTrackPass = 1u;
+  constexpr static uint32_t PidTrackPass = 1u;
 
   Produces<o2::aod::FDHfCharmTrkPairs> rowFemtoResultPairs;
   Produces<o2::aod::FDHfCharm3Prong> rowFemtoResultCharm3Prong;
@@ -206,13 +207,13 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   /// Partition for particle 1
   Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
-  Partition<FilteredFDParticles> partitionTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == pidTrackPass);
+  Partition<FilteredFDParticles> partitionTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) &&
                                                  ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
 
-  Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == pidTrackPass);
+  Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
   /// Partition for particle 2
   Partition<FilteredCharmCand3Prongs> partitionCharmHadron3Prong = aod::fdhf::bdtBkg < charmSel.charmHadBkgBDTmax && aod::fdhf::bdtFD < charmSel.charmHadFdBDTmax && aod::fdhf::bdtFD > charmSel.charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmSel.charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmSel.charmHadPromptBDTmin;
@@ -471,8 +472,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
       if constexpr (Channel == DecayChannel::D0ToPiK) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id()) {
           continue;
+        }
 
         if (pairQASetting.useCPR.value) {
           if (pairCloseRejectionSE2Prong.isClosePair(p1, p2, parts, col.magField())) {
@@ -486,8 +488,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
 
       if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id()) {
           continue;
+        }
         if (pairQASetting.useCPR.value) {
           if (pairCloseRejectionSE3Prong.isClosePair(p1, p2, parts, col.magField())) {
             continue;
@@ -500,8 +503,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
 
       if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id()) {
           continue;
+        }
         if (pairQASetting.useCPR.value) {
           if (pairCloseRejectionSEDstar.isClosePair(p1, p2, parts, col.magField())) {
             continue;

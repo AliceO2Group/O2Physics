@@ -403,8 +403,8 @@ struct FlowGenericFramework {
       if (bins->fN > 0) {
         event_pt_spectrum = new TH1D("event_pt_spectrum", "event_pt_spectrum", bins->fN - 1, bins->fArray);
       }
-      registry.add<TProfile>("meanNpt", "", {HistType::kTProfile, {ptAxis}});
-      registry.add<TProfile>("meanpt", "", {HistType::kTProfile, {ptAxis}});
+      registry.add<TProfile2D>("meanNpt", "", {HistType::kTProfile2D, {ptAxis, multAxis}});
+      registry.add<TProfile>("meanpt", "", {HistType::kTProfile, {multAxis}});
       registry.add<TProfile2D>("Npt_pt", "", {HistType::kTProfile2D, {ptAxis, multAxis}});
       registry.add<TH1>("trackQA/after/Nch_corrected", "", {HistType::kTH1D, {nchAxis}});
       registry.add<TH1>("trackQA/after/Nch_uncorrected", "", {HistType::kTH1D, {nchAxis}});
@@ -705,6 +705,15 @@ struct FlowGenericFramework {
       return false;
     return ((track.tpcNClsCrossedRows() >= cfgNTPCXrows) && (track.tpcNClsFound() >= cfgNTPCCls) && (track.itsNCls() >= cfgMinNITSCls));
   }
+
+  template <typename TTrack>
+  bool nchSelected(TTrack track)
+  {
+    if (std::fabs(track.dcaXY()) > (0.0105f + 0.0035f / track.pt()))
+      return false;
+    return ((track.tpcNClsCrossedRows() >= 70) && (track.tpcNClsFound() >= 70) && (track.itsNCls() >= 5));
+  }
+
   enum DataType {
     kReco,
     kGen
@@ -823,12 +832,16 @@ struct FlowGenericFramework {
       }
     }
 
-    double mean_pt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
-    registry.fill(HIST("meanpt"), centmult, mean_pt);
-    for (int bin = 1; bin <= event_pt_spectrum->GetNbinsX(); ++bin) {
-      registry.fill(HIST("meanNpt"), event_pt_spectrum->GetXaxis()->GetBinCenter(bin), event_pt_spectrum->GetBinContent(bin));
-      registry.fill(HIST("Npt_pt"), event_pt_spectrum->GetXaxis()->GetBinCenter(bin), centmult, event_pt_spectrum->GetBinContent(bin) * mean_pt);
+    // Only consider events where mean pt can be calculated
+    if (fFCpt->corrDen[1] != 0) {
+      double mean_pt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
+      registry.fill(HIST("meanpt"), centmult, mean_pt);
+      for (int bin = 1; bin <= event_pt_spectrum->GetNbinsX(); ++bin) {
+        registry.fill(HIST("meanNpt"), event_pt_spectrum->GetXaxis()->GetBinCenter(bin), centmult, event_pt_spectrum->GetBinContent(bin));
+        registry.fill(HIST("Npt_pt"), event_pt_spectrum->GetXaxis()->GetBinCenter(bin), centmult, event_pt_spectrum->GetBinContent(bin) * mean_pt);
+      }
     }
+
     return;
   }
 
@@ -894,8 +907,9 @@ struct FlowGenericFramework {
     for (const auto& track : tracks) {
       processTrack(track, vtxz, run, densitycorrections, acceptedTracks);
     }
-    registry.fill(HIST("TrackQA/after/Nch_corrected"), acceptedTracks.corrected);
-    registry.fill(HIST("TrackQA/after/Nch_uncorrected"), acceptedTracks.uncorrected);
+
+    registry.fill(HIST("trackQA/after/Nch_corrected"), acceptedTracks.corrected);
+    registry.fill(HIST("trackQA/after/Nch_uncorrected"), acceptedTracks.uncorrected);
 
     int multiplicity = 0;
     switch (cfgUseNchCorrection) {
@@ -918,7 +932,7 @@ struct FlowGenericFramework {
   }
 
   struct AcceptedTracks {
-    unsigned int corrected = 0;
+    float corrected = 0;
     unsigned int uncorrected = 0;
   };
 
@@ -938,12 +952,15 @@ struct FlowGenericFramework {
       if (mcParticle.eta() < o2::analysis::gfw::etalow || mcParticle.eta() > o2::analysis::gfw::etaup || mcParticle.pt() < o2::analysis::gfw::ptlow || mcParticle.pt() > o2::analysis::gfw::ptup)
         return;
 
-      if (!trackSelected(track))
+      // Select tracks with nominal cuts always
+      if (!nchSelected(track))
         return;
 
       acceptedTracks.corrected += getEfficiency(track);
-      ;
       ++acceptedTracks.uncorrected;
+
+      if (!trackSelected(track))
+        return;
 
       int pidIndex = 0;
       if (cfgUsePID) {
@@ -999,12 +1016,15 @@ struct FlowGenericFramework {
       if (cfgFillQA)
         fillTrackQA<kReco, kBefore>(track, vtxz);
 
-      if (!trackSelected(track))
+      // Select tracks with nominal cuts always
+      if (!nchSelected(track))
         return;
 
       acceptedTracks.corrected += getEfficiency(track);
-      ;
       ++acceptedTracks.uncorrected;
+
+      if (!trackSelected(track))
+        return;
 
       int pidIndex = 0;
       if (cfgUsePID) {
@@ -1172,7 +1192,6 @@ struct FlowGenericFramework {
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
-    LOGF(info, "TRACKS SIZE = %d", tracks.size());
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
     if (run != lastRun) {

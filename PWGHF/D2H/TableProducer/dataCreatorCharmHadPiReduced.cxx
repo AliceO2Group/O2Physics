@@ -209,12 +209,12 @@ struct HfDataCreatorCharmHadPiReduced {
   o2::hf_evsel::HfEventSelectionMc hfEvSelMc;
 
   // CCDB service
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber{};
 
   // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   double massC{0.};
   double massB{0.};

@@ -97,14 +97,11 @@ struct HfCandidateCreatorB0 {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber{};
 
-  double massPi{0.};
-  double massD{0.};
-  double massB0{0.};
   double invMass2DPiMin{0.};
   double invMass2DPiMax{0.};
   double bz{0.};
@@ -136,11 +133,8 @@ struct HfCandidateCreatorB0 {
   void init(InitContext const&)
   {
     // invariant-mass window cut
-    massPi = MassPiPlus;
-    massD = MassDMinus;
-    massB0 = MassB0;
-    invMass2DPiMin = (massB0 - invMassWindowB0) * (massB0 - invMassWindowB0);
-    invMass2DPiMax = (massB0 + invMassWindowB0) * (massB0 + invMassWindowB0);
+    invMass2DPiMin = (MassB0 - invMassWindowB0) * (MassB0 - invMassWindowB0);
+    invMass2DPiMax = (MassB0 + invMassWindowB0) * (MassB0 + invMassWindowB0);
 
     // Initialise fitter for B vertex (2-prong vertex filter)
     df2.setPropagateToPCA(propagateToPCA);
@@ -351,7 +345,7 @@ struct HfCandidateCreatorB0 {
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B0 vertex
 
           // calculate invariant mass square and apply selection
-          auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
+          auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{MassDMinus, MassPiPlus});
           if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
             continue;
           }
@@ -364,7 +358,7 @@ struct HfCandidateCreatorB0 {
           trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
 
           // get uncertainty of the decay length
-          double phi, theta;
+          double phi{}, theta{};
           // getPointDirection modifies phi and theta
           getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexB0, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
