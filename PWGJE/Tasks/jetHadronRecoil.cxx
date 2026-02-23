@@ -381,7 +381,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U>
-  void fillHistogramsMCD(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0, auto collisionID = 0)
+  void fillHistogramsMCD(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
@@ -882,7 +882,7 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    fillHistogramsMCD(jets, tracks, 1.0, 0.0, collision.mcCollision().ptHard(), collision.mcCollisionId());
+    fillHistogramsMCD(jets, tracks, 1.0, 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCD, "process MC detector level", false);
 
@@ -904,7 +904,7 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    fillHistogramsMCD(jets, tracks, 1.0, collision.rho(), collision.mcCollision().ptHard(), collision.mcCollisionId());
+    fillHistogramsMCD(jets, tracks, 1.0, collision.rho(), collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCDWithRhoSubtraction, "process MC detector level with rho subtraction", false);
 
@@ -926,7 +926,7 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.mcCollision().weight());
-    fillHistogramsMCD(jets, tracks, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard(), collision.mcCollisionId());
+    fillHistogramsMCD(jets, tracks, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCDWeighted, "process MC detector level with event weights", false);
 
@@ -948,7 +948,7 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.mcCollision().weight());
-    fillHistogramsMCD(jets, tracks, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard(), collision.mcCollisionId());
+    fillHistogramsMCD(jets, tracks, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCDWeightedWithRhoSubtraction, "process MC detector level with event weights and rho subtraction", false);
 
