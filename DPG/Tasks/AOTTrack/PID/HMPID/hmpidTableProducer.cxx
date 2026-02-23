@@ -57,15 +57,16 @@ struct HmpidTableProducer {
 
   Produces<aod::HmpidAnalysis> hmpidAnalysis;
 
-  // using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+  // configurable for quality requirements
+  Configurable<bool> requireITS{"requireITS", true, "Require ITS track"};
+  Configurable<bool> requireTPC{"requireTPC", true, "Require TPC track"};
+  Configurable<bool> requireTOF{"requireTOF", true, "Require TOF track"};
 
-  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using CollisionCandidates = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
-
-  // using CentralityClass = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
   void init(o2::framework::InitContext&)
   {
@@ -73,8 +74,11 @@ struct HmpidTableProducer {
     ccdb->setURL(ccdbConfig.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
     histos.add("eventCounter", "eventCounter", kTH1F, {axisEvtCounter});
+    histos.add("goodEventCounter", "goodEventCounter", kTH1F, {axisEvtCounter});
+    histos.add("eventsHmpid", "eventsWithHmpid", kTH1F, {axisEvtCounter});
   }
 
   // function to manage ccdb
@@ -87,28 +91,54 @@ struct HmpidTableProducer {
     mCCDBRunNumber = bc.runNumber();
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col,
-               const aod::HMPIDs& hmpids,
-               TrackCandidates const&,
-               aod::BCsWithTimestamps const&)
+  void processEvent(CollisionCandidates::iterator const& col,
+                    aod::BCsWithTimestamps const&)
   {
     histos.fill(HIST("eventCounter"), 0.5);
+    if (col.sel8()) {
+      histos.fill(HIST("goodEventCounter"), 0.5);
+    }
 
+    // initialize CCDB for current BC
     initCCDB(col.bc_as<aod::BCsWithTimestamps>());
+  }
+  PROCESS_SWITCH(HmpidTableProducer, processEvent, "Process event level - collisions", true);
 
-    for (const auto& t : hmpids) {
+  void processHmpid(
+    aod::HMPIDs const& hmpids,
+    TrackCandidates const&,
+    CollisionCandidates const&,
+    aod::BCsWithTimestamps const&)
+  {
+    // --- Static set to track unique collisions with HMPID tracks ---
+    static std::unordered_set<uint32_t> collisionsWithHmpid;
 
-      // global tracks associated to hmpid tracks
+    for (auto const& t : hmpids) {
+
+      // Access the global track associated to the HMPID track
       const auto& globalTrack = t.track_as<TrackCandidates>();
-      if (!globalTrack.isGlobalTrack())
-        continue;
-      if (!globalTrack.hasITS() || !globalTrack.hasTPC() || !globalTrack.hasTOF())
+
+      if (!globalTrack.has_collision())
         continue;
 
-      // verify accessible collision
-      if (!globalTrack.has_collision()) {
+      // Access the associated collision
+      const auto& col = globalTrack.collision_as<CollisionCandidates>();
+      initCCDB(col.bc_as<aod::BCsWithTimestamps>());
+      uint32_t collId = col.globalIndex();
+
+      // --- Track quality selection ---
+      if ((requireITS && !globalTrack.hasITS()) ||
+          (requireTPC && !globalTrack.hasTPC()) ||
+          (requireTOF && !globalTrack.hasTOF())) {
         continue;
       }
+
+      // Count collisions with at least one valid HMPID track
+      if (collisionsWithHmpid.insert(collId).second) {
+        histos.fill(HIST("eventsHmpid"), 0.5);
+      }
+
+      float centrality = col.centFV0A();
 
       float hmpidPhotsCharge2[o2::aod::kDimPhotonsCharge];
 
@@ -116,21 +146,20 @@ struct HmpidTableProducer {
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
       }
 
-      float centrality = col.centFV0A();
-
-      /////FILL TABLE
-      hmpidAnalysis(
-        t.hmpidSignal(), globalTrack.phi(), globalTrack.eta(), t.hmpidMom(),
-        globalTrack.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
-        t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000,
-        t.hmpidClusSize() / 1000000, hmpidPhotsCharge2, globalTrack.eta(), globalTrack.phi(),
-        globalTrack.px(), globalTrack.py(), globalTrack.pz(), globalTrack.itsNCls(),
-        globalTrack.tpcNClsFound(), globalTrack.tpcNClsCrossedRows(), globalTrack.tpcChi2NCl(), globalTrack.itsChi2NCl(),
-        globalTrack.dcaXY(), globalTrack.dcaZ(), globalTrack.tpcNSigmaPi(), globalTrack.tofNSigmaPi(),
-        globalTrack.tpcNSigmaKa(), globalTrack.tofNSigmaKa(), globalTrack.tpcNSigmaPr(), globalTrack.tofNSigmaPr(),
-        globalTrack.tpcNSigmaDe(), globalTrack.tofNSigmaDe(), centrality);
-    }
+      /////FILL HMPID CUSTOM TABLE
+      hmpidAnalysis(t.hmpidSignal(), t.hmpidMom(),
+                    globalTrack.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
+                    t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000,
+                    t.hmpidClusSize() / 1000000, hmpidPhotsCharge2, globalTrack.eta(), globalTrack.phi(),
+                    globalTrack.px(), globalTrack.py(), globalTrack.pz(), globalTrack.itsNCls(),
+                    globalTrack.tpcNClsFound(), globalTrack.tpcNClsCrossedRows(), globalTrack.tpcChi2NCl(), globalTrack.itsChi2NCl(),
+                    globalTrack.dcaXY(), globalTrack.dcaZ(), globalTrack.tpcNSigmaPi(), globalTrack.tofNSigmaPi(),
+                    globalTrack.tpcNSigmaKa(), globalTrack.tofNSigmaKa(), globalTrack.tpcNSigmaPr(), globalTrack.tofNSigmaPr(),
+                    globalTrack.tpcNSigmaDe(), globalTrack.tofNSigmaDe(), centrality);
+    } // end loop on hmpid table entries
   }
+
+  PROCESS_SWITCH(HmpidTableProducer, processHmpid, "Process hmpid entries - tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<HmpidTableProducer>(cfg)}; }
