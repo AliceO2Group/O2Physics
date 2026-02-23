@@ -36,6 +36,9 @@
 namespace o2::aod
 {
 
+using EMPhotonEvents = EMEvents_004;
+using EMPhotonEvent = EMPhotonEvents::iterator;
+
 namespace emmcbinnedgen
 {
 DECLARE_SOA_COLUMN(GeneratedGamma, generatedGamma, std::vector<uint16_t>);             //! gamma binned generated data
@@ -263,6 +266,7 @@ using EMEventWeight = EMEventsWeight::iterator;
 namespace v0photonkf
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                             //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent);                 //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                      //!
 DECLARE_SOA_COLUMN(V0Id, v0Id, int);                                    //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
@@ -341,8 +345,9 @@ using V0PhotonsKF = V0PhotonsKF_001;
 // iterators
 using V0PhotonKF = V0PhotonsKF::iterator;
 
-DECLARE_SOA_TABLE(V0KFEMEventIds, "AOD", "V0KFEMEVENTID", v0photonkf::EMEventId); // To be joined with V0PhotonsKF table at analysis level.
-// iterators
+DECLARE_SOA_TABLE(V0KFEMEventIds_000, "AOD", "V0KFEMEVENTID", v0photonkf::EMEventId);                    // To be joined with V0PhotonsKF table at analysis level.
+DECLARE_SOA_TABLE_VERSIONED(V0KFEMEventIds_001, "AOD", "V0KFEMEVENTID", 1, v0photonkf::EMPhotonEventId); // To be joined with V0PhotonsKF table at analysis level.
+using V0KFEMEventIds = V0KFEMEventIds_001;
 using V0KFEMEventId = V0KFEMEventIds::iterator;
 
 DECLARE_SOA_TABLE(V0PhotonsKFCov, "AOD", "V0PHOTONKFCOV", //! To be joined with V0PhotonsKF table at analysis level.
@@ -416,9 +421,20 @@ using EMPrimaryElectronsFromDalitz = EMPrimaryElectronsFromDalitz_001;
 // iterators
 using EMPrimaryElectronFromDalitz = EMPrimaryElectronsFromDalitz::iterator;
 
+namespace emprimaryelectronda
+{
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);             //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent); //!
+} // namespace emprimaryelectronda
+
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronDaEMEventIds_001, "AOD", "PRMELDAEVENTID", 1, emprimaryelectronda::EMPhotonEventId); // To be joined with EMPrimaryElectronsFromDalitz table at analysis level.
+using EMPrimaryElectronDaEMEventIds = EMPrimaryElectronDaEMEventIds_001;
+using EMPrimaryElectronDaEMEventId = EMPrimaryElectronDaEMEventIds::iterator;
+
 namespace v0photonsphivpsi
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent); //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent); //!
 DECLARE_SOA_COLUMN(PhiV, phiv, float);      //!
 DECLARE_SOA_COLUMN(PsiPair, psipair, float);
 } // namespace v0photonsphivpsi
@@ -430,6 +446,7 @@ using V0PhotonsPhiVPsi = V0PhotonsPhiVPsi;
 namespace dalitzee
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                         //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent);                             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, EMPrimaryElectrons, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, EMPrimaryElectrons, "_Neg"); //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                  //!
@@ -458,6 +475,7 @@ using DalitzEEEMEventId = DalitzEEEMEventIds::iterator;
 namespace pwgem::photon::swtinfo
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                                              //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent);                                                                  //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                                                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(TriggerV0PhotonHighPt, triggerV0PhotonHighPt, int, V0PhotonsKF, "_TriggerV0PhotonHighPt"); //! high pT PCM trigger is fired by this v0 photon
 DECLARE_SOA_INDEX_COLUMN_FULL(TriggerV0PhotonPair, triggerV0PhotonPair, int, V0PhotonsKF, "_TriggerV0PhotonPair");       //! PCM+EE trigger is fired by this v0 photon and dielectron
@@ -557,6 +575,7 @@ DECLARE_SOA_TABLE(McGammasTrue, "AOD", "MCGATRUE",
 namespace skimmedcluster
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                            //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent);                //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                     //!
 DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
 DECLARE_SOA_COLUMN(E, e, float);                                       //! cluster energy (GeV)
@@ -573,6 +592,7 @@ DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! numbe
 namespace emccluster
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                                                             //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent);                                                                                 //!
 DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                                                                                      //! cluster core energy (GeV)
 DECLARE_SOA_COLUMN(Time, time, float);                                                                                                  //! cluster time (ns)
 DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                                           //! flag to mark cluster as exotic
@@ -629,13 +649,15 @@ DECLARE_SOA_TABLE(EmEmcMTracks, "AOD", "EMEMCMTRACK", //!
 DECLARE_SOA_TABLE(EmEmcMSTracks, "AOD", "EMEMCMSTRACK", //!
                   trackmatching::EmEmcClusterId, emctm::DeltaPhi, emctm::DeltaEta, emctm::TrackP, emctm::TrackPt);
 
-DECLARE_SOA_TABLE(EMCEMEventIds, "AOD", "EMCEMEVENTID", emccluster::EMEventId); // To be joined with SkimEMCClusters table at analysis level.
-// iterators
+DECLARE_SOA_TABLE(EMCEMEventIds_000, "AOD", "EMCEMEVENTID", emccluster::EMEventId);                    // To be joined with SkimEMCClusters table at analysis level.
+DECLARE_SOA_TABLE_VERSIONED(EMCEMEventIds_001, "AOD", "EMCEMEVENTID", 1, emccluster::EMPhotonEventId); // To be joined with SkimEMCClusters table at analysis level.
+using EMCEMEventIds = EMCEMEventIds_001;
 using EMCEMEventId = EMCEMEventIds::iterator;
 
 namespace phoscluster
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                         //!
+DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent);                             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(MatchedTrack, matchedTrack, int, Tracks, "_Matched"); //! matched track index
 DECLARE_SOA_COLUMN(X, x, float);                                                    //! cluster hit position in ALICE global coordinate
 DECLARE_SOA_COLUMN(Y, y, float);                                                    //! cluster hit position in ALICE global coordinate
@@ -670,8 +692,9 @@ DECLARE_SOA_TABLE(PHOSClusters, "AOD", "PHOSCLUSTERS", //!
                   phoscluster::Phi<phoscluster::X, phoscluster::Y>);
 using PHOSCluster = PHOSClusters::iterator;
 
-DECLARE_SOA_TABLE(PHOSEMEventIds, "AOD", "PHOSEMEVENTID", phoscluster::EMEventId); // To be joined with PHOSClusters table at analysis level.
-// iterators
+DECLARE_SOA_TABLE(PHOSEMEventIds_000, "AOD", "PHOSEMEVENTID", phoscluster::EMEventId);                    // To be joined with PHOSClusters table at analysis level.
+DECLARE_SOA_TABLE_VERSIONED(PHOSEMEventIds_001, "AOD", "PHOSEMEVENTID", 1, phoscluster::EMPhotonEventId); // To be joined with PHOSClusters table at analysis level.
+using PHOSEMEventIds = PHOSEMEventIds_001;
 using PHOSEMEventId = PHOSEMEventIds::iterator;
 
 namespace caloextra

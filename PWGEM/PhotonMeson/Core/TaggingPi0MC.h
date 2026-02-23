@@ -21,7 +21,7 @@
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+// #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
@@ -70,7 +70,7 @@ using namespace o2::aod::pwgem::photonmeson::photonpair;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyCollisionsWithJJMC = soa::Join<MyCollisions, aod::EMEventsWeight>;
@@ -85,13 +85,13 @@ using MyV0Photon = MyV0Photons::iterator;
 using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
 using MyEMCCluster = MyEMCClusters::iterator;
 
-using MyPHOSClusters = soa::Join<aod::PHOSClusters, aod::PHOSEMEventIds>;
-using MyPHOSCluster = MyEMCClusters::iterator;
+// using MyPHOSClusters = soa::Join<aod::PHOSClusters, aod::PHOSEMEventIds>;
+// using MyPHOSCluster = MyEMCClusters::iterator;
 
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 using MyMCV0Leg = MyMCV0Legs::iterator;
 
-using MyMCElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronMCLabels>;
+using MyMCElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronDaEMEventIds, aod::EMPrimaryElectronMCLabels>;
 using MyMCElectron = MyMCElectrons::iterator;
 
 template <PairType pairtype, typename... Types>
@@ -210,11 +210,11 @@ struct TaggingPi0MC {
     Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
   } emccuts;
 
-  PHOSPhotonCut fPHOSCut;
-  struct : ConfigurableGroup {
-    std::string prefix = "phoscut_group";
-    Configurable<float> cfg_min_Ecluster{"cfg_min_Ecluster", 0.3, "Minimum cluster energy for PHOS in GeV"};
-  } phoscuts;
+  // PHOSPhotonCut fPHOSCut;
+  // struct : ConfigurableGroup {
+  //   std::string prefix = "phoscut_group";
+  //   Configurable<float> cfg_min_Ecluster{"cfg_min_Ecluster", 0.3, "Minimum cluster energy for PHOS in GeV"};
+  // } phoscuts;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
@@ -235,7 +235,7 @@ struct TaggingPi0MC {
     DefinePCMCut();
     DefineDileptonCut();
     DefineEMCCut();
-    DefinePHOSCut();
+    // DefinePHOSCut();
 
     mRunNumber = 0;
     d_bz = 0;
@@ -412,17 +412,17 @@ struct TaggingPi0MC {
     fEMCCut.SetUseExoticCut(emccuts.EMC_UseExoticCut);
   }
 
-  void DefinePHOSCut()
-  {
-    fPHOSCut.SetEnergyRange(phoscuts.cfg_min_Ecluster, 1e+10);
-  }
+  // void DefinePHOSCut()
+  // {
+  //   fPHOSCut.SetEnergyRange(phoscuts.cfg_min_Ecluster, 1e+10);
+  // }
 
   SliceCache cache;
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;
-  Preslice<MyEMCClusters> perCollision_emc = aod::emccluster::emeventId;
-  Preslice<MyPHOSClusters> perCollision_phos = aod::phoscluster::emeventId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emphotoneventId;
+  Preslice<MyEMCClusters> perCollision_emc = aod::emccluster::emphotoneventId;
+  // Preslice<MyPHOSClusters> perCollision_phos = aod::phoscluster::emphotoneventId;
 
-  Preslice<MyMCElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
+  Preslice<MyMCElectrons> perCollision_electron = aod::emprimaryelectronda::emphotoneventId;
   Partition<MyMCElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
   Partition<MyMCElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
 
@@ -461,8 +461,8 @@ struct TaggingPi0MC {
 
       if constexpr (pairtype == PairType::kPCMDalitzEE) {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
-        auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
-        auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+        auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectronda::emphotoneventId, collision.globalIndex(), cache);
+        auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectronda::emphotoneventId, collision.globalIndex(), cache);
 
         for (const auto& g1 : photons1_per_collision) {
           if (!cut1.template IsSelected<decltype(g1), TSubInfos1>(g1)) {

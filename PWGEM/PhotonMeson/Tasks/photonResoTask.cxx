@@ -202,13 +202,13 @@ struct PhotonResoTask {
 
   using PcmMcLegs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
-  using Colls = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
+  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 
   using McColls = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts>;
   using McParticles = EMMCParticles;
 
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::emeventId;
-  PresliceOptional<PcmPhotons> perCollisionPCM = aod::v0photonkf::emeventId;
+  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::emphotoneventId;
+  PresliceOptional<PcmPhotons> perCollisionPCM = aod::v0photonkf::emphotoneventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
