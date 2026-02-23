@@ -1315,68 +1315,68 @@ struct derivedlambdakzeroanalysis {
     // TOF PID in DeltaT
     // Positive track
     if (v0Selections.requirePosHasTOF) {
-      if (posTrackExtra.hasTOF() && std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+      if (v0.positiveHasTOF() && std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
         BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
-      if (posTrackExtra.hasTOF() && std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+      if (v0.positiveHasTOF() && std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTPositivePionLambda);
-      if (posTrackExtra.hasTOF() && std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+      if (v0.positiveHasTOF() && std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
     } else { // only apply TOF requirement if available
-      if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+      if (!v0.positiveHasTOF() || std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
         BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
-      if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+      if (!v0.positiveHasTOF() || std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTPositivePionLambda);
-      if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+      if (!v0.positiveHasTOF() || std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
     }
     // Negative track
     if (v0Selections.requireNegHasTOF) {
-      if (negTrackExtra.hasTOF() && std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+      if (v0.negativeHasTOF() && std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
         BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
-      if (negTrackExtra.hasTOF() && std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+      if (v0.negativeHasTOF() && std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTNegativePionLambda);
-      if (negTrackExtra.hasTOF() && std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+      if (v0.negativeHasTOF() && std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
     } else { // only apply TOF requirement if available
-      if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+      if (!v0.negativeHasTOF() || std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
         BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
-      if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+      if (!v0.negativeHasTOF() || std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTNegativePionLambda);
-      if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+      if (!v0.negativeHasTOF() || std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
         BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
     }
 
     // TOF PID in NSigma
     // Positive track
     if (v0Selections.requirePosHasTOF) {
-      if (posTrackExtra.hasTOF() && std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+      if (v0.positiveHasTOF() && std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
         BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
-      if (posTrackExtra.hasTOF() && std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+      if (v0.positiveHasTOF() && std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
         BITSET(bitMap, selTOFNSigmaPositivePionLambda);
-      if (posTrackExtra.hasTOF() && std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
+      if (v0.positiveHasTOF() && std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
         BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
     } else { // only apply TOF requirement if available
-      if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+      if (!v0.positiveHasTOF() || std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
         BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
-      if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+      if (!v0.positiveHasTOF() || std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
         BITSET(bitMap, selTOFNSigmaPositivePionLambda);
-      if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
+      if (!v0.positiveHasTOF() || std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
         BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
     }
     // Negative track
     if (v0Selections.requireNegHasTOF) {
-      if (negTrackExtra.hasTOF() && std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+      if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
-      if (negTrackExtra.hasTOF() && std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+      if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
         BITSET(bitMap, selTOFNSigmaNegativePionLambda);
-      if (negTrackExtra.hasTOF() && std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
+      if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
         BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
     } else { // only apply TOF requirement if available
-      if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+      if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
-      if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+      if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
         BITSET(bitMap, selTOFNSigmaNegativePionLambda);
-      if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
+      if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
         BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
     }
 
