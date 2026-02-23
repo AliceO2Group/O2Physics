@@ -419,7 +419,6 @@ struct NonPromptCascadeTask {
       float multNTracks = coll.multNTracksGlobal();
       float run = mRunNumber;
       float numContrib = coll.numContrib();
-      auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
       mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
     }
   };
