@@ -188,8 +188,6 @@ struct JetHadronRecoil {
       registry.add("hDeltaRpTReference", "jet p_{T} vs #DeltaR;p_{T,jet};#DeltaR", {HistType::kTH2F, {{500, -100, 400}, dRAxis}}, doSumw);
       registry.add("hDeltaRpTDPhiReference", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{500, -100, 400}, {100, 0, o2::constants::math::TwoPI}, dRAxis}}, doSumw);
       registry.add("hDeltaRpTDPhiReferenceShifts", "testing shifts;p_{T,jet};#Delta#phi;#DeltaR;shifts", {HistType::kTHnSparseD, {{500, -100, 400}, {100, 0, o2::constants::math::TwoPI}, dRAxis, {20, 0.0, 2.0}}}, doSumw);
-      registry.add("hPtTrackMatched", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}, doSumw);
-      registry.add("hPtTrackMatchedToCollisions", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}, doSumw);
     }
 
     if (doprocessMCP || doprocessMCPWeighted || doprocessMCPOnTheFly || doprocessMCPOnTheFlyWeighted) {
@@ -433,13 +431,6 @@ struct JetHadronRecoil {
       registry.fill(HIST("hPhiTrack"), track.phi(), weight);
       registry.fill(HIST("hTrack3D"), track.pt(), track.eta(), track.phi(), weight);
       registry.fill(HIST("hPtTrackPtHard"), track.pt() / pTHat, track.pt(), weight);
-      if (track.has_mcParticle()) {
-        registry.fill(HIST("hPtTrackMatched"), track.pt(), weight);
-        auto mcParticle = track.mcParticle();
-        if (mcParticle.mcCollisionId() == collisionID) {
-          registry.fill(HIST("hPtTrackMatchedToCollisions"), track.pt(), weight);
-        }
-      }
     }
     if (nTT > 0) {
       int trigNumber = rand->Integer(nTT);
