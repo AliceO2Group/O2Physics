@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(Converters)
+
 o2physics_add_dpl_workflow(skimmer-gamma-conversion
                     SOURCES skimmerGammaConversion.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle

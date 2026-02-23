@@ -54,7 +54,7 @@ using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
