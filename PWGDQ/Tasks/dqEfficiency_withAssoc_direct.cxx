@@ -3152,13 +3152,21 @@ struct AnalysisDileptonTrack {
       // for the energy correlators
       for (auto& t2 : groupedMCTracks) {
         auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
-        if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22)
+        if (!t2_raw.isPhysicalPrimary()) {
           continue;
+        }
+
+        if (t2_raw.has_mothers()) {
+          auto mother_raw = t2_raw.template mothers_first_as<McParticles>();
+          if (mother_raw.globalIndex() == t1_raw.globalIndex()) {
+            continue;
+          }
+        }
+
         if (t2_raw.pt() < fConfigMCOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCOptions.fConfigMCGenHadronEtaAbs.value) {
           continue;
         }
-        if (t2_raw.getGenStatusCode() <= 0)
-          continue;
+
         std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
         VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues, fTransRange[0], fTransRange[1]);
         for (auto& sig : fGenMCSignals) {
@@ -3229,15 +3237,21 @@ struct AnalysisDileptonTrack {
       // for the energy correlators
       for (auto& t2 : groupedMCTracks2) {
         auto t2_raw = groupedMCTracks2.rawIteratorAt(t2.globalIndex());
-        if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22) {
+        if (!t2_raw.isPhysicalPrimary()) {
           continue;
         }
+
+        if (t2_raw.has_mothers()) {
+          auto mother_raw = t2_raw.template mothers_first_as<McParticles>();
+          if (mother_raw.globalIndex() == t1_raw.globalIndex()) {
+            continue;
+          }
+        }
+
         if (t2_raw.pt() < fConfigMCOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCOptions.fConfigMCGenHadronEtaAbs.value) {
           continue;
         }
-        if (t2_raw.getGenStatusCode() <= 0) {
-          continue;
-        }
+
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, t1_raw)) {
             VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues);
