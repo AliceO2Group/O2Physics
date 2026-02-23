@@ -24,7 +24,10 @@
 #include <cmath>
 #include <vector>
 
+constexpr int invalidIndex = -99999999;
+
 enum class JetConstituentStatus {
+  invalidStatus = -1,
   track = 0,
   cluster = 1,
   candidate = 2
@@ -36,24 +39,24 @@ namespace fastjetutilities
 // Class defined to store additional info which is passed to the FastJet object
 class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
 {
-  int status; // the status of each particle (Options are: TrueParticle (final state particles in generator event which arent special), HFParticle (heavy-flavour particle of interest in generator event), ThermalParticle (particles belonging to the thermal backgound), DecaySisterParticle (other particles poduced in the decay resulting in a non-prompt heavy-flavour particle of interest))
+  JetConstituentStatus status; // the status of each particle (Options are: TrueParticle (final state particles in generator event which arent special), HFParticle (heavy-flavour particle of interest in generator event), ThermalParticle (particles belonging to the thermal backgound), DecaySisterParticle (other particles poduced in the decay resulting in a non-prompt heavy-flavour particle of interest))
   int index;  // a number unique to each particle in the event
 
  public:
   fastjet_user_info()
   {
-    status = -9;
+    status = JetConstituentStatus::invalidStatus;
     index = -9;
   }
-  fastjet_user_info(int _status, int _index)
+  fastjet_user_info(JetConstituentStatus _status, int _index)
   {
     status = _status;
     index = _index;
   }
   ~fastjet_user_info() = default;
-  void setStatus(int set) { status = set; }
+  void setStatus(JetConstituentStatus set) { status = set; }
   void setIndex(int set) { index = set; }
-  int getStatus() const { return status; }
+  JetConstituentStatus getStatus() const { return status; }
   int getIndex() const { return index; }
 };
 
@@ -65,7 +68,7 @@ class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
  * @param status status of constituent type
  */
 
-void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track));
+void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index = invalidIndex, JetConstituentStatus status = JetConstituentStatus::track);
 
 /**
  * Add track as a pseudojet object to the fastjet vector
@@ -78,9 +81,9 @@ void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index
  */
 
 template <typename T>
-void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), float mass = o2::constants::physics::MassPiPlus)
+void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = invalidIndex, JetConstituentStatus status = JetConstituentStatus::track, float mass = o2::constants::physics::MassPiPlus)
 {
-  if (status == static_cast<int>(JetConstituentStatus::track) || status == static_cast<int>(JetConstituentStatus::candidate)) {
+  if (status == JetConstituentStatus::track || status == JetConstituentStatus::candidate) {
     // auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
     auto energy = std::sqrt((constituent.p() * constituent.p()) + (mass * mass));
     constituents.emplace_back(constituent.px(), constituent.py(), constituent.pz(), energy);
@@ -98,9 +101,9 @@ void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constitue
  */
 
 template <typename T>
-void fillClusters(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int hadronicCorrectionType = 0, int status = static_cast<int>(JetConstituentStatus::cluster))
+void fillClusters(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = invalidIndex, int hadronicCorrectionType = 0, JetConstituentStatus status = JetConstituentStatus::cluster)
 {
-  if (status == static_cast<int>(JetConstituentStatus::cluster)) {
+  if (status == JetConstituentStatus::cluster) {
     float constituentEnergy = 0.0;
     if (hadronicCorrectionType == 0) {
       constituentEnergy = constituent.energy();

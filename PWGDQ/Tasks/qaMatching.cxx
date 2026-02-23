@@ -130,12 +130,6 @@ struct qaMatching {
   Configurable<float> fMuonTaggingSigmaPdcaUp{"cfgMuonTaggingPdcaUp", 4.f, ""};
   Configurable<float> fMuonTaggingChi2DiffLow{"cfgMuonTaggingChi2DiffLow", 100.f, ""};
 
-  ///    Variables to event mixing criteria
-  Configurable<float> fSaveMixedMatchingParamsRate{"cfgSaveMixedMatchingParamsRate", 0.002f, ""};
-  Configurable<int> fEventMaxDeltaNMFT{"cfgEventMaxDeltaNMFT", 1, ""};
-  Configurable<float> fEventMaxDeltaVtxZ{"cfgEventMaxDeltaVtxZ", 1.f, ""};
-  Configurable<int> fEventMinDeltaBc{"cfgEventMinDeltaBc", 500, ""};
-
   ////   Variables for ccdb
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -156,7 +150,8 @@ struct qaMatching {
   } fConfigQAs;
 
   ///    Variables for histograms configuration
-  Configurable<int> fNCandidatesMax{"nCandidatesMax", 5, ""};
+  Configurable<int> fNCandidatesMax{"cfgNCandidatesMax", 5, "Number of matching candidates stored for each muon track"};
+  Configurable<int> fMftTrackMultiplicityMax{"cfgMftTrackMultiplicityMax", 1000, "Maximum number of MFT tracks per collision"};
 
   double mBzAtMftCenter{0};
 
@@ -451,19 +446,19 @@ struct qaMatching {
     o2::framework::HistPtr histVsDeltaChi2;
     o2::framework::HistPtr histVsProdRanking;
 
-    MatchRankingHistos(std::string histName, std::string histTitle, HistogramRegistry* registry)
+    MatchRankingHistos(std::string histName, std::string histTitle, HistogramRegistry* registry, int mftMultMax, int numCandidates)
     {
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
       AxisSpec ptAxis = {100, 0, 10, "p_{T} (GeV/c)"};
       AxisSpec dzAxis = {100, 0, 50, "#Deltaz (cm)"};
-      AxisSpec trackMultAxis = {100, 0, 1000, "MFT track mult."};
+      AxisSpec trackMultAxis = {static_cast<int>(mftMultMax) / 10, 0, static_cast<double>(mftMultMax), "MFT track mult."};
       AxisSpec trackTypeAxis = {2, 0, 2, "MFT track type"};
       int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
       AxisSpec matchTypeAxis = {matchTypeMax, 0, static_cast<double>(matchTypeMax), "match type"};
       AxisSpec dchi2Axis = {100, 0, 100, "#Delta#chi^{2}"};
       AxisSpec dqAxis = {3, -1.5, 1.5, "MFT #DeltaQ"};
-      AxisSpec indexAxis = {6, 0, 6, "ranking index"};
-      AxisSpec indexProdAxis = {6, 0, 6, "ranking index (production)"};
+      AxisSpec indexAxis = {numCandidates + 1, 0, static_cast<double>(numCandidates + 1), "ranking index"};
+      AxisSpec indexProdAxis = {numCandidates + 1, 0, static_cast<double>(numCandidates + 1), "ranking index (production)"};
 
       hist = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH1F, {indexAxis}});
       histVsP = registry->add((histName + "VsP").c_str(), (histTitle + " vs. p").c_str(), {HistType::kTH2F, {pAxis, indexAxis}});
@@ -529,7 +524,10 @@ struct qaMatching {
     HistogramRegistry* registry;
 
     MatchingPlotter(std::string path,
-                    HistogramRegistry* reg, bool createPdgMomHistograms)
+                    HistogramRegistry* reg,
+                    bool createPdgMomHistograms,
+                    int mftMultMax,
+                    int numCandidates)
       : fMatchingPurityPlotter(path + "matching-purity/", "Matching purity", *reg, createPdgMomHistograms),
         fPairingEfficiencyPlotter(path + "pairing-efficiency/", "Pairing efficiency", *reg, createPdgMomHistograms),
         fMatchingEfficiencyPlotter(path + "matching-efficiency/", "Matching efficiency", *reg, createPdgMomHistograms),
@@ -544,10 +542,10 @@ struct qaMatching {
       std::string histName = path + "matchRanking";
       std::string histTitle = "True match ranking";
 
-      fMatchRanking = std::make_unique<MatchRankingHistos>(path + "matchRanking", "True match ranking", registry);
-      fMatchRankingGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingGoodMCH", "True match ranking (good MCH tracks)", registry);
-      fMatchRankingPaired = std::make_unique<MatchRankingHistos>(path + "matchRankingPaired", "True match ranking (paired MCH tracks)", registry);
-      fMatchRankingPairedGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingPairedGoodMCH", "True match ranking (good paired MCH tracks)", registry);
+      fMatchRanking = std::make_unique<MatchRankingHistos>(path + "matchRanking", "True match ranking", registry, mftMultMax, numCandidates);
+      fMatchRankingGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingGoodMCH", "True match ranking (good MCH tracks)", registry, mftMultMax, numCandidates);
+      fMatchRankingPaired = std::make_unique<MatchRankingHistos>(path + "matchRankingPaired", "True match ranking (paired MCH tracks)", registry, mftMultMax, numCandidates);
+      fMatchRankingPairedGoodMCH = std::make_unique<MatchRankingHistos>(path + "matchRankingPairedGoodMCH", "True match ranking (good paired MCH tracks)", registry, mftMultMax, numCandidates);
 
       //-
       AxisSpec missedMatchAxis = {5, 0, 5, ""};
@@ -759,19 +757,19 @@ struct qaMatching {
     registry.add((histPath + "selectedMCHTracksAtMFTTrue").c_str(), "Selected MCH tracks position at MFT end - true", {HistType::kTH2F, {trackPositionXAtMFTAxis, trackPositionYAtMFTAxis}});
     registry.add((histPath + "selectedMCHTracksAtMFTFake").c_str(), "Selected MCH tracks position at MFT end - fake", {HistType::kTH2F, {trackPositionXAtMFTAxis, trackPositionYAtMFTAxis}});
 
-    fChi2MatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Prod/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms);
+    fChi2MatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Prod/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms, fMftTrackMultiplicityMax, fNCandidatesMax);
     int registryIndex = 0;
     for (const auto& [label, func] : matchingChi2Functions) {
-      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", registryMatchingVec[registryIndex], fConfigQAs.fCreatePdgMomHistograms);
+      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", registryMatchingVec[registryIndex], fConfigQAs.fCreatePdgMomHistograms, fMftTrackMultiplicityMax, fNCandidatesMax);
       registryIndex += 1;
     }
     for (const auto& [label, response] : matchingMlResponses) {
-      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", (registryMatchingVec[registryIndex]), fConfigQAs.fCreatePdgMomHistograms);
+      fMatchingPlotters[label] = std::make_unique<MatchingPlotter>(histPath + label + "/", (registryMatchingVec[registryIndex]), fConfigQAs.fCreatePdgMomHistograms, fMftTrackMultiplicityMax, fNCandidatesMax);
       registryIndex += 1;
     }
 
-    fTaggedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Tagged/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms);
-    fSelectedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Selected/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms);
+    fTaggedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Tagged/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms, fMftTrackMultiplicityMax, fNCandidatesMax);
+    fSelectedMuonsMatchingPlotter = std::make_unique<MatchingPlotter>(histPath + "Selected/", &registryMatching, fConfigQAs.fCreatePdgMomHistograms, fMftTrackMultiplicityMax, fNCandidatesMax);
   }
 
   void CreateDimuonHistos()
@@ -979,7 +977,7 @@ struct qaMatching {
     AxisSpec trackTypeAxis = {static_cast<int>(nTrackTypes), 0.0, static_cast<double>(nTrackTypes), "track type"};
     registry.add("nTracksPerType", "Number of tracks per type", {HistType::kTH1F, {trackTypeAxis}});
 
-    AxisSpec tracksMultiplicityAxis = {10000, 0, 10000, "tracks multiplicity"};
+    AxisSpec tracksMultiplicityAxis = {fMftTrackMultiplicityMax, 0, static_cast<double>(fMftTrackMultiplicityMax), "tracks multiplicity"};
     registry.add("tracksMultiplicityMFT", "MFT tracks multiplicity", {HistType::kTH1F, {tracksMultiplicityAxis}});
     registry.add("tracksMultiplicityMCH", "MCH tracks multiplicity", {HistType::kTH1F, {tracksMultiplicityAxis}});
 
@@ -2316,11 +2314,12 @@ struct qaMatching {
   template <class C, class TMUON, class TMFT, class CMFT>
   void RunChi2Matching(C const& collisions,
                        TMUON const& muonTracks,
-                       TMFT const& /*mftTracks*/,
+                       TMFT const& mftTracks,
                        CMFT const& mftCovs,
                        std::string funcName,
                        float matchingPlaneZ,
                        int extrapMethod,
+                       const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                        const MatchingCandidates& matchingCandidates,
                        MatchingCandidates& newMatchingCandidates)
   {
@@ -2410,6 +2409,15 @@ struct qaMatching {
 
     for (auto& [mchIndex, globalTracksVector] : newMatchingCandidates) {
       std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+
+      int ranking = 1;
+      for (auto& candidate : globalTracksVector) {
+        const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
+
+        candidate.matchRanking = ranking;
+        candidate.matchType = GetMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        ranking += 1;
+      }
     }
   }
 
@@ -2419,6 +2427,7 @@ struct qaMatching {
                        TMFT const& mftTracks,
                        CMFT const& mftCovs,
                        std::string label,
+                       const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                        const MatchingCandidates& matchingCandidates,
                        MatchingCandidates& newMatchingCandidates)
   {
@@ -2442,15 +2451,16 @@ struct qaMatching {
     auto matchingPlaneZ = matchingPlanesZ[label];
     auto extrapMethod = matchingExtrapMethod[label];
 
-    RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, funcName, matchingPlaneZ, extrapMethod, matchingCandidates, newMatchingCandidates);
+    RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, funcName, matchingPlaneZ, extrapMethod, matchablePairs, matchingCandidates, newMatchingCandidates);
   }
 
   template <class C, class TMUON, class TMFT, class CMFT>
   void RunMLMatching(C const& collisions,
                      TMUON const& muonTracks,
-                     TMFT const& /*mftTracks*/,
+                     TMFT const& mftTracks,
                      CMFT const& mftCovs,
                      std::string label,
+                     const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                      const MatchingCandidates& matchingCandidates,
                      MatchingCandidates& newMatchingCandidates)
   {
@@ -2539,6 +2549,15 @@ struct qaMatching {
 
     for (auto& [mchIndex, globalTracksVector] : newMatchingCandidates) {
       std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+
+      int ranking = 1;
+      for (auto& candidate : globalTracksVector) {
+        const auto& muonTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
+
+        candidate.matchRanking = ranking;
+        candidate.matchType = GetMatchType(muonTrack, muonTracks, mftTracks, matchablePairs, ranking);
+        ranking += 1;
+      }
     }
   }
 
@@ -2558,7 +2577,7 @@ struct qaMatching {
     FillMatchingPlotsMC(collision, collisionInfo, muonTracks, mftTracks, collisionInfo.matchingCandidates, collisionInfo.matchingCandidates, collisionInfo.matchablePairs, fMatchingChi2ScoreMftMchLow, fChi2MatchingPlotter.get(), false);
     for (auto& [label, func] : matchingChi2Functions) {
       MatchingCandidates matchingCandidates;
-      RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchingCandidates, matchingCandidates);
+      RunChi2Matching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
 
       auto* plotter = fMatchingPlotters.at(label).get();
       double matchingScoreCut = matchingScoreCuts.at(label);
@@ -2569,7 +2588,7 @@ struct qaMatching {
     // ML-based matching analysis
     for (auto& [label, mlResponse] : matchingMlResponses) {
       MatchingCandidates matchingCandidates;
-      RunMLMatching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchingCandidates, matchingCandidates);
+      RunMLMatching(collisions, muonTracks, mftTracks, mftCovs, label, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
 
       auto* plotter = fMatchingPlotters.at(label).get();
       double matchingScoreCut = matchingScoreCuts.at(label);
@@ -2653,7 +2672,7 @@ struct qaMatching {
     }
   }
 
-  PROCESS_SWITCH(qaMatching, processQAMC, "process qa MC", true);
+  PROCESS_SWITCH(qaMatching, processQAMC, "processQAMC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

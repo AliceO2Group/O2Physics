@@ -410,12 +410,6 @@ struct EmcalCorrectionTask {
 
       initZorroCCDB(bc);
 
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(bc.globalBC())) {
-          continue;
-        }
-      }
-
       // get run number
       runNumber = bc.runNumber();
 
@@ -441,6 +435,14 @@ struct EmcalCorrectionTask {
       }
       // Counters for BCs with matched collisions
       countBC(collisionsInFoundBC.size(), true);
+
+      // do not do the next part if we do not fulfill the software trigger selection
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
+
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (const auto& cell : cellsInBC) {
@@ -525,12 +527,8 @@ struct EmcalCorrectionTask {
     } // end of bc loop
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
+    // NOTE: we can not do zorro selection here since emcalcollisionmatch needs to alway be filled to be joinable with collision table
     for (const auto& collision : collisions) {
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
-          continue;
-        }
-      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);
@@ -559,12 +557,6 @@ struct EmcalCorrectionTask {
 
       initZorroCCDB(bc);
 
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(bc.globalBC())) {
-          continue;
-        }
-      }
-
       // get run number
       runNumber = bc.runNumber();
 
@@ -590,6 +582,14 @@ struct EmcalCorrectionTask {
       }
       // Counters for BCs with matched collisions
       countBC(collisionsInFoundBC.size(), true);
+
+      // do not do the next part if we do not fulfill the software trigger selection
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
+
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (const auto& cell : cellsInBC) {
@@ -678,12 +678,8 @@ struct EmcalCorrectionTask {
     } // end of bc loop
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
+    // NOTE: we can not do zorro selection here since emcalcollisionmatch needs to alway be filled to be joinable with collision table
     for (const auto& collision : collisions) {
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
-          continue;
-        }
-      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);
@@ -714,12 +710,6 @@ struct EmcalCorrectionTask {
 
       initZorroCCDB(bc);
 
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(bc.globalBC())) {
-          continue;
-        }
-      }
-
       // get run number
       runNumber = bc.runNumber();
 
@@ -737,6 +727,14 @@ struct EmcalCorrectionTask {
       }
       // Counters for BCs with matched collisions
       countBC(collisionsInFoundBC.size(), true);
+
+      // do not do the next part if we do not fulfill the software trigger selection
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
+
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       std::vector<o2::emcal::CellLabel> cellLabels;
@@ -860,11 +858,6 @@ struct EmcalCorrectionTask {
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
     for (const auto& collision : collisions) {
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
-          continue;
-        }
-      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);
@@ -895,12 +888,6 @@ struct EmcalCorrectionTask {
 
       initZorroCCDB(bc);
 
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(bc.globalBC())) {
-          continue;
-        }
-      }
-
       // get run number
       runNumber = bc.runNumber();
 
@@ -918,6 +905,13 @@ struct EmcalCorrectionTask {
       }
       // Counters for BCs with matched collisions
       countBC(collisionsInFoundBC.size(), true);
+
+      if (applySoftwareTriggerSelection) {
+        if (!zorro.isSelected(bc.globalBC())) {
+          continue;
+        }
+      }
+
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       std::vector<o2::emcal::CellLabel> cellLabels;
@@ -1045,11 +1039,6 @@ struct EmcalCorrectionTask {
 
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
     for (const auto& collision : collisions) {
-      if (applySoftwareTriggerSelection) {
-        if (!zorro.isSelected(collision.foundBC_as<BcEvSels>().globalBC())) {
-          continue;
-        }
-      }
       auto globalbcid = collision.foundBC_as<BcEvSels>().globalIndex();
       auto foundColls = numberCollsInBC.find(globalbcid);
       auto foundCells = numberCellsInBC.find(globalbcid);

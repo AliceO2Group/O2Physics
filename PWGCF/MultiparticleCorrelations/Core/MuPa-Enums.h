@@ -38,7 +38,7 @@ enum eConfiguration {
   eUseSpecificCuts,
   eWhichSpecificCuts,
   eSkipTheseRuns,
-  eUseSetBinLabel, // Use or not setter SetBinLabel(...)
+  eUseSetBinLabel, // Use or not ->SetBinLabel(...)
   eUseClone,       // Use or not ->Clone()
   eUseFormula,     // Use or not class TFormula
   eUseDatabasePDG, // Use or not class TDatabasePDG
@@ -57,7 +57,7 @@ enum eProcess {
   eProcessSim_Run1,    // Run 1, only simulated
   eProcessTest,        // minimum subscription to the tables, for testing purposes
   eProcessQA,          // maximum subscription to the tables, for QA purposes. Basically: eProcessRec + otherwise unnecessary tables
-  eProcessHepMChi,     // special subscription when I extract info from the table HepMCHeavyIons TBI 20250429 merge this case eventualyl with RecSim cases
+  eProcessHepMChi,     // special subscription when I extract info from the table HepMCHeavyIons TBI 20250429 merge this case eventually with RecSim cases
   // Generic flags, calculated and set from individual flags above in DefaultConfiguration(), AFTER process switch was taken into account:
   eGenericRec,    // generic "Rec" case, eTest is treated for the time being as "Rec". eQA is also in this category
   eGenericRecSim, // generic "RecSim" case
@@ -140,7 +140,7 @@ enum eVnPsin { eVn = 0,
 
 enum eEventHistograms {
   eNumberOfEvents = 0,    // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
-  eTotalMultiplicity,     // TBI 20241123 I define it as tracks.size(), but most likely this I do not need this
+  eTotalMultiplicity,     // TBI 20241123 I define it as tracks.size(), but most likely I do not need this
   eMultiplicity,          // see documentation for ebye.fMultiplicity
   eReferenceMultiplicity, // see documentation for ebye.fReferenceMultiplicity
   eCentrality,            // default centrality estimator

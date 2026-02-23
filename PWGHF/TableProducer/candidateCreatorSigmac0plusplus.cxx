@@ -19,6 +19,7 @@
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/Utils/utilsSigmac.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -83,6 +84,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   /// Selections on candidate soft π-,+
   Configurable<bool> applyGlobalTrkWoDcaCutsSoftPi{"applyGlobalTrkWoDcaCutsSoftPi", false, "Switch on the application of the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS"};
+  Configurable<float> softPiPtMin{"softPiPtMin", 0.1f, "Soft pion min value for pt (GeV/c)"};
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
   Configurable<float> softPiChi2Max{"softPiChi2Max", 36.f, "Soft pion max value for chi2 ITS"};
   Configurable<int> softPiApplyCustomITSHitMap{"softPiApplyCustomITSHitMap", true, "Flag to enable/disable the application of the custom ITS hitmap requirement for the candidate soft pion"};
@@ -102,7 +104,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   TrackSelection softPiCuts;
 
   // Needed for dcaXY, dcaZ recalculation of soft pions reassigned to a new collision
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber{};
@@ -157,7 +159,7 @@ struct HfCandidateCreatorSigmac0plusplus {
     }
 
     // kinematics
-    // softPiCuts.SetPtRange(0.001, 1000.); // pt
+    softPiCuts.SetPtRange(softPiPtMin, 1e10f);           // pt
     softPiCuts.SetEtaRange(-softPiEtaMax, softPiEtaMax); // eta
     // softPiCuts.SetMaxDcaXY(softPiDcaXYMax);              // dcaXY
     // softPiCuts.SetMaxDcaZ(softPiDcaZMax);                // dcaZ
@@ -227,10 +229,10 @@ struct HfCandidateCreatorSigmac0plusplus {
         mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
       }
 
-      if (candLc.isSelLcToPKPi() >= 1 && std::abs(HfHelper::invMassLcToPKPi(candLc) - MassLambdaCPlus) <= mPKPiCandLcMax) {
+      if (candLc.isSelLcToPKPi() >= 1 && std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPKPi(candLc)) <= mPKPiCandLcMax) {
         statusSpreadMinvPKPiFromPDG = 1;
       }
-      if (candLc.isSelLcToPiKP() >= 1 && std::abs(HfHelper::invMassLcToPiKP(candLc) - MassLambdaCPlus) <= mPiKPCandLcMax) {
+      if (candLc.isSelLcToPiKP() >= 1 && std::abs(o2::hf_sigmac_utils::massDiffFromPdgLcToPiKP(candLc)) <= mPiKPCandLcMax) {
         statusSpreadMinvPiKPFromPDG = 1;
       }
       if (statusSpreadMinvPKPiFromPDG == 0 && statusSpreadMinvPiKPFromPDG == 0) {

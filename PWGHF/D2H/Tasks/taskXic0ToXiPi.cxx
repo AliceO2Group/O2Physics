@@ -174,7 +174,7 @@ struct HfTaskXic0ToXiPi {
     if (candidate.resultSelections() != true) {
       return;
     }
-    double yCharmBaryon;
+    double yCharmBaryon{0.};
     if constexpr (UseKfParticle) {
       yCharmBaryon = candidate.kfRapXic();
     } else {
@@ -223,7 +223,7 @@ struct HfTaskXic0ToXiPi {
       if (candidate.resultSelections() != true) {
         continue;
       }
-      double yCharmBaryon;
+      double yCharmBaryon{0.};
       if constexpr (UseKfParticle) {
         yCharmBaryon = candidate.kfRapXic();
       } else {

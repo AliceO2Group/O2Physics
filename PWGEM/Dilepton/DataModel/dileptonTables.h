@@ -795,11 +795,11 @@ DECLARE_SOA_COLUMN(EtaMatchedMCHMIDatMP, etaMatchedMCHMIDatMP, float); //! eta o
 DECLARE_SOA_COLUMN(PhiMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, float); //! phi of MCH-MID track in MFT-MCH-MID track at matching plane
 DECLARE_SOA_COLUMN(EtaMatchedMFTatMP, etaMatchedMFTatMP, float);       //! eta of MFT track in MFT-MCH-MID track at matching plane
 DECLARE_SOA_COLUMN(PhiMatchedMFTatMP, phiMatchedMFTatMP, float);       //! phi of MFT track in MFT-MCH-MID track at matching plane
-
-DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool); //! is associated to most probable collision
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);             //! is ambiguous
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
-DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                    //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool);        //! is associated to most probable collision
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                    //! is ambiguous
+DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);  //! is correct match between MFT and MCH, only for MC
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //!
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                           //! chi2 of MFT standalone track
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -906,6 +906,10 @@ using EMAmbiguousMuonSelfId = EMAmbiguousMuonSelfIds::iterator;
 DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryMuonsMatchMC, "AOD", "EMMUONMATCHMC", emprimarymuon::IsCorrectMatchMFTMCH); // To be joined with EMPrimaryMuons table at analysis level. only for MC.
+// iterators
+using EMPrimaryMuonMatchMC = EMPrimaryMuonsMatchMC::iterator;
 
 namespace oldemprimarytrack
 {

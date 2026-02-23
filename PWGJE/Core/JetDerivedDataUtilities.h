@@ -17,6 +17,7 @@
 #ifndef PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
+#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGUD/Core/SGSelector.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -90,20 +91,31 @@ bool selectCollision(T const& collision, const std::vector<int>& eventSelectionM
   if (eventSelectionMaskBits.size() == 0) {
     return true;
   }
+  bool isOrCondition = false;
   for (auto eventSelectionMaskBit : eventSelectionMaskBits) {
-    if (!(collision.eventSel() & (1 << eventSelectionMaskBit))) {
-      return false;
+    if (eventSelectionMaskBit == -1) {
+      isOrCondition = true;
+      continue;
+    }
+    if (!isOrCondition) {
+      if (!(collision.eventSel() & (1ULL << eventSelectionMaskBit))) {
+        return false;
+      }
+    } else {
+      if (collision.eventSel() & (1ULL << eventSelectionMaskBit)) {
+        return true;
+      }
     }
   }
-  return true;
+  return !isOrCondition;
 }
 
 bool eventSelectionMasksContainSelection(const std::string& eventSelectionMasks, std::string selection)
 {
   size_t position = 0;
   while ((position = eventSelectionMasks.find(selection, position)) != std::string::npos) {
-    bool validStart = (position == 0 || eventSelectionMasks[position - 1] == '+');
-    bool validEnd = (position + selection.length() == eventSelectionMasks.length() || eventSelectionMasks[position + selection.length()] == '+');
+    bool validStart = (position == 0 || eventSelectionMasks[position - 1] == '+' || eventSelectionMasks[position - 1] == '|');
+    bool validEnd = (position + selection.length() == eventSelectionMasks.length() || eventSelectionMasks[position + selection.length()] == '+' || eventSelectionMasks[position + selection.length()] == '|');
     if (validStart && validEnd) {
       return true;
     }
@@ -115,6 +127,9 @@ bool eventSelectionMasksContainSelection(const std::string& eventSelectionMasks,
 std::vector<int> initialiseEventSelectionBits(const std::string& eventSelectionMasks)
 {
   std::vector<int> eventSelectionMaskBits;
+  if (eventSelectionMasks.find('|') != std::string::npos) { // needs to be first if statement evaluated
+    eventSelectionMaskBits.push_back(-1);
+  }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel8")) {
     eventSelectionMaskBits.push_back(JCollisionSel::sel8);
   }
@@ -285,7 +300,7 @@ bool selectTrigger(T const& collision, const std::vector<int>& triggerMaskBits)
     return true;
   }
   for (auto triggerMaskBit : triggerMaskBits) {
-    if (collision.triggerSel() & (1 << triggerMaskBit)) {
+    if (collision.triggerSel() & (1ULL << triggerMaskBit)) {
       return true;
     }
   }
@@ -296,9 +311,9 @@ template <typename T>
 bool selectTrigger(T const& collision, int triggerMaskBit)
 {
   if (triggerMaskBit == -1) {
-    return false;
+    return true;
   }
-  return collision.triggerSel() & (1 << triggerMaskBit);
+  return collision.triggerSel() & (1ULL << triggerMaskBit);
 }
 
 bool triggerMasksContainTrigger(const std::string& triggerMasks, std::string trigger)
@@ -409,7 +424,7 @@ bool selectChargedTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.chargedTriggerSel() & (1 << triggerSelection));
+  return (collision.chargedTriggerSel() & (1ULL << triggerSelection));
 }
 
 int initialiseChargedTriggerSelection(const std::string& triggerSelection)
@@ -474,7 +489,7 @@ bool selectFullTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.fullTriggerSel() & (1 << triggerSelection));
+  return (collision.fullTriggerSel() & (1ULL << triggerSelection));
 }
 
 int initialiseFullTriggerSelection(const std::string& triggerSelection)
@@ -569,7 +584,7 @@ bool selectChargedHFTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.chargedHFTriggerSel() & (1 << triggerSelection));
+  return (collision.chargedHFTriggerSel() & (1ULL << triggerSelection));
 }
 
 int initialiseChargedHFTriggerSelection(const std::string& triggerSelection)
@@ -631,16 +646,16 @@ bool applyTrackKinematics(T const& track, float pTMin = 0.15, float pTMax = 100.
 template <typename T>
 bool selectTrack(T const& track, int trackSelection, bool isEmbedded = false)
 {
-  if (!(track.trackSel() & (1 << JTrackSel::notBadMcTrack))) {
+  if (!(track.trackSel() & (1ULL << JTrackSel::notBadMcTrack))) {
     return false;
   }
-  if (isEmbedded && !(track.trackSel() & (1 << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
+  if (isEmbedded && !(track.trackSel() & (1ULL << JTrackSel::embeddedTrack))) { // will get rid of non embedded tracks
     return false;
   }
   if (trackSelection == -1) {
     return true;
   }
-  return (track.trackSel() & (1 << trackSelection));
+  return (track.trackSel() & (1ULL << trackSelection));
 }
 
 int initialiseTrackSelection(const std::string& trackSelection)
@@ -706,6 +721,25 @@ template <typename T>
 bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
 {
   return std::abs(track.dcaZ()) < dcaZmax;
+}
+
+std::vector<int> initialiseClusterDefinitions(const std::string clusterDefinitions)
+{
+  std::vector<int> clusterDefinitionsVec;
+  if (clusterDefinitions.empty()) {
+    return clusterDefinitionsVec;
+  }
+  size_t start = 0;
+  size_t end;
+  while ((end = clusterDefinitions.find(',', start)) != std::string::npos) {
+    clusterDefinitionsVec.push_back(static_cast<int>(o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitions.substr(start, end - start))));
+    start = end + 1;
+  }
+  // Process the last element (after the final comma or if no comma exists)
+  if (start < clusterDefinitions.length()) {
+    clusterDefinitionsVec.push_back(static_cast<int>(o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitions.substr(start))));
+  }
+  return clusterDefinitionsVec;
 }
 
 } // namespace jetderiveddatautilities
