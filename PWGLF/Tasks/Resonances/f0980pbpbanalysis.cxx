@@ -328,8 +328,8 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("TrackQA/TPCChi2_BC"), centrality, obj.tpcChi2NCl());
           histos.fill(HIST("TrackQA/ITSChi2_BC"), centrality, obj.itsChi2NCl());
         } else {
-          histos.fill(HIST("TrackQA/DCArToPv_AC"), centrality, obj.dcaXY());
-          histos.fill(HIST("TrackQA/DCAzToPv_AC"), centrality, obj.dcaZ());
+          histos.fill(HIST("TrackQA/DCArToPv_AC"), obj.pt(), centrality, obj.dcaXY());
+          histos.fill(HIST("TrackQA/DCAzToPv_AC"), obj.pt(), centrality, obj.dcaZ());
           histos.fill(HIST("TrackQA/IsPrim_AC"), centrality, obj.isPrimaryTrack());
           histos.fill(HIST("TrackQA/IsGood_AC"), centrality, obj.isGlobalTrackWoDCA());
           histos.fill(HIST("TrackQA/IsPrimCont_AC"), centrality, obj.isPVContributor());
