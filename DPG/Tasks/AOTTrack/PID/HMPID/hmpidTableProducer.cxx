@@ -38,6 +38,7 @@
 #include <TTree.h>
 
 #include <string>
+#include <unordered_set>
 
 using namespace o2;
 using namespace o2::framework;
