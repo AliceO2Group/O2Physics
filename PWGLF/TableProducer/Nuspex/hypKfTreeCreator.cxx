@@ -302,6 +302,8 @@ struct HypKfTreeCreator {
     cand.occu = coll.occupancy();
     cand.runNumber = coll.runNumber();
     cand.passedEvSel = coll.passedEvSel();
+    cand.ct = ct(coll, hypNuc);
+    cand.cpaPv = cpa(coll, hypNuc);
     cand.mass = hypNuc.mass();
     cand.y = hypNuc.y();
     cand.pt = hypNuc.pt();
