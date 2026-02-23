@@ -14,9 +14,9 @@
 /// \author  s.scheid@cern.ch, daiki.sekihata@cern.ch
 ///
 
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -25,11 +25,10 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/runDataProcessing.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
 #include <Math/Vector4D.h>
-
 
 #include <vector>
 
@@ -106,7 +105,7 @@ struct Alice3Dilepton {
       registry.add("Generated/Particle/prodVy", "Particle Prod. Vertex Y", kTH1F, {axisPrody});
       registry.add("Generated/Particle/prodVz", "Particle Prod. Vertex Z", kTH1F, {axisProdz});
       registry.add("Generated/Particle/ParticlesPerEvent", "Particles per event", kTH1F, {{100, 0, 100}});
-      registry.add("Generated/Particle/ParticlesFit", "Charged Particles in Fit acceptance per event", kTH1F, {{15000,0,15000}});
+      registry.add("Generated/Particle/ParticlesFit", "Charged Particles in Fit acceptance per event", kTH1F, {{15000, 0, 15000}});
 
       registry.add("Generated/Pair/ULS/Tried", "Pair tries", kTH1F, {{10, -0.5, 9.5}});
       registry.add("Generated/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
@@ -608,10 +607,10 @@ struct Alice3Dilepton {
 
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
       int nParticlesInEvent = 0;
-      int nParticlesFIT=0;
+      int nParticlesFIT = 0;
       for (const auto& mcParticle : mcParticles_per_coll) {
         if (mcParticle.isPhysicalPrimary()) {
-          if ((2.2<mcParticle.eta()&&mcParticle.eta()< 5.0) || (-3.4<mcParticle.eta()&&mcParticle.eta()<-2.3)) {
+          if ((2.2 < mcParticle.eta() && mcParticle.eta() < 5.0) || (-3.4 < mcParticle.eta() && mcParticle.eta() < -2.3)) {
             auto pdgParticle = inspdg->GetParticle(mcParticle.pdgCode());
             if (pdgParticle) {
               float charge = pdgParticle->Charge() / 3.f; // Charge in units of |e|
