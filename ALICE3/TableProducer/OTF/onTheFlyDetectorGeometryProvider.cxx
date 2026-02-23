@@ -17,6 +17,7 @@
 ///
 
 #include "ALICE3/Core/FastTracker.h"
+#include "ALICE3/DataModel/OTFLUT.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisTask.h>
@@ -33,6 +34,7 @@ struct OnTheFlyDetectorGeometryProvider {
   o2::framework::Configurable<std::vector<std::string>> detectorConfiguration{"detectorConfiguration",
                                                                               std::vector<std::string>{"$O2PHYSICS_ROOT/share/alice3/a3geometry_v3.ini"},
                                                                               "Paths of the detector geometry configuration files"};
+  o2::framework::Produces<o2::aod::TOFCalibrationObjects> tofCalibObjects;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   void init(o2::framework::InitContext&)
   {
