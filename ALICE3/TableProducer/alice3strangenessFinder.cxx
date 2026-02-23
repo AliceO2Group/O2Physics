@@ -465,7 +465,6 @@ struct Alice3strangenessFinder {
     bool isK0s = false;
     bool isLambda = false;
     bool isAntiLambda = false;
-    int v0PdgCode = 0;
     int iPosPart = 0;
     for (auto const& posParticle : positiveMCParticlesGrouped) {
       radiusPos = std::hypot(posParticle.vx(), posParticle.vy());
@@ -480,14 +479,8 @@ struct Alice3strangenessFinder {
         }
         if (radiusPos == radiusNeg) {
           isK0s = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kPiMinus);
-          if (isK0s)
-            v0PdgCode = kK0Short;
           isLambda = (posParticle.pdgCode() == kProton && negParticle.pdgCode() == kPiMinus);
-          if (isLambda)
-            v0PdgCode = kLambda0;
           isAntiLambda = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kProtonBar);
-          if (isAntiLambda)
-            v0PdgCode = kLambda0Bar;
           if (isK0s || isLambda || isAntiLambda) {
             if (!isK0s && isK0Gun)
               continue;
