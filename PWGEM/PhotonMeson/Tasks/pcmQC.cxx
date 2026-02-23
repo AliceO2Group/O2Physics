@@ -54,7 +54,7 @@ using MyCollision = MyCollisions::iterator;
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-using MyV0PhotonsML = soa::Join<aod::V0PhotonsKF, aod::V0PhotonsPhiVPsi, aod::V0KFEMEventIds>;
+using MyV0PhotonsML = soa::Join<MyV0Photons, aod::V0PhotonsPhiVPsi>;
 using MyV0PhotonML = MyV0PhotonsML::iterator;
 
 struct PCMQC {
@@ -476,8 +476,8 @@ struct PCMQC {
     // fRegistry.fill(HIST("V0Leg/hZY"), leg.z(), leg.y());
   }
 
-  Preslice<MyV0Photons> perCollisionV0 = aod::v0photonkf::emeventId;
-  Preslice<MyV0PhotonsML> perCollisionV0ML = aod::v0photonkf::emeventId;
+  Preslice<MyV0Photons> perCollisionV0 = aod::v0photonkf::emphotoneventId;
+  Preslice<MyV0PhotonsML> perCollisionV0ML = aod::v0photonkf::emphotoneventId;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
