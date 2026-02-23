@@ -12,7 +12,7 @@
 /// \file rho770analysis.cxx
 /// \brief rho(770)0 analysis in pp 13 & 13.6 TeV
 /// \author Hyunji Lim (hyunji.lim@cern.ch)
-/// \since 14/01/2026
+/// \since 08/02/2026
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
@@ -57,12 +57,20 @@ struct rho770analysis {
 
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
-  Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.15, "Maximum transverse DCA"};
-  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Maximum longitudinal DCA"};
   Configurable<float> cfgMaxTPC{"cfgMaxTPC", 5.0, "Maximum TPC PID with TOF"};
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 5.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
+
+  // DCA cuts
+  Configurable<bool> cDCAxyToPVAsPt{"cDCAxyToPVAsPt", true, "DCAxy to PV selection as pt"};
+  Configurable<bool> cDCAzToPVAsPt{"cDCAzToPVAsPt", false, "DCAz to PV selection as pt"};
+  Configurable<float> cfgMaxDCAxyToPVcut{"cfgMaxDCAxyToPVcut", 0.15, "Maximum transverse DCA"};
+  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Maximum longitudinal DCA"};
+  Configurable<float> cDCAxytoPVByPtPiFirstP0{"cDCAxytoPVByPtPiFirstP0", 0.0105, "Coeff. Track DCAxy cut to PV by pt for Pion First (p0)"};
+  Configurable<float> cDCAxyToPVByPtPiFirstExp{"cDCAxyToPVByPtPiFirstExp", 0.035, "Coeff. Track DCAxy cut to PV by pt for Pion First (exp)"};
+  Configurable<float> cDCAztoPVByPtPiFirstP0{"cDCAztoPVByPtPiFirstP0", 0.0105, "Coeff. Track DCAz cut to PV by pt for Pion First (p0)"};
+  Configurable<float> cDCAzToPVByPtPiFirstExp{"cDCAzToPVByPtPiFirstExp", 0.035, "Coeff. Track DCAz cut to PV by pt for Pion First (exp)"};
 
   // Track selection
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
@@ -76,23 +84,23 @@ struct rho770analysis {
                                                                                                              // kEtaRange)
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Number of TPC cluster"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"}; // refit is included in global track selection
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Number of TPC cluster"};
   Configurable<int> cfgTPCRows{"cfgTPCRows", 80, "Minimum Number of TPC Crossed Rows "};
 
   // PID
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                          // TOF
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                          // TPC
-  Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 3.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
+  Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 2.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
   Configurable<int> selectTypeInt{"selectTypeInt", static_cast<int>(TrackPIDMode::OnlyTPC), "Pion PID selection mode: 0=TPCOrTOF, 1=OnlyTPC, 2=Combined, 3=TPCWithTOFVeto"};
 
   // Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis massK0sAxis{"massK0sAxis", {200, 0.46, 0.54}, "K0s Invariant mass axis"};
-  ConfigurableAxis massKstarAxis{"massKstarAxis", {200, 0.7, 1.1}, "Kstar Invariant mass axis"};
+  ConfigurableAxis massKstarAxis{"massKstarAxis", {200, 0.6, 1.3}, "Kstar Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 95.0, 100.0, 105.0, 110.0}, "Centrality  Binning"};
 
@@ -147,25 +155,35 @@ struct rho770analysis {
       return false;
     if (std::abs(track.eta()) > cfgMaxEta)
       return false;
-    if (std::abs(track.dcaXY()) > cfgMaxDCArToPVcut)
+    if (cDCAxyToPVAsPt) {
+      if (std::abs(track.dcaXY()) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+        return false;
+    } else {
+      if (std::abs(track.dcaXY()) > cfgMaxDCAxyToPVcut)
+        return false;
+    }
+    if (cDCAzToPVAsPt) {
+      if (std::abs(track.dcaZ()) > (cDCAztoPVByPtPiFirstP0 + cDCAzToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+        return false;
+    } else {
+      if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
+        return false;
+    }
+    if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
-    if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
+    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
-    if (track.tpcNClsFound() < cfgTPCcluster)
+    if (cfgPVContributor && !track.isPVContributor())
       return false;
-    if (cfgHasTOF && !track.hasTOF())
+    if (cfgGlobalTrack && !track.isGlobalTrack())
       return false;
     if (cfgUseITSRefit && !track.passedITSRefit())
       return false;
     if (cfgUseTPCRefit && !track.passedTPCRefit())
       return false;
-    if (cfgPVContributor && !track.isPVContributor())
+    if (cfgHasTOF && !track.hasTOF())
       return false;
-    if (cfgPrimaryTrack && !track.isPrimaryTrack())
-      return false;
-    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
-      return false;
-    if (cfgGlobalTrack && !track.isGlobalTrack())
+    if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
     if (track.tpcNClsCrossedRows() < cfgTPCRows)
       return false;
@@ -330,21 +348,31 @@ struct rho770analysis {
     }
   }
 
-  void processData(aod::ResoCollision const& collision, aod::ResoTracks const& resotracks)
+  void processData(aod::ResoCollision const& resoCollision,
+                   aod::ResoCollisionColls const& collisionIndex,
+                   soa::Join<aod::Collisions, aod::PVMults> const& collisions,
+                   aod::ResoTracks const& resoTracks)
   {
-    auto multiplicity = collision.cent();
-    fillHistograms<false>(collision, multiplicity, resotracks);
+    auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+    auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+    auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
+
+    if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
+    auto multiplicity = resoCollision.cent();
+    fillHistograms<false>(resoCollision, multiplicity, resoTracks);
   }
   PROCESS_SWITCH(rho770analysis, processData, "Process Event for data", true);
 
-  void processMCLight(ResoMCCols::iterator const& collision,
+  void processMCLight(ResoMCCols::iterator const& resoCollision,
                       aod::ResoCollisionColls const& collisionIndex,
                       soa::Join<aod::ResoCollisionCandidatesMC, aod::PVMults> const& collisionsMC,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoTracks,
                       soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
-    float multiplicity;
-    auto linkRow = collisionIndex.iteratorAt(collision.globalIndex());
+    auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
     auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
     auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
@@ -353,23 +381,22 @@ struct rho770analysis {
       return;
 
     auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
-    multiplicity = mcColl.centFT0M();
+    auto multiplicity = mcColl.centFT0M();
 
-    if (!collision.isInAfterAllCuts())
+    if (!resoCollision.isInAfterAllCuts())
       return;
 
-    fillHistograms<true>(collision, multiplicity, resotracks);
+    fillHistograms<true>(resoCollision, multiplicity, resoTracks);
   }
   PROCESS_SWITCH(rho770analysis, processMCLight, "Process Event for MC", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision,
+  void processMCTrue(ResoMCCols::iterator const& resoCollision,
                      aod::ResoCollisionColls const& collisionIndex,
                      aod::ResoMCParents const& resoParents,
                      aod::ResoCollisionCandidatesMC const& collisionsMC,
                      soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
-    float multiplicity;
-    auto linkRow = collisionIndex.iteratorAt(collision.globalIndex());
+    auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
     auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
     auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
@@ -378,7 +405,7 @@ struct rho770analysis {
       return;
 
     auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
-    multiplicity = mcColl.centFT0M();
+    auto multiplicity = mcColl.centFT0M();
 
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (std::abs(part.pdgCode()) != kRho770_0)
@@ -396,16 +423,16 @@ struct rho770analysis {
 
       histos.fill(HIST("MCL/hpT_rho770_GEN"), 0, mass, part.pt(), multiplicity);
 
-      if (collision.isVtxIn10()) {
+      if (resoCollision.isVtxIn10()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 1, mass, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isInSel8()) {
+      if (resoCollision.isVtxIn10() && resoCollision.isInSel8()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 2, mass, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isTriggerTVX()) {
+      if (resoCollision.isVtxIn10() && resoCollision.isTriggerTVX()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 3, mass, part.pt(), multiplicity);
       }
-      if (collision.isInAfterAllCuts()) {
+      if (resoCollision.isInAfterAllCuts()) {
         histos.fill(HIST("MCL/hpT_rho770_GEN"), 4, mass, part.pt(), multiplicity);
       }
     }

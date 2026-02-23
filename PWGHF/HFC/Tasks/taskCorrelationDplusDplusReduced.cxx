@@ -38,7 +38,7 @@ using namespace o2::framework::expressions;
 struct HfTaskCorrelationDplusDplusReduced {
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Selection Flag for Dplus"};
 
-  using SelectedCandidates = soa::Filtered<o2::aod::HfCandDpFulls>;
+  using SelectedCandidates = soa::Filtered<o2::aod::HfCandDpTinys>;
   using SelectedMcParticles = o2::aod::HfCandDpMcPs;
 
   Filter filterSelectCandidates = aod::full::candidateSelFlag >= selectionFlagDplus;
@@ -56,7 +56,9 @@ struct HfTaskCorrelationDplusDplusReduced {
   {
     registry.add("hMassDplus", "D+ candidates;inv. mass (#pi#pi K) (GeV/#it{c}^{2}))", {HistType::kTH1F, {{120, 1.5848, 2.1848}}});
     registry.add("hMassDplusMatched", "D+ matched candidates;inv. mass (#pi#pi K) (GeV/#it{c}^{2}))", {HistType::kTH1F, {{120, 1.5848, 2.1848}}});
-    registry.add("hMassDMesonPair", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});inv. mass (#pi K) (GeV/#it{c}^{2})", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {120, 1.5848, 2.1848}}});
+    registry.add("hMassDplusminusPair", "D plus-minus pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});inv. mass (#pi K) (GeV/#it{c}^{2})", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {120, 1.5848, 2.1848}}});
+    registry.add("hMassDplusPair", "D plus pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});inv. mass (#pi K) (GeV/#it{c}^{2})", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {120, 1.5848, 2.1848}}});
+    registry.add("hMassDminusPair", "D minus pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});inv. mass (#pi K) (GeV/#it{c}^{2})", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {120, 1.5848, 2.1848}}});
     registry.add("hDltPhiMcGen", "Azimuthal correlation for D mesons; #Delta#phi", {HistType::kTH1F, {{100, -3.141593, 3.141593}}});
   }
 
@@ -67,9 +69,25 @@ struct HfTaskCorrelationDplusDplusReduced {
 
     for (const auto& cand1 : localCandidates) {
       auto mass1 = cand1.m();
+      auto sign1 = 1;
+      if (cand1.pt() < 0) {
+        sign1 = -1;
+      }
       for (auto cand2 = cand1 + 1; cand2 != localCandidates.end(); ++cand2) {
         auto mass2 = cand2.m();
-        registry.fill(HIST("hMassDMesonPair"), mass2, mass1);
+        auto sign2 = 1;
+        if (cand2.pt() < 0) {
+          sign2 = -1;
+        }
+        if (sign1 == sign2) {
+          if (sign1 == 1) {
+            registry.fill(HIST("hMassDplusPair"), mass2, mass1);
+          } else {
+            registry.fill(HIST("hMassDminusPair"), mass2, mass1);
+          }
+        } else {
+          registry.fill(HIST("hMassDplusminusPair"), mass2, mass1);
+        }
       }
     }
   }

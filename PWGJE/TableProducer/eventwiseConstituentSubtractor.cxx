@@ -75,16 +75,12 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
-  Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in the collision analysed by this task"};
-  Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
-  Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied if applyTrackingEfficiency is true"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
   Configurable<float> alpha{"alpha", 1.0, "exponent of transverse momentum in calculating the distance measure between pairs"};
   Configurable<float> rMax{"rMax", 0.24, "maximum distance of subtraction"};
-  Configurable<float> eventEtaMax{"eventEtaMax", 0.9, "maximum pseudorapidity of event"};
   Configurable<bool> doRhoMassSub{"doRhoMassSub", true, "perfom mass subtraction as well"};
   Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
@@ -112,19 +108,10 @@ struct eventWiseConstituentSubtractorTask {
 
     eventWiseConstituentSubtractor.setDoRhoMassSub(doRhoMassSub);
     eventWiseConstituentSubtractor.setConstSubAlphaRMax(alpha, rMax);
-    eventWiseConstituentSubtractor.setMaxEtaEvent(eventEtaMax);
+    eventWiseConstituentSubtractor.setEtaMinMax(trackEtaMin, trackEtaMax);
     fastjet::GhostedAreaSpec ghostAreaSpec(ghostRapMax, ghostRepeat, ghostArea,
                                            ghostGridScatter, ghostKtScatter, ghostMeanPt);
     eventWiseConstituentSubtractor.setGhostAreaSpec(ghostAreaSpec);
-
-    if (applyTrackingEfficiency) {
-      if (trackingEfficiencyPtBinning->size() < 2) {
-        LOGP(fatal, "eventWiseConstituentSubtractor workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
-      }
-      if (trackingEfficiency->size() + 1 != trackingEfficiencyPtBinning->size()) {
-        LOGP(fatal, "eventWiseConstituentSubtractor workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
-      }
-    }
   }
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
@@ -142,7 +129,7 @@ struct eventWiseConstituentSubtractorTask {
       }
       inputParticles.clear();
       tracksSubtracted.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, candidate.rho(), candidate.rhoM());
       for (auto const& trackSubtracted : tracksSubtracted) {
@@ -179,7 +166,7 @@ struct eventWiseConstituentSubtractorTask {
     }
     inputParticles.clear();
     tracksSubtracted.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning);
+    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection);
 
     tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, collision.rho(), collision.rhoM());
 

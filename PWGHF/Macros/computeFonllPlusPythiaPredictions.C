@@ -87,7 +87,7 @@ void computeFonllPlusPythiaPredictions(int nDecays = 10000000,
                                        std::string inFileFonllPromptDstarPlus = "fonll_prompt_dstar_5dot5teV_y05.txt",
                                        std::string outFileName = "fonll_pythia_beautyFFee_charmhadrons_5dot5tev_y0dot5.root");
 std::vector<std::string> splitString(const std::string& str, char delimiter);
-std::array<TH1D*, 3> readFonll(std::string inFile, std::string histName = "hFonllBhadron");
+std::array<TH1D*, 3> readFonll(const std::string& inFile, const std::string& histName = "hFonllBhadron");
 
 // FUNCTION IMPLEMENTATIONS
 //__________________________________________________________________________________________________

@@ -102,6 +102,7 @@ struct lambdaAnalysis_pb {
   Configurable<std::vector<float>> kaonTOFPIDcut{"kaonTOFPIDcut", {3.0}, "TOF nsigma cuts kaons"};
   // Event Mixing.
   Configurable<int> cNumMixEv{"cNumMixEv", 20, "Number of Events to be mixed"};
+  ConfigurableAxis cDCAzBins{"dcazbins", {VARIABLE_WIDTH, -1.2f, -1.0f, -0.9f, -0.8f, -0.7f, -0.6f, -0.5f, -0.4f, -0.3f, -0.2f, -0.1f, 0.f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f}, "DCA - z-vertex"};
 
   ConfigurableAxis cMixVtxBins{"cMixVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cMixMultBins{"cMixMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
@@ -117,7 +118,7 @@ struct lambdaAnalysis_pb {
     const AxisSpec axisPt_pid(200, 0., 10., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
     const AxisSpec axisEta(40, -1, 1, "#eta");
-    const AxisSpec axisDCAz(500, -0.5, 0.5, {"DCA_{z} (cm)"});
+    // const AxisSpec axisDCAz(500, -0.5, 0.5, {"DCA_{z} (cm)"});
     const AxisSpec axisDCAxy(240, -0.12, 0.12, {"DCA_{xy} (cm)"});
     const AxisSpec axisTPCNCls(200, 0, 200, {"TPCNCls"});
     const AxisSpec axisTPCNsigma(401, -10.025, 10.025, {"n#sigma^{TPC}"});
@@ -125,8 +126,9 @@ struct lambdaAnalysis_pb {
     const AxisSpec axisdEdx(380, 10, 200, {"#frac{dE}{dx}"});
     const AxisSpec axisVz(120, -12, 12, {"vz"});
     const AxisSpec axisEP(120, -3.14, 3.14, {"#theta"});
-    const AxisSpec axisInvM(nBinsInvM, 1.44, 2.04, {"M_{inv} (GeV/c^{2})"});
+    const AxisSpec axisInvM(nBinsInvM, 1.2, 1.8, {"M_{inv} (GeV/c^{2})"});
     AxisSpec axisOccupancy = {occupancy_bins, "Occupancy [-40,100]"};
+    AxisSpec axisDCAz = {cDCAzBins, "DCA_{z} (cm)"};
 
     histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH2F, {axisCent, axisOccupancy});
     if (doprocessMix || doprocessMixDF || doprocessMixepDF) {
@@ -633,7 +635,7 @@ struct lambdaAnalysis_pb {
     }
   }
 
-  PROCESS_SWITCH(lambdaAnalysis_pb, processMix, "Process for Mixed Events", false);
+  PROCESS_SWITCH(lambdaAnalysis_pb, processMix, "Process for Mixed Events", true);
 
   Preslice<aod::ResoTrackDFs> perRColdf = aod::resodaughter::resoCollisionDFId;
 
