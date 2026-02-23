@@ -55,7 +55,7 @@ class EMPhotonEventCut : public TNamed
   template <typename T>
   bool IsSelected(T const& collision) const
   {
-   if (mRequireSel8 && !IsSelected(collision, EMPhotonEventCuts::kSel8)) {
+    if (mRequireSel8 && !IsSelected(collision, EMPhotonEventCuts::kSel8)) {
       return false;
     }
     if (mRequireFT0AND && !IsSelected(collision, EMPhotonEventCuts::kFT0AND)) {
