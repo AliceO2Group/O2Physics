@@ -36,12 +36,12 @@ namespace otf::lut
 //   lutHeader_t* mLUTHeader[nLUTs] = {nullptr};
 //   lutEntry_t***** mLUTEntry[nLUTs] = {nullptr};
 
-DECLARE_SOA_CCDB_COLUMN(LUTHeader, lutHeader, lutHeader_t, "TOF/Calib/LHCphase"); //!
+DECLARE_SOA_CCDB_COLUMN(LUTHeader, lutHeader, lutHeader_t, "LUTS"); //!
 // DECLARE_SOA_CCDB_COLUMN(LUTHeader, lutHeader, o2::dataformats::CalibLHCphaseTOF, "TOF/Calib/LHCphase"); //!
 
 } // namespace otf::lut
 
-DECLARE_SOA_TIMESTAMPED_TABLE(TOFCalibrationObjects, aod::Timestamps, o2::aod::timestamp::Timestamp, 1, "TOFCALIB", //!
+DECLARE_SOA_TIMESTAMPED_TABLE(LUTs, aod::Timestamps, o2::aod::timestamp::Timestamp, 1, "LUTs", //!
                               otf::lut::LUTHeader);
 } // namespace o2::aod
 
