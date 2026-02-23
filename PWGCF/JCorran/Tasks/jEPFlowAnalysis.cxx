@@ -21,6 +21,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -32,6 +33,8 @@
 #include <string>
 #include <vector>
 
+#include <TDatabasePDG.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -39,6 +42,8 @@ using namespace std;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
+using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
 
 struct jEPFlowAnalysis {
 
@@ -95,6 +100,12 @@ struct jEPFlowAnalysis {
   ConfigurableAxis cfgAxisPt{"cfgAxisPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 30.0, 50.0, 70.0, 100.0}, ""};
   ConfigurableAxis cfgAxisCos{"cfgAxisCos", {102, -1.02, 1.02}, ""};
   ConfigurableAxis cfgAxisQvec{"cfgAxisQvec", {200, -5.0, 5.0}, ""};
+
+  ConfigurableAxis cfgAxisCentMC{"cfgAxisCentMC", {5, 0, 100}, ""};
+  ConfigurableAxis cfgAxisVtxZMC{"cfgAxisVtxZMC", {20, -10, 10}, ""};
+  ConfigurableAxis cfgAxisEtaMC{"cfgAxisEtaMC", {20, -1, 1}, ""};
+  ConfigurableAxis cfgAxisPhiMC{"cfgAxisPhiMC", {36, 0, constants::math::PI * 2.0}, ""};
+  ConfigurableAxis cfgAxisPtMC{"cfgAxisPtMC", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 30.0, 50.0, 70.0, 100.0}, ""};
 
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
 
@@ -169,6 +180,7 @@ struct jEPFlowAnalysis {
     effVars[1] = eff->GetAxis(1)->FindBin(pt);
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
+
     return eff->GetBinContent(effVars);
   }
 
@@ -193,6 +205,12 @@ struct jEPFlowAnalysis {
     AxisSpec axisCos{cfgAxisCos, "cos"};
     AxisSpec axisQvec{cfgAxisQvec, "Qvec"};
 
+    AxisSpec axisCentMC{cfgAxisCentMC, "cent"};
+    AxisSpec axisVtxZMC{cfgAxisVtxZMC, "vtxz"};
+    AxisSpec axisEtaMC{cfgAxisEtaMC, "eta"};
+    AxisSpec axisPhiMC{cfgAxisPhiMC, "phi"};
+    AxisSpec axisPtMC{cfgAxisPtMC, "pt"};
+
     epFlowHistograms.add("EpDet", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
     epFlowHistograms.add("EpRefA", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
     epFlowHistograms.add("EpRefB", "", {HistType::kTH3F, {axisMod, axisCent, axisEvtPl}});
@@ -216,6 +234,10 @@ struct jEPFlowAnalysis {
 
     epFlowHistograms.add("hCentrality", "", {HistType::kTH1F, {axisCent}});
     epFlowHistograms.add("hVertex", "", {HistType::kTH1F, {axisVertex}});
+
+    epFlowHistograms.add("MC/hPartGen", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
+    epFlowHistograms.add("MC/hPartRecPr", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
+    epFlowHistograms.add("MC/hPartRec", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
   }
 
   void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
@@ -251,7 +273,11 @@ struct jEPFlowAnalysis {
 
     if (cfgEffCor) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
-      effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+      currentRunNumber = bc.runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+        lastRunNumber = currentRunNumber;
+      }
     }
 
     float cent = coll.cent();
@@ -350,7 +376,7 @@ struct jEPFlowAnalysis {
           continue;
 
         if (cfgEffCor) {
-          weight /= getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
+          weight = getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
         }
 
         float vn = std::cos((i + 2) * (track.phi() - eps[0]));
@@ -365,6 +391,102 @@ struct jEPFlowAnalysis {
     }
   }
   PROCESS_SWITCH(jEPFlowAnalysis, processDefault, "default process", true);
+
+  void processMCRec(MyCollisionsMC::iterator const& coll, MyTracksMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+  {
+    if (!coll.has_mcCollision()) {
+      return;
+    }
+
+    if (cfgAddEvtSel) {
+      if (std::abs(coll.posZ()) > cfgVertexZ)
+        return;
+      switch (cfgEvtSel) {
+        case 0: // Sel8
+          if (!coll.sel8())
+            return;
+          break;
+        case 1: // PbPb standard
+          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        case 2: // PbPb with pileup
+          if (!coll.sel8() || !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
+              !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        case 3: // Small systems (OO, NeNe, pp)
+          if (!coll.sel8() || !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        default:
+          LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
+      }
+      // Check occupancy
+      if (coll.trackOccupancyInTimeRange() > cfgMaxOccupancy || coll.trackOccupancyInTimeRange() < cfgMinOccupancy)
+        return;
+    }
+
+    float cent = coll.centFT0C();
+
+    if (cfgEffCor) {
+      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+      currentRunNumber = bc.runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        effMap = ccdb->getForTimeStamp<THnT<float>>(cfgEffCorDir, bc.timestamp());
+        lastRunNumber = currentRunNumber;
+      }
+    }
+
+    for (auto trk : tracks) {
+      if (!trk.has_mcParticle()) {
+        continue;
+      }
+
+      if (trackSel(trk)) {
+        continue;
+      }
+
+      epFlowHistograms.fill(HIST("MC/hPartRec"), cent, coll.posZ(), trk.eta(), trk.phi(), trk.pt());
+      auto mctrk = trk.mcParticle();
+      if (mctrk.isPhysicalPrimary()) {
+        epFlowHistograms.fill(HIST("MChPartRecPr"), cent, coll.posZ(), trk.eta(), trk.phi(), trk.pt());
+      }
+    }
+  }
+  PROCESS_SWITCH(jEPFlowAnalysis, processMCRec, "process for MC", false);
+
+  void processMCGen(MyCollisionsMC::iterator const& coll, aod::McParticles const& mcParticles, aod::McCollisions const&)
+  {
+    if (!coll.has_mcCollision()) return;
+    const auto mcColl = coll.mcCollision();
+
+    if (cfgAddEvtSel) {
+      if (std::abs(mcColl.posZ()) > cfgVertexZ) {
+        return;
+      }
+    }
+
+    float cent = coll.centFT0C();
+
+    for (auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.eta()) > cfgTrackCuts.cfgEtaMax)
+        continue;
+
+      auto* p = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
+      if (p) {
+        if (std::abs(p->Charge()) < 1e-1) {
+          continue;
+        }
+      }
+
+      if (!mcParticle.isPhysicalPrimary())
+        continue;
+
+      epFlowHistograms.fill(HIST("MC/hPartGen"), cent, mcColl.posZ(), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+    }
+  }
+  PROCESS_SWITCH(jEPFlowAnalysis, processMCGen, "process for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
