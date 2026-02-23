@@ -153,14 +153,19 @@ struct strangenessFilter {
   Configurable<float> ptthrtof{"ptthrtof", 1.0, "Pt threshold to apply TOF condition"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Require TVX"};
-  Configurable<int> HMTrgSelectionForOmegaFT0M{"HMTrgSelectionForOmegaFT0M", 1, "0: none, 1: normalised FT0M, 2: FT0M "};
-  Configurable<int> LowLimitHMTrgOmegaT0M{"LowLimitHMTrgOmegaT0M", 3100, "T0M"};
-  Configurable<int> LowLimitHMTrgOmegaT0MNorm{"LowLimitHMTrgOmegaT0MNorm", 70, "normalised T0M selection [2] of multFiler"};
-  Configurable<int> HMTrgSelectionForOmegaTrks{"HMTrgSelectionForOmegaTrks", 2, "0: none, 1: GlobalMult,2: selectTrack"};
-  Configurable<int> LowLimitHMTrgOmegaTrkGlob{"LowLimitHMTrgOmegaTrksGlob", 90, "tracks from table GlobalMult"};
-  Configurable<int> LowLimitHMTrgOmegaTrkSel{"LowLimitHMTrgOmegaTrkSel", 50, "tracks as defined in selectTrackHMO"};
-  Configurable<float> hEtaHM{"hEtaHM", 1.0f, "Eta range for particles defining HM events"};
-  Configurable<float> hMinPtHM{"hMinPtHM", 0.2f, "Min pt for particles defining HM events"};
+  struct : ConfigurableGroup {
+    Configurable<int> HMTrgSelectionForOmegaFT0M{"HMTrgSelectionForOmegaFT0M", 1, "0: none, 1: normalised FT0M, 2: FT0M "};
+    Configurable<int> LowLimitHMTrgOmegaT0M{"LowLimitHMTrgOmegaT0M", 3100, "T0M"};
+    Configurable<int> LowLimitHMTrgOmegaT0MNorm{"LowLimitHMTrgOmegaT0MNorm", 70, "normalised T0M selection [2] of multFiler"};
+    Configurable<int> LowLimitHMTrgT0MNorm{"LowLimitHMTrgT0MNorm", 140, "normalised T0M selection [2] of multFiler"};
+    Configurable<int> HMTrgSelectionForOmegaTrks{"HMTrgSelectionForOmegaTrks", 1, "0: none, 1: GlobalMult,2: selectTrack"};
+    Configurable<int> LowLimitHMTrgOmegaTrkGlob{"LowLimitHMTrgOmegaTrkGlob", 45, "Omega HM GlobalMult"};
+    Configurable<int> LowLimitHMTrgOmegaTrkSel{"LowLimitHMTrgOmegaTrkSel", 50, "Omega HM selectTrackHMO"};
+    Configurable<int> LowLimitHMTrgTrkGlob{"LowLimitHMTrgTrksGlob", 100, "HM Omega normalisation GlobalMult"};
+    Configurable<int> LowLimitHMTrgTrkSel{"LowLimitHMTrgTrkSel", 50, "HM Omega normalisation selectTrackHMO"};
+    Configurable<float> hEtaHM{"hEtaHM", 1.0f, "Eta range for particles defining HM events"};
+    Configurable<float> hMinPtHM{"hMinPtHM", 0.2f, "Min pt for particles defining HM events"};
+  } cfgHMOmegaCuts;
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
@@ -244,7 +249,7 @@ struct strangenessFilter {
   }
   bool selectTrackOHM(const auto& track)
   {
-    return track.pt() > hMinPtHM && std::abs(track.eta()) < hEtaHM && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
+    return track.pt() > cfgHMOmegaCuts.hMinPtHM && std::abs(track.eta()) < cfgHMOmegaCuts.hEtaHM && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
   }
   float getV0V0DCA(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
   {
@@ -438,7 +443,7 @@ struct strangenessFilter {
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
     AxisSpec multAxisNTPV = {100, 0.0f, 100.0f, "N. tracks PV estimator"};
     AxisSpec multAxisT0M = {600, 0.0f, 6000.0f, "T0M multiplicity estimator"};
-    AxisSpec multAxisT0MNorm = {150, 0.0f, 150.0f, "Normalised T0M multiplicity estimator"};
+    AxisSpec multAxisT0MNorm = {200, 0.0f, 200.0f, "Normalised T0M multiplicity estimator"};
     AxisSpec multAxisTrack = {150, 0.0f, 150.0f, "Track multiplicity"};
     AxisSpec multAxisV0A = {500, 0.0f, 25000.0f, "V0A multiplicity estimator"};
     AxisSpec ximassAxis = {200, 1.28f, 1.36f};
@@ -615,7 +620,7 @@ struct strangenessFilter {
       o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", run);
       o2::base::Propagator::initFieldFromGRP(grpmag);
       mBz = static_cast<float>(grpmag->getNominalL3Field());
-      if (HMTrgSelectionForOmegaFT0M == 1) {
+      if (cfgHMOmegaCuts.HMTrgSelectionForOmegaFT0M == 1) {
         mMeanMultT0C = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0C", run);
         mMeanMultT0A = ccdb->getForRun<std::vector<double>>("Users/e/ekryshen/meanT0A", run);
       }
@@ -695,11 +700,14 @@ struct strangenessFilter {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityZeqNTracksPV"), collision.multZeqNTracksPV());
     }
 
-    Bool_t isHighMultEvent = 0;
+    Bool_t isHighMultEvent = 0;         // tail
+    Bool_t isHighMultEventOmegaCut = 0; // Omega HM cut
     float multFT0MNorm = 0.f;
-    Bool_t isHighMultEventTrk = 0;
+    Bool_t isHighMultEventTrk = 0;         // tail
+    Bool_t isHighMultEventTrkOmegaCut = 0; // Omega HM cut
+
     float multTrack = 0.f;
-    if (HMTrgSelectionForOmegaFT0M == 1) {
+    if (cfgHMOmegaCuts.HMTrgSelectionForOmegaFT0M == 1) {
       float meanMultT0C = 0.f;
       float fac_FT0C_ebe = 1.;
       meanMultT0C = (*mMeanMultT0C)[0];
@@ -740,9 +748,12 @@ struct strangenessFilter {
             ampneg++;
           }
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), multFT0MNorm);
-          if (multFT0MNorm > LowLimitHMTrgOmegaT0MNorm) {
-            isHighMultEvent = 1;
+          if (multFT0MNorm > cfgHMOmegaCuts.LowLimitHMTrgOmegaT0MNorm) {
+            isHighMultEventOmegaCut = 1;
             LOG(debug) << "Found FT0 using norm mult";
+          }
+          if (multFT0MNorm > cfgHMOmegaCuts.LowLimitHMTrgT0MNorm) {
+            isHighMultEvent = 1;
           }
         } else {
           LOG(warn) << "Found FT0 but, bith amplitudes are <=0 ";
@@ -757,27 +768,35 @@ struct strangenessFilter {
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 149);
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
       }
-    } else if (HMTrgSelectionForOmegaFT0M == 2) {
+    } else if (cfgHMOmegaCuts.HMTrgSelectionForOmegaFT0M == 2) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
-      if (collision.multFT0M() > LowLimitHMTrgOmegaT0M) {
-        isHighMultEvent = 1;
+      if (collision.multFT0M() > cfgHMOmegaCuts.LowLimitHMTrgOmegaT0M) {
+        isHighMultEventOmegaCut = 1;
       }
     }
-    if (HMTrgSelectionForOmegaTrks == 1) {
+    if (cfgHMOmegaCuts.HMTrgSelectionForOmegaTrks == 1) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracksGlob"), collision.multNTracksGlobal());
-      if (collision.multNTracksGlobal() > LowLimitHMTrgOmegaTrkGlob) {
+      if (collision.multNTracksGlobal() > cfgHMOmegaCuts.LowLimitHMTrgOmegaTrkGlob) {
+        isHighMultEventTrkOmegaCut = 1;
+      }
+      if (collision.multNTracksGlobal() > cfgHMOmegaCuts.LowLimitHMTrgTrkGlob) {
         isHighMultEventTrk = 1;
       }
-    } else if (HMTrgSelectionForOmegaTrks == 2) {
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracks"), collision.multNTracksGlobal());
+
+    } else if (cfgHMOmegaCuts.HMTrgSelectionForOmegaTrks == 2) {
       for (auto& track : tracks) {
         if (selectTrackOHM(track)) {
           multTrack++;
         }
       }
-      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracks"), multTrack);
-      if (multTrack > LowLimitHMTrgOmegaTrkSel) {
+      if (multTrack > cfgHMOmegaCuts.LowLimitHMTrgOmegaTrkSel) {
+        isHighMultEventTrkOmegaCut = 1;
+      }
+      if (multTrack > cfgHMOmegaCuts.LowLimitHMTrgTrkSel) {
         isHighMultEventTrk = 1;
       }
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracks"), multTrack);
     }
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -1276,30 +1295,30 @@ struct strangenessFilter {
     }
 
     // Omega in high multiplicity events
-    if (omegacounter > 0 && isHighMultEvent) {
+    if (omegacounter > 0 && isHighMultEventOmegaCut) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmegaNorm"), multFT0MNorm);
     }
-    if (omegacounter > 0 && isHighMultEventTrk) {
+    if (omegacounter > 0 && isHighMultEventTrkOmegaCut) {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTrackswOmega"), multTrack);
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityTracksGlobwOmega"), collision.multNTracksGlobal());
     }
-    if (omegacounter > 0 && (isHighMultEvent || isHighMultEventTrk)) { // to compute "OR" selectivity
+    if (omegacounter > 0 && (isHighMultEventOmegaCut || isHighMultEventTrkOmegaCut)) { // to compute "OR" selectivity
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTrackswOmega"), multTrack);
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTracksGlobwOmega"), collision.multNTracksGlobal());
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTrackswOmega2D"), multTrack, multFT0MNorm);
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MTracksGlobwOmega2D"), collision.multNTracksGlobal(), multFT0MNorm);
     }
-    if (omegacounter > 0 && isHighMultEvent) {
+    if (omegacounter > 0 && isHighMultEventOmegaCut) {
       keepEvent[9] = true;
     }
-    if (omegacounter > 0 && isHighMultEventTrk) {
+    if (omegacounter > 0 && isHighMultEventTrkOmegaCut) {
       keepEvent[13] = true;
     }
-    if (isHighMultEvent) {
+    if (isHighMultEvent) { // Normalisation tail
       keepEvent[14] = true;
     }
-    if (isHighMultEventTrk) {
+    if (isHighMultEventTrk) { // Normalisation tail
       keepEvent[15] = true;
     }
     for (const auto& trackedCascade : trackedCascades) {

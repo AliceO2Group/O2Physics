@@ -71,6 +71,7 @@ struct LumiStabilityLightIons {
 
   Configurable<bool> cfgRequireZDCTriggerForZDCQA{"cfgRequireZDCTriggerForZDCQA", false, "Require ZDC trigger (1ZNC) for filling QA histograms"};
   Configurable<bool> cfgRequireTVXTriggerForZDCQA{"cfgRequireTVXTriggerForZDCQA", false, "Require FT0 vertex trigger (MTVX) for filling ZDC QA histograms"};
+  Configurable<bool> cfgRequireZEDTriggerForZDCQA{"cfgRequireZEDTriggerForZDCQA", false, "Require ZED trigger (1ZNC||1ZNA) for filling QA histograms"};
 
   Configurable<bool> cfgRequireNoT0ForSLBC{"cfgRequireNoT0ForSLBC", false, "Require no T0 signal for definition of super leading BC (otherwise only no FDD)"};
 
@@ -259,6 +260,8 @@ struct LumiStabilityLightIons {
       if (cfgRequireTVXTriggerForZDCQA && !(ctpInputMask.test(2))) // 2 = 3 - 1 -> MTVX
         continue;
       if (cfgRequireZDCTriggerForZDCQA && !(ctpInputMask.test(25))) // 25 = 26 - 1 -> 1ZNC
+        continue;
+      if (cfgRequireZEDTriggerForZDCQA && !(ctpInputMask.test(24))) // 24 = 25 - 1 -> 1ZED
         continue;
 
       bool zdcHit = !bc.has_zdc() ? 0 : ((bc.zdc().energyCommonZNC() > -1 && std::abs(bc.zdc().timeZNC()) < 1E5) ? 1 : 0);
