@@ -55,7 +55,55 @@ class EMPhotonEventCut : public TNamed
   template <typename T>
   bool IsSelected(T const& collision) const
   {
-    if (!EMPhotonEventCut::IsSelected(collision)) {
+   if (mRequireSel8 && !IsSelected(collision, EMPhotonEventCuts::kSel8)) {
+      return false;
+    }
+    if (mRequireFT0AND && !IsSelected(collision, EMPhotonEventCuts::kFT0AND)) {
+      return false;
+    }
+    if (!IsSelected(collision, EMPhotonEventCuts::kZvtx)) {
+      return false;
+    }
+    if (mRequireNoTFB && !IsSelected(collision, EMPhotonEventCuts::kNoTFB)) {
+      return false;
+    }
+    if (mRequireNoITSROFB && !IsSelected(collision, EMPhotonEventCuts::kNoITSROFB)) {
+      return false;
+    }
+    if (mRequireNoSameBunchPileup && !IsSelected(collision, EMPhotonEventCuts::kNoSameBunchPileup)) {
+      return false;
+    }
+    if (mRequireVertexITSTPC && !IsSelected(collision, EMPhotonEventCuts::kIsVertexITSTPC)) {
+      return false;
+    }
+    if (mRequireVertexTOFmatched && !IsSelected(collision, EMPhotonEventCuts::kIsVertexTOFmatched)) {
+      return false;
+    }
+    if (mRequireGoodZvtxFT0vsPV && !IsSelected(collision, EMPhotonEventCuts::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (mRequireNoCollInTimeRangeStandard && !IsSelected(collision, EMPhotonEventCuts::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    if (mRequireNoCollInTimeRangeStrict && !IsSelected(collision, EMPhotonEventCuts::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if (mRequireNoCollInITSROFStandard && !IsSelected(collision, EMPhotonEventCuts::kNoCollInITSROFStandard)) {
+      return false;
+    }
+    if (mRequireNoCollInITSROFStrict && !IsSelected(collision, EMPhotonEventCuts::kNoCollInITSROFStrict)) {
+      return false;
+    }
+    if (mRequireNoHighMultCollInPrevRof && !IsSelected(collision, EMPhotonEventCuts::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if (mRequireGoodITSLayer3 && !IsSelected(collision, EMPhotonEventCuts::kIsGoodITSLayer3)) {
+      return false;
+    }
+    if (mRequireGoodITSLayer0123 && !IsSelected(collision, EMPhotonEventCuts::kIsGoodITSLayer0123)) {
+      return false;
+    }
+    if (mRequireGoodITSLayersAll && !IsSelected(collision, EMPhotonEventCuts::kIsGoodITSLayersAll)) {
       return false;
     }
     if (mRequireEMCReadoutInMB && !IsSelected(collision, EMPhotonEventCuts::kEMCReadoutInMB)) {
