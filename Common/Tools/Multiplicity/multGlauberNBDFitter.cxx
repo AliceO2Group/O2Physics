@@ -384,7 +384,7 @@ Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k
   return F;
 }
 
-void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F *lNancestor2DPlot)
+void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F* lNancestor2DPlot)
 {
   cout << "Calculating <Npart>, <Ncoll> in centrality bins..." << endl;
   cout << "Range to calculate: " << lLoRange << " to " << lHiRange << endl;
@@ -438,7 +438,7 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       hEccentricity->SetName(Form("hEccentricity_%i", ibin));
     }
 
-    // impact parameter handling 
+    // impact parameter handling
     TH1D* hImpactParameter = 0x0;
     if (lNpNcB) {
       // locate the histogram that corresponds to the eccentricity distribution in this NpNc pair
@@ -464,7 +464,7 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
         lMultValueToFill = hPercentileMap->GetBinContent(hPercentileMap->FindBin(lMultValue));
       lNPartProf->Fill(lMultValueToFill, fNpart[ibin], lProbability);
       lNCollProf->Fill(lMultValueToFill, fNcoll[ibin], lProbability);
-      if(lNancestor2DPlot){ 
+      if (lNancestor2DPlot) {
         // fill cross-check histogram with lNancestorCount at lNancestors value
         lNancestor2DPlot->Fill(lMultValueToFill, lNancestors, lProbability * lNancestorCount);
       }
