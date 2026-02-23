@@ -24,7 +24,6 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/PVertexer.h"
 #include "Framework/ASoA.h"
@@ -32,9 +31,10 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/BetheBlochAleph.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
 #include "Math/Vector4D.h"
 #include "TDatabasePDG.h"
@@ -414,13 +414,13 @@ struct NonPromptCascadeTask {
     for (const auto& coll : collisions) {
       float centFT0M = coll.centFT0M();
       float multFT0M = coll.multFT0M();
-      //float centFV0A = coll.centFV0A();
-      //float multFV0A = coll.multFV0A();
+      // float centFV0A = coll.centFV0A();
+      // float multFV0A = coll.multFV0A();
       float multNTracks = coll.multNTracksGlobal();
       float run = mRunNumber;
       float numContrib = coll.numContrib();
       auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
-      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib , multNTracks, run);
+      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
     }
   };
 
@@ -977,7 +977,8 @@ struct NonPromptCascadeTask {
 
   PROCESS_SWITCH(NonPromptCascadeTask, processdNdetaMC, "process mc dN/deta", false);
 
-  void processPileUp(CollisionCandidatesRun3 const& collisions, aod::BCsWithTimestamps const&) {
+  void processPileUp(CollisionCandidatesRun3 const& collisions, aod::BCsWithTimestamps const&)
+  {
     std::cout << "Processing pile up" << std::endl;
     for (const auto& coll : collisions) {
       float centFT0M = coll.centFT0M();
@@ -985,11 +986,10 @@ struct NonPromptCascadeTask {
       auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
       uint64_t globalBC = bc.globalBC();
       NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
-      //NPPileUpTable(mRunNumber, globalBC, multNTracks, centFT0M, multFT0M);
+      // NPPileUpTable(mRunNumber, globalBC, multNTracks, centFT0M, multFT0M);
     }
   };
   PROCESS_SWITCH(NonPromptCascadeTask, processPileUp, "pile up studies", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
