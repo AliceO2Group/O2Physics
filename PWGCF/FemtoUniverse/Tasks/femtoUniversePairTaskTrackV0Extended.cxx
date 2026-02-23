@@ -117,7 +117,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<float> confHPtChildPion{"confHPtChildPion", 10.0f, "Higher limit for pt of children pions"};
     Configurable<float> confLPtChildPion{"confLPtChildPion", 0.f, "Lower limit for pt of children pions"};
     Configurable<bool> confV0DuplCosPA{"confV0DuplCosPA", false, "Use cosPA instead of inv. mass as a deciding factor in rejecting a V0 in V0V0 pairs"};
-    Configurable<bool> confAddInvMassCheck{"confAddInvMassCheck", false, "Apply additional cut separate for mLambda and mAntiLambda"};
+    Configurable<bool> confSeparateInvMassCheck{"confSeparateInvMassCheck", false, "Apply additional cut separate for mLambda and mAntiLambda"};
   } ConfV0Selection;
 
   /// Partition for particle 2 using extended table
@@ -210,10 +210,17 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
 
-  bool invMLambda(float invMassLambda, float invMassAntiLambda)
+  bool invMLambda(float invMassLambda, float invMassAntiLambda, int V0Type)
   {
-    if ((invMassLambda < ConfV0Selection.confV0InvMassLowLimit || invMassLambda > ConfV0Selection.confV0InvMassUpLimit) && (invMassAntiLambda < ConfV0Selection.confV0InvMassLowLimit || invMassAntiLambda > ConfV0Selection.confV0InvMassUpLimit)) {
-      return false;
+    if (ConfV0Selection.confSeparateInvMassCheck) {
+      const float pMass = V0Type ? invMassAntiLambda : invMassLambda;
+      if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
+        return false;
+      }
+    } else {
+      if ((invMassLambda < ConfV0Selection.confV0InvMassLowLimit || invMassLambda > ConfV0Selection.confV0InvMassUpLimit) && (invMassAntiLambda < ConfV0Selection.confV0InvMassLowLimit || invMassAntiLambda > ConfV0Selection.confV0InvMassUpLimit)) {
+        return false;
+      }
     }
     return true;
   }
@@ -417,20 +424,13 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type1))
         continue;
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
       if (posChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][0] || negChild.pt() < v0DaughPtLowTable[ConfV0Selection.confV0Type1][1] || posChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][0] || negChild.pt() > v0DaughPtHighTable[ConfV0Selection.confV0Type1][1]) {
         continue;
-      }
-
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float pMass = ConfV0Selection.confV0Type1 ? part.mAntiLambda() : part.mLambda();
-        if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-          continue;
-        }
       }
 
       /// Daughters that do not pass this condition are not selected
@@ -492,7 +492,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     /// Now build the combinations
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // Lambda invariant mass cut
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type1))
         continue;
       /// PID using stored binned nsigma
       if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
@@ -534,13 +534,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         }
       }
 
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float pMass = ConfV0Selection.confV0Type1 ? p2.mAntiLambda() : p2.mLambda();
-        if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-          continue;
-        }
-      }
-
       if (ConfCPR.confIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           continue;
@@ -571,7 +564,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event for first V0 particle
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type1))
         continue;
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
@@ -586,12 +579,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type1 ? part.mAntiLambda() : part.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
         trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
         posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
         negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
@@ -618,7 +605,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event for second V0 particle
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), ConfV0Selection.confV0Type2))
         continue;
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
@@ -633,12 +620,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type2][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type2][1]))
           continue;
 
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type2 ? part.mAntiLambda() : part.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
         trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
         posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
         negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
@@ -665,19 +646,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     auto pairDuplicateCheckFunc = [&](auto& p1, auto& p2) -> void {
       // V0 inv mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+      if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1))
         return;
       // V0 inv mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2))
         return;
-
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-        const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-        if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
-          return;
-        }
-      }
 
       // track cleaning & checking for duplicate pairs
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
@@ -702,10 +675,10 @@ struct FemtoUniversePairTaskTrackV0Extended {
       if (v0Duplicates.contains(p1.globalIndex()) || v0Duplicates.contains(p2.globalIndex()))
         return false;
       // Lambda invariant mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+      if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1))
         return false;
       // Lambda invariant mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2))
         return false;
 
       const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2 - parts.begin().globalIndex());
@@ -753,14 +726,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
         } else {
           if ((posChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
             return false;
-        }
-      }
-
-      if (ConfV0Selection.confAddInvMassCheck) {
-        const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-        const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-        if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
-          return false;
         }
       }
 
@@ -984,7 +949,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type1))
           continue;
         /// PID using stored binned nsigma
         if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
@@ -1016,13 +981,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
           } else {
             if ((posChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][0])) == 0 || (negChild.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type1][1])) == 0)
               continue;
-          }
-        }
-
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type1 ? p2.mAntiLambda() : p2.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
           }
         }
 
@@ -1084,11 +1042,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda())) {
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1)) {
           continue;
         }
         // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda())) {
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2)) {
           continue;
         }
 
@@ -1138,14 +1096,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
           } else {
             if ((posChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][0])) == 0 || (negChild2.pidCut() & (8u << V0ChildTable[ConfV0Selection.confV0Type2][1])) == 0)
               continue;
-          }
-        }
-
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-          const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-          if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
           }
         }
 
@@ -1375,7 +1325,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type1))
           continue;
         /// PID using stored binned nsigma
         if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
@@ -1392,13 +1342,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         if (!isParticleTOF(posChild, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
-
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float pMass = ConfV0Selection.confV0Type1 ? p2.mAntiLambda() : p2.mLambda();
-          if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
 
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -1452,11 +1395,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda())) {
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), ConfV0Selection.confV0Type1)) {
           continue;
         }
         // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda())) {
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), ConfV0Selection.confV0Type2)) {
           continue;
         }
 
@@ -1483,14 +1426,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         if (!isParticleTOF(negChild2, V0ChildTable[ConfV0Selection.confV0Type1][0]) || !isParticleTOF(negChild2, V0ChildTable[ConfV0Selection.confV0Type1][1]))
           continue;
-
-        if (ConfV0Selection.confAddInvMassCheck) {
-          const float p1Mass = ConfV0Selection.confV0Type1 ? p1.mAntiLambda() : p1.mLambda();
-          const float p2Mass = ConfV0Selection.confV0Type2 ? p2.mAntiLambda() : p2.mLambda();
-          if (p1Mass < ConfV0Selection.confV0InvMassLowLimit || p1Mass > ConfV0Selection.confV0InvMassUpLimit || p2Mass < ConfV0Selection.confV0InvMassLowLimit || p2Mass > ConfV0Selection.confV0InvMassUpLimit) {
-            continue;
-          }
-        }
 
         // track cleaning
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
