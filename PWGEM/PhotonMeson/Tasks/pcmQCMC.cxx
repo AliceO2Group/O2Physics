@@ -568,14 +568,15 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaEta"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.eta() - mcleg.eta());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPhi"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.phi() - mcleg.phi());
   }
-  o2::framework::SliceCache v0cache;
+  Preslice<MyV0Photons> perCollisionV0 = aod::v0photonkf::emeventId;
+  Preslice<MyV0PhotonsML> perCollisionV0ML = aod::v0photonkf::emeventId;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  template <typename TV0Photons>
-  void processMC(FilteredMyCollisions const& collisions, TV0Photons const& v0photons, aod::EMMCParticles const& mcparticles, MyMCV0Legs const&, aod::EMMCEvents const&)
+  template <typename TV0Photons, typename TPerCollision>
+  void processMC(FilteredMyCollisions const& collisions, TV0Photons const& v0photons, aod::EMMCParticles const& mcparticles, MyMCV0Legs const&, aod::EMMCEvents const&, TPerCollision const& percollision)
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
@@ -593,7 +594,7 @@ struct PCMQCMC {
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
       fV0PhotonCut.SetCentrality(centralities[cfgCentEstimator]); // set centrality for BDT response
-      auto V0Photons_coll = v0photons.sliceByCached(aod::v0photonkf::emeventId, collision.globalIndex(), v0cache);
+      auto V0Photons_coll = v0photons.sliceBy(percollision, collision.globalIndex());
       int ng_primary = 0, ng_wd = 0, ng_hs = 0, nee_pi0 = 0, nee_eta = 0;
       for (const auto& v0 : V0Photons_coll) {
         auto pos = v0.template posTrack_as<MyMCV0Legs>();
@@ -683,12 +684,12 @@ struct PCMQCMC {
 
   void processQCMC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::EMMCParticles const& mcparticles, MyMCV0Legs const& mcv0legs, aod::EMMCEvents const& mcevents)
   {
-    processMC(collisions, v0photons, mcparticles, mcv0legs, mcevents);
+    processMC(collisions, v0photons, mcparticles, mcv0legs, mcevents, perCollisionV0);
   } // end of QC process
 
   void processQCMCML(FilteredMyCollisions const& collisions, MyV0PhotonsML const& v0photonsML, aod::EMMCParticles const& mcparticles, MyMCV0Legs const& mcv0legs, aod::EMMCEvents const& mcevents)
   {
-    processMC(collisions, v0photonsML, mcparticles, mcv0legs, mcevents);
+    processMC(collisions, v0photonsML, mcparticles, mcv0legs, mcevents, perCollisionV0ML);
   } // end of QC process with ML cuts
 
   template <typename TBinnedData>

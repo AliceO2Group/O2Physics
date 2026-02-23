@@ -476,14 +476,15 @@ struct PCMQC {
     // fRegistry.fill(HIST("V0Leg/hZY"), leg.z(), leg.y());
   }
 
-  o2::framework::SliceCache v0cache;
+  Preslice<MyV0Photons> perCollisionV0 = aod::v0photonkf::emeventId;
+  Preslice<MyV0PhotonsML> perCollisionV0ML = aod::v0photonkf::emeventId;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  template <typename TV0Photon>
-  void process(FilteredMyCollisions const& collisions, TV0Photon const& v0photons, aod::V0Legs const&)
+  template <typename TV0Photon, typename TPerCollision>
+  void process(FilteredMyCollisions const& collisions, TV0Photon const& v0photons, aod::V0Legs const&, TPerCollision const& perCollision)
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
@@ -502,7 +503,7 @@ struct PCMQC {
 
       fV0PhotonCut.SetCentrality(centralities[cfgCentEstimator]);
       int nv0 = 0;
-      auto v0photons_coll = v0photons.sliceByCached(aod::v0photonkf::emeventId, collision.globalIndex(), v0cache);
+      auto v0photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
       for (const auto& v0 : v0photons_coll) {
         auto pos = v0.template posTrack_as<aod::V0Legs>();
         auto ele = v0.template negTrack_as<aod::V0Legs>();
@@ -525,12 +526,12 @@ struct PCMQC {
   }
   void processQC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
   {
-    process(collisions, v0photons, v0legs);
+    process(collisions, v0photons, v0legs, perCollisionV0);
   } // end of process
 
   void processQCML(FilteredMyCollisions const& collisions, MyV0PhotonsML const& v0photonsML, aod::V0Legs const& v0legs)
   {
-    process(collisions, v0photonsML, v0legs);
+    process(collisions, v0photonsML, v0legs, perCollisionV0ML);
   } // end of ML process
 
   void processDummy(MyCollisions const&) {}
