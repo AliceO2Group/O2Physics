@@ -103,9 +103,9 @@ DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY",
                   full::Eta,
                   full::Phi,
                   full::HfCandDpFullEvId,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec)
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec)
 
 DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   hf_cand::Chi2PCA,
