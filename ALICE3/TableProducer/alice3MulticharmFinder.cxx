@@ -28,6 +28,7 @@
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -69,7 +70,7 @@ using namespace o2::framework::expressions;
 #define GET_HIST(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 #define INSERT_HIST(name, ...) histPointers[name] = histos.add((name).c_str(), __VA_ARGS__);
 
-using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes, aod::UpgradeRichs, aod::UpgradeRichSignals>;
+using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
 using Alice3Collision = soa::Join<aod::Collisions, aod::OTFLUTConfigId>::iterator;
 
 struct Alice3MulticharmFinder {
@@ -77,12 +78,18 @@ struct Alice3MulticharmFinder {
 
   Produces<aod::MCharmIndices> multiCharmIdx;
   Produces<aod::MCharmCores> multiCharmCore;
-  Produces<aod::MCharmPID> multiCharmPID;
   Produces<aod::MCharmExtra> multiCharmExtra;
 
   // Operation and minimisation criteria
-  Configurable<bool> fillDerivedTable{"fillDerivedTable", false, "fill MCharm[] tables (careful: memory)"};
-  Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "derivedTable"; // JSON group name
+    Configurable<bool> fillMCharmIdx{"fillMCharmIdx", true, "fill MCharmIdx[] tables (careful: memory)"};
+    Configurable<bool> fillMCharmCore{"fillMCharmCore", true, "fill MCharmCores[] tables (careful: memory)"};
+    Configurable<bool> fillMCharmExtra{"fillMCharmExtra", false, "fill MCharmExtra[] tables (careful: memory)"};
+  } derivedTable; // allows for gap between peak and bg in case someone wants to
+
+  Configurable<float> cfgMagneticField{"cfgMagneticField", 20.0f, "Magnetic field (in kilogauss) if value not found from geo provider"};
   Configurable<bool> doDCAplots{"doDCAplots", true, "do daughter prong DCA plots for D mesons"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
   Configurable<std::vector<float>> minNTracks{"minNTracks", {-1}, "Minimum number of tracks"};
@@ -94,7 +101,6 @@ struct Alice3MulticharmFinder {
   Configurable<float> xiMinDecayRadius{"xiMinDecayRadius", 0.5, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> xiMassWindow{"xiMassWindow", 0.005, "Mass window around Xi peak (GeV/c)"};
 
-  Configurable<float> picTofDiffInner{"picTofDiffInner", 99999, "|signal - expected| (ps)"};
   Configurable<float> picMinConstDCAxy{"picMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> picMinConstDCAz{"picMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> picMinPtDepDCAxy{"picMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
@@ -110,7 +116,6 @@ struct Alice3MulticharmFinder {
   Configurable<float> xicMaxProperLength{"xicMaxProperLength", 0.1, "Minimum proper length for XiC decay (cm)"};
   Configurable<float> xicMassWindow{"xicMassWindow", 0.012, "Mass window around XiC peak (GeV/c)"};
 
-  Configurable<float> piccTofDiffInner{"piccTofDiffInner", 99999, "|signal - expected| (ps)"};
   Configurable<float> piccMinConstDCAxy{"piccMinConstDCAxy", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piccMinConstDCAz{"piccMinConstDCAz", 0.0005f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piccMinPtDepDCAxy{"piccMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
@@ -154,11 +159,12 @@ struct Alice3MulticharmFinder {
 
   // Constants
   static constexpr std::array<int, 6> MomentumIndices = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+  static constexpr float ToMicrons = 1e+4;
 
-  static constexpr float toMicrons = 1e+4;
   // filter expressions for pions
   static constexpr uint32_t TrackSelectionPic = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiFromXiC;
   static constexpr uint32_t TrackSelectionPicc = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiFromXiCC;
+  float magneticField{};
 
   // partitions
   Partition<aod::McParticles> trueXi = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kXiMinus);
@@ -183,7 +189,7 @@ struct Alice3MulticharmFinder {
     std::array<float, 3> prong1mom;
     std::array<float, 3> prong2mom;
     std::array<float, o2::track::kLabCovMatSize> parentTrackCovMatrix;
-  } thisXiCcandidate;
+  } thisXicCandidate;
 
   struct {
     float dca;
@@ -198,7 +204,7 @@ struct Alice3MulticharmFinder {
     // charm daughters
     int nSiliconHitsPiCC;
     int nTPCHitsPiCC;
-  } thisXiCCcandidate;
+  } thisXiccCandidate;
 
   struct ProngInfo {
     float pt = 1e+10;
@@ -225,18 +231,18 @@ struct Alice3MulticharmFinder {
 
     o2::track::TrackParCov t0new = fitter.getTrack(0);
     o2::track::TrackParCov t1new = fitter.getTrack(1);
-    t0new.getPxPyPzGlo(thisXiCCcandidate.prong0mom);
-    t1new.getPxPyPzGlo(thisXiCCcandidate.prong1mom);
+    t0new.getPxPyPzGlo(thisXiccCandidate.prong0mom);
+    t1new.getPxPyPzGlo(thisXiccCandidate.prong1mom);
 
     // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
-    for (size_t i = 0; i < thisXiCCcandidate.xyz.size(); i++) {
-      thisXiCCcandidate.xyz[i] = vtx[i];
+    for (size_t i = 0; i < thisXiccCandidate.xyz.size(); i++) {
+      thisXiccCandidate.xyz[i] = vtx[i];
     }
 
     // compute cov mat
     for (int ii = 0; ii < o2::track::kLabCovMatSize; ii++) {
-      thisXiCCcandidate.parentTrackCovMatrix[ii] = 0.0f;
+      thisXiccCandidate.parentTrackCovMatrix[ii] = 0.0f;
     }
 
     std::array<float, o2::track::kLabCovMatSize> covA = {0};
@@ -246,31 +252,31 @@ struct Alice3MulticharmFinder {
 
     for (size_t i = 0; i < MomentumIndices.size(); i++) {
       int j = MomentumIndices[i];
-      thisXiCCcandidate.parentTrackCovMatrix[j] = covA[j] + covB[j];
+      thisXiccCandidate.parentTrackCovMatrix[j] = covA[j] + covB[j];
     }
 
     auto covVtx = fitter.calcPCACovMatrix();
-    thisXiCCcandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
-    thisXiCCcandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
-    thisXiCCcandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
-    thisXiCCcandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
-    thisXiCCcandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
-    thisXiCCcandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
+    thisXiccCandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
+    thisXiccCandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
+    thisXiccCandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
+    thisXiccCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
+    thisXiccCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
+    thisXiccCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
 
     // set relevant values
-    thisXiCCcandidate.dca = std::sqrt(fitter.getChi2AtPCACandidate());
-    if (thisXiCCcandidate.dca > xiccMaxDauDCA) {
+    thisXiccCandidate.dca = std::sqrt(fitter.getChi2AtPCACandidate());
+    if (thisXiccCandidate.dca > xiccMaxDauDCA) {
       return false;
     }
 
-    thisXiCCcandidate.mass = RecoDecay::m(std::array{std::array{thisXiCCcandidate.prong0mom[0], thisXiCCcandidate.prong0mom[1], thisXiCCcandidate.prong0mom[2]}, std::array{thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong1mom[2]}}, std::array{mass0, mass1});
+    thisXiccCandidate.mass = RecoDecay::m(std::array{std::array{thisXiccCandidate.prong0mom[0], thisXiccCandidate.prong0mom[1], thisXiccCandidate.prong0mom[2]}, std::array{thisXiccCandidate.prong1mom[0], thisXiccCandidate.prong1mom[1], thisXiccCandidate.prong1mom[2]}}, std::array{mass0, mass1});
 
-    if (std::fabs(thisXiCCcandidate.mass - o2::constants::physics::MassXiCCPlusPlus) > xiccMassWindow) {
+    if (std::fabs(thisXiccCandidate.mass - o2::constants::physics::MassXiCCPlusPlus) > xiccMassWindow) {
       return false;
     }
 
-    thisXiCCcandidate.pt = std::hypot(thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1]);
-    thisXiCCcandidate.eta = RecoDecay::eta(std::array{thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]});
+    thisXiccCandidate.pt = std::hypot(thisXiccCandidate.prong0mom[0] + thisXiccCandidate.prong1mom[0], thisXiccCandidate.prong0mom[1] + thisXiccCandidate.prong1mom[1]);
+    thisXiccCandidate.eta = RecoDecay::eta(std::array{thisXiccCandidate.prong0mom[0] + thisXiccCandidate.prong1mom[0], thisXiccCandidate.prong0mom[1] + thisXiccCandidate.prong1mom[1], thisXiccCandidate.prong0mom[2] + thisXiccCandidate.prong1mom[2]});
     return true;
   }
 
@@ -297,19 +303,19 @@ struct Alice3MulticharmFinder {
     t0 = fitter3.getTrack(0);
     t1 = fitter3.getTrack(1);
     t2 = fitter3.getTrack(2);
-    t0.getPxPyPzGlo(thisXiCcandidate.prong0mom);
-    t1.getPxPyPzGlo(thisXiCcandidate.prong1mom);
-    t2.getPxPyPzGlo(thisXiCcandidate.prong2mom);
+    t0.getPxPyPzGlo(thisXicCandidate.prong0mom);
+    t1.getPxPyPzGlo(thisXicCandidate.prong1mom);
+    t2.getPxPyPzGlo(thisXicCandidate.prong2mom);
 
     // get decay vertex coordinates
     const auto& vtx = fitter3.getPCACandidate();
-    for (size_t i = 0; i < thisXiCcandidate.xyz.size(); i++) {
-      thisXiCcandidate.xyz[i] = vtx[i];
+    for (size_t i = 0; i < thisXicCandidate.xyz.size(); i++) {
+      thisXicCandidate.xyz[i] = vtx[i];
     }
 
     // compute cov mat
     for (int ii = 0; ii < o2::track::kLabCovMatSize; ii++) {
-      thisXiCcandidate.parentTrackCovMatrix[ii] = 0.0f;
+      thisXicCandidate.parentTrackCovMatrix[ii] = 0.0f;
     }
 
     std::array<float, o2::track::kLabCovMatSize> covA = {0};
@@ -321,33 +327,26 @@ struct Alice3MulticharmFinder {
 
     for (size_t i = 0; i < MomentumIndices.size(); i++) {
       int j = MomentumIndices[i];
-      thisXiCcandidate.parentTrackCovMatrix[j] = covA[j] + covB[j] + covC[j];
+      thisXicCandidate.parentTrackCovMatrix[j] = covA[j] + covB[j] + covC[j];
     }
 
     auto covVtx = fitter3.calcPCACovMatrix();
-    thisXiCcandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
-    thisXiCcandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
-    thisXiCcandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
-    thisXiCcandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
-    thisXiCcandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
-    thisXiCcandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
+    thisXicCandidate.parentTrackCovMatrix[0] = covVtx(0, 0);
+    thisXicCandidate.parentTrackCovMatrix[1] = covVtx(1, 0);
+    thisXicCandidate.parentTrackCovMatrix[2] = covVtx(1, 1);
+    thisXicCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
+    thisXicCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
+    thisXicCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
 
     // set relevant values
-    thisXiCcandidate.dca = std::sqrt(fitter3.getChi2AtPCACandidate());
-    if (thisXiCcandidate.dca > xicMaxDauDCA) {
+    thisXicCandidate.dca = std::sqrt(fitter3.getChi2AtPCACandidate());
+    if (thisXicCandidate.dca > xicMaxDauDCA) {
       return false;
     }
-    thisXiCcandidate.mass = RecoDecay::m(std::array{std::array{thisXiCcandidate.prong0mom[0], thisXiCcandidate.prong0mom[1], thisXiCcandidate.prong0mom[2]}, std::array{thisXiCcandidate.prong1mom[0], thisXiCcandidate.prong1mom[1], thisXiCcandidate.prong1mom[2]}, std::array{thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong2mom[2]}}, std::array{p0mass, p1mass, p2mass});
-    thisXiCcandidate.pt = std::hypot(thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1]);
-    thisXiCcandidate.eta = RecoDecay::eta(std::array{thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]});
+    thisXicCandidate.mass = RecoDecay::m(std::array{std::array{thisXicCandidate.prong0mom[0], thisXicCandidate.prong0mom[1], thisXicCandidate.prong0mom[2]}, std::array{thisXicCandidate.prong1mom[0], thisXicCandidate.prong1mom[1], thisXicCandidate.prong1mom[2]}, std::array{thisXicCandidate.prong2mom[0], thisXicCandidate.prong2mom[1], thisXicCandidate.prong2mom[2]}}, std::array{p0mass, p1mass, p2mass});
+    thisXicCandidate.pt = std::hypot(thisXicCandidate.prong0mom[0] + thisXicCandidate.prong1mom[0] + thisXicCandidate.prong2mom[0], thisXicCandidate.prong0mom[1] + thisXicCandidate.prong1mom[1] + thisXicCandidate.prong2mom[1]);
+    thisXicCandidate.eta = RecoDecay::eta(std::array{thisXicCandidate.prong0mom[0] + thisXicCandidate.prong1mom[0] + thisXicCandidate.prong2mom[0], thisXicCandidate.prong0mom[1] + thisXicCandidate.prong1mom[1] + thisXicCandidate.prong2mom[1], thisXicCandidate.prong0mom[2] + thisXicCandidate.prong1mom[2] + thisXicCandidate.prong2mom[2]});
     return true;
-  }
-
-  template <typename TTrackType>
-  int getPdgCodeForTrack(const TTrackType& track)
-  {
-    auto mcParticle = track.template mcParticle_as<aod::McParticles>();
-    return mcParticle.pdgCode();
   }
 
   /// function to check if tracks have the same mother in MC
@@ -400,8 +399,17 @@ struct Alice3MulticharmFinder {
     return returnValue;
   }
 
-  void init(InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
+    const bool foundMagneticField = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "magneticField", magneticField, false);
+    if (!foundMagneticField) {
+      LOG(info) << "Could not retrieve magnetic field from geometry provider.";
+      LOG(info) << "Using value from configurable cfgMagneticField: " << cfgMagneticField;
+      magneticField = cfgMagneticField;
+    } else {
+      LOG(info) << "Using magnetic field form geometry provider with value: " << magneticField;
+    }
+
     // initialize O2 2-prong fitter (only once)
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
@@ -444,6 +452,7 @@ struct Alice3MulticharmFinder {
     // --- 0: attempt XiC, 1: success XiC
     // --- 2: attempt XiCC, 3: success XiCC
     INSERT_HIST(histPath + "hCharmBuilding", "hCharmBuilding", {kTH1D, {{10, -0.5, 9.5f}}});
+    INSERT_HIST(histPath + "hMultiCharmBuilding", "hMultiCharmBuilding", {kTH1D, {{10, -0.5, 9.5f}}});
 
     INSERT_HIST(histPath + "hMassXi", "hMassXi", {kTH1D, {{axisXiMass}}});
     INSERT_HIST(histPath + "hMassXiC", "hMassXiC", {kTH1D, {{axisXiCMass}}});
@@ -478,13 +487,17 @@ struct Alice3MulticharmFinder {
     INSERT_HIST(histPath + "hMinXiCDecayRadius", "hMinXiCDecayRadius", {kTH1D, {{axisRadius}}});
     INSERT_HIST(histPath + "hMinXiCCDecayRadius", "hMinXiCCDecayRadius", {kTH1D, {{axisRadius}}});
 
-    INSERT_HIST(histPath + "hMinxicDecayDistanceFromPV", "hMinxicDecayDistanceFromPV", {kTH1D, {{axisDecayLength}}});
+    INSERT_HIST(histPath + "hMinXicDecayDistanceFromPV", "hMinXicDecayDistanceFromPV", {kTH1D, {{axisDecayLength}}});
     INSERT_HIST(histPath + "hProperLengthXiC", "hProperLengthXiC", {kTH1D, {{axisDecayLength}}});
     INSERT_HIST(histPath + "hProperLengthXiCC", "hProperLengthXiCC", {kTH1D, {{axisDecayLength}}});
 
     INSERT_HIST(histPath + "hInnerTOFTrackTimeRecoPi1c", "hInnerTOFTrackTimeRecoPi1c", {kTH1D, {{axisTOFTrack}}});
     INSERT_HIST(histPath + "hInnerTOFTrackTimeRecoPi2c", "hInnerTOFTrackTimeRecoPi2c", {kTH1D, {{axisTOFTrack}}});
     INSERT_HIST(histPath + "hInnerTOFTrackTimeRecoPicc", "hInnerTOFTrackTimeRecoPicc", {kTH1D, {{axisTOFTrack}}});
+
+    INSERT_HIST(histPath + "hOuterTOFTrackTimeRecoPi1c", "hOuterTOFTrackTimeRecoPi1c", {kTH1D, {{axisTOFTrack}}});
+    INSERT_HIST(histPath + "hOuterTOFTrackTimeRecoPi2c", "hOuterTOFTrackTimeRecoPi2c", {kTH1D, {{axisTOFTrack}}});
+    INSERT_HIST(histPath + "hOuterTOFTrackTimeRecoPicc", "hOuterTOFTrackTimeRecoPicc", {kTH1D, {{axisTOFTrack}}});
 
     INSERT_HIST(histPath + "hXiRadiusVsXicRadius", "hXiRadiusVsXicRadius", {kTH2D, {{axisRadius2D, axisRadius2D}}});
     INSERT_HIST(histPath + "hXicRadiusVsXiccRadius", "hXicRadiusVsXiccRadius", {kTH2D, {{axisRadius2D, axisRadius2D}}});
@@ -525,7 +538,7 @@ struct Alice3MulticharmFinder {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindXiCC(Alice3Collision const& collision, Alice3Tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
+  void processFindXicc(Alice3Collision const& collision, Alice3Tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
     const std::string histPath = "Configuration_" + std::to_string(collision.lutConfigId()) + "/";
     initDetectorConfiguration(collision.lutConfigId());
@@ -544,20 +557,20 @@ struct Alice3MulticharmFinder {
 
     for (auto const& track : tracks) {
       if (BIT_CHECK(track.decayMap(), kTruePiFromXiC)) {
-        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiC")->Fill(track.pt(), track.dcaXY() * toMicrons);
-        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiC")->Fill(track.pt(), track.dcaZ() * toMicrons);
+        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiC")->Fill(track.pt(), track.dcaXY() * ToMicrons);
+        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiC")->Fill(track.pt(), track.dcaZ() * ToMicrons);
       }
       if (BIT_CHECK(track.decayMap(), kTruePiFromXiCC)) {
-        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiCC")->Fill(track.pt(), track.dcaXY() * toMicrons);
-        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiCC")->Fill(track.pt(), track.dcaZ() * toMicrons);
+        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiCC")->Fill(track.pt(), track.dcaXY() * ToMicrons);
+        GET_HIST(TH2, histPath + "h2dDCAxyVsPtPiFromXiCC")->Fill(track.pt(), track.dcaZ() * ToMicrons);
       }
     }
 
     for (auto const& xiCand : cascades) {
       auto xi = xiCand.cascadeTrack_as<Alice3Tracks>(); // de-reference cascade track
       GET_HIST(TH1, histPath + "hMassXi")->Fill(xiCand.mXi());
-      GET_HIST(TH2, histPath + "h2dDCAxyVsPtXiFromXiC")->Fill(xi.pt(), xi.dcaXY() * toMicrons);
-      GET_HIST(TH2, histPath + "h2dDCAzVsPtXiFromXiC")->Fill(xi.pt(), xi.dcaZ() * toMicrons);
+      GET_HIST(TH2, histPath + "h2dDCAxyVsPtXiFromXiC")->Fill(xi.pt(), xi.dcaXY() * ToMicrons);
+      GET_HIST(TH2, histPath + "h2dDCAzVsPtXiFromXiC")->Fill(xi.pt(), xi.dcaZ() * ToMicrons);
 
       if (std::fabs(xiCand.mXi() - o2::constants::physics::MassXiMinus) > xiMassWindow) {
         continue; // out of mass region
@@ -572,8 +585,8 @@ struct Alice3MulticharmFinder {
         continue; // likely a primary xi
       }
 
-      GET_HIST(TH1, histPath + "hDCAxyXi")->Fill(xi.dcaXY() * toMicrons);
-      GET_HIST(TH1, histPath + "hDCAzXi")->Fill(xi.dcaZ() * toMicrons);
+      GET_HIST(TH1, histPath + "hDCAxyXi")->Fill(xi.dcaXY() * ToMicrons);
+      GET_HIST(TH1, histPath + "hDCAzXi")->Fill(xi.dcaZ() * ToMicrons);
       if (xiCand.cascRadius() < xiMinDecayRadius) {
         continue;
       }
@@ -593,13 +606,6 @@ struct Alice3MulticharmFinder {
         }
 
         GET_HIST(TH1, histPath + "hPi1cPt")->Fill(pi1c.pt());
-        float pi1cTOFDiffInner = std::fabs(pi1c.innerTOFTrackTimeReco() - pi1c.innerTOFExpectedTimePi());
-        float pi1cTOFDiffOuter = std::fabs(pi1c.outerTOFTrackTimeReco() - pi1c.outerTOFExpectedTimePi());
-        if (pi1cTOFDiffInner > picTofDiffInner) {
-          continue; // did not arrive at expected time
-        }
-
-        GET_HIST(TH1, histPath + "hInnerTOFTrackTimeRecoPi1c")->Fill(pi1cTOFDiffInner);
         // second pion from XiC decay for starts here
         for (auto const& pi2c : picTracksGrouped) {
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c)) {
@@ -619,44 +625,40 @@ struct Alice3MulticharmFinder {
           }
 
           GET_HIST(TH1, histPath + "hPi2cPt")->Fill(pi2c.pt());
-          float pi2cTOFDiffInner = std::fabs(pi2c.innerTOFTrackTimeReco() - pi2c.innerTOFExpectedTimePi());
-          float pi2cTOFDiffOuter = std::fabs(pi2c.outerTOFTrackTimeReco() - pi2c.outerTOFExpectedTimePi());
-          if (pi2cTOFDiffInner > picTofDiffInner) {
-            continue; // did not arrive at expected time
-          }
-
-          GET_HIST(TH1, histPath + "hInnerTOFTrackTimeRecoPi2c")->Fill(pi2cTOFDiffInner);
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
-
           nCombinationsC++;
           GET_HIST(TH1, histPath + "hCharmBuilding")->Fill(0.0f);
+
           if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, o2::constants::physics::MassXiMinus, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged)) {
             continue; // failed at building candidate
           }
 
-          GET_HIST(TH1, histPath + "hDCAXiCDaughters")->Fill(thisXiCcandidate.dca * toMicrons);
-          if (std::fabs(thisXiCcandidate.mass - o2::constants::physics::MassXiCPlus) > xicMassWindow) {
+          GET_HIST(TH1, histPath + "hDCAXiCDaughters")->Fill(thisXicCandidate.dca * ToMicrons);
+          if (std::fabs(thisXicCandidate.mass - o2::constants::physics::MassXiCPlus) > xicMassWindow) {
             continue; // out of mass region
           }
 
           GET_HIST(TH1, histPath + "hCharmBuilding")->Fill(1.0f);
           const std::array<float, 3> momentumC = {
-            thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0],
-            thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1],
-            thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]};
+            thisXicCandidate.prong0mom[0] + thisXicCandidate.prong1mom[0] + thisXicCandidate.prong2mom[0],
+            thisXicCandidate.prong0mom[1] + thisXicCandidate.prong1mom[1] + thisXicCandidate.prong2mom[1],
+            thisXicCandidate.prong0mom[2] + thisXicCandidate.prong1mom[2] + thisXicCandidate.prong2mom[2]};
 
-          o2::track::TrackParCov xicTrack(thisXiCcandidate.xyz, momentumC, thisXiCcandidate.parentTrackCovMatrix, +1);
-          float xicDecayRadius2D = std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1]);
-          if (xicDecayRadius2D < xiccMinDecayRadius)
+          o2::track::TrackParCov xicTrack(thisXicCandidate.xyz, momentumC, thisXicCandidate.parentTrackCovMatrix, +1);
+          float xicDecayRadius2D = std::hypot(thisXicCandidate.xyz[0], thisXicCandidate.xyz[1]);
+          if (xicDecayRadius2D < xiccMinDecayRadius) {
             continue; // do not take if radius too small, likely a primary combination
+          }
 
-          GET_HIST(TH1, histPath + "hMinXiCDecayRadius")->Fill(xicDecayRadius2D * toMicrons);
+          GET_HIST(TH1, histPath + "hCharmBuilding")->Fill(2.0f);
+          GET_HIST(TH1, histPath + "hMinXiCDecayRadius")->Fill(xicDecayRadius2D * ToMicrons);
           if (xicDecayRadius2D > xiCand.cascRadius()) {
             continue;
           }
 
-          GET_HIST(TH2, histPath + "hXiRadiusVsXicRadius")->Fill(xiCand.cascRadius() * toMicrons, xicDecayRadius2D * toMicrons);
+          GET_HIST(TH1, histPath + "hCharmBuilding")->Fill(3.0f);
+          GET_HIST(TH2, histPath + "hXiRadiusVsXicRadius")->Fill(xiCand.cascRadius() * ToMicrons, xicDecayRadius2D * ToMicrons);
           o2::dataformats::DCA dcaInfo;
           float xicdcaXY = 1e+10, xicdcaZ = 1e+10;
           o2::track::TrackParCov xicTrackCopy(xicTrack); // paranoia
@@ -672,9 +674,10 @@ struct Alice3MulticharmFinder {
             continue; // likely a primary xic
           }
 
-          GET_HIST(TH1, histPath + "hDCAxyXiC")->Fill(std::fabs(xicdcaXY * toMicrons));
-          GET_HIST(TH1, histPath + "hDCAzXiC")->Fill(std::fabs(xicdcaZ * toMicrons));
-          GET_HIST(TH1, histPath + "hMassXiC")->Fill(thisXiCcandidate.mass);
+          GET_HIST(TH1, histPath + "hCharmBuilding")->Fill(4.0f);
+          GET_HIST(TH1, histPath + "hDCAxyXiC")->Fill(std::fabs(xicdcaXY * ToMicrons));
+          GET_HIST(TH1, histPath + "hDCAzXiC")->Fill(std::fabs(xicdcaZ * ToMicrons));
+          GET_HIST(TH1, histPath + "hMassXiC")->Fill(thisXicCandidate.mass);
 
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
@@ -691,72 +694,71 @@ struct Alice3MulticharmFinder {
               continue; // too low momentum
             }
 
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(0.0f);
             GET_HIST(TH1, histPath + "hPiccPt")->Fill(picc.pt());
-            float piccTOFDiffInner = std::fabs(picc.innerTOFTrackTimeReco() - picc.innerTOFExpectedTimePi());
-            float piccTOFDiffOuter = std::fabs(picc.outerTOFTrackTimeReco() - picc.outerTOFExpectedTimePi());
-            if (piccTOFDiffInner > piccTofDiffInner) {
-              continue; // did not arrive at expected time
-            }
-
-            GET_HIST(TH1, histPath + "hInnerTOFTrackTimeRecoPicc")->Fill(piccTOFDiffInner);
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
             nCombinationsCC++;
-            GET_HIST(TH1, histPath + "hCharmBuilding")->Fill(2.0f);
             if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, o2::constants::physics::MassXiCPlus, o2::constants::physics::MassPionCharged)) {
               continue; // failed at building candidate
             }
 
-            GET_HIST(TH1, histPath + "hDCAXiCCDaughters")->Fill(thisXiCCcandidate.dca * toMicrons);
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(1.0f);
+            GET_HIST(TH1, histPath + "hDCAXiCCDaughters")->Fill(thisXiccCandidate.dca * ToMicrons);
             const std::array<float, 3> momentumCC = {
-              thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0],
-              thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1],
-              thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]};
+              thisXiccCandidate.prong0mom[0] + thisXiccCandidate.prong1mom[0],
+              thisXiccCandidate.prong0mom[1] + thisXiccCandidate.prong1mom[1],
+              thisXiccCandidate.prong0mom[2] + thisXiccCandidate.prong1mom[2]};
 
-            o2::track::TrackParCov xiccTrack(thisXiCCcandidate.xyz, momentumCC, thisXiCCcandidate.parentTrackCovMatrix, +2);
-            float xiccDecayRadius2D = std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1]);
+            o2::track::TrackParCov xiccTrack(thisXiccCandidate.xyz, momentumCC, thisXiccCandidate.parentTrackCovMatrix, +2);
+            float xiccDecayRadius2D = std::hypot(thisXiccCandidate.xyz[0], thisXiccCandidate.xyz[1]);
             if (xiccDecayRadius2D < xiccMinDecayRadius) {
               continue; // do not take if radius too small, likely a primary combination
             }
 
-            GET_HIST(TH1, histPath + "hDCAXiCCDaughters")->Fill(thisXiCCcandidate.dca * toMicrons);
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(2.0f);
+            GET_HIST(TH1, histPath + "hDCAXiCCDaughters")->Fill(thisXiccCandidate.dca * ToMicrons);
             float totalMomentumC = std::hypot(momentumC[0], momentumC[1], momentumC[2]);
             float decayLengthXiC = std::hypot(
-              thisXiCcandidate.xyz[0] - thisXiCCcandidate.xyz[0],
-              thisXiCcandidate.xyz[1] - thisXiCCcandidate.xyz[1],
-              thisXiCcandidate.xyz[2] - thisXiCCcandidate.xyz[2]);
-            float xicProperLength = decayLengthXiC * thisXiCcandidate.mass / totalMomentumC;
+              thisXicCandidate.xyz[0] - thisXiccCandidate.xyz[0],
+              thisXicCandidate.xyz[1] - thisXiccCandidate.xyz[1],
+              thisXicCandidate.xyz[2] - thisXiccCandidate.xyz[2]);
+            float xicProperLength = decayLengthXiC * thisXicCandidate.mass / totalMomentumC;
 
             if (xicProperLength < xicMinProperLength || xicProperLength > xicMaxProperLength) {
               continue; // likely background
             }
 
-            GET_HIST(TH1, histPath + "hProperLengthXiC")->Fill(xicProperLength * toMicrons);
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(3.0f);
+            GET_HIST(TH1, histPath + "hProperLengthXiC")->Fill(xicProperLength * ToMicrons);
             float xicDistanceFromPV = std::hypot(
-              thisXiCcandidate.xyz[0] - collision.posX(),
-              thisXiCcandidate.xyz[1] - collision.posY(),
-              thisXiCcandidate.xyz[2] - collision.posZ());
-            float xicDecayDistanceFromPV = xicDistanceFromPV * thisXiCcandidate.mass / totalMomentumC;
+              thisXicCandidate.xyz[0] - collision.posX(),
+              thisXicCandidate.xyz[1] - collision.posY(),
+              thisXicCandidate.xyz[2] - collision.posZ());
+            float xicDecayDistanceFromPV = xicDistanceFromPV * thisXicCandidate.mass / totalMomentumC;
             if (xicDecayDistanceFromPV < xicMinDecayDistanceFromPV) {
               continue; // too close to PV
             }
 
-            GET_HIST(TH1, histPath + "hMinxicDecayDistanceFromPV")->Fill(xicDecayDistanceFromPV * toMicrons);
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(4.0f);
+            GET_HIST(TH1, histPath + "hMinXicDecayDistanceFromPV")->Fill(xicDecayDistanceFromPV * ToMicrons);
             float totalMomentumCC = std::hypot(momentumCC[0], momentumCC[1], momentumCC[2]);
             float decayLengthXiCC = std::hypot(
-              thisXiCCcandidate.xyz[0] - collision.posX(),
-              thisXiCCcandidate.xyz[1] - collision.posY(),
-              thisXiCCcandidate.xyz[2] - collision.posZ());
-            float xiccProperLength = decayLengthXiCC * thisXiCCcandidate.mass / totalMomentumCC;
+              thisXiccCandidate.xyz[0] - collision.posX(),
+              thisXiccCandidate.xyz[1] - collision.posY(),
+              thisXiccCandidate.xyz[2] - collision.posZ());
+            float xiccProperLength = decayLengthXiCC * thisXiccCandidate.mass / totalMomentumCC;
             if (xiccProperLength < xiccMinProperLength || xiccProperLength > xicMaxProperLength) {
               continue; // likely background
             }
 
-            GET_HIST(TH1, histPath + "hProperLengthXiCC")->Fill(xiccProperLength * toMicrons);
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(5.0f);
+            GET_HIST(TH1, histPath + "hProperLengthXiCC")->Fill(xiccProperLength * ToMicrons);
             if (xiccDecayRadius2D > xicDecayRadius2D) {
               continue; // XiCC should decay before XiC
             }
 
-            GET_HIST(TH2, histPath + "hXicRadiusVsXiccRadius")->Fill(xicDecayRadius2D * toMicrons, xiccDecayRadius2D * toMicrons);
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(6.0f);
+            GET_HIST(TH2, histPath + "hXicRadiusVsXiccRadius")->Fill(xicDecayRadius2D * ToMicrons, xiccDecayRadius2D * ToMicrons);
             float xiccdcaXY = 1e+10, xiccdcaZ = 1e+10;
             if (xiccTrack.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
               xiccdcaXY = dcaInfo.getY();
@@ -767,37 +769,40 @@ struct Alice3MulticharmFinder {
               continue; // not pointing to PV
             }
 
-            GET_HIST(TH1, histPath + "hDCAxyXiCC")->Fill(xiccdcaXY * toMicrons);
-            GET_HIST(TH1, histPath + "hDCAzXiCC")->Fill(xiccdcaZ * toMicrons);
-            if (std::fabs(thisXiCCcandidate.eta) > xiccMaxEta) {
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(7.0f);
+            GET_HIST(TH1, histPath + "hDCAxyXiCC")->Fill(xiccdcaXY * ToMicrons);
+            GET_HIST(TH1, histPath + "hDCAzXiCC")->Fill(xiccdcaZ * ToMicrons);
+            if (std::fabs(thisXiccCandidate.eta) > xiccMaxEta) {
               continue; // not in central barrel
             }
 
-            GET_HIST(TH1, histPath + "hCharmBuilding")->Fill(3.0f);
-            GET_HIST(TH1, histPath + "hMassXiCC")->Fill(thisXiCCcandidate.mass);
-            GET_HIST(TH1, histPath + "hPtXiCC")->Fill(thisXiCCcandidate.pt);
-            GET_HIST(TH1, histPath + "hEtaXiCC")->Fill(thisXiCCcandidate.eta);
-            GET_HIST(TH3, histPath + "h3dMassXiCC")->Fill(thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
+            GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(8.0f);
+            GET_HIST(TH1, histPath + "hMassXiCC")->Fill(thisXiccCandidate.mass);
+            GET_HIST(TH1, histPath + "hPtXiCC")->Fill(thisXiccCandidate.pt);
+            GET_HIST(TH1, histPath + "hEtaXiCC")->Fill(thisXiccCandidate.eta);
+            GET_HIST(TH3, histPath + "h3dMassXiCC")->Fill(thisXiccCandidate.pt, thisXiccCandidate.eta, thisXiccCandidate.mass);
 
-            GET_HIST(TH1, histPath + "hPi1cDCAxy")->Fill(std::abs(pi1c.dcaXY() * toMicrons));
-            GET_HIST(TH1, histPath + "hPi1cDCAz")->Fill(std::abs(pi1c.dcaZ() * toMicrons));
-            GET_HIST(TH1, histPath + "hPi2cDCAxy")->Fill(std::abs(pi2c.dcaXY() * toMicrons));
-            GET_HIST(TH1, histPath + "hPi2cDCAz")->Fill(std::abs(pi2c.dcaZ() * toMicrons));
-            GET_HIST(TH1, histPath + "hPiccDCAxy")->Fill(std::abs(picc.dcaXY() * toMicrons));
-            GET_HIST(TH1, histPath + "hPiccDCAz")->Fill(std::abs(picc.dcaZ() * toMicrons));
+            GET_HIST(TH1, histPath + "hPi1cDCAxy")->Fill(std::abs(pi1c.dcaXY() * ToMicrons));
+            GET_HIST(TH1, histPath + "hPi1cDCAz")->Fill(std::abs(pi1c.dcaZ() * ToMicrons));
+            GET_HIST(TH1, histPath + "hPi2cDCAxy")->Fill(std::abs(pi2c.dcaXY() * ToMicrons));
+            GET_HIST(TH1, histPath + "hPi2cDCAz")->Fill(std::abs(pi2c.dcaZ() * ToMicrons));
+            GET_HIST(TH1, histPath + "hPiccDCAxy")->Fill(std::abs(picc.dcaXY() * ToMicrons));
+            GET_HIST(TH1, histPath + "hPiccDCAz")->Fill(std::abs(picc.dcaZ() * ToMicrons));
 
             // produce multi-charm table for posterior analysis
-            if (fillDerivedTable) {
+            if (derivedTable.fillMCharmIdx) {
               multiCharmIdx(
                 xiCand.globalIndex(),
                 pi1c.globalIndex(), pi2c.globalIndex(),
                 picc.globalIndex());
+            }
 
+            if (derivedTable.fillMCharmCore) {
               multiCharmCore(
-                thisXiCCcandidate.mass, thisXiCCcandidate.pt,
-                thisXiCCcandidate.eta, thisXiCCcandidate.dca,
-                thisXiCcandidate.mass, thisXiCcandidate.pt,
-                thisXiCcandidate.eta, thisXiCcandidate.dca,
+                thisXiccCandidate.mass, thisXiccCandidate.pt,
+                thisXiccCandidate.eta, thisXiccCandidate.dca,
+                thisXicCandidate.mass, thisXicCandidate.pt,
+                thisXicCandidate.eta, thisXicCandidate.dca,
                 xi.dcaXY(), xi.dcaZ(),
                 xicdcaXY, xicdcaZ,
                 xiccdcaXY, xiccdcaZ,
@@ -810,21 +815,9 @@ struct Alice3MulticharmFinder {
                 xiccProperLength,
                 pi1c.pt(), pi2c.pt(), picc.pt(),
                 collision.lutConfigId());
+            }
 
-              multiCharmPID(
-                pi1cTOFDiffInner, pi1c.nSigmaPionInnerTOF(),
-                pi1cTOFDiffOuter, pi1c.nSigmaPionOuterTOF(),
-                pi1c.hasSigPi(), pi1c.nSigmaPionRich(),
-                getPdgCodeForTrack(pi1c),
-                pi2cTOFDiffInner, pi2c.nSigmaPionInnerTOF(),
-                pi2cTOFDiffOuter, pi2c.nSigmaPionOuterTOF(),
-                pi2c.hasSigPi(), pi2c.nSigmaPionRich(),
-                getPdgCodeForTrack(pi2c),
-                piccTOFDiffInner, picc.nSigmaPionInnerTOF(),
-                piccTOFDiffOuter, picc.nSigmaPionOuterTOF(),
-                picc.hasSigPi(), picc.nSigmaPionRich(),
-                getPdgCodeForTrack(picc));
-
+            if (derivedTable.fillMCharmExtra) {
               ProngInfo bachelor, positive, negative;
               if (xiCand.has_bachTrack()) {
                 auto bach = xiCand.bachTrack_as<Alice3Tracks>(); // de-reference bach track
@@ -870,7 +863,7 @@ struct Alice3MulticharmFinder {
 
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
   PROCESS_SWITCH(Alice3MulticharmFinder, processGenerated, "fill MC-only histograms", true);
-  PROCESS_SWITCH(Alice3MulticharmFinder, processFindXiCC, "find XiCC baryons", true);
+  PROCESS_SWITCH(Alice3MulticharmFinder, processFindXicc, "find XiCC baryons", true);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
