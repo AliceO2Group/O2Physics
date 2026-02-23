@@ -1366,14 +1366,14 @@ struct derivedlambdakzeroanalysis {
     // Negative track
     if (v0Selections.requireNegHasTOF) {
       if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
-      BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
+        BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
       if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
         BITSET(bitMap, selTOFNSigmaNegativePionLambda);
       if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
         BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
     } else { // only apply TOF requirement if available
       if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
-      BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
+        BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
       if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
         BITSET(bitMap, selTOFNSigmaNegativePionLambda);
       if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
