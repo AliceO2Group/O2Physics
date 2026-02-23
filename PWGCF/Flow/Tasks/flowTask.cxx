@@ -394,6 +394,8 @@ struct FlowTask {
     registry.add("PtVariance_partB_WithinGap08", "", {HistType::kTProfile, {axisIndependent}});
     if (cfgAdditionObs.cfgDptDisEnable) {
       registry.add("hNormDeltaPt_X", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgAdditionObs.cfgDptDisAxisNormal, axisIndependent}});
+      registry.add("hNormDeltaPt_X_afterCut", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgAdditionObs.cfgDptDisAxisNormal, axisIndependent}});
+      registry.add("hPt_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
     }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -1222,6 +1224,7 @@ struct FlowTask {
     std::vector<float> consistentEventVector = cfgUserIO.cfgConsistentEventVector;
     if (cfgUserIO.cfgConsistentEventFlag)
       LOGF(info, "consistentEventVector.size = %u", consistentEventVector.size());
+    std::vector<float> ptVec;
 
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
@@ -1290,6 +1293,8 @@ struct FlowTask {
         }
       }
       registry.fill(HIST("hPt"), track.pt());
+      if (cfgAdditionObs.cfgDptDisEnable)
+        ptVec.push_back(track.pt());
       if (cfgAdditionObs.cfgV02Enabled && track.eta() >= cfgAdditionObs.cfgV02FracEtaMin && track.eta() <= cfgAdditionObs.cfgV02FracEtaMax) {
         cfgAdditionObs.listPtX[0]->Fill(independent, track.pt(), weff);
         cfgAdditionObs.listPtX[sampleIndex + 1]->Fill(independent, track.pt(), weff);
@@ -1372,6 +1377,11 @@ struct FlowTask {
       } else if (cfgAdditionObs.cfgDptDisSelectionSwitch == kHighDptCut && normDeltaPt < cfgAdditionObs.fDptDisCutHigh->GetBinContent(cfgAdditionObs.fDptDisCutHigh->FindBin(independent))) {
         // only keep high 10% dpt event
         return;
+      }
+      registry.fill(HIST("hNormDeltaPt_X_afterCut"), normDeltaPt, independent, weffEvent);
+      if (ptVec.size() > 0) {
+        for (auto trpt : ptVec)
+          registry.fill(HIST("hPt_afterDptCut"), trpt);
       }
     }
 
