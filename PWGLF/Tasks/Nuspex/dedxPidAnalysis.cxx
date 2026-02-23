@@ -623,6 +623,10 @@ struct DedxPidAnalysis {
     // Event Counter by centrality
     registryDeDx.add("histCentrality", "Centrality", HistType::kTH1F, {centAxis});
 
+    // Tracks vs p
+    registryDeDx.add("Tracks_vs_pT_all", "pT All", HistType::kTH1F, {{ptAxis}});
+    registryDeDx.add("Tracks_vs_pT_all_cuts", "pT All + cuts", HistType::kTH1F, {{ptAxis}});
+
     // Event Counter
     registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
     auto hstat = registryDeDx.get<TH1>(HIST("evsel"));
@@ -1397,6 +1401,8 @@ struct DedxPidAnalysis {
         continue;
 
       registryDeDx.fill(HIST("trackselAll"), TrkPriCutLabel::SelectionPrim);
+      // For pt
+      registryDeDx.fill(HIST("Tracks_vs_pT_all"), trk.pt());
 
       // phi and Ncl cut
       if (phiVarCut) {
@@ -1424,6 +1430,8 @@ struct DedxPidAnalysis {
       }
 
       registryDeDx.fill(HIST("heta_vs_NclFound_TPC_After_Primary"), trk.eta(), trk.tpcNClsFound());
+      // For pt + cuts
+      registryDeDx.fill(HIST("Tracks_vs_pT_all_cuts"), trk.pt());
 
       float signedP = trk.sign() * getMomentum(trk);
 

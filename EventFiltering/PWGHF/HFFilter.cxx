@@ -112,9 +112,10 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for beauty triggers
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCAXY pT-dependent cut"};
-  Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
-  Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
-  Configurable<LabeledArray<double>> cutsTrackBeautyToJPsi{"cutsTrackBeautyToJPsi", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for beauty->JPsi candidates (not muons)"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
+    Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 4-prong beauty candidates and J/Psi channels"};
+  } cutsTrackBeauty;
   Configurable<std::string> paramCharmMassShape{"paramCharmMassShape", "2023_pass3", "Parametrisation of charm-hadron mass shape (options: 2023_pass3)"};
   Configurable<float> numSigmaDeltaMassCharmHad{"numSigmaDeltaMassCharmHad", 2.5, "Number of sigma for charm-hadron delta mass cut in B and D resonance triggers"};
   Configurable<std::vector<double>> pTBinsBHadron{"pTBinsBHadron", std::vector<double>{hf_trigger_cuts_presel_beauty::vecBinsPt}, "pT bin limits for beauty hadrons preselections"};
@@ -135,6 +136,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<float>> ptThresholdsForFemto{"ptThresholdsForFemto", {cutsPtThresholdsForFemto[0], 1, 2, labelsEmpty, labelsColumnsPtThresholdsForFemto}, "pT treshold for proton or deuteron for kFemto triggers in GeV/c"};
   Configurable<bool> forceTofProtonForFemto{"forceTofProtonForFemto", true, "flag to force TOF PID for protons"};
   Configurable<bool> forceTofDeuteronForFemto{"forceTofDeuteronForFemto", false, "flag to force TOF PID for deuterons"};
+  Configurable<bool> forceTofProtonForLcReso{"forceTofProtonForLcReso", false, "flag to force TOF PID for protons in Lc* channels"};
 
   // double charm
   Configurable<LabeledArray<int>> enableDoubleCharmChannels{"enableDoubleCharmChannels", {activeDoubleCharmChannels[0], 2, 3, labelsRowsDoubleCharmChannels, labelsColumnsDoubleCharmChannels}, "Flags to enable/disable double charm channels"};
@@ -143,9 +145,11 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for resonance triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
   Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 4, 14, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
-  Configurable<bool> keepAlsoWrongDmesLambdaPairs{"keepAlsoWrongDmesLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
-  Configurable<bool> keepAlsoWrongDmesProtonPairs{"keepAlsoWrongDmesProtonPairs", true, "flat go keep also wrong sign D0p pairs"};
-  Configurable<bool> keepAlsoWrongDstarMesProtonPairs{"keepAlsoWrongDstarMesProtonPairs", true, "flat go keep also wrong sign D*0p pairs"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> keepAlsoWrongDmesLambdaPairs{"keepAlsoWrongDmesLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
+    Configurable<bool> keepAlsoWrongDmesProtonPairs{"keepAlsoWrongDmesProtonPairs", true, "flat go keep also wrong sign D0p pairs"};
+    Configurable<bool> keepAlsoWrongDstarMesProtonPairs{"keepAlsoWrongDstarMesProtonPairs", true, "flat go keep also wrong sign D*0p pairs"};
+  } enableWrongMassHyp;
 
   // parameters for Sigma_C proton trigger
   Configurable<LabeledArray<float>> cutsSigmaCPr{
@@ -167,12 +171,14 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for ML application
   Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{hf_cuts_bdt_multiclass::vecBinsPt}, "track pT bin limits for BDT cut"};
 
-  Configurable<LabeledArray<double>> thresholdBDTScoreD0ToKPi{"thresholdBDTScoreD0ToKPi", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D0 candidates"};
-  Configurable<LabeledArray<double>> thresholdBDTScoreDPlusToPiKPi{"thresholdBDTScoreDPlusToPiKPi", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDTScoreDSToPiKK{"thresholdBDTScoreDSToPiKK", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Ds+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDTScoreLcToPiKP{"thresholdBDTScoreLcToPiKP", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDTScoreXicToPiKP{"thresholdBDTScoreXicToPiKP", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Xic+ candidates"};
-  Configurable<LabeledArray<double>> thresholdBDTScoreScForSigmaCPr{"thresholdBDTScoreScForSigmaCPr", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc<--Sc candidates for sigmaC-pr trigger"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<LabeledArray<double>> thresholdBDTScoreD0ToKPi{"thresholdBDTScoreD0ToKPi", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D0 candidates"};
+    Configurable<LabeledArray<double>> thresholdBDTScoreDPlusToPiKPi{"thresholdBDTScoreDPlusToPiKPi", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D+ candidates"};
+    Configurable<LabeledArray<double>> thresholdBDTScoreDSToPiKK{"thresholdBDTScoreDSToPiKK", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Ds+ candidates"};
+    Configurable<LabeledArray<double>> thresholdBDTScoreLcToPiKP{"thresholdBDTScoreLcToPiKP", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
+    Configurable<LabeledArray<double>> thresholdBDTScoreXicToPiKP{"thresholdBDTScoreXicToPiKP", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Xic+ candidates"};
+    Configurable<LabeledArray<double>> thresholdBDTScoreScForSigmaCPr{"thresholdBDTScoreScForSigmaCPr", {hf_cuts_bdt_multiclass::Cuts[0], hf_cuts_bdt_multiclass::NBinsPt, hf_cuts_bdt_multiclass::NCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc<--Sc candidates for sigmaC-pr trigger"};
+  } thresholdsBDT;
 
   Configurable<bool> acceptBdtBkgOnly{"acceptBdtBkgOnly", true, "Enable / disable selection based on BDT bkg score only"};
 
@@ -271,7 +277,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
     helper.setPtLimitsLcResonanceBachelor(ptCuts->get(0u, 8u), ptCuts->get(1u, 8u));
     helper.setPtLimitsThetaCBachelor(ptCuts->get(0u, 9u), ptCuts->get(1u, 9u));
-    helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong, cutsTrackBeauty4Prong);
+    helper.setCutsSingleTrackBeauty(cutsTrackBeauty.cutsTrackBeauty3Prong, cutsTrackBeauty.cutsTrackBeauty4Prong, cutsTrackBeauty.cutsTrackBeauty4Prong);
     helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
     helper.setCutsBhadrons(cutsBtoHadrons.cutsBplus, cutsBtoHadrons.cutsBzeroToDstar, cutsBtoHadrons.cutsBc, cutsBtoHadrons.cutsBzero, cutsBtoHadrons.cutsBs, cutsBtoHadrons.cutsLb, cutsBtoHadrons.cutsXib);
     helper.setCutsBtoJPsi(cutsBtoHadrons.cutsBtoJPsiX);
@@ -284,6 +290,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setNsigmaKaonCutsFor3Prongs(nSigmaPidCuts->get(0u, 2u), nSigmaPidCuts->get(1u, 2u));
     helper.setNsigmaKaonProtonCutsForBeautyToJPsi(nSigmaPidCuts->get(0u, 7u), nSigmaPidCuts->get(1u, 7u));
     helper.setForceTofForFemto(forceTofProtonForFemto, forceTofDeuteronForFemto);
+    helper.setForceTofForLcResonances(forceTofProtonForLcReso);
     helper.setV0Selections(cutsGammaK0sLambda->get(0u, 0u), cutsGammaK0sLambda->get(0u, 1u), cutsGammaK0sLambda->get(0u, 2u), cutsGammaK0sLambda->get(0u, 3u), cutsGammaK0sLambda->get(0u, 4u), cutsGammaK0sLambda->get(0u, 5u));
     helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u), cutsXiCascades->get(0u, 7u));
     helper.setXiBachelorSelections(cutsXiBachelor->get(0u, 0u), cutsXiBachelor->get(0u, 1u), cutsXiBachelor->get(0u, 2u), cutsXiBachelor->get(0u, 3u), cutsXiBachelor->get(0u, 4u), cutsXiBachelor->get(0u, 5u), cutsXiBachelor->get(0u, 6u), cutsXiBachelor->get(0u, 7u), cutsXiBachelor->get(0u, 8u), cutsXiBachelor->get(0u, 9u), cutsXiBachelor->get(0u, 10u), cutsXiBachelor->get(0u, 11u), cutsXiBachelor->get(0u, 12u), cutsXiBachelor->get(0u, 13u), cutsXiBachelor->get(0u, 14u));
@@ -456,7 +463,7 @@ struct HfFilter { // Main struct for HF triggers
     ccdbApi.init(url);
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
-    thresholdBDTScores = {thresholdBDTScoreD0ToKPi, thresholdBDTScoreDPlusToPiKPi, thresholdBDTScoreDSToPiKK, thresholdBDTScoreLcToPiKP, thresholdBDTScoreXicToPiKP};
+    thresholdBDTScores = {thresholdsBDT.thresholdBDTScoreD0ToKPi, thresholdsBDT.thresholdBDTScoreDPlusToPiKPi, thresholdsBDT.thresholdBDTScoreDSToPiKK, thresholdsBDT.thresholdBDTScoreLcToPiKP, thresholdsBDT.thresholdBDTScoreXicToPiKP};
   }
 
   void process(CollsWithEvSel const& collisions,
@@ -1089,19 +1096,19 @@ struct HfFilter { // Main struct for HF triggers
                   if (isGoodXicStar) {
                     if (isRightSignXicStar) {
                       hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
-                    } else if (keepAlsoWrongDmesLambdaPairs) {
+                    } else if (enableWrongMassHyp.keepAlsoWrongDmesLambdaPairs) {
                       hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
                     }
                   }
                   if (isGoodXicStarBar) {
                     if (isRightSignXicStarBar) {
                       hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
-                    } else if (keepAlsoWrongDmesLambdaPairs) {
+                    } else if (enableWrongMassHyp.keepAlsoWrongDmesLambdaPairs) {
                       hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
                     }
                   }
                 }
-                if ((isGoodXicStar && (isRightSignXicStar || keepAlsoWrongDmesLambdaPairs)) || (isGoodXicStarBar && (isRightSignXicStarBar || keepAlsoWrongDmesLambdaPairs))) {
+                if ((isGoodXicStar && (isRightSignXicStar || enableWrongMassHyp.keepAlsoWrongDmesLambdaPairs)) || (isGoodXicStarBar && (isRightSignXicStarBar || enableWrongMassHyp.keepAlsoWrongDmesLambdaPairs))) {
                   keepEvent[kV0Charm2P] = true;
                   break;
                 }
@@ -1188,19 +1195,19 @@ struct HfFilter { // Main struct for HF triggers
                             if (isGoodThetac) {
                               if (isRightSignThetaC) {
                                 hMassVsPtC[kNCharmParticles + 21]->Fill(ptCand, massDiffThetacCand);
-                              } else if (keepAlsoWrongDmesProtonPairs) {
+                              } else if (enableWrongMassHyp.keepAlsoWrongDmesProtonPairs) {
                                 hMassVsPtC[kNCharmParticles + 22]->Fill(ptCand, massDiffThetacBarCand);
                               }
                             }
                             if (isGoodThetacBar) {
                               if (isRightSignThetaCBar) {
                                 hMassVsPtC[kNCharmParticles + 21]->Fill(ptCand, massDiffThetacCand);
-                              } else if (keepAlsoWrongDmesProtonPairs) {
+                              } else if (enableWrongMassHyp.keepAlsoWrongDmesProtonPairs) {
                                 hMassVsPtC[kNCharmParticles + 22]->Fill(ptCand, massDiffThetacBarCand);
                               }
                             }
                           }
-                          if ((isGoodThetac && (isRightSignThetaC || keepAlsoWrongDstarMesProtonPairs)) || (isGoodThetacBar && (isRightSignThetaCBar || keepAlsoWrongDstarMesProtonPairs))) {
+                          if ((isGoodThetac && (isRightSignThetaC || enableWrongMassHyp.keepAlsoWrongDstarMesProtonPairs)) || (isGoodThetacBar && (isRightSignThetaCBar || enableWrongMassHyp.keepAlsoWrongDstarMesProtonPairs))) {
                             keepEvent[kPrCharm2P] = true;
                             break;
                           }
@@ -1239,19 +1246,19 @@ struct HfFilter { // Main struct for HF triggers
                     if (isGoodLcStar) {
                       if (isRightSignLcStar) {
                         hMassVsPtC[kNCharmParticles + 19]->Fill(ptCand, massDiffLcStarCand);
-                      } else if (keepAlsoWrongDmesProtonPairs) {
+                      } else if (enableWrongMassHyp.keepAlsoWrongDmesProtonPairs) {
                         hMassVsPtC[kNCharmParticles + 20]->Fill(ptCand, massDiffLcStarBarCand);
                       }
                     }
                     if (isGoodLcStarBar) {
                       if (isRightSignLcStarBar) {
                         hMassVsPtC[kNCharmParticles + 19]->Fill(ptCand, massDiffLcStarCand);
-                      } else if (keepAlsoWrongDmesProtonPairs) {
+                      } else if (enableWrongMassHyp.keepAlsoWrongDmesProtonPairs) {
                         hMassVsPtC[kNCharmParticles + 20]->Fill(ptCand, massDiffLcStarBarCand);
                       }
                     }
                   }
-                  if ((isGoodLcStar && (isRightSignLcStar || keepAlsoWrongDmesProtonPairs)) || (isGoodLcStarBar && (isRightSignLcStarBar || keepAlsoWrongDmesProtonPairs))) {
+                  if ((isGoodLcStar && (isRightSignLcStar || enableWrongMassHyp.keepAlsoWrongDmesProtonPairs)) || (isGoodLcStarBar && (isRightSignLcStarBar || enableWrongMassHyp.keepAlsoWrongDmesProtonPairs))) {
                     keepEvent[kPrCharm2P] = true;
                     break;
                   }
@@ -1646,7 +1653,7 @@ struct HfFilter { // Main struct for HF triggers
                 // DeltaEta is the difference in Eta between SigmaC candiate and proton
                 float deltaEta = std::abs(RecoDecay::eta(pVecSigmaC) - track.eta());
                 if (!keepEvent[kSigmaCPr] && (isTrackProton && deltaEta < 1.0)) {
-                  auto tagBDT = helper.isBDTSelected(scores[2], thresholdBDTScoreScForSigmaCPr.value);
+                  auto tagBDT = helper.isBDTSelected(scores[2], thresholdsBDT.thresholdBDTScoreScForSigmaCPr.value);
                   int8_t whichSigmaC = helper.isSelectedSigmaCInDeltaMassRange<-1>(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 23], activateQA); // put charge {-1} for not looking charge specific SigmaC ground state, it will return bit 4 corresponding to it
                   if (TESTBIT(whichSigmaC, 4) && TESTBIT(tagBDT, RecoDecay::OriginType::Prompt)) {
                     keepEvent[kSigmaCPr] = true;
@@ -1755,11 +1762,11 @@ struct HfFilter { // Main struct for HF triggers
                     if (activateQA) {
                       if (isRightSign) {
                         hMassVsPtC[kNCharmParticles + 5]->Fill(ptCand, massDiffXicStar);
-                      } else if (keepAlsoWrongDmesLambdaPairs) {
+                      } else if (enableWrongMassHyp.keepAlsoWrongDmesLambdaPairs) {
                         hMassVsPtC[kNCharmParticles + 6]->Fill(ptCand, massDiffXicStar);
                       }
                     }
-                    if (isRightSign || keepAlsoWrongDmesLambdaPairs) {
+                    if (isRightSign || enableWrongMassHyp.keepAlsoWrongDmesLambdaPairs) {
                       keepEvent[kV0Charm3P] = true;
                     }
                   }

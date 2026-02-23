@@ -803,8 +803,7 @@ struct HfDataCreatorJpsiHadReduced {
 
       // ---------------------------------
       // reconstruct J/Psi candidate secondary vertex
-      o2::track::TrackParCov const trackParCovJpsi{}; // FIXME: unused
-      std::array<float, 3> const pVecJpsi{};          // FIXME: unused
+      std::array<float, 3> pVecJpsi{};
       registry.fill(HIST("hFitCandidatesJpsi"), SVFitting::BeforeFit);
       try {
         if (df2.process(trackPosParCov, trackNegParCov) == 0) {
@@ -858,12 +857,6 @@ struct HfDataCreatorJpsiHadReduced {
 
         if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
           registry.fill(HIST("hPtKaon"), trackParCovBach.getPt());
-          // compute invariant mass square and apply selection
-          invMass2JpsiHad = RecoDecay::m2(std::array{pVecJpsi, pVecBach}, std::array{MassJPsi, MassKPlus});
-          if ((invMass2JpsiHad < invMass2JpsiHadMin) || (invMass2JpsiHad > invMass2JpsiHadMax)) {
-            continue;
-          }
-          registry.fill(HIST("hMassJpsiKaon"), std::sqrt(invMass2JpsiHad));
 
           registry.fill(HIST("hFitCandidatesBPlus"), SVFitting::BeforeFit);
           try {
@@ -885,12 +878,19 @@ struct HfDataCreatorJpsiHadReduced {
           df3.getTrack(1).getPxPyPzGlo(pVec1);
           df3.getTrack(2).getPxPyPzGlo(pVec2);
           pVecBPlus = RecoDecay::pVec(pVec0, pVec1, pVec2);
+          pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
           trackParCovBPlus = df3.createParentTrackParCov();
           trackParCovBPlus.setAbsCharge(0); // to be sure
 
           if (!isBSelected(pVecBPlus, secondaryVertexBPlus, collision)) {
             continue;
           }
+          // compute invariant mass square and apply selection
+          invMass2JpsiHad = RecoDecay::m2(std::array{pVecJpsi, pVecBach}, std::array{MassJPsi, MassKPlus});
+          if ((invMass2JpsiHad < invMass2JpsiHadMin) || (invMass2JpsiHad > invMass2JpsiHadMax)) {
+            continue;
+          }
+          registry.fill(HIST("hMassJpsiKaon"), std::sqrt(invMass2JpsiHad));
 
           // fill Kaon tracks table
           // if information on track already stored, go to next track
@@ -973,6 +973,7 @@ struct HfDataCreatorJpsiHadReduced {
             df4.getTrack(2).getPxPyPzGlo(pVec2);
             df4.getTrack(3).getPxPyPzGlo(pVec3);
             pVecBS = RecoDecay::pVec(pVec0, pVec1, pVec2, pVec3);
+            pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
             pVecPhi = RecoDecay::pVec(pVec2, pVec3);
             trackParCovBS = df4.createParentTrackParCov();
             trackParCovBS.setAbsCharge(0); // to be sure
