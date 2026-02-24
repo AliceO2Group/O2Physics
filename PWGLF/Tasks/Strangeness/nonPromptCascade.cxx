@@ -24,7 +24,6 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/PVertexer.h"
 #include "Framework/ASoA.h"
@@ -32,7 +31,9 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
 #include "Math/Vector4D.h"
@@ -175,12 +176,12 @@ std::vector<NPCascCandidate> gCandidatesNT;
 } // namespace
 
 struct NonPromptCascadeTask {
-
   Produces<o2::aod::NPCascTable> NPCTable;
   Produces<o2::aod::NPCascTableMC> NPCTableMC;
   Produces<o2::aod::NPCascTableNT> NPCTableNT;
   Produces<o2::aod::NPCascTableMCNT> NPCTableMCNT;
   Produces<o2::aod::NPCascTableGen> NPCTableGen;
+  Produces<o2::aod::NPPileUpTable> NPPUTable;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
@@ -227,6 +228,7 @@ struct NonPromptCascadeTask {
   std::array<int, 2> mProcessCounter = {0, 0}; // {Tracked, All}
   std::map<uint64_t, uint32_t> mToiMap;
   //
+  Service<o2::framework::O2DatabasePDG> pdgDB;
   HistogramRegistry mRegistryMults{"Multhistos"};
   HistogramRegistry mRegistrydNdeta{"dNdetahistos"};
 
@@ -315,9 +317,10 @@ struct NonPromptCascadeTask {
     AxisSpec centAxisFV0{centBinning, "Centrality FV0 (%)"};
     AxisSpec trackAxisMC{trackBinning, "NTracks MC"};
     AxisSpec trackAxis{trackBinning, "NTracks Global Reco"};
+    AxisSpec numContribAxis{trackBinning, "Num of Contrib"};
     AxisSpec runsAxis{runsBinning, "Run Number"};
 
-    mRegistryMults.add("hCentMultsRuns", "hCentMultsRuns", HistType::kTHnSparseF, {centAxisFT0M, multAxis, centAxisFV0, multAxisFV0, nTracksAxis, runsAxis});
+    mRegistryMults.add("hCentMultsRuns", "hCentMultsRuns", HistType::kTHnSparseF, {centAxisFT0M, multAxis, numContribAxis, nTracksAxis, runsAxis});
     //
     // dN/deta
     //
@@ -411,11 +414,12 @@ struct NonPromptCascadeTask {
     for (const auto& coll : collisions) {
       float centFT0M = coll.centFT0M();
       float multFT0M = coll.multFT0M();
-      float centFV0A = coll.centFV0A();
-      float multFV0A = coll.multFV0A();
+      // float centFV0A = coll.centFV0A();
+      // float multFV0A = coll.multFV0A();
       float multNTracks = coll.multNTracksGlobal();
       float run = mRunNumber;
-      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, centFV0A, multFV0A, multNTracks, run);
+      float numContrib = coll.numContrib();
+      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
     }
   };
 
@@ -729,7 +733,7 @@ struct NonPromptCascadeTask {
     fillCandidatesVector<TracksExtMC>(collisions, tracks, trackedCascades, gCandidates);
     fillMCtable<aod::AssignedTrackedCascades>(mcParticles, collisions, gCandidates);
   }
-  PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
+  PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", false);
 
   void processCascadesMC(CollisionCandidatesRun3MC const& collisions, aod::Cascades const& cascades,
                          aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
@@ -817,7 +821,7 @@ struct NonPromptCascadeTask {
       if (std::abs(mcp.eta()) > 0.5f)
         continue;
       int q = 0;
-      if (auto pdg = TDatabasePDG::Instance()->GetParticle(mcp.pdgCode())) {
+      if (auto pdg = pdgDB->GetParticle(mcp.pdgCode())) {
         q = int(std::round(pdg->Charge() / 3.0));
       }
       if (q == 0)
@@ -928,7 +932,7 @@ struct NonPromptCascadeTask {
       }
 
       int q = 0;
-      if (auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcPar.pdgCode())) {
+      if (auto pdgEntry = pdgDB->GetParticle(mcPar.pdgCode())) {
         q = int(std::round(pdgEntry->Charge() / 3.0));
       }
       if (q == 0) {
@@ -971,6 +975,20 @@ struct NonPromptCascadeTask {
   }
 
   PROCESS_SWITCH(NonPromptCascadeTask, processdNdetaMC, "process mc dN/deta", false);
+
+  void processPileUp(CollisionCandidatesRun3 const& collisions, aod::BCsWithTimestamps const&)
+  {
+    std::cout << "Processing pile up" << std::endl;
+    for (const auto& coll : collisions) {
+      float centFT0M = coll.centFT0M();
+      float multFT0M = coll.multFT0M();
+      auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+      uint64_t globalBC = bc.globalBC();
+      NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
+      // NPPileUpTable(mRunNumber, globalBC, multNTracks, centFT0M, multFT0M);
+    }
+  };
+  PROCESS_SWITCH(NonPromptCascadeTask, processPileUp, "pile up studies", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
