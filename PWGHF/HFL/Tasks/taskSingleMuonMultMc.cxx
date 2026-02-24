@@ -25,6 +25,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+#include <Framework/ASoA.h>
 #include <Framework/Configurable.h>
 
 #include <TString.h>
@@ -257,90 +258,90 @@ struct HfTaskSingleMuonMultMc {
   }
 
   // particle has an associated MC particle
-  bool isIdentified(const uint16_t& mask)
+  bool isIdentified(const uint16_t mask)
   {
     return (TESTBIT(mask, IsIdentified));
   }
   // this particle is muon
-  bool isMuon(const uint16_t& mask)
+  bool isMuon(const uint16_t mask)
   {
     return (TESTBIT(mask, IsIdentified) && TESTBIT(mask, IsMuon));
   }
 
   // this muon comes from transport
-  bool isSecondaryMu(const uint16_t& mask)
+  bool isSecondaryMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, IsSecondary));
   }
 
   // this muon comes from light flavor quark decay
-  bool isLightDecayMu(const uint16_t& mask)
+  bool isLightDecayMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)));
   }
 
   // this muon comes from tau decays
-  bool isTauDecayMu(const uint16_t& mask)
+  bool isTauDecayMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasTauParent) && (!TESTBIT(mask, HasWParent)) && (!TESTBIT(mask, HasZParent)) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasCharmParent)));
   }
 
   // this muon comes from W+- decay
-  bool isWBosonDecayMu(const uint16_t& mask)
+  bool isWBosonDecayMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasWParent) && (!TESTBIT(mask, HasZParent)) && (!TESTBIT(mask, HasTauParent)) && (!TESTBIT(mask, HasLightParent)) && (!TESTBIT(mask, IsSecondary)));
   }
 
   // this muon comes from Z decay
-  bool isZBosonDecayMu(const uint16_t& mask)
+  bool isZBosonDecayMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasZParent) && (!TESTBIT(mask, HasWParent)) && (!TESTBIT(mask, HasTauParent)) && (!TESTBIT(mask, HasLightParent)) && (!TESTBIT(mask, IsSecondary)));
   }
 
   // this muon comes from quarkonium decay
-  bool isQuarkoniumDecayMu(const uint16_t& mask)
+  bool isQuarkoniumDecayMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasQuarkoniumParent) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasCharmParent)) && (!TESTBIT(mask, HasLightParent)));
   }
 
   // this muon comes from beauty decay and does not have light flavor parent
-  bool isBeautyMu(const uint16_t& mask)
+  bool isBeautyMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasBeautyParent) && (!TESTBIT(mask, HasQuarkoniumParent)) && (!TESTBIT(mask, HasLightParent)) && (!TESTBIT(mask, IsSecondary)));
   }
 
   // this muon comes directly from beauty decay
-  bool isBeautyDecayMu(const uint16_t& mask)
+  bool isBeautyDecayMu(const uint16_t mask)
   {
     return (isBeautyMu(mask) && (!TESTBIT(mask, HasCharmParent) && (!TESTBIT(mask, HasQuarkoniumParent))) && (!TESTBIT(mask, HasLightParent)) && (!TESTBIT(mask, IsSecondary)));
   }
 
   // this muon comes from non-prompt charm decay and does not have light flavor parent
-  bool isNonpromptCharmMu(const uint16_t& mask)
+  bool isNonpromptCharmMu(const uint16_t mask)
   {
     return (isBeautyMu(mask) && TESTBIT(mask, HasCharmParent) && (!TESTBIT(mask, HasQuarkoniumParent)) && (!TESTBIT(mask, HasLightParent)) && (!TESTBIT(mask, IsSecondary)));
   }
 
   // this muon comes from prompt charm decay and does not have light flavor parent
-  bool isPromptCharmMu(const uint16_t& mask)
+  bool isPromptCharmMu(const uint16_t mask)
   {
     return (isMuon(mask) && TESTBIT(mask, HasCharmParent) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasQuarkoniumParent)) && (!TESTBIT(mask, HasLightParent)) && (!TESTBIT(mask, IsSecondary)));
   }
 
   // this muon comes from other sources which have not classified above.
-  bool isOtherMu(const uint16_t& mask)
+  bool isOtherMu(const uint16_t mask)
   {
     return (isMuon(mask) && (!isSecondaryMu(mask)) && (!isLightDecayMu(mask)) && (!isTauDecayMu(mask)) && (!isWBosonDecayMu(mask)) && (!isZBosonDecayMu(mask)) && (!isQuarkoniumDecayMu(mask)) && (!isBeautyMu(mask)) && (!isPromptCharmMu(mask)));
   }
 
   // this is a hadron
-  bool isHadron(const uint16_t& mask)
+  bool isHadron(const uint16_t mask)
   {
     return (TESTBIT(mask, IsIdentified) && (!TESTBIT(mask, IsMuon)));
   }
 
   // this particle is unidentified
-  bool isUnidentified(const uint16_t& mask)
+  bool isUnidentified(const uint16_t mask)
   {
     return ((!TESTBIT(mask, IsIdentified)));
   }
@@ -398,7 +399,10 @@ struct HfTaskSingleMuonMultMc {
     }
   }
 
-  void process(McGenCollisions::iterator const& mccollision, McMuons const& muons, aod::McParticles const&, McRecCollisions const& collisions)
+  void process(McGenCollisions::iterator const& mccollision,
+               McMuons const& muons,
+               aod::McParticles const&,
+               McRecCollisions const& collisions)
   {
 
     // event selections
@@ -474,7 +478,10 @@ struct HfTaskSingleMuonMultMc {
     }
   }
 
-  void processResTrack(McGenCollisions::iterator const& mccollision, McRecCollisions const& collisions, aod::McParticles const& particles, MyTracks const& tracks)
+  void processResTrack(McGenCollisions::iterator const& mccollision,
+                       McRecCollisions const& collisions,
+                       aod::McParticles const& particles,
+                       MyTracks const& tracks)
   {
     // event selections
     if (std::abs(mccollision.posZ()) > zVtxMax) {
@@ -514,17 +521,19 @@ struct HfTaskSingleMuonMultMc {
       auto nTrk = 0;
       auto tracksample = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracksample) {
-        if (!track.isGlobalTrack())
+        if (!track.isGlobalTrack()) {
           continue;
+        }
         registry.fill(HIST("hParticleRec"), track.pt(), track.eta());
         ++nTrk;
       }
-      if (nTrk < 1)
+      if (nTrk < 1) {
         continue;
+      }
       registry.fill(HIST("hTrackResponse"), nP, nTrk);
     }
   }
-  PROCESS_SWITCH(HfTaskSingleMuonMultMc, processResTrack, "Process Track Reconstruction/Generation", true);
+  PROCESS_SWITCH(HfTaskSingleMuonMultMc, processResTrack, "Process Track Reconstruction/Generation", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
