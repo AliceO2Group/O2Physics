@@ -2018,7 +2018,7 @@ struct StrangenessInJets {
 
             if (std::abs(v0mcparticle.pdgCode()) == kLambda0 && v0mcparticle.has_mothers()) {
               for (auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
-                if (std::abs(mcparticleMother0.pdgCode()) == 3312 || std::abs(mcparticleMother0.pdgCode()) == 3322) {
+                if (std::abs(mcparticleMother0.pdgCode()) == kXiMinus || std::abs(mcparticleMother0.pdgCode()) == kXi0) {
                   ptMotherMC = mcparticleMother0.pt();
                   pdgMother = mcparticleMother0.pdgCode();
                 }
@@ -2041,19 +2041,19 @@ struct StrangenessInJets {
             if (passedLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0 && isPhysPrim) {
               if (position.isInJet()) {
                 registryMC.fill(HIST("Lambda_reconstructed_jet"), multiplicity, v0.pt());
-                if (pdgMother == 3312) {
+                if (pdgMother == kXiMinus) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_DoubleCharged_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == 3312 || pdgMother == 3322) {
+                if (pdgMother == kXiMinus || pdgMother == kXi0) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_MCRatio_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
               if (position.isInUE1() || position.isInUE2()) {
                 registryMC.fill(HIST("Lambda_reconstructed_ue"), multiplicity, v0.pt());
-                if (pdgMother == 3312) {
+                if (pdgMother == kXiMinus) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_DoubleCharged_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == 3312 || pdgMother == 3322) {
+                if (pdgMother == kXiMinus || pdgMother == kXi0) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_MCRatio_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
@@ -2062,19 +2062,19 @@ struct StrangenessInJets {
             if (passedAntiLambdaSelection(v0, pos, neg) && motherPos.pdgCode() == kLambda0Bar && isPhysPrim) {
               if (position.isInJet()) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_jet"), multiplicity, v0.pt());
-                if (pdgMother == -3312) {
+                if (pdgMother == kXiPlusBar) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == -3312 || pdgMother == -3322) {
+                if (pdgMother == kXiPlusBar || pdgMother == -kXi0) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_MCRatio_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
               if (position.isInUE1() || position.isInUE2()) {
                 registryMC.fill(HIST("AntiLambda_reconstructed_ue"), multiplicity, v0.pt());
-                if (pdgMother == -3312) {
+                if (pdgMother == kXiPlusBar) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == -3312 || pdgMother == -3322) {
+                if (pdgMother == kXiPlusBar || pdgMother == -kXi0) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_MCRatio_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
