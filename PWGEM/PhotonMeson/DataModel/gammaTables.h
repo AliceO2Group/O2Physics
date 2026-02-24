@@ -433,9 +433,9 @@ using EMPrimaryElectronDaEMEventId = EMPrimaryElectronDaEMEventIds::iterator;
 
 namespace v0photonsphivpsi
 {
-DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent); //!
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);             //!
 DECLARE_SOA_INDEX_COLUMN(EMPhotonEvent, emphotonevent); //!
-DECLARE_SOA_COLUMN(PhiV, phiv, float);      //!
+DECLARE_SOA_COLUMN(PhiV, phiv, float);                  //!
 DECLARE_SOA_COLUMN(PsiPair, psipair, float);
 } // namespace v0photonsphivpsi
 DECLARE_SOA_TABLE(V0PhotonsPhiVPsi, "AOD", "V0PHOTONPHIVPSI", //!
@@ -727,9 +727,7 @@ DECLARE_SOA_COLUMN(OmegaMBWeight, omegaMBWeight, float);
 
 DECLARE_SOA_TABLE(V0PhotonOmegaMBWeights, "AOD", "V0PHOTONMBW", v0photonMBweights::OmegaMBWeight); // store MB weights. To be joined with V0PhotonsKF table at analysis level.
 
-using V0PhotonOmegaMBWeight = V0PhotonOmegaMBWeights::iterator; 
+using V0PhotonOmegaMBWeight = V0PhotonOmegaMBWeights::iterator;
 } // namespace o2::aod
-
-
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
