@@ -619,7 +619,7 @@ struct GammaConversions {
     }
   }
 
-  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emeventId;
+  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emphotoneventId;
   void processRec(aod::EMEvents::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
                   aod::V0Legs const&)

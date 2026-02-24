@@ -275,6 +275,7 @@ struct Chk892pp {
   int kPDGK0 = kK0;
   int kKstarPlus = o2::constants::physics::Pdg::kKPlusStar892;
   // int kPiPlus = 211;
+  double fMaxPosPV = 1e-2;
 
   void init(o2::framework::InitContext&)
   {
@@ -445,12 +446,15 @@ struct Chk892pp {
 
       histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/genKstar_pri", "Gen primary Kstar (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("EffKstar/genKstar_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
 
       histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_den_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_num", "Gen Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/sigLoss_num_pri", "Gen primary Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num_pri_pos", "Gen primary Kstar selected by vertex position (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
       histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
       histos.add("Correction/MCTruthCent_all", "MC truth FT0M centrality (all mcCollisions)", HistType::kTH1F, {centAxis});
@@ -914,7 +918,7 @@ struct Chk892pp {
     return true;
   } // matchRecoToTruthKstar
 
-  void effKstarProcessGen(MCTrueTrackCandidates const& mcparts)
+  void effKstarProcessGen(soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const&, MCTrueTrackCandidates const& mcparts)
   {
     for (const auto& part : mcparts) {
       if (!part.has_mcCollision())
@@ -970,6 +974,18 @@ struct Chk892pp {
 
       if (part.vt() == 0) {
         histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
+      }
+
+      const auto mcc = part.mcCollision_as<soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms>>();
+
+      const float dx = part.vx() - mcc.posX();
+      const float dy = part.vy() - mcc.posY();
+      const float dz = part.vz() - mcc.posZ();
+
+      const float distanceFromPV = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+      if (distanceFromPV < fMaxPosPV) {
+        histos.fill(HIST("EffKstar/genKstar_pri_pos"), part.pt(), lCentrality);
       }
     }
   } // effKstarProcessGen
@@ -1038,7 +1054,7 @@ struct Chk892pp {
     }
   } // effKstarProcessReco
 
-  void fillSigLossNum(MCTrueTrackCandidates const& mcparts)
+  void fillSigLossNum(soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const&, MCTrueTrackCandidates const& mcparts)
   {
     for (auto const& part : mcparts) {
       if (!part.has_mcCollision())
@@ -1062,10 +1078,22 @@ struct Chk892pp {
       if (part.vt() == 0) {
         histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
       }
+
+      const auto mcc = part.mcCollision_as<soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms>>();
+
+      const float dx = part.vx() - mcc.posX();
+      const float dy = part.vy() - mcc.posY();
+      const float dz = part.vz() - mcc.posZ();
+
+      const float distanceFromPV = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+      if (distanceFromPV < fMaxPosPV) {
+        histos.fill(HIST("Correction/sigLoss_num_pri_pos"), part.pt(), lCentrality);
+      }
     }
   } // fillSigLossNum
 
-  void fillSigLossDen(MCTrueTrackCandidates const& mcparts)
+  void fillSigLossDen(soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms> const&, MCTrueTrackCandidates const& mcparts)
   {
     for (auto const& part : mcparts) {
       if (!part.has_mcCollision())
@@ -1088,6 +1116,18 @@ struct Chk892pp {
       histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
       if (part.vt() == 0) {
         histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
+
+      const auto mcc = part.mcCollision_as<soa::Join<MCTrueEventCandidates, aod::McCentFT0Ms>>();
+
+      const float dx = part.vx() - mcc.posX();
+      const float dy = part.vy() - mcc.posY();
+      const float dz = part.vz() - mcc.posZ();
+
+      const float distanceFromPV = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+      if (distanceFromPV < fMaxPosPV) {
+        histos.fill(HIST("Correction/sigLoss_den_pri_pos"), part.pt(), lCentrality);
       }
     }
   } // fillSigLossDen
@@ -1351,10 +1391,10 @@ struct Chk892pp {
     buildReferenceMcIds(mccolls, mcpart);
     effK0sProcessGen(mcpart);
     effK0sProcessReco(v0s);
-    effKstarProcessGen(mcpart);
+    effKstarProcessGen(mccolls, mcpart);
     effKstarProcessReco(v0s, tracks);
-    fillSigLossNum(mcpart);
-    fillSigLossDen(mcpart);
+    fillSigLossNum(mccolls, mcpart);
+    fillSigLossDen(mccolls, mcpart);
 
     for (const auto& mcid : refClassIds) {
       histos.fill(HIST("Correction/EF_den"), refCentByMcId[mcid]);

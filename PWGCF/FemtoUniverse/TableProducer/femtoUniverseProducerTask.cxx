@@ -2581,6 +2581,7 @@ struct FemtoUniverseProducerTask {
           fillCascade<true>(col, groupedStrageParts, groupedTracks);
         }
       } else {
+        mcColIds.insert(col.mcCollisionId());
         fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
       }
       for (const auto& track : groupedTracks) {

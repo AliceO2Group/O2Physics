@@ -227,9 +227,9 @@ struct HfProducerCharmHadronsTrackFemtoDream {
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
-  using Generated3ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using Generated2ProngMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
-  using GeneratedDstarMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
+  using Generated3ProngMc = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using Generated2ProngMc = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+  using GeneratedDstarMc = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
 
   Filter filterSelectCandidateD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagHadron || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagHadron);
   Filter filterSelectCandidateDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;

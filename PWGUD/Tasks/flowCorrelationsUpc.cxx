@@ -224,7 +224,7 @@ struct FlowCorrelationsUpc {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    registry.fill(HIST("hTrackCount"), 0.5);
+    // registry.fill(HIST("hTrackCount"), 0.5);
     // UPC selection
     if (!track.isPVContributor()) {
       return false;

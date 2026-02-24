@@ -64,11 +64,32 @@
 using namespace o2;
 using namespace o2::framework;
 
+namespace
+{
+
+enum trackQuality {
+  kNoCuts = 0,
+  kEtaCut = 1,
+  kPtpcCut = 2,
+  kNclsItsCut = 3,
+  kNclsTpcCut = 4,
+  kNCrossedRowsCut = 5,
+  kTpcChi2Cut = 6,
+  kItsChi2Cut = 7,
+  kNtrackQuality = 8
+};
+
+std::array<std::string, trackQuality::kNtrackQuality> trackQualityLabels{"All", "#eta cut", "#it{p}_{TPC}^{min} cut", "#it{N}_{cls}^{ITS} cut", "#it{N}_{cls}^{TPC} cut", "Crossed rows cut", "#chi^{2}_{TPC} cut", "#chi^{2}_{ITS} cut"};
+
+} // namespace
+
 struct nucleiQC {
 
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, aod::TOFEvTime, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCDe, aod::pidTOFDe, aod::pidTPCTr, aod::pidTOFTr, aod::pidTPCHe, aod::pidTOFHe, aod::pidTPCAl, aod::pidTOFAl>;
   using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, aod::TOFEvTime, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCDe, aod::pidTOFDe, aod::pidTPCTr, aod::pidTOFTr, aod::pidTPCHe, aod::pidTOFHe, aod::pidTPCAl, aod::pidTOFAl, aod::McTrackLabels>;
   using Collision = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::McCollisionLabels>::iterator;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::McCollisionLabels>;
+  Preslice<TrackCandidatesMC> mTracksPerCollision = aod::track::collisionId;
   Preslice<aod::McParticles> mMcParticlesPerCollision = o2::aod::mcparticle::mcCollisionId;
 
   Configurable<bool> cfgFillTable{"cfgFillTable", true, "Fill output tree"};
@@ -77,6 +98,9 @@ struct nucleiQC {
   Configurable<LabeledArray<int>> cfgSpeciesToProcess{"cfgSpeciesToProcess", {nuclei::speciesToProcessDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"processNucleus"}}, "Nuclei to process"};
   Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 8, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "Centrality estimator (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3)"};
+  Configurable<bool> cfgPerformPidSelectionInIts{"cfgPerformPidSelectionInIts", false, "Perform PID selections in ITS"};
+  Configurable<bool> cfgPerformPidSelectionInTpc{"cfgPerformPidSelectionInTpc", false, "Perform PID selections in TPC"};
+  Configurable<bool> cfgPerformPidSelectionInTof{"cfgPerformPidSelectionInTof", false, "Perform PID selections in TOF"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], nuclei::Species::kNspecies, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<int>> cfgUseCentralTpcCalibration{"cfgUseCentralTpcCalibration", {nuclei::useCentralTpcCalibrationDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"UseCentralTpcCalibration"}}, "Use central TPC calibration"};
   Configurable<LabeledArray<double>> cfgDownscalingFactor{"cfgDownscalingFactor", {nuclei::DownscalingDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"DownscalingFactor"}}, "Save to the AO2D with a downscaling factor"};
@@ -95,6 +119,9 @@ struct nucleiQC {
   Configurable<float> cfgCutTpcMom{"cfgCutTpcMom", 0.2f, "Minimum TPC momentum for tracks"};
   Configurable<float> cfgCutNclusITS{"cfgCutNclusITS", 5, "Minimum number of ITS clusters"};
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
+  Configurable<float> cfgCutNclusCrossedRowsTPC{"cfgCutNclusCrossedRowsTPC", 70, "Minimum number of TPC clusters crossed rows"};
+  Configurable<float> cfgCutChi2PerClusterTPC{"cfgCutChi2PerClusterTPC", 4.f, "Maximum chi2 per TPC cluster"};
+  Configurable<float> cfgCutChi2PerClusterITS{"cfgCutChi2PerClusterITS", 36.f, "Maximum chi2 per ITS cluster"};
 
   Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], nuclei::Species::kNspecies, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
   Configurable<LabeledArray<double>> cfgNsigmaTOF{"cfgNsigmaTOF", {nuclei::nSigmaTOFdefault[0], nuclei::Species::kNspecies, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
@@ -123,6 +150,7 @@ struct nucleiQC {
 
   std::vector<int> mSpeciesToProcess;
   Produces<aod::NucleiTableRed> mNucleiTableRed;
+  Produces<aod::NucleiTableExt> mNucleiTableExt;
 
   std::vector<nuclei::SlimCandidate> mNucleiCandidates;
   std::vector<int> mFilledMcParticleIds;
@@ -166,6 +194,10 @@ struct nucleiQC {
       }
 
       nuclei::createHistogramRegistryNucleus<kSpeciesCt>(mHistograms);
+      mHistograms.add(fmt::format("{}/hTrackQuality", nuclei::cNames[kSpeciesRt]).c_str(), (fmt::format("{} track quality;", nuclei::cNames[kSpeciesRt]) + std::string("#it{p}_{T} / #it{Z} (GeV/#it{c}); Selection step; Counts")).c_str(), o2::framework::HistType::kTH2D, {{400, -10.0f, 10.0f}, {trackQuality::kNtrackQuality, -0.5f, static_cast<float>(trackQuality::kNtrackQuality) - 0.5f}});
+      for (size_t iSel = 0; iSel < trackQuality::kNtrackQuality; iSel++) {
+        mHistograms.get<TH2>(HIST(nuclei::cNames[kSpeciesRt]) + HIST("/hTrackQuality"))->GetYaxis()->SetBinLabel(iSel + 1, trackQualityLabels[iSel].c_str());
+      }
 
       if (cfgUseCentralTpcCalibration->get(static_cast<uint32_t>(kSpeciesRt), static_cast<uint32_t>(0)) == 0) {
         mPidManagers[kSpeciesRt] = nuclei::PidManager(kSpeciesRt, tpcBetheBlochParams);
@@ -217,19 +249,39 @@ struct nucleiQC {
     LOGF(info, "Retrieved GRP for timestamp %ull (%i) with magnetic field of %1.2f kZG", timestamp, mRunNumber, mBz);
   }
 
-  template <typename Ttrack>
+  template <int iSpecies, typename Ttrack>
   bool trackSelection(const Ttrack& track)
   {
-    if (std::abs(track.eta()) > cfgCutEta ||
-        track.tpcInnerParam() < cfgCutTpcMom ||
-        track.itsNCls() < cfgCutNclusITS ||
-        track.tpcNClsFound() < cfgCutNclusTPC ||
-        track.tpcNClsCrossedRows() < 70 ||
-        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
-        track.tpcChi2NCl() > 4.f ||
-        track.itsChi2NCl() > 36.f) {
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kNoCuts);
+
+    if (std::abs(track.eta()) > cfgCutEta)
       return false;
-    }
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kEtaCut);
+
+    if (track.tpcInnerParam() < cfgCutTpcMom)
+      return false;
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kPtpcCut);
+
+    if (track.itsNCls() < cfgCutNclusITS)
+      return false;
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kNclsItsCut);
+
+    if (track.tpcNClsFound() < cfgCutNclusTPC)
+      return false;
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kNclsTpcCut);
+
+    if (track.tpcNClsCrossedRows() < cfgCutNclusCrossedRowsTPC)
+      return false;
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kNCrossedRowsCut);
+
+    if (track.tpcChi2NCl() > cfgCutChi2PerClusterTPC)
+      return false;
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kTpcChi2Cut);
+
+    if (track.itsChi2NCl() > cfgCutChi2PerClusterITS)
+      return false;
+    mHistograms.fill(HIST(nuclei::cNames[iSpecies]) + HIST("/hTrackQuality"), track.sign() * track.pt(), trackQuality::kItsChi2Cut);
+
     return true;
   }
 
@@ -243,7 +295,7 @@ struct nucleiQC {
     float centrality = nuclei::getCentrality(collision, cfgCentralityEstimator);
     float nsigmaTPC = mPidManagers[kIndex].getNSigmaTPC(track);
     mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPC_preselectionVsCentrality"), track.pt() * track.sign(), nsigmaTPC, centrality);
-    if (std::abs(nsigmaTPC) > cfgNsigmaTPC->get(kIndex, 1))
+    if (std::abs(nsigmaTPC) > cfgNsigmaTPC->get(kIndex, 1) && cfgPerformPidSelectionInTpc)
       return false;
     mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPCVsCentrality"), track.pt() * track.sign(), nsigmaTPC, centrality);
 
@@ -254,7 +306,7 @@ struct nucleiQC {
 
     float nsigmaTOF = mPidManagers[kIndex].getNSigmaTOF(track);
     mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOF_preselectionVsCentrality"), track.sign() * track.pt(), nsigmaTOF, centrality);
-    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(kIndex, 1) && track.hasTOF())
+    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(kIndex, 1) && track.hasTOF() && cfgPerformPidSelectionInTof)
       return false;
     mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOFVsCentrality"), track.sign() * track.pt(), nsigmaTOF, centrality);
 
@@ -390,7 +442,9 @@ struct nucleiQC {
                                        .yGenerated = 0.f,
                                        .phiGenerated = 0.f,
                                        .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality),
-                                       .mcProcess = TMCProcess::kPNoProcess};
+                                       .mcProcess = TMCProcess::kPNoProcess,
+                                       .nsigmaTpc = mPidManagers[iSpecies].getNSigmaTPC(track),
+                                       .nsigmaTof = mPidManagers[iSpecies].getNSigmaTOF(track)};
 
     fillNucleusFlagsPdgs(iSpecies, collision, track, candidate);
 
@@ -456,6 +510,7 @@ struct nucleiQC {
 
   void processMc(const Collision& collision, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles)
   {
+
     gRandom->SetSeed(67);
     mNucleiCandidates.clear();
     mFilledMcParticleIds.clear();
@@ -479,6 +534,9 @@ struct nucleiQC {
       mHistTrackTunedTracks->SetTitle(mTrackTuner.outputString.c_str());
       mTrackTuner.getDcaGraphs();
     }
+
+    auto tracksThisCollision = tracks.sliceBy(mTracksPerCollision, collision.globalIndex());
+    tracksThisCollision.bindExternalIndices(&tracks);
 
     for (const auto& track : tracks) {
 
@@ -510,7 +568,7 @@ struct nucleiQC {
           return;
 
         mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
-        if (!trackSelection(track))
+        if (!trackSelection<kSpeciesRt>(track))
           return;
         mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
 
@@ -547,6 +605,11 @@ struct nucleiQC {
       if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), iSpecies) == mSpeciesToProcess.end())
         continue;
 
+      if (cfgDownscalingFactor->get(iSpecies) < 1.) {
+        if ((gRandom->Uniform()) > cfgDownscalingFactor->get(iSpecies))
+          return;
+      }
+
       nuclei::SlimCandidate candidate;
       candidate.centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality);
       fillNucleusFlagsPdgsMc(particle, candidate);
@@ -576,6 +639,9 @@ struct nucleiQC {
         candidate.mcProcess,
         candidate.pdgCode,
         candidate.motherPdgCode);
+      mNucleiTableExt(
+        candidate.nsigmaTpc,
+        candidate.nsigmaTof);
     }
   }
   PROCESS_SWITCH(nucleiQC, processMc, "Mc analysis", false);

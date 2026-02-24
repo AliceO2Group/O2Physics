@@ -930,6 +930,7 @@ struct cascadeFlow {
     histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1EPvsv1SP", "hV1EPvsV1SP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1SP_ZDCA_vs_ZDCC", "hv1SP_ZDCA_vs_ZDCC", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
+    histos.add("hV0RapidityvsPt", "hV0RapidityvsPt", HistType::kTH2F, {{100, 0, 10}, {100, -2, 2}});
     histos.add("hEtaV0", "hEtaV0", HistType::kTH1F, {{100, -1, 1}});
     histos.add("hEtaV0posDau", "hEtaV0posDau", HistType::kTH1F, {{100, -1, 1}});
     histos.add("hEtaV0negDau", "hEtaV0negDau", HistType::kTH1F, {{100, -1, 1}});
@@ -2039,6 +2040,7 @@ struct cascadeFlow {
       if (!isSelectedV0[0] && !isSelectedV0[1])
         continue;
 
+      histos.fill(HIST("hV0RapidityvsPt"), v0.pt(), v0.yLambda());
       histos.fill(HIST("hEtaV0"), v0.eta());
       Float_t posDauEta = RecoDecay::eta(std::array{v0.pxpos(), v0.pypos(), v0.pzpos()});
       histos.fill(HIST("hEtaV0posDau"), posDauEta);
