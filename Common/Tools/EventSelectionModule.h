@@ -159,6 +159,7 @@ class BcSelectionModule
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
   std::string strLPMProductionTag = "";  // MC production tag to be retrieved from AO2D metadata
+  std::string strPassName = "";          // RecoPassName (for data) or AnchorPassName (for MC) from metadata
   bool isMC = false;
 
   TriggerAliases* aliases = nullptr;
@@ -195,8 +196,9 @@ class BcSelectionModule
         return;
       }
     }
-    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
     isMC = metadataInfo.isMC();
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
+    strPassName = metadataInfo.get(isMC ? "AnchorPassName" : "RecoPassName");
 
     // add counter
     histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::kTH1D, {{1, 0., 1.}});
@@ -279,8 +281,15 @@ class BcSelectionModule
       // QC info
       std::map<std::string, std::string> metadata;
       metadata["run"] = Form("%d", run);
+      metadata["passName"] = strPassName;
+      LOGP(info, "accessing pass-specific rct object for run={} and passName={} from ccdb", run, strPassName);
       ccdb->setFatalWhenNull(0);
       mapRCT = ccdb->template getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", ts, metadata);
+      if (mapRCT == nullptr) {
+        LOGP(info, "pass-specific rct object missing... trying the latest");
+        metadata.erase("passName");
+        mapRCT = ccdb->template getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", ts, metadata);
+      }
       ccdb->setFatalWhenNull(1);
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
