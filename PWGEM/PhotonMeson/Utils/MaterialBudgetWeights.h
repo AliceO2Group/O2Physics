@@ -19,6 +19,9 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
 #define PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
 
+#include <map>
+#include <string>
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -29,9 +32,12 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 
+<<<<<<< HEAD
 #include <map>
 #include <string>
 
+=======
+>>>>>>> 947616059 (Apply formatting fixes)
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;

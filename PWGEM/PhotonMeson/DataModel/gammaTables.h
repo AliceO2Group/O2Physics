@@ -726,9 +726,7 @@ DECLARE_SOA_COLUMN(OmegaMBWeight, omegaMBWeight, float);
 
 DECLARE_SOA_TABLE(V0PhotonOmegaMBWeights, "AOD", "V0PHOTONMBW", v0photonMBweights::OmegaMBWeight); // store MB weights. To be joined with V0PhotonsKF table at analysis level.
 
-using V0PhotonOmegaMBWeight = V0PhotonOmegaMBWeights::iterator; 
+using V0PhotonOmegaMBWeight = V0PhotonOmegaMBWeights::iterator;
 } // namespace o2::aod
-
-
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_

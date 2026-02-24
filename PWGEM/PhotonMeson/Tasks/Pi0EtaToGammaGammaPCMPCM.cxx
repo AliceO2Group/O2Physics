@@ -15,8 +15,8 @@
 
 #include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGamma.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MaterialBudgetWeights.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
