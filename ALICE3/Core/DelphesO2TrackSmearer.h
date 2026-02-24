@@ -173,6 +173,7 @@ class DelphesO2TrackSmearer : public TNamed
   const char* getParticleName(int pdg);
   void setdNdEta(float val) { mdNdEta = val; }                                 //;
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; } //;
+  void print();
 
  protected:
   static constexpr unsigned int nLUTs = 9; // Number of LUT available
