@@ -1229,7 +1229,7 @@ struct decay3bodyBuilder {
         }
       }
     }
-    
+
     // now check if all three daughters have the same mother
     int momID = -1;
     int momPdgCode = 0;
