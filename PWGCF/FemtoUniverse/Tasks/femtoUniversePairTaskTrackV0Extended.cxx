@@ -1686,9 +1686,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
             registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
           }
-        }
-
-        else if (part.mAntiLambda() < 0) {
+        } else if (part.mAntiLambda() < 0) {
           registryMCreco.fill(HIST("minus/MCrecoAllPt"), mcpart.pt());
           if (mcpart.pdgMCTruth() == kPiMinus) {
             if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
