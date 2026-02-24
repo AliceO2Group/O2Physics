@@ -25,22 +25,27 @@ float EMNonLin::getCorrectionFactor(float x, const Context& ctx)
     return x;
   }
 
-  float val = x;
-  // safety measure
   int maxIter = std::min(ctx.nIter, MaxIter - 1);
 
+  float scale = 1.f; // cumulative scale
+  float refVal = x;  // reference value for computing next scale
+
   for (int i = 0; i <= maxIter; ++i) {
-    if (val == 0.f) {
+    if (refVal == 0.f) {
       break;
     }
 
-    float inv = 1.f / val;
-    val *= (1.f + ctx.params[i].par0 * inv +
-            ctx.params[i].par1 * inv * inv) /
-           (1.f + ctx.params[i].par2 * inv);
-  }
+    const auto& p = ctx.params[i];
 
-  return val;
+    // scale function (x + a + b/x)/(x + c) which goes towards 1 for large x since x >> a,b,c -> x/x = 1
+    float iterScale =
+      (refVal + p.par0 + p.par1 / refVal) /
+      (refVal + p.par2);
+
+    scale *= iterScale; // total scale = product over itertaion scale
+    refVal = x * scale; // next iteration uses scaled original input
+  }
+  return scale;
 }
 
 const EMNonLin::NonLinParams* EMNonLin::resolveParams(PhotonType type, float cent)
