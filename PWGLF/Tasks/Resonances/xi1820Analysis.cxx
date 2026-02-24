@@ -45,8 +45,8 @@ struct Xi1820Analysis {
 
   // Constants
   static constexpr float kSmallMomentumDenominator = 1e-10f; // Small value to avoid division by zero
-  static constexpr int kPdgChagedXi1820 = 123314;                  // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
-  static constexpr int kPdgXi1820Zero = 123324;                  // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
+  static constexpr int kPdgChagedXi1820 = 123314;            // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
+  static constexpr int kPdgXi1820Zero = 123324;              // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
   static constexpr int kExpectedDaughters = 2;               // Expected number of daughters for two-body decay
 
   // Axes
@@ -95,7 +95,6 @@ struct Xi1820Analysis {
   Configurable<bool> cV0sCrossMassRejection{"cV0sCrossMassRejection", true, "Enable K0s mass rejection for Lambda"};
   Configurable<float> cV0sCrossMassRejectionWindow{"cV0sCrossMassRejectionWindow", 0.005, "K0s mass rejection window for Lambda (GeV/c^2)"};
 
-
   // K0s selections
   Configurable<double> cK0sMinCosPA{"cK0sMinCosPA", 0.98, "K0s minimum pointing angle cosine"};
   Configurable<double> cK0sMaxDaughDCA{"cK0sMaxDaughDCA", 0.5, "K0s daughter DCA Maximum"};
@@ -130,7 +129,6 @@ struct Xi1820Analysis {
     Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.5, "Rapidity cut"};
     ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0, 500}, "N_{tracks}"};
 
-
   } additionalConfig;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
@@ -161,166 +159,162 @@ struct Xi1820Analysis {
     histos.add("Event/nLambdasAfterCuts", "Number of Lambdas per event after cuts", kTH1F, {{100, 0., 100., "N_{Lambda}"}});
     histos.add("Event/nKaonsAfterCuts", "Number of kaons (or K0s) per event after cuts", kTH1F, {{100, 0., 100., "N_{Kaon}"}});
 
-    if(doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMCWithTracks || doprocessK0sLambda || doprocessMCK0sLambda) {
-    // Lambda QA histograms
-    histos.add("QAbefore/lambdaMass", "Lambda mass before cuts", kTH1F, {lambdaMassAxis});
-    histos.add("QAbefore/lambdaMassAnti", "Anti-Lambda mass before cuts", kTH1F, {lambdaMassAxis});
-    histos.add("QAbefore/lambdaPt", "Lambda pT before cuts", kTH1F, {ptAxisQA});
-    histos.add("QAbefore/lambdaEta", "Lambda eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAbefore/lambdaCosPA", "Lambda CosPA before cuts", kTH2F, {ptAxisQA, cosPAAxis});
-    histos.add("QAbefore/lambdaRadius", "Lambda radius before cuts", kTH2F, {ptAxisQA, radiusAxis});
-    histos.add("QAbefore/lambdaDauDCA", "Lambda daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAbefore/lambdaProperLifetime", "Lambda proper lifetime before cuts", kTH2F, {ptAxisQA, lifetimeAxis});
-    histos.add("QAbefore/lambdaDauPosDCA", "Lambda positive daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAbefore/lambdaDauNegDCA", "Lambda negative daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAbefore/lambdaArmenterosPodolanski", "Lambda candidate Armenteros-Podolanski before cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
+    if (doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMCWithTracks || doprocessK0sLambda || doprocessMCK0sLambda) {
+      // Lambda QA histograms
+      histos.add("QAbefore/lambdaMass", "Lambda mass before cuts", kTH1F, {lambdaMassAxis});
+      histos.add("QAbefore/lambdaMassAnti", "Anti-Lambda mass before cuts", kTH1F, {lambdaMassAxis});
+      histos.add("QAbefore/lambdaPt", "Lambda pT before cuts", kTH1F, {ptAxisQA});
+      histos.add("QAbefore/lambdaEta", "Lambda eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
+      histos.add("QAbefore/lambdaCosPA", "Lambda CosPA before cuts", kTH2F, {ptAxisQA, cosPAAxis});
+      histos.add("QAbefore/lambdaRadius", "Lambda radius before cuts", kTH2F, {ptAxisQA, radiusAxis});
+      histos.add("QAbefore/lambdaDauDCA", "Lambda daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAbefore/lambdaProperLifetime", "Lambda proper lifetime before cuts", kTH2F, {ptAxisQA, lifetimeAxis});
+      histos.add("QAbefore/lambdaDauPosDCA", "Lambda positive daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAbefore/lambdaDauNegDCA", "Lambda negative daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAbefore/lambdaArmenterosPodolanski", "Lambda candidate Armenteros-Podolanski before cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
 
-    histos.add("QAafter/lambdaMass", "Lambda mass after cuts", kTH1F, {lambdaMassAxis});
-    histos.add("QAafter/lambdaMassAnti", "Anti-Lambda mass after cuts", kTH1F, {lambdaMassAxis});
-    histos.add("QAafter/lambdaPt", "Lambda pT after cuts", kTH1F, {ptAxisQA});
-    histos.add("QAafter/lambdaEta", "Lambda eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAafter/lambdaCosPA", "Lambda CosPA after cuts", kTH2F, {ptAxisQA, cosPAAxis});
-    histos.add("QAafter/lambdaRadius", "Lambda radius after cuts", kTH2F, {ptAxisQA, radiusAxis});
-    histos.add("QAafter/lambdaDauDCA", "Lambda daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAafter/lambdaProperLifetime", "Lambda proper lifetime after cuts", kTH2F, {ptAxisQA, lifetimeAxis});
-    histos.add("QAafter/lambdaDauPosDCA", "Lambda positive daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAafter/lambdaDauNegDCA", "Lambda negative daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAafter/lambdaArmenterosPodolanski", "Lambda candidate Armenteros-Podolanski after cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
+      histos.add("QAafter/lambdaMass", "Lambda mass after cuts", kTH1F, {lambdaMassAxis});
+      histos.add("QAafter/lambdaMassAnti", "Anti-Lambda mass after cuts", kTH1F, {lambdaMassAxis});
+      histos.add("QAafter/lambdaPt", "Lambda pT after cuts", kTH1F, {ptAxisQA});
+      histos.add("QAafter/lambdaEta", "Lambda eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
+      histos.add("QAafter/lambdaCosPA", "Lambda CosPA after cuts", kTH2F, {ptAxisQA, cosPAAxis});
+      histos.add("QAafter/lambdaRadius", "Lambda radius after cuts", kTH2F, {ptAxisQA, radiusAxis});
+      histos.add("QAafter/lambdaDauDCA", "Lambda daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAafter/lambdaProperLifetime", "Lambda proper lifetime after cuts", kTH2F, {ptAxisQA, lifetimeAxis});
+      histos.add("QAafter/lambdaDauPosDCA", "Lambda positive daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAafter/lambdaDauNegDCA", "Lambda negative daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAafter/lambdaArmenterosPodolanski", "Lambda candidate Armenteros-Podolanski after cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
     }
 
+    if (doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMCWithTracks) {
+      // Kaon QA histograms
+      histos.add("QAbefore/kaonPt", "Kaon pT before cuts", kTH1F, {ptAxisQA});
+      histos.add("QAbefore/kaonEta", "Kaon eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
+      histos.add("QAbefore/kaonDCAxy", "Kaon DCAxy before cuts", kTH2F, {ptAxisQA, dcaxyAxis});
+      histos.add("QAbefore/kaonDCAz", "Kaon DCAz before cuts", kTH2F, {ptAxisQA, dcazAxis});
+      histos.add("QAbefore/kaonTPCNcls", "Kaon TPC clusters before cuts", kTH1F, {{160, 0, 160, "N_{TPC clusters}"}});
+      histos.add("QAbefore/kaonITSNcls", "Kaon ITS clusters before cuts", kTH1F, {{10, 0, 10, "N_{ITS clusters}"}});
+      histos.add("QAbefore/kaonTPCNSigma", "Kaon TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("QAbefore/kaonTOFNSigma", "Kaon TOF NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
 
-    
-    if(doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMCWithTracks) {
-    // Kaon QA histograms
-    histos.add("QAbefore/kaonPt", "Kaon pT before cuts", kTH1F, {ptAxisQA});
-    histos.add("QAbefore/kaonEta", "Kaon eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAbefore/kaonDCAxy", "Kaon DCAxy before cuts", kTH2F, {ptAxisQA, dcaxyAxis});
-    histos.add("QAbefore/kaonDCAz", "Kaon DCAz before cuts", kTH2F, {ptAxisQA, dcazAxis});
-    histos.add("QAbefore/kaonTPCNcls", "Kaon TPC clusters before cuts", kTH1F, {{160, 0, 160, "N_{TPC clusters}"}});
-    histos.add("QAbefore/kaonITSNcls", "Kaon ITS clusters before cuts", kTH1F, {{10, 0, 10, "N_{ITS clusters}"}});
-    histos.add("QAbefore/kaonTPCNSigma", "Kaon TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
-    histos.add("QAbefore/kaonTOFNSigma", "Kaon TOF NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
-
-    histos.add("QAafter/kaonPt", "Kaon pT after cuts", kTH1F, {ptAxisQA});
-    histos.add("QAafter/kaonEta", "Kaon eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAafter/kaonDCAxy", "Kaon DCAxy after cuts", kTH2F, {ptAxisQA, dcaxyAxis});
-    histos.add("QAafter/kaonDCAz", "Kaon DCAz after cuts", kTH2F, {ptAxisQA, dcazAxis});
-    histos.add("QAafter/kaonTPCNcls", "Kaon TPC clusters after cuts", kTH1F, {{160, 0, 160, "N_{TPC clusters}"}});
-    histos.add("QAafter/kaonITSNcls", "Kaon ITS clusters after cuts", kTH1F, {{10, 0, 10, "N_{ITS clusters}"}});
-    histos.add("QAafter/kaonTPCNSigma", "Kaon TPC NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
-    histos.add("QAafter/kaonTOFNSigma", "Kaon TOF NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("QAafter/kaonPt", "Kaon pT after cuts", kTH1F, {ptAxisQA});
+      histos.add("QAafter/kaonEta", "Kaon eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
+      histos.add("QAafter/kaonDCAxy", "Kaon DCAxy after cuts", kTH2F, {ptAxisQA, dcaxyAxis});
+      histos.add("QAafter/kaonDCAz", "Kaon DCAz after cuts", kTH2F, {ptAxisQA, dcazAxis});
+      histos.add("QAafter/kaonTPCNcls", "Kaon TPC clusters after cuts", kTH1F, {{160, 0, 160, "N_{TPC clusters}"}});
+      histos.add("QAafter/kaonITSNcls", "Kaon ITS clusters after cuts", kTH1F, {{10, 0, 10, "N_{ITS clusters}"}});
+      histos.add("QAafter/kaonTPCNSigma", "Kaon TPC NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
+      histos.add("QAafter/kaonTOFNSigma", "Kaon TOF NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
     }
 
     // Resonance histograms - 4 combinations
     // K+ Lambda
-    if(doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMixedEventWithTracks || doprocessMixedEventWithMicroTracks || doprocessMCWithTracks) {
-    histos.add("xi1820/kplus_lambda/hInvMassKplusLambda", "Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis});
-    histos.add("xi1820/kplus_lambda/hInvMassKplusLambda_Mix", "Mixed event Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis});
-    histos.add("xi1820/kplus_lambda/hMassPtCentKplusLambda", "K^{+} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
-    histos.add("xi1820/kplus_lambda/hMassPtCentKplusLambda_Mix", "Mixed event K^{+} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+    if (doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMixedEventWithTracks || doprocessMixedEventWithMicroTracks || doprocessMCWithTracks) {
+      histos.add("xi1820/kplus_lambda/hInvMassKplusLambda", "Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/kplus_lambda/hInvMassKplusLambda_Mix", "Mixed event Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/kplus_lambda/hMassPtCentKplusLambda", "K^{+} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1820/kplus_lambda/hMassPtCentKplusLambda_Mix", "Mixed event K^{+} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
 
-    // K+ Anti-Lambda
-    histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda", "Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
-    histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda_Mix", "Mixed event Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
-    histos.add("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda", "K^{+} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
-    histos.add("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Mix", "Mixed event K^{+} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+      // K+ Anti-Lambda
+      histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda", "Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda_Mix", "Mixed event Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda", "K^{+} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Mix", "Mixed event K^{+} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
 
-    // K- Lambda
-    histos.add("xi1820/kminus_lambda/hInvMassKminusLambda", "Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
-    histos.add("xi1820/kminus_lambda/hInvMassKminusLambda_Mix", "Mixed event Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
-    histos.add("xi1820/kminus_lambda/hMassPtCentKminusLambda", "K^{-} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
-    histos.add("xi1820/kminus_lambda/hMassPtCentKminusLambda_Mix", "Mixed event K^{-} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+      // K- Lambda
+      histos.add("xi1820/kminus_lambda/hInvMassKminusLambda", "Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/kminus_lambda/hInvMassKminusLambda_Mix", "Mixed event Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/kminus_lambda/hMassPtCentKminusLambda", "K^{-} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1820/kminus_lambda/hMassPtCentKminusLambda_Mix", "Mixed event K^{-} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
 
-    // K- Anti-Lambda
-    histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda", "Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
-    histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda_Mix", "Mixed event Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
-    histos.add("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda", "K^{-} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
-    histos.add("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda_Mix", "Mixed event K^{-} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+      // K- Anti-Lambda
+      histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda", "Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda_Mix", "Mixed event Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda", "K^{-} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda_Mix", "Mixed event K^{-} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
     }
 
     // MC Reco histograms for charged K + Lambda channel
-    if(doprocessMCWithTracks) {
-    histos.add("MC/kplus_antilambda/hMCRecoInvMassKplusAntiLambda", "Invariant mass of Xi(1820) to K^{-} + #Lambda (MC Reco)", kTH1F, {invMassAxis});
-    histos.add("MC/kplus_antilambda/hMCRecoMassPtCentKplusAntiLambda", "Xi(1820) mass vs pT vs cent (K^{-} + #Lambda) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis,ptAxis});
+    if (doprocessMCWithTracks) {
+      histos.add("MC/kplus_antilambda/hMCRecoInvMassKplusAntiLambda", "Invariant mass of Xi(1820) to K^{-} + #Lambda (MC Reco)", kTH1F, {invMassAxis});
+      histos.add("MC/kplus_antilambda/hMCRecoMassPtCentKplusAntiLambda", "Xi(1820) mass vs pT vs cent (K^{-} + #Lambda) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis, ptAxis});
 
-    histos.add("MC/kminus_antilambda/hMCRecoInvMassKminusAntiLambda", "Invariant mass of Xi(1820) to K^{+} + #bar{#Lambda} (MC Reco)", kTH1F, {invMassAxis});
-    histos.add("MC/kminus_antilambda/hMCRecoMassPtCentKminusAntiLambda", "Xi(1820) mass vs pT vs cent (K^{+} + #bar{#Lambda}) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis, ptAxis});
+      histos.add("MC/kminus_antilambda/hMCRecoInvMassKminusAntiLambda", "Invariant mass of Xi(1820) to K^{+} + #bar{#Lambda} (MC Reco)", kTH1F, {invMassAxis});
+      histos.add("MC/kminus_antilambda/hMCRecoMassPtCentKminusAntiLambda", "Xi(1820) mass vs pT vs cent (K^{+} + #bar{#Lambda}) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis, ptAxis});
     }
 
     // K0s QA histograms
-    if(doprocessK0sLambda || doprocessMCK0sLambda) {
-    histos.add("QAbefore/k0sMass", "K0s mass before cuts", kTH1F, {{100, 0.4, 0.6, "K^{0}_{S} mass (GeV/#it{c}^{2})"}});
-    histos.add("QAbefore/k0sPt", "K0s pT before cuts", kTH1F, {ptAxisQA});
-    histos.add("QAbefore/k0sEta", "K0s eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAbefore/k0sCosPA", "K0s CosPA before cuts", kTH2F, {ptAxisQA, cosPAAxis});
-    histos.add("QAbefore/k0sRadius", "K0s radius before cuts", kTH2F, {ptAxisQA, radiusAxis});
-    histos.add("QAbefore/k0sDauDCA", "K0s daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAbefore/k0sProperLifetime", "K0s proper lifetime before cuts", kTH2F, {ptAxisQA, lifetimeAxis});
-    histos.add("QAbefore/k0sArmenterosPodolanski", "K0s candidate Armenteros-Podolanski before cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
-    
+    if (doprocessK0sLambda || doprocessMCK0sLambda) {
+      histos.add("QAbefore/k0sMass", "K0s mass before cuts", kTH1F, {{100, 0.4, 0.6, "K^{0}_{S} mass (GeV/#it{c}^{2})"}});
+      histos.add("QAbefore/k0sPt", "K0s pT before cuts", kTH1F, {ptAxisQA});
+      histos.add("QAbefore/k0sEta", "K0s eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
+      histos.add("QAbefore/k0sCosPA", "K0s CosPA before cuts", kTH2F, {ptAxisQA, cosPAAxis});
+      histos.add("QAbefore/k0sRadius", "K0s radius before cuts", kTH2F, {ptAxisQA, radiusAxis});
+      histos.add("QAbefore/k0sDauDCA", "K0s daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAbefore/k0sProperLifetime", "K0s proper lifetime before cuts", kTH2F, {ptAxisQA, lifetimeAxis});
+      histos.add("QAbefore/k0sArmenterosPodolanski", "K0s candidate Armenteros-Podolanski before cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
 
-    histos.add("QAafter/k0sMass", "K0s mass after cuts", kTH1F, {{100, 0.4, 0.6, "K^{0}_{S} mass (GeV/#it{c}^{2})"}});
-    histos.add("QAafter/k0sPt", "K0s pT after cuts", kTH1F, {ptAxisQA});
-    histos.add("QAafter/k0sEta", "K0s eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
-    histos.add("QAafter/k0sCosPA", "K0s CosPA after cuts", kTH2F, {ptAxisQA, cosPAAxis});
-    histos.add("QAafter/k0sRadius", "K0s radius after cuts", kTH2F, {ptAxisQA, radiusAxis});
-    histos.add("QAafter/k0sDauDCA", "K0s daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
-    histos.add("QAafter/k0sProperLifetime", "K0s proper lifetime after cuts", kTH2F, {ptAxisQA, lifetimeAxis});
-    histos.add("QAafter/k0sArmenterosPodolanski", "K0s candidate Armenteros-Podolanski after cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
+      histos.add("QAafter/k0sMass", "K0s mass after cuts", kTH1F, {{100, 0.4, 0.6, "K^{0}_{S} mass (GeV/#it{c}^{2})"}});
+      histos.add("QAafter/k0sPt", "K0s pT after cuts", kTH1F, {ptAxisQA});
+      histos.add("QAafter/k0sEta", "K0s eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
+      histos.add("QAafter/k0sCosPA", "K0s CosPA after cuts", kTH2F, {ptAxisQA, cosPAAxis});
+      histos.add("QAafter/k0sRadius", "K0s radius after cuts", kTH2F, {ptAxisQA, radiusAxis});
+      histos.add("QAafter/k0sDauDCA", "K0s daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAafter/k0sProperLifetime", "K0s proper lifetime after cuts", kTH2F, {ptAxisQA, lifetimeAxis});
+      histos.add("QAafter/k0sArmenterosPodolanski", "K0s candidate Armenteros-Podolanski after cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
     }
 
     // K0s + Lambda
-    if(doprocessK0sLambda || doprocessK0sLambdaMixedEvent|| doprocessMCK0sLambda ) {
-    histos.add("xi1820/k0s_lambda/hInvMassK0sLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
-    histos.add("xi1820/k0s_lambda/hInvMassK0sLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
-    histos.add("xi1820/k0s_lambda/hMassPtCentK0sLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTH3D, {invMassAxis, ptAxis, centAxis});
-    histos.add("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTH3D, {invMassAxis, ptAxis, centAxis});
+    if (doprocessK0sLambda || doprocessK0sLambdaMixedEvent || doprocessMCK0sLambda) {
+      histos.add("xi1820/k0s_lambda/hInvMassK0sLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_lambda/hInvMassK0sLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_lambda/hMassPtCentK0sLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTH3D, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTH3D, {invMassAxis, ptAxis, centAxis});
 
-    // K0s + Anti-Lambda
-    histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
-    histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
-    histos.add("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTH3D, {invMassAxis, ptAxis, centAxis});
-    histos.add("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTH3D, {invMassAxis, ptAxis, centAxis});
+      // K0s + Anti-Lambda
+      histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTH3D, {invMassAxis, ptAxis, centAxis});
+      histos.add("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTH3D, {invMassAxis, ptAxis, centAxis});
     }
 
+    if (doprocessMCK0sLambda) {
+      histos.add("MC/k0s_lambda/hMCRecoInvMassK0sLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda (MC Reco)", kTH1F, {invMassAxis});
+      histos.add("MC/k0s_lambda/hMCRecoMassPtCentK0sLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis, ptAxis});
 
-    if(doprocessMCK0sLambda) {
-    histos.add("MC/k0s_lambda/hMCRecoInvMassK0sLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda (MC Reco)", kTH1F, {invMassAxis});
-    histos.add("MC/k0s_lambda/hMCRecoMassPtCentK0sLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis, ptAxis});
-
-    histos.add("MC/k0s_antilambda/hMCRecoInvMassK0sAntiLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda} (MC Reco)", kTH1F, {invMassAxis});
-    histos.add("MC/k0s_antilambda/hMCRecoMassPtCentK0sAntiLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda}) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis, ptAxis});
+      histos.add("MC/k0s_antilambda/hMCRecoInvMassK0sAntiLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda} (MC Reco)", kTH1F, {invMassAxis});
+      histos.add("MC/k0s_antilambda/hMCRecoMassPtCentK0sAntiLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda}) (MC Reco)", kTHnSparseD, {invMassAxis, ptAxis, centAxis, ptAxis});
     }
 
-    if(doprocessMCGen){
-    histos.add("multQA/h2MultCentMC", "Multiplicity vs Centrality MC", HistType::kTH2D, {centAxis, additionalConfig.multNTracksAxis});
-    // MC truth invariant mass vs pT (2D)
-    histos.add("MC/hMCGenPtCentMultKminusLambda", "MC Truth Mass vs pT K^{-}#Lambda", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
-    histos.add("MC/hMCGenPtCentMultKplusAntiLambda", "MC Truth Mass vs pT K^{+}#bar{#Lambda}", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
-    histos.add("MC/hMCGenPtCentMultK0sLambda", "MC Truth Mass vs pT K^{0}_{S}#Lambda", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
-    histos.add("MC/hMCGenPtCentMultK0sAntiLambda", "MC Truth Mass vs pT K^{0}_{S}#bar{#Lambda}", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
+    if (doprocessMCGen) {
+      histos.add("multQA/h2MultCentMC", "Multiplicity vs Centrality MC", HistType::kTH2D, {centAxis, additionalConfig.multNTracksAxis});
+      // MC truth invariant mass vs pT (2D)
+      histos.add("MC/hMCGenPtCentMultKminusLambda", "MC Truth Mass vs pT K^{-}#Lambda", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
+      histos.add("MC/hMCGenPtCentMultKplusAntiLambda", "MC Truth Mass vs pT K^{+}#bar{#Lambda}", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
+      histos.add("MC/hMCGenPtCentMultK0sLambda", "MC Truth Mass vs pT K^{0}_{S}#Lambda", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
+      histos.add("MC/hMCGenPtCentMultK0sAntiLambda", "MC Truth Mass vs pT K^{0}_{S}#bar{#Lambda}", kTH3D, {ptAxis, centAxis, additionalConfig.multNTracksAxis});
     }
 
     // MC truth histograms
     AxisSpec etaAxis = {100, -2.0, 2.0, "#eta"};
     AxisSpec rapidityAxis = {100, -2.0, 2.0, "y"};
 
-    if(doprocessMCTruth){
-    histos.add("MC/hMCTruthXi1820Pt", "MC Generated Xi(1820) pT", kTH1F, {ptAxis});
-    histos.add("MC/hMCTruthXi1820PtEta", "MC Generated Xi(1820) pT vs eta", kTH2F, {ptAxis, etaAxis});
-    histos.add("MC/hMCTruthXi1820Y", "MC Generated Xi(1820) rapidity", kTH1F, {rapidityAxis});
+    if (doprocessMCTruth) {
+      histos.add("MC/hMCTruthXi1820Pt", "MC Generated Xi(1820) pT", kTH1F, {ptAxis});
+      histos.add("MC/hMCTruthXi1820PtEta", "MC Generated Xi(1820) pT vs eta", kTH2F, {ptAxis, etaAxis});
+      histos.add("MC/hMCTruthXi1820Y", "MC Generated Xi(1820) rapidity", kTH1F, {rapidityAxis});
 
-    // MC truth invariant mass (from MC particles)
-    histos.add("MC/hMCTruthInvMassKminusLambda", "MC Truth Inv Mass K^{-}#Lambda", kTH1F, {invMassAxis});
-    histos.add("MC/hMCTruthInvMassKplusAntiLambda", "MC Truth Inv Mass K^{+}#bar{#Lambda}", kTH1F, {invMassAxis});
-    histos.add("MC/hMCTruthInvMassK0sLambda", "MC Truth Inv Mass K^{0}_{S}#Lambda", kTH1F, {invMassAxis});
-    histos.add("MC/hMCTruthInvMassK0sAntiLambda", "MC Truth Inv Mass K^{0}_{S}#bar{#Lambda}", kTH1F, {invMassAxis});
+      // MC truth invariant mass (from MC particles)
+      histos.add("MC/hMCTruthInvMassKminusLambda", "MC Truth Inv Mass K^{-}#Lambda", kTH1F, {invMassAxis});
+      histos.add("MC/hMCTruthInvMassKplusAntiLambda", "MC Truth Inv Mass K^{+}#bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("MC/hMCTruthInvMassK0sLambda", "MC Truth Inv Mass K^{0}_{S}#Lambda", kTH1F, {invMassAxis});
+      histos.add("MC/hMCTruthInvMassK0sAntiLambda", "MC Truth Inv Mass K^{0}_{S}#bar{#Lambda}", kTH1F, {invMassAxis});
 
-    // MC truth invariant mass vs pT (2D)
-    histos.add("MC/hMCTruthMassPtKminusLambda", "MC Truth Mass vs pT K^{-}#Lambda", kTH2F, {invMassAxis, ptAxis});
-    histos.add("MC/hMCTruthMassPtKplusAntiLambda", "MC Truth Mass vs pT K^{+}#bar{#Lambda}", kTH2F, {invMassAxis, ptAxis});
-    histos.add("MC/hMCTruthMassPtK0sLambda", "MC Truth Mass vs pT K^{0}_{S}#Lambda", kTH2F, {invMassAxis, ptAxis});
-    histos.add("MC/hMCTruthMassPtK0sAntiLambda", "MC Truth Mass vs pT K^{0}_{S}#bar{#Lambda}", kTH2F, {invMassAxis, ptAxis});
+      // MC truth invariant mass vs pT (2D)
+      histos.add("MC/hMCTruthMassPtKminusLambda", "MC Truth Mass vs pT K^{-}#Lambda", kTH2F, {invMassAxis, ptAxis});
+      histos.add("MC/hMCTruthMassPtKplusAntiLambda", "MC Truth Mass vs pT K^{+}#bar{#Lambda}", kTH2F, {invMassAxis, ptAxis});
+      histos.add("MC/hMCTruthMassPtK0sLambda", "MC Truth Mass vs pT K^{0}_{S}#Lambda", kTH2F, {invMassAxis, ptAxis});
+      histos.add("MC/hMCTruthMassPtK0sAntiLambda", "MC Truth Mass vs pT K^{0}_{S}#bar{#Lambda}", kTH2F, {invMassAxis, ptAxis});
     }
   }
 
@@ -561,7 +555,7 @@ struct Xi1820Analysis {
       return false;
     if (std::abs(track.eta()) > cKaonEtaMax)
       return false;
-    
+
     float dcaXY = -999.f;
     float dcaZ = -999.f;
 
@@ -570,30 +564,28 @@ struct Xi1820Analysis {
       dcaXY = o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags());
       dcaZ = o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags());
 
-      if(additionalConfig.cUsePtDepDCAForKaons){  // Insert pT dependent DCAxy,z cut (tighter than global-track w DCA cut)
+      if (additionalConfig.cUsePtDepDCAForKaons) { // Insert pT dependent DCAxy,z cut (tighter than global-track w DCA cut)
         if (std::abs(dcaXY) > (additionalConfig.cDCAToPVByPtFirstP0 + additionalConfig.cDCAToPVByPtFirstExp * std::pow(candPt, -1.)))
           return false;
-        if ( std::abs(dcaZ) > (additionalConfig.cDCAToPVByPtFirstP0 + additionalConfig.cDCAToPVByPtFirstExp * std::pow(candPt, -1.)))
+        if (std::abs(dcaZ) > (additionalConfig.cDCAToPVByPtFirstP0 + additionalConfig.cDCAToPVByPtFirstExp * std::pow(candPt, -1.)))
           return false;
-      }
-      else {
-      if (std::abs(dcaXY) > cKaonDCAxyMax)
-        return false;
-      if (std::abs(dcaZ) > cKaonDCAzMax)
-        return false;
+      } else {
+        if (std::abs(dcaXY) > cKaonDCAxyMax)
+          return false;
+        if (std::abs(dcaZ) > cKaonDCAzMax)
+          return false;
       }
     } else {
-      if(additionalConfig.cUsePtDepDCAForKaons){  // Insert pT dependent DCAxy,z cut (tighter than global-track w DCA cut)
+      if (additionalConfig.cUsePtDepDCAForKaons) { // Insert pT dependent DCAxy,z cut (tighter than global-track w DCA cut)
         if (std::abs(track.dcaXY()) > (additionalConfig.cDCAToPVByPtFirstP0 + additionalConfig.cDCAToPVByPtFirstExp * std::pow(candPt, -1.)))
           return false;
-        if ( std::abs(track.dcaZ()) > (additionalConfig.cDCAToPVByPtFirstP0 + additionalConfig.cDCAToPVByPtFirstExp * std::pow(candPt, -1.)))
+        if (std::abs(track.dcaZ()) > (additionalConfig.cDCAToPVByPtFirstP0 + additionalConfig.cDCAToPVByPtFirstExp * std::pow(candPt, -1.)))
           return false;
-      }
-      else {
-      if (std::abs(track.dcaXY()) > cKaonDCAxyMax)
-        return false;
-      if (std::abs(track.dcaZ()) > cKaonDCAzMax)
-        return false;
+      } else {
+        if (std::abs(track.dcaXY()) > cKaonDCAxyMax)
+          return false;
+        if (std::abs(track.dcaZ()) > cKaonDCAzMax)
+          return false;
       }
     }
 
@@ -622,16 +614,16 @@ struct Xi1820Analysis {
     auto cent = collision.cent();
 
     // Fill event QA histograms (only for same-event)
-  if constexpr (!IsMix) {
+    if constexpr (!IsMix) {
       histos.fill(HIST("Event/posZ"), collision.posZ());
       histos.fill(HIST("Event/centrality"), cent);
       histos.fill(HIST("Event/posZvsCent"), collision.posZ(), cent);
       histos.fill(HIST("Event/nV0s"), v0s.size());
       histos.fill(HIST("Event/nKaons"), tracks.size());
-  }
+    }
 
     if (additionalConfig.cConsiderPairOnly && (v0s.size() < 1 || tracks.size() < 1))
-     return; // skip events that cannot form pairs if the option is enabled (for increasing processing speed when only pairs are of interest)
+      return; // skip events that cannot form pairs if the option is enabled (for increasing processing speed when only pairs are of interest)
 
     // Count candidates after cuts
     int nV0sAfterCuts = 0;
@@ -769,7 +761,7 @@ struct Xi1820Analysis {
           pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), v0.mLambda()));
           pRes = pKaon + pLambda;
           auto pCandRapidity = pRes.Rapidity();
-          if(std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
+          if (std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kplus_lambda/hInvMassKplusLambda"), pRes.M());
@@ -786,7 +778,7 @@ struct Xi1820Analysis {
           pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), v0.mAntiLambda()));
           pRes = pKaon + pLambda;
           auto pCandRapidity = pRes.Rapidity();
-          if(std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
+          if (std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kplus_antilambda/hInvMassKplusAntiLambda"), pRes.M());
@@ -798,9 +790,9 @@ struct Xi1820Analysis {
                 continue;
               if (kaon.motherId() != v0.motherId())
                 continue;
-              auto pMCPt = v0.motherPt(); // Check particle's pT resolution
+              auto pMCPt = v0.motherPt();                                                                            // Check particle's pT resolution
               if (additionalConfig.cUseTruthRapidity && std::abs(v0.motherRap()) >= additionalConfig.cfgRapidityCut) // skip candidate if True rapidity of mother particle is outside of cut
-                continue; 
+                continue;
               histos.fill(HIST("MC/kplus_antilambda/hMCRecoInvMassKplusAntiLambda"), pRes.M());
               histos.fill(HIST("MC/kplus_antilambda/hMCRecoMassPtCentKplusAntiLambda"), pRes.M(), pRes.Pt(), cent, pMCPt);
 
@@ -817,7 +809,7 @@ struct Xi1820Analysis {
           pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), v0.mLambda()));
           pRes = pKaon + pLambda;
           auto pCandRapidity = pRes.Rapidity();
-          if(std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
+          if (std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kminus_lambda/hInvMassKminusLambda"), pRes.M());
@@ -829,9 +821,9 @@ struct Xi1820Analysis {
                 continue;
               if (kaon.motherId() != v0.motherId())
                 continue;
-              auto pMCPt = v0.motherPt(); // Check particle's pT resolution
+              auto pMCPt = v0.motherPt();                                                                            // Check particle's pT resolution
               if (additionalConfig.cUseTruthRapidity && std::abs(v0.motherRap()) >= additionalConfig.cfgRapidityCut) // skip candidate if True rapidity of mother particle is outside of cut
-                continue; 
+                continue;
               histos.fill(HIST("MC/kminus_lambda/hMCRecoInvMassKminusLambda"), pRes.M());
               histos.fill(HIST("MC/kminus_lambda/hMCRecoMassPtCentKminusLambda"), pRes.M(), pRes.Pt(), cent, pMCPt);
 
@@ -848,7 +840,7 @@ struct Xi1820Analysis {
           pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(v0.pt(), v0.eta(), v0.phi(), v0.mAntiLambda()));
           pRes = pKaon + pLambda;
           auto pCandRapidity = pRes.Rapidity();
-          if(std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
+          if (std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kminus_antilambda/hInvMassKminusAntiLambda"), pRes.M());
@@ -868,22 +860,22 @@ struct Xi1820Analysis {
     }
   }
 
-    template <bool IsMix, bool IsMC, typename CollisionT, typename V0sT>
+  template <bool IsMix, bool IsMC, typename CollisionT, typename V0sT>
   void fillK0sLambda(const CollisionT& collision, const V0sT& k0sCands, const V0sT& lambdaCands) // Xi(1820) analysis: K0s + Lambda channel, No need to MicroTrack!
   {
-        auto cent = collision.cent();
+    auto cent = collision.cent();
 
     // Fill event QA histograms
     if constexpr (!IsMix) {
-    histos.fill(HIST("Event/posZ"), collision.posZ());
-    histos.fill(HIST("Event/centrality"), cent);
-    histos.fill(HIST("Event/posZvsCent"), collision.posZ(), cent);
-    histos.fill(HIST("Event/nV0s"), lambdaCands.size());
-    histos.fill(HIST("Event/nKaons"), k0sCands.size());
+      histos.fill(HIST("Event/posZ"), collision.posZ());
+      histos.fill(HIST("Event/centrality"), cent);
+      histos.fill(HIST("Event/posZvsCent"), collision.posZ(), cent);
+      histos.fill(HIST("Event/nV0s"), lambdaCands.size());
+      histos.fill(HIST("Event/nKaons"), k0sCands.size());
     }
 
     if (additionalConfig.cConsiderHasV0s && (lambdaCands.size() < 1))
-     return; // skip events that do not have V0s if the option is enabled
+      return; // skip events that do not have V0s if the option is enabled
 
     int nV0sAfterCuts = 0;
     int nKaonsAfterCuts = 0;
@@ -892,21 +884,21 @@ struct Xi1820Analysis {
     for (const auto& k0s : k0sCands) {
       // K0s QA before cuts
       if constexpr (!IsMix) {
-      histos.fill(HIST("QAbefore/k0sMass"), k0s.mK0Short());
-      histos.fill(HIST("QAbefore/k0sPt"), k0s.pt());
-      histos.fill(HIST("QAbefore/k0sEta"), k0s.eta());
-      histos.fill(HIST("QAbefore/k0sCosPA"), k0s.pt(), k0s.v0CosPA());
-      histos.fill(HIST("QAbefore/k0sRadius"), k0s.pt(), k0s.transRadius());
-      histos.fill(HIST("QAbefore/k0sDauDCA"), k0s.pt(), k0s.daughDCA());
+        histos.fill(HIST("QAbefore/k0sMass"), k0s.mK0Short());
+        histos.fill(HIST("QAbefore/k0sPt"), k0s.pt());
+        histos.fill(HIST("QAbefore/k0sEta"), k0s.eta());
+        histos.fill(HIST("QAbefore/k0sCosPA"), k0s.pt(), k0s.v0CosPA());
+        histos.fill(HIST("QAbefore/k0sRadius"), k0s.pt(), k0s.transRadius());
+        histos.fill(HIST("QAbefore/k0sDauDCA"), k0s.pt(), k0s.daughDCA());
 
-      float dx = k0s.decayVtxX() - collision.posX();
-      float dy = k0s.decayVtxY() - collision.posY();
-      float dz = k0s.decayVtxZ() - collision.posZ();
-      float l = std::sqrt(dx * dx + dy * dy + dz * dz);
-      float p = std::sqrt(k0s.px() * k0s.px() + k0s.py() * k0s.py() + k0s.pz() * k0s.pz());
-      auto k0sProperLifetime = (l / (p + 1e-10)) * MassK0Short;
-      histos.fill(HIST("QAbefore/k0sProperLifetime"), k0s.pt(), k0sProperLifetime);
-      histos.fill(HIST("QAbefore/k0sArmenterosPodolanski"), k0s.alpha(), k0s.qtarm(), k0s.pt());
+        float dx = k0s.decayVtxX() - collision.posX();
+        float dy = k0s.decayVtxY() - collision.posY();
+        float dz = k0s.decayVtxZ() - collision.posZ();
+        float l = std::sqrt(dx * dx + dy * dy + dz * dz);
+        float p = std::sqrt(k0s.px() * k0s.px() + k0s.py() * k0s.py() + k0s.pz() * k0s.pz());
+        auto k0sProperLifetime = (l / (p + 1e-10)) * MassK0Short;
+        histos.fill(HIST("QAbefore/k0sProperLifetime"), k0s.pt(), k0sProperLifetime);
+        histos.fill(HIST("QAbefore/k0sArmenterosPodolanski"), k0s.alpha(), k0s.qtarm(), k0s.pt());
       }
 
       if (!k0sCut(collision, k0s))
@@ -915,22 +907,22 @@ struct Xi1820Analysis {
 
       if constexpr (!IsMix) {
         nKaonsAfterCuts++;
-      // K0s QA after cuts
-      histos.fill(HIST("QAafter/k0sMass"), k0s.mK0Short());
-      histos.fill(HIST("QAafter/k0sPt"), k0s.pt());
-      histos.fill(HIST("QAafter/k0sEta"), k0s.eta());
-      histos.fill(HIST("QAafter/k0sCosPA"), k0s.pt(), k0s.v0CosPA());
-      histos.fill(HIST("QAafter/k0sRadius"), k0s.pt(), k0s.transRadius());
-      histos.fill(HIST("QAafter/k0sDauDCA"), k0s.pt(), k0s.daughDCA());
-      
-      float dx = k0s.decayVtxX() - collision.posX();
-      float dy = k0s.decayVtxY() - collision.posY();
-      float dz = k0s.decayVtxZ() - collision.posZ();
-      float l = std::sqrt(dx * dx + dy * dy + dz * dz);
-      float p = std::sqrt(k0s.px() * k0s.px() + k0s.py() * k0s.py() + k0s.pz() * k0s.pz());
-      auto k0sProperLifetime = (l / (p + 1e-10)) * MassK0Short;
-      histos.fill(HIST("QAafter/k0sProperLifetime"), k0s.pt(), k0sProperLifetime);
-      histos.fill(HIST("QAafter/k0sArmenterosPodolanski"), k0s.alpha(), k0s.qtarm(), k0s.pt());
+        // K0s QA after cuts
+        histos.fill(HIST("QAafter/k0sMass"), k0s.mK0Short());
+        histos.fill(HIST("QAafter/k0sPt"), k0s.pt());
+        histos.fill(HIST("QAafter/k0sEta"), k0s.eta());
+        histos.fill(HIST("QAafter/k0sCosPA"), k0s.pt(), k0s.v0CosPA());
+        histos.fill(HIST("QAafter/k0sRadius"), k0s.pt(), k0s.transRadius());
+        histos.fill(HIST("QAafter/k0sDauDCA"), k0s.pt(), k0s.daughDCA());
+
+        float dx = k0s.decayVtxX() - collision.posX();
+        float dy = k0s.decayVtxY() - collision.posY();
+        float dz = k0s.decayVtxZ() - collision.posZ();
+        float l = std::sqrt(dx * dx + dy * dy + dz * dz);
+        float p = std::sqrt(k0s.px() * k0s.px() + k0s.py() * k0s.py() + k0s.pz() * k0s.pz());
+        auto k0sProperLifetime = (l / (p + 1e-10)) * MassK0Short;
+        histos.fill(HIST("QAafter/k0sProperLifetime"), k0s.pt(), k0sProperLifetime);
+        histos.fill(HIST("QAafter/k0sArmenterosPodolanski"), k0s.alpha(), k0s.qtarm(), k0s.pt());
       }
 
       // Loop over V0s for Lambda
@@ -940,7 +932,7 @@ struct Xi1820Analysis {
 
         if constexpr (!IsMix) {
           if (indexLambda == indexK0s) // Avoid self-combination
-            continue; 
+            continue;
           histos.fill(HIST("QAbefore/lambdaMass"), lambda.mLambda());
           histos.fill(HIST("QAbefore/lambdaMassAnti"), lambda.mAntiLambda());
           histos.fill(HIST("QAbefore/lambdaPt"), lambda.pt());
@@ -1001,65 +993,64 @@ struct Xi1820Analysis {
         ROOT::Math::PxPyPzEVector pK0s, pLambda, pRes;
         pK0s = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(k0s.pt(), k0s.eta(), k0s.phi(), MassK0Short));
 
-          if (isLambda) {
-            pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(lambda.pt(), lambda.eta(), lambda.phi(), lambda.mLambda()));
-            pRes = pK0s + pLambda;
-            auto pCandRapidity = pRes.Rapidity();
-            if(std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
-              continue;
-            if constexpr (!IsMix) {
-              histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda"), pRes.M());
-              histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda"), pRes.M(), pRes.Pt(), cent);
-              if constexpr (IsMC) { // Calculate Acceptance x efficiency 
-                if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
-                  continue;
-                if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0)
-                  continue;
-                if (k0s.motherId() != lambda.motherId())
-                  continue;
-                auto pMCPt = lambda.motherPt(); // Check particle's pT resolution
-                if (additionalConfig.cUseTruthRapidity && std::abs(lambda.motherRap()) >= additionalConfig.cfgRapidityCut) // skip candidate if True rapidity of mother particle is outside of cut
-                  continue; 
-                histos.fill(HIST("MC/k0s_lambda/hMCRecoInvMassK0sLambda"), pRes.M());
-                histos.fill(HIST("MC/k0s_lambda/hMCRecoMassPtCentK0sLambda"), pRes.M(), pRes.Pt(), cent, pMCPt);
-                // Detail QA histograms for truth particle -> Will be updated
-              }
-            } else {
-              histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda_Mix"), pRes.M());
-              histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent);
+        if (isLambda) {
+          pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(lambda.pt(), lambda.eta(), lambda.phi(), lambda.mLambda()));
+          pRes = pK0s + pLambda;
+          auto pCandRapidity = pRes.Rapidity();
+          if (std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
+            continue;
+          if constexpr (!IsMix) {
+            histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda"), pRes.M());
+            histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda"), pRes.M(), pRes.Pt(), cent);
+            if constexpr (IsMC) { // Calculate Acceptance x efficiency
+              if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
+                continue;
+              if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0)
+                continue;
+              if (k0s.motherId() != lambda.motherId())
+                continue;
+              auto pMCPt = lambda.motherPt();                                                                            // Check particle's pT resolution
+              if (additionalConfig.cUseTruthRapidity && std::abs(lambda.motherRap()) >= additionalConfig.cfgRapidityCut) // skip candidate if True rapidity of mother particle is outside of cut
+                continue;
+              histos.fill(HIST("MC/k0s_lambda/hMCRecoInvMassK0sLambda"), pRes.M());
+              histos.fill(HIST("MC/k0s_lambda/hMCRecoMassPtCentK0sLambda"), pRes.M(), pRes.Pt(), cent, pMCPt);
+              // Detail QA histograms for truth particle -> Will be updated
             }
+          } else {
+            histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda_Mix"), pRes.M());
+            histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent);
           }
+        }
 
-          if (isAntiLambda) {
-            pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(lambda.pt(), lambda.eta(), lambda.phi(), lambda.mAntiLambda()));
-            pRes = pK0s + pLambda;
-            auto pCandRapidity = pRes.Rapidity();
-            if(std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
-              continue;
-            if constexpr (!IsMix) {
+        if (isAntiLambda) {
+          pLambda = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(lambda.pt(), lambda.eta(), lambda.phi(), lambda.mAntiLambda()));
+          pRes = pK0s + pLambda;
+          auto pCandRapidity = pRes.Rapidity();
+          if (std::abs(pCandRapidity) >= additionalConfig.cfgRapidityCut) // skip candidate if reconstructed rapidity is outside of cut
+            continue;
+          if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/k0s_antilambda/hInvMassK0sAntiLambda"), pRes.M());
             histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda"), pRes.M(), pRes.Pt(), cent);
 
-              if constexpr (IsMC) { // Calculate Acceptance x efficiency
-                if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
-                  continue;
-                if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0Bar)
-                  continue;
-                if (k0s.motherId() != lambda.motherId())
-                  continue;
-                auto pMCPt = lambda.motherPt(); // Check particle's pT resolution
-                if (additionalConfig.cUseTruthRapidity && std::abs(lambda.motherRap()) >= additionalConfig.cfgRapidityCut) // skip candidate if True rapidity of mother particle is outside of cut
-                  continue; 
-                histos.fill(HIST("MC/k0s_antilambda/hMCRecoInvMassK0sAntiLambda"), pRes.M());
-                histos.fill(HIST("MC/k0s_antilambda/hMCRecoMassPtCentK0sAntiLambda"), pRes.M(), pRes.Pt(), cent, pMCPt);
-                // Detail QA histograms for truth particle -> Will be updated
-              }
-            } else {
-              histos.fill(HIST("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix"), pRes.M());
-              histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
+            if constexpr (IsMC) { // Calculate Acceptance x efficiency
+              if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
+                continue;
+              if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0Bar)
+                continue;
+              if (k0s.motherId() != lambda.motherId())
+                continue;
+              auto pMCPt = lambda.motherPt();                                                                            // Check particle's pT resolution
+              if (additionalConfig.cUseTruthRapidity && std::abs(lambda.motherRap()) >= additionalConfig.cfgRapidityCut) // skip candidate if True rapidity of mother particle is outside of cut
+                continue;
+              histos.fill(HIST("MC/k0s_antilambda/hMCRecoInvMassK0sAntiLambda"), pRes.M());
+              histos.fill(HIST("MC/k0s_antilambda/hMCRecoMassPtCentK0sAntiLambda"), pRes.M(), pRes.Pt(), cent, pMCPt);
+              // Detail QA histograms for truth particle -> Will be updated
             }
-        
+          } else {
+            histos.fill(HIST("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix"), pRes.M());
+            histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
           }
+        }
       } // End of loop over Lambda candidates
     } // End of loop over K0s candidates
 
@@ -1080,7 +1071,7 @@ struct Xi1820Analysis {
                              aod::ResoV0s const& resoV0s,
                              aod::ResoTracks const& resoTracks)
   {
-    if(additionalConfig.cRecoINELgt0 && !resoCollision.isRecINELgt0())
+    if (additionalConfig.cRecoINELgt0 && !resoCollision.isRecINELgt0())
       return; // skip event if RecoINEL>0 selection is enabled and event does not pass it
     fillChargedKLambda<false, false, false>(resoCollision, resoV0s, resoTracks);
   }
@@ -1090,7 +1081,7 @@ struct Xi1820Analysis {
                                   aod::ResoV0s const& resoV0s,
                                   aod::ResoMicroTracks const& resoMicroTracks)
   {
-    if(additionalConfig.cRecoINELgt0 && !resoCollision.isRecINELgt0())
+    if (additionalConfig.cRecoINELgt0 && !resoCollision.isRecINELgt0())
       return; // skip event if RecoINEL>0 selection is enabled and event does not pass it
     fillChargedKLambda<false, true, false>(resoCollision, resoV0s, resoMicroTracks);
   }
@@ -1100,13 +1091,13 @@ struct Xi1820Analysis {
                                    aod::ResoV0s const& resoV0s,
                                    aod::ResoTracks const& resoTracks)
   {
-    
+
     auto v0sTracksTuple = std::make_tuple(resoTracks, resoV0s);
     BinningTypeVertexContributor colBinning{{cfgVtxBins, cfgMultBins}, true};
     Pair<aod::ResoCollisions, aod::ResoTracks, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, resoCollisions, v0sTracksTuple, &cache};
 
     for (auto& [collision1, tracks1, collision2, v0s2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
-      if(additionalConfig.cRecoINELgt0 && !collision1.isRecINELgt0())
+      if (additionalConfig.cRecoINELgt0 && !collision1.isRecINELgt0())
         continue; // skip event if RecoINEL>0 selection is enabled and event does not pass it
       fillChargedKLambda<true, false, false>(collision1, v0s2, tracks1);
     }
@@ -1123,7 +1114,7 @@ struct Xi1820Analysis {
     Pair<aod::ResoCollisions, aod::ResoV0s, aod::ResoMicroTracks, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, resoCollisions, v0sTracksTuple, &cache};
 
     for (auto& [collision1, v0s1, collision2, tracks2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
-      if(additionalConfig.cRecoINELgt0 && !collision2.isRecINELgt0())
+      if (additionalConfig.cRecoINELgt0 && !collision2.isRecINELgt0())
         continue; // skip event if RecoINEL>0 selection is enabled and event does not pass it
       fillChargedKLambda<true, true, false>(collision2, v0s1, tracks2);
     }
@@ -1134,7 +1125,7 @@ struct Xi1820Analysis {
   void processK0sLambda(const aod::ResoCollision& resoCollision,
                         aod::ResoV0s const& resoV0s)
   {
-    if(additionalConfig.cRecoINELgt0 && !resoCollision.isRecINELgt0())
+    if (additionalConfig.cRecoINELgt0 && !resoCollision.isRecINELgt0())
       return; // skip event if RecoINEL>0 selection is enabled and event does not pass it
     fillK0sLambda<false, false>(resoCollision, resoV0s, resoV0s);
   }
@@ -1150,7 +1141,7 @@ struct Xi1820Analysis {
     Pair<aod::ResoCollisions, aod::ResoV0s, aod::ResoV0s, BinningTypeVertexContributor> pairs{colBinning, nEvtMixing, -1, resoCollisions, v0sV0sTuple, &cache};
 
     for (auto& [collision1, k0s1, collision2, lambda2] : pairs) { // o2-linter: disable=const-ref-in-for-loop (structured bindings from Pair iterator cannot be const)
-      if(additionalConfig.cRecoINELgt0 && !collision1.isRecINELgt0())
+      if (additionalConfig.cRecoINELgt0 && !collision1.isRecINELgt0())
         continue; // skip event if RecoINEL>0 selection is enabled and event does not pass it
       fillK0sLambda<true, false>(collision1, k0s1, lambda2);
     }
@@ -1159,26 +1150,25 @@ struct Xi1820Analysis {
 
   // MC processes for charged K + Lambda analysis
   void processMCWithTracks(ResoMCCols::iterator const& resoMCcollision,
-                          soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resoMCV0s,
-                          soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoMCTracks)
+                           soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resoMCV0s,
+                           soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoMCTracks)
   {
-    if(additionalConfig.cRecoINELgt0 && !resoMCcollision.isRecINELgt0())
-      return; // skip event if RecoINEL>0 selection is enabled and event does not pass it
+    if (additionalConfig.cRecoINELgt0 && !resoMCcollision.isRecINELgt0())
+      return;                                // skip event if RecoINEL>0 selection is enabled and event does not pass it
     if (!resoMCcollision.isInAfterAllCuts()) // MC event selection
       return;
     fillChargedKLambda<false, false, true>(resoMCcollision, resoMCV0s, resoMCTracks);
   }
   PROCESS_SWITCH(Xi1820Analysis, processMCWithTracks, "Process MC for charged K + Lambda", false);
 
-  void processMCK0sLambda(ResoMCCols::iterator const&  resoMCCollision,
-                           soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resoMCV0s)
+  void processMCK0sLambda(ResoMCCols::iterator const& resoMCCollision,
+                          soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resoMCV0s)
   {
-    if(additionalConfig.cRecoINELgt0 && !resoMCCollision.isRecINELgt0())
-      return; // skip event if RecoINEL>0 selection is enabled and event does not pass it
+    if (additionalConfig.cRecoINELgt0 && !resoMCCollision.isRecINELgt0())
+      return;                                // skip event if RecoINEL>0 selection is enabled and event does not pass it
     if (!resoMCCollision.isInAfterAllCuts()) // MC event selection
       return;
     fillK0sLambda<false, true>(resoMCCollision, resoMCV0s, resoMCV0s);
-
   }
   PROCESS_SWITCH(Xi1820Analysis, processMCK0sLambda, "Process MC K0s + Lambda", false);
 
@@ -1192,8 +1182,8 @@ struct Xi1820Analysis {
   }
   PROCESS_SWITCH(Xi1820Analysis, processMCWithMicroTracks, "Process MC with ResoMicroTracks (placeholder)", false);
 
-  void processMCGen(ResoMCCols::iterator const& resoCollision, //Calculate denominator for the acceptance x efficiency and a part of Event-factor (for selected evennts)
-                     aod::ResoMCParents const& resoParents)
+  void processMCGen(ResoMCCols::iterator const& resoCollision, // Calculate denominator for the acceptance x efficiency and a part of Event-factor (for selected evennts)
+                    aod::ResoMCParents const& resoParents)
   {
     auto multiplicity = resoCollision.mcMultiplicity();
     auto inCent = resoCollision.cent();
@@ -1206,37 +1196,36 @@ struct Xi1820Analysis {
       auto pdgMother = part.pdgCode();
       if (std::abs(pdgMother) != kPdgChagedXi1820 && std::abs(pdgMother) != kPdgXi1820Zero)
         continue;
-      if(std::abs(part.y()) >= additionalConfig.cfgRapidityCut)
+      if (std::abs(part.y()) >= additionalConfig.cfgRapidityCut)
         continue; // skip if rapidity of the particle is outside of cut
-       auto motherPt = part.pt();
-       auto daughter1PDG = part.daughterPDG1();
-       auto daughter2PDG = part.daughterPDG2();
-  
-    if(std::abs(pdgMother) == kPdgChagedXi1820) { // Explicity check for the safety.
-      // K- + Anti-Lambda,  K+ + Anti-Lambda
-      if ((daughter1PDG == PDG_t::kKMinus && daughter2PDG == PDG_t::kLambda0) ||
-          (daughter1PDG == PDG_t::kLambda0 && daughter2PDG == PDG_t::kKMinus)) {
-            histos.fill(HIST("MC/hMCGenPtCentMultKminusLambda"),motherPt, inCent, multiplicity);
-      } else if ((daughter1PDG == PDG_t::kKPlus && daughter2PDG == PDG_t::kLambda0Bar) ||
-          (daughter1PDG == PDG_t::kLambda0Bar && daughter2PDG == PDG_t::kKPlus)) {
-            histos.fill(HIST("MC/hMCGenPtCentMultKplusAntiLambda"),motherPt, inCent, multiplicity);
-      }
-    } else {
-      // K0s + Lambda, K0s + Anti-Lambda
-      if ((std::abs(daughter1PDG) == PDG_t::kK0Short && daughter2PDG == PDG_t::kLambda0) ||
-          (daughter1PDG == PDG_t::kLambda0 && std::abs(daughter2PDG) == PDG_t::kK0Short)) {
-            histos.fill(HIST("MC/hMCGenPtCentMultK0sLambda"), motherPt, inCent, multiplicity);
-      } else if ((std::abs(daughter1PDG) == PDG_t::kK0Short && daughter2PDG == PDG_t::kLambda0Bar) ||
-          (daughter1PDG == PDG_t::kLambda0Bar && std::abs(daughter2PDG) == PDG_t::kK0Short)) {
-            histos.fill(HIST("MC/hMCGenPtCentMultK0sAntiLambda"), motherPt, inCent, multiplicity);
+      auto motherPt = part.pt();
+      auto daughter1PDG = part.daughterPDG1();
+      auto daughter2PDG = part.daughterPDG2();
+
+      if (std::abs(pdgMother) == kPdgChagedXi1820) { // Explicity check for the safety.
+        // K- + Anti-Lambda,  K+ + Anti-Lambda
+        if ((daughter1PDG == PDG_t::kKMinus && daughter2PDG == PDG_t::kLambda0) ||
+            (daughter1PDG == PDG_t::kLambda0 && daughter2PDG == PDG_t::kKMinus)) {
+          histos.fill(HIST("MC/hMCGenPtCentMultKminusLambda"), motherPt, inCent, multiplicity);
+        } else if ((daughter1PDG == PDG_t::kKPlus && daughter2PDG == PDG_t::kLambda0Bar) ||
+                   (daughter1PDG == PDG_t::kLambda0Bar && daughter2PDG == PDG_t::kKPlus)) {
+          histos.fill(HIST("MC/hMCGenPtCentMultKplusAntiLambda"), motherPt, inCent, multiplicity);
+        }
+      } else {
+        // K0s + Lambda, K0s + Anti-Lambda
+        if ((std::abs(daughter1PDG) == PDG_t::kK0Short && daughter2PDG == PDG_t::kLambda0) ||
+            (daughter1PDG == PDG_t::kLambda0 && std::abs(daughter2PDG) == PDG_t::kK0Short)) {
+          histos.fill(HIST("MC/hMCGenPtCentMultK0sLambda"), motherPt, inCent, multiplicity);
+        } else if ((std::abs(daughter1PDG) == PDG_t::kK0Short && daughter2PDG == PDG_t::kLambda0Bar) ||
+                   (daughter1PDG == PDG_t::kLambda0Bar && std::abs(daughter2PDG) == PDG_t::kK0Short)) {
+          histos.fill(HIST("MC/hMCGenPtCentMultK0sAntiLambda"), motherPt, inCent, multiplicity);
+        }
       }
     }
   }
-}
   PROCESS_SWITCH(Xi1820Analysis, processMCGen, "Process Event for MC (Generated at selected events)", false);
 
-
-  void processMCTruth(aod::McParticles const& mcParticles)// ->Let's keep it and use for injected MC QA...!
+  void processMCTruth(aod::McParticles const& mcParticles) // ->Let's keep it and use for injected MC QA...!
   {
     // Process MC generated particles (no reconstruction requirement)
     // Xi(1820)0 PDG code: 123314 (neutral, decays to K+ Lambda or K0s Lambda)

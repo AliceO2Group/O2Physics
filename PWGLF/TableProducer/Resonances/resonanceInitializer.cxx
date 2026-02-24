@@ -1017,7 +1017,7 @@ struct ResonanceInitializer {
         daughterPDGs = getDaughtersPDGCodes(v0mc);
       }
       while (daughters.size() > 2) {
-//        LOGF(info, "daughters.size() is larger than 2");
+        //        LOGF(info, "daughters.size() is larger than 2");
         daughters.pop_back();
         daughterPDGs.pop_back();
       }
@@ -1128,7 +1128,7 @@ struct ResonanceInitializer {
         daughterPDGs = getDaughtersPDGCodes(cascmc);
       }
       while (daughters.size() > 2) {
-      //  LOGF(info, "daughters.size() is larger than 2");
+        //  LOGF(info, "daughters.size() is larger than 2");
         daughters.pop_back();
         daughterPDGs.pop_back();
       }
