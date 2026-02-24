@@ -733,6 +733,13 @@ struct AnalysisTrackSelection {
         trackSel(0);
         continue;
       }
+      ///
+      auto track = tracks.rawIteratorAt(assoc.trackId());
+      auto evFromTrack = events.rawIteratorAt(track.collisionId());
+      if (!evFromTrack.isEventSelected_bit(0)) {
+        trackSel(0);
+        continue;
+      }
 
       // cout << "Processing association: event global index " << event.globalIndex() << endl;
       VarManager::ResetValues(VarManager::kNTFWiseVariables, VarManager::kNBarrelTrackVariables);
@@ -743,10 +750,10 @@ struct AnalysisTrackSelection {
       }
       // cout << "Filled event observables for association" << endl;
 
-      auto track = tracks.rawIteratorAt(assoc.trackId());
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      if (track.collisionId() != event.globalIndex())
+        VarManager::FillTrackCollision<TTrackFillMap>(track, event);
       // cout << "Filled track observables for association" << endl;
 
       bool isCorrectAssoc = false;
