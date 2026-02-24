@@ -720,6 +720,16 @@ DECLARE_SOA_TABLE(NonLinV0s, "AOD", "NONLINV0", //! table of non lin corrected v
 DECLARE_SOA_TABLE(NonLinEmcClusters, "AOD", "NONLINEMCCLUSTER", //! table of non lin corrected values for EMCal Photons (so far only E and pT)
                   nonlin::CorrE, nonlin::CorrPt);               //!
 
+namespace v0photonMBweights
+{
+DECLARE_SOA_COLUMN(OmegaMBWeight, omegaMBWeight, float);
+}
+
+DECLARE_SOA_TABLE(V0PhotonOmegaMBWeights, "AOD", "V0PHOTONMBW", v0photonMBweights::OmegaMBWeight); // store MB weights. To be joined with V0PhotonsKF table at analysis level.
+
+using V0PhotonOmegaMBWeight = V0PhotonOmegaMBWeights::iterator; 
 } // namespace o2::aod
+
+
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_

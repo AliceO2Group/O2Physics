@@ -226,11 +226,11 @@ struct Pi0EtaToGammaGamma {
   //---------------------------------------------------------------------------
   // Preslices and partitions
   o2::framework::SliceCache cache;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>> perCollision_pcm = o2::aod::v0photonkf::emphotoneventId;
-  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::EmEmcClusters, o2::aod::EMCEMEventIds>> perCollision_emc = o2::aod::emccluster::emphotoneventId;
-  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>> perCollision_phos = o2::aod::phoscluster::emphotoneventId;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>> perCollision_electron = o2::aod::emprimaryelectronda::emphotoneventId;
-
+  o2::framework::PresliceOptional<
+  o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived, o2::aod::V0PhotonOmegaMBWeights>>> perCollision_pcm = o2::aod::v0photonkf::emeventId;
+  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::EmEmcClusters, o2::aod::EMCEMEventIds>> perCollision_emc = o2::aod::emccluster::emeventId;
+  o2::framework::PresliceOptional<o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>> perCollision_phos = o2::aod::phoscluster::emeventId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>> perCollision_electron = o2::aod::emprimaryelectron::emeventId;
   o2::framework::PresliceOptional<o2::aod::EmEmcMTracks> perEMCClusterMT = o2::aod::trackmatching::emEmcClusterId;
   o2::framework::PresliceOptional<o2::aod::EmEmcMSTracks> perEMCClusterMS = o2::aod::trackmatching::emEmcClusterId;
 
@@ -879,7 +879,16 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), weight);
+          float wpair = weight;
+
+          if constexpr (requires { g1.omegaMBWeight(); }) {
+            wpair *= g1.omegaMBWeight();
+          }
+          if constexpr (requires { g2.omegaMBWeight(); }) {
+            wpair *= g2.omegaMBWeight();
+          }
+
+          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), wpair);
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
             emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
