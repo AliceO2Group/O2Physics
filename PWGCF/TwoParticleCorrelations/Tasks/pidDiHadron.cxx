@@ -118,7 +118,7 @@ struct PidDiHadron {
   O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
   O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "1 = pion, 2 = kaon, 3 = proton, 4 = kshort, 5 = lambda, 6 = phi, 0 for no PID")
   O2_DEFINE_CONFIGURABLE(cfgGetNsigmaQA, bool, true, "Get QA histograms for selection of pions, kaons, and protons")
-  O2_DEFINE_CONFIGURABLE(cfgGetdEdx, bool, true, "Get QA histograms for selection of pions, kaons, and protons")
+  O2_DEFINE_CONFIGURABLE(cfgGetdEdx, bool, true, "Get dEdx histograms for pions, kaons, and protons")
   O2_DEFINE_CONFIGURABLE(cfgUseAntiLambda, bool, true, "Use AntiLambda candidates for analysis")
   O2_DEFINE_CONFIGURABLE(cfgPIDUseRejection, bool, true, "Turn off and on the exclusion criteria for PID determination")
 
@@ -186,7 +186,7 @@ struct PidDiHadron {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -540,6 +540,12 @@ struct PidDiHadron {
       histos.add("ExpTpcdEdx_ptwise_pi", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
       histos.add("ExpTpcdEdx_ptwise_ka", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
       histos.add("ExpTpcdEdx_ptwise_pr", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+
+      histos.add("TpcdEdx_ptwise_pi_physprim", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+      histos.add("TpcdEdx_ptwise_ka_physprim", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+      histos.add("TpcdEdx_ptwise_pr_physprim", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+
+      histos.add("TpcdEdx_ptwise_all_physprim", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
     }
 
     histos.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -1546,10 +1552,21 @@ struct PidDiHadron {
       if (pidIndex == kProtons)
         histos.fill(HIST("hNsigmaProtonSelected"), track.pt());
 
+      if (track.mcParticle().isPhysicalPrimary()) {
+        if (cfgPIDParticle == kPions)
+          histos.fill(HIST("TpcdEdx_ptwise_all_physprim"), track.pt(), track.tpcSignal(), track.tofNSigmaPi());
+        if (cfgPIDParticle == kKaons)
+          histos.fill(HIST("TpcdEdx_ptwise_all_physprim"), track.pt(), track.tpcSignal(), track.tofNSigmaKa());
+        if (cfgPIDParticle == kProtons)
+          histos.fill(HIST("TpcdEdx_ptwise_all_physprim"), track.pt(), track.tpcSignal(), track.tofNSigmaPr());
+      }
+
       // Check the PDG code for the particles (MC truth) and match with analysed Nsigma PID
       if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kPiPlus) {
         histos.fill(HIST("hNsigmaPionTrue"), track.pt());
         histos.fill(HIST("TpcdEdx_ptwise_pi"), track.pt(), track.tpcSignal(), track.tofNSigmaPi());
+        if (track.mcParticle().isPhysicalPrimary())
+          histos.fill(HIST("TpcdEdx_ptwise_pi_physprim"), track.pt(), track.tpcSignal(), track.tofNSigmaPi());
 
         double tpcExpSignalPi = track.tpcSignal() - (track.tpcNSigmaPi() * track.tpcExpSigmaPi());
         histos.fill(HIST("ExpTpcdEdx_ptwise_pi"), track.pt(), tpcExpSignalPi, track.tofNSigmaPi());
@@ -1562,6 +1579,8 @@ struct PidDiHadron {
       if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kKPlus) {
         histos.fill(HIST("hNsigmaKaonTrue"), track.pt());
         histos.fill(HIST("TpcdEdx_ptwise_ka"), track.pt(), track.tpcSignal(), track.tofNSigmaKa());
+        if (track.mcParticle().isPhysicalPrimary())
+          histos.fill(HIST("TpcdEdx_ptwise_ka_physprim"), track.pt(), track.tpcSignal(), track.tofNSigmaKa());
 
         double tpcExpSignalKa = track.tpcSignal() - (track.tpcNSigmaKa() * track.tpcExpSigmaKa());
         histos.fill(HIST("ExpTpcdEdx_ptwise_ka"), track.pt(), tpcExpSignalKa, track.tofNSigmaKa());
@@ -1574,6 +1593,8 @@ struct PidDiHadron {
       if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kProton) {
         histos.fill(HIST("hNsigmaProtonTrue"), track.pt());
         histos.fill(HIST("TpcdEdx_ptwise_pr"), track.pt(), track.tpcSignal(), track.tofNSigmaPr());
+        if (track.mcParticle().isPhysicalPrimary())
+          histos.fill(HIST("TpcdEdx_ptwise_pr_physprim"), track.pt(), track.tpcSignal(), track.tofNSigmaPr());
 
         double tpcExpSignalPr = track.tpcSignal() - (track.tpcNSigmaPr() * track.tpcExpSigmaPr());
         histos.fill(HIST("ExpTpcdEdx_ptwise_pr"), track.pt(), tpcExpSignalPr, track.tofNSigmaPr());
