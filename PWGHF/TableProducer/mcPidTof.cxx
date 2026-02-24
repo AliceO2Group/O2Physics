@@ -777,7 +777,7 @@ struct McPidTof {
   {
     mTOFCalibConfig.inheritFromBaseTask(initContext);
     // Checking the tables are requested in the workflow and enabling them (only pi, K, p)
-    std::array<int, 6> supportedSpecies = {IdxPi, IdxKa, IdxPr, IdxDe, IdxTr, IdxHe};
+    std::array<int, 7> supportedSpecies = {IdxPi, IdxKa, IdxPr, IdxDe, IdxTr, IdxHe, IdxAl};
     for (auto iSpecie{0u}; iSpecie < supportedSpecies.size(); ++iSpecie) {
       // First checking tiny
       int flag = -1;
