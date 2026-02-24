@@ -268,8 +268,8 @@ struct RadialFlowDecorr {
       return false;
     if (cfgEvSelkNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
       return false;
-    // if (cfgIsGoodZvtxFT0VsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
-    // return false;
+    if (cfgIsGoodZvtxFT0VsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
 
     return true;
   }
@@ -860,7 +860,7 @@ struct RadialFlowDecorr {
   {
     if (cfgSys == kPbPb) {
       nChAxis = {cfgNchPbMax / 4, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchPbMax / 20, KBinOffset, cfgNchPbMax + KBinOffset, , "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {cfgNchPbMax / 20, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
     } else if (cfgSys == kOO || cfgSys == kpPb) {
       nChAxis = {cfgNchOMax / 2, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
       nChAxis2 = {cfgNchOMax / 5, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
@@ -1255,10 +1255,6 @@ struct RadialFlowDecorr {
       for (const auto& col : colSlice) {
         if (!col.has_mcCollision() || !isEventSelected(col))
           continue;
-        //
-        // auto trackSlice = tracks.sliceBy(trackPerCollision, col.globalIndex());
-        // if (trackSlice.size() < 1) continue;
-
         auto trackSlice = tracks.sliceBy(trackPerCollision, col.globalIndex());
         auto partSlice = mcParticles.sliceBy(partPerMcCollision, mcCollision.globalIndex());
         if (trackSlice.size() < 1 || partSlice.size() < 1)
