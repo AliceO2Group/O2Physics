@@ -2018,7 +2018,7 @@ struct StrangenessInJets {
 
             if (std::abs(v0mcparticle.pdgCode()) == kLambda0 && v0mcparticle.has_mothers()) {
               for (auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
-                if (std::abs(mcparticleMother0.pdgCode()) == kXiMinus || std::abs(mcparticleMother0.pdgCode()) == kXi0) {
+                if (std::abs(mcparticleMother0.pdgCode()) == kXiMinus || std::abs(mcparticleMother0.pdgCode()) == o2::constants::physics::Pdg::kXi0) {
                   ptMotherMC = mcparticleMother0.pt();
                   pdgMother = mcparticleMother0.pdgCode();
                 }
@@ -2044,7 +2044,7 @@ struct StrangenessInJets {
                 if (pdgMother == kXiMinus) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_DoubleCharged_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == kXiMinus || pdgMother == kXi0) {
+                if (pdgMother == kXiMinus || pdgMother == o2::constants::physics::Pdg::kXi0) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_MCRatio_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
@@ -2053,7 +2053,7 @@ struct StrangenessInJets {
                 if (pdgMother == kXiMinus) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_DoubleCharged_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == kXiMinus || pdgMother == kXi0) {
+                if (pdgMother == kXiMinus || pdgMother == o2::constants::physics::Pdg::kXi0) {
                   registryMC.fill(HIST("hFDVsPtLambdaVsMotherPt_MCRatio_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
@@ -2065,7 +2065,7 @@ struct StrangenessInJets {
                 if (pdgMother == kXiPlusBar) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == kXiPlusBar || pdgMother == -kXi0) {
+                if (pdgMother == kXiPlusBar || pdgMother == -o2::constants::physics::Pdg::kXi0) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_MCRatio_jet"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
@@ -2074,7 +2074,7 @@ struct StrangenessInJets {
                 if (pdgMother == kXiPlusBar) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_DoubleCharged_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
-                if (pdgMother == kXiPlusBar || pdgMother == -kXi0) {
+                if (pdgMother == kXiPlusBar || pdgMother == -o2::constants::physics::Pdg::kXi0) {
                   registryMC.fill(HIST("hFDVsPtAntiLambdaVsMotherPt_MCRatio_ue"), v0mcparticle.pt(), ptMotherMC);
                 }
               }
