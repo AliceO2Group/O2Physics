@@ -32,12 +32,9 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 
-<<<<<<< HEAD
 #include <map>
 #include <string>
 
-=======
->>>>>>> 947616059 (Apply formatting fixes)
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
