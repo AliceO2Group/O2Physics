@@ -1224,7 +1224,7 @@ struct decay3bodyBuilder {
     // now first check if the proton and pion have the same mother and it is a Lambda
     for (const auto& motherPr : mcParticlePr.template mothers_as<aod::McParticles>()) {
       for (const auto& motherPi : mcParticlePiTmp.template mothers_as<aod::McParticles>()) {
-        if (motherPr.globalIndex() == motherPi.globalIndex() && std::abs(motherPr.pdgCode()) == PDG_t::kLambda) {
+        if (motherPr.globalIndex() == motherPi.globalIndex() && std::abs(motherPr.pdgCode()) == PDG_t::kLambda0) {
           return -3;
         }
       }
