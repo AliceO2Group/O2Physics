@@ -203,16 +203,16 @@ struct LumiStabilityPP {
     int totalLeadingBCs = 0;
     for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
       if (bcPatternB[iBC]) {    // Check if current BC is of type B
-        int nonBtypeBCsBefore = 0; // Count how many consecutive BCs before this one are empty
+        int nonBtypeBCsBefore = 0; // Count how many consecutive BCs before this one are non-B
         for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
           if (!bcPatternB[prevBC]) {
             nonBtypeBCsBefore++;
           } else {
-            break; // Stop counting if we hit a non-empty BC
+            break; // Stop counting if we hit a BCB
           }
         }
-        if (nonBtypeBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC empty BCs before this one, mark it as leading
+        if (nonBtypeBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC non-B BCs before this one, mark it as leading
           bcPatternL[iBC] = true;
           totalLeadingBCs++;
         }
