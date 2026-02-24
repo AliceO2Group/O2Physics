@@ -19,9 +19,6 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
 #define PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
 
-#include <map>
-#include <string>
-
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -31,6 +28,9 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+
+#include <map>
+#include <string>
 
 using namespace o2;
 using namespace o2::soa;
