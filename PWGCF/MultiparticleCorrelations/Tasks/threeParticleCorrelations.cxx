@@ -1117,7 +1117,7 @@ struct ThreeParticleCorrelations {
     if (track.dcaZ() > trackSelGroup.dcaZ) {
       return false;
     }
-    
+
     if (!track.hasTOF()) {
       return false;
     }
