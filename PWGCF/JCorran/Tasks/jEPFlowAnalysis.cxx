@@ -18,10 +18,10 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -30,23 +30,17 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
-#include <TDatabasePDG.h>
-
 #include <string>
 #include <vector>
+
+#include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace std;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
-using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
-
 struct jEPFlowAnalysis {
-
   HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   EventPlaneHelper helperEP;
   FlowJHistManager histManager;
@@ -109,6 +103,11 @@ struct jEPFlowAnalysis {
 
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
 
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
+  using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
+
   int detId;
   int refAId;
   int refBId;
@@ -168,6 +167,12 @@ struct jEPFlowAnalysis {
     }
     if (std::abs(track.dcaXY()) >= cfgdcaXY0 + cfgdcaXY1 / std::pow(track.pt(), 1.1) && cfgSystStudy) {
       tracksel += 64;
+    }
+    if (track.pt() <= cfgTrackCuts.cfgPtMin) {
+      tracksel += 128;
+    }
+    if (std::abs(track.eta()) >= cfgTrackCuts.cfgEtaMax) {
+      tracksel += 256;
     }
 
     return tracksel;
@@ -458,8 +463,7 @@ struct jEPFlowAnalysis {
 
   void processMCGen(MyCollisionsMC::iterator const& coll, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
-    if (!coll.has_mcCollision())
-      return;
+    if (!coll.has_mcCollision()) return;
     const auto mcColl = coll.mcCollision();
 
     if (cfgAddEvtSel) {
