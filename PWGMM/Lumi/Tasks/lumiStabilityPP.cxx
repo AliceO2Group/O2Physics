@@ -49,16 +49,18 @@ enum TriggerAliases { AllBCs = 0,
                       FT0CE = 2,
                       FDD = 3,
                       NTriggerAliases };
-enum BCCategories { BCA = 0,      // A side BCs (bunch-crossings that had beam only from A side)
-                    BCB = 1,      // B type BCs (bunch-crossings that had beam from both sides)
-                    BCC = 2,      // C side BCs (bunch-crossings that had beam only from C side)
-                    BCE = 3,      // empty BCs (bunch-crossings that did not have beam from either side)
-                    BCL = 4,      // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
-                    BCSLFDD = 5,  // super-leading BCs for FDD (bunch-crossings that had beam from both sides but did not have FDD activity for a configurable number of preceding BCs)
-                    BCSLFT0 = 6,  // super-leading BCs for FT0 (bunch-crossings that had beam from both sides but did not have FT0 activity for a configurable number of preceding BCs)
-                    BCNL = 7,     // non-leading BCs of type B (bunch-crossings that come after a BCL and are of type B)
-                    BCNSLFDD = 8, // non-super-leading BCs for FDD of type B (bunch-crossings that had beam from both sides but are not SL for FDD activity for a configurable number of preceding BCs)
-                    BCNSLFT0 = 9, // non-super-leading BCs for FT0 of type B (bunch-crossings that had beam from both sides but are not SL for FT0 activity for a configurable number of preceding BCs)
+enum BCCategories { BCA = 0,  // A side BCs (bunch-crossings that had beam only from A side)
+                    BCB,      // B type BCs (bunch-crossings that had beam from both sides)
+                    BCC,      // C side BCs (bunch-crossings that had beam only from C side)
+                    BCE,      // empty BCs (bunch-crossings that did not have beam from either side)
+                    BCL,      // leading BCs (bunch-crossings that have not-B BCs for a configurable number of preceding BCs)
+                    BCLE,     // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
+                    BCSLFDD,  // super-leading BCs for FDD (bunch-crossings that had beam from both sides but did not have FDD activity for a configurable number of preceding BCs)
+                    BCSLFT0,  // super-leading BCs for FT0 (bunch-crossings that had beam from both sides but did not have FT0 activity for a configurable number of preceding BCs)
+                    BCNL,     // non-leading BCs of type B (bunch-crossings that come after a BCL and are of type B)
+                    BCNLE,    // non-leading BCs of type B (bunch-crossings that come after a BCLE and are of type B)
+                    BCNSLFDD, // non-super-leading BCs for FDD of type B (bunch-crossings that had beam from both sides but are not SL for FDD activity for a configurable number of preceding BCs)
+                    BCNSLFT0, // non-super-leading BCs for FT0 of type B (bunch-crossings that had beam from both sides but are not SL for FT0 activity for a configurable number of preceding BCs)
                     NBCCategories };
 } // namespace lumi
 } // namespace o2
@@ -72,14 +74,15 @@ using BCsWithTimeStamps = soa::Join<aod::BCs, aod::Timestamps>;
 
 struct LumiStabilityPP {
 
-  static constexpr int defaulFlags[1][NBCCategories] = {{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
-  Configurable<LabeledArray<int>> doTypeBC{"doTypeBC", {defaulFlags[0], NBCCategories, {"BCA", "BCB", "BCC", "BCE", "BCL", "BCSLFDD", "BCSLFT0", "BCNL", "BCNSLFDD", "BCNSLFT0"}}, "Create and fill histograms for different BC types"};
+  static constexpr int defaulFlags[1][NBCCategories] = {{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
+  Configurable<LabeledArray<int>> doTypeBC{"doTypeBC", {defaulFlags[0], NBCCategories, {"BCA", "BCB", "BCC", "BCE", "BCL", "BCLE", "BCSLFDD", "BCSLFT0", "BCNL", "BCNLE", "BCNSLFDD", "BCNSLFT0"}}, "Create and fill histograms for different BC types"};
 
-  Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of (empty) non-B BCs before a (super)leading BC"};
+  static constexpr int defaulNumBCsBeforeLeadingBC[1][3] = {{5, 5, 5}};
+  Configurable<LabeledArray<int>> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", {defaulNumBCsBeforeLeadingBC[0], 3, {"BCL", "BCLE", "BCSL"}}, "Create and fill histograms for different BC types"};
   Configurable<int> bcShiftFDDForData2023{"bcShiftFDDForData2023", 7, "Number of bc to shift for FDD to be applied for 2023 data only"};
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
-  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE, bcPatternL;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA, bcPatternC, bcPatternB, bcPatternE, bcPatternL, bcPatternLE;
   const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -103,22 +106,22 @@ struct LumiStabilityPP {
   std::map<int, std::shared_ptr<TH1>> histInteractionRate;
 
   static constexpr std::string_view NBCsVsTimeHistNames[NTriggerAliases][NBCCategories] =
-    {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime", "AllBCs/BC_SL_FDD/nBCsVsTime", "AllBCs/BC_SL_FT0/nBCsVsTime", "AllBCs/BC_NL/nBCsVsTime", "AllBCs/BC_NSL_FT0/nBCsVsTime", "AllBCs/BC_NSL_FDD/nBCsVsTime"},
-     {"FT0VTx/BC_A/nBCsVsTime", "FT0VTx/BC_B/nBCsVsTime", "FT0VTx/BC_C/nBCsVsTime", "FT0VTx/BC_E/nBCsVsTime", "FT0VTx/BC_L/nBCsVsTime", "FT0VTx/BC_SL_FDD/nBCsVsTime", "FT0VTx/BC_SL_FT0/nBCsVsTime", "FT0VTx/BC_NL/nBCsVsTime", "FT0VTx/BC_NSL_FT0/nBCsVsTime", "FT0VTx/BC_NSL_FDD/nBCsVsTime"},
-     {"FT0CE/BC_A/nBCsVsTime", "FT0CE/BC_B/nBCsVsTime", "FT0CE/BC_C/nBCsVsTime", "FT0CE/BC_E/nBCsVsTime", "FT0CE/BC_L/nBCsVsTime", "FT0CE/BC_SL_FDD/nBCsVsTime", "FT0CE/BC_SL_FT0/nBCsVsTime", "FT0CE/BC_NL/nBCsVsTime", "FT0CE/BC_NSL_FT0/nBCsVsTime", "FT0CE/BC_NSL_FDD/nBCsVsTime"},
-     {"FDD/BC_A/nBCsVsTime", "FDD/BC_B/nBCsVsTime", "FDD/BC_C/nBCsVsTime", "FDD/BC_E/nBCsVsTime", "FDD/BC_L/nBCsVsTime", "FDD/BC_SL_FDD/nBCsVsTime", "FDD/BC_SL_FT0/nBCsVsTime", "FDD/BC_NL/nBCsVsTime", "FDD/BC_NSL_FT0/nBCsVsTime", "FDD/BC_NSL_FDD/nBCsVsTime"}};
+    {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime", "AllBCs/BC_LE/nBCsVsTime", "AllBCs/BC_SL_FDD/nBCsVsTime", "AllBCs/BC_SL_FT0/nBCsVsTime", "AllBCs/BC_NL/nBCsVsTime", "AllBCs/BC_NLE/nBCsVsTime", "AllBCs/BC_NSL_FT0/nBCsVsTime", "AllBCs/BC_NSL_FDD/nBCsVsTime"},
+     {"FT0VTx/BC_A/nBCsVsTime", "FT0VTx/BC_B/nBCsVsTime", "FT0VTx/BC_C/nBCsVsTime", "FT0VTx/BC_E/nBCsVsTime", "FT0VTx/BC_L/nBCsVsTime", "FT0VTx/BC_LE/nBCsVsTime", "FT0VTx/BC_SL_FDD/nBCsVsTime", "FT0VTx/BC_SL_FT0/nBCsVsTime", "FT0VTx/BC_NL/nBCsVsTime", "FT0VTx/BC_NLE/nBCsVsTime", "FT0VTx/BC_NSL_FT0/nBCsVsTime", "FT0VTx/BC_NSL_FDD/nBCsVsTime"},
+     {"FT0CE/BC_A/nBCsVsTime", "FT0CE/BC_B/nBCsVsTime", "FT0CE/BC_C/nBCsVsTime", "FT0CE/BC_E/nBCsVsTime", "FT0CE/BC_L/nBCsVsTime", "FT0CE/BC_LE/nBCsVsTime", "FT0CE/BC_SL_FDD/nBCsVsTime", "FT0CE/BC_SL_FT0/nBCsVsTime", "FT0CE/BC_NL/nBCsVsTime", "FT0CE/BC_NLE/nBCsVsTime", "FT0CE/BC_NSL_FT0/nBCsVsTime", "FT0CE/BC_NSL_FDD/nBCsVsTime"},
+     {"FDD/BC_A/nBCsVsTime", "FDD/BC_B/nBCsVsTime", "FDD/BC_C/nBCsVsTime", "FDD/BC_E/nBCsVsTime", "FDD/BC_L/nBCsVsTime", "FDD/BC_LE/nBCsVsTime", "FDD/BC_SL_FDD/nBCsVsTime", "FDD/BC_SL_FT0/nBCsVsTime", "FDD/BC_NL/nBCsVsTime", "FDD/BC_NLE/nBCsVsTime", "FDD/BC_NSL_FT0/nBCsVsTime", "FDD/BC_NSL_FDD/nBCsVsTime"}};
 
   static constexpr std::string_view NBCsVsBCIDHistNames[NTriggerAliases][NBCCategories] =
-    {{"AllBCs/BC_A/nBCsVsBCID", "AllBCs/BC_B/nBCsVsBCID", "AllBCs/BC_C/nBCsVsBCID", "AllBCs/BC_E/nBCsVsBCID", "AllBCs/BC_L/nBCsVsBCID", "AllBCs/BC_SL_FDD/nBCsVsBCID", "AllBCs/BC_SL_FT0/nBCsVsBCID", "AllBCs/BC_NL/nBCsVsBCID", "AllBCs/BC_NSL_FT0/nBCsVsBCID", "AllBCs/BC_NSL_FDD/nBCsVsBCID"},
-     {"FT0VTx/BC_A/nBCsVsBCID", "FT0VTx/BC_B/nBCsVsBCID", "FT0VTx/BC_C/nBCsVsBCID", "FT0VTx/BC_E/nBCsVsBCID", "FT0VTx/BC_L/nBCsVsBCID", "FT0VTx/BC_SL_FDD/nBCsVsBCID", "FT0VTx/BC_SL_FT0/nBCsVsBCID", "FT0VTx/BC_NL/nBCsVsBCID", "FT0VTx/BC_NSL_FT0/nBCsVsBCID", "FT0VTx/BC_NSL_FDD/nBCsVsBCID"},
-     {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_SL_FDD/nBCsVsBCID", "FT0CE/BC_SL_FT0/nBCsVsBCID", "FT0CE/BC_NL/nBCsVsBCID", "FT0CE/BC_NSL_FT0/nBCsVsBCID", "FT0CE/BC_NSL_FDD/nBCsVsBCID"},
-     {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_SL_FDD/nBCsVsBCID", "FDD/BC_SL_FT0/nBCsVsBCID", "FDD/BC_NL/nBCsVsBCID", "FDD/BC_NSL_FT0/nBCsVsBCID", "FDD/BC_NSL_FDD/nBCsVsBCID"}};
+    {{"AllBCs/BC_A/nBCsVsBCID", "AllBCs/BC_B/nBCsVsBCID", "AllBCs/BC_C/nBCsVsBCID", "AllBCs/BC_E/nBCsVsBCID", "AllBCs/BC_L/nBCsVsBCID", "AllBCs/BC_LE/nBCsVsBCID", "AllBCs/BC_SL_FDD/nBCsVsBCID", "AllBCs/BC_SL_FT0/nBCsVsBCID", "AllBCs/BC_NL/nBCsVsBCID", "AllBCs/BC_NLE/nBCsVsBCID", "AllBCs/BC_NSL_FT0/nBCsVsBCID", "AllBCs/BC_NSL_FDD/nBCsVsBCID"},
+     {"FT0VTx/BC_A/nBCsVsBCID", "FT0VTx/BC_B/nBCsVsBCID", "FT0VTx/BC_C/nBCsVsBCID", "FT0VTx/BC_E/nBCsVsBCID", "FT0VTx/BC_L/nBCsVsBCID", "FT0VTx/BC_LE/nBCsVsBCID", "FT0VTx/BC_SL_FDD/nBCsVsBCID", "FT0VTx/BC_SL_FT0/nBCsVsBCID", "FT0VTx/BC_NL/nBCsVsBCID", "FT0VTx/BC_NLE/nBCsVsBCID", "FT0VTx/BC_NSL_FT0/nBCsVsBCID", "FT0VTx/BC_NSL_FDD/nBCsVsBCID"},
+     {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_LE/nBCsVsBCID", "FT0CE/BC_SL_FDD/nBCsVsBCID", "FT0CE/BC_SL_FT0/nBCsVsBCID", "FT0CE/BC_NL/nBCsVsBCID", "FT0CE/BC_NLE/nBCsVsBCID", "FT0CE/BC_NSL_FT0/nBCsVsBCID", "FT0CE/BC_NSL_FDD/nBCsVsBCID"},
+     {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_LE/nBCsVsBCID", "FDD/BC_SL_FDD/nBCsVsBCID", "FDD/BC_SL_FT0/nBCsVsBCID", "FDD/BC_NL/nBCsVsBCID", "FDD/BC_NLE/nBCsVsBCID", "FDD/BC_NSL_FT0/nBCsVsBCID", "FDD/BC_NSL_FDD/nBCsVsBCID"}};
 
-  static constexpr std::string_view MuHistNames[NTriggerAliases][NBCCategories] =
-    {{"AllBCs/BC_A/Mu", "AllBCs/BC_B/Mu", "AllBCs/BC_C/Mu", "AllBCs/BC_E/Mu", "AllBCs/BC_L/Mu", "AllBCs/BC_SL_FDD/Mu", "AllBCs/BC_SL_FT0/Mu", "AllBCs/BC_NL/Mu", "AllBCs/BC_NSL_FT0/Mu", "AllBCs/BC_NSL_FDD/Mu"},
-     {"FT0VTx/BC_A/Mu", "FT0VTx/BC_B/Mu", "FT0VTx/BC_C/Mu", "FT0VTx/BC_E/Mu", "FT0VTx/BC_L/Mu", "FT0VTx/BC_SL_FDD/Mu", "FT0VTx/BC_SL_FT0/Mu", "FT0VTx/BC_NL/Mu", "FT0VTx/BC_NSL_FT0/Mu", "FT0VTx/BC_NSL_FDD/Mu"},
-     {"FT0CE/BC_A/Mu", "FT0CE/BC_B/Mu", "FT0CE/BC_C/Mu", "FT0CE/BC_E/Mu", "FT0CE/BC_L/Mu", "FT0CE/BC_SL_FDD/Mu", "FT0CE/BC_SL_FT0/Mu", "FT0CE/BC_NL/Mu", "FT0CE/BC_NSL_FT0/Mu", "FT0CE/BC_NSL_FDD/Mu"},
-     {"FDD/BC_A/Mu", "FDD/BC_B/Mu", "FDD/BC_C/Mu", "FDD/BC_E/Mu", "FDD/BC_L/Mu", "FDD/BC_SL_FDD/Mu", "FDD/BC_SL_FT0/Mu", "FDD/BC_NL/Mu", "FDD/BC_NSL_FT0/Mu", "FDD/BC_NSL_FDD/Mu"}};
+  static constexpr std::string_view NBCsInspectVsBCIDHistNames[NTriggerAliases][NBCCategories] =
+    {{"AllBCs/BC_A/nBCsInspectedVsBCID", "AllBCs/BC_B/nBCsInspectedVsBCID", "AllBCs/BC_C/nBCsInspectedVsBCID", "AllBCs/BC_E/nBCsInspectedVsBCID", "AllBCs/BC_L/nBCsInspectedVsBCID", "AllBCs/BC_LE/nBCsInspectedVsBCID", "AllBCs/BC_SL_FDD/nBCsInspectedVsBCID", "AllBCs/BC_SL_FT0/nBCsInspectedVsBCID", "AllBCs/BC_NL/nBCsInspectedVsBCID", "AllBCs/BC_NLE/nBCsInspectedVsBCID", "AllBCs/BC_NSL_FT0/nBCsInspectedVsBCID", "AllBCs/BC_NSL_FDD/nBCsInspectedVsBCID"},
+     {"FT0VTx/BC_A/nBCsInspectedVsBCID", "FT0VTx/BC_B/nBCsInspectedVsBCID", "FT0VTx/BC_C/nBCsInspectedVsBCID", "FT0VTx/BC_E/nBCsInspectedVsBCID", "FT0VTx/BC_L/nBCsInspectedVsBCID", "FT0VTx/BC_LE/nBCsInspectedVsBCID", "FT0VTx/BC_SL_FDD/nBCsInspectedVsBCID", "FT0VTx/BC_SL_FT0/nBCsInspectedVsBCID", "FT0VTx/BC_NL/nBCsInspectedVsBCID", "FT0VTx/BC_NLE/nBCsInspectedVsBCID", "FT0VTx/BC_NSL_FT0/nBCsInspectedVsBCID", "FT0VTx/BC_NSL_FDD/nBCsInspectedVsBCID"},
+     {"FT0CE/BC_A/nBCsInspectedVsBCID", "FT0CE/BC_B/nBCsInspectedVsBCID", "FT0CE/BC_C/nBCsInspectedVsBCID", "FT0CE/BC_E/nBCsInspectedVsBCID", "FT0CE/BC_L/nBCsInspectedVsBCID", "FT0CE/BC_LE/nBCsInspectedVsBCID", "FT0CE/BC_SL_FDD/nBCsInspectedVsBCID", "FT0CE/BC_SL_FT0/nBCsInspectedVsBCID", "FT0CE/BC_NL/nBCsInspectedVsBCID", "FT0CE/BC_NLE/nBCsInspectedVsBCID", "FT0CE/BC_NSL_FT0/nBCsInspectedVsBCID", "FT0CE/BC_NSL_FDD/nBCsInspectedVsBCID"},
+     {"FDD/BC_A/nBCsInspectedVsBCID", "FDD/BC_B/nBCsInspectedVsBCID", "FDD/BC_C/nBCsInspectedVsBCID", "FDD/BC_E/nBCsInspectedVsBCID", "FDD/BC_L/nBCsInspectedVsBCID", "FDD/BC_LE/nBCsInspectedVsBCID", "FDD/BC_SL_FDD/nBCsInspectedVsBCID", "FDD/BC_SL_FT0/nBCsInspectedVsBCID", "FDD/BC_NL/nBCsInspectedVsBCID", "FDD/BC_NLE/nBCsInspectedVsBCID", "FDD/BC_NSL_FT0/nBCsInspectedVsBCID", "FDD/BC_NSL_FDD/nBCsInspectedVsBCID"}};
 
   const AxisSpec timeAxis{2880, 0., 2880., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{nBCsPerOrbit, -0.5, static_cast<float>(nBCsPerOrbit) - 0.5, "#bf{BC ID in orbit}"};
 
@@ -146,8 +149,7 @@ struct LumiStabilityPP {
         if (doTypeBC->get(0u, iBCCategory)) {
           histBcVsTime[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsVsTimeHistNames[iTrigger][iBCCategory]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
           histBcVsBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
-          histMu[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers;#mu;counts", HistType::kTH1D, {{400, 0., 0.2}});
-          histMuPerBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH2>(Form("%d/%sVsBcId", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers per BCId;#mu;counts", HistType::kTH2D, {{bcIDAxis}, {400, 0., 0.2}});
+          histBcInspectVsBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsInspectVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of inspecred BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
         }
       }
     }
@@ -161,7 +163,7 @@ struct LumiStabilityPP {
     }
 
     const int runStart2023{535069};
-    const int runStop2023{543113};
+    const int runStop2023{539908};
     if (bc.runNumber() >= runStart2023 && bc.runNumber() <= runStop2023) {
       isData23 = true;
     }
@@ -197,13 +199,14 @@ struct LumiStabilityPP {
 
     // Create bcPatternL: leading BCs of type B that follow at least "numEmptyBCsBeforeLeadingBC" non-B BCs
     bcPatternL.reset(); // Initialize all bits to false
+    bcPatternLE.reset();
     LOG(info) << "Starting to create bcPatternL from bcPatternB";
     LOG(info) << "Total number of BCs to check: " << o2::constants::lhc::LHCMaxBunches;
 
-    int totalLeadingBCs = 0;
+    std::array<int, 2> totalLeadingBCs = {0, 0};
     for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
       if (bcPatternB[iBC]) {    // Check if current BC is of type B
-        int nonBtypeBCsBefore = 0; // Count how many consecutive BCs before this one are non-B
+        int nonBtypeBCsBefore{0}, emptyBCsBefore{0}; // Count how many consecutive BCs before this one are non-B
         for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
           if (!bcPatternB[prevBC]) {
@@ -212,13 +215,26 @@ struct LumiStabilityPP {
             break; // Stop counting if we hit a BCB
           }
         }
-        if (nonBtypeBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC non-B BCs before this one, mark it as leading
+        for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
+          int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
+          if (bcPatternE[prevBCE]) {
+            emptyBCsBefore++;
+          } else {
+            break; // Stop counting if we hit a non BCE
+          }
+        }
+        if (nonBtypeBCsBefore >= numEmptyBCsBeforeLeadingBC->get(0u, 0u)) { // If we found at least numEmptyBCsBeforeLeadingBC[0] non-B BCs before this one, mark it as leading
           bcPatternL[iBC] = true;
-          totalLeadingBCs++;
+          totalLeadingBCs[0]++;
+        }
+        if (emptyBCsBefore >= numEmptyBCsBeforeLeadingBC->get(0u, 1u)) { // If we found at least numEmptyBCsBeforeLeadingBC[1] empty BCs before this one, mark it as leading
+          bcPatternLE[iBC] = true;
+          totalLeadingBCs[1]++;
         }
       }
     }
-    LOG(info) << "bcPatternL creation complete. Total leading BCs found: " << totalLeadingBCs;
+    LOG(info) << "bcPatternL creation complete. Total leading BCs found: " << totalLeadingBCs[0];
+    LOG(info) << "bcPatternLE creation complete. Total leading BCs found: " << totalLeadingBCs[1];
 
     auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), runNumber, metadataInfo.get("LPMProductionTag"));
     bcSOR = runInfo.orbitSOR * nBCsPerOrbit; // first bc of the first orbit
@@ -242,9 +258,8 @@ struct LumiStabilityPP {
   }
 
   template <int iTrigger, int iBCCategory>
-  void fillHistograms(float timeSinceSOF, int64_t localBC, int& nTriggers)
+  void fillHistograms(float timeSinceSOF, int64_t localBC)
   {
-    nTriggers += 1;
     histBcVsTime[iTrigger][iBCCategory][runNumber]->Fill(timeSinceSOF);
     histBcVsBcId[iTrigger][iBCCategory][runNumber]->Fill(localBC);
   }
@@ -257,12 +272,6 @@ struct LumiStabilityPP {
     std::vector<std::array<int, NBCCategories>> nBCsPerBcId;
     nBCsPerBcId.resize(nBCsPerOrbit);
     std::fill(&nBCsPerBcId[0][0], &nBCsPerBcId[0][0] + (static_cast<int>(nBCsPerOrbit) * static_cast<int>(NBCCategories)), 0); // Initialize to 0
-    std::vector<std::array<std::array<int, NBCCategories>, NTriggerAliases>> nTriggersPerBcId;
-    nTriggersPerBcId.resize(nBCsPerOrbit);
-    std::fill(&nTriggersPerBcId[0][0][0], &nTriggersPerBcId[0][0][0] + (static_cast<int>(nBCsPerOrbit) * static_cast<int>(NTriggerAliases) * static_cast<int>(NBCCategories)), 0); // Initialize to 0
-
-    int nTriggersPerDf[NTriggerAliases][NBCCategories];
-    std::fill(&nTriggersPerDf[0][0], &nTriggersPerDf[0][0] + (static_cast<int>(NTriggerAliases) * static_cast<int>(NBCCategories)), 0); // Initialize to 0
 
     double rate{-1.};
     for (const auto& bc : bcs) {
@@ -330,18 +339,21 @@ struct LumiStabilityPP {
         }
         if (bcPatternB[iLocalBC]) {
           nBCsPerBcId[iLocalBC][BCB]++;
-          if (iGlobalBC - globalBCIdOfLastBCWithActivityFDD > numEmptyBCsBeforeLeadingBC) {
+          if (iGlobalBC - globalBCIdOfLastBCWithActivityFDD > numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
             nBCsPerBcId[iLocalBC][BCSLFDD]++;
           } else {
             nBCsPerBcId[iLocalBC][BCNSLFDD]++;
           }
-          if (iGlobalBC - globalBCIdOfLastBCWithActivityFT0 > numEmptyBCsBeforeLeadingBC) {
+          if (iGlobalBC - globalBCIdOfLastBCWithActivityFT0 > numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
             nBCsPerBcId[iLocalBC][BCSLFT0]++;
           } else {
             nBCsPerBcId[iLocalBC][BCNSLFT0]++;
           }
           if (!bcPatternL[iLocalBC]) {
             nBCsPerBcId[iLocalBC][BCNL]++;
+          }
+          if (!bcPatternLE[iLocalBC]) {
+            nBCsPerBcId[iLocalBC][BCNLE]++;
           }
         }
         if (bcPatternC[iLocalBC]) {
@@ -352,6 +364,9 @@ struct LumiStabilityPP {
         }
         if (bcPatternL[iLocalBC]) {
           nBCsPerBcId[iLocalBC][BCL]++;
+        }
+        if (bcPatternLE[iLocalBC]) {
+          nBCsPerBcId[iLocalBC][BCLE]++;
         }
       }
 
@@ -367,91 +382,107 @@ struct LumiStabilityPP {
           if (doTypeBC->get(0u, iBCCategory)) {
             if (iTrigger == AllBCs) {
               if (iBCCategory == BCA && bcPatternA[localBC])
-                fillHistograms<AllBCs, BCA>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCA>(timeSinceSOF, localBC);
               if (iBCCategory == BCB && bcPatternB[localBC])
-                fillHistograms<AllBCs, BCB>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCB>(timeSinceSOF, localBC);
               if (iBCCategory == BCC && bcPatternC[localBC])
-                fillHistograms<AllBCs, BCC>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCC>(timeSinceSOF, localBC);
               if (iBCCategory == BCE && bcPatternE[localBC])
-                fillHistograms<AllBCs, BCE>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCE>(timeSinceSOF, localBC);
               if (iBCCategory == BCL && bcPatternL[localBC])
-                fillHistograms<AllBCs, BCL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCL>(timeSinceSOF, localBC);
+              if (iBCCategory == BCLE && bcPatternLE[localBC])
+                fillHistograms<AllBCs, BCLE>(timeSinceSOF, localBC);
               if (iBCCategory == BCSLFDD && isSuperLeadingBcFDD)
-                fillHistograms<AllBCs, BCSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCSLFDD>(timeSinceSOF, localBC);
               if (iBCCategory == BCSLFT0 && isSuperLeadingBcFT0)
-                fillHistograms<AllBCs, BCSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCSLFT0>(timeSinceSOF, localBC);
               if (iBCCategory == BCNL && !bcPatternL[localBC] && bcPatternB[localBC])
-                fillHistograms<AllBCs, BCNL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCNL>(timeSinceSOF, localBC);
+              if (iBCCategory == BCNLE && !bcPatternLE[localBC] && bcPatternB[localBC])
+                fillHistograms<AllBCs, BCNLE>(timeSinceSOF, localBC);
               if (iBCCategory == BCNSLFDD && !isSuperLeadingBcFDD && bcPatternB[localBC])
-                fillHistograms<AllBCs, BCNSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCNSLFDD>(timeSinceSOF, localBC);
               if (iBCCategory == BCNSLFT0 && !isSuperLeadingBcFT0 && bcPatternB[localBC])
-                fillHistograms<AllBCs, BCNSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<AllBCs, BCNSLFT0>(timeSinceSOF, localBC);
             }
             if (iTrigger == FT0Vtx && ctpInputMask.test(2)) {
               if (iBCCategory == BCA && bcPatternA[localBC])
-                fillHistograms<FT0Vtx, BCA>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCA>(timeSinceSOF, localBC);
               if (iBCCategory == BCB && bcPatternB[localBC])
-                fillHistograms<FT0Vtx, BCB>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCB>(timeSinceSOF, localBC);
               if (iBCCategory == BCC && bcPatternC[localBC])
-                fillHistograms<FT0Vtx, BCC>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCC>(timeSinceSOF, localBC);
               if (iBCCategory == BCE && bcPatternE[localBC])
-                fillHistograms<FT0Vtx, BCE>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCE>(timeSinceSOF, localBC);
               if (iBCCategory == BCL && bcPatternL[localBC])
-                fillHistograms<FT0Vtx, BCL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCL>(timeSinceSOF, localBC);
+              if (iBCCategory == BCLE && bcPatternLE[localBC])
+                fillHistograms<FT0Vtx, BCLE>(timeSinceSOF, localBC);
               if (iBCCategory == BCSLFDD && isSuperLeadingBcFDD)
-                fillHistograms<FT0Vtx, BCSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCSLFDD>(timeSinceSOF, localBC);
               if (iBCCategory == BCSLFT0 && isSuperLeadingBcFT0)
-                fillHistograms<FT0Vtx, BCSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCSLFT0>(timeSinceSOF, localBC);
               if (iBCCategory == BCNL && !bcPatternL[localBC] && bcPatternB[localBC])
-                fillHistograms<FT0Vtx, BCNL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCNL>(timeSinceSOF, localBC);
+              if (iBCCategory == BCNLE && !bcPatternLE[localBC] && bcPatternB[localBC])
+                fillHistograms<FT0Vtx, BCNLE>(timeSinceSOF, localBC);
               if (iBCCategory == BCNSLFDD && !isSuperLeadingBcFDD && bcPatternB[localBC])
-                fillHistograms<FT0Vtx, BCNSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCNSLFDD>(timeSinceSOF, localBC);
               if (iBCCategory == BCNSLFT0 && !isSuperLeadingBcFT0 && bcPatternB[localBC])
-                fillHistograms<FT0Vtx, BCNSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0Vtx, BCNSLFT0>(timeSinceSOF, localBC);
             }
             if (iTrigger == FT0CE && ctpInputMask.test(4)) {
               if (iBCCategory == BCA && bcPatternA[localBC])
-                fillHistograms<FT0CE, BCA>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCA>(timeSinceSOF, localBC);
               if (iBCCategory == BCB && bcPatternB[localBC])
-                fillHistograms<FT0CE, BCB>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCB>(timeSinceSOF, localBC);
               if (iBCCategory == BCC && bcPatternC[localBC])
-                fillHistograms<FT0CE, BCC>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCC>(timeSinceSOF, localBC);
               if (iBCCategory == BCE && bcPatternE[localBC])
-                fillHistograms<FT0CE, BCE>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCE>(timeSinceSOF, localBC);
               if (iBCCategory == BCL && bcPatternL[localBC])
-                fillHistograms<FT0CE, BCL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCL>(timeSinceSOF, localBC);
+              if (iBCCategory == BCLE && bcPatternLE[localBC])
+                fillHistograms<FT0CE, BCLE>(timeSinceSOF, localBC);
               if (iBCCategory == BCSLFDD && isSuperLeadingBcFDD)
-                fillHistograms<FT0CE, BCSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCSLFDD>(timeSinceSOF, localBC);
               if (iBCCategory == BCSLFT0 && isSuperLeadingBcFT0)
-                fillHistograms<FT0CE, BCSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCSLFT0>(timeSinceSOF, localBC);
               if (iBCCategory == BCNL && !bcPatternL[localBC] && bcPatternB[localBC])
-                fillHistograms<FT0CE, BCNL>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCNL>(timeSinceSOF, localBC);
+              if (iBCCategory == BCNLE && !bcPatternLE[localBC] && bcPatternB[localBC])
+                fillHistograms<FT0CE, BCNLE>(timeSinceSOF, localBC);
               if (iBCCategory == BCNSLFDD && !isSuperLeadingBcFDD && bcPatternB[localBC])
-                fillHistograms<FT0CE, BCNSLFDD>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCNSLFDD>(timeSinceSOF, localBC);
               if (iBCCategory == BCNSLFT0 && !isSuperLeadingBcFT0 && bcPatternB[localBC])
-                fillHistograms<FT0CE, BCNSLFT0>(timeSinceSOF, localBC, nTriggersPerBcId[localBC][iTrigger][iBCCategory]);
+                fillHistograms<FT0CE, BCNSLFT0>(timeSinceSOF, localBC);
             }
             if (iTrigger == FDD && ctpInputMask.test(15)) {
               if (iBCCategory == BCA && bcPatternA[localBCFDD])
-                fillHistograms<FDD, BCA>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCA>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCB && bcPatternB[localBCFDD])
-                fillHistograms<FDD, BCB>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCB>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCC && bcPatternC[localBCFDD])
-                fillHistograms<FDD, BCC>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCC>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCE && bcPatternE[localBCFDD])
-                fillHistograms<FDD, BCE>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCE>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCL && bcPatternL[localBCFDD])
-                fillHistograms<FDD, BCL>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCL>(timeSinceSOF, localBCFDD);
+              if (iBCCategory == BCLE && bcPatternLE[localBCFDD])
+                fillHistograms<FDD, BCLE>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCSLFDD && isSuperLeadingBcFDD)
-                fillHistograms<FDD, BCSLFDD>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCSLFDD>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCSLFT0 && isSuperLeadingBcFT0)
-                fillHistograms<FDD, BCSLFT0>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCSLFT0>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCNL && !bcPatternL[localBCFDD] && bcPatternB[localBCFDD])
-                fillHistograms<FDD, BCNL>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCNL>(timeSinceSOF, localBCFDD);
+              if (iBCCategory == BCNLE && !bcPatternLE[localBCFDD] && bcPatternB[localBCFDD])
+                fillHistograms<FDD, BCNLE>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCNSLFDD && !isSuperLeadingBcFDD && bcPatternB[localBCFDD])
-                fillHistograms<FDD, BCNSLFDD>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCNSLFDD>(timeSinceSOF, localBCFDD);
               if (iBCCategory == BCNSLFT0 && !isSuperLeadingBcFT0 && bcPatternB[localBCFDD])
-                fillHistograms<FDD, BCNSLFT0>(timeSinceSOF, localBCFDD, nTriggersPerBcId[localBCFDD][iTrigger][iBCCategory]);
+                fillHistograms<FDD, BCNSLFT0>(timeSinceSOF, localBCFDD);
             }
           }
         }
@@ -467,16 +498,9 @@ struct LumiStabilityPP {
     for (int iTrigger{0}; iTrigger < NTriggerAliases; ++iTrigger) {
       for (int iBCCategory{0}; iBCCategory < NBCCategories; ++iBCCategory) {
         if (doTypeBC->get(0u, iBCCategory)) {
-          int nTotBCs{0};
-          int nTotTriggers{0};
           for (int iBcId{0}; iBcId < nBCsPerOrbit; ++iBcId) {
-            float muPerBcId = getMu(nTriggersPerBcId[iBcId][iTrigger][iBCCategory], nBCsPerBcId[iBcId][iBCCategory]);
-            histMuPerBcId[iTrigger][iBCCategory][runNumber]->Fill(iBcId, muPerBcId);
-            nTotBCs += nBCsPerBcId[iBcId][iBCCategory];
-            nTotTriggers += nTriggersPerBcId[iBcId][iTrigger][iBCCategory];
+            histBcInspectVsBcId[iTrigger][iBCCategory][runNumber]->Fill(iBcId, nBCsPerBcId[iBcId][iBCCategory]);
           }
-          float mu = getMu(nTotTriggers, nTotBCs);
-          histMu[iTrigger][iBCCategory][runNumber]->Fill(mu);
         }
       }
     }
