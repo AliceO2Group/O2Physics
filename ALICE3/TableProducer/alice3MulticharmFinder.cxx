@@ -227,6 +227,9 @@ struct Alice3MulticharmFinder {
     if (nCand == 0) {
       return false;
     }
+
+    const u_int8_t fitterStatusCode = fitter.getFitStatus();
+    histos.fill(HIST("hFitterStatusCode"), fitterStatusCode);
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
 
     o2::track::TrackParCov t0new = fitter.getTrack(0);
@@ -298,6 +301,9 @@ struct Alice3MulticharmFinder {
     if (nCand == 0) {
       return false;
     }
+
+    const u_int8_t fitter3StatusCode = fitter3.getFitStatus();
+    histos.fill(HIST("hFitter3StatusCode"), fitter3StatusCode);
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
 
     t0 = fitter3.getTrack(0);
@@ -432,6 +438,48 @@ struct Alice3MulticharmFinder {
     fitter3.setWeightedFinalPCA(false);
     fitter3.setBz(magneticField);
     fitter3.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
+
+    auto hFitterStatusCode = histos.add<TH1>("hFitterStatusCode", "hFitterStatusCode", kTH1D, {{15, -0.5, 14.5}});
+    hFitterStatusCode->GetXaxis()->SetBinLabel(1, "None"); // no status set (should not be possible!)
+
+    /* Good Conditions */
+    hFitterStatusCode->GetXaxis()->SetBinLabel(2, "Converged"); // fit converged
+    hFitterStatusCode->GetXaxis()->SetBinLabel(3, "MaxIter");   // max iterations reached before fit convergence
+
+    /* Error Conditions */
+    hFitterStatusCode->GetXaxis()->SetBinLabel(4, "NoCrossing");       // no reasaonable crossing was found
+    hFitterStatusCode->GetXaxis()->SetBinLabel(5, "RejRadius");        // radius of crossing was not acceptable
+    hFitterStatusCode->GetXaxis()->SetBinLabel(6, "RejTrackX");        // one candidate track x was below the mimimum required radius
+    hFitterStatusCode->GetXaxis()->SetBinLabel(7, "RejTrackRoughZ");   // rejected by rough cut on tracks Z difference
+    hFitterStatusCode->GetXaxis()->SetBinLabel(8, "RejChi2Max");       // rejected by maximum chi2 cut
+    hFitterStatusCode->GetXaxis()->SetBinLabel(9, "FailProp");         // propagation of at least prong to PCA failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(10, "FailInvCov");      // inversion of cov.-matrix failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(11, "FailInvWeight");   // inversion of Ti weight matrix failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(12, "FailInv2ndDeriv"); // inversion of 2nd derivatives failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(13, "FailCorrTracks");  // correction of tracks to updated x failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(14, "FailCloserAlt");   // alternative PCA is closer
+    hFitterStatusCode->GetXaxis()->SetBinLabel(15, "NStatusesDefined");
+
+    auto hFitter3StatusCode = histos.add<TH1>("hFitter3StatusCode", "hFitter3StatusCode", kTH1D, {{15, -0.5, 14.5}});
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(1, "None"); // no status set (should not be possible!)
+
+    /* Good Conditions */
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(2, "Converged"); // fit converged
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(3, "MaxIter");   // max iterations reached before fit convergence
+
+    /* Error Conditions */
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(4, "NoCrossing");       // no reasaonable crossing was found
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(5, "RejRadius");        // radius of crossing was not acceptable
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(6, "RejTrackX");        // one candidate track x was below the mimimum required radius
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(7, "RejTrackRoughZ");   // rejected by rough cut on tracks Z difference
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(8, "RejChi2Max");       // rejected by maximum chi2 cut
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(9, "FailProp");         // propagation of at least prong to PCA failed
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(10, "FailInvCov");      // inversion of cov.-matrix failed
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(11, "FailInvWeight");   // inversion of Ti weight matrix failed
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(12, "FailInv2ndDeriv"); // inversion of 2nd derivatives failed
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(13, "FailCorrTracks");  // correction of tracks to updated x failed
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(14, "FailCloserAlt");   // alternative PCA is closer
+    hFitter3StatusCode->GetXaxis()->SetBinLabel(15, "NStatusesDefined");
 
     INSERT_HIST(std::string("h2dGenXi"), "h2dGenXi", {kTH2D, {{axisPt, axisEta}}});
     INSERT_HIST(std::string("h2dGenXiC"), "h2dGenXiC", {kTH2D, {{axisPt, axisEta}}});
