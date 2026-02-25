@@ -44,6 +44,7 @@
 #include <TLorentzVector.h>
 
 #include <cstdlib>
+#include <vector>
 
 using namespace o2;
 // using namespace o2::analysis;
