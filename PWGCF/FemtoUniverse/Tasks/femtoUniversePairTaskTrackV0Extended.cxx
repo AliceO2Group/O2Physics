@@ -1545,9 +1545,9 @@ struct FemtoUniversePairTaskTrackV0Extended {
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
       //
       if (part.partType() == aod::femtouniverseparticle::ParticleType::kV0) {
-        if (!invMLambda(part.mLambda(), part.mAntiLambda()))
-          continue;
         if (mcpart.pdgMCTruth() == kLambda0) {
+          if (!invMLambda(part.mLambda(), part.mAntiLambda(), 0))
+            continue;
           const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
           const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
           if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
@@ -1573,6 +1573,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
           registryMCreco.fill(HIST("plus/MCrecoLambda"), mcpart.pt(), mcpart.eta()); // lambda
 
         } else if (mcpart.pdgMCTruth() == kLambda0Bar) {
+          if (!invMLambda(part.mLambda(), part.mAntiLambda(), 1))
+            continue;
           const auto& posChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
           const auto& negChild = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
           if constexpr (std::experimental::is_detected<hasSigma, typename PartType::iterator>::value) {
