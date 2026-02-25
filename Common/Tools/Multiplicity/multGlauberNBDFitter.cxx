@@ -384,7 +384,7 @@ Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k
   return F;
 }
 
-void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot)
+void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F* lNancestor2DPlot, Double_t fProbabilityCutoff)
 {
   cout << "Calculating <Npart>, <Ncoll> in centrality bins..." << endl;
   cout << "Range to calculate: " << lLoRange << " to " << lHiRange << endl;
@@ -415,28 +415,56 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
   }
   // bypass to zero
   for (int ibin = 0; ibin < fNNpNcPairs; ibin++) {
-    if (ibin % 2000 == 0)
+    if (ibin % 200 == 0)
       cout << "At NpNc pair #" << ibin << " of " << fNNpNcPairs << "..." << endl;
     Double_t lNAncestors0 = (Int_t)(fNpart[ibin] * ff + fNcoll[ibin] * (1.0 - ff));
     Double_t lNAncestors1 = TMath::Floor(fNpart[ibin] * ff + fNcoll[ibin] * (1.0 - ff) + 0.5);
     Double_t lNAncestors2 = (fNpart[ibin] * ff + fNcoll[ibin] * (1.0 - ff));
 
-    TH1D* hEccentricity = 0x0;
+    // define ancestors officially
+    Double_t lNancestors = lNAncestors0;
+    if (fAncestorMode == 1)
+      lNancestors = lNAncestors1;
+    if (fAncestorMode == 2)
+      lNancestors = lNAncestors2;
 
+    // eccentricity handling
+    TH1D* hEccentricity = 0x0;
     if (lNpNcEcc) {
       // locate the histogram that corresponds to the eccentricity distribution in this NpNc pair
       lNpNcEcc->GetXaxis()->SetRange(lNpNcEcc->GetXaxis()->FindBin(fNpart[ibin]), lNpNcEcc->GetXaxis()->FindBin(fNpart[ibin]));
       lNpNcEcc->GetYaxis()->SetRange(lNpNcEcc->GetYaxis()->FindBin(fNcoll[ibin]), lNpNcEcc->GetYaxis()->FindBin(fNcoll[ibin]));
       hEccentricity = reinterpret_cast<TH1D*>(lNpNcEcc->Project3D("z"));
       hEccentricity->SetName(Form("hEccentricity_%i", ibin));
+
+      // normalize into unitary fractions
+      Double_t eccIntegral = hEccentricity->Integral(1, hEccentricity->GetNbinsX() + 1);
+      if (eccIntegral > 1e-6) { // no counts
+        hEccentricity->Scale(1. / eccIntegral);
+      } else {
+        hEccentricity->Scale(0.0);
+      }
+    }
+
+    // impact parameter handling
+    TH1D* hImpactParameter = 0x0;
+    if (lNpNcB) {
+      // locate the histogram that corresponds to the eccentricity distribution in this NpNc pair
+      lNpNcB->GetXaxis()->SetRange(lNpNcB->GetXaxis()->FindBin(fNpart[ibin]), lNpNcB->GetXaxis()->FindBin(fNpart[ibin]));
+      lNpNcB->GetYaxis()->SetRange(lNpNcB->GetYaxis()->FindBin(fNcoll[ibin]), lNpNcB->GetYaxis()->FindBin(fNcoll[ibin]));
+      hImpactParameter = reinterpret_cast<TH1D*>(lNpNcB->Project3D("z"));
+      hImpactParameter->SetName(Form("hImpactParameter_%i", ibin));
+
+      // normalize into unitary fractions
+      Double_t bIntegral = hImpactParameter->Integral(1, hImpactParameter->GetNbinsX() + 1);
+      if (bIntegral > 1e-6) { // no counts
+        hImpactParameter->Scale(1. / bIntegral);
+      } else {
+        hImpactParameter->Scale(0.0);
+      }
     }
 
     for (Long_t lMultValue = 1; lMultValue < lHiRange; lMultValue++) {
-      Double_t lNancestors = lNAncestors0;
-      if (fAncestorMode == 1)
-        lNancestors = lNAncestors1;
-      if (fAncestorMode == 2)
-        lNancestors = lNAncestors2;
       Double_t lNancestorCount = fContent[ibin];
       Double_t lThisMu = (((Double_t)lNancestors)) * fMu;
       Double_t lThisk = (((Double_t)lNancestors)) * fk;
@@ -447,11 +475,20 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       if (lMultValue > 1e-6)
         lMult = fAncestorMode != 2 ? fNBD->Eval(lMultValue) : ContinuousNBD(lMultValue, lThisMu, lThisk);
       Double_t lProbability = lNancestorCount * lMult;
+
+      if (lProbability < fProbabilityCutoff) {
+        continue; // skip if probability of contributing too small
+      }
+
       Double_t lMultValueToFill = lMultValue;
       if (hPercentileMap)
         lMultValueToFill = hPercentileMap->GetBinContent(hPercentileMap->FindBin(lMultValue));
       lNPartProf->Fill(lMultValueToFill, fNpart[ibin], lProbability);
       lNCollProf->Fill(lMultValueToFill, fNcoll[ibin], lProbability);
+      if (lNancestor2DPlot) {
+        // fill cross-check histogram with lNancestorCount at lNancestors value
+        lNancestor2DPlot->Fill(lMultValueToFill, lNancestors, lProbability);
+      }
       if (lNPart2DPlot)
         lNPart2DPlot->Fill(lMultValueToFill, fNpart[ibin], lProbability);
       if (lNColl2DPlot)
@@ -460,6 +497,12 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
         // collapse the entire eccentricity distribution for this combo
         for (int ib = 1; ib < hEccentricity->GetNbinsX() + 1; ib++) {
           lEcc2DPlot->Fill(lMultValueToFill, hEccentricity->GetBinCenter(ib), lProbability * hEccentricity->GetBinContent(ib));
+        }
+      }
+      if (lNpNcB) {
+        // collapse the entire impact parameter distribution for this combo
+        for (int ib = 1; ib < hImpactParameter->GetNbinsX() + 1; ib++) {
+          lB2DPlot->Fill(lMultValueToFill, hImpactParameter->GetBinCenter(ib), lProbability * hImpactParameter->GetBinContent(ib));
         }
       }
     }
