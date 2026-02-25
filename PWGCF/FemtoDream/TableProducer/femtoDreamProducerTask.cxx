@@ -314,9 +314,7 @@ struct femtoDreamProducerTask {
     if (doprocessData == false && doprocessData_noCentrality == false && doprocessData_CentPbPb == false && doprocessData_CentPbPb_EP == false && doprocessMC == false && doprocessMC_noCentrality == false && doprocessMC_CentPbPb == false && doprocessMC_CentPbPb_EP == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessData == true) || (doprocessData_CentPbPb == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC == true) || (doprocessData_CentPbPb == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC_CentPbPb == true) 
-        || (doprocessData_CentPbPb_EP == true && doprocessData == true) || (doprocessData_CentPbPb_EP == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb_EP == true && doprocessMC == true) || (doprocessData_CentPbPb_EP == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb_EP == true && doprocessMC_CentPbPb == true) || (doprocessData_CentPbPb_EP == true && doprocessData_CentPbPb == true) || (doprocessData_CentPbPb_EP == true && doprocessMC_CentPbPb_EP == true)
-        || (doprocessMC_CentPbPb_EP == true && doprocessData == true) || (doprocessMC_CentPbPb_EP == true && doprocessData_noCentrality == true) || (doprocessMC_CentPbPb_EP == true && doprocessMC == true) || (doprocessMC_CentPbPb_EP == true && doprocessMC_noCentrality == true) || (doprocessMC_CentPbPb_EP == true && doprocessMC_CentPbPb == true) || (doprocessMC_CentPbPb_EP == true && doprocessData_CentPbPb == true)) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessData == true) || (doprocessData_CentPbPb == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC == true) || (doprocessData_CentPbPb == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC_CentPbPb == true) || (doprocessData_CentPbPb_EP == true && doprocessData == true) || (doprocessData_CentPbPb_EP == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb_EP == true && doprocessMC == true) || (doprocessData_CentPbPb_EP == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb_EP == true && doprocessMC_CentPbPb == true) || (doprocessData_CentPbPb_EP == true && doprocessData_CentPbPb == true) || (doprocessData_CentPbPb_EP == true && doprocessMC_CentPbPb_EP == true) || (doprocessMC_CentPbPb_EP == true && doprocessData == true) || (doprocessMC_CentPbPb_EP == true && doprocessData_noCentrality == true) || (doprocessMC_CentPbPb_EP == true && doprocessMC == true) || (doprocessMC_CentPbPb_EP == true && doprocessMC_noCentrality == true) || (doprocessMC_CentPbPb_EP == true && doprocessMC_CentPbPb == true) || (doprocessMC_CentPbPb_EP == true && doprocessData_CentPbPb == true)) {
       LOGF(fatal,
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
@@ -1138,7 +1136,7 @@ struct femtoDreamProducerTask {
     float myqn = 0.f;
     float myEP = 0.f;
 
-    if (!isMC || epCal.ConfMCQvec){
+    if (!isMC || epCal.ConfMCQvec) {
       myqn = colCuts.computeqnVec(col, epCal.ConfQvecDetector);
       myEP = TMath::RadToDeg() * colCuts.computeEP(col, EPHarmonic, epCal.ConfEPDetector); // psi from rad(0-pi) to deg, in table psi would be in deg,from 0-180
     }
@@ -1288,16 +1286,16 @@ struct femtoDreamProducerTask {
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 
   void processMC_CentPbPb_EP(aod::FemtoFullCollisionMC_CentPbPb_qvec const& col,
-                               aod::BCsWithTimestamps const&,
-                               soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                               aod::FemtoFullMCgenCollisions const&,
-                               aod::McParticles const&,                               
-                               soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s, /// \todo with FilteredFullV0s
-                               soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades)
+                             aod::BCsWithTimestamps const&,
+                             soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                             aod::FemtoFullMCgenCollisions const&,
+                             aod::McParticles const&,
+                             soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s, /// \todo with FilteredFullV0s
+                             soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades)
   {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
-    // fill the tables      
+    // fill the tables
     fillCollisionsAndTracksAndV0AndCascade<true, false, true, true, true>(col, tracks, tracks, fullV0s, fullCascades);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb_EP, "Provide MC data with centrality and q-vector table for PbPb collisions", false);

@@ -713,7 +713,7 @@ struct femtoDreamPairTaskTrackTrack {
     float myEP = -999.f;
     int myqnBin = -999;
 
-    if (!isMC || EPCal.mcQvec){
+    if (!isMC || EPCal.mcQvec) {
       myEP = TMath::DegToRad() * col.eventPlane();
       if (EPCal.doQnSeparation || EPCal.do3DFemto) {
         myqnBin = epCalculator.myqnBin(col.multV0M(), EPCal.centMax, EPCal.fillFlowQA, EPCal.qnBinSeparator, col.qnVal(), EPCal.numQnBins, EPCal.centBinWidth);
@@ -748,7 +748,7 @@ struct femtoDreamPairTaskTrackTrack {
           }
           if (EPCal.do3DFemto) {
             sameEventQnCont.setPair_3Dqn<isMC>(p1, p2, col.multV0M(), Option.SameSpecies.value, myqnBin + 0.f, myEP, Option.SmearingByOrigin);
-          } 
+          }
         } else {
           if (EPCal.do1DFemto) {
             sameEventQnCont.setPair_EP<isMC>(p2, p1, col.multV0M(), EPCal.doQnSeparation, EPCal.doQnSeparation ? myqnBin + 0.f : myEP);
@@ -801,14 +801,14 @@ struct femtoDreamPairTaskTrackTrack {
   /// process function for to call doSameEventEP with MC Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoDreamParticleTable
-  void processSameEventEPMC(FilteredMCQnCollision& col, 
+  void processSameEventEPMC(FilteredMCQnCollision& col,
                             o2::aod::FDMCCollisions&,
                             soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                             o2::aod::FDMCParticles&)
   {
     if (EPCal.storeEvtTrkInfo) {
       fillCollision<true>(col);
-    }    
+    }
     auto SliceTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     if (SliceTrk1.size() == 0 && SliceTrk2.size() == 0) {
@@ -833,15 +833,13 @@ struct femtoDreamPairTaskTrackTrack {
       auto myEP_event1 = -999.f;
       auto myEP_event2 = -999.f;
 
-      if (!isMC || EPCal.mcQvec){
+      if (!isMC || EPCal.mcQvec) {
         myEP_event1 = TMath::DegToRad() * collision1.eventPlane();
         myEP_event2 = TMath::DegToRad() * collision2.eventPlane();
-      } 
-      else{
+      } else {
         myEP_event1 = 0.f;
         myEP_event2 = 0.f;
       }
-
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
         if (Option.CPROn.value) {
