@@ -75,7 +75,7 @@ struct LumiStabilityPP {
   static constexpr int defaulFlags[1][NBCCategories] = {{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
   Configurable<LabeledArray<int>> doTypeBC{"doTypeBC", {defaulFlags[0], NBCCategories, {"BCA", "BCB", "BCC", "BCE", "BCL", "BCSLFDD", "BCSLFT0", "BCNL", "BCNSLFDD", "BCNSLFT0"}}, "Create and fill histograms for different BC types"};
 
-  Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of empty BCs before a (super)leading BC"};
+  Configurable<int> numEmptyBCsBeforeLeadingBC{"numEmptyBCsBeforeLeadingBC", 5, "Number of (empty) non-B BCs before a (super)leading BC"};
   Configurable<int> bcShiftFDDForData2023{"bcShiftFDDForData2023", 7, "Number of bc to shift for FDD to be applied for 2023 data only"};
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA, beamPatternC;
@@ -146,8 +146,8 @@ struct LumiStabilityPP {
         if (doTypeBC->get(0u, iBCCategory)) {
           histBcVsTime[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsVsTimeHistNames[iTrigger][iBCCategory]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
           histBcVsBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
-          histMu[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers;#mu;counts", HistType::kTH1D, {{1000, 0., 0.2}});
-          histMuPerBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH2>(Form("%d/%sVsBcId", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers per BCId;#mu;counts", HistType::kTH2D, {{bcIDAxis}, {1000, 0., 0.2}});
+          histMu[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers;#mu;counts", HistType::kTH1D, {{400, 0., 0.2}});
+          histMuPerBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH2>(Form("%d/%sVsBcId", runNumber, std::string(MuHistNames[iTrigger][iBCCategory]).c_str()), "pile-up #mu of different triggers per BCId;#mu;counts", HistType::kTH2D, {{bcIDAxis}, {400, 0., 0.2}});
         }
       }
     }
@@ -203,16 +203,16 @@ struct LumiStabilityPP {
     int totalLeadingBCs = 0;
     for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
       if (bcPatternB[iBC]) {    // Check if current BC is of type B
-        int emptyBCsBefore = 0; // Count how many consecutive BCs before this one are empty
+        int nonBtypeBCsBefore = 0; // Count how many consecutive BCs before this one are non-B
         for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
-          if (bcPatternE[prevBC]) {
-            emptyBCsBefore++;
+          if (!bcPatternB[prevBC]) {
+            nonBtypeBCsBefore++;
           } else {
-            break; // Stop counting if we hit a non-empty BC
+            break; // Stop counting if we hit a BCB
           }
         }
-        if (emptyBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC empty BCs before this one, mark it as leading
+        if (nonBtypeBCsBefore >= numEmptyBCsBeforeLeadingBC) { // If we found at least numEmptyBCsBeforeLeadingBC non-B BCs before this one, mark it as leading
           bcPatternL[iBC] = true;
           totalLeadingBCs++;
         }
