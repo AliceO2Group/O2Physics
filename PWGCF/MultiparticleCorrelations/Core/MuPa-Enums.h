@@ -123,6 +123,7 @@ enum eDiffPhiWeights {
 
 enum eDiffPtWeights {
   wPtPtAxis = 0,
+  wPtEtaAxis,
   wPtChargeAxis,
   wPtCentralityAxis,
   eDiffPtWeights_N
@@ -130,6 +131,7 @@ enum eDiffPtWeights {
 
 enum eDiffEtaWeights {
   wEtaEtaAxis = 0,
+  wEtaPtAxis,
   wEtaChargeAxis,
   wEtaCentralityAxis,
   eDiffEtaWeights_N
