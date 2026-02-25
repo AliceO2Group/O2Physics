@@ -215,7 +215,7 @@ struct LumiStabilityPP {
     for (int iBC = 0; iBC < o2::constants::lhc::LHCMaxBunches; iBC++) {
       if (bcPatternB[iBC]) {    // Check if current BC is of type B
         int nonBtypeBCsBefore{0}, emptyBCsBefore{0}; // Count how many consecutive BCs before this one are non-B
-        for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
+        for (int j = 1; j <= numEmptyBCsBeforeLeadingBC->get(0u, 0u); j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
           if (!bcPatternB[prevBC]) {
             nonBtypeBCsBefore++;
@@ -223,9 +223,9 @@ struct LumiStabilityPP {
             break; // Stop counting if we hit a BCB
           }
         }
-        for (int j = 1; j <= numEmptyBCsBeforeLeadingBC; j++) {
+        for (int j = 1; j <= numEmptyBCsBeforeLeadingBC->get(0u, 1u); j++) {
           int prevBC = (iBC - j + o2::constants::lhc::LHCMaxBunches) % o2::constants::lhc::LHCMaxBunches; // Protection for BCs at small indices to check the end of the orbit
-          if (bcPatternE[prevBCE]) {
+          if (bcPatternE[prevBC]) {
             emptyBCsBefore++;
           } else {
             break; // Stop counting if we hit a non BCE
@@ -330,10 +330,10 @@ struct LumiStabilityPP {
       int localBCFDD = globalBCFDD % nBCsPerOrbit;
 
       bool isSuperLeadingBcFDD{true}, isSuperLeadingBcFT0{true};
-      if (globalBCFDD - globalBCIdOfLastBCWithActivityFDD < numEmptyBCsBeforeLeadingBC) {
+      if (globalBCFDD - globalBCIdOfLastBCWithActivityFDD < numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
         isSuperLeadingBcFDD = false; // not a super-leading BC for FDD
       }
-      if (globalBC - globalBCIdOfLastBCWithActivityFT0 < numEmptyBCsBeforeLeadingBC) {
+      if (globalBC - globalBCIdOfLastBCWithActivityFT0 < numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
         isSuperLeadingBcFT0 = false; // not a super-leading BC for FT0
       }
 
