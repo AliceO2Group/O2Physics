@@ -607,7 +607,7 @@ struct f1protoncorrelation {
         }
         auto relative_momentum = getkstar(F1, Proton);
         if (relative_momentum <= 0.5) {
-          histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), Proton.Pt());
+          histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), protontrack.protonNsigmaTOF(), Proton.Pt());
         }
         histos.fill(HIST("h2SameEventPtCorrelation"), relative_momentum, F1.Pt(), Proton.Pt());
 
@@ -977,7 +977,7 @@ struct f1protoncorrelation {
       Kaon.SetXYZM(f1track.f1d2Px(), f1track.f1d2Py(), f1track.f1d2Pz(), 0.493);
       Kshort.SetXYZM(f1track.f1d3Px(), f1track.f1d3Py(), f1track.f1d3Pz(), 0.497);
       KaonKshortPair = Kaon + Kshort;
-
+      if (F1.Pt() < lowPtF1 || F1.Pt() > 50.0) continue;
       std::vector<int> activeSys;
       activeSys.reserve((size_t)nSysTotal);
 
@@ -1023,7 +1023,7 @@ struct f1protoncorrelation {
 
         const auto& sc0 = sysCuts[0];
 
-        if (countf1 && passPrimary(protontrack.protonDcaxy(), protontrack.protonDcaz(), protontrack.protonTPCNcrs(), protontrack.protonTPCNcls(), sc0)) {
+        if (countf1 && passPrimary(protontrack.protonDcaxy(), protontrack.protonDcaz(), protontrack.protonTPCNcrs(), protontrack.protonTPCNcls(), sc0) && passProtonPID(0, protontrack, Proton, pMinP, pMaxP, pTofP)) {
           histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), protontrack.protonNsigmaTOF(), Proton.Pt());
         }
 
@@ -1055,7 +1055,7 @@ struct f1protoncorrelation {
               histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz), relative_momentum); // Phase Space Proton kaon
             if (pionCharge == protontrack.protonCharge())
               histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Pion.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz), relative_momentum); // Phase Space Proton Pion
-            histos.fill(HIST("h2SameEventf1pptCorrelation"), F1.M(), relative_momentum, Proton.Pt());
+	    histos.fill(HIST("h2SameEventf1pptCorrelation"), F1.M(), relative_momentum, Proton.Pt());
           }
           activePair.push_back(sysId);
         }
@@ -1119,6 +1119,7 @@ struct f1protoncorrelation {
         Kshort.SetXYZM(t1.f1d3Px(), t1.f1d3Py(), t1.f1d3Pz(), 0.497);
         KaonKshortPair = Kaon + Kshort;
         Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
+	if (F1.Pt() < lowPtF1 || F1.Pt() > 50.0) continue;
         auto relative_momentum = getkstar(F1, Proton);
         auto mT = getmT(F1, Proton);
         // sys list for this (F1, p) pair

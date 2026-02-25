@@ -161,8 +161,8 @@ struct f1protonreducedtable {
                                              {"hInvMassf1Like", "hInvMassf1Like", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
                                              {"hInvMassf1kstar", "hInvMassf1kstar", {HistType::kTH3F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}, {8, 0.0f, 0.8f}}}},
                                              {"hkstarDist", "hkstarDist", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-                                             {"hDCAxy", "hDCAxy", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
-                                             {"hDCAz", "hDCAz", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
+                                             {"hDCAxy", "hDCAxy", {HistType::kTH3F, {{100, -0.05f, 0.05f}, {5, -2.5, 2.5}, {40, 0.0, 4.0}}}},
+					     {"hDCAz", "hDCAz", {HistType::kTH3F, {{100, -0.05f, 0.05f}, {2, 0, 2}, {40, 0.0, 4.0}}}},
                                              {"hPhi", "hPhi", {HistType::kTH1F, {{1400, -7.0f, 7.0f}}}},
                                              {"hPhiSphero", "hPhiSphero", {HistType::kTH1F, {{1400, -7.0f, 7.0f}}}},
                                              {"hEta", "hEta", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
@@ -170,7 +170,7 @@ struct f1protonreducedtable {
                                              {"hNsigmaPtpionTOF", "hNsigmaPtpionTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH3F, {{200, -10.0f, 10.0f}, {200, -20.0f, 20.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtkaonTOF", "hNsigmaPtkaonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
-                                             {"hNsigmaPtprotonTPC", "hNsigmaPtprotonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
+                                             {"hNsigmaPtprotonTPC", "hNsigmaPtprotonTPC", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtprotonTOF", "hNsigmaPtprotonTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hInvMassk0", "hInvMassk0", {HistType::kTH2F, {{200, 0.4f, 0.6f}, {100, 0.0f, 10.0f}}}},
                                            },
@@ -266,7 +266,7 @@ struct f1protonreducedtable {
   bool selectionGlobalTrack(const T& candidate)
   {
     if (!(candidate.isGlobalTrack() && candidate.isPVContributor())) {
-      return false;
+      // return false;
     }
     return true;
   }
@@ -348,6 +348,33 @@ struct f1protonreducedtable {
     return false;
   }
 
+  inline bool passProtonPID(float nsigmaTPC, float nsigmaTOF, float TOFHit, ROOT::Math::PtEtaPhiMVector proton)
+  {
+    // pidMode:
+    // 0 = default:  p < thr -> |TPC| < 2.5   ;  p >= thr -> TOF mandatory AND circular(TPC,TOF) < 2.0
+    // 1 = syst-1:   p < thr -> |TPC| < 2.0   ;  p >= thr -> TOF mandatory AND circular(TPC,TOF) < 2.0
+    // 2 = syst-2:   p < thr -> |TPC| < 2.5   ;  p >= thr -> TOF mandatory AND circular(TPC,TOF) < 2.5
+
+    if (proton.Pt() > 4.0 || proton.Pt() < 0.15) {
+      return false;
+    }
+
+    if (proton.P() < 0.7) {
+      return (std::abs(nsigmaTPC) < 2.5);
+    }
+
+    // above threshold: TOF must exist
+    if (TOFHit != 1) {
+      return false;
+    }
+
+
+    const float nsTPC = nsigmaTPC;
+    const float nsTOF = nsigmaTOF;
+    const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
+    return (comb < 2.5);
+  }
+  
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
@@ -682,8 +709,6 @@ struct f1protonreducedtable {
           if (!selectionGlobalTrack(track)) {
             continue;
           }
-          qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
-          qaRegistry.fill(HIST("hDCAz"), track.dcaZ());
           qaRegistry.fill(HIST("hEta"), track.eta());
           qaRegistry.fill(HIST("hPhi"), track.phi());
           double nTPCSigmaP[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -778,17 +803,15 @@ struct f1protonreducedtable {
             ProtonIndex.push_back(track.globalIndex());
             ProtonCharge.push_back(track.sign());
 
-            ProtonDcaxy.push_back(std::abs(track.dcaXY()));
-            ProtonDcaz.push_back(std::abs(track.dcaZ()));
+            ProtonDcaxy.push_back(track.dcaXY());
+            ProtonDcaz.push_back(track.dcaZ());
             ProtonTPCNcls.push_back(std::abs(track.tpcNClsFound()));
             ProtonTPCNcrs.push_back(std::abs(track.tpcNClsCrossedRows()));
 
             if (track.sign() > 0) {
-              qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaP[2], track.pt());
               ProtonTPCNsigma.push_back(nTPCSigmaP[2]);
             }
             if (track.sign() < 0) {
-              qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaN[2], track.pt());
               ProtonTPCNsigma.push_back(nTPCSigmaN[2]);
             }
             if (track.hasTOF()) {
@@ -961,6 +984,24 @@ struct f1protonreducedtable {
       }
     }
     qaRegistry.fill(HIST("hEventstat"), 0.5);
+
+    for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
+      auto i6 = std::distance(protons.begin(), iproton);
+      ProtonVectorDummy2 = protons.at(i6);
+      if (std::abs(ProtonDcaxy.at(i6)) < 0.05 && std::abs(ProtonDcaz.at(i6)) < 0.05) {
+	if (ProtonTOFHit.at(i6) && ProtonVectorDummy2.P() > 0.7) {
+	  qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonVectorDummy2.Pt());
+	}
+	if (ProtonVectorDummy2.P() < 0.7) {
+	  qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), 4.999, ProtonVectorDummy2.Pt());
+	}
+      }
+      if (passProtonPID(ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonTOFHit.at(i6), ProtonVectorDummy2)) {
+	qaRegistry.fill(HIST("hDCAxy"), ProtonDcaxy.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
+	qaRegistry.fill(HIST("hDCAz"), ProtonDcaz.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
+      }
+    }
+    
     if (numberF1 > 0 && (f1resonance.size() == f1signal.size()) && (f1resonance.size() == f1kaonkshortmass.size()) && (f1resonance.size() == f1resonanced1.size()) && (f1resonance.size() == f1resonanced2.size()) && (f1resonance.size() == f1resonanced3.size())) {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       if (keepEventF1Proton) {
