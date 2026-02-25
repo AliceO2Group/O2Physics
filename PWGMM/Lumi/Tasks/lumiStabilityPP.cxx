@@ -249,14 +249,6 @@ struct LumiStabilityPP {
     return (bc.timestamp() - mLHCIFdata->getFillNumberTime()) / 1e3 / 60; // Convert to minutes
   }
 
-  float getMu(double ntriggers, int nbc)
-  {
-    if (nbc == 0) {
-      return 0.;
-    }
-    return -std::log(1.f - ntriggers / nbc);
-  }
-
   template <int iTrigger, int iBCCategory>
   void fillHistograms(float timeSinceSOF, int64_t localBC)
   {
