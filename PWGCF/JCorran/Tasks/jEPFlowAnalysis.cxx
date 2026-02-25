@@ -18,10 +18,10 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -30,10 +30,10 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
+#include <TDatabasePDG.h>
+
 #include <string>
 #include <vector>
-
-#include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -463,7 +463,8 @@ struct jEPFlowAnalysis {
 
   void processMCGen(MyCollisionsMC::iterator const& coll, aod::McParticles const& mcParticles, aod::McCollisions const&)
   {
-    if (!coll.has_mcCollision()) return;
+    if (!coll.has_mcCollision())
+      return;
     const auto mcColl = coll.mcCollision();
 
     if (cfgAddEvtSel) {
