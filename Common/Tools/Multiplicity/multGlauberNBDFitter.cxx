@@ -480,13 +480,13 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       if (lNpNcEcc) {
         // collapse the entire eccentricity distribution for this combo
         for (int ib = 1; ib < hEccentricity->GetNbinsX() + 1; ib++) {
-          lEcc2DPlot->Fill(lMultValueToFill, hEccentricity->GetBinCenter(ib), lProbability * hEccentricity->GetBinContent(ib));
+          lEcc2DPlot->Fill(lMultValueToFill, hEccentricity->GetBinCenter(ib), lProbability * lNancestorCount * hEccentricity->GetBinContent(ib));
         }
       }
       if (lNpNcB) {
         // collapse the entire impact parameter distribution for this combo
         for (int ib = 1; ib < hImpactParameter->GetNbinsX() + 1; ib++) {
-          lB2DPlot->Fill(lMultValueToFill, hImpactParameter->GetBinCenter(ib), lProbability * hImpactParameter->GetBinContent(ib));
+          lB2DPlot->Fill(lMultValueToFill, hImpactParameter->GetBinCenter(ib), lProbability * lNancestorCount * hImpactParameter->GetBinContent(ib));
         }
       }
     }
