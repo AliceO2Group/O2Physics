@@ -16110,7 +16110,10 @@ void GetParticleWeights()
     TString whichCategory = "pt"; // differential pt weights
 
     TString whichDimensions = ""; // differential pt weights as a function of particular dimension
-    // Remark: the naming convention hardwired here for axes dimensions have to be in sync with what I have in the macro to make these weights
+    // Remark: the naming convention hardwired here for axes dimensions have to be in sync with what I have in the macro to make these weights.
+    if (pw.fUseDiffPtWeights[wPtEtaAxis]) {
+      whichDimensions += "_eta";
+    }
     if (pw.fUseDiffPtWeights[wPtChargeAxis]) {
       whichDimensions += "_charge";
     }
@@ -16140,8 +16143,10 @@ void GetParticleWeights()
     TString whichCategory = "eta"; // differential eta weights
 
     TString whichDimensions = ""; // differential eta weights as a function of particular dimension
-    // Remark: the naming convention hardwired here for axes dimensions have to be in sync with what I have in the macro to make these weights
-
+    // Remark: the naming convention hardwired here for axes dimensions have to be in sync with what I have in the macro to make these weights.
+    if (pw.fUseDiffEtaWeights[wEtaPtAxis]) {
+      whichDimensions += "_pt";
+    }
     if (pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
       whichDimensions += "_charge";
     }
