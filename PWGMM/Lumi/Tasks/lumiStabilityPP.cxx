@@ -49,16 +49,18 @@ enum TriggerAliases { AllBCs = 0,
                       FT0CE = 2,
                       FDD = 3,
                       NTriggerAliases };
+
+// SL types must be after all the others
 enum BCCategories { BCA = 0,  // A side BCs (bunch-crossings that had beam only from A side)
                     BCB,      // B type BCs (bunch-crossings that had beam from both sides)
                     BCC,      // C side BCs (bunch-crossings that had beam only from C side)
                     BCE,      // empty BCs (bunch-crossings that did not have beam from either side)
                     BCL,      // leading BCs (bunch-crossings that have not-B BCs for a configurable number of preceding BCs)
                     BCLE,     // leading BCs (bunch-crossings that did not have interacting bunches for a configurable number of preceding BCs)
-                    BCSLFDD,  // super-leading BCs for FDD (bunch-crossings that had beam from both sides but did not have FDD activity for a configurable number of preceding BCs)
-                    BCSLFT0,  // super-leading BCs for FT0 (bunch-crossings that had beam from both sides but did not have FT0 activity for a configurable number of preceding BCs)
                     BCNL,     // non-leading BCs of type B (bunch-crossings that come after a BCL and are of type B)
                     BCNLE,    // non-leading BCs of type B (bunch-crossings that come after a BCLE and are of type B)
+                    BCSLFDD,  // super-leading BCs for FDD (bunch-crossings that had beam from both sides but did not have FDD activity for a configurable number of preceding BCs)
+                    BCSLFT0,  // super-leading BCs for FT0 (bunch-crossings that had beam from both sides but did not have FT0 activity for a configurable number of preceding BCs)
                     BCNSLFDD, // non-super-leading BCs for FDD of type B (bunch-crossings that had beam from both sides but are not SL for FDD activity for a configurable number of preceding BCs)
                     BCNSLFT0, // non-super-leading BCs for FT0 of type B (bunch-crossings that had beam from both sides but are not SL for FT0 activity for a configurable number of preceding BCs)
                     NBCCategories };
@@ -96,8 +98,8 @@ struct LumiStabilityPP {
 
   std::array<std::array<std::map<int, std::shared_ptr<TH1>>, NBCCategories>, NTriggerAliases> histBcVsTime;
   std::array<std::array<std::map<int, std::shared_ptr<TH1>>, NBCCategories>, NTriggerAliases> histBcVsBcId;
-  std::array<std::array<std::map<int, std::shared_ptr<TH1>>, NBCCategories>, NTriggerAliases> histMu;
-  std::array<std::array<std::map<int, std::shared_ptr<TH2>>, NBCCategories>, NTriggerAliases> histMuPerBcId;
+  std::array<std::array<std::map<int, std::shared_ptr<TH1>>, NBCCategories>, NTriggerAliases> histBcInspectVsBcId;
+  std::array<std::map<int, std::shared_ptr<TH1>>, BCSLFDD> histBcPattern; // undefined for BC(N)SL
   std::map<int, std::shared_ptr<TH1>> histNBcsVsTime;
   std::map<int, std::shared_ptr<TH1>> histNBcsVsBcId;
   std::map<int, std::shared_ptr<TH1>> histTfPerMin;
@@ -106,22 +108,24 @@ struct LumiStabilityPP {
   std::map<int, std::shared_ptr<TH1>> histInteractionRate;
 
   static constexpr std::string_view NBCsVsTimeHistNames[NTriggerAliases][NBCCategories] =
-    {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime", "AllBCs/BC_LE/nBCsVsTime", "AllBCs/BC_SL_FDD/nBCsVsTime", "AllBCs/BC_SL_FT0/nBCsVsTime", "AllBCs/BC_NL/nBCsVsTime", "AllBCs/BC_NLE/nBCsVsTime", "AllBCs/BC_NSL_FT0/nBCsVsTime", "AllBCs/BC_NSL_FDD/nBCsVsTime"},
-     {"FT0VTx/BC_A/nBCsVsTime", "FT0VTx/BC_B/nBCsVsTime", "FT0VTx/BC_C/nBCsVsTime", "FT0VTx/BC_E/nBCsVsTime", "FT0VTx/BC_L/nBCsVsTime", "FT0VTx/BC_LE/nBCsVsTime", "FT0VTx/BC_SL_FDD/nBCsVsTime", "FT0VTx/BC_SL_FT0/nBCsVsTime", "FT0VTx/BC_NL/nBCsVsTime", "FT0VTx/BC_NLE/nBCsVsTime", "FT0VTx/BC_NSL_FT0/nBCsVsTime", "FT0VTx/BC_NSL_FDD/nBCsVsTime"},
-     {"FT0CE/BC_A/nBCsVsTime", "FT0CE/BC_B/nBCsVsTime", "FT0CE/BC_C/nBCsVsTime", "FT0CE/BC_E/nBCsVsTime", "FT0CE/BC_L/nBCsVsTime", "FT0CE/BC_LE/nBCsVsTime", "FT0CE/BC_SL_FDD/nBCsVsTime", "FT0CE/BC_SL_FT0/nBCsVsTime", "FT0CE/BC_NL/nBCsVsTime", "FT0CE/BC_NLE/nBCsVsTime", "FT0CE/BC_NSL_FT0/nBCsVsTime", "FT0CE/BC_NSL_FDD/nBCsVsTime"},
-     {"FDD/BC_A/nBCsVsTime", "FDD/BC_B/nBCsVsTime", "FDD/BC_C/nBCsVsTime", "FDD/BC_E/nBCsVsTime", "FDD/BC_L/nBCsVsTime", "FDD/BC_LE/nBCsVsTime", "FDD/BC_SL_FDD/nBCsVsTime", "FDD/BC_SL_FT0/nBCsVsTime", "FDD/BC_NL/nBCsVsTime", "FDD/BC_NLE/nBCsVsTime", "FDD/BC_NSL_FT0/nBCsVsTime", "FDD/BC_NSL_FDD/nBCsVsTime"}};
+    {{"AllBCs/BC_A/nBCsVsTime", "AllBCs/BC_B/nBCsVsTime", "AllBCs/BC_C/nBCsVsTime", "AllBCs/BC_E/nBCsVsTime", "AllBCs/BC_L/nBCsVsTime", "AllBCs/BC_LE/nBCsVsTime", "AllBCs/BC_NL/nBCsVsTime", "AllBCs/BC_NLE/nBCsVsTime", "AllBCs/BC_SL_FDD/nBCsVsTime", "AllBCs/BC_SL_FT0/nBCsVsTime", "AllBCs/BC_NSL_FT0/nBCsVsTime", "AllBCs/BC_NSL_FDD/nBCsVsTime"},
+     {"FT0VTx/BC_A/nBCsVsTime", "FT0VTx/BC_B/nBCsVsTime", "FT0VTx/BC_C/nBCsVsTime", "FT0VTx/BC_E/nBCsVsTime", "FT0VTx/BC_L/nBCsVsTime", "FT0VTx/BC_LE/nBCsVsTime", "FT0VTx/BC_NL/nBCsVsTime", "FT0VTx/BC_NLE/nBCsVsTime", "FT0VTx/BC_SL_FDD/nBCsVsTime", "FT0VTx/BC_SL_FT0/nBCsVsTime", "FT0VTx/BC_NSL_FT0/nBCsVsTime", "FT0VTx/BC_NSL_FDD/nBCsVsTime"},
+     {"FT0CE/BC_A/nBCsVsTime", "FT0CE/BC_B/nBCsVsTime", "FT0CE/BC_C/nBCsVsTime", "FT0CE/BC_E/nBCsVsTime", "FT0CE/BC_L/nBCsVsTime", "FT0CE/BC_LE/nBCsVsTime", "FT0CE/BC_NL/nBCsVsTime", "FT0CE/BC_NLE/nBCsVsTime", "FT0CE/BC_SL_FDD/nBCsVsTime", "FT0CE/BC_SL_FT0/nBCsVsTime", "FT0CE/BC_NSL_FT0/nBCsVsTime", "FT0CE/BC_NSL_FDD/nBCsVsTime"},
+     {"FDD/BC_A/nBCsVsTime", "FDD/BC_B/nBCsVsTime", "FDD/BC_C/nBCsVsTime", "FDD/BC_E/nBCsVsTime", "FDD/BC_L/nBCsVsTime", "FDD/BC_LE/nBCsVsTime", "FDD/BC_NL/nBCsVsTime", "FDD/BC_NLE/nBCsVsTime", "FDD/BC_SL_FDD/nBCsVsTime", "FDD/BC_SL_FT0/nBCsVsTime", "FDD/BC_NSL_FT0/nBCsVsTime", "FDD/BC_NSL_FDD/nBCsVsTime"}};
 
   static constexpr std::string_view NBCsVsBCIDHistNames[NTriggerAliases][NBCCategories] =
-    {{"AllBCs/BC_A/nBCsVsBCID", "AllBCs/BC_B/nBCsVsBCID", "AllBCs/BC_C/nBCsVsBCID", "AllBCs/BC_E/nBCsVsBCID", "AllBCs/BC_L/nBCsVsBCID", "AllBCs/BC_LE/nBCsVsBCID", "AllBCs/BC_SL_FDD/nBCsVsBCID", "AllBCs/BC_SL_FT0/nBCsVsBCID", "AllBCs/BC_NL/nBCsVsBCID", "AllBCs/BC_NLE/nBCsVsBCID", "AllBCs/BC_NSL_FT0/nBCsVsBCID", "AllBCs/BC_NSL_FDD/nBCsVsBCID"},
-     {"FT0VTx/BC_A/nBCsVsBCID", "FT0VTx/BC_B/nBCsVsBCID", "FT0VTx/BC_C/nBCsVsBCID", "FT0VTx/BC_E/nBCsVsBCID", "FT0VTx/BC_L/nBCsVsBCID", "FT0VTx/BC_LE/nBCsVsBCID", "FT0VTx/BC_SL_FDD/nBCsVsBCID", "FT0VTx/BC_SL_FT0/nBCsVsBCID", "FT0VTx/BC_NL/nBCsVsBCID", "FT0VTx/BC_NLE/nBCsVsBCID", "FT0VTx/BC_NSL_FT0/nBCsVsBCID", "FT0VTx/BC_NSL_FDD/nBCsVsBCID"},
-     {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_LE/nBCsVsBCID", "FT0CE/BC_SL_FDD/nBCsVsBCID", "FT0CE/BC_SL_FT0/nBCsVsBCID", "FT0CE/BC_NL/nBCsVsBCID", "FT0CE/BC_NLE/nBCsVsBCID", "FT0CE/BC_NSL_FT0/nBCsVsBCID", "FT0CE/BC_NSL_FDD/nBCsVsBCID"},
-     {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_LE/nBCsVsBCID", "FDD/BC_SL_FDD/nBCsVsBCID", "FDD/BC_SL_FT0/nBCsVsBCID", "FDD/BC_NL/nBCsVsBCID", "FDD/BC_NLE/nBCsVsBCID", "FDD/BC_NSL_FT0/nBCsVsBCID", "FDD/BC_NSL_FDD/nBCsVsBCID"}};
+    {{"AllBCs/BC_A/nBCsVsBCID", "AllBCs/BC_B/nBCsVsBCID", "AllBCs/BC_C/nBCsVsBCID", "AllBCs/BC_E/nBCsVsBCID", "AllBCs/BC_L/nBCsVsBCID", "AllBCs/BC_LE/nBCsVsBCID", "AllBCs/BC_NL/nBCsVsBCID", "AllBCs/BC_NLE/nBCsVsBCID", "AllBCs/BC_SL_FDD/nBCsVsBCID", "AllBCs/BC_SL_FT0/nBCsVsBCID", "AllBCs/BC_NSL_FT0/nBCsVsBCID", "AllBCs/BC_NSL_FDD/nBCsVsBCID"},
+     {"FT0VTx/BC_A/nBCsVsBCID", "FT0VTx/BC_B/nBCsVsBCID", "FT0VTx/BC_C/nBCsVsBCID", "FT0VTx/BC_E/nBCsVsBCID", "FT0VTx/BC_L/nBCsVsBCID", "FT0VTx/BC_LE/nBCsVsBCID", "FT0VTx/BC_NL/nBCsVsBCID", "FT0VTx/BC_NLE/nBCsVsBCID", "FT0VTx/BC_SL_FDD/nBCsVsBCID", "FT0VTx/BC_SL_FT0/nBCsVsBCID", "FT0VTx/BC_NSL_FT0/nBCsVsBCID", "FT0VTx/BC_NSL_FDD/nBCsVsBCID"},
+     {"FT0CE/BC_A/nBCsVsBCID", "FT0CE/BC_B/nBCsVsBCID", "FT0CE/BC_C/nBCsVsBCID", "FT0CE/BC_E/nBCsVsBCID", "FT0CE/BC_L/nBCsVsBCID", "FT0CE/BC_LE/nBCsVsBCID", "FT0CE/BC_NL/nBCsVsBCID", "FT0CE/BC_NLE/nBCsVsBCID", "FT0CE/BC_SL_FDD/nBCsVsBCID", "FT0CE/BC_SL_FT0/nBCsVsBCID", "FT0CE/BC_NSL_FT0/nBCsVsBCID", "FT0CE/BC_NSL_FDD/nBCsVsBCID"},
+     {"FDD/BC_A/nBCsVsBCID", "FDD/BC_B/nBCsVsBCID", "FDD/BC_C/nBCsVsBCID", "FDD/BC_E/nBCsVsBCID", "FDD/BC_L/nBCsVsBCID", "FDD/BC_LE/nBCsVsBCID", "FDD/BC_NL/nBCsVsBCID", "FDD/BC_NLE/nBCsVsBCID", "FDD/BC_SL_FDD/nBCsVsBCID", "FDD/BC_SL_FT0/nBCsVsBCID", "FDD/BC_NSL_FT0/nBCsVsBCID", "FDD/BC_NSL_FDD/nBCsVsBCID"}};
 
   static constexpr std::string_view NBCsInspectVsBCIDHistNames[NTriggerAliases][NBCCategories] =
-    {{"AllBCs/BC_A/nBCsInspectedVsBCID", "AllBCs/BC_B/nBCsInspectedVsBCID", "AllBCs/BC_C/nBCsInspectedVsBCID", "AllBCs/BC_E/nBCsInspectedVsBCID", "AllBCs/BC_L/nBCsInspectedVsBCID", "AllBCs/BC_LE/nBCsInspectedVsBCID", "AllBCs/BC_SL_FDD/nBCsInspectedVsBCID", "AllBCs/BC_SL_FT0/nBCsInspectedVsBCID", "AllBCs/BC_NL/nBCsInspectedVsBCID", "AllBCs/BC_NLE/nBCsInspectedVsBCID", "AllBCs/BC_NSL_FT0/nBCsInspectedVsBCID", "AllBCs/BC_NSL_FDD/nBCsInspectedVsBCID"},
-     {"FT0VTx/BC_A/nBCsInspectedVsBCID", "FT0VTx/BC_B/nBCsInspectedVsBCID", "FT0VTx/BC_C/nBCsInspectedVsBCID", "FT0VTx/BC_E/nBCsInspectedVsBCID", "FT0VTx/BC_L/nBCsInspectedVsBCID", "FT0VTx/BC_LE/nBCsInspectedVsBCID", "FT0VTx/BC_SL_FDD/nBCsInspectedVsBCID", "FT0VTx/BC_SL_FT0/nBCsInspectedVsBCID", "FT0VTx/BC_NL/nBCsInspectedVsBCID", "FT0VTx/BC_NLE/nBCsInspectedVsBCID", "FT0VTx/BC_NSL_FT0/nBCsInspectedVsBCID", "FT0VTx/BC_NSL_FDD/nBCsInspectedVsBCID"},
-     {"FT0CE/BC_A/nBCsInspectedVsBCID", "FT0CE/BC_B/nBCsInspectedVsBCID", "FT0CE/BC_C/nBCsInspectedVsBCID", "FT0CE/BC_E/nBCsInspectedVsBCID", "FT0CE/BC_L/nBCsInspectedVsBCID", "FT0CE/BC_LE/nBCsInspectedVsBCID", "FT0CE/BC_SL_FDD/nBCsInspectedVsBCID", "FT0CE/BC_SL_FT0/nBCsInspectedVsBCID", "FT0CE/BC_NL/nBCsInspectedVsBCID", "FT0CE/BC_NLE/nBCsInspectedVsBCID", "FT0CE/BC_NSL_FT0/nBCsInspectedVsBCID", "FT0CE/BC_NSL_FDD/nBCsInspectedVsBCID"},
-     {"FDD/BC_A/nBCsInspectedVsBCID", "FDD/BC_B/nBCsInspectedVsBCID", "FDD/BC_C/nBCsInspectedVsBCID", "FDD/BC_E/nBCsInspectedVsBCID", "FDD/BC_L/nBCsInspectedVsBCID", "FDD/BC_LE/nBCsInspectedVsBCID", "FDD/BC_SL_FDD/nBCsInspectedVsBCID", "FDD/BC_SL_FT0/nBCsInspectedVsBCID", "FDD/BC_NL/nBCsInspectedVsBCID", "FDD/BC_NLE/nBCsInspectedVsBCID", "FDD/BC_NSL_FT0/nBCsInspectedVsBCID", "FDD/BC_NSL_FDD/nBCsInspectedVsBCID"}};
+    {{"AllBCs/BC_A/nBCsInspectedVsBCID", "AllBCs/BC_B/nBCsInspectedVsBCID", "AllBCs/BC_C/nBCsInspectedVsBCID", "AllBCs/BC_E/nBCsInspectedVsBCID", "AllBCs/BC_L/nBCsInspectedVsBCID", "AllBCs/BC_LE/nBCsInspectedVsBCID", "AllBCs/BC_NL/nBCsInspectedVsBCID", "AllBCs/BC_NLE/nBCsInspectedVsBCID", "AllBCs/BC_SL_FDD/nBCsInspectedVsBCID", "AllBCs/BC_SL_FT0/nBCsInspectedVsBCID", "AllBCs/BC_NSL_FT0/nBCsInspectedVsBCID", "AllBCs/BC_NSL_FDD/nBCsInspectedVsBCID"},
+     {"FT0VTx/BC_A/nBCsInspectedVsBCID", "FT0VTx/BC_B/nBCsInspectedVsBCID", "FT0VTx/BC_C/nBCsInspectedVsBCID", "FT0VTx/BC_E/nBCsInspectedVsBCID", "FT0VTx/BC_L/nBCsInspectedVsBCID", "FT0VTx/BC_LE/nBCsInspectedVsBCID", "FT0VTx/BC_NL/nBCsInspectedVsBCID", "FT0VTx/BC_NLE/nBCsInspectedVsBCID", "FT0VTx/BC_SL_FDD/nBCsInspectedVsBCID", "FT0VTx/BC_SL_FT0/nBCsInspectedVsBCID", "FT0VTx/BC_NSL_FT0/nBCsInspectedVsBCID", "FT0VTx/BC_NSL_FDD/nBCsInspectedVsBCID"},
+     {"FT0CE/BC_A/nBCsInspectedVsBCID", "FT0CE/BC_B/nBCsInspectedVsBCID", "FT0CE/BC_C/nBCsInspectedVsBCID", "FT0CE/BC_E/nBCsInspectedVsBCID", "FT0CE/BC_L/nBCsInspectedVsBCID", "FT0CE/BC_LE/nBCsInspectedVsBCID", "FT0CE/BC_NL/nBCsInspectedVsBCID", "FT0CE/BC_NLE/nBCsInspectedVsBCID", "FT0CE/BC_SL_FDD/nBCsInspectedVsBCID", "FT0CE/BC_SL_FT0/nBCsInspectedVsBCID", "FT0CE/BC_NSL_FT0/nBCsInspectedVsBCID", "FT0CE/BC_NSL_FDD/nBCsInspectedVsBCID"},
+     {"FDD/BC_A/nBCsInspectedVsBCID", "FDD/BC_B/nBCsInspectedVsBCID", "FDD/BC_C/nBCsInspectedVsBCID", "FDD/BC_E/nBCsInspectedVsBCID", "FDD/BC_L/nBCsInspectedVsBCID", "FDD/BC_LE/nBCsInspectedVsBCID", "FDD/BC_NL/nBCsInspectedVsBCID", "FDD/BC_NLE/nBCsInspectedVsBCID", "FDD/BC_SL_FDD/nBCsInspectedVsBCID", "FDD/BC_SL_FT0/nBCsInspectedVsBCID", "FDD/BC_NSL_FT0/nBCsInspectedVsBCID", "FDD/BC_NSL_FDD/nBCsInspectedVsBCID"}};
+
+  static constexpr std::string_view PatternHistNames[BCSLFDD] = {"BC_A/BcPattern", "BC_B/BcPattern", "BC_C/BcPattern", "BC_E/BcPattern", "BC_L/BcPattern", "BC_LE/BcPattern", "BC_NL/BcPattern", "BC_NLE/BcPattern"};
 
   const AxisSpec timeAxis{2880, 0., 2880., "#bf{t-t_{SOF} (min)}"}, bcIDAxis{nBCsPerOrbit, -0.5, static_cast<float>(nBCsPerOrbit) - 0.5, "#bf{BC ID in orbit}"};
 
@@ -152,6 +156,10 @@ struct LumiStabilityPP {
           histBcInspectVsBcId[iTrigger][iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(NBCsInspectVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of inspecred BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
         }
       }
+    }
+
+    for (int iBCCategory{0}; iBCCategory < BCSLFDD ; ++iBCCategory) {
+      histBcPattern[iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(PatternHistNames[iBCCategory]).c_str()), "BC Pattern;#bf{BC ID in orbit};", HistType::kTH1D, {bcIDAxis});
     }
   }
 
@@ -231,6 +239,30 @@ struct LumiStabilityPP {
           bcPatternLE[iBC] = true;
           totalLeadingBCs[1]++;
         }
+      }
+      if (bcPatternA[iBC]) {
+        histBcPattern[BCA][runNumber]->Fill(iBC);
+      }
+      if (bcPatternB[iBC]) {
+        histBcPattern[BCB][runNumber]->Fill(iBC);
+        if (!bcPatternL[iBC]) {
+          histBcPattern[BCNL][runNumber]->Fill(iBC);
+        }
+        if (!bcPatternLE[iBC]) {
+          histBcPattern[BCNLE][runNumber]->Fill(iBC);
+        }
+      }
+      if (bcPatternC[iBC]) {
+        histBcPattern[BCC][runNumber]->Fill(iBC);
+      }
+      if (bcPatternE[iBC]) {
+          histBcPattern[BCE][runNumber]->Fill(iBC);
+      }
+      if (bcPatternL[iBC]) {
+          histBcPattern[BCL][runNumber]->Fill(iBC);
+      }
+      if (bcPatternLE[iBC]) {
+          histBcPattern[BCLE][runNumber]->Fill(iBC);
       }
     }
     LOG(info) << "bcPatternL creation complete. Total leading BCs found: " << totalLeadingBCs[0];
