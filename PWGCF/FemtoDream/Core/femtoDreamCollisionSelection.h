@@ -223,6 +223,10 @@ class FemtoDreamCollisionSelection
     mHistogramQn->add("Event/centVsqnVsSpher", "; cent; qn; Sphericity", kTH3F, {{10, 0, 100}, {100, 0, 1000}, {100, 0, 1}});
     mHistogramQn->add("Event/qnBin", "; qnBin; entries", kTH1F, {{20, 0, 20}});
     mHistogramQn->add("Event/psiEP", "; #Psi_{EP} (deg); entries", kTH1F, {{100, 0, 180}});
+    mHistogramQn->add("Event/epReso_FT0CTPC", "; cent; qnBin; reso_ft0c_tpc", kTH2F, {{10, 0, 100},{10,0,10}});
+    mHistogramQn->add("Event/epReso_FT0ATPC", "; cent; qnBin; reso_ft0a_tpc", kTH2F, {{10, 0, 100},{10,0,10}});
+    mHistogramQn->add("Event/epReso_FT0CFT0A", "; cent; qnBin; reso_ft0c_ft0a", kTH2F, {{10, 0, 100},{10,0,10}});
+    mHistogramQn->add("Event/epReso_count", "; cent; qnBin; count", kTH2F, {{10, 0, 100},{10,0,10}});
 
     return;
   }
@@ -330,9 +334,17 @@ class FemtoDreamCollisionSelection
   /// \param col Collision
   /// \return value of the qn-vector of FT0C of the event
   template <typename T>
-  float computeqnVec(T const& col)
+  float computeqnVec(T const& col, int qvecMod = 0)
   {
-    double qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
+    double qn = -999.f;
+    if (qvecMod == 0){
+      qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
+    } else if (qvecMod == 1){
+      qn = std::sqrt(col.qvecFT0AReVec()[0] * col.qvecFT0AReVec()[0] + col.qvecFT0AImVec()[0] * col.qvecFT0AImVec()[0]) * std::sqrt(col.sumAmplFT0A());
+    } else {
+       LOGP(error, "no selected detector of Qvec for ESE ");  
+       return qn;   
+    }
     return qn;
   }
 
@@ -342,13 +354,41 @@ class FemtoDreamCollisionSelection
   /// \param nmode EP in which harmonic(default 2nd harmonic)
   /// \return angle of the event plane (rad) of FT0C of the event
   template <typename T>
-  float computeEP(T const& col, int nmode)
+  float computeEP(T const& col, int nmode, int qvecMod)
   {
-    double EP = ((1. / nmode) * (TMath::ATan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])));
-    if (EP < 0)
+    double EP = -999.f;
+    if (qvecMod == 0){
+      EP = ((1. / nmode) * (TMath::ATan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])));
+    } else if (qvecMod == 1) {
+      EP = ((1. / nmode) * (TMath::ATan2(col.qvecFT0AImVec()[0], col.qvecFT0AReVec()[0])));      
+    } else if (qvecMod == 2) {
+      EP = ((1. / nmode) * (TMath::ATan2(col.qvecTPCallImVec()[0], col.qvecTPCallReVec()[0])));            
+    } else {
+       LOGP(error, "no selected detector of Qvec for EP");  
+       return EP;   
+    }
+    
+    if (EP < 0){
       EP += TMath::Pi();
-    // atan2 return in rad -pi/2-pi/2, then make it 0-pi
+    } // atan2 return in rad -pi/2-pi/2, then make it 0-pi   
     return EP;
+  }
+
+  /// Compute the event plane resolution of 3 sub-events
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \param nmode EP in which harmonic(default 2nd harmonic)
+  template <typename T>
+  void fillEPReso(T const& col, int nmode, float centrality)
+  {
+    const float psi_ft0c = ((1. / nmode) * (TMath::ATan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])));
+    const float psi_ft0a = ((1. / nmode) * (TMath::ATan2(col.qvecFT0AImVec()[0], col.qvecFT0AReVec()[0])));
+    const float psi_tpc = ((1. / nmode) * (TMath::ATan2(col.qvecTPCallImVec()[0], col.qvecTPCallReVec()[0]))); 
+
+    mHistogramQn->fill(HIST("Event/epReso_FT0CTPC"), centrality, mQnBin + 0.f, std::cos((psi_ft0c - psi_tpc) * nmode));
+    mHistogramQn->fill(HIST("Event/epReso_FT0ATPC"), centrality, mQnBin + 0.f, std::cos((psi_ft0a - psi_tpc) * nmode));
+    mHistogramQn->fill(HIST("Event/epReso_FT0CFT0A"), centrality, mQnBin + 0.f, std::cos((psi_ft0c - psi_ft0a) * nmode));
+    mHistogramQn->fill(HIST("Event/epReso_count"), centrality, mQnBin + 0.f);
   }
 
   /// \return the 1-d qn-vector separator to 2-d
@@ -413,13 +453,15 @@ class FemtoDreamCollisionSelection
   }
 
   /// \fill event-wise informations
-  void fillEPQA(float centrality, float fSpher, float qn, float psiEP)
+  template <typename T>
+  void fillEPQA(T& col, float centrality, float fSpher, float qn, float psiEP, int nmode = 2)
   {
     mHistogramQn->fill(HIST("Event/centFT0CBeforeQn"), centrality);
     mHistogramQn->fill(HIST("Event/centVsqn"), centrality, qn);
     mHistogramQn->fill(HIST("Event/centVsqnVsSpher"), centrality, qn, fSpher);
     mHistogramQn->fill(HIST("Event/qnBin"), mQnBin + 0.f);
     mHistogramQn->fill(HIST("Event/psiEP"), psiEP);
+    fillEPReso(col, nmode, centrality);
   }
 
   /// \todo to be implemented!

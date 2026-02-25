@@ -95,6 +95,7 @@ struct femtoDreamPairTaskTrackTrack {
     Configurable<bool> storeEvtTrkInfo{"storeEvtTrkInfo", false, "Fill info of track1 and track2 while pariing in divided qn bins"};
     Configurable<bool> doQnSeparation{"doQnSeparation", false, "Do qn separation"};
     Configurable<bool> doEPReClibForMixing{"doEPReClibForMixing", false, "While mixing, using respective event plane for participating particles azimuthal angle caulculation"};
+    Configurable<bool> mcQvec{"mcQvec", false, "Enable Q vector table for Monte Carlo"};
     Configurable<std::vector<float>> qnBinSeparator{"qnBinSeparator", std::vector<float>{-999.f, -999.f, -999.f}, "Qn bin separator"};
     Configurable<int> numQnBins{"numQnBins", 10, "Number of qn bins"};
     Configurable<int> qnBinMin{"qnBinMin", 0, "Number of qn bins"};
@@ -113,6 +114,8 @@ struct femtoDreamPairTaskTrackTrack {
   using FilteredMCCollision = FilteredMCCollisions::iterator;
   using FilteredQnCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDExtQnCollisions, aod::FDExtEPCollisions>>;
   using FilteredQnCollision = FilteredQnCollisions::iterator;
+  using FilteredMCQnCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels, aod::FDExtQnCollisions, aod::FDExtEPCollisions>>;
+  using FilteredMCQnCollision = FilteredMCQnCollisions::iterator;
 
   using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
@@ -322,9 +325,9 @@ struct femtoDreamPairTaskTrackTrack {
 
     if (EPCal.do3DFemto) {
       sameEventQnCont.init_3Dqn(&Registry, EPCal.DKout, EPCal.DKside, EPCal.DKlong,
-                                Binning4D.mT, Binning4D.multPercentile, Option.IsMC, EPCal.qnBins, EPCal.pairPhiBins);
+                                Binning4D.mT, Binning4D.multPercentile, Option.IsMC, EPCal.qnBins, EPCal.pairPhiBins, Option.SmearingByOrigin);
       mixedEventQnCont.init_3Dqn(&Registry, EPCal.DKout, EPCal.DKside, EPCal.DKlong,
-                                 Binning4D.mT, Binning4D.multPercentile, Option.IsMC, EPCal.qnBins, EPCal.pairPhiBins);
+                                 Binning4D.mT, Binning4D.multPercentile, Option.IsMC, EPCal.qnBins, EPCal.pairPhiBins, Option.SmearingByOrigin);
       sameEventQnCont.setPDGCodes(Track1.PDGCode, Track2.PDGCode);
       mixedEventQnCont.setPDGCodes(Track1.PDGCode, Track2.PDGCode);
       if (EPCal.fillFlowQA) {
@@ -377,7 +380,10 @@ struct femtoDreamPairTaskTrackTrack {
         (doprocessMixedEvent && doprocessMixedEventEP) ||
         (doprocessMixedEventMasked && doprocessMixedEventEP) ||
         (doprocessSameEventMC && doprocessSameEventMCMasked) ||
-        (doprocessMixedEventMC && doprocessMixedEventMCMasked)) {
+        (doprocessSameEventMC && doprocessSameEventEPMC) ||
+        (doprocessMixedEventMC && doprocessMixedEventMCMasked) ||
+        (doprocessMixedEventMC && doprocessMixedEventEPMC) ||
+        (doprocessMixedEventMCMasked && doprocessMixedEventEPMC)) {
       LOG(fatal) << "Normal and masked processing cannot be activated simultaneously!";
     }
   };
@@ -704,17 +710,20 @@ struct femtoDreamPairTaskTrackTrack {
       }
     }
 
-    auto myEP = TMath::DegToRad() * col.eventPlane();
+    float myEP = -999.f;
     int myqnBin = -999;
-    if (EPCal.doQnSeparation || EPCal.do3DFemto) {
-      myqnBin = epCalculator.myqnBin(col.multV0M(), EPCal.centMax, EPCal.fillFlowQA, EPCal.qnBinSeparator, col.qnVal(), EPCal.numQnBins, EPCal.centBinWidth);
-      if (myqnBin < EPCal.qnBinMin || myqnBin > EPCal.numQnBins) {
-        myqnBin = -999;
-      }
-    }
 
-    if (EPCal.fillFlowQA) {
-      epCalculator.fillEPQA(col.multV0M(), col.sphericity(), col.qnVal(), col.eventPlane());
+    if (!isMC || EPCal.mcQvec){
+      myEP = TMath::DegToRad() * col.eventPlane();
+      if (EPCal.doQnSeparation || EPCal.do3DFemto) {
+        myqnBin = epCalculator.myqnBin(col.multV0M(), EPCal.centMax, EPCal.fillFlowQA, EPCal.qnBinSeparator, col.qnVal(), EPCal.numQnBins, EPCal.centBinWidth);
+        if (myqnBin < EPCal.qnBinMin || myqnBin > EPCal.numQnBins) {
+          myqnBin = -999;
+        }
+      }
+    } else {
+      myEP = 0.f;
+      myqnBin = 0;
     }
 
     /// Now build the combinations
@@ -738,14 +747,14 @@ struct femtoDreamPairTaskTrackTrack {
             sameEventQnCont.setPair_EP<isMC>(p1, p2, col.multV0M(), EPCal.doQnSeparation, EPCal.doQnSeparation ? myqnBin + 0.f : myEP);
           }
           if (EPCal.do3DFemto) {
-            sameEventQnCont.setPair_3Dqn<isMC>(p1, p2, col.multV0M(), Option.SameSpecies.value, myqnBin + 0.f, myEP);
-          }
+            sameEventQnCont.setPair_3Dqn<isMC>(p1, p2, col.multV0M(), Option.SameSpecies.value, myqnBin + 0.f, myEP, Option.SmearingByOrigin);
+          } 
         } else {
           if (EPCal.do1DFemto) {
             sameEventQnCont.setPair_EP<isMC>(p2, p1, col.multV0M(), EPCal.doQnSeparation, EPCal.doQnSeparation ? myqnBin + 0.f : myEP);
           }
           if (EPCal.do3DFemto) {
-            sameEventQnCont.setPair_3Dqn<isMC>(p2, p1, col.multV0M(), Option.SameSpecies.value, myqnBin + 0.f, myEP);
+            sameEventQnCont.setPair_3Dqn<isMC>(p2, p1, col.multV0M(), Option.SameSpecies.value, myqnBin + 0.f, myEP, Option.SmearingByOrigin);
           }
         }
       }
@@ -764,7 +773,7 @@ struct femtoDreamPairTaskTrackTrack {
           sameEventQnCont.setPair_EP<isMC>(p1, p2, col.multV0M(), EPCal.doQnSeparation, EPCal.doQnSeparation ? myqnBin + 0.f : myEP);
         }
         if (EPCal.do3DFemto) {
-          sameEventQnCont.setPair_3Dqn<isMC>(p1, p2, col.multV0M(), Option.SameSpecies.value, myEP, myqnBin);
+          sameEventQnCont.setPair_3Dqn<isMC>(p1, p2, col.multV0M(), Option.SameSpecies.value, myEP, myqnBin, Option.SmearingByOrigin);
         }
       }
     }
@@ -789,6 +798,28 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventEP, "Enable processing same event wrt azimuthal angle and event-plane ", false);
 
+  /// process function for to call doSameEventEP with MC Data
+  /// \param col subscribe to the collision table (Data)
+  /// \param parts subscribe to the femtoDreamParticleTable
+  void processSameEventEPMC(FilteredMCQnCollision& col, 
+                            o2::aod::FDMCCollisions&,
+                            soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+                            o2::aod::FDMCParticles&)
+  {
+    if (EPCal.storeEvtTrkInfo) {
+      fillCollision<true>(col);
+    }    
+    auto SliceTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto SliceTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    if (SliceTrk1.size() == 0 && SliceTrk2.size() == 0) {
+      return;
+    }
+    if (EPCal.do1DFemto || EPCal.do3DFemto) {
+      doSameEventEP<true>(SliceTrk1, SliceTrk2, parts, col);
+    }
+  }
+  PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventEPMC, "Enable processing same event of 3D for Monte Carlo", false);
+
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_NotMaskedEP(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
@@ -799,8 +830,18 @@ struct femtoDreamPairTaskTrackTrack {
         continue;
       }
 
-      auto myEP_event1 = TMath::DegToRad() * collision1.eventPlane();
-      auto myEP_event2 = TMath::DegToRad() * collision2.eventPlane();
+      auto myEP_event1 = -999.f;
+      auto myEP_event2 = -999.f;
+
+      if (!isMC || EPCal.mcQvec){
+        myEP_event1 = TMath::DegToRad() * collision1.eventPlane();
+        myEP_event2 = TMath::DegToRad() * collision2.eventPlane();
+      } 
+      else{
+        myEP_event1 = 0.f;
+        myEP_event2 = 0.f;
+      }
+
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
         if (Option.CPROn.value) {
@@ -816,13 +857,13 @@ struct femtoDreamPairTaskTrackTrack {
               mixedEventQnCont.setPair_EP<isMC>(p1, p2, collision1.multV0M(), EPCal.doQnSeparation, myEP_event1, myEP_event2);
           }
           if (EPCal.do3DFemto) {
-            mixedEventQnCont.setPair_3Dqn<isMC>(p1, p2, collision1.multV0M(), Option.SameSpecies.value, 0.f, myEP_event1, myEP_event2);
+            mixedEventQnCont.setPair_3Dqn<isMC>(p1, p2, collision1.multV0M(), Option.SameSpecies.value, 0.f, myEP_event1, myEP_event2, Option.SmearingByOrigin);
           }
         } else {
           if (EPCal.do1DFemto)
             mixedEventQnCont.setPair_EP<isMC>(p1, p2, collision1.multV0M(), EPCal.doQnSeparation, EPCal.doQnSeparation ? 0.f : myEP_event1);
           if (EPCal.do3DFemto) {
-            mixedEventQnCont.setPair_3Dqn<isMC>(p1, p2, collision1.multV0M(), Option.SameSpecies.value, 0.f, myEP_event1);
+            mixedEventQnCont.setPair_3Dqn<isMC>(p1, p2, collision1.multV0M(), Option.SameSpecies.value, 0.f, myEP_event1, Option.SmearingByOrigin);
           }
         }
       }
@@ -855,6 +896,33 @@ struct femtoDreamPairTaskTrackTrack {
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventEP, "Enable processing mixed events wrt azimuthal angle and event-plane", false);
+
+  /// process function for to call doMixedEvent with Data
+  /// @param cols subscribe to the collisions table (Data)
+  /// @param parts subscribe to the femtoDreamParticleTable
+  void processMixedEventEPMC(FilteredMCQnCollisions& cols, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  {
+    switch (Mixing.Policy.value) {
+      case femtodreamcollision::kMult:
+        doMixedEvent_NotMaskedEP<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMult);
+        break;
+      case femtodreamcollision::kMultPercentile:
+        doMixedEvent_NotMaskedEP<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultPercentile);
+        break;
+      case femtodreamcollision::kMultMultPercentile:
+        doMixedEvent_NotMaskedEP<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultMultPercentile);
+        break;
+      case femtodreamcollision::kMultPercentileQn:
+        doMixedEvent_NotMaskedEP<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultPercentileqn);
+        break;
+      case femtodreamcollision::kMultPercentileEP:
+        doMixedEvent_NotMaskedEP<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultPercentileEP);
+        break;
+      default:
+        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    }
+  }
+  PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventEPMC, "Enable processing mixed events wrt azimuthal angle and event-plane for Monte Carlo", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
