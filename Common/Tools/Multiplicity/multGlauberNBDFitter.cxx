@@ -384,7 +384,7 @@ Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k
   return F;
 }
 
-void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F *lNancestor2DPlot, Double_t fProbabilityCutoff)
+void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F* lNancestor2DPlot, Double_t fProbabilityCutoff)
 {
   cout << "Calculating <Npart>, <Ncoll> in centrality bins..." << endl;
   cout << "Range to calculate: " << lLoRange << " to " << lHiRange << endl;
@@ -460,7 +460,7 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
         lMult = fAncestorMode != 2 ? fNBD->Eval(lMultValue) : ContinuousNBD(lMultValue, lThisMu, lThisk);
       Double_t lProbability = lNancestorCount * lMult;
 
-      if(lProbability < fProbabilityCutoff){
+      if (lProbability < fProbabilityCutoff) {
         continue; // skip if probability of contributing too small
       }
 
