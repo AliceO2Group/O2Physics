@@ -41,6 +41,14 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
+DECLARE_SOA_TABLE(CollisionTables, "AOD", "COLLISIONINFOTABLE",
+                  o2::soa::Index<>,
+                  collision::PosZ);
+
+namespace collisionInfo
+{
+DECLARE_SOA_INDEX_COLUMN(CollisionTable, collisionTable);
+} // namespace indexColumns
 namespace d0Info
 {
 // D0
@@ -59,28 +67,9 @@ DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
 DECLARE_SOA_COLUMN(D0Reflection, d0Reflection, int);
 } // namespace d0Info
 
-namespace jetInfo
-{
-// Jet
-DECLARE_SOA_COLUMN(JetPt, jetPt, float);
-DECLARE_SOA_COLUMN(JetEta, jetEta, float);
-DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
-// D0-jet
-DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
-} // namespace jetInfo
-
-DECLARE_SOA_TABLE(CollisionTables, "AOD", "COLLISIONINFOTABLE",
-                  o2::soa::Index<>,
-                  collision::PosZ);
-
-namespace indexColumns
-{
-DECLARE_SOA_INDEX_COLUMN(CollisionTable, collisionTable);
-} // namespace o2::indexColumns
-
 DECLARE_SOA_TABLE(D0DataTables, "AOD", "D0DATATABLE",
                   o2::soa::Index<>,
-                  indexColumns::CollisionTableId,
+                  collisionInfo::CollisionTableId,
                   d0Info::D0PromptBDT,
                   d0Info::D0NonPromptBDT,
                   d0Info::D0BkgBDT,
@@ -91,32 +80,29 @@ DECLARE_SOA_TABLE(D0DataTables, "AOD", "D0DATATABLE",
 
 DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPARTICLELEVELTABLE",
                   o2::soa::Index<>,
-                  indexColumns::CollisionTableId,
+                  collisionInfo::CollisionTableId,
                   d0Info::D0McOrigin,
                   d0Info::D0Pt,
                   d0Info::D0Eta,
                   d0Info::D0Phi);
 
-DECLARE_SOA_TABLE(D0McMatchedTables, "AOD", "D0MCMATCHEDTABLE",
-                  o2::soa::Index<>,
-                  indexColumns::CollisionTableId,
-                  d0Info::D0Pt,
-                  d0Info::D0Eta,
-                  d0Info::D0Phi,
-                  d0Info::D0McOrigin,
-                  d0Info::D0Reflection);
-
-namespace indexColumns
+namespace jetInfo
 {
-  DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
-  DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
-  DECLARE_SOA_INDEX_COLUMN(D0McMatchedTable, d0MCMatched);
-} // namespace o2::indexColumns
+// D0 tables
+DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
+DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
+// Jet
+DECLARE_SOA_COLUMN(JetPt, jetPt, float);
+DECLARE_SOA_COLUMN(JetEta, jetEta, float);
+DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
+// D0-jet
+DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
+} // namespace jetInfo
 
 DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETDATATABLE",
                          o2::soa::Index<>,
-                         indexColumns::CollisionTableId,
-                         indexColumns::D0DataTableId,
+                         collisionInfo::CollisionTableId,
+                         jetInfo::D0DataTableId,
                          jetInfo::JetPt,
                          jetInfo::JetEta,
                          jetInfo::JetPhi,
@@ -124,21 +110,13 @@ DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETDATATABLE",
 
 DECLARE_SOA_TABLE_STAGED(JetMCPTables, "JETMCPARTICLELEVELTABLE",
                          o2::soa::Index<>,
-                         indexColumns::CollisionTableId,
-                         indexColumns::D0McPTableId,
+                         collisionInfo::CollisionTableId,
+                         jetInfo::D0McPTableId,
                          jetInfo::JetPt,
                          jetInfo::JetEta,
                          jetInfo::JetPhi,
                          jetInfo::D0JetDeltaPhi);
 
-DECLARE_SOA_TABLE_STAGED(JetMCMatchedTables, "JETMCMATCHEDTABLE",
-                         o2::soa::Index<>,
-                         indexColumns::CollisionTableId,
-                         indexColumns::D0McMatchedTableId,
-                         jetInfo::JetPt,
-                         jetInfo::JetEta,
-                         jetInfo::JetPhi,
-                         jetInfo::D0JetDeltaPhi);
 } // namespace o2::aod
 
 struct JetCorrelationD0 {
@@ -146,10 +124,8 @@ struct JetCorrelationD0 {
   Produces<aod::CollisionTables> tableCollision;
   Produces<aod::D0DataTables> tableD0;
   Produces<aod::D0McPTables> tableD0MCParticle;
-  Produces<aod::D0McMatchedTables> tableD0MCMatched;
   Produces<aod::JetDataTables> tableJet;
   Produces<aod::JetMCPTables> tableJetMCParticle;
-  Produces<aod::JetMCMatchedTables> tableJetMCMatched;
 
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
 
