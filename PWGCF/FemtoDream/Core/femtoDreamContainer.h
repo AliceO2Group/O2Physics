@@ -225,24 +225,24 @@ class FemtoDreamContainer
 
   template <typename T>
   void init_3Dqn_MC(std::string folderName, std::string femtoDKout, std::string femtoDKside, std::string femtoDKlong,
-                    T& femtoDKoutAxis, T& femtoDKsideAxis, T& femtoDKlongAxis, bool smearingByOrigin=false)
+                    T& femtoDKoutAxis, T& femtoDKsideAxis, T& femtoDKlongAxis, bool smearingByOrigin = false)
   {
     mHistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
     mHistogramRegistry->add((folderName + "/hFakePairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
     if (smearingByOrigin) {
       const int nOriginBins = o2::aod::femtodreamMCparticle::ParticleOriginMCTruth::kNOriginMCTruthTypes;
-      mHistogramRegistry->add((folderName + "/relPair3dresolution").c_str(), (";" + femtoDKout + "mctruth;" + femtoDKout + "_reco;" + femtoDKside + "mctruth;" + femtoDKside + "_reco;" +femtoDKlong + "mctruth;" +femtoDKlong + "_reco;" + "MC origin particle 1; MC origin particle 2;").c_str(), 
-                               kTHnSparseF, {femtoDKoutAxis, femtoDKoutAxis, femtoDKsideAxis, femtoDKsideAxis, femtoDKlongAxis, femtoDKlongAxis,
-                               {nOriginBins, 0, nOriginBins}, {nOriginBins, 0, nOriginBins}});
+      mHistogramRegistry->add((folderName + "/relPair3dresolution").c_str(), (";" + femtoDKout + "mctruth;" + femtoDKout + "_reco;" + femtoDKside + "mctruth;" + femtoDKside + "_reco;" + femtoDKlong + "mctruth;" + femtoDKlong + "_reco;" + "MC origin particle 1; MC origin particle 2;").c_str(),
+                              kTHnSparseF, {femtoDKoutAxis, femtoDKoutAxis, femtoDKsideAxis, femtoDKsideAxis, femtoDKlongAxis, femtoDKlongAxis, {nOriginBins, 0, nOriginBins}, {nOriginBins, 0, nOriginBins}});
     } else {
-      mHistogramRegistry->add((folderName + "/relPair3dresolution").c_str(), (";" + femtoDKout + "mctruth;" + femtoDKside + "mctruth;" +femtoDKlong + "mctruth;" + femtoDKout + "_reco;" + femtoDKside + "_reco;" +femtoDKlong + "_reco;").c_str(),
-                               kTHnSparseF, {femtoDKoutAxis, femtoDKoutAxis, femtoDKsideAxis, femtoDKsideAxis, femtoDKlongAxis, femtoDKlongAxis});    }
+      mHistogramRegistry->add((folderName + "/relPair3dresolution").c_str(), (";" + femtoDKout + "mctruth;" + femtoDKside + "mctruth;" + femtoDKlong + "mctruth;" + femtoDKout + "_reco;" + femtoDKside + "_reco;" + femtoDKlong + "_reco;").c_str(),
+                              kTHnSparseF, {femtoDKoutAxis, femtoDKoutAxis, femtoDKsideAxis, femtoDKsideAxis, femtoDKlongAxis, femtoDKlongAxis});
+    }
   }
 
   template <typename T>
   void init_3Dqn(HistogramRegistry* registry,
                  T& DKoutBins, T& DKsideBins, T& DKlongBins, T& mTBins4D, T& multPercentileBins4D,
-                 bool isMC, ConfigurableAxis qnBins = {"qnBins", {10, 0, 10}, "qn binning"}, ConfigurableAxis pairPhiBins = {"phiBins", {10, 0 - 0.05, TMath::Pi() + 0.05}, "pair phi binning"}, bool smearingByOrigin=false)
+                 bool isMC, ConfigurableAxis qnBins = {"qnBins", {10, 0, 10}, "qn binning"}, ConfigurableAxis pairPhiBins = {"phiBins", {10, 0 - 0.05, TMath::Pi() + 0.05}, "pair phi binning"}, bool smearingByOrigin = false)
   {
     mHistogramRegistry = registry;
 
@@ -268,7 +268,7 @@ class FemtoDreamContainer
       init_base_3Dqn(folderName, femtoObsDKout, femtoObsDKside, femtoObsDKlong,
                      DKoutAxis, DKsideAxis, DKlongAxis, mTAxis4D, multPercentileAxis4D, qnAxis, pairPhiAxis);
       init_3Dqn_MC(folderName, femtoObsDKout, femtoObsDKside, femtoObsDKlong,
-                    DKoutAxis, DKsideAxis, DKlongAxis, smearingByOrigin);
+                   DKoutAxis, DKsideAxis, DKlongAxis, smearingByOrigin);
     }
   }
 
@@ -511,7 +511,6 @@ class FemtoDreamContainer
     } else {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("_3Dqn") + HIST("/relPair3dresolution"), k3dMC[1], k3d[1], k3dMC[2], k3d[2], k3dMC[3], k3d[3]);
     }
-    
   }
 
   template <bool isMC, typename T1, typename T2>
@@ -519,8 +518,8 @@ class FemtoDreamContainer
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
-    if (k3d.size()<4){
-      LOG(error)<<"newpairfunc returned size="<< k3d.size();
+    if (k3d.size() < 4) {
+      LOG(error) << "newpairfunc returned size=" << k3d.size();
       return;
     }
     float DKout = k3d[1];
@@ -538,8 +537,8 @@ class FemtoDreamContainer
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
           std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
-          if (k3dMC.size()<4){
-            LOG(error)<<"newpairfunc returned size="<< k3d.size();
+          if (k3dMC.size() < 4) {
+            LOG(error) << "newpairfunc returned size=" << k3d.size();
             return;
           }
           const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
@@ -564,8 +563,8 @@ class FemtoDreamContainer
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
-    if (k3d.size()<4){
-      LOG(error)<<"newpairfunc returned size="<< k3d.size();
+    if (k3d.size() < 4) {
+      LOG(error) << "newpairfunc returned size=" << k3d.size();
       return;
     }
     float DKout = k3d[1];
@@ -583,10 +582,10 @@ class FemtoDreamContainer
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
           std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
-          if (k3dMC.size()<4){
-            LOG(error)<<"newpairfunc returned size="<< k3d.size();
+          if (k3dMC.size() < 4) {
+            LOG(error) << "newpairfunc returned size=" << k3d.size();
             return;
-          }          
+          }
           const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
           const float pairPhiEPMC = FemtoDreamMath::getPairPhiEP(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, EP1, EP2);
 
