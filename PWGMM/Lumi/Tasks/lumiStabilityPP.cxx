@@ -171,7 +171,7 @@ struct LumiStabilityPP {
     }
 
     const int runStart2023{535069};
-    const int runStop2023{539908};
+    const int runStop2023{543113};
     if (bc.runNumber() >= runStart2023 && bc.runNumber() <= runStop2023) {
       isData23 = true;
     }
