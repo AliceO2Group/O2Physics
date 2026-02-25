@@ -52,11 +52,11 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h> // for PDG codes
-#include <TRandom3.h>
-#include <TDatabasePDG.h>
 #include <TParticlePDG.h>
+#include <TRandom3.h>
 
 #include <algorithm>
 #include <cmath>
@@ -922,7 +922,7 @@ struct nucleiSpectra {
     bool selectINELgt0 = cfgEventSelections->get(nuclei::evSel::kINELgt0);
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
 
-    auto *pdgDB = TDatabasePDG::Instance(); // Useful for evaluating the particle charge
+    auto* pdgDB = TDatabasePDG::Instance(); // Useful for evaluating the particle charge
 
     for (const auto& c : mcCollisions) {
 
@@ -950,7 +950,7 @@ struct nucleiSpectra {
         if (selectINELgt0 && !acceptEvent) {
           if (std::abs(p.eta()) < 1.0f) {
             auto* pdg = pdgDB->GetParticle(p.pdgCode());
-            if (pdg && pdg->Charge()!= 0)
+            if (pdg && pdg->Charge() != 0)
               acceptEvent = true;
           }
         }
@@ -971,8 +971,10 @@ struct nucleiSpectra {
       }
 
       int mcId = collision.mcCollisionId();
-      if (mcId < 0) continue;
-      if(!goodCollisions[mcId]) continue;
+      if (mcId < 0)
+        continue;
+      if (!goodCollisions[mcId])
+        continue;
 
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       fillDataInfo(collision, slicedTracks);
