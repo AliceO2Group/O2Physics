@@ -262,7 +262,7 @@ struct ParticleHistograms {
   int fParticleSparseHistogramsNBins[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{0}};            // number of bins. I do not have min and max, because for sparse I use BinEdges, see below
   TArrayD* fParticleSparseHistogramsBinEdges[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{NULL}}; // arrays holding bin edges, see the usage of SetBinEdges for sparse histograms
   TString fParticleSparseHistogramsAxisTitle[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{""}};   // axis title
-  int fRebinSparse = 1;                                                                                     // used only for all fixed-length bins which are implemented directly for sparse histograms (i.e. not inherited from results histograms)
+  float fRebinSparse[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{1.}};                           // used only for all fixed-length bins which are implemented directly for sparse histograms (i.e. not inherited from results histograms)
 } ph;                                                                                                       // "ph" labels an instance of group of histograms "ParticleHistograms"
 
 // *) Particle cuts:

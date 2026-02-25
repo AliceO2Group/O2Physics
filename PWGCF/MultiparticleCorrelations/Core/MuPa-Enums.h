@@ -121,8 +121,9 @@ enum eDiffPhiWeights {
   eDiffPhiWeights_N
 };
 
-enum eDiffPtWeights {
+enum eDiffPtWeights { // if i add new entry here, or in eDiffPhiWeights and eDiffEtaWeights, I need to update also GetParticleWeights()
   wPtPtAxis = 0,
+  wPtEtaAxis,
   wPtChargeAxis,
   wPtCentralityAxis,
   eDiffPtWeights_N
@@ -130,6 +131,7 @@ enum eDiffPtWeights {
 
 enum eDiffEtaWeights {
   wEtaEtaAxis = 0,
+  wEtaPtAxis,
   wEtaChargeAxis,
   wEtaCentralityAxis,
   eDiffEtaWeights_N
