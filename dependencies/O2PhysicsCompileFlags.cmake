@@ -1,4 +1,4 @@
-# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+# Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
 #
@@ -41,62 +41,68 @@ if(O2PHYSICS_WARNINGS_AS_ERRORS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
   # Set warning flags for all platforms.
   o2_build_warning_flags(PREFIX "-Wno-error="
-                         OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_COMMON_NO_ERROR
-                         WARNINGS ${O2PHYSICS_WARNINGS_COMMON_NO_ERROR})
+    OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_COMMON_NO_ERROR
+    WARNINGS ${O2PHYSICS_WARNINGS_COMMON_NO_ERROR})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${O2PHYSICS_CXX_WARNINGS_COMMON_NO_ERROR}")
   if(APPLE)
     # Set warning flags for macOS only.
     o2_build_warning_flags(PREFIX "-Wno-error="
-                           OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_APPLE_NO_ERROR
-                           WARNINGS ${O2PHYSICS_WARNINGS_CLANG_NO_ERROR})
+      OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_APPLE_NO_ERROR
+      WARNINGS ${O2PHYSICS_WARNINGS_CLANG_NO_ERROR})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${O2PHYSICS_CXX_WARNINGS_APPLE_NO_ERROR}")
   elseif(UNIX)
     # Set warning flags for Linux only.
     o2_build_warning_flags(PREFIX "-Wno-error="
-                           OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_UNIX_NO_ERROR
-                           WARNINGS ${O2PHYSICS_WARNINGS_GCC_NO_ERROR})
+      OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_UNIX_NO_ERROR
+      WARNINGS ${O2PHYSICS_WARNINGS_GCC_NO_ERROR})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${O2PHYSICS_CXX_WARNINGS_UNIX_NO_ERROR}")
   endif()
 endif()
 
-IF (ENABLE_TIMETRACE)
+if(ENABLE_TIMETRACE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
-ENDIF()
+endif()
 
-set(CMAKE_CXX_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
+if(APPLE)
+else()
+set(SPLIT_DWARF "-gsplit-dwarf")
+endif()
+
+set(CMAKE_CXX_FLAGS_COVERAGE "${SPLIT_DWARF} -O2 -fprofile-arcs -ftest-coverage")
 set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_COVERAGE}")
-set(CMAKE_Fortran_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
+set(CMAKE_Fortran_FLAGS_COVERAGE "${SPLIT_DWARF} -O2 -fprofile-arcs -ftest-coverage")
 set(CMAKE_LINK_FLAGS_COVERAGE "--coverage -fprofile-arcs  -fPIC")
 
-MARK_AS_ADVANCED(
+mark_as_advanced(
     CMAKE_CXX_FLAGS_COVERAGE
     CMAKE_C_FLAGS_COVERAGE
     CMAKE_Fortran_FLAGS_COVERAGE
     CMAKE_LINK_FLAGS_COVERAGE)
 
 #Check the compiler and set the compile and link flags
-IF (NOT CMAKE_BUILD_TYPE)
-  Message(STATUS "Set BuildType to DEBUG")
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "Set BuildType to DEBUG")
   set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
-ENDIF (NOT CMAKE_BUILD_TYPE)
+endif()
 
-IF(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -pipe")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -pipe")
-ELSE()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -pipe")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG -pipe")
-    if (CMAKE_BUILD_TYPE STREQUAL "RELEASE" OR CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
-      set(FAIR_MIN_SEVERITY "info")
-    endif()
-ENDIF()
+if(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2 -pipe")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 ${SPLIT_DWARF} -pipe")
+else()
+  set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -pipe")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 ${SPLIT_DWARF} -DNDEBUG -pipe")
+  if(CMAKE_BUILD_TYPE STREQUAL "RELEASE"
+      OR CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
+    set(FAIR_MIN_SEVERITY "info")
+  endif()
+endif()
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_Fortran_FLAGS_RELEASE "-O2")
-set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "-O2 ${SPLIT_DWARF}")
 # make sure Debug build not optimized (does not seem to work without CACHE + FORCE)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0" CACHE STRING "Debug mode build flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "${SPLIT_DWARF} -O0" CACHE STRING "Debug mode build flags" FORCE)
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "Debug mode build flags" FORCE)
-set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0" CACHE STRING "Debug mode build flags" FORCE)
+set(CMAKE_Fortran_FLAGS_DEBUG "${SPLIT_DWARF} -O0" CACHE STRING "Debug mode build flags" FORCE)
 
 if(APPLE)
 elseif(UNIX)
