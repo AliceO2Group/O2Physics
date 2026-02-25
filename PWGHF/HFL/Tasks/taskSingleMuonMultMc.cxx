@@ -17,18 +17,25 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
+#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
+#include "Framework/InitContext.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include <Framework/ASoA.h>
-#include <Framework/Configurable.h>
 
+#include <TPDGCode.h>
 #include <TString.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::aod;
@@ -36,7 +43,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::fwdtrack;
 
-auto static constexpr MinCharge = 3.f;
+// Minimum PDG charge (in units of 1/3 e)
+auto static constexpr ChargeMin = 3.f;
 
 namespace
 {
@@ -343,7 +351,7 @@ struct HfTaskSingleMuonMultMc {
   // this particle is unidentified
   bool isUnidentified(const uint16_t mask)
   {
-    return ((!TESTBIT(mask, IsIdentified)));
+    return (!TESTBIT(mask, IsIdentified));
   }
 
   // fill the histograms of each particle types
@@ -413,14 +421,14 @@ struct HfTaskSingleMuonMultMc {
     registry.fill(HIST("hNEventGenMu"), 1);
 
     for (const auto& muon : muons) {
-      if (!(muon.has_mcParticle())) {
+      if (!muon.has_mcParticle()) {
         continue;
       }
       auto mcPart(muon.mcParticle());
       auto pdgGen(mcPart.pdgCode());
       auto etaGen(mcPart.eta());
 
-      if (!(std::abs(pdgGen) == kMuonMinus)) {
+      if (std::abs(pdgGen) != kMuonMinus) {
         continue;
       }
       if ((etaGen >= etaMax) || (etaGen < etaMin)) {
@@ -443,7 +451,7 @@ struct HfTaskSingleMuonMultMc {
           continue;
         }
 
-        if (!(muon.has_mcParticle())) {
+        if (!muon.has_mcParticle()) {
           continue;
         }
         const auto pt(muon.pt()), eta(muon.eta()), rAbsorb(muon.rAtAbsorberEnd()), pDca(muon.pDca()), chi2(muon.chi2MatchMCHMFT());
@@ -503,7 +511,7 @@ struct HfTaskSingleMuonMultMc {
         charge = p->Charge();
       }
 
-      if (std::abs(charge) < MinCharge) {
+      if (std::abs(charge) < ChargeMin) {
         continue;
       }
       if (particle.pt() < ptTrackMin || std::abs(particle.eta()) >= etaTrackMax) {
