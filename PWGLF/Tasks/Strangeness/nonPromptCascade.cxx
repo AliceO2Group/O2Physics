@@ -216,6 +216,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMaxMult{"cfgMaxMult", 8000.f, "Upper range of multiplicty histo"};
   Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
+  Configurable<int> cfgDownscaleMB{"cfgDownscaleMB", 1, "Downscaling for pile up study sample"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -978,14 +979,21 @@ struct NonPromptCascadeTask {
 
   void processPileUp(CollisionCandidatesRun3 const& collisions, aod::BCsWithTimestamps const&)
   {
-    std::cout << "Processing pile up" << std::endl;
+    // std::cout << "Processing pile up" << std::endl;
+    int ds = 1;
     for (const auto& coll : collisions) {
-      float centFT0M = coll.centFT0M();
-      float multFT0M = coll.multFT0M();
-      auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
-      uint64_t globalBC = bc.globalBC();
-      NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
-      // NPPileUpTable(mRunNumber, globalBC, multNTracks, centFT0M, multFT0M);
+      if (ds == cfgDownscaleMB) {
+        auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+        if (mRunNumber != bc.runNumber()) {
+          mRunNumber = bc.runNumber();
+        }
+        float centFT0M = coll.centFT0M();
+        float multFT0M = coll.multFT0M();
+        uint64_t globalBC = bc.globalBC();
+        NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
+        ds = 0;
+      }
+      ds++;
     }
   };
   PROCESS_SWITCH(NonPromptCascadeTask, processPileUp, "pile up studies", true);
