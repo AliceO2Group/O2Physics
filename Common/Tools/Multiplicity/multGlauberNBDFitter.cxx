@@ -438,10 +438,10 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       hEccentricity->SetName(Form("hEccentricity_%i", ibin));
 
       // normalize into unitary fractions
-      Double_t eccIntegral = hEccentricity->Integral(1, hEccentricity->GetNbinsX()+1); 
-      if(eccIntegral>1e-6){ // no counts
-        hEccentricity->Scale(1./eccIntegral);
-      }else{
+      Double_t eccIntegral = hEccentricity->Integral(1, hEccentricity->GetNbinsX() + 1);
+      if (eccIntegral > 1e-6) { // no counts
+        hEccentricity->Scale(1. / eccIntegral);
+      } else {
         hEccentricity->Scale(0.0);
       }
     }
@@ -456,10 +456,10 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       hImpactParameter->SetName(Form("hImpactParameter_%i", ibin));
 
       // normalize into unitary fractions
-      Double_t bIntegral = hImpactParameter->Integral(1, hImpactParameter->GetNbinsX()+1); 
-      if(bIntegral>1e-6){ // no counts
-        hImpactParameter->Scale(1./bIntegral);
-      }else{
+      Double_t bIntegral = hImpactParameter->Integral(1, hImpactParameter->GetNbinsX() + 1);
+      if (bIntegral > 1e-6) { // no counts
+        hImpactParameter->Scale(1. / bIntegral);
+      } else {
         hImpactParameter->Scale(0.0);
       }
     }
