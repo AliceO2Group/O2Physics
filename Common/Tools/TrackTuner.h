@@ -189,6 +189,10 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++                Run list: 564356 <= runNumber && runNumber <= 564445                                                                 +++";
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++      [CASE 5]: OO, 5.36 TeV 2025, period LHC25af: CCDB path Users/m/mfaggin/test/inputsTrackTuner/OO/LHC25af                        +++";
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++                Run list: 564468 <= runNumber && runNumber <= 564472                                                                 +++";
+    LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++      [CASE 6]: pp, 5.36 TeV 2024, period LHC24ap: CCDB path Users/m/mfaggin/test/inputsTrackTuner/pp2024/ppRef/polarity_positive    +++";
+    LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++                Run list: 559348 <= runNumber && runNumber <= 559387                                                                 +++";
+    LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++      [CASE 7]: pp, 5.36 TeV 2024, period LHC24aq: CCDB path Users/m/mfaggin/test/inputsTrackTuner/pp2024/ppRef/polarity_negative    +++";
+    LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++                Run list: 559408 <= runNumber && runNumber <= 559456                                                                 +++";
     LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]: +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++";
     LOG(info) << "";
 
@@ -234,6 +238,22 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       pathInputFile = "Users/m/mfaggin/test/inputsTrackTuner/OO/LHC25af";
       LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]:   >>>   OO, 5.36 TeV 2025, period LHC25af: CCDB path " << pathInputFile;
       LOG(info) << "                                                   >>>   Run list: 564468 <= runNumber && runNumber <= 564472";
+    } else if (559348 <= runNumber && runNumber <= 559387) {
+      ///
+      ///   [CASE 6]: pp, 5.36 TeV 2024, period LHC24ap: CCDB path Users/m/mfaggin/test/inputsTrackTuner/pp2024/ppRef/polarity_positive
+      ///             Run list: 559348 <= runNumber && runNumber <= 559387
+      ///
+      pathInputFile = "Users/m/mfaggin/test/inputsTrackTuner/pp2024/ppRef/polarity_positive";
+      LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]:   >>>   pp, 5.36 TeV 2024, period LHC24ap: CCDB path " << pathInputFile;
+      LOG(info) << "                                                   >>>   Run list: 559348 <= runNumber && runNumber <= 559387";
+    } else if (559408 <= runNumber && runNumber <= 559456) {
+      ///
+      ///   [CASE 7]: pp, 5.36 TeV 2024, period LHC24aq: CCDB path Users/m/mfaggin/test/inputsTrackTuner/pp2024/ppRef/polarity_negative
+      ///             Run list: 559408 <= runNumber && runNumber <= 559456
+      ///
+      pathInputFile = "Users/m/mfaggin/test/inputsTrackTuner/pp2024/ppRef/polarity_negative";
+      LOG(info) << "[TrackTuner::getPathInputFileAutomaticFromCCDB]:   >>>   pp, 5.36 TeV 2024, period LHC24aq: CCDB path " << pathInputFile;
+      LOG(info) << "                                                   >>>   Run list: 559408 <= runNumber && runNumber <= 559456";
     } else {
       LOG(fatal) << "runNumber " << runNumber << " not supported for the autodetection. Please switch to manual configuration of the TrackTuner object. Aborting...";
     }
