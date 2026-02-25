@@ -83,6 +83,7 @@ struct CalcNchUpc {
 
     registry.add("Ncharge", "N_{charge}", {HistType::kTH1D, {axisNch}});
     registry.add("zVtx_all", "zVtx_all", {HistType::kTH1D, {axisVrtx}});
+    registry.add("Nch_vs_zVtx", "Nch vs zVtx", {HistType::kTH2D, {axisVrtx, axisNch}});
   }
 
   void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
@@ -90,6 +91,7 @@ struct CalcNchUpc {
     multiplicityNch(tracks.size());
     registry.fill(HIST("Ncharge"), tracks.size());
     registry.fill(HIST("zVtx_all"), collision.posZ());
+    registry.fill(HIST("Nch_vs_zVtx"), collision.posZ(), tracks.size());
   }
 };
 
@@ -169,6 +171,7 @@ struct FlowCorrelationsUpc {
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
     registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
+    registry.add("Nch_vs_zVtx", "Nch vs zVtx", {HistType::kTH2D, {axisVertex, axisMultiplicity}});
 
     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
 
@@ -380,6 +383,7 @@ struct FlowCorrelationsUpc {
     int runIndex = collision.runNumber();
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
+    registry.fill(HIST("Nch_vs_zVtx"), collision.posZ(), tracks.size());
     fillYield(collision, tracks);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, runIndex); // fill the SE histogram and Sparse
   }
