@@ -755,19 +755,24 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     dcaZResMC = evalGraph(ptMC, grDcaZResVsPtPionMC[phiBin].get());
     dcaZResData = evalGraph(ptMC, grDcaZResVsPtPionData[phiBin].get());
 
-    // For Q/Pt corrections, files on CCDB will be used if both qOverPtMC and qOverPtData are null
+    // Local Q/Pt resolution: either the constant configurable value, or evaluated per-track from graphs
+    double currentQOverPtMC = qOverPtMC;
+    double currentQOverPtData = qOverPtData;
     if (updateCurvature || updateCurvatureIU) {
-      if ((qOverPtMC < 0) || (qOverPtData < 0)) {
-        if (debugInfo) {
-          LOG(info) << "### q/pt smearing: qOverPtMC=" << qOverPtMC << ", qOverPtData=" << qOverPtData << ". One of them is negative. Retrieving then values from graphs from input .root file";
-        }
+      if ((currentQOverPtMC < 0) || (currentQOverPtData < 0)) {
         /// check that input graphs for q/pt smearing are correctly retrieved
         if (!grOneOverPtPionData.get() || !grOneOverPtPionMC.get()) {
           LOG(fatal) << "### q/pt smearing: input graphs not correctly retrieved. Aborting.";
         }
-        qOverPtMC = std::max(0.0, evalGraph(ptMC, grOneOverPtPionMC.get()));
-        qOverPtData = std::max(0.0, evalGraph(ptMC, grOneOverPtPionData.get()));
-      } // qOverPtMC, qOverPtData block ends here
+        currentQOverPtMC = std::max(0.0, evalGraph(ptMC, grOneOverPtPionMC.get()));
+        currentQOverPtData = std::max(0.0, evalGraph(ptMC, grOneOverPtPionData.get()));
+        if (debugInfo) {
+          LOG(info) << "### q/pt graph-based smearing: pT=" << ptMC
+                    << " sigma(1/pT)_MC=" << currentQOverPtMC
+                    << " sigma(1/pT)_Data=" << currentQOverPtData
+                    << " ratio(Data/MC)=" << (currentQOverPtMC > 0. ? currentQOverPtData / currentQOverPtMC : -1.);
+        }
+      } // currentQOverPtMC, currentQOverPtData block ends here
     } // updateCurvature, updateCurvatureIU block ends here
 
     if (updateTrackDCAs) {
@@ -836,7 +841,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       // double dpt1o =pt1o-pt1mc;
       deltaQpt = trackParQPtMCRec - trackParQPtMC;
       // double dpt1n =dpt1o *(spt1o >0. ? (spt1n /spt1o ) : 1.);
-      deltaQptTuned = deltaQpt * (qOverPtMC > 0. ? (qOverPtData / qOverPtMC) : 1.);
+      deltaQptTuned = deltaQpt * (currentQOverPtMC > 0. ? (currentQOverPtData / currentQOverPtMC) : 1.);
       // double pt1n  = pt1mc+dpt1n;
       trackParQPtTuned = trackParQPtMC + deltaQptTuned;
       trackParCov.setQ2Pt(trackParQPtTuned);
@@ -844,36 +849,36 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       // updating track cov matrix elements for 1/Pt at innermost update point
       //       if(sd0rpo>0. && spt1o>0.)covar[10]*=(sd0rpn/sd0rpo)*(spt1n/spt1o);//ypt
       sigma1PtY = trackParCov.getSigma1PtY();
-      if (dcaXYResMC > 0. && qOverPtMC > 0.) {
-        sigma1PtY *= ((dcaXYResData / dcaXYResMC) * (qOverPtData / qOverPtMC));
+      if (dcaXYResMC > 0. && currentQOverPtMC > 0.) {
+        sigma1PtY *= ((dcaXYResData / dcaXYResMC) * (currentQOverPtData / currentQOverPtMC));
         trackParCov.setCov(sigma1PtY, 10);
       }
 
       //       if(sd0zo>0. && spt1o>0.) covar[11]*=(sd0zn/sd0zo)*(spt1n/spt1o);//zpt
       sigma1PtZ = trackParCov.getSigma1PtZ();
-      if (dcaZResMC > 0. && qOverPtMC > 0.) {
-        sigma1PtZ *= ((dcaZResData / dcaZResMC) * (qOverPtData / qOverPtMC));
+      if (dcaZResMC > 0. && currentQOverPtMC > 0.) {
+        sigma1PtZ *= ((dcaZResData / dcaZResMC) * (currentQOverPtData / currentQOverPtMC));
         trackParCov.setCov(sigma1PtZ, 11);
       }
 
       //       if(spt1o>0.)             covar[12]*=(spt1n/spt1o);//sinPhipt
       sigma1PtSnp = trackParCov.getSigma1PtSnp();
-      if (qOverPtMC > 0.) {
-        sigma1PtSnp *= (qOverPtData / qOverPtMC);
+      if (currentQOverPtMC > 0.) {
+        sigma1PtSnp *= (currentQOverPtData / currentQOverPtMC);
         trackParCov.setCov(sigma1PtSnp, 12);
       }
 
       //       if(spt1o>0.)             covar[13]*=(spt1n/spt1o);//tanTpt
       sigma1PtTgl = trackParCov.getSigma1PtTgl();
-      if (qOverPtMC > 0.) {
-        sigma1PtTgl *= (qOverPtData / qOverPtMC);
+      if (currentQOverPtMC > 0.) {
+        sigma1PtTgl *= (currentQOverPtData / currentQOverPtMC);
         trackParCov.setCov(sigma1PtTgl, 13);
       }
 
       //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
       sigma1Pt2 = trackParCov.getSigma1Pt2();
-      if (qOverPtMC > 0.) {
-        sigma1Pt2 *= (qOverPtData / qOverPtMC) * (qOverPtData / qOverPtMC);
+      if (currentQOverPtMC > 0.) {
+        sigma1Pt2 *= (currentQOverPtData / currentQOverPtMC) * (currentQOverPtData / currentQOverPtMC);
         trackParCov.setCov(sigma1Pt2, 14);
       }
     } // updateCurvatureIU block ends here
@@ -969,7 +974,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       }
       deltaQpt = trackParQPtMCRec - trackParQPtMC;
       // double dpt1n =dpt1o *(spt1o >0. ? (spt1n /spt1o ) : 1.);
-      deltaQptTuned = deltaQpt * (qOverPtMC > 0. ? (qOverPtData / qOverPtMC) : 1.);
+      deltaQptTuned = deltaQpt * (currentQOverPtMC > 0. ? (currentQOverPtData / currentQOverPtMC) : 1.);
       // double pt1n  = pt1mc+dpt1n;
       trackParQPtTuned = trackParQPtMC + deltaQptTuned;
       trackParCov.setQ2Pt(trackParQPtTuned);
@@ -1030,36 +1035,36 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       if ((updateCurvature) && (!updateCurvatureIU)) {
         //       if(sd0rpo>0. && spt1o>0.)covar[10]*=(sd0rpn/sd0rpo)*(spt1n/spt1o);//ypt
         sigma1PtY = trackParCov.getSigma1PtY();
-        if (dcaXYResMC > 0. && qOverPtMC > 0.) {
-          sigma1PtY *= ((dcaXYResData / dcaXYResMC) * (qOverPtData / qOverPtMC));
+        if (dcaXYResMC > 0. && currentQOverPtMC > 0.) {
+          sigma1PtY *= ((dcaXYResData / dcaXYResMC) * (currentQOverPtData / currentQOverPtMC));
           trackParCov.setCov(sigma1PtY, 10);
         }
 
         //       if(sd0zo>0. && spt1o>0.) covar[11]*=(sd0zn/sd0zo)*(spt1n/spt1o);//zpt
         sigma1PtZ = trackParCov.getSigma1PtZ();
-        if (dcaZResMC > 0. && qOverPtMC > 0.) {
-          sigma1PtZ *= ((dcaZResData / dcaZResMC) * (qOverPtData / qOverPtMC));
+        if (dcaZResMC > 0. && currentQOverPtMC > 0.) {
+          sigma1PtZ *= ((dcaZResData / dcaZResMC) * (currentQOverPtData / currentQOverPtMC));
           trackParCov.setCov(sigma1PtZ, 11);
         }
 
         //       if(spt1o>0.)             covar[12]*=(spt1n/spt1o);//sinPhipt
         sigma1PtSnp = trackParCov.getSigma1PtSnp();
-        if (qOverPtMC > 0.) {
-          sigma1PtSnp *= (qOverPtData / qOverPtMC);
+        if (currentQOverPtMC > 0.) {
+          sigma1PtSnp *= (currentQOverPtData / currentQOverPtMC);
           trackParCov.setCov(sigma1PtSnp, 12);
         }
 
         //       if(spt1o>0.)             covar[13]*=(spt1n/spt1o);//tanTpt
         sigma1PtTgl = trackParCov.getSigma1PtTgl();
-        if (qOverPtMC > 0.) {
-          sigma1PtTgl *= (qOverPtData / qOverPtMC);
+        if (currentQOverPtMC > 0.) {
+          sigma1PtTgl *= (currentQOverPtData / currentQOverPtMC);
           trackParCov.setCov(sigma1PtTgl, 13);
         }
 
         //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
         sigma1Pt2 = trackParCov.getSigma1Pt2();
-        if (qOverPtMC > 0.) {
-          sigma1Pt2 *= (qOverPtData / qOverPtMC) * (qOverPtData / qOverPtMC);
+        if (currentQOverPtMC > 0.) {
+          sigma1Pt2 *= (currentQOverPtData / currentQOverPtMC) * (currentQOverPtData / currentQOverPtMC);
           trackParCov.setCov(sigma1Pt2, 14);
         }
       } // ---> track cov matrix elements for 1/Pt ends here
