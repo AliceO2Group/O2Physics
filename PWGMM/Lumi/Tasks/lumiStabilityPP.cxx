@@ -158,7 +158,7 @@ struct LumiStabilityPP {
       }
     }
 
-    for (int iBCCategory{0}; iBCCategory < BCSLFDD ; ++iBCCategory) {
+    for (int iBCCategory{0}; iBCCategory < BCSLFDD; ++iBCCategory) {
       histBcPattern[iBCCategory][runNumber] = registry.add<TH1>(Form("%d/%s", runNumber, std::string(PatternHistNames[iBCCategory]).c_str()), "BC Pattern;#bf{BC ID in orbit};", HistType::kTH1D, {bcIDAxis});
     }
   }
@@ -256,13 +256,13 @@ struct LumiStabilityPP {
         histBcPattern[BCC][runNumber]->Fill(iBC);
       }
       if (bcPatternE[iBC]) {
-          histBcPattern[BCE][runNumber]->Fill(iBC);
+        histBcPattern[BCE][runNumber]->Fill(iBC);
       }
       if (bcPatternL[iBC]) {
-          histBcPattern[BCL][runNumber]->Fill(iBC);
+        histBcPattern[BCL][runNumber]->Fill(iBC);
       }
       if (bcPatternLE[iBC]) {
-          histBcPattern[BCLE][runNumber]->Fill(iBC);
+        histBcPattern[BCLE][runNumber]->Fill(iBC);
       }
     }
     LOG(info) << "bcPatternL creation complete. Total leading BCs found: " << totalLeadingBCs[0];
