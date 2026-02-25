@@ -95,8 +95,8 @@ struct HfCandidateSelectorToXiPiQa {
   Configurable<double> etaTrackLFDauMax{"etaTrackLFDauMax", 1.0, "Max absolute value of eta for V0 and cascade daughters"};
   Configurable<double> ptPiFromCascMin{"ptPiFromCascMin", 0.15, "Min pT pi <--Casc"};
   Configurable<double> ptPiFromCharmBaryonMin{"ptPiFromCharmBaryonMin", 0.2, "Min pT pi <--Casc"};
-  Configurable<double> radiusCascMin{"radiusCascMin", 0.5, "Min Cascade radius"};
-  Configurable<double> radiusV0Min{"radiusV0Min", 1.1, "Min V0 radius"};
+  Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min Cascade radius"};
+  Configurable<double> radiusV0Min{"radiusV0Min", 1.2, "Min V0 radius"};
   Configurable<double> impactParXYPiFromCharmBaryonMin{"impactParXYPiFromCharmBaryonMin", 0., "Min dcaxy pi from charm baryon track to pV"};
   Configurable<double> impactParXYPiFromCharmBaryonMax{"impactParXYPiFromCharmBaryonMax", 10., "Max dcaxy pi from charm baryon track to pV"};
   Configurable<double> impactParXYCascMin{"impactParXYCascMin", 0., "Min dcaxy casc track to pV"};
@@ -130,7 +130,7 @@ struct HfCandidateSelectorToXiPiQa {
   Configurable<double> nSigmaTofCombinedPiMax{"nSigmaTofCombinedPiMax", 0., "Nsigma cut on TOF combined with TPC for pion selection"};
   Configurable<double> ptPrPidTofMin{"ptPrPidTofMin", -1, "Lower bound of track pT for TOF PID for proton selection"};
   Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for proton selection"};
-  Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 5., "Nsigma cut on TOF only for proton selection"};
+  Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 3., "Nsigma cut on TOF only for proton selection"};
   Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 0., "Nsigma cut on TOF combined with TPC for proton selection"};
   // detector track quality selections
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
@@ -529,12 +529,6 @@ struct HfCandidateSelectorToXiPiQa {
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
       outputMlXic0ToXiPi.clear();
 
-#if 0
-      auto trackV0PosDau = candidate.template posTrack_as<TracksSel>();
-      auto trackV0NegDau = candidate.template negTrack_as<TracksSel>();
-      auto trackPiFromCasc = candidate.template bachelor_as<TracksSel>();
-      auto trackPiFromCharm = candidate.template bachelorFromCharmBaryon_as<TracksSel>();
-#endif
       auto trackV0PosDau = lfTracks.rawIteratorAt(candidate.posTrackId());
       auto trackV0NegDau = lfTracks.rawIteratorAt(candidate.negTrackId());
       auto trackPiFromCasc = lfTracks.rawIteratorAt(candidate.bachelorId());
