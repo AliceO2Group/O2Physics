@@ -384,7 +384,7 @@ Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k
   return F;
 }
 
-void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F* lNancestor2DPlot)
+void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange, Double_t lHiRange, TH3D* lNpNcEcc, TH2F* lEcc2DPlot, TH3D* lNpNcB, TH2F* lB2DPlot, TH2F *lNancestor2DPlot, Double_t fProbabilityCutoff)
 {
   cout << "Calculating <Npart>, <Ncoll> in centrality bins..." << endl;
   cout << "Range to calculate: " << lLoRange << " to " << lHiRange << endl;
@@ -415,7 +415,7 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
   }
   // bypass to zero
   for (int ibin = 0; ibin < fNNpNcPairs; ibin++) {
-    if (ibin % 2000 == 0)
+    if (ibin % 200 == 0)
       cout << "At NpNc pair #" << ibin << " of " << fNNpNcPairs << "..." << endl;
     Double_t lNAncestors0 = (Int_t)(fNpart[ibin] * ff + fNcoll[ibin] * (1.0 - ff));
     Double_t lNAncestors1 = TMath::Floor(fNpart[ibin] * ff + fNcoll[ibin] * (1.0 - ff) + 0.5);
@@ -459,6 +459,11 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
       if (lMultValue > 1e-6)
         lMult = fAncestorMode != 2 ? fNBD->Eval(lMultValue) : ContinuousNBD(lMultValue, lThisMu, lThisk);
       Double_t lProbability = lNancestorCount * lMult;
+
+      if(lProbability < fProbabilityCutoff){
+        continue; // skip if probability of contributing too small
+      }
+
       Double_t lMultValueToFill = lMultValue;
       if (hPercentileMap)
         lMultValueToFill = hPercentileMap->GetBinContent(hPercentileMap->FindBin(lMultValue));
@@ -479,7 +484,7 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
         }
       }
       if (lNpNcB) {
-        // collapse the entire eccentricity distribution for this combo
+        // collapse the entire impact parameter distribution for this combo
         for (int ib = 1; ib < hImpactParameter->GetNbinsX() + 1; ib++) {
           lB2DPlot->Fill(lMultValueToFill, hImpactParameter->GetBinCenter(ib), lProbability * hImpactParameter->GetBinContent(ib));
         }
