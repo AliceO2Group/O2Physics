@@ -979,10 +979,10 @@ struct NonPromptCascadeTask {
 
   void processPileUp(CollisionCandidatesRun3 const& collisions, aod::BCsWithTimestamps const&)
   {
-    //std::cout << "Processing pile up" << std::endl;
+    // std::cout << "Processing pile up" << std::endl;
     int ds = 1;
     for (const auto& coll : collisions) {
-      if(ds == cfgDownscaleMB ) {
+      if (ds == cfgDownscaleMB) {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
         if (mRunNumber != bc.runNumber()) {
           mRunNumber = bc.runNumber();
